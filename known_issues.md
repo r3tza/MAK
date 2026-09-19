@@ -1,6 +1,6 @@
 # Znane problemy interfejsu
 
-Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose i `mockup.html`.
+Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose.
 
 ## Weryfikacja po poprawkach
 
@@ -16,7 +16,6 @@ Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose
 - Ekrany mają stany puste, komunikaty błędów i stan ładowania.
 - Plan pokazuje tekstowe statusy, takie jak „Odwołane”, „Zmienione” i „Jednorazowe”. Kolor nie jest jedynym oznaczeniem karty zajęć.
 - Kod przewiduje motyw jasny, ciemny i systemowy.
-- Mockup ma widoczny focus dla pól i przycisków oraz obsługę `prefers-reduced-motion`. Te zasady trzeba przenieść do Compose.
 
 ## Problemy do naprawy
 
@@ -94,7 +93,7 @@ Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose
 
 **Status:** Częściowo zrealizowane. Dodano stany focusu i obsługę klawiatury dla zmienionych kontrolek. Brakuje testu na urządzeniu.
 
-**Problem:** Własne przyciski, filtry, checkbox, wybór dnia i pola wyboru używają `clickable` albo `selectable`, ale kod nie definiuje spójnego wizualnego stanu focusu. Mockup ma `focus-visible`, aplikacja Compose nie ma odpowiadającego mechanizmu w tych komponentach.
+**Problem:** Własne przyciski, filtry, checkbox, wybór dnia i pola wyboru używały `clickable` albo `selectable`, ale kod nie definiował spójnego wizualnego stanu focusu.
 
 **Dowody:** `MakIconButton`, `MakRoundButton`, `MakFilterRow`, `MakCheckbox`, `MakNavBar` i `MakSelectField` w `ui/components/MakComponents.kt`.
 
@@ -111,7 +110,6 @@ Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose
 **Dowody:**
 
 - `MakFilterRow` używa `horizontalScroll`.
-- `mockup.html` używa `overflow:auto` dla `.filter-row`.
 - Architektura wymaga braku poziomego przewijania na szerokości 320 dp.
 
 **Ryzyko:** Część filtrów jest ukryta poza ekranem, a użytkownik nie dostaje pełnego obrazu dostępnych opcji.

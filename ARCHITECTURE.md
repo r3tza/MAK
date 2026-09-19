@@ -52,7 +52,7 @@ Wspólne prymitywy, przewidywalne odstępy, jawny grid, powtarzalne akcje i udok
 
 ### Material 3 jako podstawa konstrukcji
 
-Interfejs budujemy na komponentach i zasadach Material 3. Mockup określa kierunek wizualny, ale nie zastępuje standardów platformy. Dopuszczalne są własne kolory, typografia, kształty, karty, nawigacja i układ, jeśli zachowują semantykę oraz przewidywalne zachowanie komponentów Material 3.
+Interfejs budujemy na komponentach i zasadach Material 3. Dopuszczalne są własne kolory, typografia, kształty, karty, nawigacja i układ, jeśli zachowują semantykę oraz przewidywalne zachowanie komponentów Material 3.
 
 Własne komponenty stosujemy tylko wtedy, gdy są potrzebne do odtworzenia zaakceptowanego wzorca. Każdy taki komponent musi zachować etykiety semantyczne, obszar dotyku co najmniej 48 dp, obsługę focusu i klawiatury, kontrast, motyw jasny i ciemny oraz poprawne działanie na szerokości 320 dp. Pola, listy wyboru, przyciski, pola wyboru, opcje jednokrotnego wyboru, dialogi i nawigację zastępujemy własnym rozwiązaniem tylko po sprawdzeniu tych kryteriów.
 
@@ -71,6 +71,12 @@ Interfejs nie pokazuje akcji, która zakończy się przewidywalnym błędem. Dat
 ### Kolizja nie jest winą użytkownika
 
 Kolizja godzin jest informacją o tym, że zajęcia z dwóch kierunków nakładają się w planie. Nie jest błędem użytkownika ani sugestią, że powinien zmienić własne dane. Aplikacja ma ostrzec, wskazać zajęcia i pokazać zakres nakładania, ale nie proponuje zmiany terminu i nie zmienia go automatycznie. Decyzja o kontakcie z uczelnią, opuszczeniu zajęć albo ręcznym przeniesieniu terminu należy do użytkownika.
+
+Na karcie zajęć kolizja używa neutralnego stylu ostrzegawczego i pokazuje dokładny zakres nakładania. Nie używa koloru błędu ani komunikatu sugerującego winę użytkownika.
+
+### Gęstość ekranu planu
+
+Ekran „Plan” grupuje zakres dat, nawigację tygodnia, oznaczenie A/B i źródło korekty w jednej sekcji. Akcja zmiany tygodnia A/B znajduje się przy tej informacji, a nie w odłączonym menu. Zwinięte filtry pokazują aktywny kierunek. Karty zajęć rozdzielają nazwę, kierunek i typ, metadane, kolizję oraz notatkę na czytelne wiersze. Układ nie może ukrywać pierwszych zajęć przez nadmiernie wysokie elementy sterujące.
 
 ### Konfiguracja początkowa
 
@@ -94,7 +100,15 @@ Projekt dzielimy na małe, wymienne części, ponieważ funkcje i wygląd będą
 
 Każda funkcja powinna mieć własną, czytelną odpowiedzialność i komunikować się z innymi częściami przez proste modele lub interfejsy. Logika obliczania planu nie może zależeć od komponentów UI, a widget nie może powielać reguł `ScheduleResolver`.
 
+Wspólny `ActivePlanProvider` składa aktywny plan dla daty z modeli domenowych, wywołuje `ScheduleResolver` i w razie potrzeby `CollisionDetector`. Mapowanie danych Room na modele domenowe znajduje się poza ViewModelem. Provider nie zależy od Compose ani Glance, a domena nie zależy od Room. Ekrany i widget korzystają z tej samej ścieżki obliczeń.
+
 Pakiety w jednym module Gradle: `data`, `domain`, `ui`, `widget`, `export`. ViewModele żyją przy ekranach w `ui`. Nie tworzymy wielu osobnych modułów Gradle bez konkretnej potrzeby, ponieważ zwiększyłyby koszt przebudowy i konfiguracji. Nowy moduł Gradle powstaje dopiero wtedy, gdy ma niezależny cykl zmian, testów albo wyraźną granicę zależności.
+
+`NavController` jest jedynym źródłem bieżącej trasy. ViewModel może zgłaszać jednorazowy zamiar nawigacji po zakończeniu operacji, ale nie przechowuje kopii aktualnej trasy. Publiczny stan UI zawiera modele prezentacyjne i potrzebne identyfikatory, a nie encje Room ani relacje bazy.
+
+ViewModele rozdzielamy według przepływów ekranów, gdy dana część jest rozwijana. Stan nadrzędny koordynuje wyłącznie dane wspólne. Trwałe preferencje zapisujemy poza pamięcią ViewModelu, a istotny stan roboczy przygotowujemy do odtworzenia procesu.
+
+Operacja obejmująca kilka zależnych zapisów ma jedną granicę transakcji. UI otrzymuje jawny stan zapisu i zachowuje wartości formularza po błędzie. Import jest atomowy: zapisuje cały zaakceptowany plik albo nie zmienia bazy.
 
 ## 6. Skala i model użycia
 

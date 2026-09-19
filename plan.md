@@ -38,6 +38,122 @@ Pozostaje do wykonania:
 - sprawdzenie TalkBacka, klawiatury, gestu wstecz i motywu ciemnego w rzeczywistym środowisku Androida;
 - funkcje zaplanowane na wersje 0.2 i 0.3, w szczególności pełna obsługa widgetu oraz import JSON, zgodnie z sekcjami wdrożenia poniżej.
 
+## 1.2. Plan porządkowania architektury
+
+Zmiany należy wprowadzać stopniowo podczas rozwoju wersji 0.2 i 0.3. Nie wymagają podziału projektu na osobne moduły Gradle ani dodania frameworka wstrzykiwania zależności.
+
+Kolejność prac:
+
+1. Przed implementacją widgetu wydzielić wspólny `ActivePlanProvider`. Komponent przyjmuje dane domenowe i datę, wywołuje `ScheduleResolver` oraz w razie potrzeby `CollisionDetector`, a następnie zwraca aktywny plan. Mapowanie danych Room na modele domenowe przenieść z ViewModelu do wspólnej granicy danych. Kod nie może zależeć od Compose ani Glance. Ekran „Dzisiaj”, plan, kalendarz i widget mają korzystać z tej samej ścieżki obliczeń.
+2. Ustawić `NavController` jako jedyne źródło bieżącej trasy. ViewModel może zgłaszać jednorazowy zamiar przejścia po zapisie, usunięciu albo zakończeniu konfiguracji, ale nie przechowuje kopii aktualnej trasy.
+3. Rozdzielać `MakViewModel` według przepływów podczas zmian odpowiednich ekranów. Docelowy podział obejmuje `ScheduleViewModel`, `ClassEditViewModel`, `OccurrenceViewModel`, `SemesterViewModel`, `SetupViewModel` i `SettingsViewModel`. Stan nadrzędny może koordynować aktywny semestr i ustawienia wspólne, ale nie zawiera logiki formularzy poszczególnych ekranów.
+4. Nie wystawiać typów Room w publicznym stanie UI. `SemesterWithData` i encje pozostają po stronie danych albo prywatnego składania stanu. Ekrany otrzymują modele prezentacyjne i identyfikatory potrzebne do akcji.
+5. Zapisy obejmujące kilka rekordów wykonywać atomowo. Dotyczy to co najmniej zapisu zajęć z nowym prowadzącym, utworzenia semestru z pierwszym kierunkiem, zmiany aktywnego semestru po usunięciu oraz przyszłego importu. Import zapisuje cały plik albo nie zmienia bazy.
+6. Wprowadzić wspólny stan operacji zapisu: `Saving`, `Saved`, `ValidationError` i `StorageError`. Błąd nie może zamknąć formularza ani usunąć wpisanych wartości. Komunikat wskazuje użytkownikowi pole albo operację, której dotyczy.
+7. Zapisać trwałe preferencje, w tym motyw, poza pamięcią ViewModelu. Stan nawigacyjny, wybrana data, filtry i robocze wartości formularza powinny przetrwać odtworzenie procesu przy użyciu `SavedStateHandle` albo równoważnego mechanizmu.
+
+Kryteria zakończenia porządkowania:
+
+- widoki Compose i widget otrzymują ten sam wynik planu dla tej samej daty oraz danych;
+- domena nie zależy od Room, Compose ani Glance;
+- systemowy back i odtworzenie procesu nie rozjeżdżają trasy ze stanem ekranu;
+- awaria operacji wieloetapowej nie zostawia częściowo zapisanych danych;
+- błąd zapisu pozostawia formularz otwarty z zachowanymi wartościami;
+- ponowne utworzenie procesu przywraca trwałe preferencje i istotny stan roboczy.
+
+## 1.3. Plan poprawy ekranu „Plan”
+
+Zmiany dotyczą widoku listy na ekranie „Plan”. Widok kalendarza zachowuje obecny zakres funkcji. Zmiany wykonać przy użyciu komponentów Material 3 i istniejących tokenów `MakSpacing`.
+
+### 1. Skrócenie nagłówka
+
+W `ScheduleScreen` zastąpić `MakSectionHeader(eyebrow = "Plan", title = "Twoje zajęcia")` zwartym nagłówkiem „Plan zajęć”. Nie wyświetlać osobnej etykiety „PLAN”, ponieważ aktywna pozycja dolnej nawigacji wskazuje bieżący ekran. Zachować globalny topbar z logo MAK i ustawieniami oraz dolną nawigację bez zmian. Odstęp między nagłówkiem i `MakViewSwitch` nie może przekraczać `MakSpacing.md`.
+
+### 2. Wspólne sterowanie tygodniem
+
+W `ScheduleScreen.kt` utworzyć prywatny komponent `WeekNavigationHeader`. Komponent zawiera:
+
+- przycisk poprzedniego tygodnia o obszarze dotyku co najmniej 48 dp;
+- wyśrodkowany zakres `weekRangeLabel` i drugą linię `weekSubtitle`;
+- przycisk następnego tygodnia o obszarze dotyku co najmniej 48 dp;
+- pod zakresem dwie zwarte informacje: `weekTypeLabel` oraz `weekSourceLabel`.
+
+Całość umieścić w jednej sekcji. Usunąć osobny `MakNoteBanner` z widoku listy. `weekTypeLabel` i `weekSourceLabel` nie mogą wyglądać jak karta o tej samej wadze co lista zajęć. Użyć małych odznak albo jednego wiersza na tle `surfaceVariant` lub `secondaryContainer`. Tekst musi korzystać z kolorów `onSurfaceVariant` albo `onSecondaryContainer`.
+
+Odznaka tygodnia ma być przyciskiem otwierającym istniejący `WeekCorrectionDialog`. Nadać jej opis dostępności „Zmień oznaczenie tygodnia, obecnie: {weekTypeLabel}, źródło: {weekSourceLabel}”. Zachować widoczny focus, obsługę klawiatury i minimum 48 dp obszaru aktywnego.
+
+### 3. Usunięcie odłączonego menu
+
+Usunąć `MakActionMenu` zawierające akcję „Zmień A/B” z `ListView`. Nie zostawiać osobnego przycisku z trzema kropkami. Jedynym wejściem do `WeekCorrectionDialog` w widoku listy jest odznaka tygodnia w `WeekNavigationHeader`. Jeśli w przyszłości pojawią się inne akcje tygodnia, umieścić je w tej samej sekcji sterowania tygodniem.
+
+### 4. Czytelny stan filtrów
+
+Zastąpić ogólną etykietę „Pokaż filtry” prywatnym komponentem `ScheduleFilterSection`. Nagłówek sekcji ma pokazywać:
+
+- „Filtry”, gdy wybrano „Wszystkie”;
+- „Filtry: {nazwa kierunku}”, gdy wybrano konkretny kierunek.
+
+Dodać ikonę filtra oraz ikonę rozwinięcia i zwinięcia z Material Icons. Semantyka przycisku zawiera bieżący wybór oraz stan „Rozwinięte” albo „Zwinięte”. Po rozwinięciu pozostawić `MakSelectField` z pojedynczym wyborem kierunku. Po wybraniu kierunku zwinąć sekcję i pozostawić nazwę wyboru w nagłówku. Długą nazwę kierunku ograniczyć do jednej linii z wielokropkiem, bez poziomego przewijania.
+
+### 5. Neutralna i konkretna informacja o kolizji
+
+W `ClassItemUi` zastąpić `hasConflict: Boolean` polem `conflictLabel: String?`. Podczas budowy stanu zebrać z `CollisionDetector` zakresy nakładania dla każdego wystąpienia. Zakres formatować jako `HH:mm-HH:mm`.
+
+Etykiety:
+
+- jedna kolizja: „Kolizja 09:00-09:30”;
+- kilka kolizji: „Kolizje: 09:00-09:30, 10:00-10:15”.
+
+Zakresy posortować, usunąć duplikaty i przypisać do obu zajęć uczestniczących w kolizji. Nie obliczać zakresu ponownie w `ClassCard`.
+
+W `ClassCard` pokazać `conflictLabel` z ikoną ostrzeżenia. Użyć `tertiaryContainer` i `onTertiaryContainer` albo innej pary tokenów spełniającej kontrast. Nie używać `error`, czerwonego tekstu ani sformułowania sugerującego błąd użytkownika. Pełna etykieta kolizji ma wejść do opisu semantycznego karty.
+
+### 6. Układ informacji w karcie zajęć
+
+Zachować godzinę rozpoczęcia i zakończenia w lewej kolumnie oraz nazwę zajęć jako pierwszy element prawej kolumny. Poniżej ułożyć informacje w tej kolejności:
+
+1. odznaka kierunku i typ zajęć;
+2. sala, budynek i prowadzący w osobnym tekście metadanych;
+3. informacja o kolizji;
+4. notatka.
+
+Dodać `building: String?` do `ClassItemUi` i wypełniać je z `PlannedOccurrence`. Pomijać puste elementy metadanych. Gdy nie podano sali, zachować tekst „Sala niepodana”. Nie umieszczać odznaki kierunku oraz wszystkich metadanych w jednym wierszu. Nazwa zajęć może mieć dwie linie, metadane dwie linie, a notatka trzy linie. Karta nie może przewijać się poziomo przy szerokości 320 dp i długiej nazwie kierunku albo prowadzącego.
+
+Pozostawić kolorowy pasek kierunku, lecz nie używać go jako jedynego oznaczenia. Pasek ma być przycięty tym samym kształtem co karta. Ograniczyć dekoracyjne obramowania do karty i elementów interaktywnych. Nie dodawać osobnego obramowania każdemu wierszowi metadanych.
+
+### 7. Czytelność wyboru dnia
+
+W `DaySelector` zwiększyć rozmiar skrótu dnia z 10 sp do co najmniej 11 sp, a numeru dnia z 13 sp do co najmniej 14 sp. Zachować siedem równych kolumn, minimum 48 dp wysokości aktywnego obszaru oraz tekstowy opis daty w semantyce. Kolor nieaktywnego skrótu musi spełniać kontrast dla zwykłego tekstu. Stan wybrany nadal używa `primary` i `onPrimary`. Nie dodawać poziomego przewijania.
+
+### 8. Testy i weryfikacja
+
+Dodać `ScheduleScreenTest` w `app/src/androidTest/java/dev/retza/mak/ui/schedule`. Testy mają używać wstrzykniętego `ScheduleUiState` i obejmować:
+
+- szerokość 320 dp z długą nazwą kierunku, zajęć i prowadzącego;
+- widoczność zakresu tygodnia, oznaczenia A/B i źródła korekty w jednej sekcji;
+- otwarcie `WeekCorrectionDialog` przez odznakę tygodnia;
+- brak osobnego menu z trzema kropkami w widoku listy;
+- nagłówek filtra bez wyboru oraz po wybraniu konkretnego kierunku;
+- kartę z dokładnym zakresem jednej kolizji oraz kartę z kilkoma zakresami;
+- zachowanie kolejności: kierunek i typ, metadane, kolizja, notatka;
+- motyw ciemny przy szerokości 390 dp;
+- dostępne akcje klawiatury, widoczny focus i obszary dotyku co najmniej 48 dp.
+
+W testach JVM dodać osobne przypadki mapowania jednej oraz wielu kolizji na etykiety obu zajęć. Zachować istniejące testy `CollisionDetector`, ponieważ to one rozstrzygają samo nakładanie przedziałów.
+
+Po implementacji uruchomić `gradlew.bat test` oraz kompilację testów Android. Na emulatorze albo urządzeniu sprawdzić szerokości 320 i 390 dp, motyw jasny i ciemny, TalkBack, klawiaturę, gest wstecz oraz brak obciętych akcji.
+
+### 9. Kryteria akceptacji
+
+- Pierwsza karta zajęć jest widoczna wyżej niż w obecnym układzie przy tej samej wysokości ekranu.
+- Sterowanie tygodniem, oznaczenie A/B i źródło korekty tworzą jedną sekcję.
+- Widok listy nie pokazuje odłączonego przycisku z trzema kropkami.
+- Zwinięty filtr pokazuje aktywny kierunek.
+- Kolizja jest neutralną informacją i zawiera dokładny zakres czasu.
+- Długie dane karty zawijają się bez poziomego przewijania i bez zasłaniania odznaki kierunku.
+- Wszystkie akcje mają semantyczne etykiety, widoczny focus i obszar dotyku co najmniej 48 dp.
+- Układ pozostaje czytelny w motywie jasnym i ciemnym przy szerokości 320-390 dp.
+
 ## 2. Technologie
 
 - Kotlin;

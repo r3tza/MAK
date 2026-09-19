@@ -23,12 +23,12 @@ Nie używaj w nowych dokumentach, tekstach interfejsu ani odpowiedziach znaku `�
 
 Zasady interfejsu z `ARCHITECTURE.md` są kryteriami akceptacji dla każdego widoku. Sprawdzaj je razem z zachowaniem funkcjonalnym.
 
-## Interfejs i mockup
+## Interfejs
 
-- Przed zmianą interfejsu przeczytaj zasady UI w `ARCHITECTURE.md` i obejrzyj `mockup.html`.
-- `mockup.html` jest aktualną referencją kierunku wizualnego i interakcji. Dokumenty pozostają źródłem prawdy dla zakresu i zachowania.
-- Jeśli zaakceptowana zmiana istotnie wpływa na nawigację, układ, formularze albo widget, zaktualizuj także mockup, aby nie pokazywał starego przebiegu.
-- Nie kopiuj kodu mockupu bezpośrednio do aplikacji. Odtwórz jego zachowanie przy użyciu komponentów i wzorców Compose.
+- Przed zmianą interfejsu przeczytaj zasady UI w `ARCHITECTURE.md` i prześledź aktualne komponenty Compose.
+- Dokumenty są źródłem prawdy dla zakresu i zachowania, a działająca aplikacja jest źródłem bieżącego wyglądu.
+- Jeśli zaakceptowana zmiana istotnie wpływa na nawigację, układ, formularze albo widget, zaktualizuj odpowiedni opis i testy.
+- Odtwarzaj zaakceptowane zachowanie przy użyciu komponentów i wzorców Compose.
 
 ## Decyzje
 
@@ -91,7 +91,7 @@ Emulator jest wolny. Zostaw kilka przebiegów z wstrzykniętą datą, nie `Local
 - notatka do zajęć kontra notatka do daty;
 - szerokość 320 px: brak poziomego przewijania, akcje widoczne.
 
-Kontrast, `reduced motion` i motyw ciemny sprawdzaj w kodzie i na mockupie, dopóki nie ma stałego urządzenia w CI.
+Kontrast, `reduced motion` i motyw ciemny sprawdzaj w kodzie oraz na emulatorze lub urządzeniu, dopóki nie ma stałego urządzenia w CI.
 
 ## Git
 

@@ -9,16 +9,23 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.FilterList
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -28,36 +35,34 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarMarkerColor
 import dev.retza.mak.ui.components.ClassCard
 import dev.retza.mak.ui.components.ClassItemUi
-import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakCheckbox
 import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDot
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakExpandableSection
-import dev.retza.mak.ui.components.MakNoteBanner
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakRoundButton
 import dev.retza.mak.ui.components.MakRowTitle
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
-import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
-import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.MakViewSwitch
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
@@ -91,6 +96,7 @@ data class ScheduleUiState(
     val weekSubtitle: String,
     val weekTypeLabel: String,
     val weekSourceLabel: String,
+    val weekType: WeekTypeUi? = null,
     val days: List<ScheduleDayUi> = emptyList(),
     val filters: List<ScheduleFilterUi> = emptyList(),
     val selectedDayLabel: String = "",
@@ -129,7 +135,12 @@ fun ScheduleScreen(
 ) {
     var showWeekDialog by remember { mutableStateOf(false) }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
-        MakSectionHeader(eyebrow = "Plan", title = "Twoje zajęcia")
+        Text(
+            text = "Plan zajęć",
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground,
+            modifier = Modifier.padding(start = MakSpacing.xs, top = MakSpacing.xs, bottom = MakSpacing.sm)
+        )
         MakViewSwitch(
             firstLabel = "Lista",
             secondLabel = "Kalendarz",
@@ -166,7 +177,7 @@ fun ScheduleScreen(
     }
     if (showWeekDialog) {
         WeekCorrectionDialog(
-            currentType = if (state.weekTypeLabel.contains("B")) WeekTypeUi.B else WeekTypeUi.A,
+            currentType = state.weekType ?: WeekTypeUi.A,
             hasOneWeekCorrection = state.hasOneWeekCorrection,
             hasFromWeekCorrection = state.hasFromWeekCorrection,
             onDismiss = { showWeekDialog = false },
@@ -193,47 +204,16 @@ private fun ListView(
     onEditWeek: () -> Unit
 ) {
     Column {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 14.dp, bottom = 13.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
-        ) {
-            MakRoundButton("Poprzedni tydzień", Icons.AutoMirrored.Outlined.ArrowBack, onPreviousWeek)
-            Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
-                Text(state.weekRangeLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
-                Text(state.weekSubtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
-            }
-            MakRoundButton("Następny tydzień", Icons.AutoMirrored.Outlined.ArrowForward, onNextWeek)
-        }
-        MakNoteBanner(
-            title = state.weekTypeLabel,
-            subtitle = state.weekSourceLabel,
-            modifier = Modifier.padding(bottom = 13.dp)
+        WeekNavigationHeader(
+            state = state,
+            onPreviousWeek = onPreviousWeek,
+            onNextWeek = onNextWeek,
+            onEditWeek = onEditWeek
         )
         DaySelector(days = state.days, onDaySelected = onDaySelected)
         if (state.filters.isNotEmpty()) {
-            var showFilters by remember { mutableStateOf(false) }
-            MakExpandableSection(
-                label = "filtry",
-                expanded = showFilters,
-                onExpandedChange = { showFilters = it }
-            ) {
-                MakSelectField(
-                    label = "Kierunek",
-                    value = state.filters.firstOrNull { it.isSelected }?.label.orEmpty(),
-                    options = state.filters.map { it.label },
-                    onSelected = { label ->
-                        state.filters.firstOrNull { it.label == label }?.id?.let(onFilterSelected)
-                    }
-                )
-            }
+            ScheduleFilterSection(filters = state.filters, onFilterSelected = onFilterSelected)
         }
-        MakActionMenu(
-            actions = listOf("Zmień A/B" to onEditWeek),
-            modifier = Modifier.fillMaxWidth()
-        )
         MakRowTitle(title = state.selectedDayLabel, meta = state.selectedDayCountLabel)
         if (state.items.isEmpty()) {
             MakEmptyState(state.emptyMessage)
@@ -243,6 +223,173 @@ private fun ListView(
                     ClassCard(item = item, onClick = { onOpenClass(item.id) })
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun WeekNavigationHeader(
+    state: ScheduleUiState,
+    onPreviousWeek: () -> Unit,
+    onNextWeek: () -> Unit,
+    onEditWeek: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = MakSpacing.xs, bottom = MakSpacing.sm)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.SpaceBetween
+        ) {
+            MakRoundButton("Poprzedni tydzień", Icons.AutoMirrored.Outlined.ArrowBack, onPreviousWeek)
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                modifier = Modifier.weight(1f)
+            ) {
+                Text(state.weekRangeLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text(
+                    state.weekSubtitle,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 11.sp
+                )
+            }
+            MakRoundButton("Następny tydzień", Icons.AutoMirrored.Outlined.ArrowForward, onNextWeek)
+        }
+        WeekTypeBadge(
+            weekTypeLabel = state.weekTypeLabel,
+            weekSourceLabel = state.weekSourceLabel,
+            onClick = onEditWeek
+        )
+    }
+}
+
+@Composable
+private fun WeekTypeBadge(
+    weekTypeLabel: String,
+    weekSourceLabel: String,
+    onClick: () -> Unit
+) {
+    var focused by remember { mutableStateOf(false) }
+    val shape = RoundedCornerShape(10.dp)
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clip(shape)
+            .border(
+                width = 2.dp,
+                color = if (focused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                shape = shape
+            )
+            .background(MaterialTheme.colorScheme.surfaceVariant)
+            .clickable(role = Role.Button, onClick = onClick)
+            .focusable()
+            .onFocusChanged { focused = it.isFocused }
+            .semantics {
+                contentDescription =
+                    "Zmień oznaczenie tygodnia, obecnie: $weekTypeLabel, źródło: $weekSourceLabel"
+            }
+            .padding(horizontal = MakSpacing.md, vertical = MakSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+    ) {
+        Text(
+            text = weekTypeLabel,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontWeight = FontWeight.Bold,
+            fontSize = 12.sp
+        )
+        Text(
+            text = weekSourceLabel,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            fontSize = 11.sp,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
+private fun ScheduleFilterSection(
+    filters: List<ScheduleFilterUi>,
+    onFilterSelected: (String) -> Unit
+) {
+    var expanded by remember { mutableStateOf(false) }
+    val selectedFilter = filters.firstOrNull { it.isSelected } ?: filters.first()
+    val allSelected = selectedFilter.id == "all"
+    val headerLabel = if (allSelected) "Filtry" else "Filtry: ${selectedFilter.label}"
+    val stateLabel = if (expanded) "Rozwinięte" else "Zwinięte"
+    val shape = RoundedCornerShape(10.dp)
+    var focused by remember { mutableStateOf(false) }
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = MakSpacing.sm)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(min = 48.dp)
+                .clip(shape)
+                .border(
+                    width = 2.dp,
+                    color = if (focused) MaterialTheme.colorScheme.primary
+                    else MaterialTheme.colorScheme.outlineVariant,
+                    shape = shape
+                )
+                .background(MaterialTheme.colorScheme.surfaceVariant)
+                .clickable(
+                    role = Role.Button,
+                    onClick = { expanded = !expanded }
+                )
+                .focusable()
+                .onFocusChanged { focused = it.isFocused }
+                .semantics {
+                    contentDescription =
+                        "$headerLabel, wybór: ${selectedFilter.label}, $stateLabel"
+                }
+                .padding(horizontal = MakSpacing.md, vertical = MakSpacing.xs),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.FilterList,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            Text(
+                text = headerLabel,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontWeight = FontWeight.Bold,
+                fontSize = 12.sp,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                modifier = Modifier.weight(1f)
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        if (expanded) {
+            MakSelectField(
+                label = "Kierunek",
+                value = selectedFilter.label,
+                options = filters.map { it.label },
+                onSelected = { label ->
+                    filters.firstOrNull { it.label == label }?.let { filter ->
+                        onFilterSelected(filter.id)
+                        expanded = false
+                    }
+                },
+                modifier = Modifier.padding(top = MakSpacing.sm)
+            )
         }
     }
 }
@@ -271,6 +418,7 @@ private fun DaySelector(
                         role = Role.Tab,
                         onClick = { onDaySelected(day.id) }
                     )
+                    .heightIn(min = 48.dp)
                     .padding(vertical = MakSpacing.sm)
                     .semantics {
                         contentDescription = day.accessibilityLabel
@@ -281,12 +429,12 @@ private fun DaySelector(
             ) {
                 Text(
                     day.shortLabel,
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     day.dateLabel,
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                 )

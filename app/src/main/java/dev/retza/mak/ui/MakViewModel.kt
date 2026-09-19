@@ -9,22 +9,14 @@ import dev.retza.mak.data.entity.CourseEntity
 import dev.retza.mak.data.entity.SemesterEntity
 import dev.retza.mak.data.entity.TeacherEntity
 import dev.retza.mak.data.repository.MakRepository
+import dev.retza.mak.data.repository.toActivePlanData
+import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.ClassForm
 import dev.retza.mak.domain.ClassValidationError
 import dev.retza.mak.domain.ClassValidator
-import dev.retza.mak.domain.CollisionDetector
-import dev.retza.mak.domain.Course
-import dev.retza.mak.domain.OccurrenceChange
 import dev.retza.mak.domain.OccurrenceChangeKind
-import dev.retza.mak.domain.OccurrenceNote
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.Recurrence
-import dev.retza.mak.domain.ScheduleResolver
-import dev.retza.mak.domain.Semester
-import dev.retza.mak.domain.Teacher
-import dev.retza.mak.domain.WeekOverride
-import dev.retza.mak.domain.WeekOverrideScope
-import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarMarkerColor
 import dev.retza.mak.ui.components.CalendarMarkerUi
@@ -37,6 +29,7 @@ import dev.retza.mak.ui.edit.ClassEditUiState
 import dev.retza.mak.ui.edit.RecurrenceOptionUi
 import dev.retza.mak.ui.schedule.ScheduleDayUi
 import dev.retza.mak.ui.schedule.ScheduleFilterUi
+import dev.retza.mak.ui.schedule.conflictLabels
 import dev.retza.mak.ui.schedule.ScheduleUiState
 import dev.retza.mak.ui.schedule.ScheduleView
 import dev.retza.mak.ui.settings.SettingsUiState
@@ -130,8 +123,7 @@ private data class Controls(
 class MakViewModel(
     private val repository: MakRepository,
     private val clock: Clock = Clock.systemDefaultZone(),
-    private val resolver: ScheduleResolver = ScheduleResolver(),
-    private val collisionDetector: CollisionDetector = CollisionDetector()
+    private val activePlanProvider: ActivePlanProvider = ActivePlanProvider()
 ) : ViewModel() {
     private val today = LocalDate.now(clock)
     private val controls = MutableStateFlow(
@@ -275,7 +267,9 @@ class MakViewModel(
         val classId = occurrenceId.substringBefore(':').toLongOrNull() ?: return
         val date = occurrenceId.substringAfter(':', "").toLocalDateOrNull() ?: return
         val data = uiState.value.activeSemesterData ?: return
-        val occurrence = resolve(data, date).occurrences.firstOrNull { it.classId == classId.toString() }
+        val occurrence = activePlan(data, date).schedule.occurrences.firstOrNull {
+            it.classId == classId.toString()
+        }
         val base = data.classes.firstOrNull { it.id == classId } ?: return
         val existingChange = data.occurrenceChanges.firstOrNull {
             it.classId == classId && (it.originalDate == date || it.targetDate == date)
@@ -301,7 +295,7 @@ class MakViewModel(
             building = occurrence?.building ?: base.building,
             teacherName = occurrence?.teacher?.name ?: data.teachers.firstOrNull { it.id == base.teacherId }?.name,
             groupName = base.group,
-            weekLabel = resolve(data, date).weekType?.let { "Tydzień ${it.name}" },
+            weekLabel = activePlan(data, date).schedule.weekType?.let { "Tydzień ${it.name}" },
             originalDateLabel = existingChange?.originalDate?.toString(),
             targetDateLabel = existingChange?.targetDate?.toString(),
             status = status,
@@ -836,29 +830,31 @@ class MakViewModel(
 
     private fun buildToday(data: SemesterWithData?, date: LocalDate): TodayUiState {
         if (data == null) return emptyTodayState()
-        val schedule = resolve(data, date)
-        val collisions = collisionDetector.detect(schedule).flatMap { listOf(it.first.id, it.second.id) }.toSet()
+        val plan = activePlan(data, date)
+        val schedule = plan.schedule
+        val labels = conflictLabels(plan.collisions)
         return TodayUiState(
             dateLabel = date.format(todayTitleFormatter).replaceFirstChar { it.titlecase(polishLocale) },
             semesterLabel = data.semester.name,
             weekLabel = schedule.weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem",
             summaryLabel = classCountLabel(schedule.occurrences.size),
-            items = schedule.occurrences.map { it.toUi(it.id in collisions) }
+            items = schedule.occurrences.map { it.toUi(labels[it.id]) }
         )
     }
 
     private fun buildSchedule(data: SemesterWithData?, control: Controls): ScheduleUiState {
         if (data == null) return emptyScheduleState()
-        val selected = resolve(data, control.scheduleDate)
+        val selectedPlan = activePlan(data, control.scheduleDate)
+        val selected = selectedPlan.schedule
         val filtered = selected.occurrences.filter {
             control.courseFilterId == "all" || it.classItem.courseId == control.courseFilterId
         }
         val cancelled = if (control.showCancelled) cancelledItems(data, control.scheduleDate) else emptyList()
-        val collisions = collisionDetector.detect(selected).flatMap { listOf(it.first.id, it.second.id) }.toSet()
+        val labels = conflictLabels(selectedPlan.collisions)
         val monday = control.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val currentWeekMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val calendarDays = calendarDates(control.calendarMonth).map { date ->
-            val occurrences = resolve(data, date).occurrences.filter {
+            val occurrences = activePlan(data, date).schedule.occurrences.filter {
                 control.courseFilterId == "all" || it.classItem.courseId == control.courseFilterId
             }
             CalendarDayUi(
@@ -877,16 +873,19 @@ class MakViewModel(
                 }
             )
         }
-        val calendarSchedule = resolve(data, control.calendarDate)
+        val calendarPlan = activePlan(data, control.calendarDate)
+        val calendarSchedule = calendarPlan.schedule
         val calendarFiltered = calendarSchedule.occurrences.filter {
             control.courseFilterId == "all" || it.classItem.courseId == control.courseFilterId
         }
+        val calendarLabels = conflictLabels(calendarPlan.collisions)
         return ScheduleUiState(
             view = control.scheduleView,
             weekRangeLabel = "${monday.format(shortDateFormatter)} - ${monday.plusDays(6).format(shortDateFormatter)}",
             weekSubtitle = if (monday == currentWeekMonday) "Bieżący tydzień" else data.semester.name,
             weekTypeLabel = selected.weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem",
             weekSourceLabel = if (selected.correction == null) "Wyliczony automatycznie" else "Korekta ręczna",
+            weekType = selected.weekType?.let { WeekTypeUi.valueOf(it.name) },
             days = (0L..6L).map { offset ->
                 val date = monday.plusDays(offset)
                 ScheduleDayUi(
@@ -904,12 +903,12 @@ class MakViewModel(
                 },
             selectedDayLabel = dayNames[control.scheduleDate.dayOfWeek].orEmpty(),
             selectedDayCountLabel = classCountLabel(filtered.size + cancelled.size),
-            items = filtered.map { it.toUi(it.id in collisions) } + cancelled,
+            items = filtered.map { it.toUi(labels[it.id]) } + cancelled,
             calendarMonthLabel = control.calendarMonth.format(monthFormatter),
             calendarDays = calendarDays,
             calendarSelectedDayLabel = control.calendarDate.format(fullDateFormatter),
             calendarSelectedDayCountLabel = classCountLabel(calendarFiltered.size),
-            calendarItems = calendarFiltered.map { it.toUi(false) } +
+            calendarItems = calendarFiltered.map { it.toUi(calendarLabels[it.id]) } +
                 if (control.showCancelled) cancelledItems(data, control.calendarDate) else emptyList(),
             showCancelled = control.showCancelled,
             hasOneWeekCorrection = data.weekOverrides.any {
@@ -963,6 +962,7 @@ class MakViewModel(
                 startTime = item.startTime.toString(),
                 endTime = item.endTime.toString(),
                 room = item.room,
+                building = item.building,
                 teacherName = teacher?.name,
                 note = item.classNote,
                 statusBadge = "Odwołane",
@@ -970,16 +970,8 @@ class MakViewModel(
             )
         }
 
-    private fun resolve(data: SemesterWithData, date: LocalDate) = resolver.resolve(
-        date = date,
-        semester = data.semester.toDomain(),
-        classes = data.classes.map { it.toDomain() },
-        courses = data.courses.map { it.toDomain() },
-        teachers = data.teachers.map { it.toDomain() },
-        weekOverrides = data.weekOverrides.map { it.toDomain() },
-        occurrenceChanges = data.occurrenceChanges.map { it.toDomain() },
-        occurrenceNotes = data.occurrenceNotes.map { it.toDomain() }
-    )
+    private fun activePlan(data: SemesterWithData, date: LocalDate) =
+        activePlanProvider.resolve(data.toActivePlanData(), date)
 
     class Factory(private val repository: MakRepository) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
@@ -1025,66 +1017,7 @@ private fun calendarOccurrenceLabel(occurrence: PlannedOccurrence): String {
     return "${occurrence.name}, ${occurrence.startTime} - ${occurrence.endTime}$status"
 }
 
-private fun SemesterEntity.toDomain() = Semester(
-    id = id.toString(),
-    name = name,
-    startDate = startDate,
-    endDate = endDate,
-    firstWeekType = WeekType.valueOf(firstWeekType.name)
-)
-
-private fun CourseEntity.toDomain() = Course(id.toString(), semesterId.toString(), name, color)
-
-private fun TeacherEntity.toDomain() = Teacher(id.toString(), semesterId.toString(), name)
-
-private fun ClassEntity.toDomain() = dev.retza.mak.domain.ClassItem(
-    id = id.toString(),
-    semesterId = semesterId.toString(),
-    name = name,
-    type = type,
-    courseId = courseId.toString(),
-    teacherId = teacherId?.toString(),
-    dayOfWeek = dayOfWeek,
-    startTime = startTime,
-    endTime = endTime,
-    room = room,
-    building = building,
-    group = group,
-    recurrence = Recurrence.valueOf(recurrence.name),
-    date = date,
-    classNote = classNote
-)
-
-private fun dev.retza.mak.data.entity.WeekOverrideEntity.toDomain() = WeekOverride(
-    id = id.toString(),
-    semesterId = semesterId.toString(),
-    weekStartDate = weekStartDate,
-    weekType = WeekType.valueOf(weekType.name),
-    scope = WeekOverrideScope.valueOf(scope.name)
-)
-
-private fun dev.retza.mak.data.entity.OccurrenceNoteEntity.toDomain() = OccurrenceNote(
-    id = id.toString(),
-    classId = classId.toString(),
-    occurrenceDate = occurrenceDate,
-    body = body
-)
-
-private fun dev.retza.mak.data.entity.OccurrenceChangeEntity.toDomain() = OccurrenceChange(
-    id = id.toString(),
-    classId = classId.toString(),
-    originalDate = originalDate,
-    kind = OccurrenceChangeKind.valueOf(kind.name),
-    targetDate = targetDate,
-    startTime = newStartTime,
-    endTime = newEndTime,
-    room = newRoom,
-    building = newBuilding,
-    teacherId = newTeacherId?.toString(),
-    note = newNote
-)
-
-private fun PlannedOccurrence.toUi(hasCollision: Boolean): ClassItemUi {
+private fun PlannedOccurrence.toUi(conflictLabel: String?): ClassItemUi {
     val cancelled = occurrenceChange?.kind == OccurrenceChangeKind.CANCELLED
     val modified = occurrenceChange?.kind == OccurrenceChangeKind.MODIFIED
     val oneOff = classItem.recurrence == Recurrence.ONCE
@@ -1097,6 +1030,7 @@ private fun PlannedOccurrence.toUi(hasCollision: Boolean): ClassItemUi {
         startTime = startTime.toString(),
         endTime = endTime.toString(),
         room = room,
+        building = building,
         teacherName = teacher?.name,
         weekLabel = when (classItem.recurrence) {
             Recurrence.A_WEEK -> "Tydzień A"
@@ -1114,7 +1048,7 @@ private fun PlannedOccurrence.toUi(hasCollision: Boolean): ClassItemUi {
         isCancelled = cancelled,
         isModified = modified,
         isOneOff = oneOff,
-        hasConflict = hasCollision
+        conflictLabel = conflictLabel
     )
 }
 

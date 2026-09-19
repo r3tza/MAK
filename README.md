@@ -12,7 +12,6 @@ Nazwa produktu to MAK. Rozwinięcie „Mobilny Akademicki Kalendarz” wyjaśnia
 - [CLAUDE.md](CLAUDE.md) — adapter dla Claude Code
 - [WRITING.md](WRITING.md) — zasady pisania
 - [plan.md](plan.md) — plan produktu i etapów wdrożenia
-- [mockup.html](mockup.html) — interaktywny podgląd ekranów i widgetu
 - [CHANGELOG.md](CHANGELOG.md) — zmiany wydane użytkownikom
 - [JOURNAL.md](JOURNAL.md) — fakty, decyzje i uzasadnienia
 

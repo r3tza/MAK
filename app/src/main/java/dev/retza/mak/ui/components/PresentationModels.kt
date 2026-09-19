@@ -12,6 +12,7 @@ data class ClassItemUi(
     val startTime: String,
     val endTime: String,
     val room: String? = null,
+    val building: String? = null,
     val teacherName: String? = null,
     val weekLabel: String? = null,
     val note: String? = null,
@@ -19,7 +20,7 @@ data class ClassItemUi(
     val isCancelled: Boolean = false,
     val isModified: Boolean = false,
     val isOneOff: Boolean = false,
-    val hasConflict: Boolean = false
+    val conflictLabel: String? = null
 )
 
 @Immutable

@@ -1,5 +1,29 @@
 # MAK — dziennik decyzji
 
+## 2026-09-19: Usunięcie poglądowego mockupu
+
+- Fakty: `mockup.html` służył wyłącznie jako poglądowy materiał podczas początkowego projektowania i nie jest źródłem prawdy dla produktu.
+- Decyzja: Usunąć `mockup.html` oraz obowiązek jego przeglądania i aktualizowania. Dokumenty pozostają źródłem zakresu i zachowania, a działająca aplikacja Compose jest źródłem bieżącego wyglądu.
+- Powód: Utrzymywanie drugiej implementacji interfejsu zwiększa koszt zmian i może pokazywać przebieg niezgodny z aplikacją.
+- Odrzucone: Dalsze utrzymywanie mockupu jako referencji wizualnej albo wymaganej części zmian UI.
+- Wznowić decyzję tylko gdy: powstanie osobny, świadomie utrzymywany proces projektowy z określonym źródłem makiet.
+
+## 2026-09-19: Zagęszczenie ekranu „Plan” i neutralna prezentacja kolizji
+
+- Fakty: Widok listy pokazuje osobno nagłówek, sterowanie tygodniem, kartę oznaczenia A/B, wybór dnia, filtry i odłączone menu z jedną akcją. Karta zajęć umieszcza kierunek, typ, salę i prowadzącego w jednym wierszu, a kolizję oznacza czerwonym tekstem bez zakresu czasu.
+- Decyzja: Połączyć sterowanie tygodniem i oznaczenie A/B, otwierać korektę z odznaki tygodnia, usunąć odłączone menu, pokazywać aktywny filtr w zwiniętej sekcji, uporządkować metadane karty i prezentować kolizję neutralnie z dokładnym zakresem. Skrócić lokalny nagłówek ekranu, zwiększyć czytelność wyboru dnia i zachować obszary dotyku co najmniej 48 dp.
+- Powód: Pierwsze zajęcia powinny pojawiać się wyżej, a stan tygodnia, filtr i kolizja mają być zrozumiałe bez otwierania dodatkowych ekranów.
+- Odrzucone: Zmiana palety całej aplikacji; zmiana dolnej nawigacji; usunięcie odznaki kierunku; czerwone oznaczenie kolizji jako błędu; poziome przewijanie dni albo filtrów.
+- Wznowić decyzję tylko gdy: testy na urządzeniu wykażą, że połączona sekcja nie mieści się na szerokości 320 dp albo zmieni się model nawigacji ekranu „Plan”.
+
+## 2026-09-19: Plan porządkowania architektury przed wersjami 0.2 i 0.3
+
+- Fakty: `MakViewModel` obsługuje większość przepływów aplikacji, mapowanie Room na domenę i składanie planu. Nawigacja przechowuje bieżący cel zarówno w ViewModelu, jak i w `NavController`. Widget oraz import zwiększą liczbę konsumentów planu i operacji wieloetapowych.
+- Decyzja: Przed widgetem wydzielić wspólny `ActivePlanProvider` i mapowanie danych poza ViewModel. Ustawić `NavController` jako jedyne źródło bieżącej trasy. Rozdzielać ViewModele według przepływów, nie wystawiać typów Room w publicznym stanie UI, używać transakcji dla operacji wieloetapowych, pokazywać jawny stan zapisu oraz przygotować preferencje i stan roboczy do odtworzenia procesu.
+- Powód: Ekrany i widget muszą korzystać z tej samej logiki planu, a rozwój wersji 0.2 i 0.3 nie powinien zwiększać sprzężenia jednego ViewModelu ani ryzyka częściowego zapisu danych.
+- Odrzucone: Kopiowanie mapowania i wywołań resolvera do widgetu; utrzymywanie dwóch źródeł trasy; jednorazowe przepisanie całej aplikacji; podział na wiele modułów Gradle i dodanie frameworka DI bez konkretnej potrzeby.
+- Wznowić decyzję tylko gdy: zakres widgetu, importu albo nawigacji zmieni granice odpowiedzialności lub obecny jeden moduł Gradle przestanie wystarczać.
+
 ## 2026-09-19: Wersje narzędzi dla 0.1
 
 - Fakty: Projekt używa `compileSdk` 36.1. Najnowsze wydania części bibliotek wymagają `compileSdk` 37, a starszy KSP nie współpracuje poprawnie z wbudowaną obsługą Kotlin w AGP 9.
@@ -127,11 +151,11 @@
 
 ## 2026-09-19 — Material 3 i standardy konstrukcji interfejsu
 
-- Fakty: Użytkownik zaakceptował połączenie kierunku wizualnego z mockupu ze standardami branżowymi i zasadami Material 3.
+- Fakty: Użytkownik zaakceptował standardy branżowe i zasady Material 3 jako podstawę konstrukcji interfejsu.
 - Decyzja: Budować interfejs na komponentach i zasadach Material 3. Własne kolory, typografia, kształty, karty, nawigacja i układ są dozwolone, jeśli zachowują semantykę, przewidywalne zachowanie oraz dostępność.
 - Problem do rozwiązania: Przeprowadzić audyt własnych komponentów Compose pod kątem obszarów dotyku co najmniej 48 dp, semantyki, focusu, klawiatury, kontrastu, motywu ciemnego i szerokości 320 dp. Wynik ma trafić do kolejnych zmian UI i testów Compose.
-- Powód: Mockup opisuje wygląd i interakcję, ale nie może usuwać standardowych wymagań platformy.
-- Wznowić decyzję tylko gdy: zmieni się zaakceptowany mockup, wersja Material 3 albo wymagania dostępności Androida.
+- Powód: Material 3 zapewnia przewidywalne zachowanie komponentów i nie usuwa możliwości stosowania własnego języka wizualnego.
+- Wznowić decyzję tylko gdy: zmieni się wersja Material 3 albo wymagania dostępności Androida.
 
 ## 2026-09-19 — Ikony Material w akcjach interfejsu
 

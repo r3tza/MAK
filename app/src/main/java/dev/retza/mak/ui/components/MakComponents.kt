@@ -42,6 +42,7 @@ import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Today
+import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -340,6 +341,7 @@ fun ClassCard(
 ) {
     val accent = classAccentColor(item)
     val shape = RoundedCornerShape(16.dp)
+    var focused by remember { mutableStateOf(false) }
     val clickable = if (onClick != null) {
         Modifier.clickable(role = Role.Button, onClick = onClick)
     } else {
@@ -352,9 +354,17 @@ fun ClassCard(
             .alpha(if (item.isCancelled) 0.68f else 1f)
             .shadow(4.dp, shape, spotColor = Color(0x091C2A46))
             .clip(shape)
-            .border(1.dp, MaterialTheme.colorScheme.outline, shape)
+            .border(
+                width = if (focused) 2.dp else 1.dp,
+                color = if (focused) MaterialTheme.colorScheme.primary
+                else MaterialTheme.colorScheme.outline,
+                shape = shape
+            )
             .background(MaterialTheme.colorScheme.surface)
             .then(clickable)
+            .focusable(enabled = onClick != null)
+            .onFocusChanged { focused = it.isFocused }
+            .semantics { contentDescription = classCardDescription(item) }
     ) {
         Box(
             modifier = Modifier
@@ -414,20 +424,43 @@ fun ClassCard(
                 ) {
                     CoursePill(item.courseName, accent)
                     Text(
-                        text = classMeta(item),
+                        text = item.type,
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+                        modifier = Modifier.weight(1f)
                     )
                 }
-                if (item.hasConflict) {
-                    Text(
-                        "Kolizja godzin",
-                        color = MaterialTheme.colorScheme.error,
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 11.sp
-                    )
+                Text(
+                    text = classMeta(item),
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (item.conflictLabel != null) {
+                    Row(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(MaterialTheme.colorScheme.tertiaryContainer)
+                            .padding(horizontal = MakSpacing.sm, vertical = MakSpacing.xs),
+                        horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Outlined.WarningAmber,
+                            contentDescription = null,
+                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = item.conflictLabel,
+                            color = MaterialTheme.colorScheme.onTertiaryContainer,
+                            fontWeight = FontWeight.SemiBold,
+                            fontSize = 11.sp
+                        )
+                    }
                 }
                 if (!item.note.isNullOrBlank()) {
                     Text(item.note, style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
@@ -1127,10 +1160,18 @@ fun MakFactRow(
 }
 
 private fun classMeta(item: ClassItemUi): String = listOfNotNull(
-    item.type,
     item.room ?: "Sala niepodana",
+    item.building,
     item.teacherName
 ).joinToString(", ")
+
+private fun classCardDescription(item: ClassItemUi): String = buildList {
+    add("${item.startTime}-${item.endTime}, ${item.name}")
+    add("${item.courseName}, ${item.type}")
+    add(classMeta(item))
+    item.conflictLabel?.let(::add)
+    item.note?.takeIf(String::isNotBlank)?.let(::add)
+}.joinToString(", ")
 
 @Composable
 private fun classAccentColor(item: ClassItemUi): Color {
