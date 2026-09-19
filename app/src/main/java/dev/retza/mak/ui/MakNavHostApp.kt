@@ -433,7 +433,7 @@ fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
     }
 }
 
-private object MakRoutes {
+object MakRoutes {
     const val Today = "today"
     const val Schedule = "schedule"
     const val Edit = "edit?classId={classId}&date={date}"
@@ -443,17 +443,17 @@ private object MakRoutes {
     const val Setup = "setup"
 }
 
-private fun occurrenceRoute(occurrenceId: String): String {
+fun occurrenceRoute(occurrenceId: String): String {
     val parts = occurrenceId.split(":", limit = 2)
     return "occurrence/${parts[0]}/${parts.getOrElse(1) { "" }}"
 }
 
-private fun editRoute(classId: Long, date: String): String =
+fun editRoute(classId: Long, date: String): String =
     "edit?classId=$classId&date=$date"
 
-private fun semesterRoute(id: String): String = "semester/$id"
+fun semesterRoute(id: String): String = "semester/$id"
 
-private fun destinationForRoute(route: String?): MakDestination = when (route) {
+fun destinationForRoute(route: String?): MakDestination = when (route) {
     MakRoutes.Schedule -> MakDestination.Schedule
     MakRoutes.Settings -> MakDestination.Settings
     MakRoutes.Setup -> MakDestination.Setup
@@ -463,7 +463,7 @@ private fun destinationForRoute(route: String?): MakDestination = when (route) {
     else -> MakDestination.Today
 }
 
-private fun destinationMatchesRoute(destination: MakDestination, route: String?): Boolean = when (destination) {
+fun destinationMatchesRoute(destination: MakDestination, route: String?): Boolean = when (destination) {
     MakDestination.Today -> route == MakRoutes.Today
     MakDestination.Schedule -> route == MakRoutes.Schedule
     MakDestination.Settings -> route == MakRoutes.Settings

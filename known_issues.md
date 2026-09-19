@@ -2,6 +2,14 @@
 
 Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose i `mockup.html`.
 
+## Weryfikacja po poprawkach
+
+- Aplikacja kompiluje się wraz z testami Android, a testy JVM przechodzą.
+- NavHost, back stack, topbar z insetami status bara oraz przyciski wstecz są używane przez faktyczną aplikację.
+- Pickery daty i godziny mają aktywację przez całe pole, jawny przycisk, semantyczną akcję i test potwierdzenia wartości.
+- Odstępy ekranów korzystają ze wspólnych tokenów `MakSpacing`, a akcje używają ikon Material.
+- Nie wykonano jeszcze przebiegu na emulatorze, dlatego testy runtime dla TalkBacka, gestu wstecz i rzeczywistego układu insetów pozostają otwarte.
+
 ## Mocne strony
 
 - Hierarchia ekranu jest spójna: nagłówek, podtytuł, karta podsumowania, sekcje i karty zajęć.
