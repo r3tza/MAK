@@ -105,6 +105,26 @@ class ScheduleScreenTest {
             .assertIsDisplayed()
     }
 
+    @Test
+    fun longCourseNameKeepsClassTypeVisibleAt320Dp() {
+        val item = ClassItemUi(
+            id = "class-long-course",
+            name = "Analiza danych",
+            type = "Laboratorium",
+            courseName = "Bardzo długa nazwa kierunku Informatyka i analiza danych",
+            startTime = "09:00",
+            endTime = "10:30",
+            room = "L204"
+        )
+
+        setScheduleContent(state = scheduleState(items = listOf(item)))
+
+        composeTestRule.onNodeWithText(
+            "Bardzo długa nazwa kierunku Informatyka i analiza danych"
+        ).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Laboratorium").assertIsDisplayed()
+    }
+
     private fun setScheduleContent(
         width: androidx.compose.ui.unit.Dp = 320.dp,
         darkTheme: Boolean = false,

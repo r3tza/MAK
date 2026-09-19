@@ -48,6 +48,19 @@ Po zaakceptowanej zmianie architektury, stosu lub zasad pracy zaktualizuj właś
 - Dla nietrywialnej logiki zostaw najmniejszy sensowny test uruchamialny. Szczegóły: sekcja Testy.
 - Traktuj dostępność, małe ekrany i stan błędu jako część implementacji.
 
+## Widget
+
+- Przed zmianą widgetu przeczytaj sekcję Widget w `ARCHITECTURE.md` oraz etapowy plan w sekcji 13.1 `plan.md`.
+- Realizuj etapy po kolei. Każdy etap pozostaw w stanie kompilującym się i sprawdzalnym bez zależności od kolejnego etapu.
+- Widget czyta dane przez `MakRepository`, mapuje je przez wspólną granicę danych i oblicza plan przez `ActivePlanProvider`. Nie woła DAO ani `ScheduleResolver` bezpośrednio i nie kopiuje reguł z ViewModelu.
+- Wstrzykuj `Clock`. Nie używaj `LocalDate.now()` bezpośrednio w loaderze, prezenterze ani testach widgetu.
+- Room jest źródłem planu. Nie przechowuj kopii planu w preferencjach Glance ani wyłącznie w pamięci procesu.
+- Odświeżaj wszystkie instancje po udanej zmianie danych na jednej wspólnej granicy. Nie wywołuj aktualizacji z każdego ekranu osobno i nie aktualizuj przed zakończeniem transakcji.
+- Nie dodawaj ciągłego serwisu, dokładnych alarmów ani odświeżania co minutę. Okresowa aktualizacja jest zabezpieczeniem i może zostać opóźniona przez system.
+- Używaj ograniczonego zestawu progów rozmiaru. Każdy próg ma jawny limit pozycji i stan pusty, bez poziomego przewijania oraz obciętych akcji.
+- Kliknięcie widgetu otwiera jawnie ekran „Dzisiaj”. Szczegóły wystąpienia wymagają osobnej decyzji o kontrakcie deep linków.
+- Stan błędu ma być krótki, bez surowych wyjątków, i pozwalać otworzyć aplikację.
+
 ## Testy
 
 Agenci sprawdzają działanie aplikacji testami, które da się uruchomić lokalnie. Priorytet ma logika domenowa na JVM. Zakres wymagań testowych pozostaje w `STACK.md`; ta sekcja mówi, jak je realizować.
@@ -66,7 +79,7 @@ Pokryj czystym Kotlinem i `java.time`, bez Compose i Room:
 - eksport JSON: `schemaVersion` i round-trip modelu.
 - walidacja: nazwa, kierunek, godziny; koniec później niż start; zajęcia przechodzące przez północ są odrzucane.
 
-Ten sam `ScheduleResolver` jest źródłem planu dla listy, kalendarza, ekranu „Dzisiaj” i widgetu. Nie powielaj reguł w testach widoków.
+Ten sam `ActivePlanProvider` jest źródłem planu dla listy, kalendarza, ekranu „Dzisiaj” i widgetu. Nie powielaj reguł w testach widoków.
 
 Nie pisz testów rozstrzygających pytania, które nadal pozostają otwarte w `ARCHITECTURE.md`.
 
@@ -79,7 +92,7 @@ Wystarczy:
 - jeden test, że zapisany semestr, korekta, `OccurrenceChange` i `OccurrenceNote` wracają po nowej instancji bazy;
 - test migracji dopiero przy rzeczywistej zmianie schematu, na zachowanych danych.
 
-Nie testuj osobno widgetu Glance. Sprawdź, że widget woła ten sam `ScheduleResolver`.
+Nie powielaj testów domeny w warstwie Glance. Przetestuj prezenter widgetu na JVM i sprawdź, że loader woła ten sam `ActivePlanProvider`.
 
 ### Compose
 

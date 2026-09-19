@@ -42,6 +42,8 @@ Pozostaje do wykonania:
 
 Zmiany należy wprowadzać stopniowo podczas rozwoju wersji 0.2 i 0.3. Nie wymagają podziału projektu na osobne moduły Gradle ani dodania frameworka wstrzykiwania zależności.
 
+Status: wspólny `ActivePlanProvider` oraz mapowanie Room poza ViewModelem są zaimplementowane. Pozostałe punkty realizować podczas zmian odpowiednich przepływów.
+
 Kolejność prac:
 
 1. Przed implementacją widgetu wydzielić wspólny `ActivePlanProvider`. Komponent przyjmuje dane domenowe i datę, wywołuje `ScheduleResolver` oraz w razie potrzeby `CollisionDetector`, a następnie zwraca aktywny plan. Mapowanie danych Room na modele domenowe przenieść z ViewModelu do wspólnej granicy danych. Kod nie może zależeć od Compose ani Glance. Ekran „Dzisiaj”, plan, kalendarz i widget mają korzystać z tej samej ścieżki obliczeń.
@@ -64,6 +66,8 @@ Kryteria zakończenia porządkowania:
 ## 1.3. Plan poprawy ekranu „Plan”
 
 Zmiany dotyczą widoku listy na ekranie „Plan”. Widok kalendarza zachowuje obecny zakres funkcji. Zmiany wykonać przy użyciu komponentów Material 3 i istniejących tokenów `MakSpacing`.
+
+Status: punkty 1-7 są zaimplementowane i mają testy kompilujące się dla Androida. Pozostaje uruchomienie testów instrumentacyjnych i ręczna weryfikacja z punktu 8 na emulatorze albo urządzeniu.
 
 ### 1. Skrócenie nagłówka
 
@@ -421,6 +425,92 @@ Widget powinien otrzymywać żądanie odświeżenia po:
 
 System może opóźnić odświeżenie po północy. Widget nie obiecuje zmiany dokładnie o 00:00; przy każdym odświeżeniu odczytuje aktualną datę i aktywny plan. Nie należy używać ciągłego serwisu w tle, dokładnych alarmów ani odświeżania co minutę. Tekst „Następne: 10:15” jest wystarczający i ogranicza zużycie baterii. Układ musi dostosować liczbę widocznych zajęć do faktycznego rozmiaru widgetu.
 
+### 13.1. Etapowy plan implementacji widgetów
+
+Każdy etap kończy się kompilującym przyrostem i testem logiki, którą da się uruchomić bez launchera. Nie rozpoczynać kolejnego etapu, jeśli poprzedni nie spełnia swoich kryteriów.
+
+#### Etap 1: stan widgetu i wspólna ścieżka planu
+
+1. Utworzyć pakiet `widget` w module `app`.
+2. Dodać czyste modele `WidgetUiState` dla stanów: brak aktywnego semestru, data poza semestrem, brak zajęć, plan dostępny i błąd odczytu.
+3. Utworzyć `WidgetPlanLoader`, który otrzymuje `MakRepository`, `ActivePlanProvider` i `Clock`. Loader odczytuje aktywny semestr, pobiera jego dane, mapuje je raz przez `toActivePlanData()` i oblicza plan dla `LocalDate.now(clock)`.
+4. Nie wywoływać DAO ani `ScheduleResolver` bezpośrednio z widgetu. Widget korzysta z tej samej instancji logiki co ekrany przez `ActivePlanProvider`.
+5. Utworzyć czysty `WidgetPresenter`, który zamienia `ActivePlan` na `WidgetUiState`. Presenter ustala kolejność zajęć, skrócone metadane, oznaczenie tygodnia, informację o kolizji i wskaźnik notatki.
+
+Kryterium etapu: test JVM potwierdza zgodność identyfikatorów i kolejności zajęć z wynikiem `ActivePlanProvider` oraz wszystkie stany puste.
+
+#### Etap 2: rejestracja i minimalny widget
+
+1. Dodać zależności `androidx.glance:glance-appwidget` i `androidx.glance:glance-material3` z istniejącego katalogu wersji.
+2. Utworzyć `TodayWidget` dziedziczący po `GlanceAppWidget` oraz `TodayWidgetReceiver` dziedziczący po `GlanceAppWidgetReceiver`.
+3. Zarejestrować receiver w `AndroidManifest.xml` dla `APPWIDGET_UPDATE` i wskazać metadane providera.
+4. Dodać `res/xml/today_widget_info.xml` z `initialLayout` biblioteki Glance, kategorią `home_screen`, zmianą rozmiaru w obu osiach oraz wartościami `targetCellWidth`, `targetCellHeight`, `minWidth`, `minHeight`, `minResizeWidth` i `minResizeHeight`.
+5. Użyć `SizeMode.Responsive` z co najmniej dwoma nazwanymi progami rozmiaru: małym i dużym. Wartości progów zapisać w jednym miejscu i dobrać po sprawdzeniu launchera na Androidzie 12 lub nowszym.
+6. Pierwsza wersja renderuje datę, oznaczenie tygodnia oraz jeden z jednoznacznych stanów pustych. Nie dodawać jeszcze listy zajęć.
+
+Kryterium etapu: widget można dodać do ekranu głównego, zmienić jego rozmiar i zobaczyć poprawny stan dla pustej bazy oraz braku zajęć.
+
+#### Etap 3: mały widget
+
+1. Dla małego progu pokazać datę, tydzień A/B oraz jedno lub dwa najbliższe zajęcia, zależnie od dostępnej wysokości.
+2. Każdy wiersz zawiera godzinę rozpoczęcia, nazwę, kierunek i salę. Pomija puste metadane zamiast zostawiać separatory.
+3. Długą nazwę zajęć ograniczyć do jednej linii, a drugorzędne informacje do jednej linii. Nie używać poziomego przewijania.
+4. Kolor kierunku może być paskiem pomocniczym, ale nazwa kierunku pozostaje tekstem. Kolor nie może być jedyną informacją.
+5. Jeśli zajęcia mają kolizję albo notatkę, pokazać krótki tekst lub dostępny wskaźnik. Pełną treść pozostawić ekranowi szczegółów w aplikacji.
+
+Kryterium etapu: przy minimalnym rozmiarze wszystkie teksty mieszczą się bez nakładania, a brak miejsca ogranicza liczbę pozycji zamiast obcinać cały układ.
+
+#### Etap 4: duży widget i rozmiary pośrednie
+
+1. Dla dużego progu pokazać pełniejszą listę dzisiejszych zajęć. Liczbę wierszy wyliczać z wybranego progu rozmiaru, a nie z modelu launchera albo stałej liczby wszystkich zajęć.
+2. Duży wiersz zawiera godzinę, nazwę, kierunek, salę oraz opcjonalnie prowadzącego. Notatkę przedstawia wskaźnik, nie pełny wielowierszowy tekst.
+3. Jeśli zajęć jest więcej niż mieści układ, pokazać informację „Jeszcze {liczba}” zamiast ściskać wiersze.
+4. Dla rozmiaru pośredniego użyć małego albo dużego wariantu wybranego przez `SizeMode.Responsive`. Nie tworzyć osobnego układu dla każdego możliwego wymiaru.
+5. Sprawdzić promień tła widgetu, padding systemowy, motyw jasny i ciemny oraz kontrast małego tekstu.
+
+Kryterium etapu: zmiana rozmiaru przełącza układ bez utraty daty, stanu tygodnia i najbliższych zajęć.
+
+#### Etap 5: otwieranie aplikacji
+
+1. Kliknięcie tła, nagłówka albo pustego stanu otwiera `MainActivity` na ekranie „Dzisiaj”.
+2. Użyć jawnego intentu lub obsługiwanej akcji Glance. Trasa docelowa nie może zależeć od ostatnio otwartego ekranu aplikacji.
+3. W pierwszej wersji kliknięcie wiersza także otwiera ekran „Dzisiaj”. Otwieranie szczegółów konkretnego wystąpienia dodać tylko po wprowadzeniu stabilnego kontraktu deep linków.
+4. Wielokrotne szybkie kliknięcie nie tworzy kilku kopii aktywności w stosie.
+
+Kryterium etapu: aplikacja uruchomiona z każdego wariantu widgetu pokazuje właściwą datę na ekranie „Dzisiaj”.
+
+#### Etap 6: odświeżanie po zmianach i zmianie dnia
+
+1. Wprowadzić niezależny od Glance interfejs żądania odświeżenia. Jego implementacja w `widget` wywołuje `TodayWidget().updateAll(context)`.
+2. Wywoływać żądanie na jednej granicy po udanym zapisie danych wpływających na plan. Nie rozrzucać wywołań po ekranach i nie uruchamiać aktualizacji przed zakończeniem transakcji.
+3. Odświeżać widget po zmianie zajęć, wystąpienia, notatki, semestru, aktywnego semestru, kierunku albo korekty tygodnia.
+4. Przy każdym odświeżeniu odczytać datę przez wstrzyknięty `Clock`. Nie przechowywać bieżącej daty ani planu wyłącznie w pamięci procesu.
+5. Ustawić `updatePeriodMillis` nie częściej niż raz na godzinę jako zabezpieczenie zmiany dnia. Nie dodawać WorkManagera, dokładnych alarmów ani osobnego serwisu, dopóki pomiary nie wykażą rzeczywistej potrzeby.
+6. Zaakceptować opóźnienie systemowe. Tekst i dokumentacja nie obiecują aktualizacji dokładnie o północy.
+
+Kryterium etapu: zapis w aplikacji aktualizuje wszystkie instancje widgetu, a okresowy sygnał odczytuje nową datę bez uruchamiania ciągłego procesu.
+
+#### Etap 7: błędy, odporność i wydajność
+
+1. Błąd odczytu danych pokazuje krótki stan „Nie udało się wczytać planu” i pozwala otworzyć aplikację. Nie wyświetla surowego wyjątku.
+2. Brak aktywnego semestru prowadzi do aplikacji, gdzie użytkownik może przejść konfigurację.
+3. Jedno odświeżenie mapuje `SemesterWithData` do `ActivePlanData` tylko raz. Nie obliczać kolizji dla dat ani wariantów rozmiaru, których widget nie prezentuje.
+4. Wiele instancji widgetu może korzystać z tego samego obliczonego stanu dnia, jeśli nie mają osobnej konfiguracji.
+5. Nie zapisywać planu użytkownika w preferencjach Glance. Room pozostaje źródłem danych.
+
+Kryterium etapu: usunięcie semestru, pusta baza, błąd odczytu i ponowne utworzenie procesu nie pozostawiają starego lub pustego `RemoteViews` bez wyjaśnienia.
+
+#### Etap 8: testy i odbiór
+
+1. Testy JVM obejmują stany `WidgetUiState`, sortowanie, limit pozycji, „Jeszcze {liczba}”, wskaźnik notatki, kolizję i datę poza semestrem.
+2. Test integracyjny potwierdza, że loader korzysta z `ActivePlanProvider` i zwraca ten sam zestaw wystąpień co ekran „Dzisiaj” dla wstrzykniętej daty.
+3. Nie powielać testów reguł tygodni A/B, zmian wystąpień i kolizji w testach Glance.
+4. Uruchomić `gradlew.bat test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug`.
+5. Na urządzeniu albo emulatorze sprawdzić dodanie, usunięcie i ponowne dodanie widgetu, mały i duży rozmiar, zmianę rozmiaru, motyw jasny i ciemny, pusty dzień, wiele zajęć, kolizję, notatkę oraz otwarcie aplikacji.
+6. Zmienić dane planu przy widocznym widgetcie i potwierdzić aktualizację bez ponownego dodawania widgetu.
+
+Kryterium zakończenia wersji 0.2: mały i duży widget pokazują plan z `ActivePlanProvider`, reagują na zmiany danych, ponownie odczytują datę, otwierają ekran „Dzisiaj” i pozostają czytelne we wszystkich zadeklarowanych rozmiarach.
+
 ## 14. Ustawienia i dane
 
 Ustawienia powinny zawierać:
@@ -516,6 +606,8 @@ Logika obliczania planu, tygodni i kolizji powinna być niezależna od Compose. 
 - otwieranie ekranu „Dzisiaj” po kliknięciu;
 - ponowny odczyt daty przy odświeżaniu oraz okresowe odświeżenie jako zabezpieczenie;
 - układ widgetu dostosowany do dostępnego rozmiaru.
+
+Szczegółowa kolejność i kryteria znajdują się w sekcji 13.1.
 
 ### Wersja 0.3 — kolizje i import danych
 

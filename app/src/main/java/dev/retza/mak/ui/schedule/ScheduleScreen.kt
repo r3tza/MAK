@@ -286,8 +286,8 @@ private fun WeekTypeBadge(
             )
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .clickable(role = Role.Button, onClick = onClick)
-            .focusable()
             .onFocusChanged { focused = it.isFocused }
+            .focusable()
             .semantics {
                 contentDescription =
                     "Zmień oznaczenie tygodnia, obecnie: $weekTypeLabel, źródło: $weekSourceLabel"
@@ -347,8 +347,8 @@ private fun ScheduleFilterSection(
                     role = Role.Button,
                     onClick = { expanded = !expanded }
                 )
-                .focusable()
                 .onFocusChanged { focused = it.isFocused }
+                .focusable()
                 .semantics {
                     contentDescription =
                         "$headerLabel, wybór: ${selectedFilter.label}, $stateLabel"

@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-19: Etapowa implementacja widgetów Glance
+
+- Fakty: `ActivePlanProvider` jest gotowy, a wersja 0.2 obejmuje mały i duży widget, odświeżanie po zmianach oraz otwieranie ekranu „Dzisiaj”. Android może opóźniać aktualizacje okresowe i ogranicza częste działanie w tle.
+- Decyzja: Implementować widget w ośmiu etapach: stan i loader, rejestracja, mały układ, duży układ, otwieranie aplikacji, odświeżanie, odporność oraz odbiór. Widget używa `MakRepository`, `ActivePlanProvider` i wstrzykniętego `Clock`. Aktualizacja po zapisie przechodzi przez jedną granicę niezależną od Glance, a okresowy sygnał działa nie częściej niż raz na godzinę.
+- Powód: Etapy ograniczają ryzyko połączenia danych, ograniczeń `RemoteViews`, wielu rozmiarów i cyklu życia widgetu w jednej zmianie. Wspólna ścieżka planu chroni zgodność z ekranem „Dzisiaj”.
+- Odrzucone: Osobny resolver widgetu; DAO wywoływane z widgetu; kopia planu w preferencjach Glance; ciągły serwis; dokładny alarm o północy; odświeżanie co minutę; osobny układ dla każdego możliwego wymiaru.
+- Wznowić decyzję tylko gdy: pomiary na urządzeniu wykażą, że godzinne zabezpieczenie lub dwa progi rozmiaru nie zapewniają użytecznego wyniku.
+
 ## 2026-09-19: Usunięcie poglądowego mockupu
 
 - Fakty: `mockup.html` służył wyłącznie jako poglądowy materiał podczas początkowego projektowania i nie jest źródłem prawdy dla produktu.

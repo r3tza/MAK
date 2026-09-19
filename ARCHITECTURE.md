@@ -123,11 +123,11 @@ Aplikacja składa się z lokalnej warstwy danych, logiki domenowej, ekranów Com
 - **Warstwa danych** (`data`) przechowuje kierunki, prowadzących, zajęcia, semestry, korekty tygodni, notatki i zmiany wystąpień w Room nad SQLite. Każdy rekord planu jest przypisany do jednego semestru. Granicą zapisu jest repozytorium. DAO nie wychodzą poza `data`. Eksport JSON nie należy do tej warstwy.
 - **Warstwa domenowa** (`domain`) oblicza oznaczenie tygodnia A/B, aktywny plan dla daty i kolizje. `WeekCalculator` jest używany wewnątrz `ScheduleResolver`. Wynik resolvera zawiera plan aktywny, oznaczenie A/B i źródło korekty. `CollisionDetector` działa na już złożonym planie. Walidacja formularza to czysta funkcja wywoływana z ViewModelu.
 - **Warstwa interfejsu** (`ui`) udostępnia kreator pierwszej konfiguracji, ekrany „Dzisiaj”, „Plan” w widoku listy lub kalendarza, formularze edycji i ustawienia. Ustawienia pozwalają zarządzać semestrami oraz wskazać aktywny semestr. ViewModel składa stan ekranu z repozytorium, wyniku `ScheduleResolver` i w razie potrzeby `CollisionDetector` albo eksportera. ViewModel nie woła DAO i nie liczy planu sam. Datę do testów wstrzykuje się (`Clock` albo `LocalDate`), nie `LocalDate.now()`.
-- **Widget** (`widget`) korzysta z tej samej logiki aktywnego planu co aplikacja. Nie ma ViewModelu. Czyta repozytorium i woła `ScheduleResolver`.
+- **Widget** (`widget`) nie ma ViewModelu. Czyta dane przez repozytorium, mapuje je na modele domenowe i woła `ActivePlanProvider` z wstrzykniętą datą. Room pozostaje źródłem planu, a widget nie przechowuje jego kopii w preferencjach Glance.
 - **Eksport i import** (`export`) zapisują oraz odczytują lokalny plik JSON z wersją schematu. UI wybiera plik przez systemowy wybór dokumentu. Pakiet `export` dostaje zrzut z repozytorium i zapisuje bajty. Domain nie zna `Uri`. Import w wersji 0.3 zostaje w tym samym pakiecie.
 - **Powiadomienia** korzystają z lokalnych danych aktywnego semestru i systemowego mechanizmu Androida. Konkretne zdarzenia, treść i moment wysyłki pozostają do ustalenia.
 
-Logika domenowa nie zależy od Compose. `ScheduleResolver` jest wspólnym punktem obliczania planu dla ekranów i widgetu.
+Logika domenowa nie zależy od Compose ani Glance. `ActivePlanProvider` jest wspólnym punktem obliczania planu i kolizji dla ekranów oraz widgetu.
 
 ## 8. Przepływ danych
 

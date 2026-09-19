@@ -362,8 +362,8 @@ fun ClassCard(
             )
             .background(MaterialTheme.colorScheme.surface)
             .then(clickable)
-            .focusable(enabled = onClick != null)
             .onFocusChanged { focused = it.isFocused }
+            .focusable(enabled = onClick != null)
             .semantics { contentDescription = classCardDescription(item) }
     ) {
         Box(
@@ -422,7 +422,11 @@ fun ClassCard(
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    CoursePill(item.courseName, accent)
+                    CoursePill(
+                        name = item.courseName,
+                        accent = accent,
+                        modifier = Modifier.weight(1f, fill = false)
+                    )
                     Text(
                         text = item.type,
                         style = MaterialTheme.typography.bodySmall,
@@ -471,11 +475,15 @@ fun ClassCard(
 }
 
 @Composable
-private fun CoursePill(name: String, accent: Color) {
+private fun CoursePill(
+    name: String,
+    accent: Color,
+    modifier: Modifier = Modifier
+) {
     val warm = isWarm(accent)
     Text(
         text = name,
-        modifier = Modifier
+        modifier = modifier
             .clip(RoundedCornerShape(50))
             .background(
                 if (warm) MaterialTheme.colorScheme.tertiaryContainer
