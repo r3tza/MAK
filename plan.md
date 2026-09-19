@@ -19,6 +19,24 @@ Główne założenia:
 
 Po jednorazowym skonfigurowaniu planu użytkownik powinien korzystać głównie z ekranu „Dzisiaj” i widgetu.
 
+## 1.1. Stan wdrożenia
+
+Stan na 2026-09-19:
+
+- Warstwa danych, kalkulator tygodni A/B, resolver planu, kolizje, Room i eksport JSON są zaimplementowane i objęte testami JVM.
+- Kreator pierwszej konfiguracji, semestry, kierunki, zajęcia, notatki, zmiany pojedynczych wystąpień, ekran „Dzisiaj”, plan, kalendarz i ustawienia są dostępne w aplikacji Compose.
+- Nawigacja korzysta z `NavHost` i back stacku. Ekrany podrzędne mają argumenty tras, tytuł topbara i przewidywalny powrót przez przycisk oraz systemowy back.
+- Edge-to-edge korzysta z insetów Material 3. Topbar i dolna nawigacja uwzględniają bezpieczny obszar ekranu.
+- Daty i godziny są wybierane przez pickery Material 3 z ograniczeniami zakresu, akcją semantyczną i przywracaniem focusu. Kolory kierunków wybiera się z nazwanej palety.
+- Własne kontrolki mają minimalny obszar dotyku 48 dp, semantykę, widoczny focus i ikony Material. Odstępy ekranów korzystają z tokenów `MakSpacing`.
+- Dodano testy tras, pickerów, topbara i układu dla szerokości 320 dp. Testy JVM oraz kompilacja testów Android przechodzą.
+
+Pozostaje do wykonania:
+
+- uruchomienie testów instrumentacyjnych i wizualna kontrola insetów na emulatorze lub urządzeniu;
+- sprawdzenie TalkBacka, klawiatury, gestu wstecz i motywu ciemnego w rzeczywistym środowisku Androida;
+- funkcje zaplanowane na wersje 0.2 i 0.3, w szczególności pełna obsługa widgetu oraz import JSON, zgodnie z sekcjami wdrożenia poniżej.
+
 ## 2. Technologie
 
 - Kotlin;

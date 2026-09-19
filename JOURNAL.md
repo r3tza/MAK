@@ -140,3 +140,11 @@
 - Powód: Ikony mają spójny optyczny rozmiar, wspierają kierunek RTL i mogą być dekoracyjne przy zachowaniu etykiety akcji w semantyce.
 - Odrzucone: Zastępowanie ikon kolejnymi znakami Unicode.
 - Wznowić decyzję tylko gdy: Material 3 zmieni zalecany pakiet ikon albo aplikacja otrzyma własny zestaw ikon.
+
+## 2026-09-19 — Zamknięcie iteracji dopracowania frontendu
+
+- Fakt: Zrealizowano migrację na `NavHost`, obsługę back stacku i argumentów tras, inserty edge-to-edge, topbar, przycisk wstecz, pickery, tokeny odstępów, ikony Material oraz testy Compose i JVM.
+- Decyzja: Oznaczyć iterację dopracowania frontendu jako wykonaną w `plan.md`. Testy runtime na emulatorze pozostają osobnym krokiem weryfikacyjnym, ponieważ środowisko nie udostępnia `adb`.
+- Powód: Kompilacja aplikacji, testy JVM i kompilacja testów Android potwierdzają poprawność na poziomie dostępnym lokalnie. Zachowanie systemowych insetów, TalkBacka i gestu wstecz wymaga rzeczywistego urządzenia.
+- Odrzucone: Oznaczenie testów urządzeniowych jako wykonanych bez dostępu do emulatora.
+- Wznowić decyzję tylko gdy: pojawi się emulator lub urządzenie do testów albo zmieni się zakres kolejnej wersji.
