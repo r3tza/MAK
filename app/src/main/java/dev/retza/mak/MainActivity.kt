@@ -7,6 +7,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
@@ -20,6 +21,8 @@ import dev.retza.mak.ui.theme.MAKTheme
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+    private var makViewModel: MakViewModel? = null
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
@@ -28,6 +31,13 @@ class MainActivity : ComponentActivity() {
             val viewModel: MakViewModel = viewModel(
                 factory = MakViewModel.Factory(application.repository)
             )
+            makViewModel = viewModel
+            LaunchedEffect(viewModel) {
+                if (intent.getBooleanExtra(EXTRA_OPEN_TODAY, false)) {
+                    viewModel.navigate(dev.retza.mak.ui.MakDestination.Today)
+                    intent.removeExtra(EXTRA_OPEN_TODAY)
+                }
+            }
             val state = viewModel.uiState.collectAsStateWithLifecycle().value
             val systemDark = isSystemInDarkTheme()
             MAKTheme(
@@ -63,5 +73,18 @@ class MainActivity : ComponentActivity() {
                 )
             }
         }
+    }
+
+    override fun onNewIntent(intent: android.content.Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        if (intent.getBooleanExtra(EXTRA_OPEN_TODAY, false)) {
+            makViewModel?.navigate(dev.retza.mak.ui.MakDestination.Today)
+            intent.removeExtra(EXTRA_OPEN_TODAY)
+        }
+    }
+
+    companion object {
+        const val EXTRA_OPEN_TODAY = "dev.retza.mak.extra.OPEN_TODAY"
     }
 }

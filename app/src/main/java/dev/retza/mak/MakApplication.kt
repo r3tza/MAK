@@ -6,6 +6,8 @@ import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.RoomMakRepository
 import dev.retza.mak.data.repository.seedDemoDataIfEmpty
+import dev.retza.mak.widget.GlanceWidgetRefreshRequester
+import dev.retza.mak.widget.registerMakWidgetRefresh
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -20,6 +22,10 @@ class MakApplication : Application() {
 
     override fun onCreate() {
         super.onCreate()
+        registerMakWidgetRefresh(
+            database = database,
+            requester = GlanceWidgetRefreshRequester(this, initializationScope)
+        )
         val isDebuggable = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
         if (isDebuggable) {
             initializationScope.launch {

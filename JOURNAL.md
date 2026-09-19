@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-19: Implementacja widgetu dzisiejszego planu
+
+- Fakty: Dodano `WidgetPlanLoader`, `WidgetPresenter`, modele stanów widgetu, responsywny `GlanceAppWidget` oraz receiver z metadanymi launchera. Loader korzysta z `MakRepository`, `ActivePlanProvider` i `Clock`, a widget otwiera ekran „Dzisiaj”.
+- Decyzja: Widget pokazuje mały lub duży wariant zależnie od `SizeMode.Responsive`, ogranicza liczbę wierszy na podstawie wysokości, odświeża się po invalidacji tabel Room i co 30 minut jako zabezpieczenie zmiany dnia.
+- Powód: Jedna ścieżka obliczeń zachowuje zgodność widgetu z ekranami Compose, a obserwacja bazy aktualizuje wszystkie instancje dopiero po zapisaniu danych.
+- Odrzucone: Bezpośrednie wywołania DAO i `ScheduleResolver` z Glance; przechowywanie planu w stanie Glance; WorkManager; dokładne alarmy; ciągły serwis; osobny układ dla każdego rozmiaru.
+- Wznowić decyzję tylko gdy: testy na urządzeniu wykażą problemy z progami rozmiaru, kontrastem albo opóźnieniem odświeżenia.
+
 ## 2026-09-19: Etapowa implementacja widgetów Glance
 
 - Fakty: `ActivePlanProvider` jest gotowy, a wersja 0.2 obejmuje mały i duży widget, odświeżanie po zmianach oraz otwieranie ekranu „Dzisiaj”. Android może opóźniać aktualizacje okresowe i ogranicza częste działanie w tle.

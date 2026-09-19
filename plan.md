@@ -31,12 +31,14 @@ Stan na 2026-09-19:
 - Własne kontrolki mają minimalny obszar dotyku 48 dp, semantykę, widoczny focus i ikony Material. Odstępy ekranów korzystają z tokenów `MakSpacing`.
 - Dodano testy tras, pickerów, topbara i układu dla szerokości 320 dp. Testy JVM oraz kompilacja testów Android przechodzą.
 - Build debug zawiera bezpieczny seed demonstracyjny dla pustej bazy, aby można było od razu obejrzeć wszystkie główne stany interfejsu.
+- Kod widgetu ma loader, presenter, stany puste i błędu, układ responsywny Glance oraz odświeżanie po zmianach bazy.
 
 Pozostaje do wykonania:
 
 - uruchomienie testów instrumentacyjnych i wizualna kontrola insetów na emulatorze lub urządzeniu;
 - sprawdzenie TalkBacka, klawiatury, gestu wstecz i motywu ciemnego w rzeczywistym środowisku Androida;
-- funkcje zaplanowane na wersje 0.2 i 0.3, w szczególności pełna obsługa widgetu oraz import JSON, zgodnie z sekcjami wdrożenia poniżej.
+- ręczna kontrola widgetu na launcherze: dodanie, zmiana rozmiaru, motywy, otwarcie aplikacji i odświeżenie po zmianie danych;
+- import JSON zaplanowany na wersję 0.3.
 
 ## 1.2. Plan porządkowania architektury
 
@@ -428,6 +430,8 @@ System może opóźnić odświeżenie po północy. Widget nie obiecuje zmiany d
 ### 13.1. Etapowy plan implementacji widgetów
 
 Każdy etap kończy się kompilującym przyrostem i testem logiki, którą da się uruchomić bez launchera. Nie rozpoczynać kolejnego etapu, jeśli poprzedni nie spełnia swoich kryteriów.
+
+Status: etapy 1-7 mają implementację w kodzie, testy JVM i kompilację debug. Etap 8 wymaga jeszcze odbioru na emulatorze lub urządzeniu.
 
 #### Etap 1: stan widgetu i wspólna ścieżka planu
 
