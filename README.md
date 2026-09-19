@@ -21,3 +21,5 @@ Nazwa produktu to MAK. Rozwinięcie „Mobilny Akademicki Kalendarz” wyjaśnia
 Wersja 0.1.0 zawiera działający lokalny plan zajęć, wiele odizolowanych semestrów, tygodnie A/B, zmiany pojedynczych terminów, notatki oraz eksport JSON.
 
 Aktualny kod obejmuje także dopracowaną warstwę Compose: nawigację `NavHost` z back stackiem, topbar z obsługą insetów, pickery daty i godziny, paletę kolorów, wspólne tokeny odstępów, ikony Material oraz testy tras i kluczowych interakcji. Testy JVM i kompilacja testów Android przechodzą. Testy runtime na emulatorze pozostają do wykonania.
+
+W buildzie debug pusta baza otrzymuje automatycznie semestr demonstracyjny z przykładowymi kierunkami, zajęciami, kolizją, korektą tygodnia A/B, terminem jednorazowym, notatką i zmienionym wystąpieniem. Seed nie nadpisuje istniejących danych i nie działa w buildzie release.

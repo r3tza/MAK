@@ -148,3 +148,11 @@
 - Powód: Kompilacja aplikacji, testy JVM i kompilacja testów Android potwierdzają poprawność na poziomie dostępnym lokalnie. Zachowanie systemowych insetów, TalkBacka i gestu wstecz wymaga rzeczywistego urządzenia.
 - Odrzucone: Oznaczenie testów urządzeniowych jako wykonanych bez dostępu do emulatora.
 - Wznowić decyzję tylko gdy: pojawi się emulator lub urządzenie do testów albo zmieni się zakres kolejnej wersji.
+
+## 2026-09-19 — Dane demonstracyjne w buildzie debug
+
+- Fakt: Pusta baza danych nie pozwalała szybko obejrzeć ekranów planu, kalendarza, zmian terminów i stanów kolizji.
+- Decyzja: Przy uruchomieniu builda debug zasilić pustą bazę jednym semestrem demonstracyjnym. Seed jest pomijany, gdy istnieje dowolny semestr, i nie działa w buildzie release.
+- Powód: Ułatwia to ręczny podgląd interfejsu bez tworzenia danych krok po kroku, jednocześnie chroniąc dane użytkownika.
+- Odrzucone: Nadpisywanie bazy przy każdym uruchomieniu oraz dodawanie przykładowych danych do wydania produkcyjnego.
+- Wznowić decyzję tylko gdy: pojawi się osobny tryb demonstracyjny albo ekran ręcznego usuwania danych przykładowych.

@@ -30,6 +30,7 @@ Stan na 2026-09-19:
 - Daty i godziny są wybierane przez pickery Material 3 z ograniczeniami zakresu, akcją semantyczną i przywracaniem focusu. Kolory kierunków wybiera się z nazwanej palety.
 - Własne kontrolki mają minimalny obszar dotyku 48 dp, semantykę, widoczny focus i ikony Material. Odstępy ekranów korzystają z tokenów `MakSpacing`.
 - Dodano testy tras, pickerów, topbara i układu dla szerokości 320 dp. Testy JVM oraz kompilacja testów Android przechodzą.
+- Build debug zawiera bezpieczny seed demonstracyjny dla pustej bazy, aby można było od razu obejrzeć wszystkie główne stany interfejsu.
 
 Pozostaje do wykonania:
 
