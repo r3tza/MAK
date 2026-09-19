@@ -7,12 +7,12 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.ClassCard
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.MakRowTitle
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSectionHeader
+import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakSummaryCard
 import dev.retza.mak.ui.components.ScreenStatus
@@ -49,7 +49,7 @@ fun TodayScreen(
         MakSummaryCard(
             caption = "Twój plan na dziś",
             value = state.summaryLabel,
-            modifier = Modifier.padding(bottom = 23.dp)
+            modifier = Modifier.padding(bottom = MakSpacing.xl)
         )
         MakRowTitle(title = "Zajęcia", meta = "Od najwcześniejszego")
         when (state.status) {
@@ -60,7 +60,7 @@ fun TodayScreen(
                     emptyMessage = state.emptyMessage
                 )
             } else {
-                Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                     state.items.forEach { item ->
                         ClassCard(item = item, onClick = { onOpenClass(item.id) })
                     }

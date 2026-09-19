@@ -52,6 +52,7 @@ import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSelectField
+import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.MakViewSwitch
@@ -234,7 +235,7 @@ private fun ListView(
         if (state.items.isEmpty()) {
             MakEmptyState(state.emptyMessage)
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 state.items.forEach { item ->
                     ClassCard(item = item, onClick = { onOpenClass(item.id) })
                 }
@@ -252,7 +253,7 @@ private fun DaySelector(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 17.dp),
-        horizontalArrangement = Arrangement.spacedBy(3.dp)
+        horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs)
     ) {
         days.forEach { day ->
             val selected = day.isSelected
@@ -267,13 +268,13 @@ private fun DaySelector(
                         role = Role.Tab,
                         onClick = { onDaySelected(day.id) }
                     )
-                    .padding(vertical = 8.dp)
+                    .padding(vertical = MakSpacing.sm)
                     .semantics {
                         contentDescription = day.accessibilityLabel
                         this.selected = selected
                     },
                 horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+                verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
             ) {
                 Text(
                     day.shortLabel,
@@ -351,7 +352,7 @@ private fun CalendarView(
         if (state.calendarItems.isEmpty()) {
             MakEmptyState("Brak zajęć. Możesz dodać termin jednorazowy.")
         } else {
-            Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
+            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 state.calendarItems.forEach { item ->
                     ClassCard(item = item, onClick = { onOpenClass(item.id) })
                 }
@@ -432,7 +433,7 @@ private fun WeekCorrectionDialog(
             options = listOf("Tydzień A", "Tydzień B"),
             onSelected = { type = if (it.endsWith("B")) WeekTypeUi.B else WeekTypeUi.A }
         )
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
             WeekOverrideScopeUi.entries.forEach { item ->
                 val label = if (item == WeekOverrideScopeUi.ONE_WEEK) {
                     "Tylko ten tydzień"
@@ -451,7 +452,7 @@ private fun WeekCorrectionDialog(
             onClick = { onClear(scope) },
             enabled = if (scope == WeekOverrideScopeUi.ONE_WEEK) hasOneWeekCorrection else hasFromWeekCorrection
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+        Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
             MakSecondaryAction(text = "Anuluj", onClick = onDismiss, modifier = Modifier.weight(1f))
             MakPrimaryAction(text = "Zapisz", onClick = { onSave(type, scope) }, modifier = Modifier.weight(1f))
         }

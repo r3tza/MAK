@@ -40,6 +40,7 @@ import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSelectField
+import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakTag
 import dev.retza.mak.ui.components.MakTextAction
@@ -197,7 +198,7 @@ private fun SemesterForm(
 ) {
     Column(
         modifier = Modifier.padding(bottom = 22.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
         MakField(
             label = "Nazwa semestru",
@@ -206,8 +207,8 @@ private fun SemesterForm(
             isError = state.nameError != null
         )
         FieldError(state.nameError?.let(::FieldErrorUi))
-        Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
                 MakDatePickerField(
                     label = "Od",
                     value = state.startDate,
@@ -217,7 +218,7 @@ private fun SemesterForm(
                 )
                 FieldError(state.startDateError?.let(::FieldErrorUi))
             }
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
                 MakDatePickerField(
                     label = "Do",
                     value = state.endDate,
@@ -255,7 +256,7 @@ private fun CoursesBlock(
 ) {
     Column(
         modifier = Modifier.padding(bottom = 22.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
         MakRowTitle(title = "Kierunki", meta = if (courses.isEmpty()) "Brak" else "${courses.size}")
         if (courses.isEmpty()) {
@@ -301,7 +302,7 @@ private fun WeekOverridesSection(
     onDeleteOverride: (String) -> Unit,
     onCancelEdit: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -345,12 +346,12 @@ private fun WeekOverrideCard(
             .fillMaxWidth()
             .border(1.dp, MaterialTheme.colorScheme.outline, shape)
             .padding(14.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
@@ -387,7 +388,7 @@ private fun WeekOverrideForm(
     onSave: () -> Unit,
     onCancel: () -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
         MakNoteBanner(
             title = if (state.isEditing) "Edytuj korektę" else "Dodaj korektę",
             subtitle = "Oznaczenie A albo B dla wybranego poniedziałku."
@@ -405,7 +406,7 @@ private fun WeekOverrideForm(
             options = listOf("Tydzień A", "Tydzień B"),
             onSelected = { onWeekTypeChanged(if (it.endsWith("B")) WeekTypeUi.B else WeekTypeUi.A) }
         )
-        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
             WeekOverrideScopeUi.entries.forEach { scope ->
                 val label = when (scope) {
                     WeekOverrideScopeUi.ONE_WEEK -> "Tylko ten tydzień"
@@ -420,7 +421,7 @@ private fun WeekOverrideForm(
         }
         Row(
             modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
         ) {
             MakPrimaryAction(
                 text = if (state.isEditing) "Zapisz zmiany" else "Dodaj korektę",

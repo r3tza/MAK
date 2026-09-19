@@ -26,6 +26,7 @@ import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSectionHeader
+import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakTag
 import dev.retza.mak.ui.components.MakTimePickerField
 
@@ -114,7 +115,7 @@ fun OccurrenceDetailsScreen(
             description = "Usunięcie wpisu usunie wszystkie jego wystąpienia. Tej operacji nie można cofnąć.",
             onDismiss = onDismissDeleteConfirmation
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
                 MakSecondaryAction(text = "Anuluj", onClick = onDismissDeleteConfirmation, modifier = Modifier.weight(1f))
                 MakSecondaryAction(
                     text = "Usuń zajęcia",
@@ -136,7 +137,7 @@ private fun StatusTag(state: OccurrenceDetailsUiState) {
         OccurrenceStatusUi.Moved -> "Przeniesione"
         OccurrenceStatusUi.OneOff -> "Jednorazowe"
     }
-    MakTag(text = label, modifier = Modifier.padding(bottom = 14.dp))
+    MakTag(text = label, modifier = Modifier.padding(bottom = MakSpacing.md))
 }
 
 @Composable
@@ -145,7 +146,7 @@ private fun Facts(state: OccurrenceDetailsUiState) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 16.dp),
-        verticalArrangement = Arrangement.spacedBy(8.dp)
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
         MakFactRow("Data", state.dateLabel)
         MakFactRow("Godziny", "${state.startTime} - ${state.endTime}")
@@ -175,7 +176,7 @@ private fun OccurrenceForm(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
         if (state.canChangeOccurrence || state.canMoveOccurrence) {
             MakDatePickerField(
@@ -186,7 +187,7 @@ private fun OccurrenceForm(
                 maxDate = state.semesterEndDate?.toLocalDateOrNull(),
                 enabled = state.canMoveOccurrence || state.canChangeOccurrence
             )
-            Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
                 MakTimePickerField(
                     label = "Od",
                     value = state.startTimeDraft,
@@ -229,7 +230,7 @@ private fun NotesBlock(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(10.dp)
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
         MakHelperText(
             if (state.sharedNote.isNullOrBlank()) {

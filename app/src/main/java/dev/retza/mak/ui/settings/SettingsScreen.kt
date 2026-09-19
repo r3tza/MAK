@@ -22,6 +22,7 @@ import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSelectField
+import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.components.ScreenStatus
@@ -66,7 +67,7 @@ fun SettingsScreen(
             subtitle = "Wybierz plan, który ma być aktywny na ekranie i w powiadomieniach."
         )
         when (state.status) {
-            ScreenStatus.Ready -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            ScreenStatus.Ready -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 if (state.semesters.isEmpty()) {
                     MakEmptyState("Dodaj semestr, aby rozpocząć pracę z planem.")
                 } else {
@@ -136,7 +137,7 @@ fun SettingsScreen(
             description = "Usunięcie semestru usunie jego plan i dane. Tej operacji nie można cofnąć.",
             onDismiss = onCancelDelete
         ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
+            Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
                 MakSecondaryAction(text = "Anuluj", onClick = onCancelDelete, modifier = Modifier.weight(1f))
                 MakSecondaryAction(
                     text = "Usuń",

@@ -24,6 +24,7 @@ import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSelectField
+import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.MakTimePickerField
@@ -99,7 +100,7 @@ fun ClassEditScreen(
             subtitle = "Najpierw termin i przedmiot. Resztę możesz uzupełnić później."
         )
         when (state.status) {
-            ScreenStatus.Ready -> Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+            ScreenStatus.Ready -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 MakField(
                     label = "Nazwa przedmiotu",
                     value = state.name,
@@ -108,8 +109,8 @@ fun ClassEditScreen(
                     isError = state.errors.containsKey(ClassEditField.Name)
                 )
                 FieldError(state.errors[ClassEditField.Name])
-                Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
                         MakSelectField(
                             label = "Kierunek",
                             value = state.courseName,
@@ -119,7 +120,7 @@ fun ClassEditScreen(
                         )
                         FieldError(state.errors[ClassEditField.Course])
                     }
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
                         MakSelectField(
                             label = "Typ",
                             value = state.type,
@@ -138,8 +139,8 @@ fun ClassEditScreen(
                     isError = state.errors.containsKey(ClassEditField.Day)
                 )
                 FieldError(state.errors[ClassEditField.Day])
-                Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
                         MakTimePickerField(
                             label = "Od",
                             value = state.startTime,
@@ -148,7 +149,7 @@ fun ClassEditScreen(
                         )
                         FieldError(state.errors[ClassEditField.StartTime])
                     }
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
                         MakTimePickerField(
                             label = "Do",
                             value = state.endTime,
