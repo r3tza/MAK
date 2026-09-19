@@ -10,16 +10,27 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.text.font.FontWeight
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakChoiceRow
+import dev.retza.mak.ui.components.MakColorPalette
+import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakEmptyState
+import dev.retza.mak.ui.components.MakActionMenu
+import dev.retza.mak.ui.components.MakExpandableSection
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakNoteBanner
@@ -109,6 +120,8 @@ fun SemesterScreen(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showCourses by remember { mutableStateOf(false) }
+    var showOverrides by remember { mutableStateOf(false) }
     MakScreenContent(
         modifier = modifier.verticalScroll(rememberScrollState())
     ) {
@@ -128,27 +141,39 @@ fun SemesterScreen(
                     onFirstWeekChanged = onSemesterFirstWeekChanged,
                     onSave = onSaveSemester
                 )
-                CoursesBlock(
-                    courses = state.courses,
-                    courseNameDraft = state.courseNameDraft,
-                    courseColorDraft = state.courseColorDraft,
-                    onCourseNameChanged = onCourseNameChanged,
-                    onCourseColorChanged = onCourseColorChanged,
-                    onAddCourse = onAddCourse,
-                    onDeleteCourse = onDeleteCourse
-                )
-                WeekOverridesSection(
-                    overrides = state.overrides,
-                    form = state.overrideForm,
-                    onWeekStartDateChanged = onOverrideWeekStartDateChanged,
-                    onWeekTypeChanged = onOverrideWeekTypeChanged,
-                    onScopeChanged = onOverrideScopeChanged,
-                    onNewOverride = onNewOverride,
-                    onEditOverride = onEditOverride,
-                    onSaveOverride = onSaveOverride,
-                    onDeleteOverride = onDeleteOverride,
-                    onCancelEdit = onCancelOverrideEdit
-                )
+                MakExpandableSection(
+                    label = "kierunki",
+                    expanded = showCourses,
+                    onExpandedChange = { showCourses = it }
+                ) {
+                    CoursesBlock(
+                        courses = state.courses,
+                        courseNameDraft = state.courseNameDraft,
+                        courseColorDraft = state.courseColorDraft,
+                        onCourseNameChanged = onCourseNameChanged,
+                        onCourseColorChanged = onCourseColorChanged,
+                        onAddCourse = onAddCourse,
+                        onDeleteCourse = onDeleteCourse
+                    )
+                }
+                MakExpandableSection(
+                    label = "korekty tygodni",
+                    expanded = showOverrides,
+                    onExpandedChange = { showOverrides = it }
+                ) {
+                    WeekOverridesSection(
+                        overrides = state.overrides,
+                        form = state.overrideForm,
+                        onWeekStartDateChanged = onOverrideWeekStartDateChanged,
+                        onWeekTypeChanged = onOverrideWeekTypeChanged,
+                        onScopeChanged = onOverrideScopeChanged,
+                        onNewOverride = onNewOverride,
+                        onEditOverride = onEditOverride,
+                        onSaveOverride = onSaveOverride,
+                        onDeleteOverride = onDeleteOverride,
+                        onCancelEdit = onCancelOverrideEdit
+                    )
+                }
                 MakSecondaryAction(
                     text = "Wróć do ustawień",
                     onClick = onBack,
@@ -182,25 +207,27 @@ private fun SemesterForm(
         )
         FieldError(state.nameError?.let(::FieldErrorUi))
         Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
-            MakField(
-                label = "Od",
-                value = state.startDate,
-                onValueChange = onStartDateChanged,
-                placeholder = "RRRR-MM-DD",
-                isError = state.startDateError != null,
-                modifier = Modifier.weight(1f)
-            )
-            MakField(
-                label = "Do",
-                value = state.endDate,
-                onValueChange = onEndDateChanged,
-                placeholder = "RRRR-MM-DD",
-                isError = state.endDateError != null,
-                modifier = Modifier.weight(1f)
-            )
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                MakDatePickerField(
+                    label = "Od",
+                    value = state.startDate,
+                    onValueChange = onStartDateChanged,
+                    maxDate = state.endDate.toLocalDateOrNull(),
+                    isError = state.startDateError != null
+                )
+                FieldError(state.startDateError?.let(::FieldErrorUi))
+            }
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                MakDatePickerField(
+                    label = "Do",
+                    value = state.endDate,
+                    onValueChange = onEndDateChanged,
+                    minDate = state.startDate.toLocalDateOrNull(),
+                    isError = state.endDateError != null
+                )
+                FieldError(state.endDateError?.let(::FieldErrorUi))
+            }
         }
-        FieldError(state.startDateError?.let(::FieldErrorUi))
-        FieldError(state.endDateError?.let(::FieldErrorUi))
         FieldError(state.dateRangeError?.let(::FieldErrorUi))
         MakSelectField(
             label = "Pierwszy tydzień",
@@ -208,7 +235,6 @@ private fun SemesterForm(
             options = listOf("Tydzień A", "Tydzień B"),
             onSelected = { onFirstWeekChanged(if (it.endsWith("B")) WeekTypeUi.B else WeekTypeUi.A) }
         )
-        MakHelperText("Podaj daty w formacie RRRR-MM-DD. Pierwszy tydzień zaczyna się w poniedziałek tygodnia zawierającego datę rozpoczęcia.")
         MakPrimaryAction(
             text = "Zapisz semestr",
             onClick = onSave,
@@ -250,11 +276,9 @@ private fun CoursesBlock(
             value = courseNameDraft,
             onValueChange = onCourseNameChanged
         )
-        MakField(
-            label = "Kolor kierunku, opcjonalnie",
-            value = courseColorDraft,
-            onValueChange = onCourseColorChanged,
-            placeholder = "#137b71"
+        MakColorPalette(
+            selectedColor = courseColorDraft,
+            onColorSelected = onCourseColorChanged
         )
         MakSecondaryAction(
             text = "Dodaj kierunek",
@@ -329,7 +353,11 @@ private fun WeekOverrideCard(
             horizontalArrangement = Arrangement.spacedBy(8.dp)
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(item.weekStartDate, fontWeight = FontWeight.SemiBold)
+                Text(
+                    item.weekStartDate.toLocalDateOrNull()?.format(polishShortDateFormatter)
+                        ?: item.weekStartDate,
+                    fontWeight = FontWeight.SemiBold
+                )
                 Text(
                     text = when (item.scope) {
                         WeekOverrideScopeUi.ONE_WEEK -> "Tylko ten tydzień"
@@ -341,13 +369,12 @@ private fun WeekOverrideCard(
             }
             MakTag(text = "Tydzień ${item.weekType.name}")
         }
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(8.dp)
-        ) {
-            MakSecondaryAction(text = "Edytuj", onClick = onEdit, modifier = Modifier.weight(1f))
-            MakSecondaryAction(text = "Usuń", onClick = onDelete, modifier = Modifier.weight(1f), destructive = true)
-        }
+        MakActionMenu(
+            actions = listOf(
+                "Edytuj" to onEdit,
+                "Usuń" to onDelete
+            )
+        )
     }
 }
 
@@ -365,11 +392,10 @@ private fun WeekOverrideForm(
             title = if (state.isEditing) "Edytuj korektę" else "Dodaj korektę",
             subtitle = "Oznaczenie A albo B dla wybranego poniedziałku."
         )
-        MakField(
+        MakDatePickerField(
             label = "Poniedziałek tygodnia",
             value = state.weekStartDate,
             onValueChange = onWeekStartDateChanged,
-            placeholder = "RRRR-MM-DD",
             isError = state.weekStartDateError != null
         )
         FieldError(state.weekStartDateError?.let(::FieldErrorUi))
@@ -413,3 +439,8 @@ private fun WeekOverrideForm(
         }
     }
 }
+
+private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
+
+private val polishShortDateFormatter =
+    DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.forLanguageTag("pl-PL"))

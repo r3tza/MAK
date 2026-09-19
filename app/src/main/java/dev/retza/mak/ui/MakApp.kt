@@ -1,21 +1,31 @@
 package dev.retza.mak.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.material3.CenterAlignedTopAppBar
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import dev.retza.mak.ui.components.MakBrandMark
 import dev.retza.mak.ui.components.MakIconButton
 import dev.retza.mak.ui.components.MakNavBar
@@ -28,7 +38,7 @@ import dev.retza.mak.ui.setup.SetupWizard
 import dev.retza.mak.ui.today.TodayScreen
 
 @Composable
-fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
+private fun LegacyMakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val showNavigation = !state.requiresSetup && state.destination !in setOf(
         MakDestination.OccurrenceDetails,

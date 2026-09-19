@@ -14,6 +14,8 @@ Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose
 
 ### 1. P1: Zastąpić ręczne wpisywanie dat i godzin pickerami
 
+**Status:** Zrealizowane w aplikacji Compose. Testy na emulatorze pozostają do wykonania.
+
 **Problem:** Użytkownik wpisuje daty w formacie `RRRR-MM-DD` oraz godziny jako zwykły tekst. Dotyczy to kreatora, konfiguracji semestru, korekt tygodni, zajęć jednorazowych i zmian pojedynczego wystąpienia.
 
 **Dowody:**
@@ -30,6 +32,8 @@ Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose
 
 ### 2. P1: Zastąpić wpisywanie koloru paletą
 
+**Status:** Zrealizowane w aplikacji Compose. Test wyboru palety kompiluje się, ale nie został uruchomiony na emulatorze.
+
 **Problem:** Kolor kierunku jest wpisywany jako kod szesnastkowy.
 
 **Dowody:**
@@ -44,6 +48,8 @@ Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose
 **Kierunek naprawy:** Pokazać ograniczoną paletę nazwanych kolorów jako wybór jednokrotny. Każda próbka powinna mieć etykietę, stan zaznaczenia i tekstową nazwę dostępną dla czytnika ekranu. Opcjonalny własny kolor można zostawić wyłącznie jako funkcję zaawansowaną z walidacją kontrastu.
 
 ### 3. P1: Zapewnić minimalny obszar dotyku 48 dp
+
+**Status:** Zrealizowane w zmienionych kontrolkach Compose. Testy runtime pozostają do wykonania.
 
 **Problem:** Własne kontrolki mają rozmiary mniejsze niż wymagane 48 dp i nie ustawiają jawnego minimalnego obszaru dotyku.
 
@@ -62,6 +68,8 @@ Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose
 
 ### 4. P1: Powiązać etykiety, wartości i błędy z polami
 
+**Status:** Zrealizowane dla pól i formularzy objętych zmianą. Testy czytnika ekranu pozostają do wykonania.
+
 **Problem:** Etykieta `MakField` jest osobnym tekstem, a właściwe pole to `BasicTextField`. `MakSelectField` działa podobnie. Błędy są renderowane obok lub pod całym wierszem dwóch pól.
 
 **Dowody:**
@@ -76,6 +84,8 @@ Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose
 
 ### 5. P1: Dodać widoczny focus i obsługę klawiatury do własnych kontrolek
 
+**Status:** Częściowo zrealizowane. Dodano stany focusu i obsługę klawiatury dla zmienionych kontrolek. Brakuje testu na urządzeniu.
+
 **Problem:** Własne przyciski, filtry, checkbox, wybór dnia i pola wyboru używają `clickable` albo `selectable`, ale kod nie definiuje spójnego wizualnego stanu focusu. Mockup ma `focus-visible`, aplikacja Compose nie ma odpowiadającego mechanizmu w tych komponentach.
 
 **Dowody:** `MakIconButton`, `MakRoundButton`, `MakFilterRow`, `MakCheckbox`, `MakNavBar` i `MakSelectField` w `ui/components/MakComponents.kt`.
@@ -85,6 +95,8 @@ Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose
 **Kierunek naprawy:** Dodać testowalny stan focusu, logiczną kolejność focusu i akcję klawiatury dla każdego elementu interaktywnego. Sprawdzić dialogi, w tym powrót focusu do elementu otwierającego.
 
 ### 6. P2: Usunąć poziomy scroll filtrów na małych ekranach
+
+**Status:** Zrealizowane. Filtry są ukryte w rozwijanej sekcji i używają pojedynczego wyboru kierunku.
 
 **Problem:** Filtry kierunków są przewijane poziomo.
 
@@ -100,6 +112,8 @@ Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose
 
 ### 7. P2: Poprawić układ akcji na szerokości 320 dp
 
+**Status:** Zrealizowane w zmienionych ekranach. Test runtime dla długich etykiet pozostaje do wykonania.
+
 **Problem:** Długie akcje są układane obok siebie, a `MakSecondaryAction` obcina tekst do jednej linii.
 
 **Dowody:**
@@ -114,6 +128,8 @@ Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose
 
 ### 8. P2: Zwiększyć kontrast tekstu pomocniczego
 
+**Status:** Zrealizowane dla czasu zakończenia zajęć. Kolor korzysta teraz z tokenu motywu `onSurfaceVariant`.
+
 **Problem:** Czas zakończenia zajęć używa `MakTimeMuted` `#78849A` na jasnym i ciemnym tle. Kontrast wynosi około 3,77:1, czyli mniej niż 4,5:1 wymagane dla zwykłego tekstu WCAG AA.
 
 **Dowody:**
@@ -126,6 +142,8 @@ Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose
 
 ### 9. P2: Nie używać samego koloru do informacji w kalendarzu
 
+**Status:** Zrealizowane w opisie dostępności dnia. Opis zawiera zajęcia, godziny i statusy.
+
 **Problem:** Kropki w kalendarzu przekazują typ lub zmianę przez kolor, ale nie mają własnej semantyki. `CalendarMarkerUi.contentDescription` istnieje w modelu, lecz `CalendarDay` przekazuje do `MakDot` tylko kolor.
 
 **Ryzyko:** Użytkownik czytnika ekranu nie dowie się, co oznaczają kropki. Użytkownik z zaburzeniami widzenia barw nie rozróżni typów oznaczeń.
@@ -133,6 +151,8 @@ Audyt czytelności i dostępności wykonany 2026-09-19 na podstawie kodu Compose
 **Kierunek naprawy:** Umieścić opis markerów w opisie dnia, dodać tekstową legendę albo zastąpić część informacji tekstowymi odznakami. Zachować liczbę zajęć i statusy w opisie dostępności dnia.
 
 ### 10. P2: Oznaczyć operacje destrukcyjne jednoznacznie
+
+**Status:** Zrealizowane dla usuwania semestru i zajęć. Pozostałe operacje destrukcyjne wymagają osobnego przeglądu.
 
 **Problem:** Potwierdzenie usunięcia semestru i zajęć używa `MakPrimaryAction`, czyli tego samego wizualnego stylu co zwykłe zapisanie formularza.
 

@@ -35,6 +35,8 @@ data class OccurrenceDetailsUiState(
     val startTimeDraft: String = "",
     val endTimeDraft: String = "",
     val roomDraft: String = "",
+    val semesterStartDate: String? = null,
+    val semesterEndDate: String? = null,
     val showDeleteConfirmation: Boolean = false,
     val canEditBaseClass: Boolean = true,
     val canDeleteBaseClass: Boolean = true,

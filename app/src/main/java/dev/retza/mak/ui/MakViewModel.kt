@@ -312,6 +312,8 @@ class MakViewModel(
             startTimeDraft = (occurrence?.startTime ?: base.startTime).toString(),
             endTimeDraft = (occurrence?.endTime ?: base.endTime).toString(),
             roomDraft = (occurrence?.room ?: base.room).orEmpty(),
+            semesterStartDate = data.semester.startDate.toString(),
+            semesterEndDate = data.semester.endDate.toString(),
             canCancelOccurrence = base.recurrence != dev.retza.mak.data.entity.Recurrence.ONCE && existingChange == null,
             canChangeOccurrence = base.recurrence != dev.retza.mak.data.entity.Recurrence.ONCE && status != OccurrenceStatusUi.Cancelled,
             canMoveOccurrence = base.recurrence != dev.retza.mak.data.entity.Recurrence.ONCE && status != OccurrenceStatusUi.Cancelled,
@@ -690,7 +692,7 @@ class MakViewModel(
         val form = controls.value.semesterDraft.overrideForm
         val date = form.weekStartDate.toLocalDateOrNull()
         if (date == null || date.dayOfWeek != DayOfWeek.MONDAY) {
-            updateSemester { it.copy(overrideForm = form.copy(weekStartDateError = "Wybierz poniedziałek w formacie RRRR-MM-DD.")) }
+            updateSemester { it.copy(overrideForm = form.copy(weekStartDateError = "Wybierz poniedziałek.")) }
             return
         }
         viewModelScope.launch {
@@ -743,7 +745,7 @@ class MakViewModel(
         val end = setup.endDate.toLocalDateOrNull()
         val errors = buildMap {
             if (setup.semesterName.isBlank()) put(SetupField.SemesterName, FieldErrorUi("Podaj nazwę semestru."))
-            if (start == null) put(SetupField.StartDate, FieldErrorUi("Podaj datę w formacie RRRR-MM-DD."))
+            if (start == null) put(SetupField.StartDate, FieldErrorUi("Wybierz poprawną datę."))
             if (end == null || start != null && end.isBefore(start)) {
                 put(SetupField.EndDate, FieldErrorUi("Data końca nie może być wcześniejsza od początku."))
             }
@@ -799,7 +801,11 @@ class MakViewModel(
         val requiresSetup = control.forceSetup || semesterList.isEmpty() ||
             activeData != null && activeData.courses.isEmpty()
         val destination = if (requiresSetup) MakDestination.Setup else control.destination
-        val editor = control.editor.copy(courseOptions = activeData?.courses?.map { it.name }.orEmpty())
+        val editor = control.editor.copy(
+            courseOptions = activeData?.courses?.map { it.name }.orEmpty(),
+            semesterStartDate = activeData?.semester?.startDate?.toString(),
+            semesterEndDate = activeData?.semester?.endDate?.toString()
+        )
         return MakUiState(
             destination = destination,
             requiresSetup = requiresSetup,
@@ -858,14 +864,14 @@ class MakViewModel(
             CalendarDayUi(
                 id = date.toString(),
                 dayLabel = date.dayOfMonth.toString(),
-                accessibilityLabel = "${date.format(fullDateFormatter)}, ${classCountLabel(occurrences.size)}",
+                accessibilityLabel = calendarAccessibilityLabel(date, occurrences),
                 isInCurrentMonth = YearMonth.from(date) == control.calendarMonth,
                 isToday = date == today,
                 isSelected = date == control.calendarDate,
                 markers = occurrences.take(3).map {
                     CalendarMarkerUi(
                         id = it.id,
-                        contentDescription = it.name,
+                        contentDescription = calendarOccurrenceLabel(it),
                         colorToken = markerColor(data, it)
                     )
                 }
@@ -991,6 +997,32 @@ private fun markerColor(
     if (occurrence.occurrenceChange != null) return CalendarMarkerColor.Error
     val index = data.courses.indexOfFirst { it.id.toString() == occurrence.course?.id }
     return if (index > 0) CalendarMarkerColor.Secondary else CalendarMarkerColor.Primary
+}
+
+private fun calendarAccessibilityLabel(
+    date: LocalDate,
+    occurrences: List<PlannedOccurrence>
+): String {
+    val details = occurrences.take(3).joinToString("; ") { calendarOccurrenceLabel(it) }
+    return buildString {
+        append(date.format(fullDateFormatter))
+        append(", ")
+        append(classCountLabel(occurrences.size))
+        if (details.isNotBlank()) {
+            append(", ")
+            append(details)
+        }
+    }
+}
+
+private fun calendarOccurrenceLabel(occurrence: PlannedOccurrence): String {
+    val status = when {
+        occurrence.occurrenceChange?.kind == OccurrenceChangeKind.CANCELLED -> ", odwołane"
+        occurrence.occurrenceChange?.kind == OccurrenceChangeKind.MODIFIED -> ", zmienione"
+        occurrence.classItem.recurrence == Recurrence.ONCE -> ", jednorazowe"
+        else -> ""
+    }
+    return "${occurrence.name}, ${occurrence.startTime} - ${occurrence.endTime}$status"
 }
 
 private fun SemesterEntity.toDomain() = Semester(

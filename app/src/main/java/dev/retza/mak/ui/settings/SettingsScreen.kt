@@ -7,10 +7,15 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakEmptyState
+import dev.retza.mak.ui.components.MakExpandableSection
 import dev.retza.mak.ui.components.MakNoteBanner
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakScreenContent
@@ -52,6 +57,8 @@ fun SettingsScreen(
     modifier: Modifier = Modifier
 ) {
     val active = state.semesters.firstOrNull { it.id == state.activeSemesterId }
+    var showData by remember { mutableStateOf(false) }
+    var showNotifications by remember { mutableStateOf(false) }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
         MakSectionHeader(
             eyebrow = "Ustawienia",
@@ -77,25 +84,12 @@ fun SettingsScreen(
                             subtitle = "${active.dateRangeLabel}, ${active.firstWeekLabel.lowercase()}"
                         )
                     }
-                    Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
-                        MakSecondaryAction(
-                            text = "Konfiguruj semestr",
-                            onClick = { active?.id?.let(onConfigureSemester) },
-                            modifier = Modifier.weight(1f),
-                            enabled = active != null
-                        )
-                        MakSecondaryAction(
-                            text = "Dodaj semestr",
-                            onClick = onAddSemester,
-                            modifier = Modifier.weight(1f)
-                        )
-                    }
                     MakSecondaryAction(
-                        text = "Usuń wybrany semestr",
-                        onClick = { active?.id?.let(onDeleteSemester) },
-                        enabled = active != null,
-                        destructive = true
+                        text = "Konfiguruj semestr",
+                        onClick = { active?.id?.let(onConfigureSemester) },
+                        enabled = active != null
                     )
+                    MakPrimaryAction(text = "Dodaj semestr", onClick = onAddSemester)
                 }
                 MakSelectField(
                     label = "Motyw",
@@ -105,11 +99,32 @@ fun SettingsScreen(
                         state.themeOptions.firstOrNull { it.label == label }?.id?.let(onThemeSelected)
                     }
                 )
-                MakNoteBanner(
-                    title = "Powiadomienia",
-                    subtitle = state.notificationsLabel
-                )
-                MakSecondaryAction(text = "Eksportuj plan do JSON", onClick = onExport)
+                MakExpandableSection(
+                    label = "dane",
+                    expanded = showData,
+                    onExpandedChange = { showData = it }
+                ) {
+                    MakSecondaryAction(
+                        text = "Eksportuj plan do JSON",
+                        onClick = onExport
+                    )
+                    MakSecondaryAction(
+                        text = "Usuń wybrany semestr",
+                        onClick = { active?.id?.let(onDeleteSemester) },
+                        enabled = active != null,
+                        destructive = true
+                    )
+                }
+                MakExpandableSection(
+                    label = "powiadomienia",
+                    expanded = showNotifications,
+                    onExpandedChange = { showNotifications = it }
+                ) {
+                    MakNoteBanner(
+                        title = "Powiadomienia",
+                        subtitle = state.notificationsLabel
+                    )
+                }
             }
 
             else -> MakStateMessage(status = state.status, onRetry = onRetry)
@@ -123,7 +138,12 @@ fun SettingsScreen(
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 MakSecondaryAction(text = "Anuluj", onClick = onCancelDelete, modifier = Modifier.weight(1f))
-                MakPrimaryAction(text = "Usuń", onClick = onConfirmDelete, modifier = Modifier.weight(1f))
+                MakSecondaryAction(
+                    text = "Usuń",
+                    onClick = onConfirmDelete,
+                    modifier = Modifier.weight(1f),
+                    destructive = true
+                )
             }
         }
     }

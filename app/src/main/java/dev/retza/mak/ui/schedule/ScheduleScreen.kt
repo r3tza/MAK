@@ -37,12 +37,13 @@ import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarMarkerColor
 import dev.retza.mak.ui.components.ClassCard
 import dev.retza.mak.ui.components.ClassItemUi
+import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakCheckbox
 import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDot
 import dev.retza.mak.ui.components.MakEmptyState
-import dev.retza.mak.ui.components.MakFilterRow
+import dev.retza.mak.ui.components.MakExpandableSection
 import dev.retza.mak.ui.components.MakNoteBanner
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakRoundButton
@@ -205,18 +206,30 @@ private fun ListView(
         MakNoteBanner(
             title = state.weekTypeLabel,
             subtitle = state.weekSourceLabel,
-            actionLabel = "Zmień A/B",
-            onAction = onEditWeek,
             modifier = Modifier.padding(bottom = 13.dp)
         )
         DaySelector(days = state.days, onDaySelected = onDaySelected)
         if (state.filters.isNotEmpty()) {
-            MakFilterRow(
-                filters = state.filters.map { it.id to it.label },
-                selectedId = state.filters.firstOrNull { it.isSelected }?.id.orEmpty(),
-                onSelected = onFilterSelected
-            )
+            var showFilters by remember { mutableStateOf(false) }
+            MakExpandableSection(
+                label = "filtry",
+                expanded = showFilters,
+                onExpandedChange = { showFilters = it }
+            ) {
+                MakSelectField(
+                    label = "Kierunek",
+                    value = state.filters.firstOrNull { it.isSelected }?.label.orEmpty(),
+                    options = state.filters.map { it.label },
+                    onSelected = { label ->
+                        state.filters.firstOrNull { it.label == label }?.id?.let(onFilterSelected)
+                    }
+                )
+            }
         }
+        MakActionMenu(
+            actions = listOf("Zmień A/B" to onEditWeek),
+            modifier = Modifier.fillMaxWidth()
+        )
         MakRowTitle(title = state.selectedDayLabel, meta = state.selectedDayCountLabel)
         if (state.items.isEmpty()) {
             MakEmptyState(state.emptyMessage)
@@ -288,6 +301,7 @@ private fun CalendarView(
     onAddOneOff: () -> Unit,
     onOpenClass: (String) -> Unit
 ) {
+    var showCalendarOptions by remember { mutableStateOf(false) }
     Column {
         Row(
             modifier = Modifier
@@ -320,21 +334,18 @@ private fun CalendarView(
                 }
             }
         }
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(top = 11.dp, bottom = 14.dp),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.SpaceBetween
+        MakExpandableSection(
+            label = "opcje kalendarza",
+            expanded = showCalendarOptions,
+            onExpandedChange = { showCalendarOptions = it },
+            modifier = Modifier.padding(bottom = 14.dp)
         ) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                MakCheckbox(
-                    label = "Pokaż odwołane",
-                    checked = state.showCancelled,
-                    onCheckedChange = onShowCancelledChanged
-                )
-            }
-            MakTextAction(text = "+ Jednorazowe", onClick = onAddOneOff)
+            MakCheckbox(
+                label = "Pokaż odwołane",
+                checked = state.showCancelled,
+                onCheckedChange = onShowCancelledChanged
+            )
+            MakSecondaryAction(text = "Dodaj jednorazowe", onClick = onAddOneOff)
         }
         MakRowTitle(title = state.calendarSelectedDayLabel, meta = state.calendarSelectedDayCountLabel)
         if (state.calendarItems.isEmpty()) {

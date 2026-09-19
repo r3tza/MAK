@@ -9,8 +9,11 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
+import dev.retza.mak.ui.components.MakColorPalette
+import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakScreenContent
@@ -40,7 +43,7 @@ data class SetupWizardUiState(
     val endDate: String = "",
     val firstWeekLabel: String = "A",
     val courseName: String = "",
-    val courseColor: String = "",
+    val courseColor: String = "#137B71",
     val errors: Map<SetupField, FieldErrorUi> = emptyMap(),
     val status: ScreenStatus = ScreenStatus.Ready,
     val canSkipClasses: Boolean = true
@@ -129,25 +132,27 @@ private fun SemesterStep(
         )
         FieldError(state.errors[SetupField.SemesterName])
         Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
-            MakField(
-                label = "Od",
-                value = state.startDate,
-                onValueChange = onStartDateChanged,
-                placeholder = "RRRR-MM-DD",
-                isError = state.errors.containsKey(SetupField.StartDate),
-                modifier = Modifier.weight(1f)
-            )
-            MakField(
-                label = "Do",
-                value = state.endDate,
-                onValueChange = onEndDateChanged,
-                placeholder = "RRRR-MM-DD",
-                isError = state.errors.containsKey(SetupField.EndDate),
-                modifier = Modifier.weight(1f)
-            )
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                MakDatePickerField(
+                    label = "Od",
+                    value = state.startDate,
+                    onValueChange = onStartDateChanged,
+                    maxDate = state.endDate.toLocalDateOrNull(),
+                    isError = state.errors.containsKey(SetupField.StartDate)
+                )
+                FieldError(state.errors[SetupField.StartDate])
+            }
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                MakDatePickerField(
+                    label = "Do",
+                    value = state.endDate,
+                    onValueChange = onEndDateChanged,
+                    minDate = state.startDate.toLocalDateOrNull(),
+                    isError = state.errors.containsKey(SetupField.EndDate)
+                )
+                FieldError(state.errors[SetupField.EndDate])
+            }
         }
-        FieldError(state.errors[SetupField.StartDate])
-        FieldError(state.errors[SetupField.EndDate])
         MakSelectField(
             label = "Pierwszy tydzień",
             value = state.firstWeekLabel,
@@ -160,6 +165,8 @@ private fun SemesterStep(
         }
     }
 }
+
+private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
 
 @Composable
 private fun CourseStep(
@@ -177,11 +184,9 @@ private fun CourseStep(
             isError = state.errors.containsKey(SetupField.CourseName)
         )
         FieldError(state.errors[SetupField.CourseName])
-        MakField(
-            label = "Kolor kierunku, opcjonalnie",
-            value = state.courseColor,
-            onValueChange = onCourseColorChanged,
-            placeholder = "#137b71"
+        MakColorPalette(
+            selectedColor = state.courseColor,
+            onColorSelected = onCourseColorChanged
         )
         MakPrimaryAction(text = "Zapisz kierunek", onClick = onNext)
         MakSecondaryAction(text = "Wstecz", onClick = onBack)

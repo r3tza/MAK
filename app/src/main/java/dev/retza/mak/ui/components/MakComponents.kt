@@ -3,7 +3,7 @@ package dev.retza.mak.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -18,13 +18,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -33,6 +32,7 @@ import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
+import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -47,18 +47,18 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
-import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
@@ -76,15 +76,11 @@ import dev.retza.mak.ui.theme.MakModifiedSoft
 import dev.retza.mak.ui.theme.MakOnce
 import dev.retza.mak.ui.theme.MakOnceSoft
 import dev.retza.mak.ui.theme.MakOrangeMark
-import dev.retza.mak.ui.theme.MakOrangeSoft
 import dev.retza.mak.ui.theme.MakPillNeutral
 import dev.retza.mak.ui.theme.MakPillNeutralBg
 import dev.retza.mak.ui.theme.MakSummaryEnd
 import dev.retza.mak.ui.theme.MakSummaryStart
 import dev.retza.mak.ui.theme.MakTeal
-import dev.retza.mak.ui.theme.MakTealSoft
-import dev.retza.mak.ui.theme.MakTime
-import dev.retza.mak.ui.theme.MakTimeMuted
 
 @Composable
 fun MakScreenContent(
@@ -94,7 +90,7 @@ fun MakScreenContent(
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(start = 20.dp, end = 20.dp, top = 4.dp, bottom = 24.dp),
+            .padding(start = MakSpacing.lg, end = MakSpacing.lg, top = MakSpacing.xs, bottom = MakSpacing.xl),
         content = content
     )
 }
@@ -111,23 +107,23 @@ fun MakSectionHeader(
             text = eyebrow.uppercase(),
             style = MaterialTheme.typography.labelSmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = 3.dp, top = 4.dp, bottom = 8.dp)
+            modifier = Modifier.padding(start = MakSpacing.xs, top = MakSpacing.xs, bottom = MakSpacing.sm)
         )
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(horizontal = 3.dp)
+            modifier = Modifier.padding(horizontal = MakSpacing.xs)
         )
         if (subtitle != null) {
             Text(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = 3.dp, end = 3.dp, top = 6.dp, bottom = 17.dp)
+                modifier = Modifier.padding(start = MakSpacing.xs, end = MakSpacing.xs, top = MakSpacing.sm, bottom = MakSpacing.lg)
             )
         } else {
-            Spacer(modifier = Modifier.height(17.dp))
+            Spacer(modifier = Modifier.height(MakSpacing.lg))
         }
     }
 }
@@ -158,13 +154,20 @@ fun MakIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var focused by remember { mutableStateOf(false) }
     Box(
         modifier = modifier
-            .size(35.dp)
+            .size(48.dp)
             .clip(RoundedCornerShape(12.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(12.dp))
+            .border(
+                2.dp,
+                if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                RoundedCornerShape(12.dp)
+            )
             .background(MaterialTheme.colorScheme.surface)
             .clickable(role = Role.Button, onClick = onClick)
+            .focusable()
+            .onFocusChanged { focused = it.isFocused }
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center
     ) {
@@ -180,13 +183,20 @@ fun MakRoundButton(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
+    var focused by remember { mutableStateOf(false) }
     Box(
         modifier = modifier
-            .size(32.dp)
+            .size(48.dp)
             .clip(RoundedCornerShape(10.dp))
-            .border(1.dp, MaterialTheme.colorScheme.outline, RoundedCornerShape(10.dp))
+            .border(
+                2.dp,
+                if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                RoundedCornerShape(10.dp)
+            )
             .background(MaterialTheme.colorScheme.surface)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .focusable(enabled = enabled)
+            .onFocusChanged { focused = it.isFocused }
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center
     ) {
@@ -210,7 +220,7 @@ fun MakSummaryCard(
             .shadow(11.dp, RoundedCornerShape(22.dp), spotColor = Color(0x332D46A4))
             .clip(RoundedCornerShape(22.dp))
             .background(Brush.linearGradient(listOf(MakSummaryStart, MakSummaryEnd)))
-            .padding(start = 18.dp, end = 18.dp, top = 17.dp, bottom = 15.dp),
+            .padding(start = MakSpacing.lg, end = MakSpacing.lg, top = MakSpacing.lg, bottom = MakSpacing.md),
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -222,7 +232,7 @@ fun MakSummaryCard(
                 style = MaterialTheme.typography.titleMedium,
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = 3.dp)
+                modifier = Modifier.padding(top = MakSpacing.xs)
             )
         }
         Text("✦", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
@@ -280,28 +290,28 @@ fun ClassCard(
         Row(
             modifier = Modifier
                 .weight(1f)
-                .padding(start = 10.dp, end = 14.dp, top = 13.dp, bottom = 13.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp)
+            .padding(start = MakSpacing.sm, end = MakSpacing.lg, top = MakSpacing.md, bottom = MakSpacing.md),
+            horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)
         ) {
             Column(modifier = Modifier.width(48.dp)) {
                 Text(
                     text = item.startTime,
                     fontSize = 13.sp,
                     fontWeight = FontWeight.ExtraBold,
-                    color = if (MaterialTheme.colorScheme.background.luminanceOrInk()) MakTime else MaterialTheme.colorScheme.onSurface,
+                    color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1
                 )
                 Text(
                     text = item.endTime,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MakTimeMuted,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
             }
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(
@@ -323,7 +333,7 @@ fun ClassCard(
                     }
                 }
                 Row(
-                    horizontalArrangement = Arrangement.spacedBy(5.dp),
+                    horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs),
                     verticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -359,9 +369,16 @@ private fun CoursePill(name: String, accent: Color) {
         text = name,
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(if (warm) MakOrangeSoft else MakTealSoft)
+            .background(
+                if (warm) MaterialTheme.colorScheme.tertiaryContainer
+                else MaterialTheme.colorScheme.secondaryContainer
+            )
             .padding(horizontal = 7.dp, vertical = 3.dp),
-        color = if (warm) MaterialTheme.colorScheme.tertiary else MakTeal,
+        color = if (warm) {
+            MaterialTheme.colorScheme.onTertiaryContainer
+        } else {
+            MaterialTheme.colorScheme.onSecondaryContainer
+        },
         fontSize = 10.sp,
         fontWeight = FontWeight.Bold,
         maxLines = 1,
@@ -412,7 +429,7 @@ fun MakEmptyState(message: String, modifier: Modifier = Modifier) {
                     cornerRadius = androidx.compose.ui.geometry.CornerRadius(18.dp.toPx())
                 )
             }
-            .padding(horizontal = 20.dp, vertical = 28.dp),
+            .padding(horizontal = MakSpacing.xl, vertical = MakSpacing.xxl),
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -434,9 +451,9 @@ fun MakStateMessage(
 ) {
     when (status) {
         ScreenStatus.Loading -> Column(
-            modifier = modifier.fillMaxWidth().padding(24.dp),
+            modifier = modifier.fillMaxWidth().padding(MakSpacing.xl),
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
         ) {
             CircularProgressIndicator()
             Text("Ładowanie", style = MaterialTheme.typography.bodyMedium)
@@ -447,8 +464,8 @@ fun MakStateMessage(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(16.dp))
                 .background(MaterialTheme.colorScheme.errorContainer)
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+                .padding(MakSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
         ) {
             Text("Nie udało się wczytać danych", fontWeight = FontWeight.SemiBold)
             Text(status.message, color = MaterialTheme.colorScheme.onErrorContainer)
@@ -472,7 +489,7 @@ fun MakPrimaryAction(
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().height(42.dp),
+        modifier = modifier.fillMaxWidth().heightIn(min = 48.dp),
         enabled = enabled,
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
@@ -496,7 +513,7 @@ fun MakSecondaryAction(
     val content = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     OutlinedButton(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().height(40.dp),
+        modifier = modifier.fillMaxWidth().heightIn(min = 48.dp),
         enabled = enabled,
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.outlinedButtonColors(contentColor = content),
@@ -506,7 +523,7 @@ fun MakSecondaryAction(
         ),
         contentPadding = PaddingValues(horizontal = 12.dp)
     ) {
-        Text(text, fontWeight = FontWeight.Bold, fontSize = 12.sp, maxLines = 1, overflow = TextOverflow.Ellipsis)
+        Text(text, fontWeight = FontWeight.Bold, fontSize = 12.sp, textAlign = TextAlign.Center)
     }
 }
 
@@ -517,7 +534,12 @@ fun MakTextAction(
     modifier: Modifier = Modifier,
     enabled: Boolean = true
 ) {
-    TextButton(onClick = onClick, modifier = modifier, enabled = enabled, contentPadding = PaddingValues(4.dp)) {
+    TextButton(
+        onClick = onClick,
+        modifier = modifier.heightIn(min = 48.dp),
+        enabled = enabled,
+        contentPadding = PaddingValues(4.dp)
+    ) {
         Text(
             text = text,
             color = MaterialTheme.colorScheme.primary,
@@ -590,7 +612,7 @@ private fun ViewSwitchButton(
 ) {
     Box(
         modifier = modifier
-            .height(34.dp)
+            .heightIn(min = 48.dp)
             .shadow(if (selected) 2.dp else 0.dp, RoundedCornerShape(10.dp), spotColor = Color(0x141F325B))
             .clip(RoundedCornerShape(10.dp))
             .background(if (selected) MaterialTheme.colorScheme.surface else Color.Transparent)
@@ -607,46 +629,6 @@ private fun ViewSwitchButton(
     }
 }
 
-@Composable
-fun MakFilterRow(
-    filters: List<Pair<String, String>>,
-    selectedId: String,
-    onSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .horizontalScroll(rememberScrollState())
-            .padding(bottom = 12.dp, top = 2.dp),
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
-    ) {
-        filters.forEach { (id, label) ->
-            val selected = id == selectedId
-            val shape = RoundedCornerShape(50)
-            Box(
-                modifier = Modifier
-                    .clip(shape)
-                    .border(
-                        1.dp,
-                        if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                        shape
-                    )
-                    .background(if (selected) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface)
-                    .clickable(role = Role.Tab, onClick = { onSelected(id) })
-                    .padding(horizontal = 10.dp, vertical = 7.dp)
-                    .semantics { this.selected = selected }
-            ) {
-                Text(
-                    text = label,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
-    }
-}
 
 @Composable
 fun MakNavBar(
@@ -662,6 +644,7 @@ fun MakNavBar(
     Row(
         modifier = modifier
             .fillMaxWidth()
+            .navigationBarsPadding()
             .background(MaterialTheme.colorScheme.surface)
             .drawBehind {
                 drawLine(
@@ -688,12 +671,21 @@ private fun RowScope.MakNavButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var focused by remember { mutableStateOf(false) }
     Column(
         modifier = modifier
             .clip(RoundedCornerShape(12.dp))
+            .border(
+                2.dp,
+                if (focused) MaterialTheme.colorScheme.primary else Color.Transparent,
+                RoundedCornerShape(12.dp)
+            )
             .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
             .clickable(role = Role.Tab, onClick = onClick)
+            .heightIn(min = 48.dp)
             .padding(horizontal = 8.dp, vertical = 4.dp)
+            .focusable()
+            .onFocusChanged { focused = it.isFocused }
             .semantics { this.selected = selected },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
@@ -724,46 +716,64 @@ fun MakField(
     enabled: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default
 ) {
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        FieldLabel(label)
-        val border = when {
-            isError -> MaterialTheme.colorScheme.error
-            else -> MaterialTheme.colorScheme.outlineVariant
-        }
-        val textColor = MaterialTheme.colorScheme.onSurface
-        val shape = RoundedCornerShape(11.dp)
-        BasicTextField(
-            value = value,
-            onValueChange = onValueChange,
-            enabled = enabled,
-            singleLine = singleLine,
-            minLines = if (singleLine) 1 else minLines,
-            keyboardOptions = keyboardOptions,
-            textStyle = TextStyle(
-                fontSize = 13.sp,
-                color = textColor.copy(alpha = if (enabled) 1f else 0.45f),
-                fontFamily = MaterialTheme.typography.bodyMedium.fontFamily
-            ),
-            cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 40.dp)
-                .border(1.dp, border, shape)
-                .background(MaterialTheme.colorScheme.surface, shape)
-                .padding(horizontal = 11.dp, vertical = 9.dp),
-            decorationBox = { inner ->
-                Box(contentAlignment = Alignment.CenterStart) {
-                    if (value.isEmpty() && placeholder != null) {
-                        Text(
-                            placeholder,
-                            fontSize = 13.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                        )
-                    }
-                    inner()
-                }
-            }
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp),
+        enabled = enabled,
+        isError = isError,
+        singleLine = singleLine,
+        minLines = if (singleLine) 1 else minLines,
+        keyboardOptions = keyboardOptions,
+        label = { Text(label) },
+        placeholder = placeholder?.let { { Text(it) } }
+    )
+}
+
+@Composable
+fun MakReadOnlyField(
+    label: String,
+    value: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    isError: Boolean = false
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = {},
+        modifier = modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clickable(role = Role.Button, onClick = onClick),
+        readOnly = true,
+        isError = isError,
+        label = { Text(label) },
+        trailingIcon = { Text("▾", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+    )
+}
+
+@Composable
+fun MakExpandableSection(
+    label: String,
+    expanded: Boolean,
+    onExpandedChange: (Boolean) -> Unit,
+    modifier: Modifier = Modifier,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(modifier = modifier.fillMaxWidth()) {
+        MakSecondaryAction(
+            text = if (expanded) "Ukryj $label" else "Pokaż $label",
+            onClick = { onExpandedChange(!expanded) }
         )
+        if (expanded) {
+            Column(
+                modifier = Modifier.padding(top = 12.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp),
+                content = content
+            )
+        }
     }
 }
 
@@ -777,20 +787,31 @@ fun MakSelectField(
     isError: Boolean = false
 ) {
     var expanded by remember { mutableStateOf(false) }
+    var focused by remember { mutableStateOf(false) }
     Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
         FieldLabel(label)
-        val border = if (isError) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.outlineVariant
+        val border = when {
+            isError -> MaterialTheme.colorScheme.error
+            focused -> MaterialTheme.colorScheme.primary
+            else -> MaterialTheme.colorScheme.outlineVariant
+        }
         val shape = RoundedCornerShape(11.dp)
         Box {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .heightIn(min = 40.dp)
+                    .heightIn(min = 48.dp)
                     .clip(shape)
                     .border(1.dp, border, shape)
                     .background(MaterialTheme.colorScheme.surface)
                     .clickable(role = Role.Button, onClick = { expanded = true })
-                    .padding(horizontal = 11.dp, vertical = 9.dp),
+                    .focusable()
+                    .onFocusChanged { focused = it.isFocused }
+                    .padding(horizontal = 11.dp, vertical = 9.dp)
+                    .semantics {
+                        contentDescription = "$label: ${value.ifBlank { "brak wyboru" }}"
+                        stateDescription = if (expanded) "Rozwinięte" else "Zwinięte"
+                    },
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -841,12 +862,20 @@ fun MakChoiceRow(
     modifier: Modifier = Modifier
 ) {
     val shape = RoundedCornerShape(12.dp)
+    var focused by remember { mutableStateOf(false) }
     Row(
         modifier = modifier
             .fillMaxWidth()
             .clip(shape)
-            .border(1.dp, MaterialTheme.colorScheme.outline, shape)
+            .border(
+                2.dp,
+                if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                shape
+            )
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
+            .heightIn(min = 48.dp)
+            .focusable()
+            .onFocusChanged { focused = it.isFocused }
             .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -881,8 +910,16 @@ fun MakCheckbox(
     onCheckedChange: (Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var focused by remember { mutableStateOf(false) }
     Row(
-        modifier = modifier.clickable(role = Role.Checkbox, onClick = { onCheckedChange(!checked) }),
+        modifier = modifier
+            .heightIn(min = 48.dp)
+            .clickable(role = Role.Checkbox, onClick = { onCheckedChange(!checked) })
+            .focusable()
+            .onFocusChanged { focused = it.isFocused }
+            .semantics {
+                stateDescription = if (checked) "Zaznaczone" else "Niezaznaczone"
+            },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(6.dp)
     ) {
@@ -893,7 +930,7 @@ fun MakCheckbox(
                 .clip(shape)
                 .border(
                     1.dp,
-                    if (checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                    if (focused || checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                     shape
                 )
                 .background(if (checked) MaterialTheme.colorScheme.primary else Color.Transparent),

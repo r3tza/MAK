@@ -8,10 +8,18 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import java.time.LocalDate
 import dev.retza.mak.ui.components.MakDialog
+import dev.retza.mak.ui.components.MakActionMenu
+import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakFactRow
+import dev.retza.mak.ui.components.MakExpandableSection
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakPrimaryAction
@@ -19,6 +27,7 @@ import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakTag
+import dev.retza.mak.ui.components.MakTimePickerField
 
 @Composable
 fun OccurrenceDetailsScreen(
@@ -41,6 +50,8 @@ fun OccurrenceDetailsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showChangeForm by remember { mutableStateOf(false) }
+    var showNoteForm by remember { mutableStateOf(false) }
     MakScreenContent(
         modifier = modifier.verticalScroll(rememberScrollState())
     ) {
@@ -51,29 +62,50 @@ fun OccurrenceDetailsScreen(
         )
         StatusTag(state)
         Facts(state)
-        OccurrenceForm(
-            state = state,
-            onTargetDateDraftChanged = onTargetDateDraftChanged,
-            onStartTimeDraftChanged = onStartTimeDraftChanged,
-            onEndTimeDraftChanged = onEndTimeDraftChanged,
-            onRoomDraftChanged = onRoomDraftChanged,
-            onCancelOccurrence = onCancelOccurrence,
-            onChangeOccurrence = onChangeOccurrence,
-            onMoveOccurrence = onMoveOccurrence,
-            onRestoreOccurrence = onRestoreOccurrence,
-            onBack = onBack
+        if (state.canRestoreOccurrence) {
+            MakPrimaryAction(text = "Przywróć termin", onClick = onRestoreOccurrence)
+        } else if (state.canChangeOccurrence || state.canMoveOccurrence) {
+            MakPrimaryAction(
+                text = "Zmień termin",
+                onClick = { showChangeForm = true }
+            )
+        }
+        MakExpandableSection(
+            label = "zmiana terminu",
+            expanded = showChangeForm,
+            onExpandedChange = { showChangeForm = it }
+        ) {
+            OccurrenceForm(
+                state = state,
+                onTargetDateDraftChanged = onTargetDateDraftChanged,
+                onStartTimeDraftChanged = onStartTimeDraftChanged,
+                onEndTimeDraftChanged = onEndTimeDraftChanged,
+                onRoomDraftChanged = onRoomDraftChanged,
+                onChangeOccurrence = onChangeOccurrence,
+                onMoveOccurrence = onMoveOccurrence
+            )
+        }
+        MakExpandableSection(
+            label = "notatkę",
+            expanded = showNoteForm,
+            onExpandedChange = { showNoteForm = it }
+        ) {
+            NotesBlock(
+                state = state,
+                onOccurrenceNoteDraftChanged = onOccurrenceNoteDraftChanged,
+                onSaveOccurrenceNote = onSaveOccurrenceNote,
+                onDeleteOccurrenceNote = onDeleteOccurrenceNote
+            )
+        }
+        MakActionMenu(
+            actions = listOfNotNull(
+                if (state.canCancelOccurrence) "Odwołaj termin" to onCancelOccurrence else null,
+                if (state.canEditBaseClass) "Edytuj bazowe zajęcia" to onEditBaseClass else null,
+                if (state.canDeleteBaseClass) "Usuń zajęcia" to onRequestDeleteBaseClass else null
+            ),
+            modifier = Modifier.fillMaxWidth()
         )
-        NotesBlock(
-            state = state,
-            onOccurrenceNoteDraftChanged = onOccurrenceNoteDraftChanged,
-            onSaveOccurrenceNote = onSaveOccurrenceNote,
-            onDeleteOccurrenceNote = onDeleteOccurrenceNote
-        )
-        BaseClassActions(
-            state = state,
-            onEditBaseClass = onEditBaseClass,
-            onRequestDeleteBaseClass = onRequestDeleteBaseClass
-        )
+        MakSecondaryAction(text = "Zamknij", onClick = onBack)
     }
 
     if (state.showDeleteConfirmation) {
@@ -84,7 +116,12 @@ fun OccurrenceDetailsScreen(
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
                 MakSecondaryAction(text = "Anuluj", onClick = onDismissDeleteConfirmation, modifier = Modifier.weight(1f))
-                MakPrimaryAction(text = "Usuń zajęcia", onClick = onDeleteBaseClass, modifier = Modifier.weight(1f))
+                MakSecondaryAction(
+                    text = "Usuń zajęcia",
+                    onClick = onDeleteBaseClass,
+                    modifier = Modifier.weight(1f),
+                    destructive = true
+                )
             }
         }
     }
@@ -131,11 +168,8 @@ private fun OccurrenceForm(
     onStartTimeDraftChanged: (String) -> Unit,
     onEndTimeDraftChanged: (String) -> Unit,
     onRoomDraftChanged: (String) -> Unit,
-    onCancelOccurrence: () -> Unit,
     onChangeOccurrence: () -> Unit,
-    onMoveOccurrence: () -> Unit,
-    onRestoreOccurrence: () -> Unit,
-    onBack: () -> Unit
+    onMoveOccurrence: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -144,22 +178,23 @@ private fun OccurrenceForm(
         verticalArrangement = Arrangement.spacedBy(12.dp)
     ) {
         if (state.canChangeOccurrence || state.canMoveOccurrence) {
-            MakField(
+            MakDatePickerField(
                 label = "Data",
                 value = state.targetDateDraft,
                 onValueChange = onTargetDateDraftChanged,
-                placeholder = "RRRR-MM-DD",
+                minDate = state.semesterStartDate?.toLocalDateOrNull(),
+                maxDate = state.semesterEndDate?.toLocalDateOrNull(),
                 enabled = state.canMoveOccurrence || state.canChangeOccurrence
             )
             Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
-                MakField(
+                MakTimePickerField(
                     label = "Od",
                     value = state.startTimeDraft,
                     onValueChange = onStartTimeDraftChanged,
                     modifier = Modifier.weight(1f),
                     enabled = state.canChangeOccurrence
                 )
-                MakField(
+                MakTimePickerField(
                     label = "Do",
                     value = state.endTimeDraft,
                     onValueChange = onEndTimeDraftChanged,
@@ -173,20 +208,6 @@ private fun OccurrenceForm(
                 onValueChange = onRoomDraftChanged,
                 enabled = state.canChangeOccurrence
             )
-        }
-        if (state.canRestoreOccurrence) {
-            MakPrimaryAction(text = "Przywróć termin", onClick = onRestoreOccurrence)
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(8.dp), modifier = Modifier.fillMaxWidth()) {
-            if (state.canCancelOccurrence) {
-                MakSecondaryAction(
-                    text = "Odwołaj termin",
-                    onClick = onCancelOccurrence,
-                    modifier = Modifier.weight(1f),
-                    destructive = true
-                )
-            }
-            MakSecondaryAction(text = "Zamknij", onClick = onBack, modifier = Modifier.weight(1f))
         }
         if (state.canChangeOccurrence) {
             MakPrimaryAction(text = "Zapisz zmianę", onClick = onChangeOccurrence)
@@ -242,22 +263,4 @@ private fun NotesBlock(
     }
 }
 
-@Composable
-private fun BaseClassActions(
-    state: OccurrenceDetailsUiState,
-    onEditBaseClass: () -> Unit,
-    onRequestDeleteBaseClass: () -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
-        if (state.canEditBaseClass) {
-            MakSecondaryAction(text = "Edytuj bazowe zajęcia", onClick = onEditBaseClass)
-        }
-        if (state.canDeleteBaseClass) {
-            MakSecondaryAction(
-                text = "Usuń zajęcia",
-                onClick = onRequestDeleteBaseClass,
-                destructive = true
-            )
-        }
-    }
-}
+private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
