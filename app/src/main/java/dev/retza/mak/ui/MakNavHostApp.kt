@@ -12,6 +12,9 @@ import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
@@ -141,7 +144,7 @@ fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
                     if (showBack) {
                         MakIconButton(
                             label = "Wstecz",
-                            symbol = "‹",
+                            icon = Icons.AutoMirrored.Outlined.ArrowBack,
                             onClick = ::navigateBack,
                             modifier = Modifier.padding(start = 4.dp)
                         )
@@ -151,7 +154,7 @@ fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
                     if (!state.requiresSetup && isRoot) {
                         MakIconButton(
                             label = "Ustawienia i motyw",
-                            symbol = "⚙",
+                            icon = Icons.Outlined.Settings,
                             onClick = {
                                 openChild(MakDestination.Settings, MakRoutes.Settings)
                             },

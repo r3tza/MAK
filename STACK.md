@@ -12,7 +12,7 @@
 - Kotlin 2.2.10.
 - Android, `minSdk` 31, `targetSdk` 36 i `compileSdk` 36.1.
 - Android Gradle Plugin 9.1.1 i Gradle 9.3.1.
-- Compose BOM 2024.09.00, Room 2.8.5, Lifecycle 2.10.0, Navigation 2.9.5, KSP 2.3.12 i Glance 1.2.0.
+- Compose BOM 2024.09.00, Material Icons Extended, Room 2.8.5, Lifecycle 2.10.0, Navigation 2.9.5, KSP 2.3.12 i Glance 1.2.0.
 
 ## 3. Warstwa aplikacji
 

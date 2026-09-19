@@ -1,6 +1,7 @@
 package dev.retza.mak.ui.components
 
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.material3.Text
@@ -85,6 +86,39 @@ class MakFormControlsTest {
         composeTestRule.onNodeWithText("Anuluj").performClick()
         composeTestRule.onNodeWithContentDescription("Więcej opcji").performClick()
         composeTestRule.onNodeWithText("Usuń").assertIsDisplayed()
+    }
+
+    @Test
+    fun dateAndTimePickersConfirmThroughExplicitAccessibleActions() {
+        var date by mutableStateOf("2026-09-19")
+        var time by mutableStateOf("09:30")
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Column(modifier = Modifier.width(390.dp)) {
+                    MakDatePickerField(
+                        label = "Data",
+                        value = date,
+                        onValueChange = { date = it },
+                        minDate = java.time.LocalDate.of(2026, 9, 1),
+                        maxDate = java.time.LocalDate.of(2026, 9, 30)
+                    )
+                    MakTimePickerField(
+                        label = "Godzina",
+                        value = time,
+                        onValueChange = { time = it }
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithContentDescription("Wybierz datę").performClick()
+        composeTestRule.onNodeWithText("Wybierz").performClick()
+        composeTestRule.onNodeWithContentDescription("Wybierz godzinę").performClick()
+        composeTestRule.onNodeWithText("Wybierz").performClick()
+
+        assertEquals("2026-09-19", date)
+        assertEquals("09:30", time)
     }
 
     @Test

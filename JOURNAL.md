@@ -132,3 +132,11 @@
 - Problem do rozwiązania: Przeprowadzić audyt własnych komponentów Compose pod kątem obszarów dotyku co najmniej 48 dp, semantyki, focusu, klawiatury, kontrastu, motywu ciemnego i szerokości 320 dp. Wynik ma trafić do kolejnych zmian UI i testów Compose.
 - Powód: Mockup opisuje wygląd i interakcję, ale nie może usuwać standardowych wymagań platformy.
 - Wznowić decyzję tylko gdy: zmieni się zaakceptowany mockup, wersja Material 3 albo wymagania dostępności Androida.
+
+## 2026-09-19 — Ikony Material w akcjach interfejsu
+
+- Fakt: Akcje nawigacyjne i lokalne używały znaków Unicode, które różnią się wyglądem między fontami i mają słabszą przewidywalność dla użytkownika.
+- Decyzja: Używać Material Icons Extended dla wstecz, ustawień, kalendarza, czasu, menu, nawigacji i dodawania.
+- Powód: Ikony mają spójny optyczny rozmiar, wspierają kierunek RTL i mogą być dekoracyjne przy zachowaniu etykiety akcji w semantyce.
+- Odrzucone: Zastępowanie ikon kolejnymi znakami Unicode.
+- Wznowić decyzję tylko gdy: Material 3 zmieni zalecany pakiet ikon albo aplikacja otrzyma własny zestaw ikon.

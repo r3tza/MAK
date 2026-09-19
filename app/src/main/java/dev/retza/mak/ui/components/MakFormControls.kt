@@ -19,6 +19,7 @@ import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.SelectableDates
@@ -33,6 +34,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.AccessTime
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.focus.FocusRequester
@@ -121,12 +126,10 @@ fun MakDatePickerField(
                 },
                 enabled = enabled
             ) {
-                Text(
-                    text = "▣",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.semantics {
-                        contentDescription = "Wybierz datę"
-                    }
+                Icon(
+                    imageVector = Icons.Outlined.Event,
+                    contentDescription = "Wybierz datę",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -217,12 +220,10 @@ fun MakTimePickerField(
                 },
                 enabled = enabled
             ) {
-                Text(
-                    text = "◷",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    modifier = Modifier.semantics {
-                        contentDescription = "Wybierz godzinę"
-                    }
+                Icon(
+                    imageVector = Icons.Outlined.AccessTime,
+                    contentDescription = "Wybierz godzinę",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -366,7 +367,7 @@ fun MakActionMenu(
     Box(modifier = modifier) {
         MakIconButton(
             label = "Więcej opcji",
-            symbol = "⋮",
+            icon = Icons.Outlined.MoreVert,
             onClick = { expanded = true }
         )
         androidx.compose.material3.DropdownMenu(

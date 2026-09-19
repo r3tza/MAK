@@ -16,6 +16,9 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowBack
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -197,12 +200,12 @@ private fun ListView(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            MakRoundButton("Poprzedni tydzień", "‹", onPreviousWeek)
+            MakRoundButton("Poprzedni tydzień", Icons.AutoMirrored.Outlined.ArrowBack, onPreviousWeek)
             Column(horizontalAlignment = Alignment.CenterHorizontally, modifier = Modifier.weight(1f)) {
                 Text(state.weekRangeLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
                 Text(state.weekSubtitle, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
             }
-            MakRoundButton("Następny tydzień", "›", onNextWeek)
+            MakRoundButton("Następny tydzień", Icons.AutoMirrored.Outlined.ArrowForward, onNextWeek)
         }
         MakNoteBanner(
             title = state.weekTypeLabel,
@@ -311,9 +314,9 @@ private fun CalendarView(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            MakRoundButton("Poprzedni miesiąc", "‹", onPreviousMonth)
+            MakRoundButton("Poprzedni miesiąc", Icons.AutoMirrored.Outlined.ArrowBack, onPreviousMonth)
             Text(state.calendarMonthLabel, fontWeight = FontWeight.Bold, fontSize = 14.sp)
-            MakRoundButton("Następny miesiąc", "›", onNextMonth)
+            MakRoundButton("Następny miesiąc", Icons.AutoMirrored.Outlined.ArrowForward, onNextMonth)
         }
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
             listOf("Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd").forEach { label ->

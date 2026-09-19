@@ -35,6 +35,14 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.ArrowBack
+import androidx.compose.material.icons.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.MoreVert
+import androidx.compose.material.icons.outlined.Today
+import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,10 +59,12 @@ import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.stateDescription
@@ -176,6 +186,38 @@ fun MakIconButton(
 }
 
 @Composable
+fun MakIconButton(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    var focused by remember { mutableStateOf(false) }
+    Box(
+        modifier = modifier
+            .size(48.dp)
+            .clip(RoundedCornerShape(12.dp))
+            .border(
+                2.dp,
+                if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                RoundedCornerShape(12.dp)
+            )
+            .background(MaterialTheme.colorScheme.surface)
+            .clickable(role = Role.Button, onClick = onClick)
+            .focusable()
+            .onFocusChanged { focused = it.isFocused }
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurface
+        )
+    }
+}
+
+@Composable
 fun MakRoundButton(
     label: String,
     symbol: String,
@@ -204,6 +246,39 @@ fun MakRoundButton(
             text = symbol,
             fontSize = 19.sp,
             color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.35f)
+        )
+    }
+}
+
+@Composable
+fun MakRoundButton(
+    label: String,
+    icon: ImageVector,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true
+) {
+    var focused by remember { mutableStateOf(false) }
+    Box(
+        modifier = modifier
+            .size(48.dp)
+            .clip(RoundedCornerShape(10.dp))
+            .border(
+                2.dp,
+                if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                RoundedCornerShape(10.dp)
+            )
+            .background(MaterialTheme.colorScheme.surface)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .focusable(enabled = enabled)
+            .onFocusChanged { focused = it.isFocused }
+            .semantics { contentDescription = label },
+        contentAlignment = Alignment.Center
+    ) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.35f)
         )
     }
 }
@@ -657,16 +732,16 @@ fun MakNavBar(
             .padding(start = 14.dp, end = 14.dp, top = 8.dp, bottom = 11.dp),
         horizontalArrangement = Arrangement.spacedBy(4.dp)
     ) {
-        MakNavButton("Dzisiaj", "▦", todaySelected, onToday, Modifier.weight(1f))
-        MakNavButton("Plan", "▤", planSelected, onPlan, Modifier.weight(1f))
-        MakNavButton("Dodaj", "＋", addSelected, onAdd, Modifier.weight(1f))
+        MakNavButton("Dzisiaj", Icons.Outlined.Today, todaySelected, onToday, Modifier.weight(1f))
+        MakNavButton("Plan", Icons.Outlined.CalendarMonth, planSelected, onPlan, Modifier.weight(1f))
+        MakNavButton("Dodaj", Icons.Outlined.Add, addSelected, onAdd, Modifier.weight(1f))
     }
 }
 
 @Composable
 private fun RowScope.MakNavButton(
     label: String,
-    symbol: String,
+    icon: ImageVector,
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -689,10 +764,10 @@ private fun RowScope.MakNavButton(
             .semantics { this.selected = selected },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            symbol,
-            fontSize = 20.sp,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             label,
@@ -957,8 +1032,9 @@ fun MakDialog(
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(22.dp))
                 .background(MaterialTheme.colorScheme.surface)
-                .padding(22.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+                .padding(MakSpacing.xl)
+                .semantics { paneTitle = title },
+            verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
         ) {
             Text(title, style = MaterialTheme.typography.titleLarge, fontSize = 20.sp)
             if (description != null) {
