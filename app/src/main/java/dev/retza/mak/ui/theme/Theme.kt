@@ -1,58 +1,108 @@
 package dev.retza.mak.ui.theme
 
 import android.app.Activity
-import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Shapes
 import androidx.compose.material3.darkColorScheme
-import androidx.compose.material3.dynamicDarkColorScheme
-import androidx.compose.material3.dynamicLightColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.platform.LocalContext
-
-private val DarkColorScheme = darkColorScheme(
-    primary = Purple80,
-    secondary = PurpleGrey80,
-    tertiary = Pink80
-)
+import androidx.compose.runtime.SideEffect
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
+import androidx.compose.ui.unit.dp
+import androidx.core.view.WindowCompat
 
 private val LightColorScheme = lightColorScheme(
-    primary = Purple40,
-    secondary = PurpleGrey40,
-    tertiary = Pink40
-
-    /* Other default colors to override
-    background = Color(0xFFFFFBFE),
-    surface = Color(0xFFFFFBFE),
+    primary = MakAccent,
     onPrimary = Color.White,
+    primaryContainer = MakAccentSoft,
+    onPrimaryContainer = MakAccent,
+    secondary = MakTeal,
     onSecondary = Color.White,
+    secondaryContainer = MakTealSoft,
+    onSecondaryContainer = MakTeal,
+    tertiary = MakOrange,
     onTertiary = Color.White,
-    onBackground = Color(0xFF1C1B1F),
-    onSurface = Color(0xFF1C1B1F),
-    */
+    tertiaryContainer = MakOrangeSoft,
+    onTertiaryContainer = MakOrange,
+    error = MakRed,
+    onError = Color.White,
+    errorContainer = MakRedSoft,
+    onErrorContainer = MakRed,
+    background = MakPaper,
+    onBackground = MakInk,
+    surface = MakPaper,
+    onSurface = MakInk,
+    surfaceVariant = MakSoft,
+    onSurfaceVariant = MakMuted,
+    outline = MakLine,
+    outlineVariant = MakFieldBorder,
+    surfaceContainerLowest = MakPaper,
+    surfaceContainerLow = MakSoft,
+    surfaceContainer = MakSoft,
+    surfaceContainerHigh = MakAccentSoft
+)
+
+private val DarkColorScheme = darkColorScheme(
+    primary = MakAccentDark,
+    onPrimary = MakBackgroundDark,
+    primaryContainer = MakAccentSoftDark,
+    onPrimaryContainer = MakAccentDark,
+    secondary = MakTealDark,
+    onSecondary = MakBackgroundDark,
+    secondaryContainer = MakTealSoftDark,
+    onSecondaryContainer = MakTealDark,
+    tertiary = MakOrangeDark,
+    onTertiary = MakBackgroundDark,
+    tertiaryContainer = MakOrangeSoftDark,
+    onTertiaryContainer = MakOrangeDark,
+    error = Color(0xFFE8A0A4),
+    onError = MakBackgroundDark,
+    errorContainer = Color(0xFF5A2A30),
+    onErrorContainer = Color(0xFFF3C4C7),
+    background = MakBackgroundDark,
+    onBackground = MakInkDark,
+    surface = MakPaperDark,
+    onSurface = MakInkDark,
+    surfaceVariant = MakSoftDark,
+    onSurfaceVariant = MakMutedDark,
+    outline = MakLineDark,
+    outlineVariant = MakLineDark,
+    surfaceContainerLowest = MakPaperDark,
+    surfaceContainerLow = MakSoftDark,
+    surfaceContainer = MakSoftDark,
+    surfaceContainerHigh = MakAccentSoftDark
+)
+
+private val MakShapes = Shapes(
+    extraSmall = RoundedCornerShape(8.dp),
+    small = RoundedCornerShape(10.dp),
+    medium = RoundedCornerShape(12.dp),
+    large = RoundedCornerShape(16.dp),
+    extraLarge = RoundedCornerShape(22.dp)
 )
 
 @Composable
 fun MAKTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    // Dynamic color is available on Android 12+
-    dynamicColor: Boolean = true,
+    @Suppress("UNUSED_PARAMETER") dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
-    val colorScheme = when {
-        dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
-            val context = LocalContext.current
-            if (darkTheme) dynamicDarkColorScheme(context) else dynamicLightColorScheme(context)
+    val view = LocalView.current
+    if (!view.isInEditMode) {
+        SideEffect {
+            val window = (view.context as? Activity)?.window ?: return@SideEffect
+            val controller = WindowCompat.getInsetsController(window, view)
+            controller.isAppearanceLightStatusBars = !darkTheme
+            controller.isAppearanceLightNavigationBars = !darkTheme
         }
-
-        darkTheme -> DarkColorScheme
-        else -> LightColorScheme
     }
-
     MaterialTheme(
-        colorScheme = colorScheme,
+        colorScheme = if (darkTheme) DarkColorScheme else LightColorScheme,
         typography = Typography,
+        shapes = MakShapes,
         content = content
     )
 }

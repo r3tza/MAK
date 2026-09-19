@@ -1,0 +1,70 @@
+package dev.retza.mak.ui.components
+
+import androidx.compose.runtime.Immutable
+
+@Immutable
+data class ClassItemUi(
+    val id: String,
+    val name: String,
+    val type: String,
+    val courseName: String,
+    val courseColor: String? = null,
+    val startTime: String,
+    val endTime: String,
+    val room: String? = null,
+    val teacherName: String? = null,
+    val weekLabel: String? = null,
+    val note: String? = null,
+    val statusBadge: String? = null,
+    val isCancelled: Boolean = false,
+    val isModified: Boolean = false,
+    val isOneOff: Boolean = false,
+    val hasConflict: Boolean = false
+)
+
+@Immutable
+data class SemesterUi(
+    val id: String,
+    val name: String,
+    val dateRangeLabel: String,
+    val firstWeekLabel: String,
+    val courseCountLabel: String,
+    val classCountLabel: String,
+    val isActive: Boolean = false
+)
+
+@Immutable
+data class CalendarDayUi(
+    val id: String,
+    val dayLabel: String,
+    val accessibilityLabel: String,
+    val isInCurrentMonth: Boolean = true,
+    val isToday: Boolean = false,
+    val isSelected: Boolean = false,
+    val markers: List<CalendarMarkerUi> = emptyList()
+)
+
+@Immutable
+data class CalendarMarkerUi(
+    val id: String,
+    val contentDescription: String,
+    val colorToken: CalendarMarkerColor = CalendarMarkerColor.Primary
+)
+
+enum class CalendarMarkerColor {
+    Primary,
+    Secondary,
+    Warning,
+    Error
+}
+
+@Immutable
+data class FieldErrorUi(
+    val message: String
+)
+
+sealed interface ScreenStatus {
+    data object Ready : ScreenStatus
+    data object Loading : ScreenStatus
+    data class Error(val message: String) : ScreenStatus
+}

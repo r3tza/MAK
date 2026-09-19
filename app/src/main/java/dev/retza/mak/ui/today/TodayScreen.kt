@@ -1,0 +1,73 @@
+package dev.retza.mak.ui.today
+
+import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import dev.retza.mak.ui.components.ClassCard
+import dev.retza.mak.ui.components.ClassItemUi
+import dev.retza.mak.ui.components.MakRowTitle
+import dev.retza.mak.ui.components.MakScreenContent
+import dev.retza.mak.ui.components.MakSectionHeader
+import dev.retza.mak.ui.components.MakStateMessage
+import dev.retza.mak.ui.components.MakSummaryCard
+import dev.retza.mak.ui.components.ScreenStatus
+
+data class TodayUiState(
+    val dateLabel: String,
+    val semesterLabel: String,
+    val weekLabel: String,
+    val summaryLabel: String,
+    val items: List<ClassItemUi> = emptyList(),
+    val status: ScreenStatus = ScreenStatus.Ready,
+    val emptyTitle: String = "Brak zajęć",
+    val emptyMessage: String = "Nie masz dziś zajęć.",
+    val showPlanAction: Boolean = true
+)
+
+@Composable
+fun TodayScreen(
+    state: TodayUiState,
+    onOpenPlan: () -> Unit,
+    onOpenClass: (String) -> Unit,
+    onRetry: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
+        MakSectionHeader(
+            eyebrow = "Dzisiaj",
+            title = state.dateLabel,
+            subtitle = listOfNotNull(
+                state.weekLabel.takeIf { it.isNotBlank() },
+                state.semesterLabel.takeIf { it.isNotBlank() }
+            ).joinToString(", ").ifBlank { null }
+        )
+        MakSummaryCard(
+            caption = "Twój plan na dziś",
+            value = state.summaryLabel,
+            modifier = Modifier.padding(bottom = 23.dp)
+        )
+        MakRowTitle(title = "Zajęcia", meta = "Od najwcześniejszego")
+        when (state.status) {
+            ScreenStatus.Ready -> if (state.items.isEmpty()) {
+                MakStateMessage(
+                    status = state.status,
+                    emptyTitle = state.emptyTitle,
+                    emptyMessage = state.emptyMessage
+                )
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(11.dp)) {
+                    state.items.forEach { item ->
+                        ClassCard(item = item, onClick = { onOpenClass(item.id) })
+                    }
+                }
+            }
+
+            else -> MakStateMessage(status = state.status, onRetry = onRetry)
+        }
+    }
+}
