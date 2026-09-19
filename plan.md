@@ -268,7 +268,7 @@ Zmiany wystąpień są stosowane po rozwinięciu planu cyklicznego i przed wykry
 
 ## 12. Kolizje
 
-Kolizja występuje, gdy dwa aktywne zajęcia tego samego dnia mają przedziały czasu, które się nakładają. Przedziały stykające się końcem i początkiem, np. 10:00–11:00 oraz 11:00–12:00, nie są kolizją.
+Kolizja występuje, gdy dwa aktywne zajęcia tego samego dnia mają przedziały czasu, które się nakładają. Dotyczy to także zajęć z dwóch różnych kierunków. Przedziały stykające się końcem i początkiem, np. 10:00–11:00 oraz 11:00–12:00, nie są kolizją.
 
 Przykład:
 
@@ -279,7 +279,7 @@ Matematyka     11:00–12:30
 
 Wynik: kolizja trwająca 30 minut.
 
-Kolizję należy oznaczyć czerwonym symbolem przy obu zajęciach i pokazać jej czas trwania po wejściu w szczegóły. Aplikacja wykrywa problem, ale nie próbuje go automatycznie rozwiązywać.
+Kolizję należy oznaczyć przy obu zajęciach i pokazać jej czas trwania po wejściu w szczegóły. Jest to ostrzeżenie i informacja o ograniczeniu planu, a nie komunikat o winie użytkownika. Aplikacja nie proponuje zmiany terminu, nie wybiera rozwiązania za użytkownika i nie modyfikuje planu automatycznie. Użytkownik sam decyduje, czy skontaktować się z uczelnią, opuścić jedno z zajęć albo ręcznie zapisać zmianę wystąpienia.
 
 ## 13. Widget
 

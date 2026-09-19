@@ -156,3 +156,11 @@
 - Powód: Ułatwia to ręczny podgląd interfejsu bez tworzenia danych krok po kroku, jednocześnie chroniąc dane użytkownika.
 - Odrzucone: Nadpisywanie bazy przy każdym uruchomieniu oraz dodawanie przykładowych danych do wydania produkcyjnego.
 - Wznowić decyzję tylko gdy: pojawi się osobny tryb demonstracyjny albo ekran ręcznego usuwania danych przykładowych.
+
+## 2026-09-19 — Kolizja jako ostrzeżenie, nie błąd użytkownika
+
+- Fakt: Zajęcia z dwóch kierunków mogą zgodnie z rzeczywistym planem nakładać się godzinami.
+- Decyzja: Traktować kolizję jako neutralną informację o ograniczeniu planu. Aplikacja wskazuje zajęcia i zakres nakładania, ale nie proponuje zmiany terminu ani nie zmienia go automatycznie.
+- Powód: Kolizja wynika z planu uczelni, a nie z błędnego działania użytkownika. To użytkownik decyduje, jakie działanie podjąć.
+- Odrzucone: Automatyczne rozwiązywanie kolizji, sugerowanie jednego terminu jako właściwego oraz komunikaty obciążające użytkownika.
+- Wznowić decyzję tylko gdy: pojawi się osobna, wyraźnie uruchamiana funkcja wsparcia w kontakcie z uczelnią.

@@ -34,7 +34,7 @@ Główne pojęcia:
 - **zmiana wystąpienia** — odwołanie, przeniesienie lub zmiana danych jednego konkretnego terminu zajęć cyklicznych;
 - **zajęcia jednorazowe** — dodatkowy wpis obowiązujący tylko w jednej dacie, używany między innymi do odrabiania zajęć;
 - **plan aktywny** — zestaw zajęć obowiązujących dla wskazanej daty po zastosowaniu semestru, tygodnia A/B, zmian wystąpień i zajęć jednorazowych;
-- **kolizja** — nakładanie się godzin dwóch aktywnych zajęć tego samego dnia.
+- **kolizja** — nakładanie się godzin dwóch aktywnych zajęć tego samego dnia, także zajęć należących do różnych kierunków.
 
 Nazwy „kierunek”, „zajęcia”, „semestr”, „aktywny semestr”, „tydzień A/B”, „korekta tygodnia”, „notatka do zajęć”, „notatka do wystąpienia”, „zmiana wystąpienia”, „zajęcia jednorazowe”, „plan aktywny” i „kolizja” mają stałe znaczenie w dokumentacji oraz interfejsie.
 
@@ -67,6 +67,10 @@ Dokumentacja i testy interfejsu muszą obejmować szerokości 320–390 px, obs�
 ### Uczciwość wobec stanu systemu
 
 Interfejs nie pokazuje akcji, która zakończy się przewidywalnym błędem. Data, oznaczenie tygodnia A/B, źródło ręcznej korekty i kolizje mają być jawne i jednoznaczne.
+
+### Kolizja nie jest winą użytkownika
+
+Kolizja godzin jest informacją o tym, że zajęcia z dwóch kierunków nakładają się w planie. Nie jest błędem użytkownika ani sugestią, że powinien zmienić własne dane. Aplikacja ma ostrzec, wskazać zajęcia i pokazać zakres nakładania, ale nie proponuje zmiany terminu i nie zmienia go automatycznie. Decyzja o kontakcie z uczelnią, opuszczeniu zajęć albo ręcznym przeniesieniu terminu należy do użytkownika.
 
 ### Konfiguracja początkowa
 
