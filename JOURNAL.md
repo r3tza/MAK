@@ -1,5 +1,35 @@
 # MAK — dziennik decyzji
 
+## 2026-09-19: Prefiks docs
+
+- Decyzja: Dozwolony jest także prefiks `docs:` dla commitów dotyczących dokumentacji.
+- Wznowić decyzję tylko gdy: użytkownik zmieni konwencję commitów.
+
+## 2026-09-19: Autonomiczne commity po zakończeniu zadań
+
+- Decyzja: Po zakończeniu zadania agent może samodzielnie utworzyć commit obejmujący jego logiczną zmianę. Wypychanie zmian, tworzenie gałęzi i zmiana historii nadal wymagają wyraźnego polecenia użytkownika.
+- Wznowić decyzję tylko gdy: użytkownik zmieni zakres autonomii dotyczącej Git.
+
+## 2026-09-19: Prefiksy commitów
+
+- Decyzja: W tematach commitów można używać prefiksów `feat:`, `fix:` i `chore:`. Temat nadal ma być krótki, konkretny i napisany w trybie rozkazującym.
+- Wznowić decyzję tylko gdy: użytkownik zmieni konwencję commitów.
+
+## 2026-09-19: Zasada prostego stylu bez AI-slop
+
+- Fakty: Użytkownik chce, aby nowe teksty nie używały środkowej kropki, em dash, emotek ani innych ozdobników mocno kojarzonych z AI-slop.
+- Decyzja: Zakaz obowiązuje nowe dokumenty, teksty interfejsu i odpowiedzi. Należy używać zwykłej interpunkcji oraz konkretnych sformułowań.
+- Powód: Prosty styl ma ograniczyć sztuczne sygnały tekstu generowanego automatycznie i ułatwić czytanie.
+- Wznowić decyzję tylko gdy: użytkownik świadomie zaakceptuje wyjątek dla konkretnego formatu lub elementu interfejsu.
+
+## 2026-09-19 — Izolowane semestry, kreator i powiadomienia
+
+- Fakty: Użytkownik zdecydował, że zajęcia nie mogą przechodzić przez północ, pierwsza konfiguracja ma przebiegać przez kreator, a aplikacja ma obsługiwać wiele odizolowanych semestrów wybieranych w ustawieniach. Użytkownik potwierdził także obsługę powiadomień, ale nie określił jeszcze ich treści.
+- Decyzja: Formularz odrzuca zajęcia, których godzina zakończenia nie jest późniejsza od rozpoczęcia w tym samym dniu. Kreator tworzy pierwszy semestr i kierunek. Każdy semestr ma własne kierunki, prowadzących, zajęcia, korekty, notatki i zmiany wystąpień. Ustawienia umożliwiają dodawanie, konfigurację, wybór i usuwanie semestrów. Powiadomienia są częścią zakresu aplikacji, a ich zdarzenia, treści i moment wysyłki pozostają otwarte.
+- Powód: Izolacja semestrów chroni plany przed mieszaniem danych, kreator ogranicza liczbę decyzji przy pierwszym uruchomieniu, a walidacja jednego dnia upraszcza model czasu.
+- Odrzucone: Zajęcia przechodzące przez północ; wspólny plan wielu semestrów; konfiguracja początkowa bez prowadzenia; ustalenie treści powiadomień bez decyzji o zdarzeniach.
+- Wznowić decyzję tylko gdy: użytkownik zmieni regułę czasu zajęć, dopuści współdzielenie danych między semestrami albo określi konkretne scenariusze powiadomień.
+
 ## 2026-09-19 — Granice warstw, ViewModel i eksport
 
 - Fakty: Użytkownik zaakceptował zalecenia: pakiety `data`, `domain`, `ui`, `widget`, `export` w jednym module Gradle; ViewModel składa stan z repozytorium i wyniku resolvera; `WeekCalculator` schowany w `ScheduleResolver`; eksport poza Room.

@@ -12,6 +12,7 @@ Główne założenia:
 - automatyczne tygodnie A/B z ręcznymi korektami;
 - wykrywanie kolizji;
 - widget na ekranie głównym;
+- powiadomienia systemowe;
 - działanie całkowicie offline;
 - małe zużycie baterii;
 - brak kont, logowania, backendu i synchronizacji w chmurze.
@@ -38,6 +39,8 @@ Dolny pasek zawiera trzy pozycje:
 - **Dodaj** — formularz nowych zajęć.
 
 Ustawienia są dostępne z menu w prawym górnym rogu. Kliknięcie zajęć na ekranie „Dzisiaj” lub „Plan” otwiera ekran szczegółów i edycji.
+
+Jeśli aplikacja nie ma jeszcze semestru, zamiast ekranu „Dzisiaj” otwiera kreator pierwszej konfiguracji. Kreator tworzy pierwszy semestr i co najmniej jeden kierunek, a po zakończeniu prowadzi do dodawania zajęć. Ustawienia pozwalają później dodawać, wybierać, konfigurować i usuwać semestry.
 
 ## 4. Ekran „Dzisiaj”
 
@@ -114,6 +117,8 @@ Formularz powinien zawierać:
 - powtarzanie: co tydzień, tydzień A, tydzień B lub jednorazowo;
 - konkretna data, gdy zajęcia są jednorazowe.
 
+Formularz ogranicza zajęcia do jednego dnia kalendarzowego. Godzina zakończenia musi być późniejsza od rozpoczęcia; zajęcia przechodzące przez północ są odrzucane.
+
 ### Lokalizacja i dodatkowe dane
 
 - sala;
@@ -124,13 +129,15 @@ Formularz powinien zawierać:
 
 Podczas dodawania notatki użytkownik wybiera zakres: „Do tych zajęć” albo „Tylko do tego terminu”. Notatkę do konkretnego wystąpienia można dodać z ekranu szczegółów zajęć na ekranie „Dzisiaj” lub „Plan”. Jeśli istnieją oba typy, aplikacja pokazuje je osobno i nie nadpisuje notatki wspólnej.
 
-Prowadzący zapisani wcześniej są proponowani podczas wpisywania. Formularz powinien walidować, że nazwa, kierunek, godzina rozpoczęcia i zakończenia są uzupełnione, a godzina zakończenia jest późniejsza od rozpoczęcia.
+Prowadzący zapisani wcześniej są proponowani podczas wpisywania. Formularz powinien walidować, że nazwa, kierunek, godzina rozpoczęcia i zakończenia są uzupełnione, a godzina zakończenia jest późniejsza od rozpoczęcia. Zajęcia przechodzące przez północ są nieprawidłowe.
 
 Po usunięciu zajęć aplikacja powinna wymagać potwierdzenia. Edycja i usuwanie muszą aktualizować widget.
 
 ## 7. Semestr i tygodnie A/B
 
 Ustawienia semestru są potrzebne od pierwszej wersji, ponieważ określają automatyczny rytm tygodni A/B.
+
+Użytkownik może mieć wiele semestrów. Każdy semestr ma własne kierunki, prowadzących, zajęcia, korekty tygodni, notatki i zmiany wystąpień. Dane nie przechodzą między semestrami automatycznie. Użytkownik wybiera aktywny semestr w ustawieniach; ekrany, widget i powiadomienia korzystają wyłącznie z jego planu.
 
 Model semestru:
 
@@ -153,11 +160,14 @@ Przykład: pierwszy tydzień semestru to A, więc następny to B. Jeśli trzeci 
 
 Poza zakresem semestru aplikacja powinna jasno pokazać, że nie ma aktywnego semestru. Nie należy opierać działania wyłącznie na numerze tygodnia ISO, ponieważ uczelniana numeracja może zaczynać się w innym miejscu.
 
+Ustawienia semestrów umożliwiają dodanie, edycję, wybór i usunięcie semestru. Usunięcie wymaga potwierdzenia i usuwa dane tego semestru. Gdy użytkownik usunie aktywny semestr, aplikacja wybiera inny istniejący semestr albo otwiera kreator, jeśli nie ma już żadnego.
+
 ## 8. Kierunki
 
 Model `Course`:
 
 - `id`;
+- `semesterId`;
 - `name`;
 - `color`.
 
@@ -168,6 +178,7 @@ Aplikacja nie jest ograniczona do dwóch kierunków. Kolor kierunku jest widoczn
 Model `Teacher`:
 
 - `id`;
+- `semesterId`;
 - `name`.
 
 Pola `email` i `academicTitle` można dodać później, ale nie są potrzebne w MVP. Warto zachować prowadzących jako osobną tabelę, aby autouzupełnianie nie tworzyło wielu kopii tej samej osoby.
@@ -177,6 +188,7 @@ Pola `email` i `academicTitle` można dodać później, ale nie są potrzebne w 
 Model aplikacyjny `ClassItem` oraz odpowiadający mu `ClassEntity` powinien zawierać:
 
 - `id`;
+- `semesterId`;
 - `name`;
 - `type`;
 - `courseId`;
@@ -278,15 +290,17 @@ System może opóźnić odświeżenie po północy. Widget nie obiecuje zmiany d
 
 Ustawienia powinny zawierać:
 
-- konfigurację semestru i korekty tygodni A/B;
+- listę semestrów z możliwością dodania, wyboru, konfiguracji i usunięcia;
+- konfigurację aktywnego semestru i korekty tygodni A/B;
 - listę kierunków i ich kolorów;
+- ustawienia powiadomień;
 - eksport planu;
 - import planu;
 - informację o wersji aplikacji.
 
 Eksport i import mogą używać lokalnego pliku JSON. Format powinien mieć pole `schemaVersion`, aby można było zmieniać model danych bez utraty zgodności ze starszymi eksportami.
 
-Eksport jest dostępny od wersji 0.1. Użytkownik wybiera miejsce zapisu przez systemowy wybór dokumentu. Plik zawiera semestr, kierunki, prowadzących, zajęcia, korekty tygodni, notatki i zmiany wystąpień. Import pojawia się w wersji 0.3.
+Eksport jest dostępny od wersji 0.1. Użytkownik wybiera miejsce zapisu przez systemowy wybór dokumentu. Plik zawiera wszystkie semestry oraz przypisane do nich kierunki, prowadzących, zajęcia, korekty tygodni, notatki i zmiany wystąpień. Import pojawia się w wersji 0.3.
 
 Import powinien:
 
@@ -346,6 +360,7 @@ Logika obliczania planu, tygodni i kolizji powinna być niezależna od Compose. 
 - Room, eksport schematu bazy i przygotowanie testów przyszłych migracji;
 - kierunki z kolorami;
 - semestr, automatyczny kalkulator tygodni A/B oraz korekty pojedyncze i „Od tego tygodnia”;
+- kreator pierwszej konfiguracji oraz zarządzanie wieloma odizolowanymi semestrami;
 - dodawanie, edycja i usuwanie zajęć;
 - zajęcia cotygodniowe oraz przypisane do tygodnia A lub B;
 - ekran „Dzisiaj”;
@@ -413,7 +428,7 @@ Na początku nie dodawać:
 3. **Rozdzielić warstwę danych od logiki harmonogramu.** Jeden `ScheduleResolver` powinien wyliczać aktywne zajęcia dla konkretnej daty. Z tego samego wyniku powinny korzystać ekran, kolizje i widget.
 4. **Stosować spójne reguły dat.** Tygodnie zaczynają się w poniedziałek, a ekran „Dzisiaj” odczytuje datę przy otwarciu lub wznowieniu. Widget może aktualizować się z opóźnieniem narzuconym przez system.
 5. **Zacząć od prostego formularza.** Prowadzący, sala, budynek, grupa i notatka mogą być opcjonalne, aby dodanie podstawowego zajęcia trwało kilka sekund.
-6. **Dodać testy logiki domenowej.** Szczególnie sprawdzić początek semestru w środku tygodnia, pojedynczą korektę, zmianę od wskazanego tygodnia, nakładanie korekt, przejście przez północ i kolizje.
+6. **Dodać testy logiki domenowej.** Szczególnie sprawdzić początek semestru w środku tygodnia, pojedynczą korektę, zmianę od wskazanego tygodnia, nakładanie korekt, odrzucenie zajęć przechodzących przez północ i kolizje.
 7. **Chronić plan od pierwszego wydania.** Eksport JSON i zachowane schematy Room pozwalają zabezpieczyć dane przed późniejszymi zmianami modelu.
 8. **Utrzymać mały zakres pierwszego wydania.** Import i kolizje można wdrażać etapami, gdy podstawowy przepływ dodawania, zmiany i przeglądania planu będzie stabilny.
 9. **Budować modułowo, ale bez przedwczesnego podziału na moduły Gradle.** Pakiety i interfejsy wystarczą do szybkich zmian, a osobny moduł Gradle warto dodać dopiero przy niezależnym cyklu życia części projektu.

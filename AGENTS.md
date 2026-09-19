@@ -19,6 +19,8 @@ Te zasady obowiązują w całym repozytorium. Szczegóły produktu znajdują si�
 
 Stosuj `WRITING.md` do dokumentacji i tekstów dla użytkownika, chyba że bezpośrednia instrukcja użytkownika albo zaakceptowana zasada produktu stanowi inaczej.
 
+Nie używaj w nowych dokumentach, tekstach interfejsu ani odpowiedziach znaku `·`, em dash `—`, emotek ani ozdobników i schematycznych zwrotów kojarzonych z AI-slop. Wybieraj zwykłą interpunkcję i konkretne sformułowania.
+
 Zasady interfejsu z `ARCHITECTURE.md` są kryteriami akceptacji dla każdego widoku. Sprawdzaj je razem z zachowaniem funkcjonalnym.
 
 ## Interfejs i mockup
@@ -62,11 +64,11 @@ Pokryj czystym Kotlinem i `java.time`, bez Compose i Room:
 - `ScheduleResolver`: cykle, `ONCE`, odwołanie, zmiana, przeniesienie, przywrócenie, rozdział notatki wspólnej od notatki do daty.
 - `CollisionDetector`: nakładka jest kolizją, stykanie godzin nie jest; kolizje po zmianach wystąpień.
 - eksport JSON: `schemaVersion` i round-trip modelu.
-- walidacja: nazwa, kierunek, godziny; koniec później niż start.
+- walidacja: nazwa, kierunek, godziny; koniec później niż start; zajęcia przechodzące przez północ są odrzucane.
 
 Ten sam `ScheduleResolver` jest źródłem planu dla listy, kalendarza, ekranu „Dzisiaj” i widgetu. Nie powielaj reguł w testach widoków.
 
-Nie pisz testu, który rozstrzyga pytanie otwarte z `ARCHITECTURE.md`, na przykład zajęcia przez północ.
+Nie pisz testów rozstrzygających pytania, które nadal pozostają otwarte w `ARCHITECTURE.md`.
 
 ### Room
 
@@ -93,11 +95,11 @@ Kontrast, `reduced motion` i motyw ciemny sprawdzaj w kodzie i na mockupie, dop�
 
 ## Git
 
-Commituj, wypychaj, twórz gałęzie i zmieniaj historię tylko na wyraźne polecenie użytkownika.
+Po zakończeniu zadania możesz samodzielnie utworzyć commit obejmujący jego logiczną zmianę. Wypychaj zmiany, twórz gałęzie i zmieniaj historię tylko na wyraźne polecenie użytkownika.
 
 Nie dodawaj stopki `Co-authored-by:` przypisującej pracę agentowi.
 
-Jeśli nie istnieje konwencja commitów, używaj krótkiego, konkretnego tematu w trybie rozkazującym. Nie dodawaj prefiksów `feat:`, `fix:` ani `chore:` bez zaakceptowanej konwencji.
+Używaj krótkiego, konkretnego tematu w trybie rozkazującym. Dozwolone są prefiksy `feat:`, `fix:`, `chore:` i `docs:`.
 
 ## Zakres
 

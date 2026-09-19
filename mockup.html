@@ -196,6 +196,15 @@
             <div class="summary"><div><small>Twój plan na dziś</small><b id="todaySummary">3 zajęcia</b></div><span class="big" aria-hidden="true">✦</span></div>
             <div class="row-title"><strong>Zajęcia</strong><span>Od najwcześniejszego</span></div><div class="class-list" id="todayList"></div>
           </section>
+          <section class="screen" id="setupScreen" aria-label="Kreator pierwszej konfiguracji" hidden>
+            <p class="section-label">Konfiguracja początkowa</p><h3>Utwórz semestr</h3><p class="subtitle">Krok 1 z 2, najpierw ustaw semestr, potem dodaj kierunek i zajęcia.</p>
+            <form id="setupForm" class="form-stack">
+              <label class="field">Nazwa semestru<input name="name" required value="Semestr zimowy 2026/27"></label>
+              <div class="field-row"><label class="field">Od<input name="start" type="date" value="2026-09-18" required></label><label class="field">Do<input name="end" type="date" value="2027-02-15" required></label></div>
+              <label class="field">Pierwszy tydzień<select name="week"><option>A</option><option>B</option></select></label>
+              <button class="primary" type="submit">Utwórz semestr</button><button class="secondary" type="button" id="backToSettings">Wróć do ustawień</button>
+            </form>
+          </section>
           <section class="screen" id="planScreen" aria-label="Plan" hidden>
             <p class="section-label">Plan</p><h3>Twoje zajęcia</h3>
             <div class="view-switch" role="group" aria-label="Sposób wyświetlania planu"><button class="active" data-plan-view="list" aria-pressed="true">Lista</button><button data-plan-view="calendar" aria-pressed="false">Kalendarz</button></div>
@@ -227,7 +236,7 @@
               <button class="primary" type="submit">Dodaj do planu</button><span class="helper">Dane dodane w podglądzie istnieją tylko do odświeżenia strony.</span>
             </form>
           </section>
-          <section class="screen" id="settingsScreen" aria-label="Ustawienia" hidden><p class="section-label">Ustawienia</p><h3>Wygląd</h3><p class="subtitle">Zobacz, jak plan i widget wyglądają w różnych motywach.</p><div class="form-stack"><label class="field">Motyw<select id="themeSelect"><option value="system">Systemowy</option><option value="light">Jasny</option><option value="dark">Ciemny</option></select></label><div class="week-note"><div><b>Semestr zimowy 2026/27</b><small>18 września – 15 lutego · pierwszy tydzień A</small></div></div><p class="helper">To podgląd projektu. Eksport danych i ustawienia semestru będą dostępne w aplikacji.</p></div></section>
+          <section class="screen" id="settingsScreen" aria-label="Ustawienia" hidden><p class="section-label">Ustawienia</p><h3>Semestry i wygląd</h3><p class="subtitle">Wybierz plan, który ma być aktywny na ekranie i w powiadomieniach.</p><div class="form-stack"><label class="field">Aktywny semestr<select id="semesterSelect"><option>Semestr zimowy 2026/27</option><option>Semestr letni 2027</option></select></label><div class="week-note"><div><b>Semestr zimowy 2026/27</b><small>18 września - 15 lutego, pierwszy tydzień A</small></div></div><div class="field-row"><button class="secondary" type="button" id="openSetup">Konfiguruj semestr</button><button class="secondary" type="button" id="addSemester">Dodaj semestr</button></div><button class="secondary dialog-danger" type="button">Usuń wybrany semestr</button><label class="field">Motyw<select id="themeSelect"><option value="system">Systemowy</option><option value="light">Jasny</option><option value="dark">Ciemny</option></select></label><div class="week-note"><div><b>Powiadomienia</b><small>Obsługiwane przez aplikację, treść i moment wysyłki do ustalenia</small></div></div><p class="helper">To podgląd projektu. Dane w mockupie istnieją tylko do odświeżenia strony.</p></div></section>
           <nav class="bottom-nav" aria-label="Nawigacja główna"><button class="nav-button active" data-screen="today"><span class="symbol" aria-hidden="true">▦</span>Dzisiaj</button><button class="nav-button" data-screen="plan"><span class="symbol" aria-hidden="true">▤</span>Plan</button><button class="nav-button" data-screen="add"><span class="symbol" aria-hidden="true">＋</span>Dodaj</button></nav>
         </div></div>
       </section>
@@ -309,10 +318,14 @@
     function renderPlan() { $('planListView').hidden=planView!=='list'; $('planCalendarView').hidden=planView!=='calendar'; document.querySelectorAll('[data-plan-view]').forEach(b=>{const active=b.dataset.planView===planView;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active);}); renderPlanList(); renderCalendar(); }
     function renderWidget() { const widgetWeekOffset=Math.floor(widgetDayIndex/7), widgetDay=((widgetDayIndex%7)+7)%7, date=dateFor(widgetWeekOffset,widgetDay), info=weekInfo(widgetWeekOffset), list=classesFor(widgetWeekOffset,widgetDay); const isToday=widgetDayIndex===4; $('widgetDate').textContent=`${weekdayNames[widgetDay]}, ${formatDate(date)}`; $('widgetWeek').textContent=`Tydzień ${info.type}`; $('widgetPosition').textContent=`${widgetDayIndex+1} / 7`; $('widgetPrev').disabled=widgetDayIndex===0; $('widgetNext').disabled=widgetDayIndex===6; $('widgetToday').hidden=isToday; $('widgetFooter').textContent=isToday?`${dayCount(list.length)} dzisiaj`:dayCount(list.length); const visible=widgetSize==='small'?2:4; $('widgetList').innerHTML=list.slice(0,visible).map(e=>`<div class="widget-item ${e.course==='Elektronika'?'orange':''}"><time>${safe(e.start)}</time><span class="bar"></span><span><b>${safe(e.name)}</b><small>${safe(e.room||'Sala niepodana')} · ${safe(e.course)}${widgetSize==='large'&&e.teacher?' · '+safe(e.teacher):''}</small></span></div>`).join('') || '<div class="empty">Brak zajęć.</div>'; }
     function render() { renderToday(); renderPlan(); renderWidget(); }
-    function show(screen) { currentScreen=screen; for (const name of ['today','plan','add','settings']) $(`${name}Screen`).hidden=name!==screen; document.querySelectorAll('.nav-button').forEach(b=>{ b.classList.toggle('active',b.dataset.screen===screen); b.setAttribute('aria-current',b.dataset.screen===screen?'page':'false'); }); }
+    function show(screen) { currentScreen=screen; for (const name of ['today','setup','plan','add','settings']) $(`${name}Screen`).hidden=name!==screen; document.querySelectorAll('.nav-button').forEach(b=>{ b.classList.toggle('active',b.dataset.screen===screen); b.setAttribute('aria-current',b.dataset.screen===screen?'page':'false'); }); }
     function toast(message) { $('toast').textContent=message; $('toast').hidden=false; clearTimeout(toast.timer); toast.timer=setTimeout(()=>$('toast').hidden=true,2600); }
     document.querySelectorAll('.nav-button').forEach(b=>b.addEventListener('click',()=>show(b.dataset.screen)));
     $('settingsButton').addEventListener('click',()=>show(currentScreen==='settings'?'today':'settings'));
+    $('openSetup').addEventListener('click',()=>show('setup'));
+    $('addSemester').addEventListener('click',()=>show('setup'));
+    $('backToSettings').addEventListener('click',()=>show('settings'));
+    $('setupForm').addEventListener('submit',e=>{e.preventDefault();show('settings');toast('Utworzono semestr w podglądzie.');});
     $('prevWeek').addEventListener('click',()=>{weekOffset=Math.max(0,weekOffset-1);renderPlan();});
     $('nextWeek').addEventListener('click',()=>{weekOffset=Math.min(22,weekOffset+1);renderPlan();});
     $('days').addEventListener('click',e=>{const b=e.target.closest('[data-day]');if(b){selectedDay=Number(b.dataset.day);renderPlan();}});

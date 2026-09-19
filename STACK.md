@@ -17,6 +17,7 @@
 
 - Jetpack Compose do budowy interfejsu.
 - Jetpack Glance do widgetu.
+- Systemowe powiadomienia Androida; zdarzenia i treść pozostają do ustalenia.
 - Lokalny font Inter.
 
 ## 4. Dane i przechowywanie

@@ -12,6 +12,7 @@ If a sentence does not add a fact, a decision, a constraint, an example, or a co
 - Hedge only when the uncertainty is real. Then say what you do not know and what follows from that.
 - Prefer names, numbers, paths, conditions, and examples over categories.
 - Use format to help scanning: lists for items, bold for labels, headings when the topic changes. Do not decorate.
+- Do not use the middle dot `·`, em dash `—`, emojis, or ornamental patterns and stock phrases strongly associated with AI-slop. Use ordinary punctuation and concrete wording.
 
 ## Documentation
 
