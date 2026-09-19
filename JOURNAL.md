@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-19: Wersje narzędzi dla 0.1
+
+- Fakty: Projekt używa `compileSdk` 36.1. Najnowsze wydania części bibliotek wymagają `compileSdk` 37, a starszy KSP nie współpracuje poprawnie z wbudowaną obsługą Kotlin w AGP 9.
+- Decyzja: Przypięto Kotlin 2.2.10, AGP 9.1.1, Gradle 9.3.1, Compose BOM 2024.09.00, Room 2.8.5, Lifecycle 2.10.0, Navigation 2.9.5, KSP 2.3.12 i Glance 1.2.0.
+- Powód: Ten zestaw kompiluje wersję 0.1 na dostępnym SDK 36.1 i zachowuje zgodność z AGP 9.
+- Wznowić decyzję tylko gdy: projekt przejdzie na `compileSdk` 37 albo aktualizacja usunie ograniczenia zgodności.
+
 ## 2026-09-19: Prefiks docs
 
 - Decyzja: Dozwolony jest także prefiks `docs:` dla commitów dotyczących dokumentacji.
@@ -117,3 +124,11 @@
 - Powód: Zasady wpływają na architekturę interfejsu, testy i kryteria ukończenia, więc powinny być źródłem prawdy projektu.
 - Odrzucone: Traktowanie dostępności i testów małych ekranów jako późniejszego audytu.
 - Wznowić decyzję tylko gdy: użytkownik zaakceptuje nowy język interfejsu albo zmieni priorytety produktu.
+
+## 2026-09-19 — Material 3 i standardy konstrukcji interfejsu
+
+- Fakty: Użytkownik zaakceptował połączenie kierunku wizualnego z mockupu ze standardami branżowymi i zasadami Material 3.
+- Decyzja: Budować interfejs na komponentach i zasadach Material 3. Własne kolory, typografia, kształty, karty, nawigacja i układ są dozwolone, jeśli zachowują semantykę, przewidywalne zachowanie oraz dostępność.
+- Problem do rozwiązania: Przeprowadzić audyt własnych komponentów Compose pod kątem obszarów dotyku co najmniej 48 dp, semantyki, focusu, klawiatury, kontrastu, motywu ciemnego i szerokości 320 dp. Wynik ma trafić do kolejnych zmian UI i testów Compose.
+- Powód: Mockup opisuje wygląd i interakcję, ale nie może usuwać standardowych wymagań platformy.
+- Wznowić decyzję tylko gdy: zmieni się zaakceptowany mockup, wersja Material 3 albo wymagania dostępności Androida.

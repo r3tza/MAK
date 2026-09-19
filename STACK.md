@@ -9,9 +9,10 @@
 
 ## 2. Język i środowisko uruchomieniowe
 
-- Kotlin.
-- Android, `minSdk` 31.
-- Konkretne wersje Kotlin, Compose, Room i Glance zostaną przypięte razem z konfiguracją projektu Gradle.
+- Kotlin 2.2.10.
+- Android, `minSdk` 31, `targetSdk` 36 i `compileSdk` 36.1.
+- Android Gradle Plugin 9.1.1 i Gradle 9.3.1.
+- Compose BOM 2024.09.00, Room 2.8.5, Lifecycle 2.10.0, Navigation 2.9.5, KSP 2.3.12 i Glance 1.2.0.
 
 ## 3. Warstwa aplikacji
 
@@ -47,7 +48,7 @@
 
 ## 7. Środowisko
 
-Repozytorium jest przygotowywane jako dokumentacyjna baza dla aplikacji Android. Na tym etapie nie zawiera kodu aplikacji, manifestu, konfiguracji Gradle ani zależności. Aplikacja jest przeznaczona do użytku własnego na jednym urządzeniu; nie wymaga infrastruktury do obsługi setek użytkowników.
+Repozytorium zawiera aplikację Android w wersji 0.1, konfigurację Gradle, lokalną bazę Room i testy. Aplikacja jest przeznaczona do użytku własnego na jednym urządzeniu; nie wymaga infrastruktury do obsługi setek użytkowników.
 
 ## 8. Odrzucone alternatywy
 

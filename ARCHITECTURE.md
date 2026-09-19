@@ -50,6 +50,12 @@ Interfejs ma szybko odpowiadać na pytania: jakie zajęcia są dziś, co wymaga 
 
 Wspólne prymitywy, przewidywalne odstępy, jawny grid, powtarzalne akcje i udokumentowane wyjątki mają pierwszeństwo przed ręcznym dopieszczaniem każdej funkcji osobno.
 
+### Material 3 jako podstawa konstrukcji
+
+Interfejs budujemy na komponentach i zasadach Material 3. Mockup określa kierunek wizualny, ale nie zastępuje standardów platformy. Dopuszczalne są własne kolory, typografia, kształty, karty, nawigacja i układ, jeśli zachowują semantykę oraz przewidywalne zachowanie komponentów Material 3.
+
+Własne komponenty stosujemy tylko wtedy, gdy są potrzebne do odtworzenia zaakceptowanego wzorca. Każdy taki komponent musi zachować etykiety semantyczne, obszar dotyku co najmniej 48 dp, obsługę focusu i klawiatury, kontrast, motyw jasny i ciemny oraz poprawne działanie na szerokości 320 dp. Pola, listy wyboru, przyciski, pola wyboru, opcje jednokrotnego wyboru, dialogi i nawigację zastępujemy własnym rozwiązaniem tylko po sprawdzeniu tych kryteriów.
+
 ### Dostępność jako część projektu
 
 Klawiatura, focus, semantyczne etykiety, kontrast, `reduced motion`, małe ekrany i brak obciętych akcji są kryteriami akceptacji. Dostępność należy uwzględniać podczas projektowania każdego widoku.
@@ -141,5 +147,8 @@ Pierwszy zakres nie obejmuje:
 
 ## 10. Otwarte pytania
 
-- Jakie konkretne wersje Kotlin, Compose, Room i Glance zostaną przypięte przy tworzeniu projektu Gradle?
 - Jakie zdarzenia, treści i momenty wysyłki będą obsługiwane przez powiadomienia?
+
+## 11. Problemy do rozwiązania
+
+- Dokończyć audyt własnych komponentów Compose względem Material 3 i zasad dostępności. Audyt ma objąć obszary dotyku o rozmiarze co najmniej 48 dp, semantykę, focus, klawiaturę, kontrast, motyw ciemny oraz szerokość 320 dp.

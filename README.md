@@ -18,4 +18,4 @@ Nazwa produktu to MAK. Rozwinięcie „Mobilny Akademicki Kalendarz” wyjaśnia
 
 ## Status
 
-Zaakceptowano zakres, stos, zasady interfejsu i nazwę MAK. W repozytorium jest projekt Android. Identyfikatory kodu mogą nadal zawierać DualPlan, dopóki pakiet i motyw nie zostaną przemianowane.
+Wersja 0.1.0 zawiera działający lokalny plan zajęć, wiele odizolowanych semestrów, tygodnie A/B, zmiany pojedynczych terminów, notatki oraz eksport JSON.
