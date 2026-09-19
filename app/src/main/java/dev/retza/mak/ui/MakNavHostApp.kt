@@ -389,7 +389,7 @@ fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
                     },
                     onReturnToSettings = {
                         viewModel.cancelSetup()
-                        openChild(MakDestination.Settings, MakRoutes.Settings)
+                        navigateBack()
                     },
                     showReturnToSettings = state.settings.semesters.isNotEmpty(),
                     onRetry = {},
