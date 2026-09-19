@@ -1,0 +1,355 @@
+<!doctype html>
+<html lang="pl">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="color-scheme" content="light dark">
+  <title>MAK — interaktywny mockup</title>
+  <style>
+    :root { font-family: Inter, "Segoe UI", system-ui, sans-serif; color-scheme: light; --ink:#17243a; --muted:#647189; --line:#e4e9f1; --paper:#fff; --soft:#f5f7fb; --accent:#334fce; --accent-soft:#eaf0ff; --teal:#137b71; --teal-soft:#e4f5f1; --orange:#a65724; --orange-soft:#fff0e5; --red:#ad3e46; --red-soft:#fff0f0; --shadow:0 24px 70px rgba(24,41,75,.12); }
+    * { box-sizing:border-box; }
+    body { margin:0; background:radial-gradient(circle at 6% 0%, #e8eefa 0, transparent 31%), radial-gradient(circle at 100% 32%, #e5f1f1 0, transparent 26%), #f6f8fb; color:var(--ink); }
+    button,input,select,textarea { font:inherit; }
+    button { cursor:pointer; }
+    button:focus-visible,input:focus-visible,select:focus-visible,textarea:focus-visible { outline:3px solid #8fa3ff; outline-offset:2px; }
+    .shell { max-width:1180px; padding:44px 24px 70px; margin:auto; }
+    .intro { display:flex; align-items:end; justify-content:space-between; gap:24px; margin-bottom:28px; }
+    .eyebrow { display:inline-flex; gap:8px; align-items:center; color:var(--accent); font-size:11px; font-weight:800; letter-spacing:.17em; text-transform:uppercase; }
+    .eyebrow:before { content:""; width:7px; height:7px; border-radius:50%; background:#617af1; }
+    h1 { font-size:clamp(31px,4vw,52px); margin:8px 0 7px; letter-spacing:-.055em; line-height:1.05; }
+    .intro p { color:var(--muted); margin:0; line-height:1.55; }
+    .demo-tag { border:1px solid #dce3f1; background:#fff; color:#60708b; padding:9px 13px; border-radius:999px; font-size:12px; font-weight:700; white-space:nowrap; }
+    .workspace { display:grid; grid-template-columns:minmax(380px, 1.3fr) minmax(300px, .88fr); gap:30px; align-items:start; }
+    .panel-heading { display:flex; justify-content:space-between; align-items:center; gap:12px; margin:0 0 14px; }
+    .panel-heading h2 { font-size:15px; margin:0; letter-spacing:-.01em; }
+    .panel-heading span { font-size:12px; color:var(--muted); }
+    .preview-card { border:1px solid #e5eaf2; padding:28px; border-radius:32px; background:rgba(255,255,255,.65); box-shadow:0 12px 40px rgba(30,47,75,.04); }
+    .phone { width:min(100%,390px); height:720px; margin:auto; border:8px solid #263047; border-radius:44px; overflow:hidden; background:var(--paper); box-shadow:0 20px 40px rgba(28,38,57,.18), inset 0 0 0 1px rgba(255,255,255,.4); display:flex; flex-direction:column; position:relative; }
+    .phone:before { content:""; position:absolute; top:7px; width:84px; height:16px; border-radius:0 0 13px 13px; background:#263047; left:50%; transform:translateX(-50%); z-index:10; }
+    .status { height:30px; padding:6px 22px 0; font-size:11px; display:flex; justify-content:space-between; font-weight:800; flex:none; }
+    .status-icons { letter-spacing:.15em; }
+    .app-top { padding:20px 22px 18px; display:flex; align-items:center; justify-content:space-between; flex:none; }
+    .brand { display:flex; gap:10px; align-items:center; font-size:21px; font-weight:800; letter-spacing:-.055em; }
+    .mark { width:31px; height:31px; display:grid; grid-template-columns:repeat(2, 1fr); gap:3px; transform:rotate(-9deg); }
+    .mark i { display:block; border-radius:5px; background:#4667db; }
+    .mark i:nth-child(2) { background:#e9ac69; }
+    .mark i:nth-child(3) { background:#74b9ac; }
+    .mark i:nth-child(4) { background:#9babed; }
+    .icon-button { border:1px solid var(--line); background:var(--paper); color:var(--ink); width:35px; height:35px; border-radius:12px; font-size:21px; line-height:1; display:grid; place-items:center; }
+    .screen { flex:1; overflow:auto; padding:0 19px 24px; scrollbar-width:thin; }
+    .screen[hidden] { display:none; }
+    .section-label { font-size:11px; font-weight:800; letter-spacing:.12em; color:var(--muted); text-transform:uppercase; margin:4px 3px 8px; }
+    .screen h3 { font-size:28px; letter-spacing:-.045em; line-height:1.08; margin:0 3px 6px; }
+    .subtitle { color:var(--muted); margin:0 3px 17px; font-size:13px; line-height:1.4; }
+    .summary { background:linear-gradient(135deg,#3d5cda,#273f9b); color:white; border-radius:22px; padding:17px 18px 15px; display:flex; justify-content:space-between; align-items:center; gap:10px; margin-bottom:23px; box-shadow:0 11px 20px rgba(45,70,164,.2); }
+    .summary b { font-size:16px; display:block; margin-top:3px; }
+    .summary small { font-size:11px; opacity:.78; }
+    .summary .big { font-size:26px; font-weight:800; }
+    .row-title { display:flex; justify-content:space-between; align-items:center; margin:0 2px 11px; }
+    .row-title strong { font-size:15px; }
+    .row-title span { font-size:11px; color:var(--muted); }
+    .class-list { display:grid; gap:11px; }
+    .class-card { width:100%; border:1px solid var(--line); border-left:4px solid var(--teal); background:var(--paper); text-align:left; border-radius:16px; padding:13px 14px; box-shadow:0 4px 14px rgba(28,42,70,.035); display:grid; grid-template-columns:48px 1fr; gap:12px; color:var(--ink); }
+    .class-card.orange { border-left-color:#e79b62; }
+    .class-card .time { font-size:13px; line-height:1.45; font-weight:800; font-variant-numeric:tabular-nums; color:#273b5b; }
+    .class-card .time span { display:block; color:#78849a; font-size:11px; font-weight:600; }
+    .class-card h4 { margin:0 0 4px; font-size:14px; letter-spacing:-.012em; line-height:1.25; }
+    .class-card .meta { display:flex; flex-wrap:wrap; gap:5px; align-items:center; color:var(--muted); font-size:11px; line-height:1.35; }
+    .pill { border-radius:999px; padding:3px 7px; font-weight:700; font-size:10px; white-space:nowrap; }
+    .pill.teal { color:var(--teal); background:var(--teal-soft); }
+    .pill.orange { color:var(--orange); background:var(--orange-soft); }
+    .pill.neutral { color:#576891; background:#edf1fb; }
+    .empty { padding:28px 20px; border:1px dashed #cbd4e2; border-radius:18px; color:var(--muted); text-align:center; font-size:13px; line-height:1.5; }
+    .bottom-nav { display:grid; grid-template-columns:1fr 1fr 1fr; gap:4px; border-top:1px solid var(--line); padding:8px 14px 11px; background:var(--paper); flex:none; }
+    .nav-button { display:grid; justify-items:center; gap:2px; border:0; background:transparent; color:#7a879c; border-radius:12px; padding:4px 8px; font-size:10px; font-weight:750; }
+    .nav-button .symbol { font-size:20px; line-height:25px; }
+    .nav-button.active { color:var(--accent); background:var(--accent-soft); }
+    .week-toolbar { display:flex; gap:8px; justify-content:space-between; align-items:center; margin:18px 2px 13px; }
+    .view-switch { display:grid; grid-template-columns:1fr 1fr; gap:4px; padding:4px; margin:2px 2px 12px; border-radius:13px; background:var(--soft); }
+    .view-switch button { border:0; border-radius:10px; background:transparent; color:var(--muted); min-height:34px; font-size:11px; font-weight:800; }
+    .view-switch button.active { background:var(--paper); color:var(--accent); box-shadow:0 2px 7px rgba(31,50,91,.08); }
+    .week-title { text-align:center; min-width:0; }
+    .week-title b { display:block; font-size:13px; white-space:nowrap; }
+    .week-title small { color:var(--muted); font-size:11px; }
+    .round-btn { border:1px solid var(--line); background:var(--paper); border-radius:10px; width:32px; height:32px; color:var(--ink); font-size:19px; line-height:1; }
+    .round-btn:disabled,.day-button:disabled { opacity:.35; cursor:default; }
+    .week-note { display:flex; justify-content:space-between; align-items:center; background:var(--accent-soft); padding:10px 11px; border-radius:13px; margin-bottom:13px; gap:8px; }
+    .week-note b { font-size:12px; }
+    .week-note small { display:block; color:#6072a2; font-size:10px; margin-top:1px; }
+    .text-button { border:0; background:transparent; color:var(--accent); padding:4px; font-size:11px; font-weight:800; }
+    .days { display:grid; grid-template-columns:repeat(7,1fr); gap:3px; margin-bottom:17px; }
+    .day-button { border:0; background:transparent; border-radius:12px; padding:8px 1px; color:var(--muted); font-size:10px; display:grid; justify-items:center; gap:4px; min-width:0; }
+    .day-button b { font-size:13px; color:var(--ink); }
+    .day-button.active { background:var(--accent); color:white; }
+    .day-button.active b { color:white; }
+    .filter-row { display:flex; gap:6px; overflow:auto; padding:2px 1px 12px; scrollbar-width:none; }
+    .filter { border:1px solid var(--line); border-radius:999px; background:var(--paper); padding:7px 10px; font-size:11px; color:var(--muted); font-weight:700; white-space:nowrap; }
+    .filter.active { border-color:var(--accent); background:var(--accent-soft); color:var(--accent); }
+    .calendar-toolbar { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:14px 2px 10px; }
+    .calendar-toolbar strong { font-size:14px; }
+    .calendar-weekdays,.calendar-grid { display:grid; grid-template-columns:repeat(7,minmax(0,1fr)); gap:3px; }
+    .calendar-weekdays { margin-bottom:4px; color:var(--muted); font-size:9px; font-weight:800; text-align:center; }
+    .calendar-day { min-height:45px; padding:5px 2px; border:0; border-radius:10px; background:transparent; color:var(--ink); display:grid; align-content:start; justify-items:center; gap:4px; font-size:10px; }
+    .calendar-day.outside { color:var(--muted); opacity:.38; }
+    .calendar-day.today { box-shadow:inset 0 0 0 1px var(--accent); }
+    .calendar-day.selected { color:white; background:var(--accent); }
+    .calendar-marks { min-height:5px; display:flex; justify-content:center; gap:2px; }
+    .calendar-marks i { width:4px; height:4px; border-radius:50%; background:var(--teal); }
+    .calendar-marks i.orange { background:#e79b62; }
+    .calendar-marks i.changed { background:var(--red); }
+    .calendar-day.selected .calendar-marks i { background:white; }
+    .calendar-options { display:flex; align-items:center; justify-content:space-between; gap:8px; margin:11px 2px 14px; }
+    .calendar-options label { display:flex; align-items:center; gap:6px; color:var(--muted); font-size:10px; }
+    .status-badge { display:inline-block; margin-left:4px; border-radius:999px; padding:2px 6px; font-size:9px; vertical-align:1px; text-decoration:none; }
+    .status-badge.cancelled { color:var(--red); background:var(--red-soft); }
+    .status-badge.modified { color:#7256ad; background:#f1edff; }
+    .status-badge.once { color:#315f9f; background:#e9f1ff; }
+    .class-card.cancelled { opacity:.68; border-left-color:var(--red); }
+    .class-card.cancelled h4 { text-decoration:line-through; }
+    .form-stack { display:grid; gap:12px; }
+    .field { display:grid; gap:5px; font-size:11px; color:#516077; font-weight:700; }
+    .field input,.field select,.field textarea { width:100%; min-height:40px; padding:9px 11px; color:var(--ink); border:1px solid #dce4ee; border-radius:11px; background:var(--paper); font-size:13px; }
+    .field textarea { min-height:66px; resize:vertical; }
+    .field-row { display:grid; grid-template-columns:1fr 1fr; gap:9px; }
+    .primary { border:0; border-radius:12px; background:var(--accent); color:white; font-size:12px; font-weight:800; min-height:42px; padding:10px 13px; }
+    .secondary { border:1px solid var(--line); border-radius:12px; background:var(--paper); color:var(--ink); font-size:12px; font-weight:700; min-height:40px; padding:9px 12px; }
+    .secondary:disabled { opacity:.45; cursor:default; }
+    .helper { font-size:11px; color:var(--muted); line-height:1.45; }
+    .widget-tools { display:flex; gap:7px; align-items:center; }
+    .tool-chip { border:1px solid #dbe2ed; background:#fff; color:#56657b; border-radius:999px; padding:7px 11px; font-size:11px; font-weight:700; }
+    .tool-chip.active { background:#253e9c; color:#fff; border-color:#253e9c; }
+    .home-phone { width:min(100%,340px); height:668px; margin:auto; border:8px solid #263047; border-radius:44px; overflow:hidden; position:relative; color:#fff; box-shadow:0 20px 40px rgba(28,38,57,.18); background:radial-gradient(circle at 85% 15%,rgba(142,199,219,.9),transparent 31%),radial-gradient(circle at 25% 65%,rgba(145,155,218,.8),transparent 38%),linear-gradient(145deg,#172d6c 1%,#5764a9 48%,#c8939e 100%); }
+    .home-phone:before { content:""; position:absolute; top:7px; width:84px; height:16px; border-radius:0 0 13px 13px; background:#263047; left:50%; transform:translateX(-50%); z-index:10; }
+    .home-status { padding:14px 18px 0; font-size:11px; font-weight:800; display:flex; justify-content:space-between; }
+    .home-clock { margin:43px 22px 0; }
+    .home-clock b { display:block; font-size:54px; letter-spacing:-.06em; line-height:1; font-weight:650; }
+    .home-clock span { display:block; margin-top:4px; font-size:13px; opacity:.94; }
+    .widget { margin:34px 15px 0; padding:15px; background:rgba(252,254,255,.96); color:var(--ink); border-radius:22px; box-shadow:0 12px 34px rgba(17,29,76,.16); touch-action:pan-y; }
+    .widget-head { display:grid; grid-template-columns:27px 1fr auto 27px; align-items:center; gap:5px; margin-bottom:10px; }
+    .widget-head strong { font-size:12px; letter-spacing:-.02em; white-space:nowrap; }
+    .widget-day { min-width:0; text-align:center; }
+    .widget-day b { display:block; font-size:11px; line-height:1.2; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .widget-day small { display:block; color:var(--muted); font-size:9px; margin-top:2px; }
+    .widget-arrow { border:1px solid var(--line); background:var(--paper); color:var(--ink); border-radius:8px; width:27px; height:27px; padding:0; font-size:17px; line-height:1; }
+    .widget-arrow:disabled { opacity:.35; cursor:default; }
+    .widget-head span { font-size:10px; font-weight:800; color:var(--accent); background:var(--accent-soft); border-radius:999px; padding:5px 8px; }
+    .widget-list { display:grid; gap:9px; }
+    .widget-item { display:grid; grid-template-columns:36px 3px 1fr; gap:8px; align-items:start; min-width:0; }
+    .widget-item time { font-size:11px; font-weight:800; font-variant-numeric:tabular-nums; margin-top:1px; }
+    .widget-item .bar { width:3px; height:29px; background:#6ab4a6; border-radius:2px; }
+    .widget-item.orange .bar { background:#e6a16e; }
+    .widget-item b { display:block; font-size:11px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .widget-item small { display:block; margin-top:2px; color:var(--muted); font-size:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+    .widget-foot { border-top:1px solid var(--line); margin-top:11px; padding-top:9px; display:flex; justify-content:space-between; align-items:center; gap:5px; font-size:10px; color:var(--muted); }
+    .widget-foot b { color:var(--accent); white-space:nowrap; }
+    .widget-today { border:0; background:transparent; color:var(--accent); padding:3px 0; font-size:10px; font-weight:800; }
+    .home-icons { display:grid; grid-template-columns:repeat(4,1fr); gap:16px; position:absolute; bottom:72px; width:100%; padding:0 28px; }
+    .app-icon { display:grid; justify-items:center; gap:5px; font-size:10px; text-shadow:0 1px 3px #425486; }
+    .app-icon i { width:43px; height:43px; border-radius:14px; background:rgba(255,255,255,.79); box-shadow:0 4px 10px #28346a2b; display:grid; place-items:center; font-size:23px; color:#33519c; font-style:normal; text-shadow:none; }
+    .app-icon:nth-child(2) i { color:#a7613f; }
+    .app-icon:nth-child(3) i { color:#146e85; }
+    .app-icon:nth-child(4) i { color:#5b65b8; }
+    .dock { position:absolute; bottom:15px; left:50%; transform:translateX(-50%); width:112px; height:5px; border-radius:20px; background:rgba(255,255,255,.9); }
+    .note { margin:15px auto 0; width:min(100%,340px); font-size:12px; color:var(--muted); line-height:1.55; }
+    .modal-backdrop { position:fixed; inset:0; z-index:30; background:rgba(18,28,48,.48); display:grid; place-items:center; padding:16px; }
+    .modal-backdrop[hidden] { display:none; }
+    .dialog { width:min(100%,380px); background:var(--paper); border-radius:22px; padding:22px; box-shadow:var(--shadow); }
+    .dialog h2 { margin:0 0 7px; font-size:20px; letter-spacing:-.03em; }
+    .dialog p { color:var(--muted); font-size:12px; line-height:1.5; margin:0 0 16px; }
+    .dialog .danger { color:var(--red); border-color:#efc3c7; }
+    .choice-list { display:grid; gap:8px; margin:14px 0; }
+    .choice-list label { border:1px solid var(--line); border-radius:12px; padding:10px; font-size:12px; display:flex; gap:8px; align-items:center; }
+    .dialog-actions { display:flex; justify-content:space-between; gap:8px; margin-top:17px; }
+    .toast { position:fixed; bottom:20px; left:50%; transform:translateX(-50%); z-index:50; background:#203154; color:#fff; padding:11px 16px; border-radius:12px; font-size:12px; box-shadow:var(--shadow); }
+    .toast[hidden] { display:none; }
+    body.dark { color-scheme:dark; --ink:#e9eef8; --muted:#a6b3c9; --line:#38445b; --paper:#202b40; --soft:#19243a; --accent:#9aafff; --accent-soft:#303e6c; --teal:#9ad9c9; --teal-soft:#24483f; --orange:#efb98d; --orange-soft:#574033; background:#10192b; }
+    body.dark .preview-card { background:#1b2639; border-color:#38445b; }
+    body.dark .phone { border-color:#0b1426; }
+    body.dark .phone:before,body.dark .home-phone:before { background:#0b1426; }
+    body.dark .class-card .time { color:#d7e0f4; }
+    body.dark .class-card .time span { color:#a6b3c9; }
+    body.dark .week-note small { color:#b7c6ff; }
+    body.dark .demo-tag,body.dark .tool-chip { background:#202b40; color:#d5dfef; border-color:#38445b; }
+    body.dark .tool-chip.active { background:#667ee2; color:white; }
+    body.dark .widget { background:rgba(32,43,64,.97); }
+    body.dark .widget-head span { color:#b7c6ff; }
+    body.dark .dialog { background:#202b40; }
+    @media (max-width:850px) { .workspace { grid-template-columns:minmax(0,1fr); max-width:540px; margin:auto; } .workspace>section { min-width:0; } .intro { max-width:540px; margin:0 auto 25px; } .home-phone { height:620px; } }
+    @media (max-width:460px) { .shell { padding:25px 10px 45px; } .intro { padding:0 7px; align-items:start; } .intro p { font-size:12px; } .demo-tag { display:none; } .preview-card { padding:12px 5px 18px; border-radius:26px; } .phone { height:690px; width:min(100%,370px); border-width:7px; } .home-phone { border-width:7px; } .panel-heading { padding:0 8px; } }
+    @media (prefers-reduced-motion:reduce) { *,*:before,*:after { animation:none!important; scroll-behavior:auto!important; transition:none!important; } }
+  </style>
+</head>
+<body>
+  <main class="shell">
+    <header class="intro">
+      <div><span class="eyebrow">Podgląd projektu</span><h1>Plan, który nadąża.</h1><p>MAK · interaktywny szkic aplikacji i widgetu</p></div>
+      <span class="demo-tag">Dane przykładowe · 18.09.2026</span>
+    </header>
+    <div class="workspace">
+      <section aria-labelledby="app-heading">
+        <div class="panel-heading"><h2 id="app-heading">Aplikacja</h2><span>Dotknij elementów, aby sprawdzić widoki</span></div>
+        <div class="preview-card"><div class="phone">
+          <div class="status"><span>9:41</span><span class="status-icons" aria-label="Zasięg, Wi-Fi, bateria">▮▮ ◕ ▰</span></div>
+          <div class="app-top"><div class="brand"><span class="mark" aria-hidden="true"><i></i><i></i><i></i><i></i></span>MAK</div><button class="icon-button" id="settingsButton" aria-label="Ustawienia i motyw">⚙</button></div>
+          <section class="screen" id="todayScreen" aria-label="Dzisiaj">
+            <p class="section-label">Dzisiaj</p><h3>Piątek, 18 września</h3><p class="subtitle" id="todayWeekLabel">Tydzień A · semestr zimowy 2026/27</p>
+            <div class="summary"><div><small>Twój plan na dziś</small><b id="todaySummary">3 zajęcia</b></div><span class="big" aria-hidden="true">✦</span></div>
+            <div class="row-title"><strong>Zajęcia</strong><span>Od najwcześniejszego</span></div><div class="class-list" id="todayList"></div>
+          </section>
+          <section class="screen" id="planScreen" aria-label="Plan" hidden>
+            <p class="section-label">Plan</p><h3>Twoje zajęcia</h3>
+            <div class="view-switch" role="group" aria-label="Sposób wyświetlania planu"><button class="active" data-plan-view="list" aria-pressed="true">Lista</button><button data-plan-view="calendar" aria-pressed="false">Kalendarz</button></div>
+            <div id="planListView">
+              <div class="week-toolbar"><button class="round-btn" id="prevWeek" aria-label="Poprzedni tydzień">‹</button><div class="week-title"><b id="weekRange"></b><small id="weekSubtitle"></small></div><button class="round-btn" id="nextWeek" aria-label="Następny tydzień">›</button></div>
+              <div class="week-note"><div><b id="weekPill">Tydzień A</b><small id="weekSource">Wyliczony automatycznie</small></div><button class="text-button" id="editWeek">Zmień A/B</button></div>
+              <div class="days" id="days"></div>
+              <div class="filter-row" role="group" aria-label="Filtr kierunków"><button class="filter active" data-filter="all">Wszystkie</button><button class="filter" data-filter="Informatyka">Informatyka</button><button class="filter" data-filter="Elektronika">Elektronika</button></div>
+              <div class="row-title"><strong id="planDayTitle">Piątek</strong><span id="planCount"></span></div><div class="class-list" id="planList"></div>
+            </div>
+            <div id="planCalendarView" hidden>
+              <div class="calendar-toolbar"><button class="round-btn" id="prevMonth" aria-label="Poprzedni miesiąc">‹</button><strong id="calendarMonth"></strong><button class="round-btn" id="nextMonth" aria-label="Następny miesiąc">›</button></div>
+              <div class="calendar-weekdays" aria-hidden="true"><span>Pn</span><span>Wt</span><span>Śr</span><span>Cz</span><span>Pt</span><span>So</span><span>Nd</span></div>
+              <div class="calendar-grid" id="calendarGrid"></div>
+              <div class="calendar-options"><label><input id="showCancelled" type="checkbox"> Pokaż odwołane</label><button class="text-button" id="addOneOff">+ Jednorazowe</button></div>
+              <div class="row-title"><strong id="calendarDayTitle"></strong><span id="calendarDayCount"></span></div><div class="class-list" id="calendarDayList"></div>
+            </div>
+          </section>
+          <section class="screen" id="addScreen" aria-label="Dodaj zajęcia" hidden>
+            <p class="section-label">Nowy wpis</p><h3>Dodaj zajęcia</h3><p class="subtitle">Najpierw termin i przedmiot. Resztę możesz uzupełnić później.</p>
+            <form id="addForm" class="form-stack">
+              <label class="field">Nazwa przedmiotu<input name="name" required maxlength="80" placeholder="np. Projektowanie interfejsów"></label>
+              <div class="field-row"><label class="field">Kierunek<select name="course"><option>Informatyka</option><option>Elektronika</option></select></label><label class="field">Typ<select name="type"><option>Wykład</option><option>Ćwiczenia</option><option>Laboratorium</option><option>Projekt</option><option>Seminarium</option></select></label></div>
+              <label class="field">Dzień tygodnia<select name="day"><option value="0">Poniedziałek</option><option value="1">Wtorek</option><option value="2">Środa</option><option value="3">Czwartek</option><option value="4" selected>Piątek</option><option value="5">Sobota</option><option value="6">Niedziela</option></select></label>
+              <div class="field-row"><label class="field">Od<input name="start" type="time" value="14:00" required></label><label class="field">Do<input name="end" type="time" value="15:30" required></label></div>
+              <label class="field">Powtarzanie<select name="repeat"><option value="all">Co tydzień</option><option value="A">Tydzień A</option><option value="B">Tydzień B</option><option value="once">Jednorazowo</option></select></label>
+              <label class="field" id="oneDateField" hidden>Data zajęć<input name="date" type="date" min="2026-09-18" max="2027-02-15"></label>
+              <div class="field-row"><label class="field">Sala<input name="room" placeholder="np. L204"></label><label class="field">Prowadzący<input name="teacher" placeholder="Opcjonalnie"></label></div>
+              <button class="primary" type="submit">Dodaj do planu</button><span class="helper">Dane dodane w podglądzie istnieją tylko do odświeżenia strony.</span>
+            </form>
+          </section>
+          <section class="screen" id="settingsScreen" aria-label="Ustawienia" hidden><p class="section-label">Ustawienia</p><h3>Wygląd</h3><p class="subtitle">Zobacz, jak plan i widget wyglądają w różnych motywach.</p><div class="form-stack"><label class="field">Motyw<select id="themeSelect"><option value="system">Systemowy</option><option value="light">Jasny</option><option value="dark">Ciemny</option></select></label><div class="week-note"><div><b>Semestr zimowy 2026/27</b><small>18 września – 15 lutego · pierwszy tydzień A</small></div></div><p class="helper">To podgląd projektu. Eksport danych i ustawienia semestru będą dostępne w aplikacji.</p></div></section>
+          <nav class="bottom-nav" aria-label="Nawigacja główna"><button class="nav-button active" data-screen="today"><span class="symbol" aria-hidden="true">▦</span>Dzisiaj</button><button class="nav-button" data-screen="plan"><span class="symbol" aria-hidden="true">▤</span>Plan</button><button class="nav-button" data-screen="add"><span class="symbol" aria-hidden="true">＋</span>Dodaj</button></nav>
+        </div></div>
+      </section>
+      <section aria-labelledby="widget-heading">
+        <div class="panel-heading"><h2 id="widget-heading">Widget na pulpicie</h2><div class="widget-tools" role="group" aria-label="Rozmiar widgetu"><button class="tool-chip active" data-widget="small">Mały</button><button class="tool-chip" data-widget="large">Duży</button></div></div>
+        <div class="preview-card"><div class="home-phone">
+          <div class="home-status"><span>9:41</span><span aria-label="Zasięg, Wi-Fi, bateria">▮▮ ◕ ▰</span></div>
+          <div class="home-clock"><b>09:41</b><span>Piątek, 18 września</span></div>
+          <div class="widget" id="widgetPreview" aria-label="Podgląd widgetu MAK"><div class="widget-head"><button class="widget-arrow" id="widgetPrev" aria-label="Poprzedni dzień">‹</button><div class="widget-day"><b id="widgetDate">Piątek, 18 wrz</b><small id="widgetWeek">Tydzień A</small></div><span class="pill neutral" id="widgetPosition">5 / 7</span><button class="widget-arrow" id="widgetNext" aria-label="Następny dzień">›</button></div><div class="widget-list" id="widgetList"></div><div class="widget-foot"><button class="widget-today" id="widgetToday" hidden>Dzisiaj</button><span id="widgetFooter">3 zajęcia dzisiaj</span><b>Otwórz plan ↗</b></div></div>
+          <div class="home-icons" aria-hidden="true"><span class="app-icon"><i>✉</i>Poczta</span><span class="app-icon"><i>▦</i>Kalendarz</span><span class="app-icon"><i>♫</i>Muzyka</span><span class="app-icon"><i>◉</i>Aparat</span></div><div class="dock" aria-hidden="true"></div>
+        </div><p class="note">Przełącz rozmiar widgetu. Dni zmienisz strzałkami albo przesunięciem lewo/prawo. Podgląd pokazuje orientacyjny układ; rzeczywisty rozmiar zależy od siatki pulpitu telefonu.</p></div>
+      </section>
+    </div>
+  </main>
+  <div class="modal-backdrop" id="weekDialog" hidden><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="dialogTitle" aria-describedby="dialogDescription"><h2 id="dialogTitle">Zmień tydzień A/B</h2><p id="dialogDescription">Wybierz oznaczenie i zakres zmiany. W każdym momencie możesz wrócić do automatycznego planu.</p><form id="weekForm"><label class="field">Oznaczenie tygodnia<select name="type"><option value="A">Tydzień A</option><option value="B">Tydzień B</option></select></label><div class="choice-list"><label><input type="radio" name="scope" value="one" checked> Tylko ten tydzień</label><label><input type="radio" name="scope" value="from"> Od tego tygodnia w przyszłość</label></div><div class="dialog-actions"><button type="button" class="secondary" id="resetWeek">Usuń korektę</button><button type="button" class="secondary" id="cancelWeek">Anuluj</button><button type="submit" class="primary">Zapisz</button></div></form></div></div>
+  <div class="modal-backdrop" id="occurrenceDialog" hidden><div class="dialog" role="dialog" aria-modal="true" aria-labelledby="occurrenceTitle" aria-describedby="occurrenceDescription"><h2 id="occurrenceTitle">Zmień termin</h2><p id="occurrenceDescription">Zmiana dotyczy tylko wybranego wystąpienia zajęć.</p><form id="occurrenceForm"><label class="field">Data<input name="date" type="date" required min="2026-09-18" max="2027-02-15"></label><div class="field-row"><label class="field">Od<input name="start" type="time" required></label><label class="field">Do<input name="end" type="time" required></label></div><label class="field">Sala<input name="room"></label><div class="dialog-actions"><button type="button" class="secondary dialog-danger" id="cancelOccurrence">Odwołaj termin</button><button type="button" class="secondary" id="closeOccurrence">Zamknij</button><button type="submit" class="primary">Zapisz zmianę</button></div></form></div></div>
+  <div class="toast" id="toast" role="status" aria-live="polite" hidden></div>
+  <script>
+    const baseMonday = new Date(2026, 8, 14);
+    const weekdayNames = ['Poniedziałek','Wtorek','Środa','Czwartek','Piątek','Sobota','Niedziela'];
+    const shortNames = ['Pon','Wt','Śr','Czw','Pt','Sob','Nd'];
+    const entries = [
+      {day:0,start:'08:00',end:'09:30',name:'Algorytmy',course:'Informatyka',type:'Wykład',room:'A12',repeat:'all'},
+      {day:1,start:'10:15',end:'11:45',name:'Układy cyfrowe',course:'Elektronika',type:'Laboratorium',room:'B04',repeat:'B'},
+      {day:2,start:'08:00',end:'09:30',name:'Bazy danych',course:'Informatyka',type:'Ćwiczenia',room:'L204',repeat:'A'},
+      {day:3,start:'12:00',end:'13:30',name:'Matematyka dyskretna',course:'Elektronika',type:'Wykład',room:'A12',repeat:'all'},
+      {day:4,start:'08:00',end:'09:30',name:'Programowanie',course:'Informatyka',type:'Laboratorium',room:'L204',teacher:'dr Jan Kowalski',repeat:'all'},
+      {day:4,start:'10:15',end:'11:45',name:'Matematyka dyskretna',course:'Elektronika',type:'Wykład',room:'A12',teacher:'dr Anna Nowak',repeat:'A'},
+      {day:4,start:'13:00',end:'14:30',name:'Elektronika',course:'Elektronika',type:'Ćwiczenia',room:'B04',teacher:'mgr Piotr Nowicki',repeat:'all'},
+      {day:4,start:'12:00',end:'13:30',name:'Projektowanie układów',course:'Elektronika',type:'Projekt',room:'201',repeat:'B'}
+    ];
+    const oneOffEntries = [{date:'2026-09-23',start:'16:00',end:'17:30',name:'Odrabianie: Programowanie',course:'Informatyka',type:'Laboratorium',room:'L204',repeat:'once'}];
+    let weekOffset = 0, selectedDay = 4, filter = 'all', widgetSize = 'small', widgetDayIndex = 4, currentScreen = 'today', lastFocus = null, widgetTouchStart = null;
+    let planView = 'list', calendarMonth = new Date(2026,8,1), selectedCalendarDate = '2026-09-23', selectedOccurrence = null;
+    const overrides = new Map();
+    const occurrenceChanges = new Map();
+    occurrenceChanges.set('2026-09-25|Programowanie',{kind:'CANCELLED',originalDate:'2026-09-25',entry:{...entries.find(e=>e.name==='Programowanie')}});
+    const $ = id => document.getElementById(id);
+    const dateFor = (offset,day=0) => { const d = new Date(baseMonday); d.setDate(d.getDate()+offset*7+day); return d; };
+    const formatDate = d => new Intl.DateTimeFormat('pl-PL',{day:'numeric',month:'short'}).format(d);
+    const fullDate = d => new Intl.DateTimeFormat('pl-PL',{weekday:'long',day:'numeric',month:'long'}).format(d);
+    const isoDate = d => `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const fromIso = value => { const [y,m,d]=value.split('-').map(Number); return new Date(y,m-1,d); };
+    const dayCount = n => n===1?'1 zajęcie':n>=2&&n<=4?`${n} zajęcia`:`${n} zajęć`;
+    const isInSemester = (offset,day) => { const d=dateFor(offset,day); return d>=new Date(2026,8,18)&&d<=new Date(2027,1,15); };
+    const safe = value => String(value??'').replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    function weekInfo(offset) {
+      let anchor = 0, type = 'A', hasFutureOverride=false;
+      for (const [key, value] of [...overrides].sort((a,b)=>a[0]-b[0])) if (key<=offset && value.from) { anchor=key; type=value.from; hasFutureOverride=true; }
+      const automatic = (offset-anchor)%2===0 ? type : (type==='A'?'B':'A');
+      const one = overrides.get(offset)?.one;
+      return {type:one||automatic, source:one?'Ręcznie · tylko ten tydzień':hasFutureOverride?'Ręcznie · od wskazanego tygodnia':'Wyliczony automatycznie'};
+    }
+    function datePosition(value) { const d=typeof value==='string'?fromIso(value):value; const days=Math.round((d-baseMonday)/86400000); return {offset:Math.floor(days/7),day:((days%7)+7)%7}; }
+    function classesForDate(value,course='all',includeCancelled=false) {
+      const date=typeof value==='string'?fromIso(value):value, iso=isoDate(date), position=datePosition(date);
+      if (!isInSemester(position.offset,position.day)) return [];
+      const type=weekInfo(position.offset).type, result=[];
+      entries.filter(e=>e.day===position.day&&(e.repeat==='all'||e.repeat===type)).forEach(entry=>{
+        const key=`${iso}|${entry.name}`, change=occurrenceChanges.get(key);
+        if (!change) result.push({...entry,changeKey:key});
+        else if (change.kind==='CANCELLED') { if(includeCancelled) result.push({...entry,status:'cancelled',changeKey:key}); }
+        else if (change.targetDate===iso) result.push({...entry,...change,status:'modified',changeKey:key});
+      });
+      for (const [key,change] of occurrenceChanges) if(change.kind==='MODIFIED'&&change.targetDate===iso&&change.originalDate!==iso) result.push({...change.entry,...change,status:'modified',changeKey:key});
+      oneOffEntries.filter(e=>e.date===iso).forEach(e=>result.push({...e,status:'once',changeKey:`once|${e.date}|${e.name}`}));
+      return result.filter(e=>course==='all'||e.course===course).sort((a,b)=>a.start.localeCompare(b.start));
+    }
+    function classesFor(offset,day,course='all',includeCancelled=false) { return classesForDate(dateFor(offset,day),course,includeCancelled); }
+    function classHtml(e,date=selectedCalendarDate) { const orange=e.course==='Elektronika', status=e.status==='cancelled'?'Odwołane':e.status==='modified'?'Zmienione':e.status==='once'?'Jednorazowe':''; return `<button class="class-card ${orange?'orange':''} ${e.status==='cancelled'?'cancelled':''}" type="button" data-class="${safe(e.name)}" data-date="${safe(date)}" data-key="${safe(e.changeKey||`${date}|${e.name}`)}" aria-label="${safe(e.name)}, ${safe(e.start)} do ${safe(e.end)}, ${safe(e.course)}${status?', '+status:''}"><span class="time">${safe(e.start)}<span>${safe(e.end)}</span></span><span><h4>${safe(e.name)}${status?` <span class="status-badge ${e.status}">${status}</span>`:''}</h4><span class="meta"><span class="pill ${orange?'orange':'teal'}">${safe(e.course)}</span> ${safe(e.type)} · ${safe(e.room||'Sala niepodana')}${e.teacher?' · '+safe(e.teacher):''}</span></span></button>`; }
+    function renderToday() { const date=isoDate(dateFor(0,4)), list=classesFor(0,4); $('todayList').innerHTML=list.length?list.map(e=>classHtml(e,date)).join(''):'<div class="empty">Nie masz dziś zajęć.</div>'; $('todaySummary').textContent=dayCount(list.length); $('todayWeekLabel').textContent=`Tydzień ${weekInfo(0).type} · semestr zimowy 2026/27`; }
+    function renderPlanList() { const info=weekInfo(weekOffset), date=isoDate(dateFor(weekOffset,selectedDay)); $('weekRange').textContent=`${formatDate(dateFor(weekOffset))} – ${formatDate(dateFor(weekOffset,6))}`; $('weekSubtitle').textContent=weekOffset===0?'Bieżący tydzień':'Semestr zimowy 2026/27'; $('weekPill').textContent=`Tydzień ${info.type}`; $('weekSource').textContent=info.source; $('prevWeek').disabled=weekOffset===0; $('nextWeek').disabled=weekOffset===22; if (!isInSemester(weekOffset,selectedDay)) selectedDay=weekOffset===22?0:4; $('days').innerHTML=shortNames.map((n,i)=>`<button class="day-button ${i===selectedDay?'active':''}" data-day="${i}" aria-pressed="${i===selectedDay}" aria-label="${weekdayNames[i]}, ${formatDate(dateFor(weekOffset,i))}" ${isInSemester(weekOffset,i)?'':'disabled'}><span>${n}</span><b>${dateFor(weekOffset,i).getDate()}</b></button>`).join(''); const list=classesFor(weekOffset,selectedDay,filter); $('planDayTitle').textContent=weekdayNames[selectedDay]; $('planCount').textContent=dayCount(list.length); $('planList').innerHTML=list.length?list.map(e=>classHtml(e,date)).join(''):'<div class="empty">Brak zajęć w tym dniu dla wybranego kierunku.</div>'; }
+    function renderCalendar() {
+      $('calendarMonth').textContent=new Intl.DateTimeFormat('pl-PL',{month:'long',year:'numeric'}).format(calendarMonth);
+      const first=new Date(calendarMonth.getFullYear(),calendarMonth.getMonth(),1), start=new Date(first), monday=(first.getDay()+6)%7; start.setDate(start.getDate()-monday);
+      $('calendarGrid').innerHTML=Array.from({length:42},(_,index)=>{const d=new Date(start);d.setDate(start.getDate()+index);const iso=isoDate(d), list=classesForDate(iso,'all',$('showCancelled').checked), changed=list.some(e=>e.status), marks=list.slice(0,3).map(e=>`<i class="${e.status?'changed':e.course==='Elektronika'?'orange':''}"></i>`).join('');return `<button class="calendar-day ${d.getMonth()!==calendarMonth.getMonth()?'outside':''} ${iso==='2026-09-18'?'today':''} ${iso===selectedCalendarDate?'selected':''}" data-calendar-date="${iso}" aria-label="${safe(fullDate(d))}, ${dayCount(list.length)}"><span>${d.getDate()}</span><span class="calendar-marks">${marks}</span></button>`;}).join('');
+      const selected=fromIso(selectedCalendarDate), list=classesForDate(selectedCalendarDate,'all',$('showCancelled').checked); $('calendarDayTitle').textContent=fullDate(selected); $('calendarDayCount').textContent=dayCount(list.length); $('calendarDayList').innerHTML=list.length?list.map(e=>classHtml(e,selectedCalendarDate)).join(''):'<div class="empty">Brak zajęć. Możesz dodać termin jednorazowy.</div>';
+    }
+    function renderPlan() { $('planListView').hidden=planView!=='list'; $('planCalendarView').hidden=planView!=='calendar'; document.querySelectorAll('[data-plan-view]').forEach(b=>{const active=b.dataset.planView===planView;b.classList.toggle('active',active);b.setAttribute('aria-pressed',active);}); renderPlanList(); renderCalendar(); }
+    function renderWidget() { const widgetWeekOffset=Math.floor(widgetDayIndex/7), widgetDay=((widgetDayIndex%7)+7)%7, date=dateFor(widgetWeekOffset,widgetDay), info=weekInfo(widgetWeekOffset), list=classesFor(widgetWeekOffset,widgetDay); const isToday=widgetDayIndex===4; $('widgetDate').textContent=`${weekdayNames[widgetDay]}, ${formatDate(date)}`; $('widgetWeek').textContent=`Tydzień ${info.type}`; $('widgetPosition').textContent=`${widgetDayIndex+1} / 7`; $('widgetPrev').disabled=widgetDayIndex===0; $('widgetNext').disabled=widgetDayIndex===6; $('widgetToday').hidden=isToday; $('widgetFooter').textContent=isToday?`${dayCount(list.length)} dzisiaj`:dayCount(list.length); const visible=widgetSize==='small'?2:4; $('widgetList').innerHTML=list.slice(0,visible).map(e=>`<div class="widget-item ${e.course==='Elektronika'?'orange':''}"><time>${safe(e.start)}</time><span class="bar"></span><span><b>${safe(e.name)}</b><small>${safe(e.room||'Sala niepodana')} · ${safe(e.course)}${widgetSize==='large'&&e.teacher?' · '+safe(e.teacher):''}</small></span></div>`).join('') || '<div class="empty">Brak zajęć.</div>'; }
+    function render() { renderToday(); renderPlan(); renderWidget(); }
+    function show(screen) { currentScreen=screen; for (const name of ['today','plan','add','settings']) $(`${name}Screen`).hidden=name!==screen; document.querySelectorAll('.nav-button').forEach(b=>{ b.classList.toggle('active',b.dataset.screen===screen); b.setAttribute('aria-current',b.dataset.screen===screen?'page':'false'); }); }
+    function toast(message) { $('toast').textContent=message; $('toast').hidden=false; clearTimeout(toast.timer); toast.timer=setTimeout(()=>$('toast').hidden=true,2600); }
+    document.querySelectorAll('.nav-button').forEach(b=>b.addEventListener('click',()=>show(b.dataset.screen)));
+    $('settingsButton').addEventListener('click',()=>show(currentScreen==='settings'?'today':'settings'));
+    $('prevWeek').addEventListener('click',()=>{weekOffset=Math.max(0,weekOffset-1);renderPlan();});
+    $('nextWeek').addEventListener('click',()=>{weekOffset=Math.min(22,weekOffset+1);renderPlan();});
+    $('days').addEventListener('click',e=>{const b=e.target.closest('[data-day]');if(b){selectedDay=Number(b.dataset.day);renderPlan();}});
+    document.querySelectorAll('[data-plan-view]').forEach(b=>b.addEventListener('click',()=>{planView=b.dataset.planView;renderPlan();}));
+    $('calendarGrid').addEventListener('click',e=>{const b=e.target.closest('[data-calendar-date]');if(!b)return;selectedCalendarDate=b.dataset.calendarDate;const date=fromIso(selectedCalendarDate);calendarMonth=new Date(date.getFullYear(),date.getMonth(),1);renderCalendar();});
+    $('prevMonth').addEventListener('click',()=>{calendarMonth.setMonth(calendarMonth.getMonth()-1);calendarMonth=new Date(calendarMonth);renderCalendar();});
+    $('nextMonth').addEventListener('click',()=>{calendarMonth.setMonth(calendarMonth.getMonth()+1);calendarMonth=new Date(calendarMonth);renderCalendar();});
+    $('showCancelled').addEventListener('change',renderCalendar);
+    $('addOneOff').addEventListener('click',()=>{const form=$('addForm');form.elements.repeat.value='once';form.elements.date.value=selectedCalendarDate;toggleOneDate();show('add');form.elements.name.focus();});
+    document.querySelectorAll('[data-filter]').forEach(b=>b.addEventListener('click',()=>{filter=b.dataset.filter;document.querySelectorAll('[data-filter]').forEach(c=>c.classList.toggle('active',c===b));renderPlan();}));
+    document.querySelectorAll('[data-widget]').forEach(b=>b.addEventListener('click',()=>{widgetSize=b.dataset.widget;document.querySelectorAll('[data-widget]').forEach(c=>c.classList.toggle('active',c===b));renderWidget();}));
+    $('widgetPrev').addEventListener('click',()=>{if(widgetDayIndex>0){widgetDayIndex--;renderWidget();}});
+    $('widgetNext').addEventListener('click',()=>{if(widgetDayIndex<6){widgetDayIndex++;renderWidget();}});
+    $('widgetToday').addEventListener('click',()=>{widgetDayIndex=4;renderWidget();});
+    $('widgetPreview').addEventListener('touchstart',e=>{widgetTouchStart=e.changedTouches[0].clientX;},{passive:true});
+    $('widgetPreview').addEventListener('touchend',e=>{if(widgetTouchStart===null)return;const distance=e.changedTouches[0].clientX-widgetTouchStart;if(Math.abs(distance)>35){if(distance<0&&widgetDayIndex<6)widgetDayIndex++;if(distance>0&&widgetDayIndex>0)widgetDayIndex--;renderWidget();}widgetTouchStart=null;},{passive:true});
+    function closeDialog(){ $('weekDialog').hidden=true; lastFocus?.focus(); }
+    function refreshResetButton(){const scope=$('weekForm').elements.scope.value; $('resetWeek').disabled=!(overrides.get(weekOffset)||{})[scope];}
+    $('editWeek').addEventListener('click',()=>{lastFocus=document.activeElement;const item=overrides.get(weekOffset)||{};const info=weekInfo(weekOffset);$('weekForm').elements.type.value=item.one||item.from||info.type;$('weekForm').elements.scope.value=item.from&&!item.one?'from':'one';refreshResetButton();$('weekDialog').hidden=false;$('weekForm').elements.type.focus();});
+    $('weekForm').addEventListener('change',refreshResetButton);
+    $('cancelWeek').addEventListener('click',closeDialog);
+    $('weekDialog').addEventListener('click',e=>{if(e.target===$('weekDialog'))closeDialog();});
+    document.addEventListener('keydown',e=>{if(e.key!=='Escape')return;if(!$('weekDialog').hidden)closeDialog();else if(!$('occurrenceDialog').hidden)closeOccurrenceDialog();});
+    $('weekForm').addEventListener('submit',e=>{e.preventDefault();const form=e.target;const item=overrides.get(weekOffset)||{};item[form.elements.scope.value]=form.elements.type.value;overrides.set(weekOffset,item);closeDialog();render();toast('Zmieniono oznaczenie tygodnia.');});
+    $('resetWeek').addEventListener('click',()=>{const item=overrides.get(weekOffset)||{};const scope=$('weekForm').elements.scope.value;delete item[scope];if(item.one||item.from)overrides.set(weekOffset,item);else overrides.delete(weekOffset);closeDialog();render();toast('Usunięto wybraną korektę.');});
+    function toggleOneDate(){const once=$('addForm').elements.repeat.value==='once';$('oneDateField').hidden=!once;$('addForm').elements.date.required=once;}
+    $('addForm').elements.repeat.addEventListener('change',toggleOneDate);
+    $('addForm').addEventListener('submit',e=>{e.preventDefault();const data=new FormData(e.target);if(data.get('end')<=data.get('start')){toast('Godzina zakończenia musi być późniejsza.');e.target.elements.end.focus();return;}const item={name:String(data.get('name')).trim(),course:data.get('course'),type:data.get('type'),day:Number(data.get('day')),start:data.get('start'),end:data.get('end'),repeat:data.get('repeat'),room:data.get('room'),teacher:data.get('teacher')};if(item.repeat==='once'){item.date=data.get('date');oneOffEntries.push(item);selectedCalendarDate=item.date;const date=fromIso(item.date);calendarMonth=new Date(date.getFullYear(),date.getMonth(),1);planView='calendar';}else entries.push(item);e.target.reset();toggleOneDate();render();show(item.repeat==='once'?'plan':'today');toast(item.repeat==='once'?'Dodano jednorazowe zajęcia.':'Dodano zajęcia do podglądu.');});
+    $('themeSelect').addEventListener('change',e=>{const mode=e.target.value;document.body.classList.toggle('dark',mode==='dark'||mode==='system'&&matchMedia('(prefers-color-scheme: dark)').matches);});
+    function closeOccurrenceDialog(){ $('occurrenceDialog').hidden=true; selectedOccurrence=null; lastFocus?.focus(); }
+    function openOccurrence(card){const list=classesForDate(card.dataset.date,'all',true), item=list.find(e=>e.changeKey===card.dataset.key);if(!item||item.status==='once'){toast(item?.status==='once'?'Zajęcia jednorazowe edytujesz jako osobny wpis.':'Nie znaleziono terminu.');return;}selectedOccurrence={...item,originalDate:item.originalDate||card.dataset.date,key:card.dataset.key};lastFocus=document.activeElement;$('occurrenceTitle').textContent=item.name;$('occurrenceForm').elements.date.value=item.targetDate||card.dataset.date;$('occurrenceForm').elements.start.value=item.start;$('occurrenceForm').elements.end.value=item.end;$('occurrenceForm').elements.room.value=item.room||'';$('cancelOccurrence').textContent=item.status==='cancelled'?'Przywróć termin':'Odwołaj termin';$('occurrenceDialog').hidden=false;$('occurrenceForm').elements.date.focus();}
+    $('closeOccurrence').addEventListener('click',closeOccurrenceDialog);
+    $('occurrenceDialog').addEventListener('click',e=>{if(e.target===$('occurrenceDialog'))closeOccurrenceDialog();});
+    $('occurrenceForm').addEventListener('submit',e=>{e.preventDefault();if(!selectedOccurrence)return;const data=new FormData(e.target);if(data.get('end')<=data.get('start')){toast('Godzina zakończenia musi być późniejsza.');e.target.elements.end.focus();return;}occurrenceChanges.set(selectedOccurrence.key,{kind:'MODIFIED',originalDate:selectedOccurrence.originalDate,targetDate:data.get('date'),start:data.get('start'),end:data.get('end'),room:data.get('room'),entry:{...selectedOccurrence,status:undefined,changeKey:undefined}});selectedCalendarDate=data.get('date');closeOccurrenceDialog();render();toast('Zmieniono tylko ten termin.');});
+    $('cancelOccurrence').addEventListener('click',()=>{if(!selectedOccurrence)return;if(selectedOccurrence.status==='cancelled'){occurrenceChanges.delete(selectedOccurrence.key);toast('Przywrócono termin.');}else{occurrenceChanges.set(selectedOccurrence.key,{kind:'CANCELLED',originalDate:selectedOccurrence.originalDate,entry:{...selectedOccurrence,status:undefined,changeKey:undefined}});toast('Odwołano wybrany termin.');}closeOccurrenceDialog();render();});
+    document.addEventListener('click',e=>{const card=e.target.closest('[data-class]');if(card)openOccurrence(card);});
+    render();
+  </script>
+</body>
+</html>

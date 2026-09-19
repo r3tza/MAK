@@ -1,0 +1,89 @@
+# MAK — dziennik decyzji
+
+## 2026-09-19 — Granice warstw, ViewModel i eksport
+
+- Fakty: Użytkownik zaakceptował zalecenia: pakiety `data`, `domain`, `ui`, `widget`, `export` w jednym module Gradle; ViewModel składa stan z repozytorium i wyniku resolvera; `WeekCalculator` schowany w `ScheduleResolver`; eksport poza Room.
+- Decyzja: Zapisano granice w `ARCHITECTURE.md`. ViewModel nie woła DAO i nie liczy planu. Widget nie ma ViewModelu. UI wybiera plik, `export` zapisuje JSON. Domain nie zna `Uri`. Datę wstrzykuje się do testów. Walidacja formularza jest czystą funkcją.
+- Powód: Poprawność planu zostaje w jednym miejscu, baza zostaje cienkim magazynem, a eksport może rosnąć o import bez mieszania z DAO.
+- Odrzucone: Osobne moduły Gradle na start; ViewModele w `domain`; `WeekCalculator` składany w każdym ekranie; eksport jako część `data` albo `data/export`.
+- Wznowić decyzję tylko gdy: któraś warstwa dostanie niezależny cykl wdrażania albo import przestanie mieścić się w pakiecie `export`.
+
+## 2026-09-19 — Minimalna wersja Androida
+
+- Fakty: Użytkownik potwierdził, że `minSdk` wynosi 31. Projekt Gradle już to ustawia.
+- Decyzja: Minimalna wersja Androida to 31 (Android 12). Zapis w `ARCHITECTURE.md` i `STACK.md`. Pytanie otwarte o minSdk zostaje zamknięte.
+- Powód: API 31 daje `java.time` bez desugaringu i odpowiada telefonowi do użytku własnego.
+- Odrzucone: Szersze wsparcie starszych wersji Androida.
+- Wznowić decyzję tylko gdy: użytkownik będzie potrzebował uruchamiać MAK na urządzeniu poniżej API 31.
+
+## 2026-09-19 — Testy dla agentów
+
+- Fakty: Użytkownik chce, żeby agenci sami sprawdzali działanie aplikacji testami. Warstwa Room ma pozostać minimalna. Zapytał, czy przy cienkiej bazie potrzeba wielu testów DAO.
+- Decyzja: Zasady testowania zapisano w `AGENTS.md`. Priorytet mają testy JVM `WeekCalculator`, `ScheduleResolver`, `CollisionDetector`, eksportu JSON i walidacji. Testy Room ograniczają się do odczytu po nowej instancji bazy oraz migracji przy rzeczywistej zmianie schematu. Testy Compose obejmują kilka przebiegów z wstrzykniętą datą. Widget nie ma osobnych testów Glance.
+- Powód: Poprawność planu jest w resolverze, nie w DAO. Dużo testów bazy dublowałoby SQLite i spowalniało agentów bez ochrony dodatkowych reguł.
+- Odrzucone: Pokrywanie CRUD każdego DAO oraz instrumentacja widgetu na starcie.
+- Wznowić decyzję tylko gdy: warstwa danych przestanie być cienkim zapisem Room albo pojawi się stałe urządzenie w CI do testów UI.
+
+## 2026-09-19 — Nazwa aplikacji
+
+- Fakty: Produkt nosił roboczą nazwę DualPlan. Użytkownik zaakceptował nazwę MAK z rozwinięciem Mobilny Akademicki Kalendarz.
+- Decyzja: Nazwa aplikacji to MAK. Rozwinięcie jest wyjaśnieniem skrótu, nie drugą nazwą. DualPlan przestaje być nazwą produktu.
+- Powód: MAK jest krótkie na launcher, po polsku i nie sugeruje limitu dwóch kierunków.
+- Odrzucone: DualPlan jako nazwa docelowa; traktowanie rozwinięcia jako osobnej nazwy w interfejsie.
+- Wznowić decyzję tylko gdy: użytkownik zaakceptuje inną nazwę produktu albo osobną etykietę launchera.
+
+## 2026-09-19 — Kalendarz i zmiany pojedynczych wystąpień
+
+- Fakty: Użytkownik chce przeglądać plan jako kalendarz oraz obsługiwać odwołane zajęcia, odrabianie i inne odstępstwa od cyklu.
+- Decyzja: Dodać na ekranie „Plan” widoki „Lista” i „Kalendarz”. Zmianę jednego terminu przechowywać jako `OccurrenceChange`, a dodatkowe spotkanie jako `ClassEntity` z `recurrence = ONCE`. Wszystkie widoki korzystają z `ScheduleResolver`.
+- Powód: Bazowy plan pozostaje prosty, a odstępstwa można dodać lub usunąć bez przebudowy cyklu zajęć.
+- Odrzucone: Edycja bazowych zajęć w celu odwołania jednego terminu oraz osobna logika planu dla kalendarza.
+- Wznowić decyzję tylko gdy: potrzebne będą zmiany obejmujące dowolny zakres dat inny niż jeden termin albo „od teraz”.
+
+## 2026-09-19 — Modularność i skala aplikacji
+
+- Fakty: Funkcjonalności i wygląd będą często zmieniane po bieżącym feedbacku. Aplikacja jest przeznaczona do użytku własnego i działa lokalnie.
+- Decyzja: Traktować modularność jako zasadę architektury. Utrzymywać wyraźne granice między danymi, logiką domenową, UI i widgetem, ale nie tworzyć wielu modułów Gradle bez konkretnej potrzeby. Nie projektować systemu pod setki użytkowników, współbieżność ani skalowanie serwerowe.
+- Powód: Małe, wymienne części ułatwiają przebudowę i testowanie bez kosztu przedwczesnej infrastruktury.
+- Odrzucone: Backend, multi-tenancy i podział na wiele modułów Gradle na starcie.
+- Wznowić decyzję tylko gdy: aplikacja przestanie być jednoosobowa albo któraś część otrzyma niezależny cykl wdrażania.
+
+## 2026-09-19 — Notatki do zajęć i wystąpień
+
+- Fakty: Użytkownik chce zapisywać notatkę wspólną dla zajęć albo notatkę dotyczącą tylko wybranego terminu.
+- Decyzja: Przechowywać `classNote` przy `ClassEntity` oraz osobny `OccurrenceNote` z `classId`, `occurrenceDate` i `body`. Oba typy są dostępne w MVP i trafiają do eksportu JSON.
+- Powód: Notatka do jednej daty nie może zmieniać notatek pozostałych wystąpień tych samych zajęć.
+- Odrzucone: Jedno pole `note` bez zakresu, ponieważ mieszałoby notatkę stałą z notatką do konkretnej daty.
+- Wznowić decyzję tylko gdy: potrzebne będą wiele notatek tego samego typu albo notatki przypięte do innych elementów planu.
+
+## 2026-09-18 — Automatyczne tygodnie A/B i ręczne korekty
+
+- Fakty: Plan opisywał tygodnie parzyste i nieparzyste bez reguły dla semestru zaczynającego się w środku tygodnia. Użytkownik zażądał automatycznego wyliczania oraz zmiany pojedynczej i od wskazanego tygodnia w przyszłość.
+- Decyzja: Używać oznaczeń A/B. Pierwszym tygodniem jest tydzień od poniedziałku zawierający początek semestru. Korekta pojedyncza zmienia tylko wybrany tydzień, a korekta przyszła ustawia nowe A/B i od niego rozpoczyna naprzemienną sekwencję. Pojedyncza korekta ma pierwszeństwo w swoim tygodniu; późniejsza korekta przyszła przejmuje kolejne tygodnie od swojej daty.
+- Powód: Użytkownik może poprawić jednorazowe odstępstwo bez przesunięcia reszty planu albo trwale przesunąć rytm zajęć.
+- Odrzucone: Obliczanie wyłącznie z numeru tygodnia ISO i ręczna zmiana każdego wpisu zajęć.
+- Wznowić decyzję tylko gdy: uczelnia stosuje inny zakres tygodnia albo wymagany jest trzeci typ cyklu.
+
+## 2026-09-18 — Ochrona danych i zasady widgetu
+
+- Fakty: Plan odkładał eksport do wersji 0.3 i sugerował odświeżenie widgetu przy zmianie dnia. Android może opóźniać zadania w tle.
+- Decyzja: Wprowadzić eksport JSON w wersji 0.1, zachować schemat Room i testować późniejsze migracje. Odświeżać widget po zmianach danych oraz okresowo, bez obietnicy aktualizacji dokładnie o północy.
+- Powód: Plan wpisywany ręcznie wymaga wczesnej możliwości zapisania kopii, a harmonogram widgetu musi odpowiadać ograniczeniom platformy.
+- Odrzucone: Obietnica punktualnego odświeżenia widgetu i częste budzenie aplikacji w tle.
+- Wznowić decyzję tylko gdy: zmienią się wymagania dotyczące kopii danych albo powstanie funkcja wymagająca dokładnego alarmu.
+
+## 2026-09-18 — Przygotowanie bazy repozytorium
+
+- Fakty: Repozytorium zawierało plan produktu w `plan.md` i nie zawierało kodu aplikacji.
+- Decyzja: Utworzyć pełną bazę dokumentacyjną bez kodu, zachować `plan.md`, używać polskiego w dokumentacji i odpowiedziach oraz angielskiego dla identyfikatorów i komentarzy.
+- Powód: Dokumentacja ma od razu opisywać zaakceptowany zakres, stos i sposób pracy przed rozpoczęciem implementacji.
+- Odrzucone: Tworzenie kodu, manifestu, konfiguracji Gradle i zależności na etapie przygotowania repozytorium.
+- Wznowić decyzję tylko gdy: zmieni się zakres aplikacji, język dokumentacji lub sposób budowy projektu.
+
+## 2026-09-18 — Zasady interfejsu jako kryteria akceptacji
+
+- Fakty: Użytkownik przekazał osiem zasad dotyczących czytelności, spójności, dostępności, mobile-first, uczciwego stanu systemu, stylu, języka i ochrony pracy użytkownika.
+- Decyzja: Umieścić te zasady w sekcji „Zasady projektowania interfejsu” w `ARCHITECTURE.md` i stosować je do każdego widoku.
+- Powód: Zasady wpływają na architekturę interfejsu, testy i kryteria ukończenia, więc powinny być źródłem prawdy projektu.
+- Odrzucone: Traktowanie dostępności i testów małych ekranów jako późniejszego audytu.
+- Wznowić decyzję tylko gdy: użytkownik zaakceptuje nowy język interfejsu albo zmieni priorytety produktu.
