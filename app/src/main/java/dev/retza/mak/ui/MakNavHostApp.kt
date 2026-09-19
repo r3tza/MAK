@@ -121,46 +121,13 @@ fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets.safeDrawing,
         topBar = {
-            CenterAlignedTopAppBar(
-                title = {
-                    if (showBack) {
-                        Text(titleForRoute(currentRoute))
-                    } else {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(10.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            MakBrandMark()
-                            Text(
-                                text = "MAK",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.ExtraBold,
-                                letterSpacing = (-0.8).sp
-                            )
-                        }
-                    }
-                },
-                navigationIcon = {
-                    if (showBack) {
-                        MakIconButton(
-                            label = "Wstecz",
-                            icon = Icons.AutoMirrored.Outlined.ArrowBack,
-                            onClick = ::navigateBack,
-                            modifier = Modifier.padding(start = 4.dp)
-                        )
-                    }
-                },
-                actions = {
-                    if (!state.requiresSetup && isRoot) {
-                        MakIconButton(
-                            label = "Ustawienia i motyw",
-                            icon = Icons.Outlined.Settings,
-                            onClick = {
-                                openChild(MakDestination.Settings, MakRoutes.Settings)
-                            },
-                            modifier = Modifier.padding(end = 4.dp)
-                        )
-                    }
+            MakTopBar(
+                title = titleForRoute(currentRoute),
+                showBack = showBack,
+                showSettings = !state.requiresSetup && isRoot,
+                onBack = ::navigateBack,
+                onSettings = {
+                    openChild(MakDestination.Settings, MakRoutes.Settings)
                 }
             )
         },
@@ -431,6 +398,59 @@ fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
             }
         }
     }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MakTopBar(
+    title: String,
+    showBack: Boolean,
+    showSettings: Boolean,
+    onBack: () -> Unit,
+    onSettings: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    CenterAlignedTopAppBar(
+        modifier = modifier,
+        title = {
+            if (showBack) {
+                Text(title)
+            } else {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    MakBrandMark()
+                    Text(
+                        text = "MAK",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        letterSpacing = (-0.8).sp
+                    )
+                }
+            }
+        },
+        navigationIcon = {
+            if (showBack) {
+                MakIconButton(
+                    label = "Wstecz",
+                    icon = Icons.AutoMirrored.Outlined.ArrowBack,
+                    onClick = onBack,
+                    modifier = Modifier.padding(start = 4.dp)
+                )
+            }
+        },
+        actions = {
+            if (showSettings) {
+                MakIconButton(
+                    label = "Ustawienia i motyw",
+                    icon = Icons.Outlined.Settings,
+                    onClick = onSettings,
+                    modifier = Modifier.padding(end = 4.dp)
+                )
+            }
+        }
+    )
 }
 
 object MakRoutes {
