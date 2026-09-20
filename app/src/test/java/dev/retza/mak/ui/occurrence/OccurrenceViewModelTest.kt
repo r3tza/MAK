@@ -3,6 +3,9 @@ package dev.retza.mak.ui.occurrence
 import dev.retza.mak.ui.FakeMakRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
+import dev.retza.mak.ui.feedback.FeedbackSink
+import dev.retza.mak.ui.feedback.UiFeedback
+import dev.retza.mak.ui.feedback.UiFeedbackKind
 import java.time.LocalDate
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
@@ -25,6 +28,11 @@ class OccurrenceViewModelTest {
 
     private fun occurrenceViewModel(repository: FakeMakRepository) =
         OccurrenceViewModel(repository, feedbackSink = FeedbackController())
+
+    private fun recordingViewModel(
+        repository: FakeMakRepository,
+        sink: RecordingFeedbackSink
+    ) = OccurrenceViewModel(repository, feedbackSink = sink)
 
     @Test
     fun openValidOccurrenceBuildsDetails() = runTest(mainDispatcher) {
@@ -243,5 +251,164 @@ class OccurrenceViewModelTest {
 
         assertEquals(listOf(OccurrenceEffect.CloseDetails), effects)
         assertTrue(repository.classes.isEmpty())
+    }
+
+    @Test
+    fun noChangeDoesNotSaveOrPublish() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.saveOccurrenceChange()
+        advanceUntilIdle()
+
+        assertTrue(sink.published.isEmpty())
+        assertTrue(repository.occurrenceChanges.isEmpty())
+        assertTrue(repository.events.isEmpty())
+    }
+
+    @Test
+    fun modifiedChangePublishesSuccessAfterSave() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "12:30") }
+        advanceUntilIdle()
+        viewModel.saveOccurrenceChange()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(UiFeedback("Zmieniono termin", UiFeedbackKind.Success)),
+            sink.published
+        )
+        assertEquals(listOf("saveOccurrenceChange", "feedback:Zmieniono termin"), repository.events)
+    }
+
+    @Test
+    fun movedChangePublishesMovedMessage() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.updateDraft { it.copy(targetDateDraft = "2026-09-23") }
+        advanceUntilIdle()
+        viewModel.saveOccurrenceChange()
+        advanceUntilIdle()
+
+        assertEquals("Przeniesiono termin", sink.published.single().message)
+        assertEquals(OccurrenceStatusUi.Moved, viewModel.details.value.status)
+    }
+
+    @Test
+    fun cancelAndRestorePublishMessages() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.cancelOccurrence()
+        advanceUntilIdle()
+        assertEquals("Odwołano termin", sink.published.single().message)
+        assertEquals(OccurrenceStatusUi.Cancelled, viewModel.details.value.status)
+
+        viewModel.restoreOccurrence()
+        advanceUntilIdle()
+        assertEquals(2, sink.published.size)
+        assertEquals("Przywrócono termin", sink.published.last().message)
+        assertEquals(OccurrenceStatusUi.Scheduled, viewModel.details.value.status)
+    }
+
+    @Test
+    fun sharedNotePublishesSaveAndDeleteMessages() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.updateSharedNoteDraft("Nowa")
+        advanceUntilIdle()
+        viewModel.saveSharedNote()
+        advanceUntilIdle()
+        assertEquals("Zapisano notatkę dla wszystkich terminów", sink.published.single().message)
+
+        viewModel.updateSharedNoteDraft("")
+        advanceUntilIdle()
+        viewModel.saveSharedNote()
+        advanceUntilIdle()
+        assertEquals("Usunięto notatkę dla wszystkich terminów", sink.published.last().message)
+    }
+
+    @Test
+    fun occurrenceNotePublishesSaveAndDeleteMessages() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.updateOccurrenceNoteDraft("Notatka daty")
+        advanceUntilIdle()
+        viewModel.saveOccurrenceNote()
+        advanceUntilIdle()
+        assertEquals("Zapisano notatkę dla tej daty", sink.published.single().message)
+
+        viewModel.updateOccurrenceNoteDraft("")
+        advanceUntilIdle()
+        viewModel.saveOccurrenceNote()
+        advanceUntilIdle()
+        assertEquals("Usunięto notatkę dla tej daty", sink.published.last().message)
+    }
+
+    @Test
+    fun repositoryErrorPublishesSingleErrorAndKeepsDraft() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        val effects = mutableListOf<OccurrenceEffect>()
+        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+
+        viewModel.updateSharedNoteDraft("Nowa")
+        advanceUntilIdle()
+        repository.failSaves = true
+        viewModel.saveSharedNote()
+        advanceUntilIdle()
+
+        assertEquals(1, sink.published.size)
+        assertEquals(UiFeedbackKind.Error, sink.published.single().kind)
+        assertEquals("Nie udało się zapisać notatki.", sink.published.single().message)
+        assertEquals("Nowa", viewModel.details.value.sharedNoteDraft)
+        assertNotNull(viewModel.details.value.sharedNoteError)
+        assertTrue(effects.isEmpty())
+    }
+}
+
+private class RecordingFeedbackSink(
+    private val eventLog: MutableList<String>
+) : FeedbackSink {
+    val published = mutableListOf<UiFeedback>()
+
+    override fun publish(feedback: UiFeedback) {
+        published += feedback
+        eventLog += "feedback:${feedback.message}"
     }
 }

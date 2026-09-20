@@ -69,7 +69,7 @@ Kryteria zakończenia porządkowania:
 
 Refaktor należy wykonać przed podłączeniem feedbacku do wszystkich operacji z etapu 6 sekcji 1.6. Nie przepisywać całego ViewModelu jednocześnie. Każdy etap ma kończyć się kompilującym stanem, testami odpowiednimi do zmiany i osobnym commitem.
 
-Status: etapy 1-5 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`, etap 3 dodaje `OccurrenceArgs` i utrzymuje `OccurrenceDetailsUiState` bez typów warstwy danych ani stanu nawigacji, etap 4 przenosi logikę szczegółów do `OccurrenceViewModel`, a etap 5 podłącza ekran szczegółów bezpośrednio do `OccurrenceViewModel` i usuwa delegację oraz stan szczegółów z `MakUiState`. `NavController` jest jedynym źródłem trasy szczegółów, a usunięcie zajęć emituje jednorazowy efekt zamknięcia. Etapy 6-8 pozostają do wykonania.
+Status: etapy 1-6 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`, etap 3 dodaje `OccurrenceArgs` i utrzymuje `OccurrenceDetailsUiState` bez typów warstwy danych ani stanu nawigacji, etap 4 przenosi logikę szczegółów do `OccurrenceViewModel`, etap 5 podłącza ekran szczegółów bezpośrednio do `OccurrenceViewModel` i usuwa delegację oraz stan szczegółów z `MakUiState`, a etap 6 podłącza komunikaty do zmiany, przeniesienia, przywrócenia i odwołania terminu oraz obu notatek. Etapy 7-8 pozostają do wykonania.
 
 #### Etap 1: inwentaryzacja odpowiedzialności
 
@@ -154,6 +154,8 @@ Status etapu: zrealizowane. Ekran szczegółów czyta `OccurrenceViewModel.detai
 5. Testy ViewModelu mają sprawdzać dokładnie jedną emisję, właściwy tekst, brak emisji dla `NoChange`, kolejność zapisu i sukcesu oraz brak nawigacji po błędzie.
 
 Kryterium etapu: przepływ wystąpienia realizuje swoją część etapu 6 sekcji 1.6 bez zależności od nadrzędnego ViewModelu.
+
+Status etapu: zrealizowane. `OccurrenceViewModel` emituje dokładnie jeden komunikat sukcesu po udanej operacji repozytorium („Zmieniono termin”, „Przeniesiono termin”, „Przywrócono termin”, „Odwołano termin”, zapis i usunięcie obu notatek), pomija `NoChange` bez zapisu i komunikatu, a przy wyjątku zachowuje draft i emituje jeden bezpieczny komunikat błędu bez nawigacji. Testy sprawdzają tekst, kolejność zapisu i sukcesu, brak emisji dla `NoChange` oraz brak efektu nawigacji po błędzie.
 
 #### Etap 7: usunięcie starego kodu wystąpienia
 
@@ -444,7 +446,7 @@ Kryterium zakończenia: konfiguracja semestru pozostaje krótka, zarządzanie ki
 
 Zmiany upraszczają edycję pojedynczego wystąpienia, przywracają możliwość edycji notatki wspólnej i wprowadzają spójny feedback po operacjach. Edycja terminu odbywa się w jednym dialogu z jedną akcją zapisu. Po zapisaniu, odwołaniu albo przywróceniu użytkownik pozostaje na ekranie szczegółów i od razu widzi aktualny stan.
 
-Status: etapy 1-5 są zaimplementowane. Edycja terminu korzysta z jednego dialogu, a decyzję o modyfikacji, przeniesieniu albo przywróceniu wybiera czysta funkcja `decideOccurrenceEdit`; przeniesienie liczy się względem daty bazowej, pusta sala jest jawnym nadpisaniem bez migracji Room, a dialog blokuje zamknięcie podczas zapisu. Ekran szczegółów pokazuje dwa niezależne pola notatek: wspólną dla wszystkich terminów (aktualizacja `classNote`) i tylko dla wybranej daty (zapis lub usunięcie `OccurrenceNote`). Puste pole usuwa notatkę, a zapis blokuje tylko właściwą akcję. Draft notatki nie jest nadpisywany, jeśli użytkownik zmieni go podczas trwającego zapisu. Wspólny system feedbacku ma model `UiFeedback`, buforowany `Channel` wystawiony jako `Flow` i jeden `MakSnackbarHost` w głównym `Scaffold` z ikoną, kontrastem, semantyką, kolejką i różnym czasem wyświetlania. Na tym etapie żadna operacja repozytorium nie emituje komunikatów. Etapy 6-7 pozostają do wykonania.
+Status: etapy 1-5 są zaimplementowane. Edycja terminu korzysta z jednego dialogu, a decyzję o modyfikacji, przeniesieniu albo przywróceniu wybiera czysta funkcja `decideOccurrenceEdit`; przeniesienie liczy się względem daty bazowej, pusta sala jest jawnym nadpisaniem bez migracji Room, a dialog blokuje zamknięcie podczas zapisu. Ekran szczegółów pokazuje dwa niezależne pola notatek: wspólną dla wszystkich terminów (aktualizacja `classNote`) i tylko dla wybranej daty (zapis lub usunięcie `OccurrenceNote`). Puste pole usuwa notatkę, a zapis blokuje tylko właściwą akcję. Draft notatki nie jest nadpisywany, jeśli użytkownik zmieni go podczas trwającego zapisu. Wspólny system feedbacku ma model `UiFeedback`, buforowany `Channel` wystawiony jako `Flow` i jeden `MakSnackbarHost` w głównym `Scaffold` z ikoną, kontrastem, semantyką, kolejką i różnym czasem wyświetlania. Operacje wystąpień i notatek emitują komunikaty sukcesu i bezpieczne błędy. Pozostałe operacje repozytorium nadal nie emitują komunikatów. Etap 6 dla pozostałych przepływów i etap 7 pozostają do wykonania.
 
 ### Etap 1: model różnicy i walidacja terminu
 

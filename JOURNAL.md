@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Feedback operacji wystąpień i notatek
+
+- Fakty: `OccurrenceViewModel` miał już zależność `FeedbackSink`, ale żadna operacja nie emitowała komunikatów, a `NoChange` nadal uruchamiał `reload` i przechodził przez blok zapisu.
+- Decyzja: Po udanej operacji repozytorium `OccurrenceViewModel` emituje jeden komunikat sukcesu: „Zmieniono termin”, „Przeniesiono termin”, „Przywrócono termin”, „Odwołano termin”, „Zapisano notatkę dla wszystkich terminów”, „Usunięto notatkę dla wszystkich terminów”, „Zapisano notatkę dla tej daty” albo „Usunięto notatkę dla tej daty”. `NoChange` kończy się przed zapisem i bez komunikatu. Wyjątek zachowuje draft, wyłącza stan zapisywania, ustawia błąd pola lub formularza i emituje jeden bezpieczny komunikat błędu bez efektu nawigacji.
+- Powód: Komunikaty mają potwierdzać rzeczywisty wynik operacji i nie mogą zależeć od nadrzędnego ViewModelu ani dublować się.
+- Odrzucone: Emitowanie sukcesu przed zakończeniem zapisu oraz komunikaty przy zmianie draftu, otwarciu dialogu lub nawigacji.
+- Weryfikacja: Testy `OccurrenceViewModelTest` sprawdzają dokładnie jedną emisję i tekst dla każdej operacji, kolejność zapisu i sukcesu, brak emisji i zapisu dla `NoChange`, komunikat przy usunięciu notatek oraz jeden błąd z zachowanym draftem bez efektu nawigacji. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-20: Odporny efekt zamknięcia i czysty stan otwarcia
 
 - Fakty: Kolektor `OccurrenceEffect` działał tylko wewnątrz trasy szczegółów, więc efekt `CloseDetails` wysłany po ręcznym wyjściu czekał w buforowanym kanale i przy następnym otwarciu zamykał nowy ekran. Dodatkowo nowa trasa komponowała się najpierw z poprzednim `occurrenceDetails`, zanim `LaunchedEffect` rozpoczął otwarcie.

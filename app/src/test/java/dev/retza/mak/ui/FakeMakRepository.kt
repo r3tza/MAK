@@ -54,6 +54,7 @@ internal class FakeMakRepository : MakRepository {
     val occurrenceNotes = mutableListOf<OccurrenceNoteEntity>()
     val occurrenceChanges = mutableListOf<OccurrenceChangeEntity>()
 
+    val events = mutableListOf<String>()
     var saveGate: CompletableDeferred<Unit>? = null
     var occurrenceDataGate: CompletableDeferred<Unit>? = null
     var failSaves = false
@@ -98,6 +99,7 @@ internal class FakeMakRepository : MakRepository {
 
     override suspend fun saveClass(entity: ClassEntity): Long {
         awaitSave()
+        events += "saveClass"
         val index = classes.indexOfFirst { it.id == entity.id }
         if (index >= 0) classes[index] = entity else classes += entity.copy(id = classes.size + 1L)
         return entity.id
@@ -105,6 +107,7 @@ internal class FakeMakRepository : MakRepository {
 
     override suspend fun deleteClass(id: Long) {
         awaitSave()
+        events += "deleteClass"
         classes.removeAll { it.id == id }
     }
 
@@ -113,6 +116,7 @@ internal class FakeMakRepository : MakRepository {
 
     override suspend fun saveOccurrenceNote(entity: OccurrenceNoteEntity): Long {
         awaitSave()
+        events += "saveOccurrenceNote"
         val index = occurrenceNotes.indexOfFirst {
             it.classId == entity.classId && it.occurrenceDate == entity.occurrenceDate
         }
@@ -126,11 +130,13 @@ internal class FakeMakRepository : MakRepository {
 
     override suspend fun deleteOccurrenceNote(id: Long) {
         awaitSave()
+        events += "deleteOccurrenceNote"
         occurrenceNotes.removeAll { it.id == id }
     }
 
     override suspend fun saveOccurrenceChange(entity: OccurrenceChangeEntity): Long {
         awaitSave()
+        events += "saveOccurrenceChange"
         val index = occurrenceChanges.indexOfFirst {
             it.classId == entity.classId && it.originalDate == entity.originalDate
         }
@@ -144,6 +150,7 @@ internal class FakeMakRepository : MakRepository {
 
     override suspend fun deleteOccurrenceChange(id: Long) {
         awaitSave()
+        events += "deleteOccurrenceChange"
         occurrenceChanges.removeAll { it.id == id }
     }
 

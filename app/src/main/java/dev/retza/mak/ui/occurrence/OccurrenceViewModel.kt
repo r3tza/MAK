@@ -17,6 +17,8 @@ import dev.retza.mak.domain.noteContentChanged
 import dev.retza.mak.domain.occurrenceRoomOverride
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.feedback.FeedbackSink
+import dev.retza.mak.ui.feedback.UiFeedback
+import dev.retza.mak.ui.feedback.UiFeedbackKind
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -43,7 +45,7 @@ sealed interface OccurrenceEffect {
 class OccurrenceViewModel(
     private val repository: MakRepository,
     private val activePlanProvider: ActivePlanProvider = ActivePlanProvider(),
-    @Suppress("unused") private val feedbackSink: FeedbackSink
+    private val feedbackSink: FeedbackSink
 ) : ViewModel() {
     private val state = MutableStateFlow(OccurrenceDetailsUiState())
     val details: StateFlow<OccurrenceDetailsUiState> = state.asStateFlow()
@@ -129,26 +131,32 @@ class OccurrenceViewModel(
         val classId = selectedClassIdState.value ?: return
         val original = originalDate ?: return
         viewModelScope.launch {
-            val existing = data.occurrenceChanges.firstOrNull {
-                it.classId == classId && it.originalDate == original
-            }
-            repository.saveOccurrenceChange(
-                OccurrenceChangeEntity(
-                    id = existing?.id ?: 0,
-                    semesterId = data.semester.id,
-                    classId = classId,
-                    originalDate = original,
-                    kind = dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED,
-                    targetDate = null,
-                    newStartTime = null,
-                    newEndTime = null,
-                    newRoom = null,
-                    newBuilding = null,
-                    newTeacherId = null,
-                    newNote = null
+            try {
+                val existing = data.occurrenceChanges.firstOrNull {
+                    it.classId == classId && it.originalDate == original
+                }
+                repository.saveOccurrenceChange(
+                    OccurrenceChangeEntity(
+                        id = existing?.id ?: 0,
+                        semesterId = data.semester.id,
+                        classId = classId,
+                        originalDate = original,
+                        kind = dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED,
+                        targetDate = null,
+                        newStartTime = null,
+                        newEndTime = null,
+                        newRoom = null,
+                        newBuilding = null,
+                        newTeacherId = null,
+                        newNote = null
+                    )
                 )
-            )
-            reload(data.semester.id, classId, original)
+                reload(data.semester.id, classId, original)
+                feedbackSink.publish(UiFeedback("Odwołano termin", UiFeedbackKind.Success))
+            } catch (error: Exception) {
+                update { it.copy(draftError = "Nie udało się odwołać terminu.") }
+                feedbackSink.publish(UiFeedback("Nie udało się odwołać terminu.", UiFeedbackKind.Error))
+            }
         }
     }
 
@@ -157,11 +165,16 @@ class OccurrenceViewModel(
         val classId = selectedClassIdState.value ?: return
         val original = originalDate ?: return
         viewModelScope.launch {
-            val change = data.occurrenceChanges.firstOrNull {
-                it.classId == classId && it.originalDate == original
-            } ?: return@launch
-            repository.deleteOccurrenceChange(change.id)
-            reload(data.semester.id, classId, original)
+            try {
+                val change = data.occurrenceChanges.firstOrNull {
+                    it.classId == classId && it.originalDate == original
+                } ?: return@launch
+                repository.deleteOccurrenceChange(change.id)
+                reload(data.semester.id, classId, original)
+                feedbackSink.publish(UiFeedback("Przywrócono termin", UiFeedbackKind.Success))
+            } catch (error: Exception) {
+                feedbackSink.publish(UiFeedback("Nie udało się przywrócić terminu.", UiFeedbackKind.Error))
+            }
         }
     }
 
@@ -192,10 +205,17 @@ class OccurrenceViewModel(
                         isSavingSharedNote = false
                     )
                 }
+                val message = if (note == null) {
+                    "Usunięto notatkę dla wszystkich terminów"
+                } else {
+                    "Zapisano notatkę dla wszystkich terminów"
+                }
+                feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
             } catch (error: Exception) {
                 update {
                     it.copy(isSavingSharedNote = false, sharedNoteError = "Nie udało się zapisać notatki.")
                 }
+                feedbackSink.publish(UiFeedback("Nie udało się zapisać notatki.", UiFeedbackKind.Error))
             }
         }
     }
@@ -226,10 +246,17 @@ class OccurrenceViewModel(
                         isSavingOccurrenceNote = false
                     )
                 }
+                val message = if (note == null) {
+                    "Usunięto notatkę dla tej daty"
+                } else {
+                    "Zapisano notatkę dla tej daty"
+                }
+                feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
             } catch (error: Exception) {
                 update {
                     it.copy(isSavingOccurrenceNote = false, occurrenceNoteError = "Nie udało się zapisać notatki.")
                 }
+                feedbackSink.publish(UiFeedback("Nie udało się zapisać notatki.", UiFeedbackKind.Error))
             }
         }
     }
@@ -260,6 +287,7 @@ class OccurrenceViewModel(
             }
 
             is OccurrenceEditDecision.Ready -> {
+                if (decision.result == OccurrenceEditResult.NoChange) return
                 val errors = occurrenceDraftErrors(decision.slot, draft)
                 if (errors.isNotEmpty()) {
                     update { it.copy(draftErrors = errors) }
@@ -295,8 +323,15 @@ class OccurrenceViewModel(
                             )
                         }
                         reload(data.semester.id, classId, decision.slot.date)
+                        val message = when (decision.result) {
+                            OccurrenceEditResult.Restored -> "Przywrócono termin"
+                            OccurrenceEditResult.Moved -> "Przeniesiono termin"
+                            else -> "Zmieniono termin"
+                        }
+                        feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
                     } catch (error: Exception) {
                         update { it.copy(isSaving = false, draftError = "Nie udało się zapisać zmian.") }
+                        feedbackSink.publish(UiFeedback("Nie udało się zapisać zmian.", UiFeedbackKind.Error))
                     }
                 }
             }
