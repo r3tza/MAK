@@ -162,9 +162,9 @@ fun MakApp(
         }
     }
 
-    LaunchedEffect(state.requiresSetup, state.destination, currentRoute) {
+    LaunchedEffect(state.requiresSetup, state.hasLoadedData, state.destination, currentRoute) {
         when {
-            state.requiresSetup && currentRoute != MakRoutes.Setup -> {
+            shouldOpenSetup(state) && currentRoute != MakRoutes.Setup -> {
                 val existingSemester = state.activeSemesterData
                     ?.takeIf { it.courses.isEmpty() }
                     ?.semester
@@ -623,6 +623,9 @@ internal fun shouldCloseSemesterConfiguration(currentRoute: String?): Boolean =
 
 internal fun shouldHandleSetupEffect(currentRoute: String?): Boolean =
     currentRoute == MakRoutes.Setup
+
+internal fun shouldOpenSetup(state: MakUiState): Boolean =
+    state.requiresSetup && state.hasLoadedData
 
 fun destinationForRoute(route: String?): MakDestination = when (route) {
     MakRoutes.Schedule -> MakDestination.Schedule

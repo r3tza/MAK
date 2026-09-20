@@ -7,6 +7,13 @@
 - Powód: Kreator ma wznowić konfigurację istniejącego semestru, a nie tworzyć duplikat.
 - Weryfikacja: `SetupViewModelTest.startResumesExistingSemesterAtCourseStep` sprawdza krok, wypełnione pola i aktualizację tego samego semestru. Dodano instrumentowany `RoomPersistenceTest.setupConfigurationRollsBackSemesterWhenCourseFails`, który potwierdza rollback semestru, gdy część transakcji dla kierunku zawiedzie. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
 
+### Zimny start nie otwiera pustego kreatora
+
+- Fakty: `MakUiState` startował z `requiresSetup = true` i `activeSemesterData = null`, więc efekt od razu otwierał pusty kreator. Gdy Room dostarczył semestr bez kierunku, trasa była już ustawiona na kreator, więc efekt nie wywoływał `start(existingSemester)` i użytkownik nadal widział pusty formularz.
+- Decyzja: Dodano `MakUiState.hasLoadedData`, ustawiane dopiero po pierwszej emisji `combine`. Pomocnicza `shouldOpenSetup` wymusza nawigację do kreatora tylko wtedy, gdy dane są już wczytane, a efekt przekazuje istniejący semestr w tym samym przebiegu. Zimny start czeka więc z otwarciem kreatora na początkowy odczyt.
+- Powód: Wymuszona konfiguracja nie może rozstrzygać o kształcie kreatora, zanim zna aktywny semestr.
+- Weryfikacja: `MakNavigationTest.forcedSetupWaitsForInitialDataLoad` sprawdza, że `shouldOpenSetup` jest fałszywe przed wczytaniem danych i prawdziwe po wczytaniu. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-20: SetupViewModel i atomowy zapis konfiguracji
 
 - Fakty: Kreator konfiguracji trzymał stan i zapisywał semestr w `MakViewModel`. Semestr powstawał w kroku semestru, a kierunek w kroku kierunku, więc przerwanie między krokami mogło pozostawić sam semestr. Nawigację z kreatora wymuszał `forceSetup`.

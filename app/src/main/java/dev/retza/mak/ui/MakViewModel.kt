@@ -67,6 +67,7 @@ enum class MakDestination {
 data class MakUiState(
     val destination: MakDestination = MakDestination.Today,
     val requiresSetup: Boolean = true,
+    val hasLoadedData: Boolean = false,
     val today: TodayUiState = emptyTodayState(),
     val schedule: ScheduleUiState = emptyScheduleState(),
     val themeId: String = "system",
@@ -261,6 +262,7 @@ class MakViewModel(
         return MakUiState(
             destination = destination,
             requiresSetup = requiresSetup,
+            hasLoadedData = true,
             today = buildToday(activeData, control.todayDate),
             schedule = buildSchedule(activeData, control),
             themeId = control.themeId,
