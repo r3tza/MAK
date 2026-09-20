@@ -50,6 +50,8 @@ import dev.retza.mak.ui.semester.SemesterScreen
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.semester.SemesterWeekOverridesScreen
 import dev.retza.mak.ui.settings.SettingsScreen
+import dev.retza.mak.ui.settings.SettingsEffect
+import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.setup.SetupEffect
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.setup.SetupWizard
@@ -64,6 +66,7 @@ fun MakApp(
     classEditViewModel: ClassEditViewModel,
     semesterViewModel: SemesterViewModel,
     setupViewModel: SetupViewModel,
+    settingsViewModel: SettingsViewModel,
     feedback: Flow<UiFeedback>,
     onCreateExportDocument: () -> Unit
 ) {
@@ -162,6 +165,23 @@ fun MakApp(
         }
     }
 
+    LaunchedEffect(settingsViewModel, navController) {
+        settingsViewModel.effects.collect { effect ->
+            when (effect) {
+                SettingsEffect.OpenSetup -> {
+                    if (shouldHandleSettingsEffect(navController.currentBackStackEntry?.destination?.route)) {
+                        setupViewModel.start()
+                        viewModel.navigate(MakDestination.Setup)
+                        navController.navigate(MakRoutes.Setup) {
+                            popUpTo(MakRoutes.Today) { saveState = true }
+                            launchSingleTop = true
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     LaunchedEffect(state.requiresSetup, state.hasLoadedData, state.destination, currentRoute) {
         when {
             shouldOpenSetup(state) && currentRoute != MakRoutes.Setup -> {
@@ -172,6 +192,7 @@ fun MakApp(
                 viewModel.navigate(MakDestination.Setup)
                 navController.navigate(MakRoutes.Setup) {
                     popUpTo(MakRoutes.Today) { saveState = true }
+                    launchSingleTop = true
                 }
             }
 
@@ -623,6 +644,9 @@ internal fun shouldCloseSemesterConfiguration(currentRoute: String?): Boolean =
 
 internal fun shouldHandleSetupEffect(currentRoute: String?): Boolean =
     currentRoute == MakRoutes.Setup
+
+internal fun shouldHandleSettingsEffect(currentRoute: String?): Boolean =
+    currentRoute == MakRoutes.Settings
 
 internal fun shouldOpenSetup(state: MakUiState): Boolean =
     state.requiresSetup && state.hasLoadedData

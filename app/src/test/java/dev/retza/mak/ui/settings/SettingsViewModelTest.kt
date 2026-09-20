@@ -1,0 +1,156 @@
+package dev.retza.mak.ui.settings
+
+import dev.retza.mak.export.JsonExportCodec
+import dev.retza.mak.ui.FakeMakRepository
+import dev.retza.mak.ui.MainDispatcherRule
+import dev.retza.mak.ui.feedback.FeedbackSink
+import dev.retza.mak.ui.feedback.UiFeedback
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.test.advanceUntilIdle
+import kotlinx.coroutines.test.runTest
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
+import org.junit.Rule
+import org.junit.Test
+
+@OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
+class SettingsViewModelTest {
+    private val mainDispatcher = UnconfinedTestDispatcher()
+
+    @get:Rule
+    val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
+
+    private fun viewModel(
+        repository: FakeMakRepository,
+        preferences: SettingsPreferences = InMemorySettingsPreferences(),
+        sink: FeedbackSink = RecordingFeedbackSink()
+    ) = SettingsViewModel(repository, preferences, sink)
+
+    @Test
+    fun settingsStateMapsSemestersActiveAndTheme() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.settings.value
+        assertEquals(2, state.semesters.size)
+        assertEquals("1", state.activeSemesterId)
+        assertEquals("Semestr", state.semesters.first { it.id == "1" }.name)
+        assertEquals("system", state.themeOptions.first { it.isSelected }.id)
+    }
+
+    @Test
+    fun selectThemePersistsAndSelectsOption() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val preferences = InMemorySettingsPreferences()
+        val viewModel = viewModel(repository, preferences)
+        backgroundScope.launch { viewModel.settings.collect {} }
+
+        viewModel.selectTheme("dark")
+        advanceUntilIdle()
+
+        assertEquals(ThemeMode.Dark, viewModel.themeMode.value)
+        assertEquals("dark", viewModel.settings.value.themeOptions.first { it.isSelected }.id)
+    }
+
+    @Test
+    fun selectingUnknownThemeIdKeepsSystem() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+
+        viewModel.selectTheme("neon")
+        advanceUntilIdle()
+
+        assertEquals(ThemeMode.System, viewModel.themeMode.value)
+    }
+
+    @Test
+    fun deletingInactiveSemesterKeepsActive() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        val effects = mutableListOf<SettingsEffect>()
+        backgroundScope.launch { viewModel.settings.collect {} }
+        backgroundScope.launch { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+
+        viewModel.requestSemesterDeletion("2")
+        viewModel.confirmSemesterDeletion()
+        advanceUntilIdle()
+
+        assertEquals(1L, repository.activeSemesterId)
+        assertEquals(listOf("1"), viewModel.settings.value.semesters.map { it.id })
+        assertTrue(effects.isEmpty())
+    }
+
+    @Test
+    fun deletingActiveSemesterSelectsFallback() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        viewModel.requestSemesterDeletion("1")
+        viewModel.confirmSemesterDeletion()
+        advanceUntilIdle()
+
+        assertEquals(2L, repository.activeSemesterId)
+        assertEquals(listOf("2"), viewModel.settings.value.semesters.map { it.id })
+    }
+
+    @Test
+    fun deletingLastSemesterEmitsSingleOpenSetup() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        val effects = mutableListOf<SettingsEffect>()
+        backgroundScope.launch { viewModel.settings.collect {} }
+        backgroundScope.launch { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+
+        viewModel.requestSemesterDeletion("1")
+        viewModel.confirmSemesterDeletion()
+        advanceUntilIdle()
+        viewModel.requestSemesterDeletion("2")
+        viewModel.confirmSemesterDeletion()
+        advanceUntilIdle()
+
+        assertEquals(0L, repository.activeSemesterId)
+        assertTrue(viewModel.settings.value.semesters.isEmpty())
+        assertEquals(listOf(SettingsEffect.OpenSetup), effects)
+    }
+
+    @Test
+    fun exportKeepsSchemaVersion() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        var bytes: ByteArray? = null
+
+        viewModel.exportJson { bytes = it }
+        advanceUntilIdle()
+
+        val snapshot = JsonExportCodec.decode(bytes!!)
+        assertEquals(1, snapshot.schemaVersion)
+    }
+
+    @Test
+    fun preferencesRestoreThemeForNewInstance() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val preferences = InMemorySettingsPreferences()
+        val first = viewModel(repository, preferences)
+        first.selectTheme("light")
+        advanceUntilIdle()
+
+        val second = viewModel(repository, preferences)
+
+        assertEquals(ThemeMode.Light, second.themeMode.value)
+    }
+}
+
+private class RecordingFeedbackSink : FeedbackSink {
+    val published = mutableListOf<UiFeedback>()
+
+    override fun publish(feedback: UiFeedback) {
+        published += feedback
+    }
+}

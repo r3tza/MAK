@@ -4,6 +4,8 @@ import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.edit.ClassEditViewModel
+import dev.retza.mak.ui.settings.InMemorySettingsPreferences
+import dev.retza.mak.ui.settings.SettingsViewModel
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -31,7 +33,8 @@ class MakViewModelTest {
         val controller = FeedbackController()
         val repository = FakeMakRepository()
         val classEditViewModel = ClassEditViewModel(repository, controller)
-        val viewModel = MakViewModel(repository, controller, classEditViewModel, clock)
+        val settingsViewModel = SettingsViewModel(repository, InMemorySettingsPreferences(), controller)
+        val viewModel = MakViewModel(repository, controller, classEditViewModel, settingsViewModel, clock)
         val received = mutableListOf<UiFeedback>()
         backgroundScope.launch(mainDispatcher) {
             controller.feedback.collect { received += it }

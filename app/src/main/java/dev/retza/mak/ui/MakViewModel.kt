@@ -16,7 +16,6 @@ import dev.retza.mak.ui.components.CalendarMarkerColor
 import dev.retza.mak.ui.components.CalendarMarkerUi
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.ScreenStatus
-import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
@@ -27,13 +26,12 @@ import dev.retza.mak.ui.schedule.conflictLabels
 import dev.retza.mak.ui.schedule.ScheduleUiState
 import dev.retza.mak.ui.schedule.ScheduleView
 import dev.retza.mak.ui.settings.SettingsUiState
-import dev.retza.mak.ui.settings.ThemeOptionUi
+import dev.retza.mak.ui.settings.SettingsViewModel
+import dev.retza.mak.ui.settings.toId
 import dev.retza.mak.ui.today.TodayUiState
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.data.entity.WeekOverrideEntity
-import dev.retza.mak.export.ExportSnapshot
-import dev.retza.mak.export.JsonExportCodec
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -83,9 +81,7 @@ private data class Controls(
     val todayDate: LocalDate,
     val scheduleView: ScheduleView = ScheduleView.List,
     val courseFilterId: String = "all",
-    val showCancelled: Boolean = false,
-    val semesterToDeleteId: String? = null,
-    val themeId: String = "system"
+    val showCancelled: Boolean = false
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -93,6 +89,7 @@ class MakViewModel(
     private val repository: MakRepository,
     private val feedbackSink: FeedbackSink,
     private val classEditViewModel: ClassEditViewModel,
+    private val settingsViewModel: SettingsViewModel,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val activePlanProvider: ActivePlanProvider = ActivePlanProvider()
 ) : ViewModel() {
@@ -111,8 +108,14 @@ class MakViewModel(
         if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
     }
 
-    val uiState = combine(semesters, activeSemesterData, controls) { semesterList, activeData, control ->
-        buildState(semesterList, activeData, control)
+    val uiState = combine(
+        semesters,
+        activeSemesterData,
+        controls,
+        settingsViewModel.settings,
+        settingsViewModel.themeMode
+    ) { semesterList, activeData, control, settings, theme ->
+        buildState(semesterList, activeData, control, settings, theme.toId())
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -210,51 +213,24 @@ class MakViewModel(
         viewModelScope.launch { repository.deleteWeekOverride(existing.id) }
     }
 
-    fun selectSemester(id: String) {
-        id.toLongOrNull()?.let { semesterId ->
-            controls.update { it.copy(courseFilterId = "all") }
-            viewModelScope.launch { repository.setActiveSemester(semesterId) }
-        }
-    }
+    fun selectSemester(id: String) = settingsViewModel.selectSemester(id)
 
-    fun requestSemesterDeletion(id: String) {
-        controls.update { it.copy(semesterToDeleteId = id) }
-    }
+    fun requestSemesterDeletion(id: String) = settingsViewModel.requestSemesterDeletion(id)
 
-    fun cancelSemesterDeletion() {
-        controls.update { it.copy(semesterToDeleteId = null) }
-    }
+    fun cancelSemesterDeletion() = settingsViewModel.cancelSemesterDeletion()
 
-    fun confirmSemesterDeletion() {
-        val id = controls.value.semesterToDeleteId?.toLongOrNull() ?: return
-        val remaining = uiState.value.settings.semesters.firstOrNull { it.id != id.toString() }
-        viewModelScope.launch {
-            repository.deleteSemester(id)
-            if (remaining != null) repository.setActiveSemester(remaining.id.toLong())
-            else repository.clearActiveSemester()
-            controls.update {
-                it.copy(
-                    semesterToDeleteId = null,
-                    destination = if (remaining == null) MakDestination.Setup else MakDestination.Settings
-                )
-            }
-        }
-    }
+    fun confirmSemesterDeletion() = settingsViewModel.confirmSemesterDeletion()
 
-    fun selectTheme(id: String) {
-        controls.update { it.copy(themeId = id) }
-    }
+    fun selectTheme(id: String) = settingsViewModel.selectTheme(id)
 
-    fun exportJson(onReady: (ByteArray) -> Unit) {
-        viewModelScope.launch {
-            onReady(JsonExportCodec.encode(ExportSnapshot.from(repository.getAllSemesterData())))
-        }
-    }
+    fun exportJson(onReady: (ByteArray) -> Unit) = settingsViewModel.exportJson(onReady)
 
     private fun buildState(
         semesterList: List<SemesterEntity>,
         activeData: SemesterWithData?,
-        control: Controls
+        control: Controls,
+        settings: SettingsUiState,
+        themeId: String
     ): MakUiState {
         val requiresSetup = semesterList.isEmpty() ||
             activeData != null && activeData.courses.isEmpty()
@@ -265,8 +241,8 @@ class MakViewModel(
             hasLoadedData = true,
             today = buildToday(activeData, control.todayDate),
             schedule = buildSchedule(activeData, control),
-            themeId = control.themeId,
-            settings = buildSettings(semesterList, activeData, control),
+            themeId = themeId,
+            settings = settings,
             activeSemesterData = activeData
         )
     }
@@ -363,32 +339,6 @@ class MakViewModel(
         )
     }
 
-    private fun buildSettings(
-        semesterList: List<SemesterEntity>,
-        activeData: SemesterWithData?,
-        control: Controls
-    ): SettingsUiState = SettingsUiState(
-        semesters = semesterList.map { semester ->
-            val isActive = semester.id == activeData?.semester?.id
-            SemesterUi(
-                id = semester.id.toString(),
-                name = semester.name,
-                dateRangeLabel = "${semester.startDate.format(shortDateFormatter)} - ${semester.endDate.format(shortDateFormatter)}",
-                firstWeekLabel = "Pierwszy tydzień ${semester.firstWeekType.name}",
-                courseCountLabel = if (isActive) "${activeData.courses.size} kierunków" else "Dane odizolowane",
-                classCountLabel = if (isActive) classCountLabel(activeData.classes.size) else "Osobny plan",
-                isActive = isActive
-            )
-        },
-        activeSemesterId = activeData?.semester?.id?.toString(),
-        themeOptions = listOf(
-            ThemeOptionUi("system", "Systemowy", control.themeId == "system"),
-            ThemeOptionUi("light", "Jasny", control.themeId == "light"),
-            ThemeOptionUi("dark", "Ciemny", control.themeId == "dark")
-        ),
-        semesterToDeleteId = control.semesterToDeleteId
-    )
-
     private fun cancelledItems(data: SemesterWithData, date: LocalDate): List<ClassItemUi> =
         data.occurrenceChanges.filter {
             it.originalDate == date && it.kind == dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED
@@ -419,12 +369,13 @@ class MakViewModel(
     class Factory(
         private val repository: MakRepository,
         private val feedbackSink: FeedbackSink,
-        private val classEditViewModel: ClassEditViewModel
+        private val classEditViewModel: ClassEditViewModel,
+        private val settingsViewModel: SettingsViewModel
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(MakViewModel::class.java))
-            return MakViewModel(repository, feedbackSink, classEditViewModel) as T
+            return MakViewModel(repository, feedbackSink, classEditViewModel, settingsViewModel) as T
         }
     }
 }

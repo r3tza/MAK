@@ -17,6 +17,8 @@ import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 
@@ -69,21 +71,25 @@ internal class FakeMakRepository : MakRepository {
     var failSaves = false
     var cancelSaves = false
     var failSetupConfiguration = false
-    var activeSemesterId: Long = 1L
     var lastSetupSemester: SemesterEntity? = null
     var lastSetupCourse: CourseEntity? = null
     private var generatedSemesterId = 100L
     private var generatedCourseId = 100L
 
-    private fun semesterById(id: Long): SemesterEntity? =
-        listOf(semester, secondSemester).firstOrNull { it.id == id }
+    private val semesterFlow = MutableStateFlow(listOf(semester, secondSemester))
+    private val activeSemesterFlow = MutableStateFlow(1L)
+    val activeSemesterId: Long get() = activeSemesterFlow.value
 
-    override fun observeSemesters(): Flow<List<SemesterEntity>> = flowOf(listOf(semester))
-    override fun observeActiveSemester(): Flow<SemesterEntity?> = flowOf(semesterById(activeSemesterId))
+    private fun semesterById(id: Long): SemesterEntity? =
+        semesterFlow.value.firstOrNull { it.id == id }
+
+    override fun observeSemesters(): Flow<List<SemesterEntity>> = semesterFlow
+    override fun observeActiveSemester(): Flow<SemesterEntity?> =
+        combine(semesterFlow, activeSemesterFlow) { list, id -> list.firstOrNull { it.id == id } }
     override fun observeSemester(id: Long): Flow<SemesterEntity?> = flowOf(semesterById(id))
     override fun observeSemesterData(id: Long): Flow<SemesterWithData?> = flow {
         occurrenceDataGate?.await()
-        val target = listOf(semester, secondSemester).firstOrNull { it.id == id }
+        val target = semesterFlow.value.firstOrNull { it.id == id }
         if (target == null) {
             emit(null)
             return@flow
@@ -115,7 +121,7 @@ internal class FakeMakRepository : MakRepository {
     override suspend fun saveSemester(entity: SemesterEntity): Long {
         awaitSave()
         events += "saveSemester"
-        if (entity.isActive) activeSemesterId = entity.id
+        if (entity.isActive) activeSemesterFlow.value = entity.id
         return entity.id
     }
 
@@ -126,11 +132,18 @@ internal class FakeMakRepository : MakRepository {
     }
 
     override suspend fun setActiveSemester(id: Long) {
-        if (semesterById(id) != null) activeSemesterId = id
+        if (semesterById(id) != null) activeSemesterFlow.value = id
     }
 
-    override suspend fun clearActiveSemester() = Unit
-    override suspend fun deleteSemester(id: Long) = Unit
+    override suspend fun clearActiveSemester() {
+        activeSemesterFlow.value = 0L
+    }
+
+    override suspend fun deleteSemester(id: Long) {
+        awaitSave()
+        events += "deleteSemester"
+        semesterFlow.value = semesterFlow.value.filterNot { it.id == id }
+    }
     override suspend fun saveCourse(entity: CourseEntity): Long {
         awaitSave()
         events += "saveCourse"
@@ -150,7 +163,7 @@ internal class FakeMakRepository : MakRepository {
         val courseId = if (course.id == 0L) generatedCourseId++ else course.id
         lastSetupSemester = semester.copy(id = semesterId, isActive = true)
         lastSetupCourse = course.copy(id = courseId, semesterId = semesterId)
-        activeSemesterId = semesterId
+        activeSemesterFlow.value = semesterId
         return dev.retza.mak.data.repository.SetupConfigurationIds(semesterId, courseId)
     }
 

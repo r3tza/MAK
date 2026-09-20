@@ -20,6 +20,7 @@ import dev.retza.mak.ui.MakViewModel
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
+import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.theme.MAKTheme
 import kotlinx.coroutines.launch
@@ -44,11 +45,19 @@ class MainActivity : ComponentActivity() {
             val setupViewModel: SetupViewModel = viewModel(
                 factory = SetupViewModel.Factory(application.repository, application.feedbackController)
             )
+            val settingsViewModel: SettingsViewModel = viewModel(
+                factory = SettingsViewModel.Factory(
+                    application.repository,
+                    application.settingsPreferences,
+                    application.feedbackController
+                )
+            )
             val viewModel: MakViewModel = viewModel(
                 factory = MakViewModel.Factory(
                     application.repository,
                     application.feedbackController,
-                    classEditViewModel
+                    classEditViewModel,
+                    settingsViewModel
                 )
             )
             makViewModel = viewModel
@@ -93,6 +102,7 @@ class MainActivity : ComponentActivity() {
                     classEditViewModel = classEditViewModel,
                     semesterViewModel = semesterViewModel,
                     setupViewModel = setupViewModel,
+                    settingsViewModel = settingsViewModel,
                     feedback = application.feedbackController.feedback,
                     onCreateExportDocument = { exportLauncher.launch("mak-plan.json") }
                 )
