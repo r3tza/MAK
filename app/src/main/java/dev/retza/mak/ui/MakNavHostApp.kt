@@ -38,7 +38,9 @@ import dev.retza.mak.ui.components.MakNavBar
 import dev.retza.mak.ui.edit.ClassEditScreen
 import dev.retza.mak.ui.occurrence.OccurrenceDetailsScreen
 import dev.retza.mak.ui.schedule.ScheduleScreen
+import dev.retza.mak.ui.semester.SemesterCoursesScreen
 import dev.retza.mak.ui.semester.SemesterScreen
+import dev.retza.mak.ui.semester.SemesterWeekOverridesScreen
 import dev.retza.mak.ui.settings.SettingsScreen
 import dev.retza.mak.ui.setup.SetupWizard
 import dev.retza.mak.ui.today.TodayScreen
@@ -356,8 +358,70 @@ fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
                     },
                     onAddCourse = viewModel::addCourse,
                     onDeleteCourse = viewModel::deleteCourse,
+                    onOpenCourses = {
+                        state.settings.activeSemesterId?.let { id ->
+                            navController.navigate(semesterCoursesRoute(id))
+                        }
+                    },
+                    onOpenOverrides = {
+                        state.settings.activeSemesterId?.let { id ->
+                            navController.navigate(semesterOverridesRoute(id))
+                        }
+                    },
                     onBack = ::navigateBack,
                     onRetry = {},
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            composable(
+                route = MakRoutes.SemesterCourses,
+                arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
+            ) { entry ->
+                val semesterId = entry.arguments?.getString("semesterId")
+                LaunchedEffect(semesterId) {
+                    semesterId?.let(viewModel::openSemesterConfiguration)
+                }
+                SemesterCoursesScreen(
+                    state = state.semester,
+                    onCourseNameChanged = { value ->
+                        viewModel.updateSemester { it.copy(courseNameDraft = value) }
+                    },
+                    onCourseColorChanged = { value ->
+                        viewModel.updateSemester { it.copy(courseColorDraft = value) }
+                    },
+                    onAddCourse = viewModel::addCourse,
+                    onDeleteCourse = viewModel::deleteCourse,
+                    onBack = ::navigateBack,
+                    modifier = Modifier.fillMaxSize()
+                )
+            }
+
+            composable(
+                route = MakRoutes.SemesterOverrides,
+                arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
+            ) { entry ->
+                val semesterId = entry.arguments?.getString("semesterId")
+                LaunchedEffect(semesterId) {
+                    semesterId?.let(viewModel::openSemesterConfiguration)
+                }
+                SemesterWeekOverridesScreen(
+                    state = state.semester,
+                    onWeekStartDateChanged = { value ->
+                        viewModel.updateSemester { it.copy(overrideForm = it.overrideForm.copy(weekStartDate = value)) }
+                    },
+                    onWeekTypeChanged = { value ->
+                        viewModel.updateSemester { it.copy(overrideForm = it.overrideForm.copy(weekType = value)) }
+                    },
+                    onScopeChanged = { value ->
+                        viewModel.updateSemester { it.copy(overrideForm = it.overrideForm.copy(scope = value)) }
+                    },
+                    onNewOverride = viewModel::newWeekOverride,
+                    onEditOverride = viewModel::editWeekOverride,
+                    onSaveOverride = viewModel::saveWeekOverride,
+                    onDeleteOverride = viewModel::deleteWeekOverride,
+                    onCancelOverrideEdit = viewModel::cancelWeekOverrideEdit,
+                    onBack = ::navigateBack,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -479,6 +543,8 @@ object MakRoutes {
     const val Edit = "edit?classId={classId}&date={date}"
     const val Occurrence = "occurrence/{classId}/{date}"
     const val Semester = "semester/{semesterId}"
+    const val SemesterCourses = "semester/{semesterId}/courses"
+    const val SemesterOverrides = "semester/{semesterId}/week-overrides"
     const val Settings = "settings"
     const val Setup = "setup"
 }
@@ -493,12 +559,18 @@ fun editRoute(classId: Long, date: String): String =
 
 fun semesterRoute(id: String): String = "semester/$id"
 
+fun semesterCoursesRoute(id: String): String = "semester/$id/courses"
+
+fun semesterOverridesRoute(id: String): String = "semester/$id/week-overrides"
+
 fun destinationForRoute(route: String?): MakDestination = when (route) {
     MakRoutes.Schedule -> MakDestination.Schedule
     MakRoutes.Settings -> MakDestination.Settings
     MakRoutes.Setup -> MakDestination.Setup
     MakRoutes.Occurrence -> MakDestination.OccurrenceDetails
-    MakRoutes.Semester -> MakDestination.Semester
+    MakRoutes.Semester,
+    MakRoutes.SemesterCourses,
+    MakRoutes.SemesterOverrides -> MakDestination.Semester
     MakRoutes.Edit -> MakDestination.EditClass
     else -> MakDestination.Today
 }
@@ -509,7 +581,9 @@ fun destinationMatchesRoute(destination: MakDestination, route: String?): Boolea
     MakDestination.Settings -> route == MakRoutes.Settings
     MakDestination.Setup -> route == MakRoutes.Setup
     MakDestination.OccurrenceDetails -> route == MakRoutes.Occurrence
-    MakDestination.Semester -> route == MakRoutes.Semester
+    MakDestination.Semester -> route == MakRoutes.Semester ||
+        route == MakRoutes.SemesterCourses ||
+        route == MakRoutes.SemesterOverrides
     MakDestination.EditClass -> route == MakRoutes.Edit
 }
 
@@ -518,6 +592,8 @@ private fun titleForRoute(route: String?): String = when (route) {
     MakRoutes.Edit -> "Zajęcia"
     MakRoutes.Occurrence -> "Termin"
     MakRoutes.Semester -> "Semestr"
+    MakRoutes.SemesterCourses -> "Kierunki"
+    MakRoutes.SemesterOverrides -> "Korekty tygodni"
     MakRoutes.Settings -> "Ustawienia"
     MakRoutes.Setup -> "Konfiguracja"
     else -> "Dzisiaj"

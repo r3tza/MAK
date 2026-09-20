@@ -1,24 +1,25 @@
 package dev.retza.mak.ui.semester
 
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.ui.text.font.FontWeight
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -30,7 +31,6 @@ import dev.retza.mak.ui.components.MakColorPalette
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakActionMenu
-import dev.retza.mak.ui.components.MakExpandableSection
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakNoteBanner
@@ -117,12 +117,12 @@ fun SemesterScreen(
     onCourseColorChanged: (String) -> Unit,
     onAddCourse: () -> Unit,
     onDeleteCourse: (String) -> Unit,
+    onOpenCourses: () -> Unit = {},
+    onOpenOverrides: () -> Unit = {},
     onBack: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var showCourses by remember { mutableStateOf(false) }
-    var showOverrides by remember { mutableStateOf(false) }
     MakScreenContent(
         modifier = modifier.verticalScroll(rememberScrollState())
     ) {
@@ -142,39 +142,18 @@ fun SemesterScreen(
                     onFirstWeekChanged = onSemesterFirstWeekChanged,
                     onSave = onSaveSemester
                 )
-                MakExpandableSection(
-                    label = "kierunki",
-                    expanded = showCourses,
-                    onExpandedChange = { showCourses = it }
-                ) {
-                    CoursesBlock(
-                        courses = state.courses,
-                        courseNameDraft = state.courseNameDraft,
-                        courseColorDraft = state.courseColorDraft,
-                        onCourseNameChanged = onCourseNameChanged,
-                        onCourseColorChanged = onCourseColorChanged,
-                        onAddCourse = onAddCourse,
-                        onDeleteCourse = onDeleteCourse
-                    )
-                }
-                MakExpandableSection(
-                    label = "korekty tygodni",
-                    expanded = showOverrides,
-                    onExpandedChange = { showOverrides = it }
-                ) {
-                    WeekOverridesSection(
-                        overrides = state.overrides,
-                        form = state.overrideForm,
-                        onWeekStartDateChanged = onOverrideWeekStartDateChanged,
-                        onWeekTypeChanged = onOverrideWeekTypeChanged,
-                        onScopeChanged = onOverrideScopeChanged,
-                        onNewOverride = onNewOverride,
-                        onEditOverride = onEditOverride,
-                        onSaveOverride = onSaveOverride,
-                        onDeleteOverride = onDeleteOverride,
-                        onCancelEdit = onCancelOverrideEdit
-                    )
-                }
+                SemesterNavigationRow(
+                    title = "Kierunki",
+                    description = "Zajęcia należące do tego semestru.",
+                    count = state.courses.size,
+                    onClick = onOpenCourses
+                )
+                SemesterNavigationRow(
+                    title = "Korekty tygodni",
+                    description = "Ręczne oznaczenia tygodni A/B.",
+                    count = state.overrides.size,
+                    onClick = onOpenOverrides
+                )
                 MakSecondaryAction(
                     text = "Wróć do ustawień",
                     onClick = onBack,
@@ -184,6 +163,103 @@ fun SemesterScreen(
 
             else -> MakStateMessage(status = state.status, onRetry = onRetry)
         }
+    }
+}
+
+@Composable
+private fun SemesterNavigationRow(
+    title: String,
+    description: String,
+    count: Int,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 64.dp)
+            .clickable(onClick = onClick)
+            .padding(horizontal = MakSpacing.md, vertical = MakSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, fontWeight = FontWeight.SemiBold)
+            Text(
+                text = "$description Liczba: $count.",
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Icon(
+            imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
+            contentDescription = "Otwórz $title",
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+fun SemesterCoursesScreen(
+    state: SemesterScreenUiState,
+    onCourseNameChanged: (String) -> Unit,
+    onCourseColorChanged: (String) -> Unit,
+    onAddCourse: () -> Unit,
+    onDeleteCourse: (String) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
+        MakSectionHeader(
+            eyebrow = "Semestr",
+            title = "Kierunki",
+            subtitle = "Kierunki należą tylko do wybranego semestru."
+        )
+        CoursesBlock(
+            courses = state.courses,
+            courseNameDraft = state.courseNameDraft,
+            courseColorDraft = state.courseColorDraft,
+            onCourseNameChanged = onCourseNameChanged,
+            onCourseColorChanged = onCourseColorChanged,
+            onAddCourse = onAddCourse,
+            onDeleteCourse = onDeleteCourse
+        )
+        MakSecondaryAction(text = "Wróć do semestru", onClick = onBack)
+    }
+}
+
+@Composable
+fun SemesterWeekOverridesScreen(
+    state: SemesterScreenUiState,
+    onWeekStartDateChanged: (String) -> Unit,
+    onWeekTypeChanged: (WeekTypeUi) -> Unit,
+    onScopeChanged: (WeekOverrideScopeUi) -> Unit,
+    onNewOverride: () -> Unit,
+    onEditOverride: (String) -> Unit,
+    onSaveOverride: () -> Unit,
+    onDeleteOverride: (String) -> Unit,
+    onCancelOverrideEdit: () -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
+        MakSectionHeader(
+            eyebrow = "Semestr",
+            title = "Korekty tygodni",
+            subtitle = "Ustaw oznaczenie tylko dla jednego tygodnia albo od wybranego tygodnia w przyszłość."
+        )
+        WeekOverridesSection(
+            overrides = state.overrides,
+            form = state.overrideForm,
+            onWeekStartDateChanged = onWeekStartDateChanged,
+            onWeekTypeChanged = onWeekTypeChanged,
+            onScopeChanged = onScopeChanged,
+            onNewOverride = onNewOverride,
+            onEditOverride = onEditOverride,
+            onSaveOverride = onSaveOverride,
+            onDeleteOverride = onDeleteOverride,
+            onCancelEdit = onCancelOverrideEdit
+        )
+        MakSecondaryAction(text = "Wróć do semestru", onClick = onBack)
     }
 }
 

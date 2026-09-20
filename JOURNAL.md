@@ -1,5 +1,11 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Podrzędne ekrany konfiguracji semestru
+
+- Fakty: Konfiguracja semestru pokazuje teraz krótkie pozycje „Kierunki” i „Korekty tygodni” z licznikami zamiast rozwijanych list.
+- Decyzja: Dodano trasy `semester/{semesterId}/courses` oraz `semester/{semesterId}/week-overrides`. Oba ekrany korzystają z istniejącego `SemesterScreenUiState` i operacji ViewModelu.
+- Weryfikacja: Test tras sprawdza identyfikator semestru i mapowanie do ekranu semestru. Test Compose dla szerokości 320 dp sprawdza nawigacyjne wiersze i brak tekstu „Pokaż kierunki”. `test` oraz `compileDebugAndroidTestKotlin` przechodzą.
+
 ## 2026-09-20: Stałe akcje ekranu szczegółów terminu
 
 - Fakty: Treść ekranu szczegółów terminu jest przewijana niezależnie od dolnego obszaru akcji. Akcja „Zmień termin” albo „Przywróć termin” oraz „Zamknij” pozostają dostępne przy dolnej krawędzi.
