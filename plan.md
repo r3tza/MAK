@@ -65,6 +65,109 @@ Kryteria zakończenia porządkowania:
 - błąd zapisu pozostawia formularz otwarty z zachowanymi wartościami;
 - ponowne utworzenie procesu przywraca trwałe preferencje i istotny stan roboczy.
 
+### Obecne zadanie: etapowy refaktor `MakViewModel`
+
+Refaktor należy wykonać przed podłączeniem feedbacku do wszystkich operacji z etapu 6 sekcji 1.6. Nie przepisywać całego ViewModelu jednocześnie. Każdy etap ma kończyć się kompilującym stanem, testami odpowiednimi do zmiany i osobnym commitem.
+
+Status: etapy 1-2 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`. Etapy 3-8 pozostają do wykonania.
+
+#### Etap 1: inwentaryzacja odpowiedzialności
+
+1. Przypisać pola i metody `MakViewModel` do grup: dane wspólne, nawigacja, plan i kalendarz, szczegóły wystąpienia, edycja zajęć, semestr, konfiguracja początkowa, ustawienia i feedback.
+2. Określić przyszłego właściciela każdej publicznej metody. Docelowi właściciele to `ScheduleViewModel`, `ClassEditViewModel`, `OccurrenceViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel` albo cienki stan nadrzędny.
+3. W tym etapie nie przenosić kodu i nie zmieniać zachowania aplikacji.
+
+Kryterium etapu: każda publiczna metoda ma wskazanego przyszłego właściciela, a kod aplikacji pozostaje bez zmian.
+
+#### Inwentaryzacja odpowiedzialności `MakViewModel` (etap 1)
+
+Pola i metody według grupy oraz przyszłego właściciela:
+
+1. Dane wspólne i cykl życia (cienki stan nadrzędny): pola `repository`, `clock`, `activePlanProvider`, `today`, `controls`, `semesters`, `activeSemesterData`, `uiState` oraz `refreshToday`.
+2. Nawigacja: `navigate` i pola trasy `destination`. Przyszły właściciel to host nawigacji i `NavController`, nie ViewModel przepływu.
+3. Plan i kalendarz (`ScheduleViewModel`): `selectScheduleView`, `changeWeek`, `selectScheduleDay`, `selectCourseFilter`, `changeMonth`, `selectCalendarDay`, `setShowCancelled`, `saveVisibleWeekOverride`, `clearVisibleWeekOverride`, `openNewClassForSelectedCalendarDay` oraz pola `schedule`, `scheduleDate`, `calendarMonth`, `calendarDate`, `scheduleView`, `courseFilterId`, `showCancelled`.
+4. Szczegóły wystąpienia (`OccurrenceViewModel`): `openOccurrence`, `updateOccurrence`, `updateOccurrenceDraft`, `openOccurrenceEditDialog`, `dismissOccurrenceEditDialog`, `requestClassDeletion`, `cancelClassDeletion`, `deleteSelectedClass`, `cancelSelectedOccurrence`, `restoreSelectedOccurrence`, `updateSharedNoteDraft`, `updateOccurrenceNoteDraft`, `saveSharedNote`, `saveOccurrenceNote`, `saveSelectedOccurrenceChange` oraz pola `occurrence`, `selectedClassId`, `selectedOccurrenceDate`, `selectedNoteDate`, `occurrenceDraft`.
+5. Edycja zajęć (`ClassEditViewModel`): `openNewClass`, `openEditClass`, `updateEditor`, `saveClass` oraz pola `editor`, `editorClassId`.
+6. Semestr (`SemesterViewModel`): `openSemesterConfiguration`, `updateSemester`, `saveSemesterConfiguration`, `newWeekOverride`, `editWeekOverride`, `cancelWeekOverrideEdit`, `saveWeekOverride`, `deleteWeekOverride`, `addCourse`, `deleteCourse` oraz pola `semester`, `semesterDraft`, `semesterEditId`.
+7. Konfiguracja początkowa (`SetupViewModel`): `updateSetup`, `setupNext`, `setupBack`, `finishSetup`, `cancelSetup`, `startSemesterSetup` oraz pola `setup`, `forceSetup`.
+8. Ustawienia (`SettingsViewModel`): `selectSemester`, `requestSemesterDeletion`, `cancelSemesterDeletion`, `confirmSemesterDeletion`, `selectTheme`, `exportJson` oraz pola `settings`, `themeId`, `semesterToDeleteId`.
+9. Feedback (`FeedbackController`): `publishFeedback` i `feedback`. Etap 2 przenosi kanał do kontrolera, a `MakViewModel` otrzymuje `FeedbackSink`.
+
+Metody koordynujące kilka grup:
+
+- `finishSetup`, `cancelSetup` i `startSemesterSetup` zmieniają stan konfiguracji oraz nawigację, więc `SetupViewModel` zgłosi jednorazowy zamiar przejścia, a trasę zmieni host.
+- `confirmSemesterDeletion` wybiera kolejny aktywny semestr albo otwiera kreator, więc `SettingsViewModel` potrzebuje operacji nadrzędnej na aktywnym semestrze.
+- `selectSemester` i `selectTheme` dotyczą stanu wspólnego, więc aktualizacja przejdzie przez cienki stan nadrzędny.
+- `activePlan`, `buildToday` i `buildSchedule` korzystają ze wspólnego `ActivePlanProvider`, a po podziale każdy ViewModel złoży własny stan z tej samej ścieżki obliczeń.
+
+#### Etap 2: kontroler feedbacku niezależny od ViewModelu
+
+1. Dodać interfejs `FeedbackSink` z operacją publikacji `UiFeedback`.
+2. Dodać aplikacyjny `FeedbackController`, który jest jedynym właścicielem `Channel<UiFeedback>(Channel.BUFFERED)`, udostępnia `Flow<UiFeedback>` i implementuje `FeedbackSink`.
+3. Przenieść kanał feedbacku z `MakViewModel` do kontrolera i przekazać jego `Flow` do `MakSnackbarHost`.
+4. Tymczasowo przekazać `FeedbackSink` do `MakViewModel`, bez podłączania operacji repozytorium.
+5. Zachować kolejkę, jednokrotną obsługę oraz cztery warianty komunikatów.
+
+Kryterium etapu: infrastruktura feedbacku działa bez własności i cyklu życia `MakViewModel`.
+
+#### Etap 3: granica modeli szczegółów wystąpienia
+
+1. Umieścić modele używane wyłącznie przez szczegóły terminu w `ui/occurrence`.
+2. Zachować `OccurrenceDetailsUiState` jako publiczny stan prezentacyjny bez `SemesterWithData`, encji Room, stanu innych ekranów i informacji o bieżącej trasie.
+3. Dodać `OccurrenceArgs(classId, date)` jako jawne argumenty otwarcia szczegółów.
+4. Nie zmieniać tekstów ani zachowania ekranu.
+
+Kryterium etapu: modele szczegółów mają jedną odpowiedzialność i nie wystawiają typów warstwy danych.
+
+#### Etap 4: wydzielenie `OccurrenceViewModel`
+
+1. Utworzyć `OccurrenceViewModel` z zależnościami `MakRepository`, `ActivePlanProvider`, `FeedbackSink` oraz `Clock`, jeśli jest potrzebny w przepływie.
+2. Przenieść do niego otwieranie i budowanie szczegółów, edycję daty, godzin i sali, walidację dialogu, zapis zmiany lub przeniesienia, przywracanie i odwoływanie terminu, obie notatki oraz ich stany zapisu i błędów.
+3. Pozostawić czyste funkcje `decideOccurrenceEdit`, `noteContentChanged` i `occurrenceRoomOverride` w domenie.
+4. Tymczasowo dopuścić delegację z `MakViewModel`, aby etap nie wymagał równoczesnej przebudowy nawigacji.
+5. Przenieść istniejące testy notatek do `OccurrenceViewModelTest` i dodać przypadki otwarcia prawidłowego wystąpienia, błędnych argumentów oraz edycji draftu podczas zapisu.
+
+Kryterium etapu: logika szczegółów działa w `OccurrenceViewModel`, a `MakViewModel` nie wykonuje jej samodzielnie.
+
+#### Etap 5: nawigacja szczegółów oparta na `NavController`
+
+1. Przekazywać `classId` i datę jako argumenty trasy szczegółów.
+2. Podłączyć ekran bezpośrednio do stanu i akcji `OccurrenceViewModel`, a następnie usunąć delegację przez `MakViewModel`.
+3. Nie przechowywać `MakDestination` w `OccurrenceViewModel`. Powrót i przejścia wykonuje `NavController`.
+4. Jeśli operacja wymaga zamknięcia ekranu po sukcesie, emitować jednorazowy efekt nawigacyjny, zbierany przez hosta ekranu.
+5. Potwierdzić, że systemowy back zamyka szczegóły, zapis notatki i edycja terminu pozostają na ekranie, a usunięcie bazowych zajęć zamyka go dokładnie raz.
+
+Kryterium etapu: `NavController` jest jedynym źródłem bieżącej trasy dla szczegółów wystąpienia.
+
+#### Etap 6: feedback dla wystąpień i notatek
+
+1. Podłączyć komunikaty sukcesu dla zmiany, przeniesienia, przywrócenia i odwołania terminu oraz zapisu i usunięcia obu rodzajów notatek.
+2. Emitować sukces dopiero po zakończeniu operacji repozytorium. Dla `NoChange` nie wykonywać zapisu i nie emitować komunikatu.
+3. Przy wyjątku zachować formularz i draft, wyłączyć stan zapisywania, pozostawić błąd przy właściwym polu lub formularzu i wyemitować jeden bezpieczny komunikat błędu.
+4. Nie emitować komunikatów przy zmianie draftu, otwarciu dialogu ani zwykłej nawigacji.
+5. Testy ViewModelu mają sprawdzać dokładnie jedną emisję, właściwy tekst, brak emisji dla `NoChange`, kolejność zapisu i sukcesu oraz brak nawigacji po błędzie.
+
+Kryterium etapu: przepływ wystąpienia realizuje swoją część etapu 6 sekcji 1.6 bez zależności od nadrzędnego ViewModelu.
+
+#### Etap 7: usunięcie starego kodu wystąpienia
+
+1. Usunąć z `MakViewModel` przeniesione pola, metody, importy i tymczasowe delegacje.
+2. Usunąć `selectedClassId`, `selectedOccurrenceDate`, `selectedNoteDate` i `occurrenceDraft`, jeśli nie są już używane przez inne przepływy.
+3. Sprawdzić oba hosty aplikacji, podglądy Compose i wywołania ekranu szczegółów.
+
+Kryterium etapu: `MakViewModel` nie zna formularza, notatek ani stanu szczegółów wystąpienia.
+
+#### Etap 8: kolejne ViewModele
+
+1. Powtórzyć ten sam schemat kolejno dla `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel` i `ScheduleViewModel`.
+2. Dla każdego przepływu najpierw wydzielić modele i testy, następnie logikę, nawigację i feedback, a na końcu usunąć stary kod.
+3. Nie przenosić dwóch dużych przepływów w jednym commicie.
+4. Podłączanie feedbacku dla danego przepływu realizuje odpowiednią część etapu 6 sekcji 1.6.
+
+Kryterium etapu: nadrzędny stan koordynuje wyłącznie dane wspólne, a logika formularzy i operacji należy do ViewModelu właściwego przepływu.
+
+Po każdym etapie uruchomić `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` oraz sprawdzić, że commit nie zawiera niezwiązanych zmian. Pierwsze zadanie wykonawcze obejmuje wyłącznie etapy 1 i 2. Wydzielanie `OccurrenceViewModel` rozpoczyna się po zaakceptowaniu granicy `FeedbackController`.
+
 ## 1.3. Plan poprawy ekranu „Plan”
 
 Zmiany dotyczą widoku listy na ekranie „Plan”. Widok kalendarza zachowuje obecny zakres funkcji. Zmiany wykonać przy użyciu komponentów Material 3 i istniejących tokenów `MakSpacing`.

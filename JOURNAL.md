@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Inwentaryzacja `MakViewModel` i kontroler feedbacku
+
+- Fakty: `MakViewModel` łączył dziewięć grup odpowiedzialności, a kanał feedbacku był jego polem i dzielił cykl życia ViewModelu.
+- Decyzja: Zapisano w `plan.md` inwentaryzację przypisującą każdą publiczną metodę i pole do przyszłego właściciela: `ScheduleViewModel`, `OccurrenceViewModel`, `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel`, cienki stan nadrzędny albo feedback. Dodano interfejs `FeedbackSink` oraz aplikacyjny `FeedbackController`, który jest jedynym właścicielem `Channel<UiFeedback>`, udostępnia `Flow<UiFeedback>` i implementuje `FeedbackSink`. `MakApplication` tworzy kontroler, `MainActivity` przekazuje `feedback` do `MakApp`, a `MakViewModel` otrzymuje `FeedbackSink`. Operacje repozytorium nie emitują jeszcze komunikatów.
+- Powód: Infrastruktura feedbacku ma działać poza cyklem życia ViewModelu, a refaktor ma pozostać etapowy i nie łączyć wielu przepływów w jednym commicie.
+- Odrzucone: Jednorazowe przepisanie ViewModelu i dalsze trzymanie kanału feedbacku w ViewModelu.
+- Weryfikacja: Dodano `FeedbackControllerTest` dla kolejki i jednokrotnej obsługi, zaktualizowano `MakViewModelTest`, a `UiFeedbackTest` nadal pokrywa cztery warianty i czas wyświetlania. `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą.
+
 ## 2026-09-20: Poprawka focusu snackbara
 
 - Fakty: `onFocusChanged` stał po `focusable()`, więc mógł nie obserwować właściwego węzła fokusu i obramowanie fokusu nie działało.

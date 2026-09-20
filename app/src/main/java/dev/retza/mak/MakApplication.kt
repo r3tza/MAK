@@ -6,6 +6,7 @@ import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.RoomMakRepository
 import dev.retza.mak.data.repository.seedDemoDataIfEmpty
+import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.widget.GlanceWidgetRefreshRequester
 import dev.retza.mak.widget.registerMakWidgetRefresh
 import kotlinx.coroutines.CoroutineScope
@@ -17,6 +18,8 @@ class MakApplication : Application() {
     val database: AppDatabase by lazy { AppDatabase.getInstance(this) }
 
     val repository: MakRepository by lazy { RoomMakRepository(database) }
+
+    val feedbackController: FeedbackController by lazy { FeedbackController() }
 
     private val initializationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 

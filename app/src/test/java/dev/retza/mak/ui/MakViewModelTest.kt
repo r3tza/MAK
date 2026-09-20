@@ -12,6 +12,7 @@ import dev.retza.mak.data.entity.TeacherEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.MakRepository
+import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import java.time.Clock
@@ -155,10 +156,11 @@ class MakViewModelTest {
 
     @Test
     fun feedbackFlowEmitsPublishedMessagesOnce() = runTest(mainDispatcher) {
-        val viewModel = createViewModel(NoteFakeRepository())
+        val controller = FeedbackController()
+        val viewModel = createViewModel(NoteFakeRepository(), controller)
         val received = mutableListOf<UiFeedback>()
         backgroundScope.launch(mainDispatcher) {
-            viewModel.feedback.collect { received += it }
+            controller.feedback.collect { received += it }
         }
         advanceUntilIdle()
 
@@ -169,8 +171,11 @@ class MakViewModelTest {
         assertEquals(listOf("Test", "Błąd"), received.map { it.message })
     }
 
-    private fun TestScope.createViewModel(repository: MakRepository): MakViewModel {
-        val viewModel = MakViewModel(repository, clock)
+    private fun TestScope.createViewModel(
+        repository: MakRepository,
+        feedbackController: FeedbackController = FeedbackController()
+    ): MakViewModel {
+        val viewModel = MakViewModel(repository, feedbackController, clock)
         backgroundScope.launch(mainDispatcher) {
             viewModel.uiState.collect {}
         }

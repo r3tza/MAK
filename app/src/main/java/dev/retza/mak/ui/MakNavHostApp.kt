@@ -37,6 +37,7 @@ import dev.retza.mak.ui.components.MakIconButton
 import dev.retza.mak.ui.components.MakNavBar
 import dev.retza.mak.ui.edit.ClassEditScreen
 import dev.retza.mak.ui.feedback.MakSnackbarHost
+import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.occurrence.OccurrenceDetailsScreen
 import dev.retza.mak.ui.schedule.ScheduleScreen
 import dev.retza.mak.ui.semester.SemesterCoursesScreen
@@ -45,10 +46,15 @@ import dev.retza.mak.ui.semester.SemesterWeekOverridesScreen
 import dev.retza.mak.ui.settings.SettingsScreen
 import dev.retza.mak.ui.setup.SetupWizard
 import dev.retza.mak.ui.today.TodayScreen
+import kotlinx.coroutines.flow.Flow
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
+fun MakApp(
+    viewModel: MakViewModel,
+    feedback: Flow<UiFeedback>,
+    onCreateExportDocument: () -> Unit
+) {
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val navController = rememberNavController()
     val currentRoute = navController.currentBackStackEntryAsState().value
@@ -126,7 +132,7 @@ fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets.safeDrawing,
         snackbarHost = {
-            MakSnackbarHost(feedback = viewModel.feedback)
+            MakSnackbarHost(feedback = feedback)
         },
         topBar = {
             MakTopBar(

@@ -29,7 +29,7 @@ class MainActivity : ComponentActivity() {
         setContent {
             val application = application as MakApplication
             val viewModel: MakViewModel = viewModel(
-                factory = MakViewModel.Factory(application.repository)
+                factory = MakViewModel.Factory(application.repository, application.feedbackController)
             )
             makViewModel = viewModel
             LaunchedEffect(viewModel) {
@@ -69,6 +69,7 @@ class MainActivity : ComponentActivity() {
                 }
                 MakApp(
                     viewModel = viewModel,
+                    feedback = application.feedbackController.feedback,
                     onCreateExportDocument = { exportLauncher.launch("mak-plan.json") }
                 )
             }
