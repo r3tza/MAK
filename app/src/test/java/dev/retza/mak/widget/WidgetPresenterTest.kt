@@ -67,7 +67,9 @@ class WidgetPresenterTest {
     @Test
     fun layoutPolicyLimitsSmallWidgetAndShowsOverflowLabel() {
         assertEquals(1, widgetItemLimit(110f, compact = true))
-        assertEquals(2, widgetItemLimit(160f, compact = true))
+        assertEquals(1, widgetItemLimit(160f, compact = true))
+        assertEquals(2, widgetItemLimit(180f, compact = false))
+        assertEquals(3, widgetItemLimit(260f, compact = false))
         assertEquals("Jeszcze 3", widgetOverflowLabel(total = 5, visible = 2))
         assertEquals(null, widgetOverflowLabel(total = 2, visible = 2))
     }

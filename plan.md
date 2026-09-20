@@ -515,6 +515,74 @@ Kryterium etapu: usunięcie semestru, pusta baza, błąd odczytu i ponowne utwor
 
 Kryterium zakończenia wersji 0.2: mały i duży widget pokazują plan z `ActivePlanProvider`, reagują na zmiany danych, ponownie odczytują datę, otwierają ekran „Dzisiaj” i pozostają czytelne we wszystkich zadeklarowanych rozmiarach.
 
+### 13.2. Plan unowocześnienia widgetu
+
+Zmiany mają poprawić hierarchię informacji, czytelność i wykorzystanie dostępnego miejsca. Widget zachowuje jasne tło, wysoki kontrast i prosty układ. Nie dodawać zdjęć, gradientów, cieni ani ozdobnych ikon.
+
+Status: obecny widget działa na launcherze, ale duży wariant wykorzystuje przestrzeń jak wariant mały. Metadane są zbyt ciasne, a kolor kierunku zapisany w stanie widgetu nie jest wykorzystywany w układzie.
+
+#### Etap 1: nagłówek i wiersze zajęć
+
+1. Pokazać datę jako główny tekst nagłówka o rozmiarze 16 sp.
+2. Pokazać tydzień A/B jako małą etykietę z delikatnym tłem.
+3. Umieścić liczbę zajęć obok etykiety tygodnia albo wyrównać ją do prawej strony nagłówka.
+4. Dodać do wiersza zajęć wąski pasek w kolorze kierunku. Zachować tekstową nazwę kierunku, ponieważ kolor nie może być jedynym nośnikiem informacji.
+5. Użyć stałej kolumny czasu. Obok niej pokazać nazwę zajęć oraz osobny wiersz metadanych z salą i prowadzącym.
+6. Pokazać kolizję i notatkę jako krótkie etykiety tekstowe o czytelnym kontraście.
+7. Oddzielić zajęcia subtelnymi separatorami. Nie umieszczać każdego zajęcia w osobnej karcie.
+8. Dopasować tło do systemowego promienia widgetów Androida.
+
+#### Etap 2: układ responsywny
+
+1. Traktować widget jako kompaktowy, gdy ma mniej niż 260 dp szerokości albo mniej niż 160 dp wysokości.
+2. W wariancie kompaktowym pokazać jedno najbliższe zajęcie. Pokazać nazwę, czas i salę, a pominąć prowadzącego i dodatkowe opisy.
+3. Jeśli wariant kompaktowy nie mieści wszystkich zajęć, pokazać tekst „Jeszcze {liczba}”.
+4. W wariancie rozszerzonym pokazać do trzech zajęć wraz z salą, prowadzącym i statusem kolizji albo notatki.
+5. Wiersze powinny wykorzystać pełną szerokość widgetu. Wariant rozszerzony ma używać większych odstępów i pełniejszych metadanych, a nie tylko zwiększać limit rekordów.
+6. Ograniczać prowadzącego i lokalizację wielokropkiem. Nie ucinać czasu. Nazwa zajęć może zająć dwa wiersze, jeśli pozwala na to wysokość wariantu.
+7. Ograniczyć maksymalny rozmiar widgetu do około 360 na 260 dp, aby launcher nie tworzył nadmiernie pustego układu.
+8. Dodać statyczny podgląd używany przez systemowy wybór widgetów.
+
+#### Etap 3: zachowanie i odświeżanie
+
+1. Zachować kliknięcie całego widgetu i każdego wiersza prowadzące do ekranu „Dzisiaj”. Nie dodawać osobnych akcji w tej wersji.
+2. Ustawić `updatePeriodMillis` na 60 minut. Natychmiastowe odświeżanie po zmianie danych nadal realizować przez obserwację Room.
+3. Przy każdym odświeżeniu pobierać bieżącą datę przez `Clock` i używać wspólnego `ActivePlanProvider`.
+4. Sprawdzić zimny i ciepły start po kliknięciu widgetu. Trasa docelowa nie może zależeć od ekranu otwartego wcześniej w aplikacji.
+5. Nie gwarantować aktualizacji dokładnie o północy i nie dodawać dokładnych alarmów ani stałego procesu w tle.
+
+#### Etap 4: Gradle i dokumentacja
+
+1. Zachować Gradle 9.7.1, jeśli pełny zestaw kontroli nadal przechodzi po zmianach widgetu.
+2. Dodać oficjalną sumę SHA-256 dystrybucji, `validateDistributionUrl=true` oraz limit czasu pobierania do konfiguracji wrappera.
+3. Uruchomić Gradle z `--warning-mode all`. Przypisać ostrzeżenia o przestarzałych API do kodu projektu albo użytych wtyczek.
+4. Zaktualizować `STACK.md` i `JOURNAL.md`, aby zapisać wersję Gradle, wynik kontroli oraz powód aktualizacji.
+5. Zaktualizować stan wdrożenia w tym pliku dopiero po zakończeniu kontroli na launcherze.
+
+#### Testy i odbiór
+
+Testy JVM powinny obejmować:
+
+- wariant kompaktowy i rozszerzony;
+- limit widocznych zajęć oraz tekst „Jeszcze {liczba}”;
+- pusty dzień, brak semestru, datę poza semestrem i błąd odczytu;
+- kolizję, notatkę i długie metadane;
+- zgodność kolejności zajęć z `ActivePlanProvider`.
+
+Po implementacji uruchomić `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug`.
+
+Na launcherze Androida 12 lub nowszego sprawdzić:
+
+- mały, duży i pośredni rozmiar oraz zmianę rozmiaru w obu osiach;
+- jasny i ciemny motyw;
+- brak semestru, pusty dzień, jedno i wiele zajęć;
+- długą nazwę zajęć, sali oraz prowadzącego;
+- kolizję i notatkę;
+- odświeżenie po zmianie danych bez ponownego dodawania widgetu;
+- otwarcie ekranu „Dzisiaj” po zimnym i ciepłym starcie.
+
+Kryterium zakończenia: żaden wariant nie ucina czasu, nie nakłada tekstów i nie wymaga koloru do zrozumienia informacji. Duży wariant wykorzystuje dodatkowe miejsce na pełniejsze metadane i czytelniejsze odstępy.
+
 ## 14. Ustawienia i dane
 
 Ustawienia powinny zawierać:
