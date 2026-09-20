@@ -119,16 +119,37 @@ internal fun WidgetOccurrenceList(
             items = items,
             itemId = { _, item -> widgetOccurrenceItemId(item.id) }
         ) { index, item ->
-            WidgetOccurrenceRow(item, openTodayAction, layoutPolicy)
-            if (index < items.lastIndex) {
-                Spacer(
-                    GlanceModifier
-                        .fillMaxWidth()
-                        .height(1.dp)
-                        .background(GlanceTheme.colors.surfaceVariant)
-                )
-                Spacer(GlanceModifier.height(layoutPolicy.rowSpacing))
-            }
+            WidgetOccurrenceListItem(
+                item = item,
+                openTodayAction = openTodayAction,
+                layoutPolicy = layoutPolicy,
+                showSeparator = index < items.lastIndex,
+                separatorIndex = index
+            )
+        }
+    }
+}
+
+@Composable
+private fun WidgetOccurrenceListItem(
+    item: WidgetOccurrenceUi,
+    openTodayAction: androidx.glance.action.Action,
+    layoutPolicy: WidgetLayoutPolicy,
+    showSeparator: Boolean,
+    separatorIndex: Int
+) {
+    Column {
+        WidgetOccurrenceRow(item, openTodayAction, layoutPolicy)
+        if (showSeparator) {
+            Spacer(GlanceModifier.height(2.dp))
+            Spacer(
+                GlanceModifier
+                    .fillMaxWidth()
+                    .height(1.dp)
+                    .background(GlanceTheme.colors.surfaceVariant)
+                    .semantics { testTag = "widget-separator-$separatorIndex" }
+            )
+            Spacer(GlanceModifier.height(2.dp))
         }
     }
 }

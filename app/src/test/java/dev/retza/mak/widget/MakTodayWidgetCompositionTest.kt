@@ -57,6 +57,10 @@ class MakTodayWidgetCompositionTest {
             items.forEach { item ->
                 onNode(hasText(item.name)).assertExists()
             }
+            onNode(hasTestTag("widget-separator-0")).assertExists()
+            onNode(hasTestTag("widget-separator-1")).assertExists()
+            onNode(hasTestTag("widget-separator-2")).assertExists()
+            onAllNodes(hasTestTag("widget-separator-3")).assertCountEquals(0)
             onAllNodes(hasText("Jeszcze 1")).assertCountEquals(0)
         }
 }
