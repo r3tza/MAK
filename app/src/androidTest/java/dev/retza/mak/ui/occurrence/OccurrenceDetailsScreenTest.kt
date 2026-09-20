@@ -13,6 +13,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.theme.MAKTheme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -23,7 +24,7 @@ class OccurrenceDetailsScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun detailsShowExpandedNoteWithoutRepeatedHeadingAt320Dp() {
+    fun detailsShowExpandedNoteAndStableBottomActionsAt320Dp() {
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
                 Box(
@@ -67,15 +68,66 @@ class OccurrenceDetailsScreenTest {
         }
 
         composeTestRule.onNodeWithText("Bardzo długa nazwa zajęć do sprawdzenia układu").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Notatka wspólna").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Notatka do zajęć: Notatka wspólna").assertIsDisplayed()
         composeTestRule.onNodeWithText("Notatka tylko dla tego terminu").assertIsDisplayed()
         composeTestRule.onNodeWithText("Zmień termin").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zamknij").assertIsDisplayed()
         composeTestRule.onAllNodesWithText("TERMIN").assertCountEquals(0)
         composeTestRule.onAllNodesWithText("Pokaż notatkę").assertCountEquals(0)
+        composeTestRule.onAllNodesWithText("Pokaż zmiana terminu").assertCountEquals(0)
 
         composeTestRule.onNodeWithText("Zmień termin").performClick()
+        composeTestRule.onAllNodesWithText("Zmień termin").assertCountEquals(0)
+        composeTestRule.onNodeWithText("Zamknij").assertIsDisplayed()
         composeTestRule.onNodeWithText("Zapisz zmianę").assertIsDisplayed()
         composeTestRule.onNodeWithText("Przenieś termin").assertIsDisplayed()
+    }
+
+    @Test
+    fun restoreCaseShowsAndRunsRestoreActionAt320Dp() {
+        var restoreClicks = 0
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(
+                    modifier = Modifier
+                        .width(320.dp)
+                        .height(900.dp)
+                ) {
+                    OccurrenceDetailsScreen(
+                        state = OccurrenceDetailsUiState(
+                            subjectName = "Matematyka",
+                            courseName = "Informatyka",
+                            typeLabel = "Ćwiczenia",
+                            dateLabel = "Wtorek, 22 września",
+                            startTime = "11:00",
+                            endTime = "12:30",
+                            canChangeOccurrence = false,
+                            canMoveOccurrence = false,
+                            canRestoreOccurrence = true,
+                            canEditOccurrenceNote = false
+                        ),
+                        onDeleteBaseClass = {},
+                        onDismissDeleteConfirmation = {},
+                        onChangeOccurrence = {},
+                        onMoveOccurrence = {},
+                        onRestoreOccurrence = { restoreClicks += 1 },
+                        onOccurrenceNoteDraftChanged = {},
+                        onTargetDateDraftChanged = {},
+                        onStartTimeDraftChanged = {},
+                        onEndTimeDraftChanged = {},
+                        onRoomDraftChanged = {},
+                        onSaveOccurrenceNote = {},
+                        onDeleteOccurrenceNote = {},
+                        onBack = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Przywróć termin").assertIsDisplayed().performClick()
+        assertEquals(1, restoreClicks)
         composeTestRule.onNodeWithText("Zamknij").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Zmień termin").assertCountEquals(0)
     }
 }

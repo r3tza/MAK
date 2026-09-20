@@ -164,7 +164,7 @@ Po implementacji uruchomić `gradlew.bat test` oraz kompilację testów Android.
 
 Zmiany dotyczą `OccurrenceDetailsScreen` oraz topbara aplikacji. Ekran ma pokazywać szczegóły, notatkę i formularz zmiany w jednej przewidywalnej kolejności. Akcje nawigacyjne i główne nie mogą znajdować się pomiędzy informacjami.
 
-Postęp: etapy 1-6 są zaimplementowane. Testy Compose, testy JVM, kompilacja testów Android, lint i assemble przechodzą. Odbiór na emulatorze lub urządzeniu pozostaje do wykonania.
+Postęp: etapy 1-7 są zaimplementowane. Dolne akcje uwzględniają bezpieczny obszar dokładnie raz, a testy Compose pokrywają notatkę, brak „Pokaż zmiana terminu”, przełączenie formularza, przywracanie terminu oraz wszystkie akcje menu topbara. Testy JVM, kompilacja testów Android, lint i assemble przechodzą. Odbiór na emulatorze lub urządzeniu pozostaje do wykonania.
 
 ### Etap 1: usunięcie powtórzonego nagłówka i rozwinięcie notatki
 
@@ -233,6 +233,20 @@ Kryterium etapu: na ekranie nie ma tekstu „Pokaż zmiana terminu”, a formula
 8. Uruchomić `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug`.
 
 Kryterium zakończenia: treść ma kolejność nazwa, opis, status, fakty, notatka i opcjonalny formularz. Menu znajduje się w topbarze, a podstawowe akcje pozostają przy dolnej krawędzi.
+
+### Etap 7: poprawki po recenzji
+
+1. W `OccurrenceBottomActions` usunąć `navigationBarsPadding()` oraz odpowiadający mu import. `NavHost` już otrzymuje bezpieczny dolny padding z nadrzędnego `Scaffold`, więc ponowne zastosowanie insetu niepotrzebnie odsuwa przyciski od dolnej krawędzi.
+2. Zachować `OccurrenceBottomActions` poza przewijaną treścią oraz pozostawić jego poziomy i pionowy padding oparty na `MakSpacing`.
+3. W `OccurrenceDetailsScreenTest` sprawdzać pełny tekst `Notatka do zajęć: Notatka wspólna` albo jawnie użyć dopasowania podciągu. Nie szukać dokładnego tekstu `Notatka wspólna`, ponieważ taki osobny węzeł nie jest renderowany.
+4. Rozszerzyć test ekranu o brak tekstu `Pokaż zmiana terminu`.
+5. Po otwarciu formularza potwierdzić, że dolny przycisk `Zmień termin` znika, a `Zamknij`, `Zapisz zmianę` i `Przenieś termin` pozostają widoczne.
+6. Dodać przypadek `canRestoreOccurrence = true`, który potwierdza widoczność i działanie przycisku `Przywróć termin`.
+7. Rozszerzyć test topbara przy szerokości 320 dp o rzeczywisty `MakActionMenu`. Sprawdzić opis `Więcej opcji`, widoczność pozycji `Odwołaj termin`, `Edytuj bazowe zajęcia` i `Usuń zajęcia` oraz osobne wywołanie każdej akcji.
+8. Nie zmieniać zachowania ViewModelu, tras, operacji zapisu, sekcji 1.5 ani widgetu.
+9. Uruchomić `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug`.
+
+Kryterium zakończenia etapu: dolne akcje uwzględniają bezpieczny obszar dokładnie raz, test notatki używa tekstu rzeczywiście renderowanego przez ekran, a testy pokrywają przełączenie formularza, przywracanie terminu i wszystkie akcje menu topbara.
 
 ## 1.5. Plan uproszczenia sekcji rozwijanych
 

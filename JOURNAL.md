@@ -1,5 +1,11 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Poprawki po recenzji ekranu szczegółów terminu
+
+- Fakty: `OccurrenceBottomActions` dodawał własny `navigationBarsPadding`, mimo że dolny inset pochodzi z nadrzędnego `Scaffold` i `NavHost`. Test ekranu szukał tekstu `Notatka wspólna`, który nie jest osobnym węzłem, bo ekran renderuje `Notatka do zajęć: Notatka wspólna`.
+- Decyzja: Usunięto `navigationBarsPadding` i jego import, pozostawiając padding `MakSpacing`. Test ekranu sprawdza pełny tekst notatki, brak „Pokaż zmiana terminu”, zniknięcie „Zmień termin” po otwarciu formularza oraz wariant przywracania z wywołaniem akcji. Test topbara używa rzeczywistego `MakActionMenu` i osobno liczy wywołania „Odwołaj termin”, „Edytuj bazowe zajęcia” i „Usuń zajęcia”.
+- Weryfikacja: `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą. Odbiór na emulatorze albo urządzeniu pozostaje wymagany.
+
 ## 2026-09-20: Osobne ekrany kierunków i korekt tygodni
 
 - Fakty: Konfiguracja semestru pokazuje wyłącznie formularz danych, a zarządzanie kierunkami i korektami tygodni odbywa się na trasach `semester/{semesterId}/courses` oraz `semester/{semesterId}/week-overrides`. Formularz korekty pojawia się dopiero po akcji „Dodaj” albo „Edytuj”, a zapis i usunięcie nie opuszczają już ekranu podrzędnego. Sekcja rozwijana tworzy jeden kontener, w którym przycisk i treść mają wspólne obramowanie, a stan jest widoczny przez ikonę kierunku i opis „Rozwinięte” albo „Zwinięte”.

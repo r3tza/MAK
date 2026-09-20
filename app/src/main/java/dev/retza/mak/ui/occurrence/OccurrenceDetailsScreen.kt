@@ -17,7 +17,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import androidx.compose.foundation.layout.navigationBarsPadding
 import java.time.LocalDate
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDatePickerField
@@ -119,7 +118,6 @@ private fun OccurrenceBottomActions(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .navigationBarsPadding()
             .padding(horizontal = MakSpacing.lg, vertical = MakSpacing.sm),
         verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
