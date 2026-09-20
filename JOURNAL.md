@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: `ClassEditViewModel` zakończony
+
+- Fakty: `ClassEditViewModel` istniał z tymczasową delegacją z `MakViewModel`. Trasa edycji była nadal synchronizowana przez `MakDestination`, a zapis nawigował z komponentu bez efektu.
+- Decyzja: Ekran edycji czyta `ClassEditViewModel.editor` i wywołuje jego akcje. Usunięto `editor` z `MakUiState` oraz delegacje `openNewClass`, `openEditClass`, `updateEditor` i `saveClass`. Efekt synchronizacji nie ingeruje w trasę edycji, więc `NavController` jest jej jedynym właścicielem. Po udanym zapisie ViewModel emituje `ClassEditEffect.CloseEditor` przez buforowany kanał, zbierany na poziomie `MakApp` i wykonywany tylko na trasie edycji. Synchroniczny `isSaving` blokuje wielokrotny zapis, a `finally` zwalnia go także po anulowaniu.
+- Feedback: „Dodano zajęcia” dla nowego wpisu, „Zapisano zmiany zajęć” dla edycji, „Nie udało się zapisać zajęć.” przy wyjątku. Sukces leci po zapisie klasy, a walidacja nie emituje komunikatu.
+- Powód: Edycja zajęć ma być niezależnym przepływem z własnym cyklem życia, a nie delegacją z nadrzędnego ViewModelu.
+- Weryfikacja: `ClassEditViewModelTest` obejmuje bezpośrednie otwarcie, oczekiwanie na dane, ostatnie otwarcie, walidację bez feedbacku, pojedynczy zapis z jednym efektem, komunikaty nowego wpisu, edycji i błędu. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-20: `openEdit` czeka na dane semestru
 
 - Fakty: `ClassEditViewModel.openEdit` czytał `activeSemesterData.value` i kończył działanie, gdy niezależny kolektor nie otrzymał jeszcze danych. Użytkownik mógł zobaczyć pusty albo poprzedni formularz, mimo że `MakViewModel` ustawił trasę edycji.

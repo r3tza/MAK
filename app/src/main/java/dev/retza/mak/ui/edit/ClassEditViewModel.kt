@@ -13,6 +13,8 @@ import dev.retza.mak.domain.ClassValidator
 import dev.retza.mak.domain.Recurrence as DomainRecurrence
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.feedback.FeedbackSink
+import dev.retza.mak.ui.feedback.UiFeedback
+import dev.retza.mak.ui.feedback.UiFeedbackKind
 import java.time.DayOfWeek
 import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
@@ -38,7 +40,7 @@ sealed interface ClassEditEffect {
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClassEditViewModel(
     private val repository: MakRepository,
-    @Suppress("unused") private val feedbackSink: FeedbackSink
+    private val feedbackSink: FeedbackSink
 ) : ViewModel() {
     private val state = MutableStateFlow(defaultClassEditState())
     val editor: StateFlow<ClassEditUiState> = state.asStateFlow()
@@ -184,6 +186,7 @@ class ClassEditViewModel(
         }
 
         val classId = editingClassId
+        val successMessage = if (classId == null) "Dodano zajęcia" else "Zapisano zmiany zajęć"
         state.update { it.copy(isSaving = true) }
         viewModelScope.launch {
             try {
@@ -212,11 +215,12 @@ class ClassEditViewModel(
                 )
                 editingClassId = null
                 state.value = withActiveOptions(defaultClassEditState())
+                feedbackSink.publish(UiFeedback(successMessage, UiFeedbackKind.Success))
                 effectsChannel.trySend(ClassEditEffect.CloseEditor)
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
-                // Error feedback is added in the feedback step; the form stays open.
+                feedbackSink.publish(UiFeedback("Nie udało się zapisać zajęć.", UiFeedbackKind.Error))
             } finally {
                 state.update { it.copy(isSaving = false) }
             }

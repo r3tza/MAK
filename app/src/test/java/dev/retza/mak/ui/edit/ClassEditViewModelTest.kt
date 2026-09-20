@@ -3,6 +3,9 @@ package dev.retza.mak.ui.edit
 import dev.retza.mak.ui.FakeMakRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
+import dev.retza.mak.ui.feedback.FeedbackSink
+import dev.retza.mak.ui.feedback.UiFeedback
+import dev.retza.mak.ui.feedback.UiFeedbackKind
 import java.time.LocalDate
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
@@ -25,6 +28,9 @@ class ClassEditViewModelTest {
 
     private fun viewModel(repository: FakeMakRepository) =
         ClassEditViewModel(repository, FeedbackController())
+
+    private fun recordingViewModel(repository: FakeMakRepository, sink: RecordingFeedbackSink) =
+        ClassEditViewModel(repository, sink)
 
     @Test
     fun openNewUsesWeeklyRecurrence() = runTest(mainDispatcher) {
@@ -231,5 +237,119 @@ class ClassEditViewModelTest {
         assertEquals(1, repository.events.count { it == "saveClass" })
         assertEquals(listOf(ClassEditEffect.CloseEditor), effects)
         assertFalse(viewModel.editor.value.isSaving)
+    }
+
+    @Test
+    fun saveNewClassPublishesAddedMessage() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.openNew()
+        viewModel.update {
+            it.copy(
+                name = "Analiza",
+                courseName = "Informatyka",
+                type = "Wykład",
+                dayLabel = "Poniedziałek",
+                startTime = "12:00",
+                endTime = "13:30"
+            )
+        }
+        advanceUntilIdle()
+
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(UiFeedback("Dodano zajęcia", UiFeedbackKind.Success)),
+            sink.published
+        )
+    }
+
+    @Test
+    fun saveEditPublishesUpdatedMessage() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.openEdit("1:2026-09-21")
+        advanceUntilIdle()
+        viewModel.update { it.copy(name = "Programowanie zaawansowane") }
+        advanceUntilIdle()
+
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(UiFeedback("Zapisano zmiany zajęć", UiFeedbackKind.Success)),
+            sink.published
+        )
+        assertEquals("Programowanie zaawansowane", repository.classes.single().name)
+    }
+
+    @Test
+    fun saveErrorPublishesOneErrorAndKeepsForm() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.openNew()
+        viewModel.update {
+            it.copy(
+                name = "Analiza",
+                courseName = "Informatyka",
+                type = "Wykład",
+                dayLabel = "Poniedziałek",
+                startTime = "12:00",
+                endTime = "13:30"
+            )
+        }
+        advanceUntilIdle()
+
+        repository.failSaves = true
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(UiFeedback("Nie udało się zapisać zajęć.", UiFeedbackKind.Error)),
+            sink.published
+        )
+        assertEquals("Analiza", viewModel.editor.value.name)
+        assertFalse(viewModel.editor.value.isSaving)
+    }
+
+    @Test
+    fun validationDoesNotPublishFeedback() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.openNew()
+        viewModel.update {
+            it.copy(
+                name = "Analiza",
+                courseName = "Informatyka",
+                type = "Wykład",
+                dayLabel = "Poniedziałek",
+                startTime = "11:00",
+                endTime = "10:30"
+            )
+        }
+        advanceUntilIdle()
+
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertNotNull(viewModel.editor.value.errors[ClassEditField.EndTime])
+        assertTrue(sink.published.isEmpty())
+    }
+}
+
+private class RecordingFeedbackSink : FeedbackSink {
+    val published = mutableListOf<UiFeedback>()
+
+    override fun publish(feedback: UiFeedback) {
+        published += feedback
     }
 }

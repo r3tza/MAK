@@ -69,7 +69,7 @@ Kryteria zakończenia porządkowania:
 
 Refaktor należy wykonać przed podłączeniem feedbacku do wszystkich operacji z etapu 6 sekcji 1.6. Nie przepisywać całego ViewModelu jednocześnie. Każdy etap ma kończyć się kompilującym stanem, testami odpowiednimi do zmiany i osobnym commitem.
 
-Status: etapy 1-7 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`, etap 3 dodaje `OccurrenceArgs` i utrzymuje `OccurrenceDetailsUiState` bez typów warstwy danych ani stanu nawigacji, etap 4 przenosi logikę szczegółów do `OccurrenceViewModel`, etap 5 podłącza ekran szczegółów bezpośrednio do `OccurrenceViewModel` i usuwa delegację oraz stan szczegółów z `MakUiState`, etap 6 podłącza komunikaty do zmiany, przeniesienia, przywrócenia i odwołania terminu oraz obu notatek, a etap 7 potwierdził brak pozostałości szczegółów w `MakViewModel`, a etap 8 rozpoczęto od `ClassEditViewModel` z tymczasową delegacją.
+Status: etapy 1-7 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`, etap 3 dodaje `OccurrenceArgs` i utrzymuje `OccurrenceDetailsUiState` bez typów warstwy danych ani stanu nawigacji, etap 4 przenosi logikę szczegółów do `OccurrenceViewModel`, etap 5 podłącza ekran szczegółów bezpośrednio do `OccurrenceViewModel` i usuwa delegację oraz stan szczegółów z `MakUiState`, etap 6 podłącza komunikaty do zmiany, przeniesienia, przywrócenia i odwołania terminu oraz obu notatek, a etap 7 potwierdził brak pozostałości szczegółów w `MakViewModel`, a etap 8 zakończył `ClassEditViewModel`.
 
 #### Etap 1: inwentaryzacja odpowiedzialności
 
@@ -176,7 +176,7 @@ Status etapu: zrealizowane. Audyt potwierdził, że `MakViewModel` nie ma pól `
 
 Kryterium etapu: nadrzędny stan koordynuje wyłącznie dane wspólne, a logika formularzy i operacji należy do ViewModelu właściwego przepływu.
 
-Status etapu: rozpoczęty od `ClassEditViewModel`. Nowy ViewModel przejmuje otwieranie formularza, wczytywanie bazowych zajęć, walidację i zapis, a `MakViewModel` tymczasowo deleguje te operacje i nadal odpowiada za nawigację. `openEdit` anuluje poprzednie zadanie, czyści formularz i czeka na pierwsze dane semestru, więc wygrywa ostatnie otwarcie. Kolejne kroki to podłączenie ekranu bezpośrednio do `ClassEditViewModel`, efekt zamknięcia po zapisie oraz feedback operacji.
+Status etapu: `ClassEditViewModel` zakończony. Ekran edycji czyta `ClassEditViewModel.editor` i wywołuje jego akcje, a `MakViewModel` nie zawiera już `editor`, metod formularza ani delegacji. `openEdit` czeka na dane semestru i wygrywa ostatnie otwarcie. Po udanym zapisie ViewModel emituje `ClassEditEffect.CloseEditor` zbierany na poziomie `MakApp`, a synchroniczny `isSaving` blokuje wielokrotny zapis. Operacje emitują komunikaty „Dodano zajęcia”, „Zapisano zmiany zajęć” oraz „Nie udało się zapisać zajęć.”, a walidacja nie emituje feedbacku. Kolejne przepływy to `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel` i `ScheduleViewModel`.
 
 Po każdym etapie uruchomić `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` oraz sprawdzić, że commit nie zawiera niezwiązanych zmian. Pierwsze zadanie wykonawcze obejmuje wyłącznie etapy 1 i 2. Wydzielanie `OccurrenceViewModel` rozpoczyna się po zaakceptowaniu granicy `FeedbackController`.
 
