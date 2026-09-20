@@ -362,6 +362,187 @@ class SemesterViewModelTest {
         assertTrue(sink.published.isEmpty())
         assertFalse(viewModel.semester.value.isAddingCourse)
     }
+
+    @Test
+    fun saveOverrideRejectsNonMonday() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.newWeekOverride()
+        viewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekStartDate = "2026-10-06")) }
+        viewModel.saveWeekOverride()
+        advanceUntilIdle()
+
+        assertNotNull(viewModel.semester.value.overrideForm.weekStartDateError)
+        assertTrue(sink.published.isEmpty())
+        assertTrue(repository.events.none { it == "saveWeekOverride" })
+    }
+
+    @Test
+    fun saveNewOverridePublishesAddedMessage() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.newWeekOverride()
+        viewModel.update {
+            it.copy(
+                overrideForm = it.overrideForm.copy(
+                    weekStartDate = "2026-10-05",
+                    weekType = WeekTypeUi.B,
+                    scope = WeekOverrideScopeUi.FROM_WEEK
+                )
+            )
+        }
+        viewModel.saveWeekOverride()
+        advanceUntilIdle()
+
+        assertEquals(1, repository.weekOverrides.size)
+        assertEquals(WeekType.B, repository.weekOverrides.single().weekType)
+        assertFalse(viewModel.semester.value.overrideForm.isOpen)
+        assertEquals(
+            listOf(UiFeedback("Dodano korektę tygodnia", UiFeedbackKind.Success)),
+            sink.published
+        )
+    }
+
+    @Test
+    fun saveEditedOverridePublishesSavedMessage() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.weekOverrides += WeekOverrideEntity(
+            id = 5L,
+            semesterId = 1L,
+            weekStartDate = LocalDate.of(2026, 10, 5),
+            weekType = WeekType.A,
+            scope = WeekOverrideScope.ONE_WEEK
+        )
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.editWeekOverride("5")
+        advanceUntilIdle()
+        assertEquals("5", viewModel.semester.value.overrideForm.id)
+
+        viewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekType = WeekTypeUi.B)) }
+        viewModel.saveWeekOverride()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(UiFeedback("Zapisano korektę tygodnia", UiFeedbackKind.Success)),
+            sink.published
+        )
+        assertEquals(WeekType.B, repository.weekOverrides.single().weekType)
+    }
+
+    @Test
+    fun saveOverrideRunsOnce() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.newWeekOverride()
+        viewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekStartDate = "2026-10-05")) }
+        repository.saveGate = CompletableDeferred()
+        viewModel.saveWeekOverride()
+        viewModel.saveWeekOverride()
+        advanceUntilIdle()
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "saveWeekOverride" })
+        assertEquals(1, sink.published.size)
+    }
+
+    @Test
+    fun saveOverrideErrorKeepsFormOpen() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.newWeekOverride()
+        viewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekStartDate = "2026-10-05")) }
+        repository.failSaves = true
+        viewModel.saveWeekOverride()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.semester.value.overrideForm.isOpen)
+        assertEquals("2026-10-05", viewModel.semester.value.overrideForm.weekStartDate)
+        assertFalse(viewModel.semester.value.overrideForm.isSaving)
+        assertEquals(1, sink.published.size)
+        assertEquals(UiFeedbackKind.Error, sink.published.single().kind)
+    }
+
+    @Test
+    fun deleteOverrideRunsOnceAndPublishesSuccess() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.weekOverrides += WeekOverrideEntity(
+            id = 5L,
+            semesterId = 1L,
+            weekStartDate = LocalDate.of(2026, 10, 5),
+            weekType = WeekType.A,
+            scope = WeekOverrideScope.ONE_WEEK
+        )
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        repository.saveGate = CompletableDeferred()
+        viewModel.deleteWeekOverride("5")
+        viewModel.deleteWeekOverride("5")
+        advanceUntilIdle()
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "deleteWeekOverride" })
+        assertTrue(repository.weekOverrides.isEmpty())
+        assertEquals(
+            listOf(UiFeedback("Usunięto korektę tygodnia", UiFeedbackKind.Success)),
+            sink.published
+        )
+        assertFalse(viewModel.semester.value.isDeletingOverride)
+    }
+
+    @Test
+    fun deleteOverrideCancellationDoesNotPublish() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.weekOverrides += WeekOverrideEntity(
+            id = 5L,
+            semesterId = 1L,
+            weekStartDate = LocalDate.of(2026, 10, 5),
+            weekType = WeekType.A,
+            scope = WeekOverrideScope.ONE_WEEK
+        )
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        repository.cancelSaves = true
+        viewModel.deleteWeekOverride("5")
+        advanceUntilIdle()
+
+        assertTrue(sink.published.isEmpty())
+        assertFalse(viewModel.semester.value.isDeletingOverride)
+    }
 }
 
 private class RecordingFeedbackSink : FeedbackSink {

@@ -6,11 +6,14 @@ import androidx.lifecycle.viewModelScope
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.CourseEntity
 import dev.retza.mak.data.entity.SemesterEntity
+import dev.retza.mak.data.entity.WeekOverrideEntity
+import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
+import java.time.DayOfWeek
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -191,6 +194,84 @@ class SemesterViewModel(
             courseColorDraft = current.courseColorDraft,
             overrideForm = current.overrideForm
         )
+    }
+
+    fun newWeekOverride() = update {
+        it.copy(overrideForm = WeekOverrideFormUiState(isOpen = true))
+    }
+
+    fun editWeekOverride(id: String) {
+        val item = state.value.overrides.firstOrNull { it.id == id } ?: return
+        update {
+            it.copy(
+                overrideForm = WeekOverrideFormUiState(
+                    id = item.id,
+                    weekStartDate = item.weekStartDate,
+                    weekType = item.weekType,
+                    scope = item.scope,
+                    isOpen = true
+                )
+            )
+        }
+    }
+
+    fun cancelWeekOverrideEdit() = update {
+        it.copy(overrideForm = WeekOverrideFormUiState())
+    }
+
+    fun saveWeekOverride() {
+        if (state.value.overrideForm.isSaving) return
+        val semester = semesterIdState.value ?: return
+        val form = state.value.overrideForm
+        val date = form.weekStartDate.toLocalDateOrNull()
+        if (date == null || date.dayOfWeek != DayOfWeek.MONDAY) {
+            update { it.copy(overrideForm = form.copy(weekStartDateError = "Wybierz poniedziałek.")) }
+            return
+        }
+        update { it.copy(overrideForm = form.copy(isSaving = true, weekStartDateError = null)) }
+        viewModelScope.launch {
+            try {
+                repository.saveWeekOverride(
+                    WeekOverrideEntity(
+                        id = form.id?.toLongOrNull() ?: 0,
+                        semesterId = semester,
+                        weekStartDate = date,
+                        weekType = WeekType.valueOf(form.weekType.name),
+                        scope = WeekOverrideScope.valueOf(form.scope.name)
+                    )
+                )
+                refresh()
+                update { it.copy(overrideForm = WeekOverrideFormUiState()) }
+                val message = if (form.id == null) "Dodano korektę tygodnia" else "Zapisano korektę tygodnia"
+                feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                feedbackSink.publish(UiFeedback("Nie udało się zapisać korekty tygodnia.", UiFeedbackKind.Error))
+            } finally {
+                update { it.copy(overrideForm = it.overrideForm.copy(isSaving = false)) }
+            }
+        }
+    }
+
+    fun deleteWeekOverride(id: String) {
+        if (state.value.isDeletingOverride) return
+        val overrideId = id.toLongOrNull() ?: return
+        update { it.copy(isDeletingOverride = true) }
+        viewModelScope.launch {
+            try {
+                repository.deleteWeekOverride(overrideId)
+                refresh()
+                update { it.copy(overrideForm = WeekOverrideFormUiState()) }
+                feedbackSink.publish(UiFeedback("Usunięto korektę tygodnia", UiFeedbackKind.Success))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                feedbackSink.publish(UiFeedback("Nie udało się usunąć korekty tygodnia.", UiFeedbackKind.Error))
+            } finally {
+                update { it.copy(isDeletingOverride = false) }
+            }
+        }
     }
 
     class Factory(

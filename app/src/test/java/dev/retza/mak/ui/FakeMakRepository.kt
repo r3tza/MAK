@@ -141,8 +141,23 @@ internal class FakeMakRepository : MakRepository {
         classes.removeAll { it.id == id }
     }
 
-    override suspend fun saveWeekOverride(entity: WeekOverrideEntity): Long = 1L
-    override suspend fun deleteWeekOverride(id: Long) = Unit
+    override suspend fun saveWeekOverride(entity: WeekOverrideEntity): Long {
+        awaitSave()
+        events += "saveWeekOverride"
+        if (entity.id == 0L) {
+            weekOverrides += entity.copy(id = (weekOverrides.size + 1).toLong())
+        } else {
+            val index = weekOverrides.indexOfFirst { it.id == entity.id }
+            if (index >= 0) weekOverrides[index] = entity else weekOverrides += entity
+        }
+        return entity.id
+    }
+
+    override suspend fun deleteWeekOverride(id: Long) {
+        awaitSave()
+        events += "deleteWeekOverride"
+        weekOverrides.removeAll { it.id == id }
+    }
 
     override suspend fun saveOccurrenceNote(entity: OccurrenceNoteEntity): Long {
         awaitSave()

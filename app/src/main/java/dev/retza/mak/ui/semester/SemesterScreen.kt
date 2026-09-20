@@ -98,6 +98,7 @@ data class SemesterScreenUiState(
     val courseNameError: String? = null,
     val isAddingCourse: Boolean = false,
     val isDeletingCourse: Boolean = false,
+    val isDeletingOverride: Boolean = false,
     val status: ScreenStatus = ScreenStatus.Ready
 )
 

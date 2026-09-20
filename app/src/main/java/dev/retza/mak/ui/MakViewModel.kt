@@ -36,7 +36,6 @@ import dev.retza.mak.ui.setup.SetupWizardUiState
 import dev.retza.mak.ui.today.TodayUiState
 import dev.retza.mak.ui.semester.SemesterScreenUiState
 import dev.retza.mak.ui.semester.SemesterViewModel
-import dev.retza.mak.ui.semester.WeekOverrideFormUiState
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.data.entity.WeekOverrideEntity
@@ -320,54 +319,18 @@ class MakViewModel(
         semesterViewModel.saveSemester()
     }
 
-    fun newWeekOverride() = semesterViewModel.update {
-        it.copy(overrideForm = WeekOverrideFormUiState(isOpen = true))
-    }
+    fun newWeekOverride() = semesterViewModel.newWeekOverride()
 
-    fun editWeekOverride(id: String) {
-        val item = semesterViewModel.semester.value.overrides.firstOrNull { it.id == id } ?: return
-        semesterViewModel.update {
-            it.copy(
-                overrideForm = WeekOverrideFormUiState(
-                    id = item.id,
-                    weekStartDate = item.weekStartDate,
-                    weekType = item.weekType,
-                    scope = item.scope,
-                    isOpen = true
-                )
-            )
-        }
-    }
+    fun editWeekOverride(id: String) = semesterViewModel.editWeekOverride(id)
 
-    fun cancelWeekOverrideEdit() = semesterViewModel.update {
-        it.copy(overrideForm = WeekOverrideFormUiState())
-    }
+    fun cancelWeekOverrideEdit() = semesterViewModel.cancelWeekOverrideEdit()
 
     fun saveWeekOverride() {
-        val semesterId = semesterViewModel.semesterId.value ?: return
-        val form = semesterViewModel.semester.value.overrideForm
-        val date = form.weekStartDate.toLocalDateOrNull()
-        if (date == null || date.dayOfWeek != DayOfWeek.MONDAY) {
-            semesterViewModel.update { it.copy(overrideForm = form.copy(weekStartDateError = "Wybierz poniedziałek.")) }
-            return
-        }
-        viewModelScope.launch {
-            repository.saveWeekOverride(
-                WeekOverrideEntity(
-                    id = form.id?.toLongOrNull() ?: 0,
-                    semesterId = semesterId,
-                    weekStartDate = date,
-                    weekType = dev.retza.mak.data.entity.WeekType.valueOf(form.weekType.name),
-                    scope = dev.retza.mak.data.entity.WeekOverrideScope.valueOf(form.scope.name)
-                )
-            )
-            semesterViewModel.update { it.copy(overrideForm = WeekOverrideFormUiState()) }
-        }
+        semesterViewModel.saveWeekOverride()
     }
 
     fun deleteWeekOverride(id: String) {
-        id.toLongOrNull()?.let { overrideId -> viewModelScope.launch { repository.deleteWeekOverride(overrideId) } }
-        semesterViewModel.update { it.copy(overrideForm = WeekOverrideFormUiState()) }
+        semesterViewModel.deleteWeekOverride(id)
     }
 
     fun addCourse() {
