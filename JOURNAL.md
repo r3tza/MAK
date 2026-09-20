@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Wydzielenie `OccurrenceViewModel`
+
+- Fakty: Logika szczegółów wystąpienia, edycji terminu i obu notatek mieszkała w `MakViewModel` razem z nawigacją, planem, semestrem i ustawieniami.
+- Decyzja: Utworzono `OccurrenceViewModel` z zależnościami `MakRepository`, `ActivePlanProvider` i `FeedbackSink`. Przeniesiono do niego otwieranie i budowanie szczegółów, edycję daty, godzin i sali, walidację, zapis zmiany lub przeniesienia, odwołanie, przywracanie oraz obie notatki ze stanami zapisu i błędów. `MakViewModel` tymczasowo deleguje te operacje i nadal decyduje o powrocie do planu po usunięciu zajęć. Czyste funkcje pozostają w domenie, a `OccurrenceViewModel` jest tworzony w `MainActivity` i przekazywany do fabryki `MakViewModel`.
+- Powód: Granica ViewModelu dla szczegółów oddziela logikę i stan od nadrzędnego koordynatora, co przygotowuje etap 5 bez przebudowy nawigacji w tym samym commicie.
+- Odrzucone: Zmiana tras i podłączenie feedbacku operacji w tym etapie.
+- Weryfikacja: Testy notatek przeniesiono do `OccurrenceViewModelTest` i dodano otwarcie prawidłowego wystąpienia, błędne argumenty oraz zapis zmiany po edycji draftu. Wspólny `FakeMakRepository` i `MainDispatcherRule` obsługują oba testy ViewModelu. `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą po czyszczeniu.
+
 ## 2026-09-20: Granica modeli szczegółów wystąpienia
 
 - Fakty: `openOccurrence` parsował identyfikator trasy `classId:date` wewnątrz ViewModelu, a modele szczegółów nie miały jawnego typu argumentów otwarcia. Trzeba było też potwierdzić, że publiczny stan szczegółów nie wystawia encji Room ani stanu nawigacji.

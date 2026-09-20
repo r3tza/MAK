@@ -69,7 +69,7 @@ Kryteria zakończenia porządkowania:
 
 Refaktor należy wykonać przed podłączeniem feedbacku do wszystkich operacji z etapu 6 sekcji 1.6. Nie przepisywać całego ViewModelu jednocześnie. Każdy etap ma kończyć się kompilującym stanem, testami odpowiednimi do zmiany i osobnym commitem.
 
-Status: etapy 1-3 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`, a etap 3 dodaje `OccurrenceArgs` i utrzymuje `OccurrenceDetailsUiState` bez typów warstwy danych ani stanu nawigacji. Etapy 4-8 pozostają do wykonania.
+Status: etapy 1-4 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`, etap 3 dodaje `OccurrenceArgs` i utrzymuje `OccurrenceDetailsUiState` bez typów warstwy danych ani stanu nawigacji, a etap 4 przenosi logikę szczegółów do `OccurrenceViewModel` i zostawia tymczasową delegację z `MakViewModel`. Nawigacja i feedback operacji pozostają bez zmian. Etapy 5-8 pozostają do wykonania.
 
 #### Etap 1: inwentaryzacja odpowiedzialności
 
@@ -130,6 +130,8 @@ Status etapu: zrealizowane. `OccurrenceArgs(classId, date)` z `parse` i `toRoute
 5. Przenieść istniejące testy notatek do `OccurrenceViewModelTest` i dodać przypadki otwarcia prawidłowego wystąpienia, błędnych argumentów oraz edycji draftu podczas zapisu.
 
 Kryterium etapu: logika szczegółów działa w `OccurrenceViewModel`, a `MakViewModel` nie wykonuje jej samodzielnie.
+
+Status etapu: zrealizowane. `OccurrenceViewModel` zależy od `MakRepository`, `ActivePlanProvider` i `FeedbackSink`, prowadzi stan szczegółów oraz obie notatki. `MakViewModel` tylko deleguje i nadal odpowiada za tymczasową nawigację po usunięciu zajęć. Testy notatek i nowe przypadki otwarcia oraz edycji draftu są w `OccurrenceViewModelTest`.
 
 #### Etap 5: nawigacja szczegółów oparta na `NavController`
 
