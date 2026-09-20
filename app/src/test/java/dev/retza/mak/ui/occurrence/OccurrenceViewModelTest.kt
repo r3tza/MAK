@@ -400,6 +400,136 @@ class OccurrenceViewModelTest {
         assertNotNull(viewModel.details.value.sharedNoteError)
         assertTrue(effects.isEmpty())
     }
+
+    @Test
+    fun repeatedSharedNoteSaveRunsOnce() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+        viewModel.updateSharedNoteDraft("Nowa")
+        advanceUntilIdle()
+
+        repository.saveGate = CompletableDeferred()
+        viewModel.saveSharedNote()
+        viewModel.saveSharedNote()
+        advanceUntilIdle()
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "saveClass" })
+        assertEquals(1, sink.published.size)
+    }
+
+    @Test
+    fun repeatedOccurrenceNoteSaveRunsOnce() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+        viewModel.updateOccurrenceNoteDraft("Notatka daty")
+        advanceUntilIdle()
+
+        repository.saveGate = CompletableDeferred()
+        viewModel.saveOccurrenceNote()
+        viewModel.saveOccurrenceNote()
+        advanceUntilIdle()
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "saveOccurrenceNote" })
+        assertEquals(1, sink.published.size)
+    }
+
+    @Test
+    fun repeatedOccurrenceChangeSaveRunsOnce() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "12:30") }
+        advanceUntilIdle()
+
+        repository.saveGate = CompletableDeferred()
+        viewModel.saveOccurrenceChange()
+        viewModel.saveOccurrenceChange()
+        advanceUntilIdle()
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "saveOccurrenceChange" })
+        assertEquals(1, sink.published.size)
+    }
+
+    @Test
+    fun repeatedCancelRunsOnce() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        repository.saveGate = CompletableDeferred()
+        viewModel.cancelOccurrence()
+        viewModel.cancelOccurrence()
+        advanceUntilIdle()
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "saveOccurrenceChange" })
+        assertEquals(1, sink.published.size)
+        assertEquals("Odwołano termin", sink.published.single().message)
+    }
+
+    @Test
+    fun repeatedRestoreRunsOnce() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+        viewModel.cancelOccurrence()
+        advanceUntilIdle()
+
+        repository.events.clear()
+        sink.published.clear()
+        repository.saveGate = CompletableDeferred()
+        viewModel.restoreOccurrence()
+        viewModel.restoreOccurrence()
+        advanceUntilIdle()
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "deleteOccurrenceChange" })
+        assertEquals(1, sink.published.size)
+        assertEquals("Przywrócono termin", sink.published.single().message)
+    }
+
+    @Test
+    fun cancellationDoesNotPublishError() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+        viewModel.updateSharedNoteDraft("Nowa")
+        advanceUntilIdle()
+
+        repository.cancelSaves = true
+        viewModel.saveSharedNote()
+        advanceUntilIdle()
+
+        assertTrue(sink.published.isEmpty())
+    }
 }
 
 private class RecordingFeedbackSink(

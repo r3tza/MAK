@@ -155,7 +155,7 @@ Status etapu: zrealizowane. Ekran szczegółów czyta `OccurrenceViewModel.detai
 
 Kryterium etapu: przepływ wystąpienia realizuje swoją część etapu 6 sekcji 1.6 bez zależności od nadrzędnego ViewModelu.
 
-Status etapu: zrealizowane. `OccurrenceViewModel` emituje dokładnie jeden komunikat sukcesu po udanej operacji repozytorium („Zmieniono termin”, „Przeniesiono termin”, „Przywrócono termin”, „Odwołano termin”, zapis i usunięcie obu notatek), pomija `NoChange` bez zapisu i komunikatu, a przy wyjątku zachowuje draft i emituje jeden bezpieczny komunikat błędu bez nawigacji. Testy sprawdzają tekst, kolejność zapisu i sukcesu, brak emisji dla `NoChange` oraz brak efektu nawigacji po błędzie.
+Status etapu: zrealizowane. `OccurrenceViewModel` emituje dokładnie jeden komunikat sukcesu po udanej operacji repozytorium („Zmieniono termin”, „Przeniesiono termin”, „Przywrócono termin”, „Odwołano termin”, zapis i usunięcie obu notatek), pomija `NoChange` bez zapisu i komunikatu, a przy wyjątku zachowuje draft i emituje jeden bezpieczny komunikat błędu bez nawigacji. Każda metoda synchronicznie sprawdza i ustawia stan operacji przed `launch`, więc powtórne kliknięcie jest ignorowane, a `CancellationException` jest ponownie rzucany i nie zamienia się w komunikat błędu. Testy sprawdzają tekst, kolejność zapisu i sukcesu, brak emisji dla `NoChange`, powtórzone wywołania bez duplikatu oraz brak komunikatu po anulowaniu.
 
 #### Etap 7: usunięcie starego kodu wystąpienia
 

@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Blokada powtórzeń i anulowanie bez fałszywego błędu
+
+- Fakty: Stan zapisu był ustawiany dopiero wewnątrz korutyny, a `cancelOccurrence` i `restoreOccurrence` nie miały blokady, więc dwa szybkie kliknięcia mogły wykonać dwa zapisy i dwa komunikaty. Dodatkowo `catch (Exception)` przechwytywał `CancellationException`, więc wyczyszczenie ViewModelu mogło opublikować fałszywy błąd do aplikacyjnego kontrolera.
+- Decyzja: Każda operacja sprawdza i ustawia właściwy stan synchronicznie przed `launch`: `isSaving`, `isSavingSharedNote`, `isSavingOccurrenceNote` oraz prywatna flaga odwołania i przywrócenia. Kolejne wywołanie jest ignorowane do zakończenia operacji. We wszystkich nowych ścieżkach feedbacku `CancellationException` jest ponownie rzucany, a komunikat błędu powstaje tylko dla rzeczywistej awarii.
+- Powód: Podwójny zapis dubluje efekt i komunikat, a anulowanie nie jest błędem użytkownika i nie może pojawić się na innym ekranie.
+- Weryfikacja: Dodano testy powtórzonego zapisu obu notatek, edycji, odwołania i przywrócenia (pojedynczy zapis i komunikat) oraz `cancellationDoesNotPublishError`. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-20: Feedback operacji wystąpień i notatek
 
 - Fakty: `OccurrenceViewModel` miał już zależność `FeedbackSink`, ale żadna operacja nie emitowała komunikatów, a `NoChange` nadal uruchamiał `reload` i przechodził przez blok zapisu.

@@ -58,6 +58,7 @@ internal class FakeMakRepository : MakRepository {
     var saveGate: CompletableDeferred<Unit>? = null
     var occurrenceDataGate: CompletableDeferred<Unit>? = null
     var failSaves = false
+    var cancelSaves = false
 
     override fun observeSemesters(): Flow<List<SemesterEntity>> = flowOf(listOf(semester))
     override fun observeActiveSemester(): Flow<SemesterEntity?> = flowOf(semester)
@@ -156,6 +157,7 @@ internal class FakeMakRepository : MakRepository {
 
     private suspend fun awaitSave() {
         if (failSaves) throw IllegalStateException("save failed")
+        if (cancelSaves) throw kotlinx.coroutines.CancellationException("save cancelled")
         saveGate?.await()
     }
 }
