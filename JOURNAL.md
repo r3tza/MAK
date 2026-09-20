@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Ochrona edycji notatki podczas zapisu
+
+- Fakty: Pola notatek pozostają edytowalne w trakcie zapisu. Blok sukcesu bezwarunkowo zastępował draft wartością wysłaną, więc tekst dopisany podczas operacji znikał.
+- Decyzja: Po sukcesie aktualizować zawsze zapisaną wartość, ale draft zastępować tylko wtedy, gdy nadal odpowiada wysłanej wartości. Jeśli użytkownik zmienił pole w trakcie, jego nowy tekst zostaje, a akcja zapisu pozostaje aktywna dla kolejnej zmiany.
+- Powód: Trwający zapis nie może usuwać pracy wykonanej w międzyczasie, a zapisana wartość i tak pochodzi z udanej operacji repozytorium.
+- Weryfikacja: `MakViewModelTest` na JVM sprawdza zapis, usunięcie pustą wartością, błąd repozytorium oraz edycję pola podczas trwającego zapisu dla obu notatek, z użyciem bramkowanego repozytorium i `Dispatchers.setMain`. `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą.
+
 ## 2026-09-20: Dwie notatki na ekranie szczegółów
 
 - Fakty: Ekran szczegółów pokazywał notatkę wspólną tylko jako tekst, a notatkę wystąpienia w jednym polu z osobnym przyciskiem usuwania i powrotem do planu po zapisie.

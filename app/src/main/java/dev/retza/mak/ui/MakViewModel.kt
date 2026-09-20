@@ -390,10 +390,11 @@ class MakViewModel(
             updateOccurrence { it.copy(isSavingSharedNote = true, sharedNoteError = null) }
             try {
                 repository.saveClass(base.copy(classNote = note))
-                updateOccurrence {
-                    it.copy(
+                updateOccurrence { current ->
+                    val draftUnchanged = !noteContentChanged(current.sharedNoteDraft, note)
+                    current.copy(
                         sharedNote = note,
-                        sharedNoteDraft = note.orEmpty(),
+                        sharedNoteDraft = if (draftUnchanged) note.orEmpty() else current.sharedNoteDraft,
                         isSavingSharedNote = false
                     )
                 }
@@ -423,10 +424,11 @@ class MakViewModel(
                         OccurrenceNoteEntity(existing?.id ?: 0, data.semester.id, classId, date, note)
                     )
                 }
-                updateOccurrence {
-                    it.copy(
+                updateOccurrence { current ->
+                    val draftUnchanged = !noteContentChanged(current.occurrenceNoteDraft, note)
+                    current.copy(
                         occurrenceNote = note,
-                        occurrenceNoteDraft = note.orEmpty(),
+                        occurrenceNoteDraft = if (draftUnchanged) note.orEmpty() else current.occurrenceNoteDraft,
                         isSavingOccurrenceNote = false
                     )
                 }
