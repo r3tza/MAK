@@ -4,11 +4,14 @@ import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.ClassItem
 import dev.retza.mak.domain.Course
+import androidx.compose.ui.unit.dp
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -65,13 +68,56 @@ class WidgetPresenterTest {
     }
 
     @Test
-    fun layoutPolicyLimitsSmallWidgetAndShowsOverflowLabel() {
-        assertEquals(1, widgetItemLimit(110f, compact = true))
-        assertEquals(1, widgetItemLimit(160f, compact = true))
-        assertEquals(2, widgetItemLimit(180f, compact = false))
-        assertEquals(3, widgetItemLimit(260f, compact = false))
+    fun layoutPolicyClassifiesAllResponsiveSizesAndShowsExplicitLimits() {
+        val smallMode = widgetLayoutMode(180.dp, 110.dp)
+        val mediumMode = widgetLayoutMode(280.dp, 180.dp)
+        val largeMode = widgetLayoutMode(360.dp, 260.dp)
+
+        assertEquals(WidgetLayoutMode.Compact, smallMode)
+        assertEquals(WidgetLayoutMode.ExpandedMedium, mediumMode)
+        assertEquals(WidgetLayoutMode.ExpandedLarge, largeMode)
+        assertEquals(1, widgetItemLimit(smallMode))
+        assertEquals(2, widgetItemLimit(mediumMode))
+        assertEquals(3, widgetItemLimit(largeMode))
+        assertEquals(1, widgetNameMaxLines(mediumMode))
+        assertEquals(2, widgetNameMaxLines(largeMode))
+        assertEquals(42, widgetNameCharacterLimit(mediumMode))
+        assertEquals(56, widgetNameCharacterLimit(largeMode))
         assertEquals("Jeszcze 3", widgetOverflowLabel(total = 5, visible = 2))
         assertEquals(null, widgetOverflowLabel(total = 2, visible = 2))
+    }
+
+    @Test
+    fun metadataUsesCommasAndOmitsTeacherOnlyInCompactMode() {
+        val item = WidgetOccurrenceUi(
+            id = "class:date",
+            startTime = "09:00",
+            endTime = "10:00",
+            name = "Algebra",
+            courseName = "Matematyka",
+            courseColor = "#137B71",
+            roomLabel = "Sala 101",
+            teacherName = "Jan Kowalski",
+            conflictLabel = "Kolizja 09:30-10:00",
+            hasNote = true
+        )
+
+        assertEquals(
+            "Matematyka, Sala 101",
+            widgetMetadataLabel(item, WidgetLayoutMode.Compact)
+        )
+        assertEquals(
+            "Matematyka, Sala 101, Jan Kowalski",
+            widgetMetadataLabel(item, WidgetLayoutMode.ExpandedMedium)
+        )
+    }
+
+    @Test
+    fun invalidColorAndLongTextAreHandledWithoutBreakingWidgetText() {
+        assertNull(parseWidgetColor("#not-a-color"))
+        assertNotNull(parseWidgetColor("#137B71"))
+        assertEquals("abcd…", truncateWidgetText("abcdefgh", 5))
+        assertEquals("short", truncateWidgetText("short", 5))
     }
 
     private fun classItem(

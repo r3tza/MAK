@@ -1,13 +1,18 @@
 package dev.retza.mak.widget
 
-internal fun widgetItemLimit(heightDp: Float, compact: Boolean): Int {
-    if (compact) return 1
-    val estimatedHeaderAndPadding = 54f
-    val estimatedRowHeight = 48f
-    val limit = ((heightDp - estimatedHeaderAndPadding) / estimatedRowHeight)
-        .toInt()
-        .coerceAtLeast(1)
-    return limit.coerceAtMost(3)
+internal fun widgetItemLimit(mode: WidgetLayoutMode): Int = when (mode) {
+    WidgetLayoutMode.Compact -> 1
+    WidgetLayoutMode.ExpandedMedium -> 2
+    WidgetLayoutMode.ExpandedLarge -> 3
+}
+
+internal fun widgetNameMaxLines(mode: WidgetLayoutMode): Int =
+    if (mode == WidgetLayoutMode.ExpandedLarge) 2 else 1
+
+internal fun widgetNameCharacterLimit(mode: WidgetLayoutMode): Int = when (mode) {
+    WidgetLayoutMode.Compact -> 28
+    WidgetLayoutMode.ExpandedMedium -> 42
+    WidgetLayoutMode.ExpandedLarge -> 56
 }
 
 internal fun widgetOverflowLabel(total: Int, visible: Int): String? =

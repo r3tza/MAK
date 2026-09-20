@@ -39,12 +39,7 @@ import java.time.Clock
 class MakTodayWidget(
     private val clock: Clock = Clock.systemDefaultZone()
 ) : GlanceAppWidget() {
-    override val sizeMode = SizeMode.Responsive(
-        setOf(
-            MakWidgetSizes.small,
-            MakWidgetSizes.large
-        )
-    )
+    override val sizeMode = SizeMode.Responsive(MakWidgetSizes.responsiveSizes)
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val application = context.applicationContext as MakApplication
@@ -66,7 +61,7 @@ class MakTodayWidgetReceiver : GlanceAppWidgetReceiver() {
 
 @Composable
 private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
-    val compact = MakWidgetSizes.isCompact(LocalSize.current.width, LocalSize.current.height)
+    val layoutMode = widgetLayoutMode(LocalSize.current.width, LocalSize.current.height)
     val openTodayAction = actionStartActivity(
         Intent(context, MainActivity::class.java).putExtra(
             MainActivity.EXTRA_OPEN_TODAY,
@@ -94,9 +89,9 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
             }
             is WidgetUiState.Error -> WidgetMessage(state.message)
             is WidgetUiState.Ready -> {
-                val visibleItems = state.items.take(widgetItemLimit(LocalSize.current.height.value, compact))
+                val visibleItems = state.items.take(widgetItemLimit(layoutMode))
                 visibleItems.forEach { item ->
-                    WidgetOccurrenceRow(item, openTodayAction, compact)
+                    WidgetOccurrenceRow(item, openTodayAction, layoutMode)
                     if (item != visibleItems.last()) {
                         Spacer(
                             GlanceModifier
@@ -104,7 +99,11 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
                                 .height(1.dp)
                                 .background(GlanceTheme.colors.surfaceVariant)
                         )
-                        Spacer(GlanceModifier.height(if (compact) 6.dp else 10.dp))
+                        Spacer(
+                            GlanceModifier.height(
+                                if (layoutMode == WidgetLayoutMode.Compact) 6.dp else 10.dp
+                            )
+                        )
                     }
                 }
                 widgetOverflowLabel(state.items.size, visibleItems.size)?.let { overflowLabel ->
@@ -203,8 +202,9 @@ private fun WidgetMessage(message: String) {
 private fun WidgetOccurrenceRow(
     item: WidgetOccurrenceUi,
     openTodayAction: androidx.glance.action.Action,
-    compact: Boolean
+    layoutMode: WidgetLayoutMode
 ) {
+    val compact = layoutMode == WidgetLayoutMode.Compact
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
@@ -215,7 +215,13 @@ private fun WidgetOccurrenceRow(
         Box(
             modifier = GlanceModifier
                 .width(4.dp)
-                .height(if (compact) 34.dp else 50.dp)
+                .height(
+                    when (layoutMode) {
+                        WidgetLayoutMode.Compact -> 34.dp
+                        WidgetLayoutMode.ExpandedMedium -> 50.dp
+                        WidgetLayoutMode.ExpandedLarge -> 64.dp
+                    }
+                )
                 .background(parseWidgetColor(item.courseColor) ?: Color.Transparent)
                 .cornerRadius(2.dp)
         ) {}
@@ -232,16 +238,16 @@ private fun WidgetOccurrenceRow(
         Spacer(GlanceModifier.width(6.dp))
         Column(modifier = GlanceModifier.defaultWeight()) {
             Text(
-                text = truncateWidgetText(item.name, if (compact) 28 else 42),
+                text = truncateWidgetText(item.name, widgetNameCharacterLimit(layoutMode)),
                 style = TextStyle(
                     color = GlanceTheme.colors.onBackground,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 ),
-                maxLines = if (compact) 1 else 2
+                maxLines = widgetNameMaxLines(layoutMode)
             )
             Text(
-                text = widgetMetadataLabel(item, compact),
+                text = widgetMetadataLabel(item, layoutMode),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 10.sp
@@ -251,7 +257,7 @@ private fun WidgetOccurrenceRow(
             val statusLabel = listOfNotNull(
                 item.conflictLabel?.let { truncateWidgetText(it, 30) },
                 item.hasNote.takeIf { it }?.let { "Notatka" }
-            ).joinToString(" · ")
+            ).joinToString(", ")
             if (statusLabel.isNotBlank()) {
                 Box(
                     modifier = GlanceModifier
@@ -273,16 +279,23 @@ private fun WidgetOccurrenceRow(
     }
 }
 
-private fun widgetMetadataLabel(item: WidgetOccurrenceUi, compact: Boolean): String =
-    listOfNotNull(
+internal fun widgetMetadataLabel(item: WidgetOccurrenceUi, layoutMode: WidgetLayoutMode): String {
+    val compact = layoutMode == WidgetLayoutMode.Compact
+    return listOfNotNull(
         item.courseName.takeIf(String::isNotBlank),
         item.roomLabel.takeIf(String::isNotBlank),
         item.teacherName
             ?.takeIf { !compact && it.isNotBlank() }
             ?.let { truncateWidgetText(it, 28) }
-    ).joinToString(" · ") { truncateWidgetText(it, if (compact) 28 else 34) }
+    ).joinToString(", ") {
+        truncateWidgetText(
+            it,
+            if (layoutMode == WidgetLayoutMode.ExpandedLarge) 42 else 34
+        )
+    }
+}
 
-private fun parseWidgetColor(value: String?): Color? = runCatching {
+internal fun parseWidgetColor(value: String?): Color? = runCatching {
     val hex = value?.trim()?.removePrefix("#") ?: return null
     val argb = when (hex.length) {
         6 -> hex.toLong(16) or 0xFF000000L

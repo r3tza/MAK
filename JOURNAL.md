@@ -2,8 +2,8 @@
 
 ## 2026-09-20: Modernizacja układu widgetu
 
-- Fakty: Widget otrzymał nagłówek z datą 16 sp, etykietę tygodnia, licznik zajęć, pasek koloru kierunku, stałą kolumnę czasu, osobne metadane i krótkie etykiety kolizji oraz notatek. Wariant kompaktowy pokazuje jedno zajęcie, a rozszerzony do trzech i wykorzystuje pełną szerokość wiersza. Dodano statyczny podgląd, limit maksymalnego rozmiaru i odświeżanie co godzinę.
-- Decyzja: Zachować dwa progi `SizeMode.Responsive`, traktować widget jako kompaktowy poniżej 260 dp szerokości albo 160 dp wysokości, a szczegóły ograniczać tekstowo zamiast dodawać przewijanie. Kolor kierunku jest tylko oznaczeniem pomocniczym i zawsze towarzyszy mu nazwa tekstowa.
+- Fakty: Widget otrzymał nagłówek z datą 16 sp, etykietę tygodnia, licznik zajęć, pasek koloru kierunku, stałą kolumnę czasu, osobne metadane i krótkie etykiety kolizji oraz notatek. `SizeMode.Responsive` udostępnia trzy rozmiary: `180x110`, `280x180` i `360x260 dp`. Wariant kompaktowy pokazuje jedno zajęcie, a rozszerzony odpowiednio dwa albo trzy. Separatory metadanych i statusów używają przecinków.
+- Decyzja: Zachować dwa rodzaje układu: kompaktowy dla `180x110 dp` oraz rozszerzony dla `280x180` i `360x260 dp`. Nazwa zajęć ma jedną linię w wariancie średnim i może mieć dwie linie wyłącznie w dużym. Kolor kierunku jest tylko oznaczeniem pomocniczym i zawsze towarzyszy mu nazwa tekstowa.
 - Powód: Duży wariant powinien wykorzystać dostępne miejsce na metadane bez tworzenia osobnego układu dla każdego wymiaru. Jedna stała kolumna czasu ułatwia szybkie porównanie zajęć, a statusy pozostają czytelne w motywie jasnym i ciemnym.
 - Narzędzia: Wrapper używa Gradle 9.7.1 z oficjalną sumą SHA-256, walidacją adresu dystrybucji i limitem czasu sieci.
 - Weryfikacja: `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą na Gradle 9.7.1. `--warning-mode all` wskazuje ostrzeżenie o notacji zależności przez obiekt `Project` używanej przez konfigurację lub plugin; skrypty projektu nie zawierają bezpośredniej zależności między modułami do przepisania. Odbiór na launcherze pozostaje wymagany.
