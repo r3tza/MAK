@@ -32,6 +32,7 @@ class OccurrenceViewModelTest {
         advanceUntilIdle()
 
         viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
 
         val state = viewModel.details.value
         assertEquals("Programowanie", state.subjectName)
@@ -48,14 +49,54 @@ class OccurrenceViewModelTest {
         advanceUntilIdle()
 
         viewModel.open("nope")
+        advanceUntilIdle()
         assertEquals("", viewModel.details.value.subjectName)
         assertEquals(null, viewModel.selectedClassId.value)
 
         viewModel.open("42:not-a-date")
+        advanceUntilIdle()
         assertEquals(null, viewModel.selectedClassId.value)
 
         viewModel.open(OccurrenceArgs(99L, LocalDate.of(2026, 9, 21)))
+        advanceUntilIdle()
         assertEquals(null, viewModel.selectedClassId.value)
+    }
+
+    @Test
+    fun openWaitsForFirstSemesterDataEmission() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.occurrenceDataGate = CompletableDeferred()
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+        assertEquals("", viewModel.details.value.subjectName)
+        assertEquals(null, viewModel.selectedClassId.value)
+
+        repository.occurrenceDataGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals("Programowanie", viewModel.details.value.subjectName)
+        assertEquals(1L, viewModel.selectedClassId.value)
+    }
+
+    @Test
+    fun lastOpenWinsWhenDataArrivesLate() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.classes += repository.classes.single().copy(id = 2L, name = "Matematyka")
+        repository.occurrenceDataGate = CompletableDeferred()
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.open(OccurrenceArgs(1L, LocalDate.of(2026, 9, 21)))
+        viewModel.open(OccurrenceArgs(2L, LocalDate.of(2026, 9, 21)))
+        advanceUntilIdle()
+        repository.occurrenceDataGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals("Matematyka", viewModel.details.value.subjectName)
+        assertEquals(2L, viewModel.selectedClassId.value)
     }
 
     @Test

@@ -131,7 +131,7 @@ Status etapu: zrealizowane. `OccurrenceArgs(classId, date)` z `parse` i `toRoute
 
 Kryterium etapu: logika szczegółów działa w `OccurrenceViewModel`, a `MakViewModel` nie wykonuje jej samodzielnie.
 
-Status etapu: zrealizowane. `OccurrenceViewModel` zależy od `MakRepository`, `ActivePlanProvider` i `FeedbackSink`, prowadzi stan szczegółów oraz obie notatki. `MakViewModel` tylko deleguje i nadal odpowiada za tymczasową nawigację po usunięciu zajęć. Testy notatek i nowe przypadki otwarcia oraz edycji draftu są w `OccurrenceViewModelTest`.
+Status etapu: zrealizowane. `OccurrenceViewModel` zależy od `MakRepository`, `ActivePlanProvider` i `FeedbackSink`, prowadzi stan szczegółów oraz obie notatki. Otwarcie szczegółów czeka na pierwsze dane aktywnego semestru i anuluje poprzednie żądanie, więc wygrywa ostatnie otwarcie. `MakViewModel` tylko deleguje i nadal odpowiada za tymczasową nawigację po usunięciu zajęć. Testy notatek i nowe przypadki otwarcia oraz edycji draftu są w `OccurrenceViewModelTest`.
 
 #### Etap 5: nawigacja szczegółów oparta na `NavController`
 

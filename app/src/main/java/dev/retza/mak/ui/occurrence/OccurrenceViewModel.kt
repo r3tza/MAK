@@ -21,6 +21,7 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -52,6 +53,7 @@ class OccurrenceViewModel(
 
     private var originalDate: LocalDate? = null
     private var noteDate: LocalDate? = null
+    private var openJob: Job? = null
 
     fun open(routeId: String) {
         val args = OccurrenceArgs.parse(routeId) ?: return
@@ -59,12 +61,15 @@ class OccurrenceViewModel(
     }
 
     fun open(args: OccurrenceArgs) {
-        val data = activeSemesterData.value ?: return
-        val built = buildDetails(data, args) ?: return
-        originalDate = built.baseDate.toLocalDateOrNull()
-        noteDate = built.currentDate.toLocalDateOrNull()
-        selectedClassIdState.value = args.classId
-        state.value = derive(built)
+        openJob?.cancel()
+        openJob = viewModelScope.launch {
+            val data = activeSemesterData.first { it != null } ?: return@launch
+            val built = buildDetails(data, args) ?: return@launch
+            originalDate = built.baseDate.toLocalDateOrNull()
+            noteDate = built.currentDate.toLocalDateOrNull()
+            selectedClassIdState.value = args.classId
+            state.value = derive(built)
+        }
     }
 
     fun update(transform: (OccurrenceDetailsUiState) -> OccurrenceDetailsUiState) {

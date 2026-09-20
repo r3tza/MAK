@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Otwarcie szczegółów czeka na dane semestru
+
+- Fakty: `OccurrenceViewModel` uruchamiał niezależną subskrypcję danych z początkową wartością `null`, a `open()` od razu odczytywał `.value`. Jeśli Room jeszcze nie zdążył wyemitować danych, otwarcie kończyło się pustym ekranem bez ponowienia. Dwa szybkie otwarcia mogły też wyścignąć się nawzajem.
+- Decyzja: `open()` uruchamia zadanie, które czeka na pierwsze niepuste dane aktywnego semestru, a każde kolejne otwarcie anuluje poprzednie. Dzięki temu wygrywa ostatnie żądanie, a brak danych nie kończy działania bezpowrotnie.
+- Powód: Dane semestru pochodzą z asynchronicznego przepływu Room, więc granica otwarcia nie może zależeć od tego, czy pierwsza emisja już dotarła.
+- Weryfikacja: Dodano testy `openWaitsForFirstSemesterDataEmission` i `lastOpenWinsWhenDataArrivesLate` z bramkowanym repozytorium oraz `advanceUntilIdle()` po otwarciu w pozostałych przypadkach. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-20: Wydzielenie `OccurrenceViewModel`
 
 - Fakty: Logika szczegółów wystąpienia, edycji terminu i obu notatek mieszkała w `MakViewModel` razem z nawigacją, planem, semestrem i ustawieniami.

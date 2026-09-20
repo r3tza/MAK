@@ -17,6 +17,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 
 internal class FakeMakRepository : MakRepository {
@@ -54,22 +55,26 @@ internal class FakeMakRepository : MakRepository {
     val occurrenceChanges = mutableListOf<OccurrenceChangeEntity>()
 
     var saveGate: CompletableDeferred<Unit>? = null
+    var occurrenceDataGate: CompletableDeferred<Unit>? = null
     var failSaves = false
 
     override fun observeSemesters(): Flow<List<SemesterEntity>> = flowOf(listOf(semester))
     override fun observeActiveSemester(): Flow<SemesterEntity?> = flowOf(semester)
     override fun observeSemester(id: Long): Flow<SemesterEntity?> = flowOf(semester)
-    override fun observeSemesterData(id: Long): Flow<SemesterWithData?> = flowOf(
-        SemesterWithData(
-            semester = semester,
-            courses = courses,
-            teachers = emptyList(),
-            classes = classes,
-            weekOverrides = emptyList(),
-            occurrenceNotes = occurrenceNotes,
-            occurrenceChanges = occurrenceChanges
+    override fun observeSemesterData(id: Long): Flow<SemesterWithData?> = flow {
+        occurrenceDataGate?.await()
+        emit(
+            SemesterWithData(
+                semester = semester,
+                courses = courses,
+                teachers = emptyList(),
+                classes = classes,
+                weekOverrides = emptyList(),
+                occurrenceNotes = occurrenceNotes,
+                occurrenceChanges = occurrenceChanges
+            )
         )
-    )
+    }
 
     override fun observeCourses(semesterId: Long): Flow<List<CourseEntity>> = flowOf(courses)
     override fun observeTeachers(semesterId: Long): Flow<List<TeacherEntity>> = flowOf(emptyList())
