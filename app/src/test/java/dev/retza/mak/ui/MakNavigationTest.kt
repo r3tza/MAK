@@ -57,6 +57,14 @@ class MakNavigationTest {
     }
 
     @Test
+    fun setupEffectAppliesOnlyOnWizardRoute() {
+        assertTrue(shouldHandleSetupEffect(MakRoutes.Setup))
+        assertFalse(shouldHandleSetupEffect(MakRoutes.Today))
+        assertFalse(shouldHandleSetupEffect(MakRoutes.Settings))
+        assertFalse(shouldHandleSetupEffect(null))
+    }
+
+    @Test
     fun semesterSubRoutesKeepTheirParentDestination() {
         assertEquals(MakDestination.Semester, destinationForRoute(MakRoutes.Semester))
         assertEquals(MakDestination.Semester, destinationForRoute(MakRoutes.SemesterCourses))

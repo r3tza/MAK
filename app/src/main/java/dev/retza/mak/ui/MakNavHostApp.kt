@@ -50,6 +50,8 @@ import dev.retza.mak.ui.semester.SemesterScreen
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.semester.SemesterWeekOverridesScreen
 import dev.retza.mak.ui.settings.SettingsScreen
+import dev.retza.mak.ui.setup.SetupEffect
+import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.setup.SetupWizard
 import dev.retza.mak.ui.today.TodayScreen
 import kotlinx.coroutines.flow.Flow
@@ -61,6 +63,7 @@ fun MakApp(
     occurrenceViewModel: OccurrenceViewModel,
     classEditViewModel: ClassEditViewModel,
     semesterViewModel: SemesterViewModel,
+    setupViewModel: SetupViewModel,
     feedback: Flow<UiFeedback>,
     onCreateExportDocument: () -> Unit
 ) {
@@ -136,16 +139,37 @@ fun MakApp(
         }
     }
 
+    LaunchedEffect(setupViewModel, navController) {
+        setupViewModel.effects.collect { effect ->
+            val route = navController.currentBackStackEntry?.destination?.route
+            if (!shouldHandleSetupEffect(route)) return@collect
+            when (effect) {
+                SetupEffect.FinishToToday -> openRoot(MakDestination.Today, MakRoutes.Today)
+                SetupEffect.ReturnToSettings -> {
+                    viewModel.navigate(MakDestination.Settings)
+                    if (navController.previousBackStackEntry?.destination?.route == MakRoutes.Settings) {
+                        navController.popBackStack()
+                    } else {
+                        openChild(MakDestination.Settings, MakRoutes.Settings)
+                    }
+                }
+
+                SetupEffect.OpenNewClassEditor -> {
+                    classEditViewModel.openNew()
+                    navController.navigate(MakRoutes.Edit)
+                }
+            }
+        }
+    }
+
     LaunchedEffect(state.requiresSetup, state.destination, currentRoute) {
         when {
             state.requiresSetup && currentRoute != MakRoutes.Setup -> {
+                setupViewModel.start()
+                viewModel.navigate(MakDestination.Setup)
                 navController.navigate(MakRoutes.Setup) {
                     popUpTo(MakRoutes.Today) { saveState = true }
                 }
-            }
-
-            !state.requiresSetup && currentRoute == MakRoutes.Setup -> {
-                openRoot(MakDestination.Today, MakRoutes.Today)
             }
 
             !state.requiresSetup &&
@@ -462,7 +486,8 @@ fun MakApp(
                     state = state.settings,
                     onSemesterSelected = viewModel::selectSemester,
                     onAddSemester = {
-                        viewModel.startSemesterSetup()
+                        setupViewModel.start()
+                        viewModel.navigate(MakDestination.Setup)
                         navController.navigate(MakRoutes.Setup)
                     },
                     onConfigureSemester = { id ->
@@ -479,29 +504,20 @@ fun MakApp(
             }
 
             composable(MakRoutes.Setup) {
+                val setupState = setupViewModel.setup.collectAsStateWithLifecycle().value
                 SetupWizard(
-                    state = state.setup,
-                    onSemesterNameChanged = { value -> viewModel.updateSetup { it.copy(semesterName = value) } },
-                    onStartDateChanged = { value -> viewModel.updateSetup { it.copy(startDate = value) } },
-                    onEndDateChanged = { value -> viewModel.updateSetup { it.copy(endDate = value) } },
-                    onFirstWeekChanged = { value -> viewModel.updateSetup { it.copy(firstWeekLabel = value) } },
-                    onCourseNameChanged = { value -> viewModel.updateSetup { it.copy(courseName = value) } },
-                    onCourseColorChanged = { value -> viewModel.updateSetup { it.copy(courseColor = value) } },
-                    onNext = viewModel::setupNext,
-                    onBack = viewModel::setupBack,
-                    onAddClass = {
-                        viewModel.finishSetup()
-                        classEditViewModel.openNew()
-                        navController.navigate(MakRoutes.Edit)
-                    },
-                    onFinish = {
-                        viewModel.finishSetup()
-                        openRoot(MakDestination.Today, MakRoutes.Today)
-                    },
-                    onReturnToSettings = {
-                        viewModel.cancelSetup()
-                        navigateBack()
-                    },
+                    state = setupState,
+                    onSemesterNameChanged = { value -> setupViewModel.update { it.copy(semesterName = value) } },
+                    onStartDateChanged = { value -> setupViewModel.update { it.copy(startDate = value) } },
+                    onEndDateChanged = { value -> setupViewModel.update { it.copy(endDate = value) } },
+                    onFirstWeekChanged = { value -> setupViewModel.update { it.copy(firstWeekLabel = value) } },
+                    onCourseNameChanged = { value -> setupViewModel.update { it.copy(courseName = value) } },
+                    onCourseColorChanged = { value -> setupViewModel.update { it.copy(courseColor = value) } },
+                    onNext = setupViewModel::next,
+                    onBack = setupViewModel::back,
+                    onAddClass = setupViewModel::addClass,
+                    onFinish = setupViewModel::finish,
+                    onReturnToSettings = setupViewModel::returnToSettings,
                     showReturnToSettings = state.settings.semesters.isNotEmpty(),
                     onRetry = {},
                     modifier = Modifier.fillMaxSize()
@@ -601,6 +617,9 @@ internal fun shouldCloseClassEditor(currentRoute: String?): Boolean =
 
 internal fun shouldCloseSemesterConfiguration(currentRoute: String?): Boolean =
     currentRoute == MakRoutes.Semester
+
+internal fun shouldHandleSetupEffect(currentRoute: String?): Boolean =
+    currentRoute == MakRoutes.Setup
 
 fun destinationForRoute(route: String?): MakDestination = when (route) {
     MakRoutes.Schedule -> MakDestination.Schedule

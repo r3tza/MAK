@@ -28,8 +28,6 @@ import dev.retza.mak.ui.schedule.ScheduleUiState
 import dev.retza.mak.ui.schedule.ScheduleView
 import dev.retza.mak.ui.settings.SettingsUiState
 import dev.retza.mak.ui.settings.ThemeOptionUi
-import dev.retza.mak.ui.setup.SetupViewModel
-import dev.retza.mak.ui.setup.SetupWizardUiState
 import dev.retza.mak.ui.today.TodayUiState
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
@@ -73,7 +71,6 @@ data class MakUiState(
     val schedule: ScheduleUiState = emptyScheduleState(),
     val themeId: String = "system",
     val settings: SettingsUiState = SettingsUiState(),
-    val setup: SetupWizardUiState = SetupWizardUiState(),
     val activeSemesterData: SemesterWithData? = null
 )
 
@@ -86,7 +83,6 @@ private data class Controls(
     val scheduleView: ScheduleView = ScheduleView.List,
     val courseFilterId: String = "all",
     val showCancelled: Boolean = false,
-    val forceSetup: Boolean = false,
     val semesterToDeleteId: String? = null,
     val themeId: String = "system"
 )
@@ -96,7 +92,6 @@ class MakViewModel(
     private val repository: MakRepository,
     private val feedbackSink: FeedbackSink,
     private val classEditViewModel: ClassEditViewModel,
-    private val setupViewModel: SetupViewModel,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val activePlanProvider: ActivePlanProvider = ActivePlanProvider()
 ) : ViewModel() {
@@ -115,13 +110,8 @@ class MakViewModel(
         if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
     }
 
-    val uiState = combine(
-        semesters,
-        activeSemesterData,
-        controls,
-        setupViewModel.setup
-    ) { semesterList, activeData, control, setup ->
-        buildState(semesterList, activeData, control, setup)
+    val uiState = combine(semesters, activeSemesterData, controls) { semesterList, activeData, control ->
+        buildState(semesterList, activeData, control)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -150,31 +140,6 @@ class MakViewModel(
 
     fun refreshToday() {
         controls.update { it.copy(todayDate = LocalDate.now(clock)) }
-    }
-
-    fun updateSetup(transform: (SetupWizardUiState) -> SetupWizardUiState) {
-        setupViewModel.update(transform)
-    }
-
-    fun setupNext() {
-        setupViewModel.next()
-    }
-
-    fun setupBack() {
-        setupViewModel.back()
-    }
-
-    fun finishSetup() {
-        controls.update { it.copy(forceSetup = false, destination = MakDestination.Today) }
-    }
-
-    fun cancelSetup() {
-        controls.update { it.copy(forceSetup = false, destination = MakDestination.Settings) }
-    }
-
-    fun startSemesterSetup() {
-        setupViewModel.start()
-        controls.update { it.copy(forceSetup = true, destination = MakDestination.Setup) }
     }
 
     fun openNewClassForSelectedCalendarDay() {
@@ -262,7 +227,6 @@ class MakViewModel(
     fun confirmSemesterDeletion() {
         val id = controls.value.semesterToDeleteId?.toLongOrNull() ?: return
         val remaining = uiState.value.settings.semesters.firstOrNull { it.id != id.toString() }
-        if (remaining == null) setupViewModel.start()
         viewModelScope.launch {
             repository.deleteSemester(id)
             if (remaining != null) repository.setActiveSemester(remaining.id.toLong())
@@ -270,8 +234,7 @@ class MakViewModel(
             controls.update {
                 it.copy(
                     semesterToDeleteId = null,
-                    destination = if (remaining == null) MakDestination.Setup else MakDestination.Settings,
-                    forceSetup = remaining == null
+                    destination = if (remaining == null) MakDestination.Setup else MakDestination.Settings
                 )
             }
         }
@@ -290,10 +253,9 @@ class MakViewModel(
     private fun buildState(
         semesterList: List<SemesterEntity>,
         activeData: SemesterWithData?,
-        control: Controls,
-        setup: SetupWizardUiState
+        control: Controls
     ): MakUiState {
-        val requiresSetup = control.forceSetup || semesterList.isEmpty() ||
+        val requiresSetup = semesterList.isEmpty() ||
             activeData != null && activeData.courses.isEmpty()
         val destination = if (requiresSetup) MakDestination.Setup else control.destination
         return MakUiState(
@@ -303,7 +265,6 @@ class MakViewModel(
             schedule = buildSchedule(activeData, control),
             themeId = control.themeId,
             settings = buildSettings(semesterList, activeData, control),
-            setup = setup,
             activeSemesterData = activeData
         )
     }
@@ -456,13 +417,12 @@ class MakViewModel(
     class Factory(
         private val repository: MakRepository,
         private val feedbackSink: FeedbackSink,
-        private val classEditViewModel: ClassEditViewModel,
-        private val setupViewModel: SetupViewModel
+        private val classEditViewModel: ClassEditViewModel
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(MakViewModel::class.java))
-            return MakViewModel(repository, feedbackSink, classEditViewModel, setupViewModel) as T
+            return MakViewModel(repository, feedbackSink, classEditViewModel) as T
         }
     }
 }

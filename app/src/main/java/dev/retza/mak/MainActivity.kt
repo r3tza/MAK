@@ -48,8 +48,7 @@ class MainActivity : ComponentActivity() {
                 factory = MakViewModel.Factory(
                     application.repository,
                     application.feedbackController,
-                    classEditViewModel,
-                    setupViewModel
+                    classEditViewModel
                 )
             )
             makViewModel = viewModel
@@ -93,6 +92,7 @@ class MainActivity : ComponentActivity() {
                     occurrenceViewModel = occurrenceViewModel,
                     classEditViewModel = classEditViewModel,
                     semesterViewModel = semesterViewModel,
+                    setupViewModel = setupViewModel,
                     feedback = application.feedbackController.feedback,
                     onCreateExportDocument = { exportLauncher.launch("mak-plan.json") }
                 )
