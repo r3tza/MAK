@@ -1,10 +1,13 @@
 package dev.retza.mak.ui.feedback
 
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.ui.semantics.SemanticsActions
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsFocused
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performSemanticsAction
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.theme.MAKTheme
 import kotlinx.coroutines.channels.Channel
@@ -48,6 +51,27 @@ class MakSnackbarHostTest {
         }
         composeTestRule.onNodeWithText(message).assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription(description).assertIsDisplayed()
+        hostState.currentSnackbarData?.dismiss()
+    }
+
+    @Test
+    fun snackbarTakesFocusForAssistiveInput() {
+        val hostState = SnackbarHostState()
+        val channel = Channel<UiFeedback>(Channel.BUFFERED)
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                MakSnackbarHost(feedback = channel.receiveAsFlow(), hostState = hostState)
+            }
+        }
+
+        channel.trySend(UiFeedback("Zapisano", UiFeedbackKind.Success))
+        composeTestRule.waitUntil(timeoutMillis = 5_000) {
+            hostState.currentSnackbarData?.visuals?.message == "Zapisano"
+        }
+        composeTestRule.onNodeWithContentDescription("Sukces: Zapisano")
+            .performSemanticsAction(SemanticsActions.RequestFocus)
+            .assertIsFocused()
         hostState.currentSnackbarData?.dismiss()
     }
 }

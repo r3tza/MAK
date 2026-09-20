@@ -95,8 +95,8 @@ private fun MakSnackbar(message: String, kind: UiFeedbackKind) {
                 color = if (focused) MaterialTheme.colorScheme.primary else container,
                 shape = RoundedCornerShape(14.dp)
             )
-            .focusable()
             .onFocusChanged { focused = it.isFocused }
+            .focusable()
             .padding(horizontal = MakSpacing.md, vertical = MakSpacing.md)
             .semantics {
                 contentDescription = "$label: $message"

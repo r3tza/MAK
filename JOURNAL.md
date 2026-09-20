@@ -1,5 +1,11 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Poprawka focusu snackbara
+
+- Fakty: `onFocusChanged` stał po `focusable()`, więc mógł nie obserwować właściwego węzła fokusu i obramowanie fokusu nie działało.
+- Decyzja: Ustawić `onFocusChanged` przed `focusable()` i dodać test Compose, który żąda focusu akcją semantyczną i sprawdza `assertIsFocused`.
+- Weryfikacja: `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą.
+
 ## 2026-09-20: Wspólny system feedbacku
 
 - Fakty: Aplikacja nie miała wspólnego kanału komunikatów ani własnego snackbara, więc każda operacja musiałaby sama decydować o sposobie informowania użytkownika.
