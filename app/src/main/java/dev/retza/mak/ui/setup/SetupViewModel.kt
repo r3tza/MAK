@@ -71,12 +71,24 @@ class SetupViewModel(
     private var saveJob: Job? = null
     private var sessionToken = 0L
 
-    fun start() {
+    fun start(existingSemester: SemesterEntity? = null) {
         sessionToken += 1
         saveJob?.cancel()
-        semesterId = null
-        courseId = null
-        state.value = SetupWizardUiState()
+        if (existingSemester == null) {
+            semesterId = null
+            courseId = null
+            state.value = SetupWizardUiState()
+        } else {
+            semesterId = existingSemester.id
+            courseId = null
+            state.value = SetupWizardUiState(
+                step = SetupStep.Course,
+                semesterName = existingSemester.name,
+                startDate = existingSemester.startDate.toString(),
+                endDate = existingSemester.endDate.toString(),
+                firstWeekLabel = existingSemester.firstWeekType.name
+            )
+        }
     }
 
     fun update(transform: (SetupWizardUiState) -> SetupWizardUiState) {

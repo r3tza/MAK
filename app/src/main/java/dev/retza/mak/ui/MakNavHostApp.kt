@@ -165,7 +165,10 @@ fun MakApp(
     LaunchedEffect(state.requiresSetup, state.destination, currentRoute) {
         when {
             state.requiresSetup && currentRoute != MakRoutes.Setup -> {
-                setupViewModel.start()
+                val existingSemester = state.activeSemesterData
+                    ?.takeIf { it.courses.isEmpty() }
+                    ?.semester
+                setupViewModel.start(existingSemester)
                 viewModel.navigate(MakDestination.Setup)
                 navController.navigate(MakRoutes.Setup) {
                     popUpTo(MakRoutes.Today) { saveState = true }

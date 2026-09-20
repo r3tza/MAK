@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Wznowienie kreatora dla semestru bez kierunku
+
+- Fakty: Po poprzedniej dwuetapowej implementacji użytkownik mógł mieć aktywny semestr bez kierunku. `requiresSetup` było wtedy prawdziwe, ale `SetupViewModel.start()` otwierał pusty kreator bez identyfikatora istniejącego semestru, więc zapis tworzył drugi semestr zamiast dodać pierwszy kierunek.
+- Decyzja: `start(existingSemester)` przyjmuje istniejący semestr, ustawia jego identyfikator, wypełnia pola i otwiera krok kierunku. Efekt nawigacji przekazuje aktywny semestr bez kierunków z `MakUiState.activeSemesterData`, a jawne dodawanie semestru nadal wywołuje `start()` bez argumentu.
+- Powód: Kreator ma wznowić konfigurację istniejącego semestru, a nie tworzyć duplikat.
+- Weryfikacja: `SetupViewModelTest.startResumesExistingSemesterAtCourseStep` sprawdza krok, wypełnione pola i aktualizację tego samego semestru. Dodano instrumentowany `RoomPersistenceTest.setupConfigurationRollsBackSemesterWhenCourseFails`, który potwierdza rollback semestru, gdy część transakcji dla kierunku zawiedzie. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-20: SetupViewModel i atomowy zapis konfiguracji
 
 - Fakty: Kreator konfiguracji trzymał stan i zapisywał semestr w `MakViewModel`. Semestr powstawał w kroku semestru, a kierunek w kroku kierunku, więc przerwanie między krokami mogło pozostawić sam semestr. Nawigację z kreatora wymuszał `forceSetup`.

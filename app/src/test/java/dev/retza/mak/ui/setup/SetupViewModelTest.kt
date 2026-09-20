@@ -266,6 +266,29 @@ class SetupViewModelTest {
     }
 
     @Test
+    fun startResumesExistingSemesterAtCourseStep() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+
+        viewModel.start(repository.semester)
+
+        val state = viewModel.setup.value
+        assertEquals(SetupStep.Course, state.step)
+        assertEquals("Semestr", state.semesterName)
+        assertEquals("2026-09-01", state.startDate)
+        assertEquals("2026-10-31", state.endDate)
+        assertEquals("A", state.firstWeekLabel)
+
+        viewModel.update { it.copy(courseName = "Nowy kierunek") }
+        viewModel.next()
+        advanceUntilIdle()
+
+        assertEquals(repository.semester.id, repository.lastSetupSemester?.id)
+        assertEquals(1, repository.events.count { it == "saveSetupConfiguration" })
+        assertEquals(SetupStep.Classes, viewModel.setup.value.step)
+    }
+
+    @Test
     fun backMovesThroughStepsInOrder() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val viewModel = viewModel(repository)

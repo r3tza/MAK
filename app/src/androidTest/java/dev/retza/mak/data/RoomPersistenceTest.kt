@@ -14,13 +14,17 @@ import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceChangeKind
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
+import dev.retza.mak.data.repository.RoomMakRepository
 import java.time.DayOfWeek
 import java.time.LocalTime
 import dev.retza.mak.data.entity.WeekType
 import java.time.LocalDate
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
+import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -105,6 +109,44 @@ class RoomPersistenceTest {
         assertEquals(overrideId, database!!.weekOverrideDao().findById(overrideId)?.id)
         assertEquals(changeId, database!!.occurrenceChangeDao().findById(changeId)?.id)
         assertEquals(noteId, database!!.occurrenceNoteDao().findById(noteId)?.id)
+    }
+
+    @Test
+    fun setupConfigurationRollsBackSemesterWhenCourseFails() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val otherSemesterId = database!!.semesterDao().insert(
+            SemesterEntity(
+                name = "Inny semestr",
+                startDate = LocalDate.of(2026, 10, 1),
+                endDate = LocalDate.of(2027, 2, 28),
+                firstWeekType = WeekType.B,
+                isActive = true
+            )
+        )
+        val otherCourseId = database!!.courseDao().insert(
+            CourseEntity(semesterId = otherSemesterId, name = "Inny kierunek", color = "#112233")
+        )
+        val before = database!!.semesterDao().observeAll().first()
+
+        try {
+            repository.saveSetupConfiguration(
+                SemesterEntity(
+                    name = "Nowy semestr",
+                    startDate = LocalDate.of(2026, 10, 1),
+                    endDate = LocalDate.of(2027, 2, 28),
+                    firstWeekType = WeekType.A,
+                    isActive = true
+                ),
+                CourseEntity(id = otherCourseId, semesterId = 0L, name = "Kierunek", color = "#445566")
+            )
+            fail("Expected the setup transaction to fail")
+        } catch (_: IllegalArgumentException) {
+        }
+
+        val after = database!!.semesterDao().observeAll().first()
+        assertEquals(before, after)
+        assertNull(after.firstOrNull { it.name == "Nowy semestr" })
     }
 
     private fun openDatabase(): AppDatabase =
