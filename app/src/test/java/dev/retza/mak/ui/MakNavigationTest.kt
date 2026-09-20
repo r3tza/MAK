@@ -46,4 +46,23 @@ class MakNavigationTest {
         assertFalse(shouldCloseOccurrenceDetails(MakRoutes.Today))
         assertFalse(shouldCloseOccurrenceDetails(null))
     }
+
+    @Test
+    fun semesterCloseEffectAppliesOnlyOnConfigurationRoute() {
+        assertTrue(shouldCloseSemesterConfiguration(MakRoutes.Semester))
+        assertFalse(shouldCloseSemesterConfiguration(MakRoutes.SemesterCourses))
+        assertFalse(shouldCloseSemesterConfiguration(MakRoutes.SemesterOverrides))
+        assertFalse(shouldCloseSemesterConfiguration(MakRoutes.Today))
+        assertFalse(shouldCloseSemesterConfiguration(null))
+    }
+
+    @Test
+    fun semesterSubRoutesKeepTheirParentDestination() {
+        assertEquals(MakDestination.Semester, destinationForRoute(MakRoutes.Semester))
+        assertEquals(MakDestination.Semester, destinationForRoute(MakRoutes.SemesterCourses))
+        assertEquals(MakDestination.Semester, destinationForRoute(MakRoutes.SemesterOverrides))
+        assertTrue(destinationMatchesRoute(MakDestination.Semester, MakRoutes.Semester))
+        assertTrue(destinationMatchesRoute(MakDestination.Semester, MakRoutes.SemesterCourses))
+        assertTrue(destinationMatchesRoute(MakDestination.Semester, MakRoutes.SemesterOverrides))
+    }
 }

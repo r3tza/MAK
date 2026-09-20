@@ -45,7 +45,9 @@ import dev.retza.mak.ui.occurrence.OccurrenceEffect
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.schedule.ScheduleScreen
 import dev.retza.mak.ui.semester.SemesterCoursesScreen
+import dev.retza.mak.ui.semester.SemesterEffect
 import dev.retza.mak.ui.semester.SemesterScreen
+import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.semester.SemesterWeekOverridesScreen
 import dev.retza.mak.ui.settings.SettingsScreen
 import dev.retza.mak.ui.setup.SetupWizard
@@ -58,11 +60,13 @@ fun MakApp(
     viewModel: MakViewModel,
     occurrenceViewModel: OccurrenceViewModel,
     classEditViewModel: ClassEditViewModel,
+    semesterViewModel: SemesterViewModel,
     feedback: Flow<UiFeedback>,
     onCreateExportDocument: () -> Unit
 ) {
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val occurrenceDetails = occurrenceViewModel.details.collectAsStateWithLifecycle().value
+    val semesterState = semesterViewModel.semester.collectAsStateWithLifecycle().value
     val navController = rememberNavController()
     val currentRoute = navController.currentBackStackEntryAsState().value
         ?.destination
@@ -120,6 +124,18 @@ fun MakApp(
         }
     }
 
+    LaunchedEffect(semesterViewModel, navController) {
+        semesterViewModel.effects.collect { effect ->
+            when (effect) {
+                SemesterEffect.CloseConfiguration -> {
+                    if (shouldCloseSemesterConfiguration(navController.currentBackStackEntry?.destination?.route)) {
+                        navController.popBackStack()
+                    }
+                }
+            }
+        }
+    }
+
     LaunchedEffect(state.requiresSetup, state.destination, currentRoute) {
         when {
             state.requiresSetup && currentRoute != MakRoutes.Setup -> {
@@ -135,17 +151,16 @@ fun MakApp(
             !state.requiresSetup &&
                 currentRoute != MakRoutes.Occurrence &&
                 currentRoute != MakRoutes.Edit &&
+                currentRoute != MakRoutes.Semester &&
+                currentRoute != MakRoutes.SemesterCourses &&
+                currentRoute != MakRoutes.SemesterOverrides &&
                 !destinationMatchesRoute(state.destination, currentRoute) -> {
                 when (state.destination) {
                     MakDestination.Today -> openRoot(MakDestination.Today, MakRoutes.Today)
                     MakDestination.Schedule -> openRoot(MakDestination.Schedule, MakRoutes.Schedule)
                     MakDestination.EditClass -> Unit
                     MakDestination.OccurrenceDetails -> Unit
-                    MakDestination.Semester -> {
-                        state.settings.activeSemesterId?.let {
-                            navController.navigate(semesterRoute(it))
-                        }
-                    }
+                    MakDestination.Semester -> Unit
                     MakDestination.Settings -> openChild(MakDestination.Settings, MakRoutes.Settings)
                     MakDestination.Setup -> Unit
                 }
@@ -365,32 +380,28 @@ fun MakApp(
             ) { entry ->
                 val semesterId = entry.arguments?.getString("semesterId")
                 LaunchedEffect(semesterId) {
-                    semesterId?.let(viewModel::openSemesterConfiguration)
+                    semesterId?.let(semesterViewModel::open)
                 }
                 SemesterScreen(
-                    state = state.semester,
+                    state = semesterState,
                     onSemesterNameChanged = { value ->
-                        viewModel.updateSemester { it.copy(semester = it.semester.copy(name = value)) }
+                        semesterViewModel.update { it.copy(semester = it.semester.copy(name = value)) }
                     },
                     onSemesterStartDateChanged = { value ->
-                        viewModel.updateSemester { it.copy(semester = it.semester.copy(startDate = value)) }
+                        semesterViewModel.update { it.copy(semester = it.semester.copy(startDate = value)) }
                     },
                     onSemesterEndDateChanged = { value ->
-                        viewModel.updateSemester { it.copy(semester = it.semester.copy(endDate = value)) }
+                        semesterViewModel.update { it.copy(semester = it.semester.copy(endDate = value)) }
                     },
                     onSemesterFirstWeekChanged = { value ->
-                        viewModel.updateSemester { it.copy(semester = it.semester.copy(firstWeek = value)) }
+                        semesterViewModel.update { it.copy(semester = it.semester.copy(firstWeek = value)) }
                     },
-                    onSaveSemester = viewModel::saveSemesterConfiguration,
+                    onSaveSemester = semesterViewModel::saveSemester,
                     onOpenCourses = {
-                        state.settings.activeSemesterId?.let { id ->
-                            navController.navigate(semesterCoursesRoute(id))
-                        }
+                        semesterId?.let { navController.navigate(semesterCoursesRoute(it)) }
                     },
                     onOpenOverrides = {
-                        state.settings.activeSemesterId?.let { id ->
-                            navController.navigate(semesterOverridesRoute(id))
-                        }
+                        semesterId?.let { navController.navigate(semesterOverridesRoute(it)) }
                     },
                     onBack = ::navigateBack,
                     onRetry = {},
@@ -404,18 +415,14 @@ fun MakApp(
             ) { entry ->
                 val semesterId = entry.arguments?.getString("semesterId")
                 LaunchedEffect(semesterId) {
-                    semesterId?.let(viewModel::openSemesterConfiguration)
+                    semesterId?.let(semesterViewModel::open)
                 }
                 SemesterCoursesScreen(
-                    state = state.semester,
-                    onCourseNameChanged = { value ->
-                        viewModel.updateSemester { it.copy(courseNameDraft = value) }
-                    },
-                    onCourseColorChanged = { value ->
-                        viewModel.updateSemester { it.copy(courseColorDraft = value) }
-                    },
-                    onAddCourse = viewModel::addCourse,
-                    onDeleteCourse = viewModel::deleteCourse,
+                    state = semesterState,
+                    onCourseNameChanged = semesterViewModel::updateCourseName,
+                    onCourseColorChanged = semesterViewModel::updateCourseColor,
+                    onAddCourse = semesterViewModel::addCourse,
+                    onDeleteCourse = semesterViewModel::deleteCourse,
                     onBack = ::navigateBack,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -427,24 +434,24 @@ fun MakApp(
             ) { entry ->
                 val semesterId = entry.arguments?.getString("semesterId")
                 LaunchedEffect(semesterId) {
-                    semesterId?.let(viewModel::openSemesterConfiguration)
+                    semesterId?.let(semesterViewModel::open)
                 }
                 SemesterWeekOverridesScreen(
-                    state = state.semester,
+                    state = semesterState,
                     onWeekStartDateChanged = { value ->
-                        viewModel.updateSemester { it.copy(overrideForm = it.overrideForm.copy(weekStartDate = value)) }
+                        semesterViewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekStartDate = value)) }
                     },
                     onWeekTypeChanged = { value ->
-                        viewModel.updateSemester { it.copy(overrideForm = it.overrideForm.copy(weekType = value)) }
+                        semesterViewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekType = value)) }
                     },
                     onScopeChanged = { value ->
-                        viewModel.updateSemester { it.copy(overrideForm = it.overrideForm.copy(scope = value)) }
+                        semesterViewModel.update { it.copy(overrideForm = it.overrideForm.copy(scope = value)) }
                     },
-                    onNewOverride = viewModel::newWeekOverride,
-                    onEditOverride = viewModel::editWeekOverride,
-                    onSaveOverride = viewModel::saveWeekOverride,
-                    onDeleteOverride = viewModel::deleteWeekOverride,
-                    onCancelOverrideEdit = viewModel::cancelWeekOverrideEdit,
+                    onNewOverride = semesterViewModel::newWeekOverride,
+                    onEditOverride = semesterViewModel::editWeekOverride,
+                    onSaveOverride = semesterViewModel::saveWeekOverride,
+                    onDeleteOverride = semesterViewModel::deleteWeekOverride,
+                    onCancelOverrideEdit = semesterViewModel::cancelWeekOverrideEdit,
                     onBack = ::navigateBack,
                     modifier = Modifier.fillMaxSize()
                 )
@@ -459,7 +466,6 @@ fun MakApp(
                         navController.navigate(MakRoutes.Setup)
                     },
                     onConfigureSemester = { id ->
-                        viewModel.openSemesterConfiguration(id)
                         navController.navigate(semesterRoute(id))
                     },
                     onDeleteSemester = viewModel::requestSemesterDeletion,
@@ -592,6 +598,9 @@ internal fun shouldCloseOccurrenceDetails(currentRoute: String?): Boolean =
 
 internal fun shouldCloseClassEditor(currentRoute: String?): Boolean =
     currentRoute == MakRoutes.Edit
+
+internal fun shouldCloseSemesterConfiguration(currentRoute: String?): Boolean =
+    currentRoute == MakRoutes.Semester
 
 fun destinationForRoute(route: String?): MakDestination = when (route) {
     MakRoutes.Schedule -> MakDestination.Schedule
