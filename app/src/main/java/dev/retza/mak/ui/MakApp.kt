@@ -171,15 +171,8 @@ private fun LegacyMakApp(viewModel: MakViewModel, onCreateExportDocument: () -> 
 
             MakDestination.OccurrenceDetails -> OccurrenceDetailsScreen(
                 state = state.occurrence,
-                onEditBaseClass = {
-                    state.selectedClassId?.let { id ->
-                        viewModel.openEditClass("$id:${state.occurrence.targetDateDraft}")
-                    }
-                },
                 onDeleteBaseClass = viewModel::deleteSelectedClass,
-                onRequestDeleteBaseClass = viewModel::requestClassDeletion,
                 onDismissDeleteConfirmation = viewModel::cancelClassDeletion,
-                onCancelOccurrence = viewModel::cancelSelectedOccurrence,
                 onChangeOccurrence = viewModel::changeSelectedOccurrence,
                 onMoveOccurrence = viewModel::moveSelectedOccurrence,
                 onRestoreOccurrence = viewModel::restoreSelectedOccurrence,

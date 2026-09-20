@@ -1,5 +1,11 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Akcje ekranu szczegółów w topbarze
+
+- Fakty: `MakTopBar` obsługuje opcjonalny slot akcji. Dla trasy szczegółów terminu pokazuje menu „Więcej opcji” po prawej stronie przycisku cofania.
+- Decyzja: Akcje odwołania terminu, edycji bazowych zajęć i usunięcia zajęć są budowane w `MakNavHostApp`, a ekran szczegółów nie renderuje menu w przewijanej treści.
+- Weryfikacja: Test topbara sprawdza renderowanie przekazanej akcji przy szerokości 320 dp. `test` i `compileDebugAndroidTestKotlin` przechodzą.
+
 ## 2026-09-20: Pierwszy etap ekranu szczegółów terminu
 
 - Fakty: Ekran szczegółów terminu nie pokazuje już lokalnej etykiety „TERMIN”. Nazwa zajęć i opis zmiany są prezentowane przez prywatny nagłówek.

@@ -18,7 +18,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import dev.retza.mak.ui.components.MakDialog
-import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakFactRow
 import dev.retza.mak.ui.components.MakExpandableSection
@@ -34,11 +33,8 @@ import dev.retza.mak.ui.components.MakTimePickerField
 @Composable
 fun OccurrenceDetailsScreen(
     state: OccurrenceDetailsUiState,
-    onEditBaseClass: () -> Unit,
     onDeleteBaseClass: () -> Unit,
-    onRequestDeleteBaseClass: () -> Unit,
     onDismissDeleteConfirmation: () -> Unit,
-    onCancelOccurrence: () -> Unit,
     onChangeOccurrence: () -> Unit,
     onMoveOccurrence: () -> Unit,
     onRestoreOccurrence: () -> Unit,
@@ -91,14 +87,6 @@ fun OccurrenceDetailsScreen(
                 onMoveOccurrence = onMoveOccurrence
             )
         }
-        MakActionMenu(
-            actions = listOfNotNull(
-                if (state.canCancelOccurrence) "Odwołaj termin" to onCancelOccurrence else null,
-                if (state.canEditBaseClass) "Edytuj bazowe zajęcia" to onEditBaseClass else null,
-                if (state.canDeleteBaseClass) "Usuń zajęcia" to onRequestDeleteBaseClass else null
-            ),
-            modifier = Modifier.fillMaxWidth()
-        )
         MakSecondaryAction(text = "Zamknij", onClick = onBack)
     }
 

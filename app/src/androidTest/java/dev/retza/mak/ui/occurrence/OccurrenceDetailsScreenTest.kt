@@ -47,11 +47,8 @@ class OccurrenceDetailsScreenTest {
                             canMoveOccurrence = false,
                             canEditOccurrenceNote = false
                         ),
-                        onEditBaseClass = {},
                         onDeleteBaseClass = {},
-                        onRequestDeleteBaseClass = {},
                         onDismissDeleteConfirmation = {},
-                        onCancelOccurrence = {},
                         onChangeOccurrence = {},
                         onMoveOccurrence = {},
                         onRestoreOccurrence = {},

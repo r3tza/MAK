@@ -4,6 +4,7 @@ import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
@@ -31,6 +32,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import dev.retza.mak.ui.components.MakBrandMark
+import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakIconButton
 import dev.retza.mak.ui.components.MakNavBar
 import dev.retza.mak.ui.edit.ClassEditScreen
@@ -128,7 +130,30 @@ fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
                 onBack = ::navigateBack,
                 onSettings = {
                     openChild(MakDestination.Settings, MakRoutes.Settings)
-                }
+                },
+                actions = if (currentRoute == MakRoutes.Occurrence) {
+                    {
+                        MakActionMenu(
+                            actions = listOfNotNull(
+                                if (state.occurrence.canCancelOccurrence) {
+                                    "Odwołaj termin" to viewModel::cancelSelectedOccurrence
+                                } else null,
+                                if (state.occurrence.canEditBaseClass) {
+                                    "Edytuj bazowe zajęcia" to {
+                                        state.selectedClassId?.let { id ->
+                                            viewModel.openEditClass("$id:${state.occurrence.targetDateDraft}")
+                                            navController.navigate(editRoute(id, state.occurrence.targetDateDraft))
+                                        }
+                                    }
+                                } else null,
+                                if (state.occurrence.canDeleteBaseClass) {
+                                    "Usuń zajęcia" to viewModel::requestClassDeletion
+                                } else null
+                            ),
+                            modifier = Modifier.padding(end = 4.dp)
+                        )
+                    }
+                } else null
             )
         },
         bottomBar = {
@@ -259,16 +284,8 @@ fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
                 }
                 OccurrenceDetailsScreen(
                     state = state.occurrence,
-                    onEditBaseClass = {
-                        state.selectedClassId?.let { id ->
-                            viewModel.openEditClass("$id:${state.occurrence.targetDateDraft}")
-                            navController.navigate(editRoute(id, state.occurrence.targetDateDraft))
-                        }
-                    },
                     onDeleteBaseClass = viewModel::deleteSelectedClass,
-                    onRequestDeleteBaseClass = viewModel::requestClassDeletion,
                     onDismissDeleteConfirmation = viewModel::cancelClassDeletion,
-                    onCancelOccurrence = viewModel::cancelSelectedOccurrence,
                     onChangeOccurrence = viewModel::changeSelectedOccurrence,
                     onMoveOccurrence = viewModel::moveSelectedOccurrence,
                     onRestoreOccurrence = viewModel::restoreSelectedOccurrence,
@@ -408,6 +425,7 @@ fun MakTopBar(
     showSettings: Boolean,
     onBack: () -> Unit,
     onSettings: () -> Unit,
+    actions: (@Composable RowScope.() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
     CenterAlignedTopAppBar(
@@ -441,7 +459,9 @@ fun MakTopBar(
             }
         },
         actions = {
-            if (showSettings) {
+            if (actions != null) {
+                actions.invoke(this)
+            } else if (showSettings) {
                 MakIconButton(
                     label = "Ustawienia i motyw",
                     icon = Icons.Outlined.Settings,
