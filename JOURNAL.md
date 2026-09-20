@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Nawigacja szczegółów oparta na `NavController`
+
+- Fakty: Ekran szczegółów korzystał ze stanu i akcji `MakViewModel`, a `MakUiState` przechowywał `occurrence` i `selectedClassId`. Trasa szczegółów współdzieliła źródło z `MakDestination`, a po usunięciu zajęć nawigację wywoływał efekt synchronizacji.
+- Decyzja: Ekran szczegółów czyta `OccurrenceViewModel.details` i wywołuje jego akcje. `MakViewModel` nie ma już delegacji ani pól szczegółów. `OccurrenceViewModel` nie zna `MakDestination`; usunięcie bazowych zajęć emituje jednorazowy `OccurrenceEffect.CloseDetails`, zbierany przez host szczegółów, który wykonuje jeden `popBackStack`. Efekt synchronizacji nie ingeruje w trasę szczegółów. Nieusuwany przebieg legacy `LegacyMakApp` został usunięty.
+- Powód: `NavController` ma być jedynym źródłem trasy szczegółów, a jednorazowy efekt zastępuje nawigację opartą na stanie ViewModelu.
+- Odrzucone: Utrzymywanie kopii trasy szczegółów w `MakViewModel` i nawigowanie przez efekt synchronizacji.
+- Weryfikacja: Dodano test `deleteSelectedClassEmitsCloseExactlyOnce`, a ekran szczegółów nadal korzysta z tych samych tekstów i akcji. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-20: Otwarcie szczegółów czeka na dane semestru
 
 - Fakty: `OccurrenceViewModel` uruchamiał niezależną subskrypcję danych z początkową wartością `null`, a `open()` od razu odczytywał `.value`. Jeśli Room jeszcze nie zdążył wyemitować danych, otwarcie kończyło się pustym ekranem bez ponowienia. Dwa szybkie otwarcia mogły też wyścignąć się nawzajem.

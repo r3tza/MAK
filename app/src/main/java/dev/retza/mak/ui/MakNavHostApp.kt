@@ -39,6 +39,8 @@ import dev.retza.mak.ui.edit.ClassEditScreen
 import dev.retza.mak.ui.feedback.MakSnackbarHost
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.occurrence.OccurrenceDetailsScreen
+import dev.retza.mak.ui.occurrence.OccurrenceEffect
+import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.schedule.ScheduleScreen
 import dev.retza.mak.ui.semester.SemesterCoursesScreen
 import dev.retza.mak.ui.semester.SemesterScreen
@@ -52,10 +54,12 @@ import kotlinx.coroutines.flow.Flow
 @Composable
 fun MakApp(
     viewModel: MakViewModel,
+    occurrenceViewModel: OccurrenceViewModel,
     feedback: Flow<UiFeedback>,
     onCreateExportDocument: () -> Unit
 ) {
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
+    val occurrenceDetails = occurrenceViewModel.details.collectAsStateWithLifecycle().value
     val navController = rememberNavController()
     val currentRoute = navController.currentBackStackEntryAsState().value
         ?.destination
@@ -102,17 +106,13 @@ fun MakApp(
             }
 
             !state.requiresSetup &&
+                currentRoute != MakRoutes.Occurrence &&
                 !destinationMatchesRoute(state.destination, currentRoute) -> {
                 when (state.destination) {
                     MakDestination.Today -> openRoot(MakDestination.Today, MakRoutes.Today)
                     MakDestination.Schedule -> openRoot(MakDestination.Schedule, MakRoutes.Schedule)
                     MakDestination.EditClass -> openChild(MakDestination.EditClass, MakRoutes.Edit)
-                    MakDestination.OccurrenceDetails -> {
-                        state.selectedClassId?.let { classId ->
-                            val date = state.occurrence.targetDateDraft
-                            navController.navigate(occurrenceRoute("$classId:$date"))
-                        }
-                    }
+                    MakDestination.OccurrenceDetails -> Unit
                     MakDestination.Semester -> {
                         state.settings.activeSemesterId?.let {
                             navController.navigate(semesterRoute(it))
@@ -147,19 +147,19 @@ fun MakApp(
                     {
                         MakActionMenu(
                             actions = listOfNotNull(
-                                if (state.occurrence.canCancelOccurrence) {
-                                    "Odwołaj termin" to viewModel::cancelSelectedOccurrence
+                                if (occurrenceDetails.canCancelOccurrence) {
+                                    "Odwołaj termin" to occurrenceViewModel::cancelOccurrence
                                 } else null,
-                                if (state.occurrence.canEditBaseClass) {
+                                if (occurrenceDetails.canEditBaseClass) {
                                     "Edytuj bazowe zajęcia" to {
-                                        state.selectedClassId?.let { id ->
-                                            viewModel.openEditClass("$id:${state.occurrence.targetDateDraft}")
-                                            navController.navigate(editRoute(id, state.occurrence.targetDateDraft))
+                                        occurrenceViewModel.selectedClassId.value?.let { id ->
+                                            viewModel.openEditClass("$id:${occurrenceDetails.targetDateDraft}")
+                                            navController.navigate(editRoute(id, occurrenceDetails.targetDateDraft))
                                         }
                                     }
                                 } else null,
-                                if (state.occurrence.canDeleteBaseClass) {
-                                    "Usuń zajęcia" to viewModel::requestClassDeletion
+                                if (occurrenceDetails.canDeleteBaseClass) {
+                                    "Usuń zajęcia" to occurrenceViewModel::requestClassDeletion
                                 } else null
                             ),
                             modifier = Modifier.padding(end = 4.dp)
@@ -196,7 +196,6 @@ fun MakApp(
                     state = state.today,
                     onOpenPlan = { openRoot(MakDestination.Schedule, MakRoutes.Schedule) },
                     onOpenClass = { occurrenceId ->
-                        viewModel.openOccurrence(occurrenceId)
                         navController.navigate(occurrenceRoute(occurrenceId))
                     },
                     onRetry = {},
@@ -221,7 +220,6 @@ fun MakApp(
                         navController.navigate(MakRoutes.Edit)
                     },
                     onOpenClass = { occurrenceId ->
-                        viewModel.openOccurrence(occurrenceId)
                         navController.navigate(occurrenceRoute(occurrenceId))
                     },
                     onSaveWeekCorrection = viewModel::saveVisibleWeekOverride,
@@ -291,33 +289,40 @@ fun MakApp(
                 val date = entry.arguments?.getString("date")
                 LaunchedEffect(classId, date) {
                     if (classId != null && date != null) {
-                        viewModel.openOccurrence("$classId:$date")
+                        occurrenceViewModel.open("$classId:$date")
+                    }
+                }
+                LaunchedEffect(occurrenceViewModel) {
+                    occurrenceViewModel.effects.collect { effect ->
+                        when (effect) {
+                            OccurrenceEffect.CloseDetails -> navController.popBackStack()
+                        }
                     }
                 }
                 OccurrenceDetailsScreen(
-                    state = state.occurrence,
-                    onDeleteBaseClass = viewModel::deleteSelectedClass,
-                    onDismissDeleteConfirmation = viewModel::cancelClassDeletion,
-                    onOpenOccurrenceEdit = viewModel::openOccurrenceEditDialog,
-                    onDismissOccurrenceEdit = viewModel::dismissOccurrenceEditDialog,
-                    onSaveOccurrenceChange = viewModel::saveSelectedOccurrenceChange,
-                    onRestoreOccurrence = viewModel::restoreSelectedOccurrence,
-                    onOccurrenceNoteDraftChanged = viewModel::updateOccurrenceNoteDraft,
-                    onSharedNoteDraftChanged = viewModel::updateSharedNoteDraft,
+                    state = occurrenceDetails,
+                    onDeleteBaseClass = occurrenceViewModel::deleteSelectedClass,
+                    onDismissDeleteConfirmation = occurrenceViewModel::cancelClassDeletion,
+                    onOpenOccurrenceEdit = occurrenceViewModel::openEditDialog,
+                    onDismissOccurrenceEdit = occurrenceViewModel::dismissEditDialog,
+                    onSaveOccurrenceChange = occurrenceViewModel::saveOccurrenceChange,
+                    onRestoreOccurrence = occurrenceViewModel::restoreOccurrence,
+                    onOccurrenceNoteDraftChanged = occurrenceViewModel::updateOccurrenceNoteDraft,
+                    onSharedNoteDraftChanged = occurrenceViewModel::updateSharedNoteDraft,
                     onTargetDateDraftChanged = { value ->
-                        viewModel.updateOccurrenceDraft { it.copy(targetDateDraft = value) }
+                        occurrenceViewModel.updateDraft { it.copy(targetDateDraft = value) }
                     },
                     onStartTimeDraftChanged = { value ->
-                        viewModel.updateOccurrenceDraft { it.copy(startTimeDraft = value) }
+                        occurrenceViewModel.updateDraft { it.copy(startTimeDraft = value) }
                     },
                     onEndTimeDraftChanged = { value ->
-                        viewModel.updateOccurrenceDraft { it.copy(endTimeDraft = value) }
+                        occurrenceViewModel.updateDraft { it.copy(endTimeDraft = value) }
                     },
                     onRoomDraftChanged = { value ->
-                        viewModel.updateOccurrenceDraft { it.copy(roomDraft = value) }
+                        occurrenceViewModel.updateDraft { it.copy(roomDraft = value) }
                     },
-                    onSaveSharedNote = viewModel::saveSharedNote,
-                    onSaveOccurrenceNote = viewModel::saveOccurrenceNote,
+                    onSaveSharedNote = occurrenceViewModel::saveSharedNote,
+                    onSaveOccurrenceNote = occurrenceViewModel::saveOccurrenceNote,
                     onBack = ::navigateBack,
                     modifier = Modifier.fillMaxSize()
                 )

@@ -41,9 +41,6 @@ import dev.retza.mak.ui.setup.SetupField
 import dev.retza.mak.ui.setup.SetupStep
 import dev.retza.mak.ui.setup.SetupWizardUiState
 import dev.retza.mak.ui.today.TodayUiState
-import dev.retza.mak.ui.occurrence.OccurrenceArgs
-import dev.retza.mak.ui.occurrence.OccurrenceDetailsUiState
-import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.semester.SemesterFormUiState
 import dev.retza.mak.ui.semester.SemesterScreenUiState
 import dev.retza.mak.ui.semester.WeekOverrideFormUiState
@@ -89,9 +86,7 @@ data class MakUiState(
     val today: TodayUiState = emptyTodayState(),
     val schedule: ScheduleUiState = emptyScheduleState(),
     val editor: ClassEditUiState = defaultEditorState(),
-    val occurrence: OccurrenceDetailsUiState = OccurrenceDetailsUiState(),
     val semester: SemesterScreenUiState = SemesterScreenUiState(),
-    val selectedClassId: Long? = null,
     val themeId: String = "system",
     val settings: SettingsUiState = SettingsUiState(),
     val setup: SetupWizardUiState = SetupWizardUiState(),
@@ -121,7 +116,6 @@ private data class Controls(
 class MakViewModel(
     private val repository: MakRepository,
     private val feedbackSink: FeedbackSink,
-    private val occurrenceViewModel: OccurrenceViewModel,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val activePlanProvider: ActivePlanProvider = ActivePlanProvider()
 ) : ViewModel() {
@@ -140,14 +134,8 @@ class MakViewModel(
         if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
     }
 
-    val uiState = combine(
-        semesters,
-        activeSemesterData,
-        controls,
-        occurrenceViewModel.details,
-        occurrenceViewModel.selectedClassId
-    ) { semesterList, activeData, control, occurrenceDetails, occurrenceClassId ->
-        buildState(semesterList, activeData, control, occurrenceDetails, occurrenceClassId)
+    val uiState = combine(semesters, activeSemesterData, controls) { semesterList, activeData, control ->
+        buildState(semesterList, activeData, control)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -272,52 +260,6 @@ class MakViewModel(
             )
         }
     }
-
-    fun openOccurrence(occurrenceId: String) {
-        occurrenceViewModel.open(occurrenceId)
-    }
-
-    fun openOccurrence(args: OccurrenceArgs) {
-        occurrenceViewModel.open(args)
-    }
-
-    fun updateOccurrence(transform: (OccurrenceDetailsUiState) -> OccurrenceDetailsUiState) {
-        occurrenceViewModel.update(transform)
-    }
-
-    fun updateOccurrenceDraft(transform: (OccurrenceDetailsUiState) -> OccurrenceDetailsUiState) {
-        occurrenceViewModel.updateDraft(transform)
-    }
-
-    fun openOccurrenceEditDialog() = occurrenceViewModel.openEditDialog()
-
-    fun dismissOccurrenceEditDialog() = occurrenceViewModel.dismissEditDialog()
-
-    fun requestClassDeletion() = occurrenceViewModel.requestClassDeletion()
-
-    fun cancelClassDeletion() = occurrenceViewModel.cancelClassDeletion()
-
-    fun deleteSelectedClass() {
-        if (occurrenceViewModel.selectedClassId.value == null) return
-        viewModelScope.launch {
-            occurrenceViewModel.deleteSelectedClass()
-            controls.update { it.copy(destination = MakDestination.Schedule) }
-        }
-    }
-
-    fun cancelSelectedOccurrence() = occurrenceViewModel.cancelOccurrence()
-
-    fun restoreSelectedOccurrence() = occurrenceViewModel.restoreOccurrence()
-
-    fun updateSharedNoteDraft(value: String) = occurrenceViewModel.updateSharedNoteDraft(value)
-
-    fun updateOccurrenceNoteDraft(value: String) = occurrenceViewModel.updateOccurrenceNoteDraft(value)
-
-    fun saveSharedNote() = occurrenceViewModel.saveSharedNote()
-
-    fun saveOccurrenceNote() = occurrenceViewModel.saveOccurrenceNote()
-
-    fun saveSelectedOccurrenceChange() = occurrenceViewModel.saveOccurrenceChange()
 
     fun openNewClassForSelectedCalendarDay() {
         openNewClass(controls.value.calendarDate)
@@ -707,9 +649,7 @@ class MakViewModel(
     private fun buildState(
         semesterList: List<SemesterEntity>,
         activeData: SemesterWithData?,
-        control: Controls,
-        occurrenceDetails: OccurrenceDetailsUiState,
-        occurrenceClassId: Long?
+        control: Controls
     ): MakUiState {
         val requiresSetup = control.forceSetup || semesterList.isEmpty() ||
             activeData != null && activeData.courses.isEmpty()
@@ -725,8 +665,6 @@ class MakViewModel(
             today = buildToday(activeData, control.todayDate),
             schedule = buildSchedule(activeData, control),
             editor = editor,
-            occurrence = occurrenceDetails,
-            selectedClassId = occurrenceClassId,
             themeId = control.themeId,
             semester = control.semesterDraft.copy(
                 overrides = activeData?.weekOverrides?.map { override ->
@@ -894,13 +832,12 @@ class MakViewModel(
 
     class Factory(
         private val repository: MakRepository,
-        private val feedbackSink: FeedbackSink,
-        private val occurrenceViewModel: OccurrenceViewModel
+        private val feedbackSink: FeedbackSink
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(MakViewModel::class.java))
-            return MakViewModel(repository, feedbackSink, occurrenceViewModel) as T
+            return MakViewModel(repository, feedbackSink) as T
         }
     }
 }

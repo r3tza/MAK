@@ -33,11 +33,7 @@ class MainActivity : ComponentActivity() {
                 factory = OccurrenceViewModel.Factory(application.repository, application.feedbackController)
             )
             val viewModel: MakViewModel = viewModel(
-                factory = MakViewModel.Factory(
-                    application.repository,
-                    application.feedbackController,
-                    occurrenceViewModel
-                )
+                factory = MakViewModel.Factory(application.repository, application.feedbackController)
             )
             makViewModel = viewModel
             LaunchedEffect(viewModel) {
@@ -77,6 +73,7 @@ class MainActivity : ComponentActivity() {
                 }
                 MakApp(
                     viewModel = viewModel,
+                    occurrenceViewModel = occurrenceViewModel,
                     feedback = application.feedbackController.feedback,
                     onCreateExportDocument = { exportLauncher.launch("mak-plan.json") }
                 )

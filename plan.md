@@ -69,7 +69,7 @@ Kryteria zakończenia porządkowania:
 
 Refaktor należy wykonać przed podłączeniem feedbacku do wszystkich operacji z etapu 6 sekcji 1.6. Nie przepisywać całego ViewModelu jednocześnie. Każdy etap ma kończyć się kompilującym stanem, testami odpowiednimi do zmiany i osobnym commitem.
 
-Status: etapy 1-4 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`, etap 3 dodaje `OccurrenceArgs` i utrzymuje `OccurrenceDetailsUiState` bez typów warstwy danych ani stanu nawigacji, a etap 4 przenosi logikę szczegółów do `OccurrenceViewModel` i zostawia tymczasową delegację z `MakViewModel`. Nawigacja i feedback operacji pozostają bez zmian. Etapy 5-8 pozostają do wykonania.
+Status: etapy 1-5 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`, etap 3 dodaje `OccurrenceArgs` i utrzymuje `OccurrenceDetailsUiState` bez typów warstwy danych ani stanu nawigacji, etap 4 przenosi logikę szczegółów do `OccurrenceViewModel`, a etap 5 podłącza ekran szczegółów bezpośrednio do `OccurrenceViewModel` i usuwa delegację oraz stan szczegółów z `MakUiState`. `NavController` jest jedynym źródłem trasy szczegółów, a usunięcie zajęć emituje jednorazowy efekt zamknięcia. Etapy 6-8 pozostają do wykonania.
 
 #### Etap 1: inwentaryzacja odpowiedzialności
 
@@ -142,6 +142,8 @@ Status etapu: zrealizowane. `OccurrenceViewModel` zależy od `MakRepository`, `A
 5. Potwierdzić, że systemowy back zamyka szczegóły, zapis notatki i edycja terminu pozostają na ekranie, a usunięcie bazowych zajęć zamyka go dokładnie raz.
 
 Kryterium etapu: `NavController` jest jedynym źródłem bieżącej trasy dla szczegółów wystąpienia.
+
+Status etapu: zrealizowane. Ekran szczegółów czyta `OccurrenceViewModel.details` i wywołuje jego akcje, a `MakViewModel` nie zawiera już `occurrence` ani `selectedClassId`. Usunięcie bazowych zajęć emituje `OccurrenceEffect.CloseDetails` przez buforowany kanał, a host szczegółów wykonuje jeden `popBackStack`. Nieusuwany przebieg legacy został usunięty.
 
 #### Etap 6: feedback dla wystąpień i notatek
 

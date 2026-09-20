@@ -3,7 +3,6 @@ package dev.retza.mak.ui
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
-import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -30,8 +29,7 @@ class MakViewModelTest {
     fun feedbackFlowEmitsPublishedMessagesOnce() = runTest(mainDispatcher) {
         val controller = FeedbackController()
         val repository = FakeMakRepository()
-        val occurrenceViewModel = OccurrenceViewModel(repository, feedbackSink = controller)
-        val viewModel = MakViewModel(repository, controller, occurrenceViewModel, clock)
+        val viewModel = MakViewModel(repository, controller, clock)
         val received = mutableListOf<UiFeedback>()
         backgroundScope.launch(mainDispatcher) {
             controller.feedback.collect { received += it }

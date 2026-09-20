@@ -22,6 +22,7 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -29,9 +30,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+sealed interface OccurrenceEffect {
+    data object CloseDetails : OccurrenceEffect
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class OccurrenceViewModel(
@@ -44,6 +50,9 @@ class OccurrenceViewModel(
 
     private val selectedClassIdState = MutableStateFlow<Long?>(null)
     val selectedClassId: StateFlow<Long?> = selectedClassIdState.asStateFlow()
+
+    private val effectsChannel = Channel<OccurrenceEffect>(Channel.BUFFERED)
+    val effects = effectsChannel.receiveAsFlow()
 
     private val activeSemesterData = repository.observeActiveSemester()
         .flatMapLatest { semester ->
@@ -103,9 +112,12 @@ class OccurrenceViewModel(
 
     fun cancelClassDeletion() = update { it.copy(showDeleteConfirmation = false) }
 
-    suspend fun deleteSelectedClass() {
+    fun deleteSelectedClass() {
         val classId = selectedClassIdState.value ?: return
-        repository.deleteClass(classId)
+        viewModelScope.launch {
+            repository.deleteClass(classId)
+            effectsChannel.trySend(OccurrenceEffect.CloseDetails)
+        }
     }
 
     fun cancelOccurrence() {

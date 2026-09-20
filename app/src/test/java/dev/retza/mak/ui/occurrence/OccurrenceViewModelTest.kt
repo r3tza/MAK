@@ -5,6 +5,7 @@ import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
 import java.time.LocalDate
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -221,5 +222,24 @@ class OccurrenceViewModelTest {
         assertEquals(OccurrenceStatusUi.Changed, state.status)
         assertEquals("11:00", state.startTime)
         assertEquals(1, repository.occurrenceChanges.size)
+    }
+
+    @Test
+    fun deleteSelectedClassEmitsCloseExactlyOnce() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        val effects = mutableListOf<OccurrenceEffect>()
+        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+
+        viewModel.deleteSelectedClass()
+        advanceUntilIdle()
+
+        assertEquals(listOf(OccurrenceEffect.CloseDetails), effects)
+        assertTrue(repository.classes.isEmpty())
     }
 }
