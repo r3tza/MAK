@@ -36,6 +36,7 @@ import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakIconButton
 import dev.retza.mak.ui.components.MakNavBar
 import dev.retza.mak.ui.edit.ClassEditScreen
+import dev.retza.mak.ui.feedback.MakSnackbarHost
 import dev.retza.mak.ui.occurrence.OccurrenceDetailsScreen
 import dev.retza.mak.ui.schedule.ScheduleScreen
 import dev.retza.mak.ui.semester.SemesterCoursesScreen
@@ -124,6 +125,9 @@ fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
         contentWindowInsets = WindowInsets.safeDrawing,
+        snackbarHost = {
+            MakSnackbarHost(feedback = viewModel.feedback)
+        },
         topBar = {
             MakTopBar(
                 title = titleForRoute(currentRoute),

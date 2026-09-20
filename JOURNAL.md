@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Wspólny system feedbacku
+
+- Fakty: Aplikacja nie miała wspólnego kanału komunikatów ani własnego snackbara, więc każda operacja musiałaby sama decydować o sposobie informowania użytkownika.
+- Decyzja: Dodano model `UiFeedback` z wariantami `Success`, `Error`, `Warning` i `Info` oraz buforowany `Channel<UiFeedback>` w ViewModelu wystawiony jako `Flow`. W głównym `Scaffold` działa jeden `MakSnackbarHost` poza `NavHost`, więc komunikaty przetrwają zmianę trasy. Warianty różnią się ikoną, kolorem kontenera i opisem semantycznym; sukces i informacja używają krótkiego czasu, błąd i ostrzeżenie długiego, a kolejne komunikaty czekają na zwolnienie miejsca bez nakładania.
+- Powód: Jedno miejsce emisji i jeden host upraszczają podłączenie operacji w etapie 6 i gwarantują spójny wygląd oraz obsługę dostępności.
+- Odrzucone: Systemowe Toasty, osobny snackbar na ekran, kolor jako jedyny nośnik znaczenia.
+- Weryfikacja: Test JVM sprawdza mapowanie wariantów na czas, przekazanie komunikatu i jednokrotną obsługę przez kanał, a test ViewModelu emisję przez `feedback`. Test Compose hosta przy 320 dp sprawdza cztery warianty, kolejność i opis semantyczny. `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą. Na tym etapie operacje repozytorium nie emitują komunikatów; zrobi to etap 6.
+
 ## 2026-09-20: Ochrona edycji notatki podczas zapisu
 
 - Fakty: Pola notatek pozostają edytowalne w trakcie zapisu. Blok sukcesu bezwarunkowo zastępował draft wartością wysłaną, więc tekst dopisany podczas operacji znikał.

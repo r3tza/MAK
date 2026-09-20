@@ -33,6 +33,8 @@ import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.edit.ClassEditField
 import dev.retza.mak.ui.edit.ClassEditUiState
 import dev.retza.mak.ui.edit.RecurrenceOptionUi
+import dev.retza.mak.ui.feedback.UiFeedback
+import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.schedule.ScheduleDayUi
 import dev.retza.mak.ui.schedule.ScheduleFilterUi
 import dev.retza.mak.ui.schedule.conflictLabels
@@ -68,13 +70,16 @@ import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 
@@ -165,6 +170,14 @@ class MakViewModel(
                 }
             }
         }
+    }
+
+    private val feedbackChannel = Channel<UiFeedback>(Channel.BUFFERED)
+
+    val feedback: Flow<UiFeedback> = feedbackChannel.receiveAsFlow()
+
+    fun publishFeedback(kind: UiFeedbackKind, message: String) {
+        feedbackChannel.trySend(UiFeedback(message, kind))
     }
 
     fun navigate(destination: MakDestination) {

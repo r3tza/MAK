@@ -12,6 +12,8 @@ import dev.retza.mak.data.entity.TeacherEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.MakRepository
+import dev.retza.mak.ui.feedback.UiFeedback
+import dev.retza.mak.ui.feedback.UiFeedbackKind
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.Instant
@@ -149,6 +151,22 @@ class MakViewModelTest {
         assertEquals("Pierwsza", state.occurrenceNote)
         assertEquals("Druga", state.occurrenceNoteDraft)
         assertFalse(state.isSavingOccurrenceNote)
+    }
+
+    @Test
+    fun feedbackFlowEmitsPublishedMessagesOnce() = runTest(mainDispatcher) {
+        val viewModel = createViewModel(NoteFakeRepository())
+        val received = mutableListOf<UiFeedback>()
+        backgroundScope.launch(mainDispatcher) {
+            viewModel.feedback.collect { received += it }
+        }
+        advanceUntilIdle()
+
+        viewModel.publishFeedback(UiFeedbackKind.Info, "Test")
+        viewModel.publishFeedback(UiFeedbackKind.Error, "Błąd")
+        advanceUntilIdle()
+
+        assertEquals(listOf("Test", "Błąd"), received.map { it.message })
     }
 
     private fun TestScope.createViewModel(repository: MakRepository): MakViewModel {
