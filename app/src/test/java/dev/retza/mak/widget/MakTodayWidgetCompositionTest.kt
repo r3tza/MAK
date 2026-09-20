@@ -34,6 +34,7 @@ class MakTodayWidgetCompositionTest {
             val state = WidgetUiState.Ready(
                 dateLabel = "poniedziałek, 21 września",
                 weekLabel = "Tydzień A",
+                collisionCount = 0,
                 items = items
             )
             val action = actionStartActivity(Intent("dev.retza.mak.OPEN_TODAY"))

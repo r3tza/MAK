@@ -67,6 +67,7 @@ class WidgetPresenterTest {
         ) as WidgetUiState.Ready
 
         assertEquals(listOf("first:$date", "second:$date", "third:$date"), state.items.map { it.id })
+        assertEquals(2, state.collisionCount)
         assertEquals(
             listOf(
                 WidgetConflictUi("09:30-10:00", "second"),
@@ -78,6 +79,23 @@ class WidgetPresenterTest {
         assertEquals(listOf(WidgetConflictUi("10:15-10:45", "first")), state.items[2].conflicts)
         assertTrue(state.items[0].hasNote)
         assertEquals("Sala niepodana", state.items[0].roomLabel)
+    }
+
+    @Test
+    fun presenterCountsThreeUniqueCollisionPairsOnce() {
+        val classes = listOf(
+            classItem("first", LocalTime.of(9, 0), LocalTime.of(11, 0)),
+            classItem("second", LocalTime.of(9, 30), LocalTime.of(10, 30)),
+            classItem("third", LocalTime.of(10, 0), LocalTime.of(11, 30))
+        )
+        val plan = ActivePlanProvider().resolve(
+            ActivePlanData(semester, classes, courses = listOf(course)),
+            date
+        )
+
+        val state = WidgetPresenter().present(date, semester.name, plan) as WidgetUiState.Ready
+
+        assertEquals(3, state.collisionCount)
     }
 
     @Test

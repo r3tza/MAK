@@ -20,6 +20,7 @@ sealed interface WidgetUiState {
     data class Ready(
         override val dateLabel: String,
         val weekLabel: String,
+        val collisionCount: Int,
         val items: List<WidgetOccurrenceUi>
     ) : WidgetUiState
 
