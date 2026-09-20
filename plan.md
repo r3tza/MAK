@@ -69,7 +69,7 @@ Kryteria zakończenia porządkowania:
 
 Refaktor należy wykonać przed podłączeniem feedbacku do wszystkich operacji z etapu 6 sekcji 1.6. Nie przepisywać całego ViewModelu jednocześnie. Każdy etap ma kończyć się kompilującym stanem, testami odpowiednimi do zmiany i osobnym commitem.
 
-Status: etapy 1-2 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`. Etapy 3-8 pozostają do wykonania.
+Status: etapy 1-3 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`, a etap 3 dodaje `OccurrenceArgs` i utrzymuje `OccurrenceDetailsUiState` bez typów warstwy danych ani stanu nawigacji. Etapy 4-8 pozostają do wykonania.
 
 #### Etap 1: inwentaryzacja odpowiedzialności
 
@@ -118,6 +118,8 @@ Kryterium etapu: infrastruktura feedbacku działa bez własności i cyklu życia
 4. Nie zmieniać tekstów ani zachowania ekranu.
 
 Kryterium etapu: modele szczegółów mają jedną odpowiedzialność i nie wystawiają typów warstwy danych.
+
+Status etapu: zrealizowane. `OccurrenceArgs(classId, date)` z `parse` i `toRouteId` jest jawną granicą otwarcia szczegółów, a `OccurrenceDetailsUiState` pozostaje stanem prezentacyjnym. Test `OccurrenceDetailsModelsTest` pilnuje braku typów warstwy danych i nawigacji.
 
 #### Etap 4: wydzielenie `OccurrenceViewModel`
 

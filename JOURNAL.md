@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Granica modeli szczegółów wystąpienia
+
+- Fakty: `openOccurrence` parsował identyfikator trasy `classId:date` wewnątrz ViewModelu, a modele szczegółów nie miały jawnego typu argumentów otwarcia. Trzeba było też potwierdzić, że publiczny stan szczegółów nie wystawia encji Room ani stanu nawigacji.
+- Decyzja: Dodano `OccurrenceArgs(classId, date)` w `ui/occurrence` z `parse` i `toRouteId`. Jawne przeciążenie `openOccurrence(OccurrenceArgs)` jest granicą otwarcia, a `openOccurrence(String)` tylko parsuje i deleguje, więc trasy i zachowanie pozostały bez zmian. `buildOccurrenceDetails` przyjmuje `OccurrenceArgs`. Nie tworzono `OccurrenceViewModel`, to etap 4.
+- Powód: Jednoznaczne argumenty oddzielają identyfikator trasy od logiki szczegółów i przygotowują wydzielenie ViewModelu bez zmiany nawigacji.
+- Weryfikacja: Dodano `OccurrenceArgsTest` dla parsowania i round-tripu oraz `OccurrenceDetailsModelsTest` pilnujący, że `OccurrenceDetailsUiState` nie zawiera typów warstwy danych ani `MakDestination`. `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą.
+
 ## 2026-09-20: Inwentaryzacja `MakViewModel` i kontroler feedbacku
 
 - Fakty: `MakViewModel` łączył dziewięć grup odpowiedzialności, a kanał feedbacku był jego polem i dzielił cykl życia ViewModelu.

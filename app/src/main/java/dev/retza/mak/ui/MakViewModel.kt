@@ -47,6 +47,7 @@ import dev.retza.mak.ui.setup.SetupField
 import dev.retza.mak.ui.setup.SetupStep
 import dev.retza.mak.ui.setup.SetupWizardUiState
 import dev.retza.mak.ui.today.TodayUiState
+import dev.retza.mak.ui.occurrence.OccurrenceArgs
 import dev.retza.mak.ui.occurrence.OccurrenceDetailsUiState
 import dev.retza.mak.ui.occurrence.OccurrenceEditField
 import dev.retza.mak.ui.occurrence.OccurrenceStatusUi
@@ -279,14 +280,17 @@ class MakViewModel(
     }
 
     fun openOccurrence(occurrenceId: String) {
-        val classId = occurrenceId.substringBefore(':').toLongOrNull() ?: return
-        val date = occurrenceId.substringAfter(':', "").toLocalDateOrNull() ?: return
+        val args = OccurrenceArgs.parse(occurrenceId) ?: return
+        openOccurrence(args)
+    }
+
+    fun openOccurrence(args: OccurrenceArgs) {
         val data = uiState.value.activeSemesterData ?: return
-        val details = buildOccurrenceDetails(data, classId, date) ?: return
+        val details = buildOccurrenceDetails(data, args) ?: return
         controls.update {
             it.copy(
                 destination = MakDestination.OccurrenceDetails,
-                selectedClassId = classId,
+                selectedClassId = args.classId,
                 selectedOccurrenceDate = details.baseDate.toLocalDateOrNull(),
                 selectedNoteDate = details.currentDate.toLocalDateOrNull(),
                 occurrenceDraft = details
@@ -525,9 +529,10 @@ class MakViewModel(
 
     private fun buildOccurrenceDetails(
         data: SemesterWithData,
-        classId: Long,
-        displayDate: LocalDate
+        args: OccurrenceArgs
     ): OccurrenceDetailsUiState? {
+        val classId = args.classId
+        val displayDate = args.date
         val base = data.classes.firstOrNull { it.id == classId } ?: return null
         val change = data.occurrenceChanges.firstOrNull {
             it.classId == classId && (it.originalDate == displayDate || it.targetDate == displayDate)
@@ -588,7 +593,7 @@ class MakViewModel(
 
     private suspend fun reloadOccurrenceDetails(semesterId: Long, classId: Long, displayDate: LocalDate) {
         val fresh = repository.observeSemesterData(semesterId).first() ?: return
-        val details = buildOccurrenceDetails(fresh, classId, displayDate) ?: return
+        val details = buildOccurrenceDetails(fresh, OccurrenceArgs(classId, displayDate)) ?: return
         controls.update {
             it.copy(
                 destination = MakDestination.OccurrenceDetails,
