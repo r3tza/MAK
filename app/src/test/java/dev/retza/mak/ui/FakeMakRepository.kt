@@ -111,8 +111,19 @@ internal class FakeMakRepository : MakRepository {
     override suspend fun setActiveSemester(id: Long) = Unit
     override suspend fun clearActiveSemester() = Unit
     override suspend fun deleteSemester(id: Long) = Unit
-    override suspend fun saveCourse(entity: CourseEntity): Long = 1L
-    override suspend fun deleteCourse(id: Long) = Unit
+    override suspend fun saveCourse(entity: CourseEntity): Long {
+        awaitSave()
+        events += "saveCourse"
+        val index = courses.indexOfFirst { it.id == entity.id }
+        if (index >= 0) courses[index] = entity else courses += entity.copy(id = (courses.size + 1).toLong())
+        return entity.id
+    }
+
+    override suspend fun deleteCourse(id: Long) {
+        awaitSave()
+        events += "deleteCourse"
+        courses.removeAll { it.id == id }
+    }
     override suspend fun saveTeacher(entity: TeacherEntity): Long = 1L
     override suspend fun deleteTeacher(id: Long) = Unit
 

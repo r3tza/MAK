@@ -371,23 +371,11 @@ class MakViewModel(
     }
 
     fun addCourse() {
-        val data = uiState.value.activeSemesterData ?: return
-        val draft = semesterViewModel.semester.value
-        if (draft.courseNameDraft.isBlank()) return
-        viewModelScope.launch {
-            repository.saveCourse(
-                CourseEntity(
-                    semesterId = data.semester.id,
-                    name = draft.courseNameDraft.trim(),
-                    color = draft.courseColorDraft.ifBlank { "#137b71" }
-                )
-            )
-            semesterViewModel.update { it.copy(courseNameDraft = "") }
-        }
+        semesterViewModel.addCourse()
     }
 
     fun deleteCourse(id: String) {
-        id.toLongOrNull()?.let { courseId -> viewModelScope.launch { repository.deleteCourse(courseId) } }
+        semesterViewModel.deleteCourse(id)
     }
 
     fun exportJson(onReady: (ByteArray) -> Unit) {

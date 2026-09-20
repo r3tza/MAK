@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.retza.mak.data.database.SemesterWithData
+import dev.retza.mak.data.entity.CourseEntity
 import dev.retza.mak.data.entity.SemesterEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.MakRepository
@@ -120,6 +121,76 @@ class SemesterViewModel(
                 update { it.copy(semester = it.semester.copy(isSaving = false)) }
             }
         }
+    }
+
+    fun updateCourseName(value: String) = update {
+        it.copy(courseNameDraft = value, courseNameError = null)
+    }
+
+    fun updateCourseColor(value: String) = update {
+        it.copy(courseColorDraft = value)
+    }
+
+    fun addCourse() {
+        if (state.value.isAddingCourse) return
+        val id = semesterIdState.value ?: return
+        val draft = state.value
+        val name = draft.courseNameDraft.trim()
+        if (name.isBlank()) {
+            update { it.copy(courseNameError = "Podaj nazwę kierunku.") }
+            return
+        }
+        update { it.copy(isAddingCourse = true, courseNameError = null) }
+        viewModelScope.launch {
+            try {
+                repository.saveCourse(
+                    CourseEntity(
+                        semesterId = id,
+                        name = name,
+                        color = draft.courseColorDraft.ifBlank { "#137b71" }
+                    )
+                )
+                refresh()
+                update { it.copy(courseNameDraft = "", isAddingCourse = false) }
+                feedbackSink.publish(UiFeedback("Dodano kierunek", UiFeedbackKind.Success))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                feedbackSink.publish(UiFeedback("Nie udało się dodać kierunku.", UiFeedbackKind.Error))
+            } finally {
+                update { it.copy(isAddingCourse = false) }
+            }
+        }
+    }
+
+    fun deleteCourse(id: String) {
+        if (state.value.isDeletingCourse) return
+        val courseId = id.toLongOrNull() ?: return
+        update { it.copy(isDeletingCourse = true) }
+        viewModelScope.launch {
+            try {
+                repository.deleteCourse(courseId)
+                refresh()
+                feedbackSink.publish(UiFeedback("Usunięto kierunek", UiFeedbackKind.Success))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                feedbackSink.publish(UiFeedback("Nie udało się usunąć kierunku.", UiFeedbackKind.Error))
+            } finally {
+                update { it.copy(isDeletingCourse = false) }
+            }
+        }
+    }
+
+    private suspend fun refresh() {
+        val id = semesterIdState.value ?: return
+        val data = repository.observeSemesterData(id).first() ?: return
+        val current = state.value
+        state.value = data.toSemesterScreenState().copy(
+            courseNameDraft = current.courseNameDraft,
+            courseColorDraft = current.courseColorDraft,
+            overrideForm = current.overrideForm
+        )
     }
 
     class Factory(

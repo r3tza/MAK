@@ -216,6 +216,152 @@ class SemesterViewModelTest {
         assertTrue(sink.published.isEmpty())
         assertFalse(viewModel.semester.value.semester.isSaving)
     }
+
+    @Test
+    fun addCourseRejectsBlankName() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.updateCourseName("   ")
+        viewModel.addCourse()
+        advanceUntilIdle()
+
+        assertNotNull(viewModel.semester.value.courseNameError)
+        assertTrue(sink.published.isEmpty())
+        assertTrue(repository.events.none { it == "saveCourse" })
+    }
+
+    @Test
+    fun addCourseUsesDefaultColorAndPublishesSuccess() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.updateCourseName("Fizyka")
+        viewModel.updateCourseColor("")
+        viewModel.addCourse()
+        advanceUntilIdle()
+
+        assertEquals("#137b71", repository.courses.first { it.name == "Fizyka" }.color)
+        assertEquals("", viewModel.semester.value.courseNameDraft)
+        assertEquals(
+            listOf(UiFeedback("Dodano kierunek", UiFeedbackKind.Success)),
+            sink.published
+        )
+    }
+
+    @Test
+    fun addCourseRunsOnce() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.updateCourseName("Fizyka")
+        repository.saveGate = CompletableDeferred()
+        viewModel.addCourse()
+        viewModel.addCourse()
+        advanceUntilIdle()
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "saveCourse" })
+        assertEquals(1, sink.published.size)
+        assertEquals(2, repository.courses.size)
+    }
+
+    @Test
+    fun addCourseErrorKeepsDraftAndPublishesError() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.updateCourseName("Fizyka")
+        repository.failSaves = true
+        viewModel.addCourse()
+        advanceUntilIdle()
+
+        assertEquals("Fizyka", viewModel.semester.value.courseNameDraft)
+        assertFalse(viewModel.semester.value.isAddingCourse)
+        assertEquals(1, sink.published.size)
+        assertEquals(UiFeedbackKind.Error, sink.published.single().kind)
+        assertEquals("Nie udało się dodać kierunku.", sink.published.single().message)
+    }
+
+    @Test
+    fun deleteCourseRunsOnceAndPublishesSuccess() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        repository.saveGate = CompletableDeferred()
+        viewModel.deleteCourse("1")
+        viewModel.deleteCourse("1")
+        advanceUntilIdle()
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "deleteCourse" })
+        assertTrue(repository.courses.isEmpty())
+        assertEquals(
+            listOf(UiFeedback("Usunięto kierunek", UiFeedbackKind.Success)),
+            sink.published
+        )
+        assertFalse(viewModel.semester.value.isDeletingCourse)
+    }
+
+    @Test
+    fun deleteCourseErrorKeepsItemAndPublishesError() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        repository.failSaves = true
+        viewModel.deleteCourse("1")
+        advanceUntilIdle()
+
+        assertEquals(1, repository.courses.size)
+        assertEquals(1, sink.published.size)
+        assertEquals(UiFeedbackKind.Error, sink.published.single().kind)
+        assertEquals("Nie udało się usunąć kierunku.", sink.published.single().message)
+        assertFalse(viewModel.semester.value.isDeletingCourse)
+    }
+
+    @Test
+    fun addCourseCancellationDoesNotPublish() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.updateCourseName("Fizyka")
+        repository.cancelSaves = true
+        viewModel.addCourse()
+        advanceUntilIdle()
+
+        assertTrue(sink.published.isEmpty())
+        assertFalse(viewModel.semester.value.isAddingCourse)
+    }
 }
 
 private class RecordingFeedbackSink : FeedbackSink {

@@ -95,6 +95,9 @@ data class SemesterScreenUiState(
     val courses: List<Pair<String, String>> = emptyList(),
     val courseNameDraft: String = "",
     val courseColorDraft: String = "#137b71",
+    val courseNameError: String? = null,
+    val isAddingCourse: Boolean = false,
+    val isDeletingCourse: Boolean = false,
     val status: ScreenStatus = ScreenStatus.Ready
 )
 
@@ -207,6 +210,9 @@ fun SemesterCoursesScreen(
             courses = state.courses,
             courseNameDraft = state.courseNameDraft,
             courseColorDraft = state.courseColorDraft,
+            courseNameError = state.courseNameError,
+            isAddingCourse = state.isAddingCourse,
+            isDeletingCourse = state.isDeletingCourse,
             onCourseNameChanged = onCourseNameChanged,
             onCourseColorChanged = onCourseColorChanged,
             onAddCourse = onAddCourse,
@@ -314,6 +320,9 @@ private fun CoursesBlock(
     courses: List<Pair<String, String>>,
     courseNameDraft: String,
     courseColorDraft: String,
+    courseNameError: String?,
+    isAddingCourse: Boolean,
+    isDeletingCourse: Boolean,
     onCourseNameChanged: (String) -> Unit,
     onCourseColorChanged: (String) -> Unit,
     onAddCourse: () -> Unit,
@@ -333,15 +342,21 @@ private fun CoursesBlock(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Text(name, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-                    MakTextAction(text = "Usuń", onClick = { onDeleteCourse(id) })
+                    MakTextAction(
+                        text = "Usuń",
+                        onClick = { onDeleteCourse(id) },
+                        enabled = !isDeletingCourse
+                    )
                 }
             }
         }
         MakField(
             label = "Nazwa nowego kierunku",
             value = courseNameDraft,
-            onValueChange = onCourseNameChanged
+            onValueChange = onCourseNameChanged,
+            isError = courseNameError != null
         )
+        FieldError(courseNameError?.let(::FieldErrorUi))
         MakColorPalette(
             selectedColor = courseColorDraft,
             onColorSelected = onCourseColorChanged
@@ -349,7 +364,7 @@ private fun CoursesBlock(
         MakSecondaryAction(
             text = "Dodaj kierunek",
             onClick = onAddCourse,
-            enabled = courseNameDraft.isNotBlank()
+            enabled = courseNameDraft.isNotBlank() && !isAddingCourse
         )
     }
 }
