@@ -63,5 +63,22 @@ class MakTodayWidgetCompositionTest {
             onNode(hasTestTag("widget-separator-2")).assertExists()
             onAllNodes(hasTestTag("widget-separator-3")).assertCountEquals(0)
             onAllNodes(hasText("Jeszcze 1")).assertCountEquals(0)
+            onAllNodes(hasText("kolizja")).assertCountEquals(0)
+        }
+
+    @Test
+    fun headerShowsCollisionCountWhenItIsPositive() =
+        runGlanceAppWidgetUnitTest {
+            val state = WidgetUiState.Ready(
+                dateLabel = "poniedziałek, 21 września",
+                weekLabel = "Tydzień A",
+                collisionCount = 1,
+                items = emptyList()
+            )
+
+            provideComposable { WidgetHeader(state) }
+
+            onNode(hasText("0 zajęć")).assertExists()
+            onNode(hasText("1 kolizja")).assertExists()
         }
 }

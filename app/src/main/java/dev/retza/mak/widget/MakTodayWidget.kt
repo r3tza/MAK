@@ -173,10 +173,11 @@ internal fun WidgetHeader(state: WidgetUiState) {
                 maxLines = 1
             )
             when (state) {
-                is WidgetUiState.EmptyDay -> WidgetHeaderDetails(state.weekLabel, 0)
+                is WidgetUiState.EmptyDay -> WidgetHeaderDetails(state.weekLabel, 0, 0)
                 is WidgetUiState.Ready -> WidgetHeaderDetails(
                     state.weekLabel,
-                    state.items.size
+                    state.items.size,
+                    state.collisionCount
                 )
                 else -> Unit
             }
@@ -185,7 +186,7 @@ internal fun WidgetHeader(state: WidgetUiState) {
 }
 
 @Composable
-private fun WidgetHeaderDetails(weekLabel: String, count: Int) {
+private fun WidgetHeaderDetails(weekLabel: String, count: Int, collisionCount: Int) {
     Row(
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -199,6 +200,18 @@ private fun WidgetHeaderDetails(weekLabel: String, count: Int) {
             ),
             maxLines = 1
         )
+        if (collisionCount > 0) {
+            Spacer(GlanceModifier.width(6.dp))
+            Text(
+                text = widgetConflictCountLabel(collisionCount),
+                style = TextStyle(
+                    color = GlanceTheme.colors.error,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                maxLines = 1
+            )
+        }
     }
 }
 
