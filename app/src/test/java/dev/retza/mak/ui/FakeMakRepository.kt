@@ -68,10 +68,14 @@ internal class FakeMakRepository : MakRepository {
     var occurrenceDataGate: CompletableDeferred<Unit>? = null
     var failSaves = false
     var cancelSaves = false
+    var activeSemesterId: Long = 1L
+
+    private fun semesterById(id: Long): SemesterEntity? =
+        listOf(semester, secondSemester).firstOrNull { it.id == id }
 
     override fun observeSemesters(): Flow<List<SemesterEntity>> = flowOf(listOf(semester))
-    override fun observeActiveSemester(): Flow<SemesterEntity?> = flowOf(semester)
-    override fun observeSemester(id: Long): Flow<SemesterEntity?> = flowOf(semester)
+    override fun observeActiveSemester(): Flow<SemesterEntity?> = flowOf(semesterById(activeSemesterId))
+    override fun observeSemester(id: Long): Flow<SemesterEntity?> = flowOf(semesterById(id))
     override fun observeSemesterData(id: Long): Flow<SemesterWithData?> = flow {
         occurrenceDataGate?.await()
         val target = listOf(semester, secondSemester).firstOrNull { it.id == id }
@@ -106,9 +110,20 @@ internal class FakeMakRepository : MakRepository {
     override suspend fun saveSemester(entity: SemesterEntity): Long {
         awaitSave()
         events += "saveSemester"
+        if (entity.isActive) activeSemesterId = entity.id
         return entity.id
     }
-    override suspend fun setActiveSemester(id: Long) = Unit
+
+    override suspend fun updateSemester(entity: SemesterEntity): Long {
+        awaitSave()
+        events += "updateSemester"
+        return entity.id
+    }
+
+    override suspend fun setActiveSemester(id: Long) {
+        if (semesterById(id) != null) activeSemesterId = id
+    }
+
     override suspend fun clearActiveSemester() = Unit
     override suspend fun deleteSemester(id: Long) = Unit
     override suspend fun saveCourse(entity: CourseEntity): Long {

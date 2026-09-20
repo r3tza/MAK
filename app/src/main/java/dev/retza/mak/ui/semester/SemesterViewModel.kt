@@ -108,7 +108,7 @@ class SemesterViewModel(
         val token = sessionToken
         viewModelScope.launch {
             try {
-                repository.saveSemester(
+                repository.updateSemester(
                     SemesterEntity(
                         id = id,
                         name = form.name.trim(),

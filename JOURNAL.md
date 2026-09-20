@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Zapis semestru nie reaktywuje poprzedniego
+
+- Fakty: `SemesterViewModel.saveSemester` zapisywał encję z `isActive = true`, a `RoomMakRepository.saveSemester` przy takiej encji czyścił aktywny semestr. Spóźniony zapis semestru A po otwarciu B ponownie ustawiał A jako aktywny, mimo że token blokował już interfejs, feedback i efekt.
+- Decyzja: Dodano `MakRepository.updateSemester`, który aktualizuje dane istniejącego semestru i zachowuje jego bieżący znacznik aktywności. `SemesterViewModel.saveSemester` korzysta z `updateSemester`, a aktywację nadal wykonuje `open` przez `setActiveSemester`. `saveSemester` pozostaje dla tworzenia nowego semestru w konfiguracji początkowej.
+- Powód: Token chroni tylko warstwę prezentacji; dane aktywnego semestru muszą być chronione w transakcji repozytorium.
+- Weryfikacja: `FakeMakRepository` odwzorowuje teraz zmianę aktywnego semestru przy `saveSemester` i brak zmiany przy `updateSemester`. Test `lateSaveFromPreviousSessionDoesNotCloseOrModifyCurrentSemester` sprawdza, że po spóźnionym zapisie aktywny pozostaje semestr B. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-20: Token sesji i parsowanie identyfikatora semestru
 
 - Fakty: Operacje zapisu nie były powiązane z sesją `open()`. Spóźniony zapis semestru A mógł zamknąć ekran semestru B albo nadpisać jego stan i flagi. `open` przy nieparsowalnym identyfikatorze wracał przed anulowaniem poprzedniego otwarcia i wyczyszczeniem stanu, więc poprzedni semestr pozostawał widoczny.

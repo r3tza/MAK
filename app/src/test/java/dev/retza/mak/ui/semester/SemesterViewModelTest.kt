@@ -146,7 +146,7 @@ class SemesterViewModelTest {
         assertNotNull(viewModel.semester.value.semester.dateRangeError)
 
         assertTrue(sink.published.isEmpty())
-        assertTrue(repository.events.none { it == "saveSemester" })
+        assertTrue(repository.events.none { it == "updateSemester" })
     }
 
     @Test
@@ -169,7 +169,7 @@ class SemesterViewModelTest {
         repository.saveGate?.complete(Unit)
         advanceUntilIdle()
 
-        assertEquals(1, repository.events.count { it == "saveSemester" })
+        assertEquals(1, repository.events.count { it == "updateSemester" })
         assertEquals(listOf(UiFeedback("Zapisano semestr", UiFeedbackKind.Success)), sink.published)
         assertEquals(listOf(SemesterEffect.CloseConfiguration), effects)
         assertFalse(viewModel.semester.value.semester.isSaving)
@@ -586,6 +586,7 @@ class SemesterViewModelTest {
 
         assertEquals("Semestr drugi", viewModel.semester.value.semester.name)
         assertEquals(2L, viewModel.semesterId.value)
+        assertEquals(2L, repository.activeSemesterId)
         assertTrue(effects.isEmpty())
         assertTrue(sink.published.isEmpty())
         assertFalse(viewModel.semester.value.semester.isSaving)

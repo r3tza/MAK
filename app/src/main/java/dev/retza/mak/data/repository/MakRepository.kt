@@ -46,6 +46,8 @@ interface MakRepository {
 
     suspend fun saveSemester(entity: SemesterEntity): Long
 
+    suspend fun updateSemester(entity: SemesterEntity): Long
+
     suspend fun setActiveSemester(id: Long)
 
     suspend fun clearActiveSemester()
@@ -141,6 +143,19 @@ class RoomMakRepository(
                 semesters.update(entity)
                 entity.id
             }
+        }
+    }
+
+    override suspend fun updateSemester(entity: SemesterEntity): Long {
+        require(entity.name.isNotBlank()) { "Semester name cannot be blank" }
+        require(!entity.endDate.isBefore(entity.startDate)) {
+            "Semester end date cannot be before start date"
+        }
+        require(entity.id != 0L) { "Use saveSemester to create a semester" }
+        return database.withTransaction {
+            val existing = semesters.findById(entity.id) ?: error("Semester does not exist")
+            semesters.update(entity.copy(isActive = existing.isActive))
+            entity.id
         }
     }
 
