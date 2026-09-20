@@ -74,13 +74,13 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
             .background(GlanceTheme.colors.widgetBackground)
             .appWidgetBackground()
             .cornerRadius(16.dp)
-            .padding(16.dp)
+            .padding(12.dp)
             .clickable(openTodayAction),
         verticalAlignment = Alignment.Top,
         horizontalAlignment = Alignment.Start
     ) {
         WidgetHeader(state)
-        Spacer(GlanceModifier.height(8.dp))
+        Spacer(GlanceModifier.height(6.dp))
         when (state) {
             is WidgetUiState.NoActiveSemester -> WidgetMessage("Brak aktywnego semestru")
             is WidgetUiState.OutsideSemester -> WidgetMessage("Poza zakresem semestru")
@@ -89,10 +89,11 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
             }
             is WidgetUiState.Error -> WidgetMessage(state.message)
             is WidgetUiState.Ready -> {
-                val visibleItems = state.items.take(widgetItemLimit(layoutMode))
-                visibleItems.forEach { item ->
-                    WidgetOccurrenceRow(item, openTodayAction, layoutMode)
-                    if (item != visibleItems.last()) {
+                val layoutPolicy = widgetLayoutPolicy(layoutMode)
+                val visibleItems = state.items.take(layoutPolicy.itemLimit)
+                visibleItems.forEachIndexed { index, item ->
+                    WidgetOccurrenceRow(item, openTodayAction, layoutPolicy)
+                    if (index < visibleItems.lastIndex) {
                         Spacer(
                             GlanceModifier
                                 .fillMaxWidth()
@@ -101,12 +102,13 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
                         )
                         Spacer(
                             GlanceModifier.height(
-                                if (layoutMode == WidgetLayoutMode.Compact) 6.dp else 10.dp
+                                layoutPolicy.rowSpacing
                             )
                         )
                     }
                 }
                 widgetOverflowLabel(state.items.size, visibleItems.size)?.let { overflowLabel ->
+                    Spacer(GlanceModifier.height(2.dp))
                     Text(
                         text = overflowLabel,
                         style = TextStyle(
@@ -202,9 +204,8 @@ private fun WidgetMessage(message: String) {
 private fun WidgetOccurrenceRow(
     item: WidgetOccurrenceUi,
     openTodayAction: androidx.glance.action.Action,
-    layoutMode: WidgetLayoutMode
+    layoutPolicy: WidgetLayoutPolicy
 ) {
-    val compact = layoutMode == WidgetLayoutMode.Compact
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
@@ -215,13 +216,7 @@ private fun WidgetOccurrenceRow(
         Box(
             modifier = GlanceModifier
                 .width(4.dp)
-                .height(
-                    when (layoutMode) {
-                        WidgetLayoutMode.Compact -> 34.dp
-                        WidgetLayoutMode.ExpandedMedium -> 50.dp
-                        WidgetLayoutMode.ExpandedLarge -> 64.dp
-                    }
-                )
+                .height(layoutPolicy.accentHeight)
                 .background(parseWidgetColor(item.courseColor) ?: Color.Transparent)
                 .cornerRadius(2.dp)
         ) {}
@@ -238,27 +233,25 @@ private fun WidgetOccurrenceRow(
         Spacer(GlanceModifier.width(6.dp))
         Column(modifier = GlanceModifier.defaultWeight()) {
             Text(
-                text = truncateWidgetText(item.name, widgetNameCharacterLimit(layoutMode)),
+                text = truncateWidgetText(item.name, layoutPolicy.nameCharacterLimit),
                 style = TextStyle(
                     color = GlanceTheme.colors.onBackground,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 ),
-                maxLines = widgetNameMaxLines(layoutMode)
+                maxLines = layoutPolicy.nameMaxLines
             )
             Text(
-                text = widgetMetadataLabel(item, layoutMode),
+                text = widgetMetadataLabel(item, layoutPolicy),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurfaceVariant,
                     fontSize = 10.sp
                 ),
                 maxLines = 1
             )
-            val statusLabel = listOfNotNull(
-                item.conflictLabel?.let { truncateWidgetText(it, 30) },
-                item.hasNote.takeIf { it }?.let { "Notatka" }
-            ).joinToString(", ")
-            if (statusLabel.isNotBlank()) {
+            val statusLabel = widgetStatusLabel(item, layoutPolicy.statusMode)
+                ?.let { truncateWidgetText(it, 30) }
+            if (statusLabel != null) {
                 Box(
                     modifier = GlanceModifier
                         .background(GlanceTheme.colors.tertiaryContainer)
@@ -279,19 +272,18 @@ private fun WidgetOccurrenceRow(
     }
 }
 
-internal fun widgetMetadataLabel(item: WidgetOccurrenceUi, layoutMode: WidgetLayoutMode): String {
-    val compact = layoutMode == WidgetLayoutMode.Compact
+internal fun widgetMetadataLabel(
+    item: WidgetOccurrenceUi,
+    layoutPolicy: WidgetLayoutPolicy
+): String {
     return listOfNotNull(
         item.courseName.takeIf(String::isNotBlank),
         item.roomLabel.takeIf(String::isNotBlank),
         item.teacherName
-            ?.takeIf { !compact && it.isNotBlank() }
+            ?.takeIf { layoutPolicy.includeTeacher && it.isNotBlank() }
             ?.let { truncateWidgetText(it, 28) }
     ).joinToString(", ") {
-        truncateWidgetText(
-            it,
-            if (layoutMode == WidgetLayoutMode.ExpandedLarge) 42 else 34
-        )
+        truncateWidgetText(it, layoutPolicy.metadataCharacterLimit)
     }
 }
 
