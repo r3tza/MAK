@@ -4,7 +4,9 @@ import dev.retza.mak.ui.FakeMakRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.FeedbackSink
+import dev.retza.mak.ui.feedback.UiFeedback
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -184,6 +186,82 @@ class SetupViewModelTest {
     }
 
     @Test
+    fun validationDoesNotPublishFeedback() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink)
+
+        viewModel.next()
+        advanceUntilIdle()
+        viewModel.fillValidSemester()
+        viewModel.next()
+        advanceUntilIdle()
+        viewModel.next()
+        advanceUntilIdle()
+
+        assertTrue(sink.published.isEmpty())
+    }
+
+    @Test
+    fun successfulSavePublishesSingleMessage() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink)
+        viewModel.fillValidSemester()
+        viewModel.next()
+        advanceUntilIdle()
+        viewModel.update { it.copy(courseName = "Informatyka") }
+
+        viewModel.next()
+        advanceUntilIdle()
+
+        assertEquals(listOf("Utworzono semestr i kierunek"), sink.published.map { it.message })
+    }
+
+    @Test
+    fun failedSavePublishesSingleError() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.failSetupConfiguration = true
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink)
+        viewModel.fillValidSemester()
+        viewModel.next()
+        advanceUntilIdle()
+        viewModel.update { it.copy(courseName = "Informatyka") }
+
+        viewModel.next()
+        advanceUntilIdle()
+
+        assertEquals(listOf("Nie udało się zapisać konfiguracji."), sink.published.map { it.message })
+    }
+
+    @Test
+    fun finishAndReturnToSettingsEmitOneEffect() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        val effects = mutableListOf<SetupEffect>()
+        backgroundScope.launch { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+
+        viewModel.finish()
+        advanceUntilIdle()
+        viewModel.addClass()
+        advanceUntilIdle()
+        viewModel.returnToSettings()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(
+                SetupEffect.FinishToToday,
+                SetupEffect.OpenNewClassEditor,
+                SetupEffect.ReturnToSettings
+            ),
+            effects
+        )
+        assertEquals(SetupWizardUiState(), viewModel.setup.value)
+    }
+
+    @Test
     fun backMovesThroughStepsInOrder() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val viewModel = viewModel(repository)
@@ -199,5 +277,13 @@ class SetupViewModelTest {
         assertEquals(SetupStep.Course, viewModel.setup.value.step)
         viewModel.back()
         assertEquals(SetupStep.Semester, viewModel.setup.value.step)
+    }
+}
+
+private class RecordingFeedbackSink : FeedbackSink {
+    val published = mutableListOf<UiFeedback>()
+
+    override fun publish(feedback: UiFeedback) {
+        published += feedback
     }
 }

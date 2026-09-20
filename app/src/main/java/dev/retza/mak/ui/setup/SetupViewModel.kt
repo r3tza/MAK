@@ -10,12 +10,16 @@ import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.feedback.FeedbackSink
+import dev.retza.mak.ui.feedback.UiFeedback
+import dev.retza.mak.ui.feedback.UiFeedbackKind
 import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -46,12 +50,21 @@ data class SetupWizardUiState(
     val isSaving: Boolean = false
 )
 
+sealed interface SetupEffect {
+    data object FinishToToday : SetupEffect
+    data object ReturnToSettings : SetupEffect
+    data object OpenNewClassEditor : SetupEffect
+}
+
 class SetupViewModel(
     private val repository: MakRepository,
     private val feedbackSink: FeedbackSink
 ) : ViewModel() {
     private val state = MutableStateFlow(SetupWizardUiState())
     val setup: StateFlow<SetupWizardUiState> = state.asStateFlow()
+
+    private val effectsChannel = Channel<SetupEffect>(Channel.BUFFERED)
+    val effects = effectsChannel.receiveAsFlow()
 
     private var semesterId: Long? = null
     private var courseId: Long? = null
@@ -88,6 +101,20 @@ class SetupViewModel(
         }
     }
 
+    fun addClass() {
+        effectsChannel.trySend(SetupEffect.OpenNewClassEditor)
+    }
+
+    fun finish() {
+        start()
+        effectsChannel.trySend(SetupEffect.FinishToToday)
+    }
+
+    fun returnToSettings() {
+        start()
+        effectsChannel.trySend(SetupEffect.ReturnToSettings)
+    }
+
     private fun advanceFromSemester() {
         val current = state.value
         val start = current.startDate.toLocalDateOrNull()
@@ -122,6 +149,7 @@ class SetupViewModel(
         }
         val existingSemester = semesterId
         val existingCourse = courseId
+        val isUpdate = existingSemester != null
         state.update { it.copy(isSaving = true, errors = emptyMap()) }
         val token = sessionToken
         saveJob = viewModelScope.launch {
@@ -146,9 +174,20 @@ class SetupViewModel(
                 semesterId = ids.semesterId
                 courseId = ids.courseId
                 state.update { it.copy(step = SetupStep.Classes, errors = emptyMap()) }
+                val message = if (isUpdate) {
+                    "Zaktualizowano konfigurację"
+                } else {
+                    "Utworzono semestr i kierunek"
+                }
+                feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Exception) {
+                if (token == sessionToken) {
+                    feedbackSink.publish(
+                        UiFeedback("Nie udało się zapisać konfiguracji.", UiFeedbackKind.Error)
+                    )
+                }
             } finally {
                 if (token == sessionToken) {
                     state.update { it.copy(isSaving = false) }
