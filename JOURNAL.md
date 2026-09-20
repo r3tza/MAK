@@ -1,5 +1,27 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Start etapu 8 od `ClassEditViewModel`
+
+- Fakty: Logika formularza zajęć, walidacji i zapisu mieszkała w `MakViewModel` razem z planem, semestrem i ustawieniami. `ClassEditUiState` i pola formularza są już w `ui/edit`.
+- Decyzja: Utworzono `ClassEditViewModel` z zależnościami `MakRepository` i `FeedbackSink`. Przejmuje `openNew`, `openEdit`, aktualizację draftu, walidację i zapis (`suspend save(): Boolean`). `MakViewModel` tymczasowo deleguje te operacje i nadal decyduje o nawigacji do ekranu edycji oraz powrocie do „Dzisiaj” po zapisie. Model `ClassEditUiState` i czyste funkcje walidacji zostały bez zmian.
+- Powód: To pierwszy krok schematu etapu 8 zgodny z wcześniejszym wydzieleniem `OccurrenceViewModel`; ogranicza dalszy wzrost `MakViewModel`.
+- Odrzucone: Równoczesna przebudowa nawigacji i feedbacku edycji zajęć w tym samym kroku.
+- Weryfikacja: Dodano `ClassEditViewModelTest` (nowy formularz, jednorazowe zajęcia, wczytanie bazowych zajęć, odrzucenie złego zakresu godzin i daty poza semestrem, zapis nowych zajęć z resetem formularza). `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą.
+
+## 2026-09-20: Testy odbiorcze etapu 7 sekcji 1.6
+
+- Fakty: Etapy 1-6 miały już testy zachowania, ale brakowało przypadków walidacji terminu, zachowania draftu po błędzie zmiany oraz widoczności komunikatu walidacji w dialogu.
+- Decyzja: Dodano testy ViewModelu dla odrzucenia zakresu godzin i daty poza semestrem bez zapisu i komunikatu, zachowania draftu po błędzie zmiany z jednym komunikatem, oraz rozszerzono test odwołania i przywrócenia o zmianę dostępnych akcji. Dodano test Compose pokazujący komunikat walidacji w dialogu przy 320 dp.
+- Powód: Kryterium etapu 7 sekcji 1.6 wymaga pokrycia walidacji, zachowania wartości po błędzie i obu stanów terminu.
+- Weryfikacja: `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą. Ręczny odbiór na emulatorze lub urządzeniu (klawiatura, TalkBack, snackbar po zmianie trasy) pozostaje do wykonania.
+
+## 2026-09-20: Audyt etapu 7 refaktoru
+
+- Fakty: Etapy 1-6 przeniosły logikę i stan szczegółów wystąpienia do `OccurrenceViewModel` oraz usunęły delegację z `MakViewModel`.
+- Decyzja: Audyt potwierdził, że `MakViewModel` nie ma pól `occurrence`, `selectedClassId`, `selectedOccurrenceDate`, `selectedNoteDate` ani `occurrenceDraft`, nie zawiera metod szczegółów ani delegacji i nie importuje typów szczegółów. Pozostałe odwołania do wystąpień (`occurrences`, `OccurrenceChangeKind`, `PlannedOccurrence`, `openEditClass`) należą do planu, kalendarza i edycji zajęć. `MakDestination.OccurrenceDetails` pozostaje wyłącznie tokenem mapowania trasy, nie stanem ViewModelu.
+- Powód: Kryterium etapu wymaga, aby `MakViewModel` nie znał formularza, notatek ani stanu szczegółów; audyt zamyka etap bez dodatkowego kodu.
+- Weryfikacja: Kontrola identyfikatorów w `MakViewModel` nie wykazała pozostałości; `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą.
+
 ## 2026-09-20: Zwolnienie stanu zapisu po anulowaniu
 
 - Fakty: `CancellationException` był ponownie rzucany, ale zapis notatki wspólnej, notatki wystąpienia i zmiany terminu nie zwalniał flagi zapisu przy wyjściu z korutyny przez anulowanie, więc akcja mogła zostać zablokowana.

@@ -69,7 +69,7 @@ Kryteria zakończenia porządkowania:
 
 Refaktor należy wykonać przed podłączeniem feedbacku do wszystkich operacji z etapu 6 sekcji 1.6. Nie przepisywać całego ViewModelu jednocześnie. Każdy etap ma kończyć się kompilującym stanem, testami odpowiednimi do zmiany i osobnym commitem.
 
-Status: etapy 1-6 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`, etap 3 dodaje `OccurrenceArgs` i utrzymuje `OccurrenceDetailsUiState` bez typów warstwy danych ani stanu nawigacji, etap 4 przenosi logikę szczegółów do `OccurrenceViewModel`, etap 5 podłącza ekran szczegółów bezpośrednio do `OccurrenceViewModel` i usuwa delegację oraz stan szczegółów z `MakUiState`, a etap 6 podłącza komunikaty do zmiany, przeniesienia, przywrócenia i odwołania terminu oraz obu notatek. Etapy 7-8 pozostają do wykonania.
+Status: etapy 1-7 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`, etap 3 dodaje `OccurrenceArgs` i utrzymuje `OccurrenceDetailsUiState` bez typów warstwy danych ani stanu nawigacji, etap 4 przenosi logikę szczegółów do `OccurrenceViewModel`, etap 5 podłącza ekran szczegółów bezpośrednio do `OccurrenceViewModel` i usuwa delegację oraz stan szczegółów z `MakUiState`, etap 6 podłącza komunikaty do zmiany, przeniesienia, przywrócenia i odwołania terminu oraz obu notatek, a etap 7 potwierdził brak pozostałości szczegółów w `MakViewModel`, a etap 8 rozpoczęto od `ClassEditViewModel` z tymczasową delegacją.
 
 #### Etap 1: inwentaryzacja odpowiedzialności
 
@@ -165,6 +165,8 @@ Status etapu: zrealizowane. `OccurrenceViewModel` emituje dokładnie jeden komun
 
 Kryterium etapu: `MakViewModel` nie zna formularza, notatek ani stanu szczegółów wystąpienia.
 
+Status etapu: zrealizowane. Audyt potwierdził, że `MakViewModel` nie ma pól `occurrence`, `selectedClassId`, `selectedOccurrenceDate`, `selectedNoteDate` ani `occurrenceDraft`, nie zawiera metod szczegółów ani tymczasowej delegacji do `OccurrenceViewModel` i nie importuje typów szczegółów. Pozostałe odwołania do wystąpień dotyczą planu, kalendarza i edycji zajęć, a nie ekranu szczegółów. Nieużywany przebieg legacy został usunięty w etapie 5.
+
 #### Etap 8: kolejne ViewModele
 
 1. Powtórzyć ten sam schemat kolejno dla `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel` i `ScheduleViewModel`.
@@ -173,6 +175,8 @@ Kryterium etapu: `MakViewModel` nie zna formularza, notatek ani stanu szczegół
 4. Podłączanie feedbacku dla danego przepływu realizuje odpowiednią część etapu 6 sekcji 1.6.
 
 Kryterium etapu: nadrzędny stan koordynuje wyłącznie dane wspólne, a logika formularzy i operacji należy do ViewModelu właściwego przepływu.
+
+Status etapu: rozpoczęty od `ClassEditViewModel`. Nowy ViewModel przejmuje otwieranie formularza, wczytywanie bazowych zajęć, walidację i zapis, a `MakViewModel` tymczasowo deleguje te operacje i nadal odpowiada za nawigację. Kolejne kroki to podłączenie ekranu bezpośrednio do `ClassEditViewModel`, efekt zamknięcia po zapisie oraz feedback operacji.
 
 Po każdym etapie uruchomić `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` oraz sprawdzić, że commit nie zawiera niezwiązanych zmian. Pierwsze zadanie wykonawcze obejmuje wyłącznie etapy 1 i 2. Wydzielanie `OccurrenceViewModel` rozpoczyna się po zaakceptowaniu granicy `FeedbackController`.
 
@@ -446,7 +450,7 @@ Kryterium zakończenia: konfiguracja semestru pozostaje krótka, zarządzanie ki
 
 Zmiany upraszczają edycję pojedynczego wystąpienia, przywracają możliwość edycji notatki wspólnej i wprowadzają spójny feedback po operacjach. Edycja terminu odbywa się w jednym dialogu z jedną akcją zapisu. Po zapisaniu, odwołaniu albo przywróceniu użytkownik pozostaje na ekranie szczegółów i od razu widzi aktualny stan.
 
-Status: etapy 1-5 są zaimplementowane. Edycja terminu korzysta z jednego dialogu, a decyzję o modyfikacji, przeniesieniu albo przywróceniu wybiera czysta funkcja `decideOccurrenceEdit`; przeniesienie liczy się względem daty bazowej, pusta sala jest jawnym nadpisaniem bez migracji Room, a dialog blokuje zamknięcie podczas zapisu. Ekran szczegółów pokazuje dwa niezależne pola notatek: wspólną dla wszystkich terminów (aktualizacja `classNote`) i tylko dla wybranej daty (zapis lub usunięcie `OccurrenceNote`). Puste pole usuwa notatkę, a zapis blokuje tylko właściwą akcję. Draft notatki nie jest nadpisywany, jeśli użytkownik zmieni go podczas trwającego zapisu. Wspólny system feedbacku ma model `UiFeedback`, buforowany `Channel` wystawiony jako `Flow` i jeden `MakSnackbarHost` w głównym `Scaffold` z ikoną, kontrastem, semantyką, kolejką i różnym czasem wyświetlania. Operacje wystąpień i notatek emitują komunikaty sukcesu i bezpieczne błędy. Pozostałe operacje repozytorium nadal nie emitują komunikatów. Etap 6 dla pozostałych przepływów i etap 7 pozostają do wykonania.
+Status: etapy 1-7 są zaimplementowane w zakresie dostępnym lokalnie. Edycja terminu korzysta z jednego dialogu, a decyzję o modyfikacji, przeniesieniu albo przywróceniu wybiera czysta funkcja `decideOccurrenceEdit`; przeniesienie liczy się względem daty bazowej, pusta sala jest jawnym nadpisaniem bez migracji Room, a dialog blokuje zamknięcie podczas zapisu. Ekran szczegółów pokazuje dwa niezależne pola notatek: wspólną dla wszystkich terminów (aktualizacja `classNote`) i tylko dla wybranej daty (zapis lub usunięcie `OccurrenceNote`). Puste pole usuwa notatkę, a zapis blokuje tylko właściwą akcję. Draft notatki nie jest nadpisywany, jeśli użytkownik zmieni go podczas trwającego zapisu. Wspólny system feedbacku ma model `UiFeedback`, buforowany `Channel` wystawiony jako `Flow` i jeden `MakSnackbarHost` w głównym `Scaffold` z ikoną, kontrastem, semantyką, kolejką i różnym czasem wyświetlania. Operacje wystąpień i notatek emitują komunikaty sukcesu i bezpieczne błędy. Testy etapu 7 pokrywają lokalnie walidację, zachowanie wartości po błędzie, blokadę powtórzeń, przywracanie, odwołanie, obie notatki i anulowanie. Pozostałe operacje repozytorium nadal nie emitują komunikatów, co należy do etapu 6 dla kolejnych przepływów. Ręczny odbiór na emulatorze lub urządzeniu, w tym klawiatura, TalkBack i snackbar po zmianie trasy, pozostaje do wykonania.
 
 ### Etap 1: model różnicy i walidacja terminu
 
