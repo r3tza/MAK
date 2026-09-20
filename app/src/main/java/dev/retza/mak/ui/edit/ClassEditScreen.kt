@@ -68,7 +68,8 @@ data class ClassEditUiState(
     val dayOptions: List<String> = emptyList(),
     val recurrenceOptions: List<RecurrenceOptionUi> = emptyList(),
     val errors: Map<ClassEditField, FieldErrorUi> = emptyMap(),
-    val status: ScreenStatus = ScreenStatus.Ready
+    val status: ScreenStatus = ScreenStatus.Ready,
+    val isSaving: Boolean = false
 )
 
 @Composable
@@ -215,7 +216,8 @@ fun ClassEditScreen(
                 }
                 MakPrimaryAction(
                     text = if (state.title.startsWith("Edytuj")) "Zapisz zajęcia" else "Dodaj do planu",
-                    onClick = onSave
+                    onClick = onSave,
+                    enabled = !state.isSaving
                 )
                 MakSecondaryAction(text = "Anuluj", onClick = onCancel)
             }

@@ -4,6 +4,8 @@ import dev.retza.mak.ui.FakeMakRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
 import java.time.LocalDate
+import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -128,11 +130,16 @@ class ClassEditViewModelTest {
         }
         advanceUntilIdle()
 
-        val saved = viewModel.save()
+        val effects = mutableListOf<ClassEditEffect>()
+        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
 
-        assertFalse(saved)
+        viewModel.save()
+        advanceUntilIdle()
+
         assertNotNull(viewModel.editor.value.errors[ClassEditField.EndTime])
         assertEquals(1, repository.classes.size)
+        assertTrue(effects.isEmpty())
     }
 
     @Test
@@ -153,9 +160,9 @@ class ClassEditViewModelTest {
         }
         advanceUntilIdle()
 
-        val saved = viewModel.save()
+        viewModel.save()
+        advanceUntilIdle()
 
-        assertFalse(saved)
         assertNotNull(viewModel.editor.value.errors[ClassEditField.Date])
         assertEquals(1, repository.classes.size)
     }
@@ -178,13 +185,51 @@ class ClassEditViewModelTest {
         }
         advanceUntilIdle()
 
-        val saved = viewModel.save()
+        val effects = mutableListOf<ClassEditEffect>()
+        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
         advanceUntilIdle()
 
-        assertTrue(saved)
+        viewModel.save()
+        advanceUntilIdle()
+
         assertEquals(2, repository.classes.size)
         assertEquals("Analiza", repository.classes.last().name)
         assertEquals("Dodaj zajęcia", viewModel.editor.value.title)
         assertEquals("", viewModel.editor.value.name)
+        assertEquals(listOf(ClassEditEffect.CloseEditor), effects)
+    }
+
+    @Test
+    fun saveRunsOnceAndEmitsCloseEffectOnce() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openNew()
+        viewModel.update {
+            it.copy(
+                name = "Analiza",
+                courseName = "Informatyka",
+                type = "Wykład",
+                dayLabel = "Poniedziałek",
+                startTime = "12:00",
+                endTime = "13:30"
+            )
+        }
+        advanceUntilIdle()
+
+        val effects = mutableListOf<ClassEditEffect>()
+        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+
+        repository.saveGate = CompletableDeferred()
+        viewModel.save()
+        viewModel.save()
+        advanceUntilIdle()
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "saveClass" })
+        assertEquals(listOf(ClassEditEffect.CloseEditor), effects)
+        assertFalse(viewModel.editor.value.isSaving)
     }
 }

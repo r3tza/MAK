@@ -15,8 +15,10 @@ import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.feedback.FeedbackSink
 import java.time.DayOfWeek
 import java.time.LocalDate
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -24,9 +26,14 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+
+sealed interface ClassEditEffect {
+    data object CloseEditor : ClassEditEffect
+}
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class ClassEditViewModel(
@@ -35,6 +42,9 @@ class ClassEditViewModel(
 ) : ViewModel() {
     private val state = MutableStateFlow(defaultClassEditState())
     val editor: StateFlow<ClassEditUiState> = state.asStateFlow()
+
+    private val effectsChannel = Channel<ClassEditEffect>(Channel.BUFFERED)
+    val effects = effectsChannel.receiveAsFlow()
 
     private var editingClassId: Long? = null
     private var openJob: Job? = null
@@ -115,8 +125,9 @@ class ClassEditViewModel(
         state.update { transform(it).copy(errors = emptyMap()) }
     }
 
-    suspend fun save(): Boolean {
-        val data = activeSemesterData.value ?: return false
+    fun save() {
+        if (state.value.isSaving) return
+        val data = activeSemesterData.value ?: return
         val editor = state.value
         val start = editor.startTime.toLocalTimeOrNull()
         val end = editor.endTime.toLocalTimeOrNull()
@@ -169,36 +180,47 @@ class ClassEditViewModel(
         }
         if (errors.isNotEmpty() || course == null || start == null || end == null) {
             state.update { it.copy(errors = errors) }
-            return false
+            return
         }
 
         val classId = editingClassId
-        val teacherId = editor.teacher.trim().takeIf(String::isNotEmpty)?.let { name ->
-            data.teachers.firstOrNull { it.name.equals(name, ignoreCase = true) }?.id
-                ?: repository.saveTeacher(TeacherEntity(semesterId = data.semester.id, name = name))
+        state.update { it.copy(isSaving = true) }
+        viewModelScope.launch {
+            try {
+                val teacherId = editor.teacher.trim().takeIf(String::isNotEmpty)?.let { name ->
+                    data.teachers.firstOrNull { it.name.equals(name, ignoreCase = true) }?.id
+                        ?: repository.saveTeacher(TeacherEntity(semesterId = data.semester.id, name = name))
+                }
+                repository.saveClass(
+                    ClassEntity(
+                        id = classId ?: 0,
+                        semesterId = data.semester.id,
+                        name = editor.name.trim(),
+                        type = editor.type,
+                        courseId = course.id,
+                        teacherId = teacherId,
+                        dayOfWeek = classEditDayNames.entries.first { it.value == editor.dayLabel }.key,
+                        startTime = start,
+                        endTime = end,
+                        room = editor.room.trim().ifEmpty { null },
+                        building = editor.building.trim().ifEmpty { null },
+                        group = editor.group.trim().ifEmpty { null },
+                        recurrence = Recurrence.valueOf(recurrence.name),
+                        date = if (recurrence == DomainRecurrence.ONCE) date else null,
+                        classNote = editor.note.trim().ifEmpty { null }
+                    )
+                )
+                editingClassId = null
+                state.value = withActiveOptions(defaultClassEditState())
+                effectsChannel.trySend(ClassEditEffect.CloseEditor)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                // Error feedback is added in the feedback step; the form stays open.
+            } finally {
+                state.update { it.copy(isSaving = false) }
+            }
         }
-        repository.saveClass(
-            ClassEntity(
-                id = classId ?: 0,
-                semesterId = data.semester.id,
-                name = editor.name.trim(),
-                type = editor.type,
-                courseId = course.id,
-                teacherId = teacherId,
-                dayOfWeek = classEditDayNames.entries.first { it.value == editor.dayLabel }.key,
-                startTime = start,
-                endTime = end,
-                room = editor.room.trim().ifEmpty { null },
-                building = editor.building.trim().ifEmpty { null },
-                group = editor.group.trim().ifEmpty { null },
-                recurrence = Recurrence.valueOf(recurrence.name),
-                date = if (recurrence == DomainRecurrence.ONCE) date else null,
-                classNote = editor.note.trim().ifEmpty { null }
-            )
-        )
-        editingClassId = null
-        state.value = withActiveOptions(defaultClassEditState())
-        return true
     }
 
     private fun withActiveOptions(value: ClassEditUiState): ClassEditUiState {

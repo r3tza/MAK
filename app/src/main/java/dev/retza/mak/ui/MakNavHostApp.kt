@@ -18,7 +18,6 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +35,7 @@ import dev.retza.mak.ui.components.MakBrandMark
 import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakIconButton
 import dev.retza.mak.ui.components.MakNavBar
+import dev.retza.mak.ui.edit.ClassEditEffect
 import dev.retza.mak.ui.edit.ClassEditScreen
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.MakSnackbarHost
@@ -51,7 +51,6 @@ import dev.retza.mak.ui.settings.SettingsScreen
 import dev.retza.mak.ui.setup.SetupWizard
 import dev.retza.mak.ui.today.TodayScreen
 import kotlinx.coroutines.flow.Flow
-import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -102,6 +101,18 @@ fun MakApp(
             when (effect) {
                 OccurrenceEffect.CloseDetails -> {
                     if (shouldCloseOccurrenceDetails(navController.currentBackStackEntry?.destination?.route)) {
+                        navController.popBackStack()
+                    }
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(classEditViewModel, navController) {
+        classEditViewModel.effects.collect { effect ->
+            when (effect) {
+                ClassEditEffect.CloseEditor -> {
+                    if (shouldCloseClassEditor(navController.currentBackStackEntry?.destination?.route)) {
                         navController.popBackStack()
                     }
                 }
@@ -276,7 +287,6 @@ fun MakApp(
                         classEditViewModel.openEdit("$classId:$date")
                     }
                 }
-                val scope = rememberCoroutineScope()
                 ClassEditScreen(
                     state = classEditViewModel.editor.collectAsStateWithLifecycle().value,
                     onNameChanged = { value -> classEditViewModel.update { it.copy(name = value) } },
@@ -299,7 +309,7 @@ fun MakApp(
                     onGroupChanged = { value -> classEditViewModel.update { it.copy(group = value) } },
                     onTeacherChanged = { value -> classEditViewModel.update { it.copy(teacher = value) } },
                     onNoteChanged = { value -> classEditViewModel.update { it.copy(note = value) } },
-                    onSave = { scope.launch { if (classEditViewModel.save()) navController.popBackStack() } },
+                    onSave = classEditViewModel::save,
                     onCancel = ::navigateBack,
                     onRetry = {},
                     modifier = Modifier.fillMaxSize()
@@ -579,6 +589,9 @@ fun semesterOverridesRoute(id: String): String = "semester/$id/week-overrides"
 
 internal fun shouldCloseOccurrenceDetails(currentRoute: String?): Boolean =
     currentRoute == MakRoutes.Occurrence
+
+internal fun shouldCloseClassEditor(currentRoute: String?): Boolean =
+    currentRoute == MakRoutes.Edit
 
 fun destinationForRoute(route: String?): MakDestination = when (route) {
     MakRoutes.Schedule -> MakDestination.Schedule
