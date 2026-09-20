@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Token sesji i parsowanie identyfikatora semestru
+
+- Fakty: Operacje zapisu nie były powiązane z sesją `open()`. Spóźniony zapis semestru A mógł zamknąć ekran semestru B albo nadpisać jego stan i flagi. `open` przy nieparsowalnym identyfikatorze wracał przed anulowaniem poprzedniego otwarcia i wyczyszczeniem stanu, więc poprzedni semestr pozostawał widoczny.
+- Decyzja: Dodano `sessionToken` zwiększany przy każdym `open()`. Każda operacja zapisu, dodawania i usuwania sprawdza token po operacji repozytorium; przy zmianie sesji nie aktualizuje stanu, nie publikuje feedbacku, nie emituje efektu i nie zwalnia flag nowej sesji. `open` anuluje poprzednie otwarcie i czyści stan przed parsowaniem identyfikatora, więc nieparsowalny identyfikator również daje pusty stan.
+- Powód: Asynchroniczne operacje poprzedniego semestru nie mogą wpływać na aktualnie otwarty semestr.
+- Weryfikacja: Dodano testy `unparsableIdClearsPreviousSemester` i `lateSaveFromPreviousSessionDoesNotCloseOrModifyCurrentSemester`. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-20: Wydzielenie `SemesterViewModel`
 
 - Fakty: Konfiguracja semestru, kierunki i korekty tygodni mieszkały w `MakViewModel` razem z planem, ustawieniami i edycją zajęć. Stan semestru był w `Controls`, a ekrany czytały `MakUiState.semester`.

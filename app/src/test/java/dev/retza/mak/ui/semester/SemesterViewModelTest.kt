@@ -543,6 +543,53 @@ class SemesterViewModelTest {
         assertTrue(sink.published.isEmpty())
         assertFalse(viewModel.semester.value.isDeletingOverride)
     }
+
+    @Test
+    fun unparsableIdClearsPreviousSemester() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+        assertEquals("Semestr", viewModel.semester.value.semester.name)
+
+        viewModel.open("abc")
+        advanceUntilIdle()
+
+        assertEquals("", viewModel.semester.value.semester.name)
+        assertEquals(null, viewModel.semesterId.value)
+    }
+
+    @Test
+    fun lateSaveFromPreviousSessionDoesNotCloseOrModifyCurrentSemester() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        val effects = mutableListOf<SemesterEffect>()
+        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+
+        repository.saveGate = CompletableDeferred()
+        viewModel.saveSemester()
+        advanceUntilIdle()
+
+        viewModel.open("2")
+        advanceUntilIdle()
+        assertEquals("Semestr drugi", viewModel.semester.value.semester.name)
+
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals("Semestr drugi", viewModel.semester.value.semester.name)
+        assertEquals(2L, viewModel.semesterId.value)
+        assertTrue(effects.isEmpty())
+        assertTrue(sink.published.isEmpty())
+        assertFalse(viewModel.semester.value.semester.isSaving)
+    }
 }
 
 private class RecordingFeedbackSink : FeedbackSink {

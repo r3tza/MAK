@@ -43,16 +43,20 @@ class SemesterViewModel(
     val effects = effectsChannel.receiveAsFlow()
 
     private var openJob: Job? = null
+    private var sessionToken = 0L
 
     fun open(id: String) {
-        val parsed = id.toLongOrNull() ?: return
+        sessionToken += 1
+        val token = sessionToken
         openJob?.cancel()
         semesterIdState.value = null
         state.value = SemesterScreenUiState()
+        val parsed = id.toLongOrNull() ?: return
         openJob = viewModelScope.launch {
             try {
                 repository.setActiveSemester(parsed)
                 val data = repository.observeSemesterData(parsed).first() ?: return@launch
+                if (token != sessionToken) return@launch
                 semesterIdState.value = parsed
                 state.value = data.toSemesterScreenState()
             } catch (error: CancellationException) {
@@ -62,6 +66,8 @@ class SemesterViewModel(
             }
         }
     }
+
+    private fun isCurrentSession(token: Long): Boolean = token == sessionToken
 
     fun update(transform: (SemesterScreenUiState) -> SemesterScreenUiState) {
         state.update { transform(it) }
@@ -99,6 +105,7 @@ class SemesterViewModel(
                 )
             )
         }
+        val token = sessionToken
         viewModelScope.launch {
             try {
                 repository.saveSemester(
@@ -111,17 +118,21 @@ class SemesterViewModel(
                         isActive = true
                     )
                 )
+                if (!isCurrentSession(token)) return@launch
                 feedbackSink.publish(UiFeedback("Zapisano semestr", UiFeedbackKind.Success))
                 effectsChannel.trySend(SemesterEffect.CloseConfiguration)
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
+                if (!isCurrentSession(token)) return@launch
                 update {
                     it.copy(semester = it.semester.copy(dateRangeError = "Nie udało się zapisać semestru."))
                 }
                 feedbackSink.publish(UiFeedback("Nie udało się zapisać semestru.", UiFeedbackKind.Error))
             } finally {
-                update { it.copy(semester = it.semester.copy(isSaving = false)) }
+                if (isCurrentSession(token)) {
+                    update { it.copy(semester = it.semester.copy(isSaving = false)) }
+                }
             }
         }
     }
@@ -144,6 +155,7 @@ class SemesterViewModel(
             return
         }
         update { it.copy(isAddingCourse = true, courseNameError = null) }
+        val token = sessionToken
         viewModelScope.launch {
             try {
                 repository.saveCourse(
@@ -153,15 +165,20 @@ class SemesterViewModel(
                         color = draft.courseColorDraft.ifBlank { "#137b71" }
                     )
                 )
-                refresh()
+                if (!isCurrentSession(token)) return@launch
+                refresh(token)
+                if (!isCurrentSession(token)) return@launch
                 update { it.copy(courseNameDraft = "", isAddingCourse = false) }
                 feedbackSink.publish(UiFeedback("Dodano kierunek", UiFeedbackKind.Success))
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
+                if (!isCurrentSession(token)) return@launch
                 feedbackSink.publish(UiFeedback("Nie udało się dodać kierunku.", UiFeedbackKind.Error))
             } finally {
-                update { it.copy(isAddingCourse = false) }
+                if (isCurrentSession(token)) {
+                    update { it.copy(isAddingCourse = false) }
+                }
             }
         }
     }
@@ -170,24 +187,32 @@ class SemesterViewModel(
         if (state.value.isDeletingCourse) return
         val courseId = id.toLongOrNull() ?: return
         update { it.copy(isDeletingCourse = true) }
+        val token = sessionToken
         viewModelScope.launch {
             try {
                 repository.deleteCourse(courseId)
-                refresh()
+                if (!isCurrentSession(token)) return@launch
+                refresh(token)
+                if (!isCurrentSession(token)) return@launch
                 feedbackSink.publish(UiFeedback("Usunięto kierunek", UiFeedbackKind.Success))
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
+                if (!isCurrentSession(token)) return@launch
                 feedbackSink.publish(UiFeedback("Nie udało się usunąć kierunku.", UiFeedbackKind.Error))
             } finally {
-                update { it.copy(isDeletingCourse = false) }
+                if (isCurrentSession(token)) {
+                    update { it.copy(isDeletingCourse = false) }
+                }
             }
         }
     }
 
-    private suspend fun refresh() {
+    private suspend fun refresh(token: Long) {
+        if (!isCurrentSession(token)) return
         val id = semesterIdState.value ?: return
         val data = repository.observeSemesterData(id).first() ?: return
+        if (!isCurrentSession(token)) return
         val current = state.value
         state.value = data.toSemesterScreenState().copy(
             courseNameDraft = current.courseNameDraft,
@@ -229,6 +254,7 @@ class SemesterViewModel(
             return
         }
         update { it.copy(overrideForm = form.copy(isSaving = true, weekStartDateError = null)) }
+        val token = sessionToken
         viewModelScope.launch {
             try {
                 repository.saveWeekOverride(
@@ -240,16 +266,21 @@ class SemesterViewModel(
                         scope = WeekOverrideScope.valueOf(form.scope.name)
                     )
                 )
-                refresh()
+                if (!isCurrentSession(token)) return@launch
+                refresh(token)
+                if (!isCurrentSession(token)) return@launch
                 update { it.copy(overrideForm = WeekOverrideFormUiState()) }
                 val message = if (form.id == null) "Dodano korektę tygodnia" else "Zapisano korektę tygodnia"
                 feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
+                if (!isCurrentSession(token)) return@launch
                 feedbackSink.publish(UiFeedback("Nie udało się zapisać korekty tygodnia.", UiFeedbackKind.Error))
             } finally {
-                update { it.copy(overrideForm = it.overrideForm.copy(isSaving = false)) }
+                if (isCurrentSession(token)) {
+                    update { it.copy(overrideForm = it.overrideForm.copy(isSaving = false)) }
+                }
             }
         }
     }
@@ -258,18 +289,24 @@ class SemesterViewModel(
         if (state.value.isDeletingOverride) return
         val overrideId = id.toLongOrNull() ?: return
         update { it.copy(isDeletingOverride = true) }
+        val token = sessionToken
         viewModelScope.launch {
             try {
                 repository.deleteWeekOverride(overrideId)
-                refresh()
+                if (!isCurrentSession(token)) return@launch
+                refresh(token)
+                if (!isCurrentSession(token)) return@launch
                 update { it.copy(overrideForm = WeekOverrideFormUiState()) }
                 feedbackSink.publish(UiFeedback("Usunięto korektę tygodnia", UiFeedbackKind.Success))
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
+                if (!isCurrentSession(token)) return@launch
                 feedbackSink.publish(UiFeedback("Nie udało się usunąć korekty tygodnia.", UiFeedbackKind.Error))
             } finally {
-                update { it.copy(isDeletingOverride = false) }
+                if (isCurrentSession(token)) {
+                    update { it.copy(isDeletingOverride = false) }
+                }
             }
         }
     }
