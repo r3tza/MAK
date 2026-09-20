@@ -37,7 +37,7 @@ class WidgetPresenter {
                     courseName = occurrence.course?.name.orEmpty(),
                     courseColor = occurrence.course?.color,
                     roomLabel = listOfNotNull(
-                        occurrence.room ?: "Sala niepodana",
+                        occurrence.room?.trim()?.ifEmpty { null } ?: "Sala niepodana",
                         occurrence.building
                     ).joinToString(", "),
                     teacherName = occurrence.teacher?.name,

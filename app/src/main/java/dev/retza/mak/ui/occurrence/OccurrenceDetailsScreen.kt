@@ -153,7 +153,7 @@ private fun OccurrenceEditDialog(
     MakDialog(
         title = "Edytuj ten termin",
         description = "Zmiany dotyczą tylko tego terminu. Pozostałe wystąpienia zajęć pozostaną bez zmian.",
-        onDismiss = onDismiss
+        onDismiss = { if (!state.isSaving) onDismiss() }
     ) {
         Column(
             modifier = Modifier

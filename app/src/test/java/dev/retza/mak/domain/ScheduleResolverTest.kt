@@ -27,7 +27,8 @@ class ScheduleResolverTest {
         date: LocalDate? = null,
         start: LocalTime = LocalTime.of(10, 0),
         end: LocalTime = LocalTime.of(11, 0),
-        note: String? = "Bring a laptop"
+        note: String? = "Bring a laptop",
+        room: String? = null
     ) = ClassItem(
         id = id,
         semesterId = semester.id,
@@ -38,6 +39,7 @@ class ScheduleResolverTest {
         dayOfWeek = day,
         startTime = start,
         endTime = end,
+        room = room,
         recurrence = recurrence,
         date = date,
         classNote = note
@@ -117,6 +119,24 @@ class ScheduleResolverTest {
         assertEquals(LocalTime.of(13, 30), occurrence.endTime)
         assertEquals("L204", occurrence.room)
         assertEquals("Bring a laptop", occurrence.classNote)
+    }
+
+    @Test
+    fun emptyRoomOverrideRemovesRoomAndRestoreBringsItBack() {
+        val date = LocalDate.of(2026, 1, 5)
+        val baseWithRoom = classItem(room = "L204")
+        val cleared = OccurrenceChange(
+            id = "clear-room",
+            classId = "class-1",
+            originalDate = date,
+            kind = OccurrenceChangeKind.MODIFIED,
+            room = ""
+        )
+
+        val withoutRoom = resolve(date, listOf(baseWithRoom), changes = listOf(cleared)).occurrences.single()
+        assertEquals(null, withoutRoom.room)
+        val restored = resolve(date, listOf(baseWithRoom)).occurrences.single()
+        assertEquals("L204", restored.room)
     }
 
     @Test

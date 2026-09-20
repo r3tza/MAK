@@ -169,7 +169,7 @@ class ScheduleResolver(
             originalDate = originalDate,
             startTime = change?.startTime ?: classItem.startTime,
             endTime = change?.endTime ?: classItem.endTime,
-            room = change?.room ?: classItem.room,
+            room = (change?.room ?: classItem.room)?.trim()?.ifEmpty { null },
             building = change?.building ?: classItem.building,
             teacher = teacherId?.let(teachers::get),
             course = courses[classItem.courseId],

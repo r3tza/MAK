@@ -15,7 +15,9 @@ data class OccurrenceSlot(
     val startTime: LocalTime,
     val endTime: LocalTime,
     val room: String?
-)
+) {
+    fun normalized(): OccurrenceSlot = copy(room = normalizeRoom(room))
+}
 
 sealed interface OccurrenceEditDecision {
     data class Ready(
@@ -39,17 +41,29 @@ fun decideOccurrenceEdit(
     val start = parseTime(draftStartTime) ?: return OccurrenceEditDecision.InvalidDateTime
     val end = parseTime(draftEndTime) ?: return OccurrenceEditDecision.InvalidDateTime
     val draft = OccurrenceSlot(date, start, end, normalizeRoom(draftRoom))
+    val baseSlot = base.normalized()
+    val currentSlot = current.normalized()
 
     val result = when {
-        draft == current -> OccurrenceEditResult.NoChange
-        hasChange && draft == base -> OccurrenceEditResult.Restored
-        draft.date != current.date -> OccurrenceEditResult.Moved
+        draft == currentSlot -> OccurrenceEditResult.NoChange
+        hasChange && draft == baseSlot -> OccurrenceEditResult.Restored
+        draft.date != baseSlot.date -> OccurrenceEditResult.Moved
         else -> OccurrenceEditResult.Modified
     }
     return OccurrenceEditDecision.Ready(result, draft)
 }
 
-private fun normalizeRoom(room: String): String? = room.trim().ifEmpty { null }
+fun occurrenceRoomOverride(baseRoom: String?, draftRoom: String?): String? {
+    val base = normalizeRoom(baseRoom)
+    val draft = normalizeRoom(draftRoom)
+    return when {
+        draft != null -> draft
+        base != null -> ""
+        else -> null
+    }
+}
+
+internal fun normalizeRoom(room: String?): String? = room?.trim()?.ifEmpty { null }
 
 private fun parseDate(value: String): LocalDate? =
     runCatching { LocalDate.parse(value.trim()) }.getOrNull()

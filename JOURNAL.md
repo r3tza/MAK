@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Poprawki po recenzji edycji terminu
+
+- Fakty: Klasyfikacja przeniesienia opierała się na poprzednim stanie edycji, więc powrót do daty bazowej z nową godziną był błędnie uznawany za przeniesienie. Wyczyszczenie sali nie miało efektu, bo `newRoom = null` uruchamiało wartość bazową. Dialog można było zamknąć podczas zapisu.
+- Decyzja: `Moved` wynika z porównania z datą bazową, a `Modified` z tej samej daty przy zmienionych godzinach lub sali. Pusta sala jest zapisywana jako jawne nadpisanie `""`, jeśli zajęcia bazowe mają salę, a `null` pozostaje przy pustej sali bazowej. Pusty tekst jest normalizowany do `null` na granicy prezentacji i porównania w `OccurrenceSlot`, resolverze, mapowaniu `ClassItemUi` oraz prezenterze widgetu. Dialog podczas `isSaving` ignoruje `onDismissRequest`, a ViewModel także odrzuca próbę zamknięcia.
+- Powód: Status ma zależeć od relacji do terminu bazowego, sala ma dać się jawnie usunąć bez migracji schematu, a trwający zapis nie może zgubić wpisanych wartości.
+- Weryfikacja: `OccurrenceEditTest` obejmuje powrót do daty bazowej z nową godziną, ponowne przeniesienie, jawną modyfikację sali i brak zmiany przy pustych salach. `ScheduleResolverTest` potwierdza brak sali po nadpisaniu i powrót `L204` po przywróceniu. Test Compose sprawdza blokadę zamknięcia dialogu przy `isSaving = true`. `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą.
+
 ## 2026-09-20: Edycja terminu oparta na różnicy i jeden dialog
 
 - Fakty: Ekran szczegółów miał osobny formularz w treści oraz wybór między „Zmień tylko ten termin” i „Przenieś ten termin”. Kolizja technicznej różnicy należała do użytkownika. Po każdej operacji ekran opuszczał szczegóły.

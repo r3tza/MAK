@@ -21,6 +21,7 @@ import dev.retza.mak.domain.OccurrenceSlot
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.decideOccurrenceEdit
+import dev.retza.mak.domain.occurrenceRoomOverride
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarMarkerColor
 import dev.retza.mak.ui.components.CalendarMarkerUi
@@ -309,8 +310,11 @@ class MakViewModel(
         )
     }
 
-    fun dismissOccurrenceEditDialog() = updateOccurrence {
-        it.copy(showEditDialog = false, draftErrors = emptyMap(), draftError = null)
+    fun dismissOccurrenceEditDialog() {
+        if (controls.value.occurrenceDraft.isSaving) return
+        updateOccurrence {
+            it.copy(showEditDialog = false, draftErrors = emptyMap(), draftError = null)
+        }
     }
 
     fun requestClassDeletion() = updateOccurrence { it.copy(showDeleteConfirmation = true) }
@@ -445,7 +449,7 @@ class MakViewModel(
                                     targetDate = decision.slot.date,
                                     newStartTime = decision.slot.startTime,
                                     newEndTime = decision.slot.endTime,
-                                    newRoom = decision.slot.room,
+                                    newRoom = occurrenceRoomOverride(base.room, decision.slot.room),
                                     newBuilding = null,
                                     newTeacherId = null,
                                     newNote = null
@@ -480,7 +484,7 @@ class MakViewModel(
         val effectiveDate = change?.targetDate ?: originalDate
         val effectiveStart = change?.newStartTime ?: base.startTime
         val effectiveEnd = change?.newEndTime ?: base.endTime
-        val effectiveRoom = change?.newRoom ?: base.room
+        val effectiveRoom = (change?.newRoom ?: base.room)?.trim()?.ifEmpty { null }
         val existingNote = data.occurrenceNotes.firstOrNull {
             it.classId == classId && it.occurrenceDate == effectiveDate
         }
@@ -520,7 +524,7 @@ class MakViewModel(
             baseDate = originalDate.toString(),
             baseStartTime = base.startTime.toString(),
             baseEndTime = base.endTime.toString(),
-            baseRoom = base.room,
+            baseRoom = base.room?.trim()?.ifEmpty { null },
             semesterStartDate = data.semester.startDate.toString(),
             semesterEndDate = data.semester.endDate.toString(),
             canCancelOccurrence = canEdit && change == null,
@@ -1099,7 +1103,7 @@ class MakViewModel(
                 courseColor = course?.color,
                 startTime = item.startTime.toString(),
                 endTime = item.endTime.toString(),
-                room = item.room,
+                room = item.room?.trim()?.ifEmpty { null },
                 building = item.building,
                 teacherName = teacher?.name,
                 note = item.classNote,
@@ -1167,7 +1171,7 @@ private fun PlannedOccurrence.toUi(conflictLabel: String?): ClassItemUi {
         courseColor = course?.color,
         startTime = startTime.toString(),
         endTime = endTime.toString(),
-        room = room,
+        room = room?.trim()?.ifEmpty { null },
         building = building,
         teacherName = teacher?.name,
         weekLabel = when (classItem.recurrence) {

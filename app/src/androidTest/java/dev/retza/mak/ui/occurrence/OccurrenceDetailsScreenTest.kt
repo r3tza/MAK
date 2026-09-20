@@ -9,12 +9,14 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import androidx.test.espresso.Espresso
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -157,5 +159,61 @@ class OccurrenceDetailsScreenTest {
         assertEquals(1, restoreClicks)
         composeTestRule.onNodeWithText("Zamknij").assertIsDisplayed()
         composeTestRule.onAllNodesWithText("Zmień termin").assertCountEquals(0)
+    }
+
+    @Test
+    fun editDialogIgnoresDismissWhileSavingAt320Dp() {
+        var dismissCalls = 0
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(
+                    modifier = Modifier
+                        .width(320.dp)
+                        .height(900.dp)
+                ) {
+                    OccurrenceDetailsScreen(
+                        state = OccurrenceDetailsUiState(
+                            subjectName = "Matematyka",
+                            dateLabel = "Poniedziałek, 21 września",
+                            currentDate = "2026-09-21",
+                            startTime = "09:00",
+                            endTime = "10:30",
+                            targetDateDraft = "2026-09-21",
+                            startTimeDraft = "09:00",
+                            endTimeDraft = "10:30",
+                            roomDraft = "L204",
+                            baseDate = "2026-09-21",
+                            baseStartTime = "09:00",
+                            baseEndTime = "10:30",
+                            baseRoom = "L204",
+                            showEditDialog = true,
+                            isSaving = true,
+                            canSaveOccurrenceEdit = true
+                        ),
+                        onDeleteBaseClass = {},
+                        onDismissDeleteConfirmation = {},
+                        onOpenOccurrenceEdit = {},
+                        onDismissOccurrenceEdit = { dismissCalls += 1 },
+                        onSaveOccurrenceChange = {},
+                        onRestoreOccurrence = {},
+                        onOccurrenceNoteDraftChanged = {},
+                        onTargetDateDraftChanged = {},
+                        onStartTimeDraftChanged = {},
+                        onEndTimeDraftChanged = {},
+                        onRoomDraftChanged = {},
+                        onSaveOccurrenceNote = {},
+                        onDeleteOccurrenceNote = {},
+                        onBack = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Edytuj ten termin").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Anuluj").assertIsNotEnabled()
+        Espresso.pressBack()
+        composeTestRule.onNodeWithText("Edytuj ten termin").assertIsDisplayed()
+        assertEquals(0, dismissCalls)
     }
 }

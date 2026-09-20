@@ -89,6 +89,50 @@ class OccurrenceEditTest {
         assertTrue(decision is OccurrenceEditDecision.InvalidDateTime)
     }
 
+    @Test
+    fun movedTermReturnedToBaseDateWithOtherTimeIsModified() {
+        val moved = base.copy(date = LocalDate.of(2026, 9, 23))
+        val decision = decide(current = moved, hasChange = true, start = "11:00", end = "12:30")
+        assertEquals(OccurrenceEditResult.Modified, ready(decision).result)
+    }
+
+    @Test
+    fun movedTermMovedAgainIsMoved() {
+        val moved = base.copy(date = LocalDate.of(2026, 9, 23))
+        val decision = decide(current = moved, hasChange = true, date = "2026-09-24")
+        assertEquals(OccurrenceEditResult.Moved, ready(decision).result)
+    }
+
+    @Test
+    fun emptyRoomDraftOverBaseRoomIsModified() {
+        val decision = decide(room = "")
+        assertEquals(OccurrenceEditResult.Modified, ready(decision).result)
+        assertEquals(null, ready(decision).slot.room)
+    }
+
+    @Test
+    fun emptyRoomDraftWithEmptyBaseRoomIsNoChange() {
+        val emptyBase = base.copy(room = null)
+        val decision = decideOccurrenceEdit(
+            emptyBase,
+            emptyBase,
+            false,
+            emptyBase.date.toString(),
+            emptyBase.startTime.toString(),
+            emptyBase.endTime.toString(),
+            ""
+        )
+        assertEquals(OccurrenceEditResult.NoChange, ready(decision).result)
+    }
+
+    @Test
+    fun roomOverrideStoresExplicitClearOnlyWhenBaseHasRoom() {
+        assertEquals("", occurrenceRoomOverride("L204", null))
+        assertEquals("L301", occurrenceRoomOverride("L204", "L301"))
+        assertEquals(null, occurrenceRoomOverride(null, null))
+        assertEquals("L301", occurrenceRoomOverride(null, "L301"))
+    }
+
     private fun ready(decision: OccurrenceEditDecision): OccurrenceEditDecision.Ready {
         assertTrue("Expected Ready but was $decision", decision is OccurrenceEditDecision.Ready)
         return decision as OccurrenceEditDecision.Ready
