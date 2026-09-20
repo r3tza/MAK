@@ -20,6 +20,7 @@ import dev.retza.mak.ui.MakViewModel
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
+import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.theme.MAKTheme
 import kotlinx.coroutines.launch
 
@@ -40,11 +41,15 @@ class MainActivity : ComponentActivity() {
             val semesterViewModel: SemesterViewModel = viewModel(
                 factory = SemesterViewModel.Factory(application.repository, application.feedbackController)
             )
+            val setupViewModel: SetupViewModel = viewModel(
+                factory = SetupViewModel.Factory(application.repository, application.feedbackController)
+            )
             val viewModel: MakViewModel = viewModel(
                 factory = MakViewModel.Factory(
                     application.repository,
                     application.feedbackController,
-                    classEditViewModel
+                    classEditViewModel,
+                    setupViewModel
                 )
             )
             makViewModel = viewModel

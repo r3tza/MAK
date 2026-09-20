@@ -4,7 +4,6 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.retza.mak.data.database.SemesterWithData
-import dev.retza.mak.data.entity.CourseEntity
 import dev.retza.mak.data.entity.SemesterEntity
 import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.toActivePlanData
@@ -16,7 +15,6 @@ import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarMarkerColor
 import dev.retza.mak.ui.components.CalendarMarkerUi
 import dev.retza.mak.ui.components.ClassItemUi
-import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.edit.ClassEditViewModel
@@ -30,8 +28,7 @@ import dev.retza.mak.ui.schedule.ScheduleUiState
 import dev.retza.mak.ui.schedule.ScheduleView
 import dev.retza.mak.ui.settings.SettingsUiState
 import dev.retza.mak.ui.settings.ThemeOptionUi
-import dev.retza.mak.ui.setup.SetupField
-import dev.retza.mak.ui.setup.SetupStep
+import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.setup.SetupWizardUiState
 import dev.retza.mak.ui.today.TodayUiState
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
@@ -89,7 +86,6 @@ private data class Controls(
     val scheduleView: ScheduleView = ScheduleView.List,
     val courseFilterId: String = "all",
     val showCancelled: Boolean = false,
-    val setup: SetupWizardUiState = SetupWizardUiState(),
     val forceSetup: Boolean = false,
     val semesterToDeleteId: String? = null,
     val themeId: String = "system"
@@ -100,6 +96,7 @@ class MakViewModel(
     private val repository: MakRepository,
     private val feedbackSink: FeedbackSink,
     private val classEditViewModel: ClassEditViewModel,
+    private val setupViewModel: SetupViewModel,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val activePlanProvider: ActivePlanProvider = ActivePlanProvider()
 ) : ViewModel() {
@@ -118,8 +115,13 @@ class MakViewModel(
         if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
     }
 
-    val uiState = combine(semesters, activeSemesterData, controls) { semesterList, activeData, control ->
-        buildState(semesterList, activeData, control)
+    val uiState = combine(
+        semesters,
+        activeSemesterData,
+        controls,
+        setupViewModel.setup
+    ) { semesterList, activeData, control, setup ->
+        buildState(semesterList, activeData, control, setup)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -151,28 +153,15 @@ class MakViewModel(
     }
 
     fun updateSetup(transform: (SetupWizardUiState) -> SetupWizardUiState) {
-        controls.update { it.copy(setup = transform(it.setup)) }
+        setupViewModel.update(transform)
     }
 
     fun setupNext() {
-        val setup = uiState.value.setup
-        when (setup.step) {
-            SetupStep.Semester -> saveSetupSemester(setup)
-            SetupStep.Course -> saveSetupCourse(setup)
-            SetupStep.Classes -> finishSetup()
-        }
+        setupViewModel.next()
     }
 
     fun setupBack() {
-        controls.update { control ->
-            val data = uiState.value.activeSemesterData
-            val previous = when {
-                data != null && data.courses.isNotEmpty() -> SetupStep.Classes
-                data != null -> SetupStep.Course
-                else -> SetupStep.Semester
-            }
-            control.copy(setup = control.setup.copy(step = previous, errors = emptyMap()))
-        }
+        setupViewModel.back()
     }
 
     fun finishSetup() {
@@ -184,13 +173,8 @@ class MakViewModel(
     }
 
     fun startSemesterSetup() {
-        controls.update {
-            it.copy(
-                forceSetup = true,
-                destination = MakDestination.Setup,
-                setup = SetupWizardUiState()
-            )
-        }
+        setupViewModel.start()
+        controls.update { it.copy(forceSetup = true, destination = MakDestination.Setup) }
     }
 
     fun openNewClassForSelectedCalendarDay() {
@@ -278,6 +262,7 @@ class MakViewModel(
     fun confirmSemesterDeletion() {
         val id = controls.value.semesterToDeleteId?.toLongOrNull() ?: return
         val remaining = uiState.value.settings.semesters.firstOrNull { it.id != id.toString() }
+        if (remaining == null) setupViewModel.start()
         viewModelScope.launch {
             repository.deleteSemester(id)
             if (remaining != null) repository.setActiveSemester(remaining.id.toLong())
@@ -286,8 +271,7 @@ class MakViewModel(
                 it.copy(
                     semesterToDeleteId = null,
                     destination = if (remaining == null) MakDestination.Setup else MakDestination.Settings,
-                    forceSetup = remaining == null,
-                    setup = if (remaining == null) SetupWizardUiState() else it.setup
+                    forceSetup = remaining == null
                 )
             }
         }
@@ -303,63 +287,11 @@ class MakViewModel(
         }
     }
 
-    private fun saveSetupSemester(setup: SetupWizardUiState) {
-        val start = setup.startDate.toLocalDateOrNull()
-        val end = setup.endDate.toLocalDateOrNull()
-        val errors = buildMap {
-            if (setup.semesterName.isBlank()) put(SetupField.SemesterName, FieldErrorUi("Podaj nazwę semestru."))
-            if (start == null) put(SetupField.StartDate, FieldErrorUi("Wybierz poprawną datę."))
-            if (end == null || start != null && end.isBefore(start)) {
-                put(SetupField.EndDate, FieldErrorUi("Data końca nie może być wcześniejsza od początku."))
-            }
-        }
-        if (errors.isNotEmpty() || start == null || end == null) {
-            controls.update { it.copy(setup = setup.copy(errors = errors)) }
-            return
-        }
-        viewModelScope.launch {
-            repository.saveSemester(
-                SemesterEntity(
-                    name = setup.semesterName.trim(),
-                    startDate = start,
-                    endDate = end,
-                    firstWeekType = dev.retza.mak.data.entity.WeekType.valueOf(setup.firstWeekLabel),
-                    isActive = true
-                )
-            )
-            controls.update {
-                it.copy(setup = setup.copy(step = SetupStep.Course, errors = emptyMap()))
-            }
-        }
-    }
-
-    private fun saveSetupCourse(setup: SetupWizardUiState) {
-        val semesterId = uiState.value.activeSemesterData?.semester?.id
-        val errors = if (setup.courseName.isBlank()) {
-            mapOf(SetupField.CourseName to FieldErrorUi("Podaj nazwę kierunku."))
-        } else emptyMap()
-        if (semesterId == null || errors.isNotEmpty()) {
-            controls.update { it.copy(setup = setup.copy(errors = errors)) }
-            return
-        }
-        viewModelScope.launch {
-            repository.saveCourse(
-                CourseEntity(
-                    semesterId = semesterId,
-                    name = setup.courseName.trim(),
-                    color = setup.courseColor.ifBlank { "#137b71" }
-                )
-            )
-            controls.update {
-                it.copy(setup = setup.copy(step = SetupStep.Classes, errors = emptyMap()))
-            }
-        }
-    }
-
     private fun buildState(
         semesterList: List<SemesterEntity>,
         activeData: SemesterWithData?,
-        control: Controls
+        control: Controls,
+        setup: SetupWizardUiState
     ): MakUiState {
         val requiresSetup = control.forceSetup || semesterList.isEmpty() ||
             activeData != null && activeData.courses.isEmpty()
@@ -371,9 +303,7 @@ class MakViewModel(
             schedule = buildSchedule(activeData, control),
             themeId = control.themeId,
             settings = buildSettings(semesterList, activeData, control),
-            setup = if (activeData != null && activeData.courses.isEmpty()) {
-                control.setup.copy(step = SetupStep.Course)
-            } else control.setup,
+            setup = setup,
             activeSemesterData = activeData
         )
     }
@@ -526,12 +456,13 @@ class MakViewModel(
     class Factory(
         private val repository: MakRepository,
         private val feedbackSink: FeedbackSink,
-        private val classEditViewModel: ClassEditViewModel
+        private val classEditViewModel: ClassEditViewModel,
+        private val setupViewModel: SetupViewModel
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(MakViewModel::class.java))
-            return MakViewModel(repository, feedbackSink, classEditViewModel) as T
+            return MakViewModel(repository, feedbackSink, classEditViewModel, setupViewModel) as T
         }
     }
 }
