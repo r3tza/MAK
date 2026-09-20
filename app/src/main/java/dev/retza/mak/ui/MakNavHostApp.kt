@@ -93,6 +93,18 @@ fun MakApp(
         }
     }
 
+    LaunchedEffect(occurrenceViewModel, navController) {
+        occurrenceViewModel.effects.collect { effect ->
+            when (effect) {
+                OccurrenceEffect.CloseDetails -> {
+                    if (shouldCloseOccurrenceDetails(navController.currentBackStackEntry?.destination?.route)) {
+                        navController.popBackStack()
+                    }
+                }
+            }
+        }
+    }
+
     LaunchedEffect(state.requiresSetup, state.destination, currentRoute) {
         when {
             state.requiresSetup && currentRoute != MakRoutes.Setup -> {
@@ -127,6 +139,27 @@ fun MakApp(
 
     BackHandler(enabled = showBack) { navigateBack() }
 
+    val occurrenceActions: List<Pair<String, () -> Unit>> = if (currentRoute == MakRoutes.Occurrence) {
+        listOfNotNull(
+            if (occurrenceDetails.canCancelOccurrence) {
+                "Odwołaj termin" to occurrenceViewModel::cancelOccurrence
+            } else null,
+            if (occurrenceDetails.canEditBaseClass) {
+                "Edytuj bazowe zajęcia" to {
+                    occurrenceViewModel.selectedClassId.value?.let { id ->
+                        viewModel.openEditClass("$id:${occurrenceDetails.targetDateDraft}")
+                        navController.navigate(editRoute(id, occurrenceDetails.targetDateDraft))
+                    }
+                }
+            } else null,
+            if (occurrenceDetails.canDeleteBaseClass) {
+                "Usuń zajęcia" to occurrenceViewModel::requestClassDeletion
+            } else null
+        )
+    } else {
+        emptyList()
+    }
+
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -143,29 +176,16 @@ fun MakApp(
                 onSettings = {
                     openChild(MakDestination.Settings, MakRoutes.Settings)
                 },
-                actions = if (currentRoute == MakRoutes.Occurrence) {
+                actions = if (occurrenceActions.isEmpty()) {
+                    null
+                } else {
                     {
                         MakActionMenu(
-                            actions = listOfNotNull(
-                                if (occurrenceDetails.canCancelOccurrence) {
-                                    "Odwołaj termin" to occurrenceViewModel::cancelOccurrence
-                                } else null,
-                                if (occurrenceDetails.canEditBaseClass) {
-                                    "Edytuj bazowe zajęcia" to {
-                                        occurrenceViewModel.selectedClassId.value?.let { id ->
-                                            viewModel.openEditClass("$id:${occurrenceDetails.targetDateDraft}")
-                                            navController.navigate(editRoute(id, occurrenceDetails.targetDateDraft))
-                                        }
-                                    }
-                                } else null,
-                                if (occurrenceDetails.canDeleteBaseClass) {
-                                    "Usuń zajęcia" to occurrenceViewModel::requestClassDeletion
-                                } else null
-                            ),
+                            actions = occurrenceActions,
                             modifier = Modifier.padding(end = 4.dp)
                         )
                     }
-                } else null
+                }
             )
         },
         bottomBar = {
@@ -196,6 +216,7 @@ fun MakApp(
                     state = state.today,
                     onOpenPlan = { openRoot(MakDestination.Schedule, MakRoutes.Schedule) },
                     onOpenClass = { occurrenceId ->
+                        occurrenceViewModel.open(occurrenceId)
                         navController.navigate(occurrenceRoute(occurrenceId))
                     },
                     onRetry = {},
@@ -220,6 +241,7 @@ fun MakApp(
                         navController.navigate(MakRoutes.Edit)
                     },
                     onOpenClass = { occurrenceId ->
+                        occurrenceViewModel.open(occurrenceId)
                         navController.navigate(occurrenceRoute(occurrenceId))
                     },
                     onSaveWeekCorrection = viewModel::saveVisibleWeekOverride,
@@ -290,13 +312,6 @@ fun MakApp(
                 LaunchedEffect(classId, date) {
                     if (classId != null && date != null) {
                         occurrenceViewModel.open("$classId:$date")
-                    }
-                }
-                LaunchedEffect(occurrenceViewModel) {
-                    occurrenceViewModel.effects.collect { effect ->
-                        when (effect) {
-                            OccurrenceEffect.CloseDetails -> navController.popBackStack()
-                        }
                     }
                 }
                 OccurrenceDetailsScreen(
@@ -555,6 +570,9 @@ fun semesterRoute(id: String): String = "semester/$id"
 fun semesterCoursesRoute(id: String): String = "semester/$id/courses"
 
 fun semesterOverridesRoute(id: String): String = "semester/$id/week-overrides"
+
+internal fun shouldCloseOccurrenceDetails(currentRoute: String?): Boolean =
+    currentRoute == MakRoutes.Occurrence
 
 fun destinationForRoute(route: String?): MakDestination = when (route) {
     MakRoutes.Schedule -> MakDestination.Schedule

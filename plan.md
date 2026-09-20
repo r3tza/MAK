@@ -143,7 +143,7 @@ Status etapu: zrealizowane. `OccurrenceViewModel` zależy od `MakRepository`, `A
 
 Kryterium etapu: `NavController` jest jedynym źródłem bieżącej trasy dla szczegółów wystąpienia.
 
-Status etapu: zrealizowane. Ekran szczegółów czyta `OccurrenceViewModel.details` i wywołuje jego akcje, a `MakViewModel` nie zawiera już `occurrence` ani `selectedClassId`. Usunięcie bazowych zajęć emituje `OccurrenceEffect.CloseDetails` przez buforowany kanał, a host szczegółów wykonuje jeden `popBackStack`. Nieusuwany przebieg legacy został usunięty.
+Status etapu: zrealizowane. Ekran szczegółów czyta `OccurrenceViewModel.details` i wywołuje jego akcje, a `MakViewModel` nie zawiera już `occurrence` ani `selectedClassId`. `OccurrenceEffect.CloseDetails` jest zbierany na poziomie całego `MakApp`, a `popBackStack` wykonuje się tylko na trasie szczegółów, więc efekt po wcześniejszym wyjściu zostaje skonsumowany i zignorowany. `open()` natychmiast czyści poprzedni stan i identyfikator przed oczekiwaniem na dane. Nieusuwany przebieg legacy został usunięty.
 
 #### Etap 6: feedback dla wystąpień i notatek
 

@@ -1,6 +1,7 @@
 package dev.retza.mak.ui
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -37,5 +38,12 @@ class MakNavigationTest {
         assertTrue(courses != overrides)
         assertTrue(destinationMatchesRoute(MakDestination.Semester, MakRoutes.SemesterCourses))
         assertTrue(destinationMatchesRoute(MakDestination.Semester, MakRoutes.SemesterOverrides))
+    }
+
+    @Test
+    fun closeEffectAppliesOnlyOnOccurrenceRoute() {
+        assertTrue(shouldCloseOccurrenceDetails(MakRoutes.Occurrence))
+        assertFalse(shouldCloseOccurrenceDetails(MakRoutes.Today))
+        assertFalse(shouldCloseOccurrenceDetails(null))
     }
 }

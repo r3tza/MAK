@@ -71,6 +71,10 @@ class OccurrenceViewModel(
 
     fun open(args: OccurrenceArgs) {
         openJob?.cancel()
+        selectedClassIdState.value = null
+        originalDate = null
+        noteDate = null
+        state.value = derive(emptyOccurrenceDetails())
         openJob = viewModelScope.launch {
             val data = activeSemesterData.first { it != null } ?: return@launch
             val built = buildDetails(data, args) ?: return@launch
@@ -392,6 +396,14 @@ class OccurrenceViewModel(
         }
     }
 }
+
+private fun emptyOccurrenceDetails(): OccurrenceDetailsUiState = OccurrenceDetailsUiState(
+    canCancelOccurrence = false,
+    canChangeOccurrence = false,
+    canMoveOccurrence = false,
+    canEditBaseClass = false,
+    canDeleteBaseClass = false
+)
 
 private fun canSaveOccurrenceEdit(state: OccurrenceDetailsUiState): Boolean {
     val base = state.toBaseSlot() ?: return false

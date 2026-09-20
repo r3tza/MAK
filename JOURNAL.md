@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Odporny efekt zamknięcia i czysty stan otwarcia
+
+- Fakty: Kolektor `OccurrenceEffect` działał tylko wewnątrz trasy szczegółów, więc efekt `CloseDetails` wysłany po ręcznym wyjściu czekał w buforowanym kanale i przy następnym otwarciu zamykał nowy ekran. Dodatkowo nowa trasa komponowała się najpierw z poprzednim `occurrenceDetails`, zanim `LaunchedEffect` rozpoczął otwarcie.
+- Decyzja: Efekty są zbierane na poziomie całego `MakApp`, a `popBackStack` wykonuje się tylko wtedy, gdy bieżąca trasa to `MakRoutes.Occurrence`; spóźniony efekt jest konsumowany i ignorowany. `OccurrenceViewModel.open()` natychmiast zeruje `selectedClassId` i ustawia pusty stan z wyłączonymi akcjami, a akcje karty wywołują `open()` przed nawigacją. Menu topbara nie pokazuje się, gdy nie ma dostępnych akcji.
+- Powód: Buforowany kanał i asynchroniczne dane nie mogą zostawiać starego efektu ani starych akcji na nowej trasie.
+- Weryfikacja: Dodano testy `openWaitsForFirstSemesterDataEmission` z czyszczeniem akcji oraz `closeEffectAppliesOnlyOnOccurrenceRoute`. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-20: Nawigacja szczegółów oparta na `NavController`
 
 - Fakty: Ekran szczegółów korzystał ze stanu i akcji `MakViewModel`, a `MakUiState` przechowywał `occurrence` i `selectedClassId`. Trasa szczegółów współdzieliła źródło z `MakDestination`, a po usunięciu zajęć nawigację wywoływał efekt synchronizacji.

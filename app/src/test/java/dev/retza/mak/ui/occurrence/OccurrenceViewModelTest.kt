@@ -74,6 +74,8 @@ class OccurrenceViewModelTest {
         advanceUntilIdle()
         assertEquals("", viewModel.details.value.subjectName)
         assertEquals(null, viewModel.selectedClassId.value)
+        assertFalse(viewModel.details.value.canCancelOccurrence)
+        assertFalse(viewModel.details.value.canDeleteBaseClass)
 
         repository.occurrenceDataGate?.complete(Unit)
         advanceUntilIdle()
