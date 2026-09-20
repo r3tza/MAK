@@ -29,6 +29,14 @@ internal class FakeMakRepository : MakRepository {
         firstWeekType = WeekType.A,
         isActive = true
     )
+    val secondSemester = SemesterEntity(
+        id = 2L,
+        name = "Semestr drugi",
+        startDate = LocalDate.of(2027, 2, 1),
+        endDate = LocalDate.of(2027, 6, 30),
+        firstWeekType = WeekType.B,
+        isActive = false
+    )
     val courses = mutableListOf(
         CourseEntity(id = 1L, semesterId = 1L, name = "Informatyka", color = "#137B71")
     )
@@ -53,6 +61,7 @@ internal class FakeMakRepository : MakRepository {
     )
     val occurrenceNotes = mutableListOf<OccurrenceNoteEntity>()
     val occurrenceChanges = mutableListOf<OccurrenceChangeEntity>()
+    val weekOverrides = mutableListOf<WeekOverrideEntity>()
 
     val events = mutableListOf<String>()
     var saveGate: CompletableDeferred<Unit>? = null
@@ -65,13 +74,18 @@ internal class FakeMakRepository : MakRepository {
     override fun observeSemester(id: Long): Flow<SemesterEntity?> = flowOf(semester)
     override fun observeSemesterData(id: Long): Flow<SemesterWithData?> = flow {
         occurrenceDataGate?.await()
+        val target = listOf(semester, secondSemester).firstOrNull { it.id == id }
+        if (target == null) {
+            emit(null)
+            return@flow
+        }
         emit(
             SemesterWithData(
-                semester = semester,
-                courses = courses,
+                semester = target,
+                courses = courses.filter { it.semesterId == id },
                 teachers = emptyList(),
-                classes = classes,
-                weekOverrides = emptyList(),
+                classes = classes.filter { it.semesterId == id },
+                weekOverrides = weekOverrides.filter { it.semesterId == id },
                 occurrenceNotes = occurrenceNotes,
                 occurrenceChanges = occurrenceChanges
             )

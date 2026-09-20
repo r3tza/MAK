@@ -34,11 +34,10 @@ import dev.retza.mak.ui.setup.SetupField
 import dev.retza.mak.ui.setup.SetupStep
 import dev.retza.mak.ui.setup.SetupWizardUiState
 import dev.retza.mak.ui.today.TodayUiState
-import dev.retza.mak.ui.semester.SemesterFormUiState
 import dev.retza.mak.ui.semester.SemesterScreenUiState
+import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.semester.WeekOverrideFormUiState
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
-import dev.retza.mak.ui.semester.WeekOverrideUi
 import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.export.ExportSnapshot
@@ -96,8 +95,6 @@ private data class Controls(
     val showCancelled: Boolean = false,
     val setup: SetupWizardUiState = SetupWizardUiState(),
     val forceSetup: Boolean = false,
-    val semesterDraft: SemesterScreenUiState = SemesterScreenUiState(),
-    val semesterEditId: Long? = null,
     val semesterToDeleteId: String? = null,
     val themeId: String = "system"
 )
@@ -107,6 +104,7 @@ class MakViewModel(
     private val repository: MakRepository,
     private val feedbackSink: FeedbackSink,
     private val classEditViewModel: ClassEditViewModel,
+    private val semesterViewModel: SemesterViewModel,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val activePlanProvider: ActivePlanProvider = ActivePlanProvider()
 ) : ViewModel() {
@@ -125,8 +123,13 @@ class MakViewModel(
         if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
     }
 
-    val uiState = combine(semesters, activeSemesterData, controls) { semesterList, activeData, control ->
-        buildState(semesterList, activeData, control)
+    val uiState = combine(
+        semesters,
+        activeSemesterData,
+        controls,
+        semesterViewModel.semester
+    ) { semesterList, activeData, control, semesterState ->
+        buildState(semesterList, activeData, control, semesterState)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -305,47 +308,21 @@ class MakViewModel(
     }
 
     fun openSemesterConfiguration(id: String) {
-        val semesterId = id.toLongOrNull() ?: return
-        viewModelScope.launch {
-            repository.setActiveSemester(semesterId)
-            val data = repository.observeSemesterData(semesterId).first() ?: return@launch
-            controls.update {
-                it.copy(
-                    destination = MakDestination.Semester,
-                    semesterEditId = semesterId,
-                    semesterDraft = SemesterScreenUiState(
-                        semester = SemesterFormUiState(
-                            name = data.semester.name,
-                            startDate = data.semester.startDate.toString(),
-                            endDate = data.semester.endDate.toString(),
-                            firstWeek = WeekTypeUi.valueOf(data.semester.firstWeekType.name)
-                        ),
-                        overrides = data.weekOverrides.map { override ->
-                            WeekOverrideUi(
-                                override.id.toString(),
-                                override.weekStartDate.toString(),
-                                WeekTypeUi.valueOf(override.weekType.name),
-                                WeekOverrideScopeUi.valueOf(override.scope.name)
-                            )
-                        },
-                        courses = data.courses.map { course -> course.id.toString() to course.name }
-                    )
-                )
-            }
-        }
+        semesterViewModel.open(id)
+        controls.update { it.copy(destination = MakDestination.Semester) }
     }
 
     fun updateSemester(transform: (SemesterScreenUiState) -> SemesterScreenUiState) {
-        controls.update { it.copy(semesterDraft = transform(it.semesterDraft)) }
+        semesterViewModel.update(transform)
     }
 
     fun saveSemesterConfiguration() {
-        val id = controls.value.semesterEditId ?: return
-        val draft = controls.value.semesterDraft.semester
+        val id = semesterViewModel.semesterId.value ?: return
+        val draft = semesterViewModel.semester.value.semester
         val start = draft.startDate.toLocalDateOrNull()
         val end = draft.endDate.toLocalDateOrNull()
         if (draft.name.isBlank() || start == null || end == null || end.isBefore(start)) {
-            updateSemester {
+            semesterViewModel.update {
                 it.copy(semester = draft.copy(
                     nameError = if (draft.name.isBlank()) "Podaj nazwę semestru." else null,
                     startDateError = if (start == null) "Podaj poprawną datę." else null,
@@ -363,13 +340,13 @@ class MakViewModel(
         }
     }
 
-    fun newWeekOverride() = updateSemester {
+    fun newWeekOverride() = semesterViewModel.update {
         it.copy(overrideForm = WeekOverrideFormUiState(isOpen = true))
     }
 
     fun editWeekOverride(id: String) {
-        val item = controls.value.semesterDraft.overrides.firstOrNull { it.id == id } ?: return
-        updateSemester {
+        val item = semesterViewModel.semester.value.overrides.firstOrNull { it.id == id } ?: return
+        semesterViewModel.update {
             it.copy(
                 overrideForm = WeekOverrideFormUiState(
                     id = item.id,
@@ -382,16 +359,16 @@ class MakViewModel(
         }
     }
 
-    fun cancelWeekOverrideEdit() = updateSemester {
+    fun cancelWeekOverrideEdit() = semesterViewModel.update {
         it.copy(overrideForm = WeekOverrideFormUiState())
     }
 
     fun saveWeekOverride() {
-        val semesterId = controls.value.semesterEditId ?: return
-        val form = controls.value.semesterDraft.overrideForm
+        val semesterId = semesterViewModel.semesterId.value ?: return
+        val form = semesterViewModel.semester.value.overrideForm
         val date = form.weekStartDate.toLocalDateOrNull()
         if (date == null || date.dayOfWeek != DayOfWeek.MONDAY) {
-            updateSemester { it.copy(overrideForm = form.copy(weekStartDateError = "Wybierz poniedziałek.")) }
+            semesterViewModel.update { it.copy(overrideForm = form.copy(weekStartDateError = "Wybierz poniedziałek.")) }
             return
         }
         viewModelScope.launch {
@@ -404,18 +381,18 @@ class MakViewModel(
                     scope = dev.retza.mak.data.entity.WeekOverrideScope.valueOf(form.scope.name)
                 )
             )
-            updateSemester { it.copy(overrideForm = WeekOverrideFormUiState()) }
+            semesterViewModel.update { it.copy(overrideForm = WeekOverrideFormUiState()) }
         }
     }
 
     fun deleteWeekOverride(id: String) {
         id.toLongOrNull()?.let { overrideId -> viewModelScope.launch { repository.deleteWeekOverride(overrideId) } }
-        updateSemester { it.copy(overrideForm = WeekOverrideFormUiState()) }
+        semesterViewModel.update { it.copy(overrideForm = WeekOverrideFormUiState()) }
     }
 
     fun addCourse() {
         val data = uiState.value.activeSemesterData ?: return
-        val draft = controls.value.semesterDraft
+        val draft = semesterViewModel.semester.value
         if (draft.courseNameDraft.isBlank()) return
         viewModelScope.launch {
             repository.saveCourse(
@@ -425,7 +402,7 @@ class MakViewModel(
                     color = draft.courseColorDraft.ifBlank { "#137b71" }
                 )
             )
-            controls.update { it.copy(semesterDraft = it.semesterDraft.copy(courseNameDraft = "")) }
+            semesterViewModel.update { it.copy(courseNameDraft = "") }
         }
     }
 
@@ -495,7 +472,8 @@ class MakViewModel(
     private fun buildState(
         semesterList: List<SemesterEntity>,
         activeData: SemesterWithData?,
-        control: Controls
+        control: Controls,
+        semesterState: SemesterScreenUiState
     ): MakUiState {
         val requiresSetup = control.forceSetup || semesterList.isEmpty() ||
             activeData != null && activeData.courses.isEmpty()
@@ -506,17 +484,7 @@ class MakViewModel(
             today = buildToday(activeData, control.todayDate),
             schedule = buildSchedule(activeData, control),
             themeId = control.themeId,
-            semester = control.semesterDraft.copy(
-                overrides = activeData?.weekOverrides?.map { override ->
-                    WeekOverrideUi(
-                        override.id.toString(),
-                        override.weekStartDate.toString(),
-                        WeekTypeUi.valueOf(override.weekType.name),
-                        WeekOverrideScopeUi.valueOf(override.scope.name)
-                    )
-                }.orEmpty(),
-                courses = activeData?.courses?.map { it.id.toString() to it.name }.orEmpty()
-            ),
+            semester = semesterState,
             settings = buildSettings(semesterList, activeData, control),
             setup = if (activeData != null && activeData.courses.isEmpty()) {
                 control.setup.copy(step = SetupStep.Course)
@@ -673,12 +641,13 @@ class MakViewModel(
     class Factory(
         private val repository: MakRepository,
         private val feedbackSink: FeedbackSink,
-        private val classEditViewModel: ClassEditViewModel
+        private val classEditViewModel: ClassEditViewModel,
+        private val semesterViewModel: SemesterViewModel
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(MakViewModel::class.java))
-            return MakViewModel(repository, feedbackSink, classEditViewModel) as T
+            return MakViewModel(repository, feedbackSink, classEditViewModel, semesterViewModel) as T
         }
     }
 }
