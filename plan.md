@@ -331,6 +331,95 @@ Kryterium etapu: każda treść rozwijana w miejscu jest wizualnie i semantyczni
 
 Kryterium zakończenia: konfiguracja semestru pozostaje krótka, zarządzanie kierunkami i korektami ma własne ekrany, a każda zachowana sekcja rozwijana jasno wskazuje, który przycisk steruje jej treścią.
 
+## 1.6. Plan poprawy edycji terminu, notatek i komunikatów zwrotnych
+
+Zmiany upraszczają edycję pojedynczego wystąpienia, przywracają możliwość edycji notatki wspólnej i wprowadzają spójny feedback po operacjach. Edycja terminu odbywa się w jednym dialogu z jedną akcją zapisu. Po zapisaniu, odwołaniu albo przywróceniu użytkownik pozostaje na ekranie szczegółów i od razu widzi aktualny stan.
+
+Status: etapy 1-3 są zaimplementowane. Edycja terminu korzysta z jednego dialogu, decyzję o modyfikacji, przeniesieniu albo przywróceniu wybiera czysta funkcja `decideOccurrenceEdit`, a ekran szczegółów aktualizuje się po udanej operacji bez zmiany trasy. Etapy 4-7 pozostają do wykonania.
+
+### Etap 1: model różnicy i walidacja terminu
+
+1. Wydzielić czystą funkcję porównującą szkic z bazowym i aktualnym terminem.
+2. Normalizować datę i godziny przez parsowanie, a salę przez `trim`; pustą salę traktować jak `null`.
+3. Funkcja zwraca jeden z wyników: `NoChange`, `Modified`, `Moved` albo `Restored`.
+4. Inna data oznacza `Moved`. Ta sama data przy zmianie godzin lub sali oznacza `Modified`. Wartości zgodne z bazowym terminem przy istniejącej zmianie oznaczają `Restored`.
+5. Dane zgodne z aktualnym stanem oznaczają `NoChange` i nie mogą powodować zapisu rekordu `OccurrenceChange`.
+6. Zachować walidację zakresu semestru i regułę, że godzina końca jest późniejsza od początku. Błędy przypisać do konkretnych pól.
+7. Rozszerzyć stan szczegółów o bazową datę, godziny i salę, szkic formularza, błędy pól, widoczność dialogu oraz `isSaving`.
+
+Kryterium etapu: logika potrafi jednoznacznie odróżnić brak zmiany, modyfikację, przeniesienie i przywrócenie bez dostępu do Compose ani Room.
+
+### Etap 2: jeden dialog edycji terminu
+
+1. Przycisk „Zmień termin” otwiera dialog „Edytuj ten termin”.
+2. Dialog zawiera datę, godzinę rozpoczęcia, godzinę zakończenia i salę oraz opis „Zmiany dotyczą tylko tego terminu. Pozostałe wystąpienia zajęć pozostaną bez zmian.”.
+3. Dialog ma wyłącznie akcje „Anuluj” i „Zapisz”. Usunąć akcje „Zapisz zmianę” i „Przenieś termin” oraz formularz wysuwany w treści ekranu.
+4. Zastąpić callbacki `onChangeOccurrence` i `onMoveOccurrence` jednym `onSaveOccurrenceChange`.
+5. Dla `NoChange` przycisk „Zapisz” pozostaje nieaktywny. Podczas operacji również jest nieaktywny, aby zapobiec podwójnemu zapisowi.
+6. Błąd walidacji lub repozytorium pozostawia dialog otwarty z zachowanymi wartościami. Dialog zamyka się wyłącznie po udanym zapisie albo po „Anuluj”.
+7. Dialog ma mieścić się przy szerokości 320 dp, przewijać własną treść przy małej wysokości i poprawnie współpracować z klawiaturą ekranową.
+
+Kryterium etapu: użytkownik nie wybiera technicznej różnicy między zmianą i przeniesieniem, a pusta operacja nie tworzy pilla ani rekordu zmiany.
+
+### Etap 3: zapis, przywracanie i natychmiastowy stan
+
+1. `saveOccurrenceChange` sam wybiera zapis modyfikacji, zapis przeniesienia albo usunięcie istniejącej zmiany na podstawie wyniku z etapu 1.
+2. Jedna operacja może jednocześnie zmienić datę, godziny i salę.
+3. Po powodzeniu nie zmieniać trasy na ekran planu. Zamknąć dialog i natychmiast zaktualizować fakty, status oraz dostępne akcje na szczegółach.
+4. Po `Modified` pokazać status „Zmienione”. Po `Moved` pokazać status „Przeniesione” wraz z datą bazową i nową datą.
+5. `restoreSelectedOccurrence` usuwa zmianę, pozostaje na szczegółach, usuwa pill zmiany i zamienia „Przywróć termin” na „Zmień termin”.
+6. Odwołanie terminu także pozostaje na szczegółach i po sukcesie pokazuje stan „Odwołane” oraz akcję przywracania.
+7. Stan UI zaktualizować po sukcesie bez oczekiwania na ponowne wejście na ekran. Room nadal pozostaje źródłem prawdy i jego obserwacja musi potwierdzić ten sam wynik.
+
+Kryterium etapu: każda udana operacja daje natychmiast widoczny rezultat, a przycisk przywracania nie pozostaje po usunięciu zmiany.
+
+### Etap 4: dwie notatki na szczegółach
+
+1. Nazwać blok „Notatki” i pokazać dwa oddzielne pola: „Notatka dla wszystkich terminów” oraz „Notatka tylko dla tej daty”.
+2. Dodać `sharedNoteDraft` i operację zapisu notatki wspólnej przez aktualizację `classNote` bazowych zajęć.
+3. Każde pole ma własną akcję zapisu i krótki opis zakresu. Nie wymaga przejścia do edycji wszystkich danych zajęć.
+4. Pusta notatka wspólna usuwa `classNote`. Pusta notatka wystąpienia usuwa istniejący `OccurrenceNote`; jeśli notatki wcześniej nie było, zapis pozostaje nieaktywny.
+5. Podczas zapisu blokować tylko akcję właściwego pola. Błąd zachowuje wpisany tekst.
+6. Po sukcesie pozostać na szczegółach i odświeżyć właściwą wartość bez wpływu na drugą notatkę.
+
+Kryterium etapu: użytkownik może z jednego ekranu niezależnie zapisać, zmienić i usunąć notatkę wspólną oraz notatkę dla wybranej daty.
+
+### Etap 5: wspólny system komunikatów w aplikacji
+
+1. Dodać model `UiFeedback(message, kind)`, gdzie `kind` przyjmuje `Success`, `Error`, `Warning` albo `Info`.
+2. ViewModel udostępnia jednokierunkowy, buforowany strumień zdarzeń. Użyć `Channel<UiFeedback>` wystawionego jako `Flow`, aby pojedynczy komunikat został obsłużony tylko raz.
+3. Dodać jeden `SnackbarHost` do głównego `Scaffold`. Nie używać systemowych Toastów.
+4. Własny snackbar korzysta z Material 3 i rozróżnia wariant ikoną, tekstem oraz kolorem. Sukces używa zielonego kontenera, błąd `errorContainer`, ostrzeżenie kontrastowego koloru ostrzegawczego, a informacja `primaryContainer`.
+5. Kolor nie jest jedynym nośnikiem znaczenia. Zapewnić semantyczny opis, kontrast, focus i poprawne działanie w jasnym oraz ciemnym motywie.
+6. Sukcesy i informacje pokazywać krótko, a błędy i ostrzeżenia długo. Komunikaty kolejkować, bez nakładania.
+7. Emitować sukces dopiero po zakończeniu operacji repozytorium. Wyjątek emituje błąd, nie zamyka formularza i nie uruchamia nawigacji przewidzianej dla sukcesu.
+
+Kryterium etapu: komunikat jest widoczny po zmianie trasy, występuje dokładnie raz i jednoznacznie wskazuje wynik operacji bez polegania wyłącznie na kolorze.
+
+### Etap 6: podłączenie feedbacku do operacji
+
+1. Podłączyć komunikaty do jawnych operacji zapisu i usuwania: zajęć, semestrów, kierunków, korekt tygodni, zmian wystąpień, obu rodzajów notatek i eksportu.
+2. Nie pokazywać komunikatów przy zwykłej nawigacji, zmianie dnia, filtrowaniu, otwarciu formularza ani zmianie roboczej wartości pola.
+3. Dla terminu stosować komunikaty „Zmieniono termin”, „Przeniesiono termin”, „Przywrócono termin” i „Odwołano termin”.
+4. Dla notatek stosować „Zapisano notatkę dla wszystkich terminów”, „Usunięto notatkę dla wszystkich terminów”, „Zapisano notatkę dla tej daty” i „Usunięto notatkę dla tej daty”.
+5. Dla pozostałych operacji używać krótkich komunikatów opisujących rzeczywisty rezultat, na przykład „Dodano kierunek”, „Usunięto zajęcia” albo „Wyeksportowano dane”.
+6. Błędy formułować według operacji, bez surowych wyjątków, na przykład „Nie udało się zapisać zmian”. Szczegóły techniczne mogą trafić do logu, ale nie do tekstu interfejsu.
+
+Kryterium etapu: każda istotna operacja zapisu lub usunięcia ma komunikat sukcesu i bezpieczny komunikat błędu, bez nadmiarowych snackbarów podczas przeglądania aplikacji.
+
+### Etap 7: testy i odbiór
+
+1. Dodać testy JVM funkcji różnicy dla braku zmian, zmiany godzin, zmiany sali, zmiany daty, jednoczesnej zmiany daty i godzin oraz powrotu do wartości bazowych.
+2. W testach ViewModelu potwierdzić brak zapisu dla `NoChange`, właściwą operację dla pozostałych wyników, pozostanie na szczegółach, natychmiastową zmianę statusu i emisję jednego feedbacku.
+3. Sprawdzić przywracanie i odwołanie: aktualizację pilla, zmianę dostępnego przycisku oraz właściwy komunikat.
+4. Dodać testy zapisu, aktualizacji i usuwania obu rodzajów notatek bez opuszczania szczegółów.
+5. Test Compose obejmuje dialog przy szerokości 320 dp, klawiaturę, walidację, zachowanie wartości po błędzie, blokadę wielokrotnego zapisu i oba pola notatek.
+6. Test hosta snackbarów obejmuje kolejkę, cztery warianty, semantykę, czas wyświetlania oraz zachowanie podczas zmiany trasy.
+7. Uruchomić `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug`.
+8. Na emulatorze albo urządzeniu sprawdzić TalkBack, motyw jasny i ciemny, małą wysokość z otwartą klawiaturą, szybkie wielokrotne kliknięcia oraz widoczność feedbacku po każdej operacji.
+
+Kryterium zakończenia: edycja terminu ma jeden zrozumiały przebieg, puste zmiany nie są zapisywane, przywracanie natychmiast aktualizuje ekran, oba rodzaje notatek są edytowalne, a wszystkie istotne operacje otrzymują spójny feedback wewnątrz aplikacji.
+
 ## 2. Technologie
 
 - Kotlin;

@@ -1,6 +1,7 @@
 package dev.retza.mak.ui.occurrence
 
 import androidx.compose.runtime.Immutable
+import dev.retza.mak.ui.components.FieldErrorUi
 
 enum class OccurrenceStatusUi {
     Scheduled,
@@ -8,6 +9,12 @@ enum class OccurrenceStatusUi {
     Changed,
     Moved,
     OneOff
+}
+
+enum class OccurrenceEditField {
+    Date,
+    StartTime,
+    EndTime
 }
 
 @Immutable
@@ -31,12 +38,22 @@ data class OccurrenceDetailsUiState(
     val sharedNote: String? = null,
     val occurrenceNote: String? = null,
     val occurrenceNoteDraft: String = occurrenceNote.orEmpty(),
+    val currentDate: String = "",
     val targetDateDraft: String = "",
     val startTimeDraft: String = "",
     val endTimeDraft: String = "",
     val roomDraft: String = "",
+    val baseDate: String = "",
+    val baseStartTime: String = "",
+    val baseEndTime: String = "",
+    val baseRoom: String? = null,
     val semesterStartDate: String? = null,
     val semesterEndDate: String? = null,
+    val draftErrors: Map<OccurrenceEditField, FieldErrorUi> = emptyMap(),
+    val draftError: String? = null,
+    val showEditDialog: Boolean = false,
+    val isSaving: Boolean = false,
+    val canSaveOccurrenceEdit: Boolean = false,
     val showDeleteConfirmation: Boolean = false,
     val canEditBaseClass: Boolean = true,
     val canDeleteBaseClass: Boolean = true,

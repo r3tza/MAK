@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Edycja terminu oparta na różnicy i jeden dialog
+
+- Fakty: Ekran szczegółów miał osobny formularz w treści oraz wybór między „Zmień tylko ten termin” i „Przenieś ten termin”. Kolizja technicznej różnicy należała do użytkownika. Po każdej operacji ekran opuszczał szczegóły.
+- Decyzja: Dodano czystą funkcję `decideOccurrenceEdit`, która normalizuje szkic i zwraca `NoChange`, `Modified`, `Moved` albo `Restored`. Edycja odbywa się w jednym dialogu „Edytuj ten termin” z akcjami „Anuluj” i „Zapisz”. `saveSelectedOccurrenceChange` sam wybiera zapis modyfikacji, zapis przeniesienia albo usunięcie zmiany. Po sukcesie ekran odczytuje świeże dane przez repozytorium i pozostaje na szczegółach. `restoreSelectedOccurrence` i `cancelSelectedOccurrence` także odświeżają szczegóły zamiast wracać do planu.
+- Powód: Użytkownik nie musi znać wewnętrznego rozróżnienia, a pusta operacja nie tworzy rekordu ani pilla. Natychmiastowa aktualizacja opiera się na Room jako źródle prawdy.
+- Weryfikacja: Test JVM `OccurrenceEditTest` pokrywa brak zmiany, zmianę godzin, sali i daty, jednoczesną zmianę oraz powrót do wartości bazowych. Testy Compose sprawdzają dialog i wariant przywracania przy 320 dp. `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą. Etapy 4-7 sekcji 1.6 pozostają do wykonania, a odbiór na urządzeniu pozostaje wymagany.
+
 ## 2026-09-20: Poprawki po recenzji ekranu szczegółów terminu
 
 - Fakty: `OccurrenceBottomActions` dodawał własny `navigationBarsPadding`, mimo że dolny inset pochodzi z nadrzędnego `Scaffold` i `NavHost`. Test ekranu szukał tekstu `Notatka wspólna`, który nie jest osobnym węzłem, bo ekran renderuje `Notatka do zajęć: Notatka wspólna`.

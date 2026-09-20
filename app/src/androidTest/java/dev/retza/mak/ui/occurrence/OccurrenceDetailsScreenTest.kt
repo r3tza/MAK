@@ -3,12 +3,15 @@ package dev.retza.mak.ui.occurrence
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
-import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -24,7 +27,35 @@ class OccurrenceDetailsScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun detailsShowExpandedNoteAndStableBottomActionsAt320Dp() {
+    fun detailsShowExpandedNoteAndSingleEditDialogAt320Dp() {
+        var state by mutableStateOf(
+            OccurrenceDetailsUiState(
+                subjectName = "Bardzo długa nazwa zajęć do sprawdzenia układu",
+                courseName = "Informatyka",
+                typeLabel = "Wykład",
+                dateLabel = "Poniedziałek, 21 września",
+                currentDate = "2026-09-21",
+                startTime = "09:00",
+                endTime = "10:30",
+                room = "L204",
+                baseDate = "2026-09-21",
+                baseStartTime = "09:00",
+                baseEndTime = "10:30",
+                baseRoom = "L204",
+                targetDateDraft = "2026-09-21",
+                startTimeDraft = "09:00",
+                endTimeDraft = "10:30",
+                roomDraft = "L204",
+                sharedNote = "Notatka wspólna",
+                occurrenceNoteDraft = "Notatka tylko dla tego terminu",
+                canChangeOccurrence = true,
+                canMoveOccurrence = true,
+                canRestoreOccurrence = false,
+                canEditOccurrenceNote = false,
+                canSaveOccurrenceEdit = true
+            )
+        )
+
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
                 Box(
@@ -33,26 +64,12 @@ class OccurrenceDetailsScreenTest {
                         .height(900.dp)
                 ) {
                     OccurrenceDetailsScreen(
-                        state = OccurrenceDetailsUiState(
-                            subjectName = "Bardzo długa nazwa zajęć do sprawdzenia układu",
-                            courseName = "Informatyka",
-                            typeLabel = "Wykład",
-                            dateLabel = "Poniedziałek, 21 września",
-                            startTime = "09:00",
-                            endTime = "10:30",
-                            sharedNote = "Notatka wspólna",
-                            occurrenceNoteDraft = "Notatka tylko dla tego terminu",
-                            canEditBaseClass = false,
-                            canDeleteBaseClass = false,
-                            canCancelOccurrence = false,
-                            canChangeOccurrence = true,
-                            canMoveOccurrence = true,
-                            canEditOccurrenceNote = false
-                        ),
+                        state = state,
                         onDeleteBaseClass = {},
                         onDismissDeleteConfirmation = {},
-                        onChangeOccurrence = {},
-                        onMoveOccurrence = {},
+                        onOpenOccurrenceEdit = { state = state.copy(showEditDialog = true) },
+                        onDismissOccurrenceEdit = { state = state.copy(showEditDialog = false) },
+                        onSaveOccurrenceChange = {},
                         onRestoreOccurrence = {},
                         onOccurrenceNoteDraftChanged = {},
                         onTargetDateDraftChanged = {},
@@ -75,12 +92,18 @@ class OccurrenceDetailsScreenTest {
         composeTestRule.onAllNodesWithText("TERMIN").assertCountEquals(0)
         composeTestRule.onAllNodesWithText("Pokaż notatkę").assertCountEquals(0)
         composeTestRule.onAllNodesWithText("Pokaż zmiana terminu").assertCountEquals(0)
+        composeTestRule.onAllNodesWithText("Zapisz zmianę").assertCountEquals(0)
+        composeTestRule.onAllNodesWithText("Przenieś termin").assertCountEquals(0)
 
         composeTestRule.onNodeWithText("Zmień termin").performClick()
-        composeTestRule.onAllNodesWithText("Zmień termin").assertCountEquals(0)
-        composeTestRule.onNodeWithText("Zamknij").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Zapisz zmianę").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Przenieś termin").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Edytuj ten termin").assertIsDisplayed()
+        composeTestRule
+            .onNodeWithText("Zmiany dotyczą tylko tego terminu. Pozostałe wystąpienia zajęć pozostaną bez zmian.")
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Od").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Do").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Anuluj").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zapisz").assertIsDisplayed()
     }
 
     @Test
@@ -100,8 +123,12 @@ class OccurrenceDetailsScreenTest {
                             courseName = "Informatyka",
                             typeLabel = "Ćwiczenia",
                             dateLabel = "Wtorek, 22 września",
+                            currentDate = "2026-09-22",
                             startTime = "11:00",
                             endTime = "12:30",
+                            baseDate = "2026-09-22",
+                            baseStartTime = "11:00",
+                            baseEndTime = "12:30",
                             canChangeOccurrence = false,
                             canMoveOccurrence = false,
                             canRestoreOccurrence = true,
@@ -109,8 +136,9 @@ class OccurrenceDetailsScreenTest {
                         ),
                         onDeleteBaseClass = {},
                         onDismissDeleteConfirmation = {},
-                        onChangeOccurrence = {},
-                        onMoveOccurrence = {},
+                        onOpenOccurrenceEdit = {},
+                        onDismissOccurrenceEdit = {},
+                        onSaveOccurrenceChange = {},
                         onRestoreOccurrence = { restoreClicks += 1 },
                         onOccurrenceNoteDraftChanged = {},
                         onTargetDateDraftChanged = {},

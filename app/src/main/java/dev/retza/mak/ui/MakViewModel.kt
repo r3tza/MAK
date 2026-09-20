@@ -15,8 +15,12 @@ import dev.retza.mak.domain.ClassForm
 import dev.retza.mak.domain.ClassValidationError
 import dev.retza.mak.domain.ClassValidator
 import dev.retza.mak.domain.OccurrenceChangeKind
+import dev.retza.mak.domain.OccurrenceEditDecision
+import dev.retza.mak.domain.OccurrenceEditResult
+import dev.retza.mak.domain.OccurrenceSlot
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.Recurrence
+import dev.retza.mak.domain.decideOccurrenceEdit
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarMarkerColor
 import dev.retza.mak.ui.components.CalendarMarkerUi
@@ -39,6 +43,7 @@ import dev.retza.mak.ui.setup.SetupStep
 import dev.retza.mak.ui.setup.SetupWizardUiState
 import dev.retza.mak.ui.today.TodayUiState
 import dev.retza.mak.ui.occurrence.OccurrenceDetailsUiState
+import dev.retza.mak.ui.occurrence.OccurrenceEditField
 import dev.retza.mak.ui.occurrence.OccurrenceStatusUi
 import dev.retza.mak.ui.semester.SemesterFormUiState
 import dev.retza.mak.ui.semester.SemesterScreenUiState
@@ -267,58 +272,13 @@ class MakViewModel(
         val classId = occurrenceId.substringBefore(':').toLongOrNull() ?: return
         val date = occurrenceId.substringAfter(':', "").toLocalDateOrNull() ?: return
         val data = uiState.value.activeSemesterData ?: return
-        val occurrence = activePlan(data, date).schedule.occurrences.firstOrNull {
-            it.classId == classId.toString()
-        }
-        val base = data.classes.firstOrNull { it.id == classId } ?: return
-        val existingChange = data.occurrenceChanges.firstOrNull {
-            it.classId == classId && (it.originalDate == date || it.targetDate == date)
-        }
-        val existingNote = data.occurrenceNotes.firstOrNull {
-            it.classId == classId && it.occurrenceDate == date
-        }
-        val status = when {
-            existingChange?.kind == dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED -> OccurrenceStatusUi.Cancelled
-            base.recurrence == dev.retza.mak.data.entity.Recurrence.ONCE -> OccurrenceStatusUi.OneOff
-            existingChange?.targetDate != null && existingChange.targetDate != existingChange.originalDate -> OccurrenceStatusUi.Moved
-            existingChange != null -> OccurrenceStatusUi.Changed
-            else -> OccurrenceStatusUi.Scheduled
-        }
-        val details = OccurrenceDetailsUiState(
-            subjectName = occurrence?.name ?: base.name,
-            courseName = occurrence?.course?.name ?: data.courses.firstOrNull { it.id == base.courseId }?.name.orEmpty(),
-            typeLabel = base.type,
-            dateLabel = date.format(fullDateFormatter),
-            startTime = (occurrence?.startTime ?: base.startTime).toString(),
-            endTime = (occurrence?.endTime ?: base.endTime).toString(),
-            room = occurrence?.room ?: base.room,
-            building = occurrence?.building ?: base.building,
-            teacherName = occurrence?.teacher?.name ?: data.teachers.firstOrNull { it.id == base.teacherId }?.name,
-            groupName = base.group,
-            weekLabel = activePlan(data, date).schedule.weekType?.let { "Tydzień ${it.name}" },
-            originalDateLabel = existingChange?.originalDate?.toString(),
-            targetDateLabel = existingChange?.targetDate?.toString(),
-            status = status,
-            sharedNote = base.classNote,
-            occurrenceNote = existingNote?.body,
-            occurrenceNoteDraft = existingNote?.body.orEmpty(),
-            targetDateDraft = date.toString(),
-            startTimeDraft = (occurrence?.startTime ?: base.startTime).toString(),
-            endTimeDraft = (occurrence?.endTime ?: base.endTime).toString(),
-            roomDraft = (occurrence?.room ?: base.room).orEmpty(),
-            semesterStartDate = data.semester.startDate.toString(),
-            semesterEndDate = data.semester.endDate.toString(),
-            canCancelOccurrence = base.recurrence != dev.retza.mak.data.entity.Recurrence.ONCE && existingChange == null,
-            canChangeOccurrence = base.recurrence != dev.retza.mak.data.entity.Recurrence.ONCE && status != OccurrenceStatusUi.Cancelled,
-            canMoveOccurrence = base.recurrence != dev.retza.mak.data.entity.Recurrence.ONCE && status != OccurrenceStatusUi.Cancelled,
-            canRestoreOccurrence = existingChange != null
-        )
+        val details = buildOccurrenceDetails(data, classId, date) ?: return
         controls.update {
             it.copy(
                 destination = MakDestination.OccurrenceDetails,
                 selectedClassId = classId,
-                selectedOccurrenceDate = existingChange?.originalDate ?: date,
-                selectedNoteDate = date,
+                selectedOccurrenceDate = details.baseDate.toLocalDateOrNull(),
+                selectedNoteDate = details.currentDate.toLocalDateOrNull(),
                 occurrenceDraft = details
             )
         }
@@ -326,6 +286,31 @@ class MakViewModel(
 
     fun updateOccurrence(transform: (OccurrenceDetailsUiState) -> OccurrenceDetailsUiState) {
         controls.update { it.copy(occurrenceDraft = transform(it.occurrenceDraft)) }
+    }
+
+    fun updateOccurrenceDraft(transform: (OccurrenceDetailsUiState) -> OccurrenceDetailsUiState) {
+        controls.update {
+            it.copy(
+                occurrenceDraft = transform(it.occurrenceDraft)
+                    .copy(draftErrors = emptyMap(), draftError = null)
+            )
+        }
+    }
+
+    fun openOccurrenceEditDialog() = updateOccurrence {
+        it.copy(
+            showEditDialog = true,
+            targetDateDraft = it.currentDate,
+            startTimeDraft = it.startTime,
+            endTimeDraft = it.endTime,
+            roomDraft = it.room.orEmpty(),
+            draftErrors = emptyMap(),
+            draftError = null
+        )
+    }
+
+    fun dismissOccurrenceEditDialog() = updateOccurrence {
+        it.copy(showEditDialog = false, draftErrors = emptyMap(), draftError = null)
     }
 
     fun requestClassDeletion() = updateOccurrence { it.copy(showDeleteConfirmation = true) }
@@ -340,20 +325,44 @@ class MakViewModel(
         }
     }
 
-    fun cancelSelectedOccurrence() = saveOccurrenceChange(cancelled = true, move = false)
-
-    fun changeSelectedOccurrence() = saveOccurrenceChange(cancelled = false, move = false)
-
-    fun moveSelectedOccurrence() = saveOccurrenceChange(cancelled = false, move = true)
+    fun cancelSelectedOccurrence() {
+        val data = uiState.value.activeSemesterData ?: return
+        val classId = controls.value.selectedClassId ?: return
+        val originalDate = controls.value.selectedOccurrenceDate ?: return
+        viewModelScope.launch {
+            val existing = data.occurrenceChanges.firstOrNull {
+                it.classId == classId && it.originalDate == originalDate
+            }
+            repository.saveOccurrenceChange(
+                OccurrenceChangeEntity(
+                    id = existing?.id ?: 0,
+                    semesterId = data.semester.id,
+                    classId = classId,
+                    originalDate = originalDate,
+                    kind = dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED,
+                    targetDate = null,
+                    newStartTime = null,
+                    newEndTime = null,
+                    newRoom = null,
+                    newBuilding = null,
+                    newTeacherId = null,
+                    newNote = null
+                )
+            )
+            reloadOccurrenceDetails(data.semester.id, classId, originalDate)
+        }
+    }
 
     fun restoreSelectedOccurrence() {
         val data = uiState.value.activeSemesterData ?: return
         val classId = controls.value.selectedClassId ?: return
-        val date = controls.value.selectedOccurrenceDate ?: return
-        val change = data.occurrenceChanges.firstOrNull { it.classId == classId && it.originalDate == date } ?: return
+        val originalDate = controls.value.selectedOccurrenceDate ?: return
         viewModelScope.launch {
+            val change = data.occurrenceChanges.firstOrNull {
+                it.classId == classId && it.originalDate == originalDate
+            } ?: return@launch
             repository.deleteOccurrenceChange(change.id)
-            controls.update { it.copy(destination = MakDestination.Schedule) }
+            reloadOccurrenceDetails(data.semester.id, classId, originalDate)
         }
     }
 
@@ -383,39 +392,156 @@ class MakViewModel(
         }
     }
 
-    private fun saveOccurrenceChange(cancelled: Boolean, move: Boolean) {
+    fun saveSelectedOccurrenceChange() {
         val data = uiState.value.activeSemesterData ?: return
         val classId = controls.value.selectedClassId ?: return
-        val date = controls.value.selectedOccurrenceDate ?: return
+        val originalDate = controls.value.selectedOccurrenceDate ?: return
         val draft = controls.value.occurrenceDraft
-        val start = draft.startTimeDraft.toLocalTimeOrNull() ?: return
-        val end = draft.endTimeDraft.toLocalTimeOrNull() ?: return
-        if (!end.isAfter(start)) return
-        val existing = data.occurrenceChanges.firstOrNull { it.classId == classId && it.originalDate == date }
-        val target = if (move) draft.targetDateDraft.toLocalDateOrNull() ?: return else existing?.targetDate ?: date
-        viewModelScope.launch {
-            repository.saveOccurrenceChange(
-                OccurrenceChangeEntity(
-                    id = existing?.id ?: 0,
-                    semesterId = data.semester.id,
-                    classId = classId,
-                    originalDate = date,
-                    kind = if (cancelled) dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED else dev.retza.mak.data.entity.OccurrenceChangeKind.MODIFIED,
-                    targetDate = if (cancelled) null else target,
-                    newStartTime = if (cancelled) null else start,
-                    newEndTime = if (cancelled) null else end,
-                    newRoom = if (cancelled) null else draft.roomDraft.trim().ifEmpty { null },
-                    newBuilding = null,
-                    newTeacherId = null,
-                    newNote = null
-                )
-            )
-            controls.update { it.copy(destination = MakDestination.Schedule) }
+        val base = draft.toBaseSlot()
+        val current = draft.toCurrentSlot()
+        if (base == null || current == null) {
+            updateOccurrence { it.copy(draftErrors = mapOf(OccurrenceEditField.Date to FieldErrorUi("Podaj poprawną datę."))) }
+            return
+        }
+        val decision = decideOccurrenceEdit(
+            base = base,
+            current = current,
+            hasChange = draft.canRestoreOccurrence,
+            draftDate = draft.targetDateDraft,
+            draftStartTime = draft.startTimeDraft,
+            draftEndTime = draft.endTimeDraft,
+            draftRoom = draft.roomDraft
+        )
+        when (decision) {
+            is OccurrenceEditDecision.InvalidDateTime -> updateOccurrence {
+                it.copy(draftErrors = mapOf(OccurrenceEditField.Date to FieldErrorUi("Podaj poprawną datę.")))
+            }
+
+            is OccurrenceEditDecision.Ready -> {
+                val errors = occurrenceDraftErrors(decision.slot, draft)
+                if (errors.isNotEmpty()) {
+                    updateOccurrence { it.copy(draftErrors = errors) }
+                    return
+                }
+                viewModelScope.launch {
+                    updateOccurrence { it.copy(isSaving = true, draftErrors = emptyMap(), draftError = null) }
+                    try {
+                        val existing = data.occurrenceChanges.firstOrNull {
+                            it.classId == classId && it.originalDate == originalDate
+                        }
+                        when (decision.result) {
+                            OccurrenceEditResult.NoChange -> Unit
+                            OccurrenceEditResult.Restored ->
+                                existing?.let { repository.deleteOccurrenceChange(it.id) }
+
+                            OccurrenceEditResult.Modified,
+                            OccurrenceEditResult.Moved -> repository.saveOccurrenceChange(
+                                OccurrenceChangeEntity(
+                                    id = existing?.id ?: 0,
+                                    semesterId = data.semester.id,
+                                    classId = classId,
+                                    originalDate = originalDate,
+                                    kind = dev.retza.mak.data.entity.OccurrenceChangeKind.MODIFIED,
+                                    targetDate = decision.slot.date,
+                                    newStartTime = decision.slot.startTime,
+                                    newEndTime = decision.slot.endTime,
+                                    newRoom = decision.slot.room,
+                                    newBuilding = null,
+                                    newTeacherId = null,
+                                    newNote = null
+                                )
+                            )
+                        }
+                        reloadOccurrenceDetails(data.semester.id, classId, decision.slot.date)
+                    } catch (error: Exception) {
+                        updateOccurrence {
+                            it.copy(isSaving = false, draftError = "Nie udało się zapisać zmian.")
+                        }
+                    }
+                }
+            }
         }
     }
 
     fun openNewClassForSelectedCalendarDay() {
         openNewClass(controls.value.calendarDate)
+    }
+
+    private fun buildOccurrenceDetails(
+        data: SemesterWithData,
+        classId: Long,
+        displayDate: LocalDate
+    ): OccurrenceDetailsUiState? {
+        val base = data.classes.firstOrNull { it.id == classId } ?: return null
+        val change = data.occurrenceChanges.firstOrNull {
+            it.classId == classId && (it.originalDate == displayDate || it.targetDate == displayDate)
+        }
+        val originalDate = change?.originalDate ?: displayDate
+        val effectiveDate = change?.targetDate ?: originalDate
+        val effectiveStart = change?.newStartTime ?: base.startTime
+        val effectiveEnd = change?.newEndTime ?: base.endTime
+        val effectiveRoom = change?.newRoom ?: base.room
+        val existingNote = data.occurrenceNotes.firstOrNull {
+            it.classId == classId && it.occurrenceDate == effectiveDate
+        }
+        val status = when {
+            change?.kind == dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED -> OccurrenceStatusUi.Cancelled
+            base.recurrence == dev.retza.mak.data.entity.Recurrence.ONCE -> OccurrenceStatusUi.OneOff
+            change?.targetDate != null && change.targetDate != change.originalDate -> OccurrenceStatusUi.Moved
+            change != null -> OccurrenceStatusUi.Changed
+            else -> OccurrenceStatusUi.Scheduled
+        }
+        val canEdit = base.recurrence != dev.retza.mak.data.entity.Recurrence.ONCE &&
+            status != OccurrenceStatusUi.Cancelled
+        return OccurrenceDetailsUiState(
+            subjectName = base.name,
+            courseName = data.courses.firstOrNull { it.id == base.courseId }?.name.orEmpty(),
+            typeLabel = base.type,
+            dateLabel = effectiveDate.format(fullDateFormatter),
+            currentDate = effectiveDate.toString(),
+            startTime = effectiveStart.toString(),
+            endTime = effectiveEnd.toString(),
+            room = effectiveRoom,
+            building = change?.newBuilding ?: base.building,
+            teacherName = change?.newTeacherId?.let { id -> data.teachers.firstOrNull { it.id == id }?.name }
+                ?: data.teachers.firstOrNull { it.id == base.teacherId }?.name,
+            groupName = base.group,
+            weekLabel = activePlan(data, effectiveDate).schedule.weekType?.let { "Tydzień ${it.name}" },
+            originalDateLabel = change?.originalDate?.toString(),
+            targetDateLabel = change?.targetDate?.toString(),
+            status = status,
+            sharedNote = base.classNote,
+            occurrenceNote = existingNote?.body,
+            occurrenceNoteDraft = existingNote?.body.orEmpty(),
+            targetDateDraft = effectiveDate.toString(),
+            startTimeDraft = effectiveStart.toString(),
+            endTimeDraft = effectiveEnd.toString(),
+            roomDraft = effectiveRoom.orEmpty(),
+            baseDate = originalDate.toString(),
+            baseStartTime = base.startTime.toString(),
+            baseEndTime = base.endTime.toString(),
+            baseRoom = base.room,
+            semesterStartDate = data.semester.startDate.toString(),
+            semesterEndDate = data.semester.endDate.toString(),
+            canCancelOccurrence = canEdit && change == null,
+            canChangeOccurrence = canEdit,
+            canMoveOccurrence = canEdit,
+            canRestoreOccurrence = change != null
+        )
+    }
+
+    private suspend fun reloadOccurrenceDetails(semesterId: Long, classId: Long, displayDate: LocalDate) {
+        val fresh = repository.observeSemesterData(semesterId).first() ?: return
+        val details = buildOccurrenceDetails(fresh, classId, displayDate) ?: return
+        controls.update {
+            it.copy(
+                destination = MakDestination.OccurrenceDetails,
+                selectedClassId = classId,
+                selectedOccurrenceDate = details.baseDate.toLocalDateOrNull(),
+                selectedNoteDate = details.currentDate.toLocalDateOrNull(),
+                occurrenceDraft = details
+            )
+        }
     }
 
     fun updateEditor(transform: (ClassEditUiState) -> ClassEditUiState) {
@@ -818,7 +944,7 @@ class MakViewModel(
             today = buildToday(activeData, control.todayDate),
             schedule = buildSchedule(activeData, control),
             editor = editor,
-            occurrence = control.occurrenceDraft,
+            occurrence = control.occurrenceDraft.copy(canSaveOccurrenceEdit = occurrenceCanSave(control.occurrenceDraft)),
             selectedClassId = control.selectedClassId,
             themeId = control.themeId,
             semester = control.semesterDraft.copy(
@@ -1089,6 +1215,52 @@ private fun emptyScheduleState() = ScheduleUiState(
     weekSourceLabel = "",
     status = ScreenStatus.Ready
 )
+
+private fun occurrenceCanSave(state: OccurrenceDetailsUiState): Boolean {
+    val base = state.toBaseSlot() ?: return false
+    val current = state.toCurrentSlot() ?: return false
+    val decision = decideOccurrenceEdit(
+        base = base,
+        current = current,
+        hasChange = state.canRestoreOccurrence,
+        draftDate = state.targetDateDraft,
+        draftStartTime = state.startTimeDraft,
+        draftEndTime = state.endTimeDraft,
+        draftRoom = state.roomDraft
+    )
+    return decision is OccurrenceEditDecision.Ready &&
+        decision.result != OccurrenceEditResult.NoChange
+}
+
+private fun occurrenceDraftErrors(
+    slot: OccurrenceSlot,
+    state: OccurrenceDetailsUiState
+): Map<OccurrenceEditField, FieldErrorUi> = buildMap {
+    val semesterStart = state.semesterStartDate?.toLocalDateOrNull()
+    val semesterEnd = state.semesterEndDate?.toLocalDateOrNull()
+    if ((semesterStart != null && slot.date.isBefore(semesterStart)) ||
+        (semesterEnd != null && slot.date.isAfter(semesterEnd))
+    ) {
+        put(OccurrenceEditField.Date, FieldErrorUi("Data musi należeć do aktywnego semestru."))
+    }
+    if (!slot.endTime.isAfter(slot.startTime)) {
+        put(OccurrenceEditField.EndTime, FieldErrorUi("Koniec musi być późniejszy niż początek tego samego dnia."))
+    }
+}
+
+private fun OccurrenceDetailsUiState.toBaseSlot(): OccurrenceSlot? {
+    val date = baseDate.toLocalDateOrNull() ?: return null
+    val start = baseStartTime.toLocalTimeOrNull() ?: return null
+    val end = baseEndTime.toLocalTimeOrNull() ?: return null
+    return OccurrenceSlot(date, start, end, baseRoom)
+}
+
+private fun OccurrenceDetailsUiState.toCurrentSlot(): OccurrenceSlot? {
+    val date = currentDate.toLocalDateOrNull() ?: return null
+    val start = startTime.toLocalTimeOrNull() ?: return null
+    val end = endTime.toLocalTimeOrNull() ?: return null
+    return OccurrenceSlot(date, start, end, room)
+}
 
 private fun recurrenceFromId(id: String): Recurrence = when (id) {
     "a_week" -> Recurrence.A_WEEK

@@ -5,19 +5,18 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
+import dev.retza.mak.ui.components.FieldError
+import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakFactRow
@@ -35,8 +34,9 @@ fun OccurrenceDetailsScreen(
     state: OccurrenceDetailsUiState,
     onDeleteBaseClass: () -> Unit,
     onDismissDeleteConfirmation: () -> Unit,
-    onChangeOccurrence: () -> Unit,
-    onMoveOccurrence: () -> Unit,
+    onOpenOccurrenceEdit: () -> Unit,
+    onDismissOccurrenceEdit: () -> Unit,
+    onSaveOccurrenceChange: () -> Unit,
     onRestoreOccurrence: () -> Unit,
     onOccurrenceNoteDraftChanged: (String) -> Unit,
     onTargetDateDraftChanged: (String) -> Unit,
@@ -48,7 +48,6 @@ fun OccurrenceDetailsScreen(
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var showChangeForm by remember { mutableStateOf(false) }
     Column(modifier = modifier.fillMaxSize()) {
         MakScreenContent(
             modifier = Modifier
@@ -67,24 +66,24 @@ fun OccurrenceDetailsScreen(
                 onSaveOccurrenceNote = onSaveOccurrenceNote,
                 onDeleteOccurrenceNote = onDeleteOccurrenceNote
             )
-            if (showChangeForm) {
-                OccurrenceForm(
-                    state = state,
-                    onTargetDateDraftChanged = onTargetDateDraftChanged,
-                    onStartTimeDraftChanged = onStartTimeDraftChanged,
-                    onEndTimeDraftChanged = onEndTimeDraftChanged,
-                    onRoomDraftChanged = onRoomDraftChanged,
-                    onChangeOccurrence = onChangeOccurrence,
-                    onMoveOccurrence = onMoveOccurrence
-                )
-            }
         }
         OccurrenceBottomActions(
             state = state,
-            showChangeForm = showChangeForm,
-            onShowChangeForm = { showChangeForm = true },
+            onOpenOccurrenceEdit = onOpenOccurrenceEdit,
             onRestoreOccurrence = onRestoreOccurrence,
             onBack = onBack
+        )
+    }
+
+    if (state.showEditDialog) {
+        OccurrenceEditDialog(
+            state = state,
+            onTargetDateDraftChanged = onTargetDateDraftChanged,
+            onStartTimeDraftChanged = onStartTimeDraftChanged,
+            onEndTimeDraftChanged = onEndTimeDraftChanged,
+            onRoomDraftChanged = onRoomDraftChanged,
+            onDismiss = onDismissOccurrenceEdit,
+            onSave = onSaveOccurrenceChange
         )
     }
 
@@ -110,8 +109,7 @@ fun OccurrenceDetailsScreen(
 @Composable
 private fun OccurrenceBottomActions(
     state: OccurrenceDetailsUiState,
-    showChangeForm: Boolean,
-    onShowChangeForm: () -> Unit,
+    onOpenOccurrenceEdit: () -> Unit,
     onRestoreOccurrence: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -121,26 +119,95 @@ private fun OccurrenceBottomActions(
             .padding(horizontal = MakSpacing.lg, vertical = MakSpacing.sm),
         verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
-        if (!showChangeForm) {
-            if (state.canRestoreOccurrence) {
-                MakPrimaryAction(
-                    text = "Przywróć termin",
-                    onClick = onRestoreOccurrence,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            } else if (state.canChangeOccurrence || state.canMoveOccurrence) {
-                MakPrimaryAction(
-                    text = "Zmień termin",
-                    onClick = onShowChangeForm,
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+        if (state.canRestoreOccurrence) {
+            MakPrimaryAction(
+                text = "Przywróć termin",
+                onClick = onRestoreOccurrence,
+                modifier = Modifier.fillMaxWidth()
+            )
+        } else if (state.canChangeOccurrence || state.canMoveOccurrence) {
+            MakPrimaryAction(
+                text = "Zmień termin",
+                onClick = onOpenOccurrenceEdit,
+                modifier = Modifier.fillMaxWidth()
+            )
         }
         MakSecondaryAction(
             text = "Zamknij",
             onClick = onBack,
             modifier = Modifier.fillMaxWidth()
         )
+    }
+}
+
+@Composable
+private fun OccurrenceEditDialog(
+    state: OccurrenceDetailsUiState,
+    onTargetDateDraftChanged: (String) -> Unit,
+    onStartTimeDraftChanged: (String) -> Unit,
+    onEndTimeDraftChanged: (String) -> Unit,
+    onRoomDraftChanged: (String) -> Unit,
+    onDismiss: () -> Unit,
+    onSave: () -> Unit
+) {
+    MakDialog(
+        title = "Edytuj ten termin",
+        description = "Zmiany dotyczą tylko tego terminu. Pozostałe wystąpienia zajęć pozostaną bez zmian.",
+        onDismiss = onDismiss
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .heightIn(max = 320.dp)
+                .verticalScroll(rememberScrollState()),
+            verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
+        ) {
+            MakDatePickerField(
+                label = "Data",
+                value = state.targetDateDraft,
+                onValueChange = onTargetDateDraftChanged,
+                minDate = state.semesterStartDate?.toLocalDateOrNull(),
+                maxDate = state.semesterEndDate?.toLocalDateOrNull(),
+                isError = state.draftErrors.containsKey(OccurrenceEditField.Date)
+            )
+            FieldError(state.draftErrors[OccurrenceEditField.Date])
+            Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
+                MakTimePickerField(
+                    label = "Od",
+                    value = state.startTimeDraft,
+                    onValueChange = onStartTimeDraftChanged,
+                    modifier = Modifier.weight(1f)
+                )
+                MakTimePickerField(
+                    label = "Do",
+                    value = state.endTimeDraft,
+                    onValueChange = onEndTimeDraftChanged,
+                    modifier = Modifier.weight(1f),
+                    isError = state.draftErrors.containsKey(OccurrenceEditField.EndTime)
+                )
+            }
+            FieldError(state.draftErrors[OccurrenceEditField.EndTime])
+            MakField(
+                label = "Sala",
+                value = state.roomDraft,
+                onValueChange = onRoomDraftChanged
+            )
+        }
+        FieldError(state.draftError?.let(::FieldErrorUi))
+        Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
+            MakSecondaryAction(
+                text = "Anuluj",
+                onClick = onDismiss,
+                modifier = Modifier.weight(1f),
+                enabled = !state.isSaving
+            )
+            MakPrimaryAction(
+                text = "Zapisz",
+                onClick = onSave,
+                modifier = Modifier.weight(1f),
+                enabled = state.canSaveOccurrenceEdit && !state.isSaving
+            )
+        }
     }
 }
 
@@ -199,63 +266,6 @@ private fun Facts(state: OccurrenceDetailsUiState) {
         if (!state.weekLabel.isNullOrBlank()) MakFactRow("Tydzień", state.weekLabel)
         if (!state.originalDateLabel.isNullOrBlank()) MakFactRow("Data bazowa", state.originalDateLabel)
         if (!state.targetDateLabel.isNullOrBlank()) MakFactRow("Nowa data", state.targetDateLabel)
-    }
-}
-
-@Composable
-private fun OccurrenceForm(
-    state: OccurrenceDetailsUiState,
-    onTargetDateDraftChanged: (String) -> Unit,
-    onStartTimeDraftChanged: (String) -> Unit,
-    onEndTimeDraftChanged: (String) -> Unit,
-    onRoomDraftChanged: (String) -> Unit,
-    onChangeOccurrence: () -> Unit,
-    onMoveOccurrence: () -> Unit
-) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = 18.dp),
-        verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
-    ) {
-        if (state.canChangeOccurrence || state.canMoveOccurrence) {
-            MakDatePickerField(
-                label = "Data",
-                value = state.targetDateDraft,
-                onValueChange = onTargetDateDraftChanged,
-                minDate = state.semesterStartDate?.toLocalDateOrNull(),
-                maxDate = state.semesterEndDate?.toLocalDateOrNull(),
-                enabled = state.canMoveOccurrence || state.canChangeOccurrence
-            )
-            Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
-                MakTimePickerField(
-                    label = "Od",
-                    value = state.startTimeDraft,
-                    onValueChange = onStartTimeDraftChanged,
-                    modifier = Modifier.weight(1f),
-                    enabled = state.canChangeOccurrence
-                )
-                MakTimePickerField(
-                    label = "Do",
-                    value = state.endTimeDraft,
-                    onValueChange = onEndTimeDraftChanged,
-                    modifier = Modifier.weight(1f),
-                    enabled = state.canChangeOccurrence
-                )
-            }
-            MakField(
-                label = "Sala",
-                value = state.roomDraft,
-                onValueChange = onRoomDraftChanged,
-                enabled = state.canChangeOccurrence
-            )
-        }
-        if (state.canChangeOccurrence) {
-            MakPrimaryAction(text = "Zapisz zmianę", onClick = onChangeOccurrence)
-        }
-        if (state.canMoveOccurrence) {
-            MakSecondaryAction(text = "Przenieś termin", onClick = onMoveOccurrence)
-        }
     }
 }
 

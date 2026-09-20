@@ -288,23 +288,24 @@ fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
                     state = state.occurrence,
                     onDeleteBaseClass = viewModel::deleteSelectedClass,
                     onDismissDeleteConfirmation = viewModel::cancelClassDeletion,
-                    onChangeOccurrence = viewModel::changeSelectedOccurrence,
-                    onMoveOccurrence = viewModel::moveSelectedOccurrence,
+                    onOpenOccurrenceEdit = viewModel::openOccurrenceEditDialog,
+                    onDismissOccurrenceEdit = viewModel::dismissOccurrenceEditDialog,
+                    onSaveOccurrenceChange = viewModel::saveSelectedOccurrenceChange,
                     onRestoreOccurrence = viewModel::restoreSelectedOccurrence,
                     onOccurrenceNoteDraftChanged = { value ->
                         viewModel.updateOccurrence { it.copy(occurrenceNoteDraft = value) }
                     },
                     onTargetDateDraftChanged = { value ->
-                        viewModel.updateOccurrence { it.copy(targetDateDraft = value) }
+                        viewModel.updateOccurrenceDraft { it.copy(targetDateDraft = value) }
                     },
                     onStartTimeDraftChanged = { value ->
-                        viewModel.updateOccurrence { it.copy(startTimeDraft = value) }
+                        viewModel.updateOccurrenceDraft { it.copy(startTimeDraft = value) }
                     },
                     onEndTimeDraftChanged = { value ->
-                        viewModel.updateOccurrence { it.copy(endTimeDraft = value) }
+                        viewModel.updateOccurrenceDraft { it.copy(endTimeDraft = value) }
                     },
                     onRoomDraftChanged = { value ->
-                        viewModel.updateOccurrence { it.copy(roomDraft = value) }
+                        viewModel.updateOccurrenceDraft { it.copy(roomDraft = value) }
                     },
                     onSaveOccurrenceNote = viewModel::saveOccurrenceNote,
                     onDeleteOccurrenceNote = viewModel::deleteOccurrenceNote,
