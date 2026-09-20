@@ -38,6 +38,11 @@ data class WidgetOccurrenceUi(
     val courseColor: String?,
     val roomLabel: String,
     val teacherName: String?,
-    val conflictLabel: String?,
+    val conflicts: List<WidgetConflictUi>,
     val hasNote: Boolean
+)
+
+data class WidgetConflictUi(
+    val timeRange: String,
+    val otherOccurrenceName: String
 )

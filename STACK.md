@@ -36,6 +36,7 @@
 - Test zgodności wyniku dla widoku listy, kalendarza, ekranu „Dzisiaj” i widgetu.
 - Eksport schematu Room od pierwszej wersji i testowanie kolejnych migracji na zachowanych danych.
 - Testy interfejsu dla szerokości 320–390 px.
+- Testy kompozycji Glance przez `glance-testing` i `glance-appwidget-testing` 1.2.0.
 - Sprawdzenie obsługi klawiatury, focusu, etykiet semantycznych, kontrastu, motywu ciemnego, `reduced motion` i dotyku.
 - Sprawdzenie braku poziomego przewijania oraz obciętych akcji.
 - Weryfikacja, że ekran i widget pokazują ten sam aktywny plan.

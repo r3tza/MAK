@@ -1,9 +1,10 @@
 package dev.retza.mak.widget
 
 import dev.retza.mak.domain.ActivePlan
-import dev.retza.mak.domain.CollisionRange
-import dev.retza.mak.domain.collisionRanges
+import dev.retza.mak.domain.Collision
+import dev.retza.mak.domain.PlannedOccurrence
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 
@@ -22,7 +23,7 @@ class WidgetPresenter {
             return WidgetUiState.EmptyDay(dateLabel, weekLabel)
         }
 
-        val rangesByOccurrence = collisionRanges(plan.collisions)
+        val conflictsByOccurrence = widgetConflicts(plan.collisions)
         return WidgetUiState.Ready(
             dateLabel = dateLabel,
             weekLabel = weekLabel,
@@ -39,8 +40,7 @@ class WidgetPresenter {
                         occurrence.building
                     ).joinToString(", "),
                     teacherName = occurrence.teacher?.name,
-                    conflictLabel = rangesByOccurrence[occurrence.id]
-                        ?.let(::formatConflictLabel),
+                    conflicts = conflictsByOccurrence[occurrence.id].orEmpty(),
                     hasNote = !occurrence.classNote.isNullOrBlank() ||
                         !occurrence.occurrenceNoteBody.isNullOrBlank()
                 )
@@ -49,14 +49,50 @@ class WidgetPresenter {
     }
 }
 
-private fun formatConflictLabel(ranges: List<CollisionRange>): String {
-    val text = ranges.joinToString(", ") {
-        "${it.start.format(conflictTimeFormatter)}-${it.end.format(conflictTimeFormatter)}"
+internal fun widgetDateLabel(date: LocalDate): String = date.format(widgetDateFormatter)
+
+private data class WidgetConflictCandidate(
+    val start: LocalTime,
+    val end: LocalTime,
+    val otherOccurrenceName: String
+)
+
+private fun widgetConflicts(
+    collisions: Collection<Collision>
+): Map<String, List<WidgetConflictUi>> {
+    val byOccurrence = linkedMapOf<String, MutableSet<WidgetConflictCandidate>>()
+    collisions.forEach { collision ->
+        byOccurrence.addConflict(collision.first, collision.overlapStart, collision.overlapEnd, collision.second)
+        byOccurrence.addConflict(collision.second, collision.overlapStart, collision.overlapEnd, collision.first)
     }
-    return if (ranges.size == 1) "Kolizja $text" else "Kolizje: $text"
+    return byOccurrence.mapValues { (_, candidates) ->
+        candidates
+            .sortedWith(compareBy<WidgetConflictCandidate> { it.start }.thenBy { it.end }
+                .thenBy { it.otherOccurrenceName })
+            .map { candidate ->
+                WidgetConflictUi(
+                    timeRange = "${candidate.start.format(conflictTimeFormatter)}-" +
+                        candidate.end.format(conflictTimeFormatter),
+                    otherOccurrenceName = candidate.otherOccurrenceName
+                )
+            }
+    }
 }
 
-internal fun widgetDateLabel(date: LocalDate): String = date.format(widgetDateFormatter)
+private fun MutableMap<String, MutableSet<WidgetConflictCandidate>>.addConflict(
+    occurrence: PlannedOccurrence,
+    start: LocalTime,
+    end: LocalTime,
+    otherOccurrence: PlannedOccurrence
+) {
+    getOrPut(occurrence.id) { linkedSetOf() }.add(
+        WidgetConflictCandidate(
+            start = start,
+            end = end,
+            otherOccurrenceName = otherOccurrence.name
+        )
+    )
+}
 
 private val widgetDateFormatter =
     DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.forLanguageTag("pl-PL"))

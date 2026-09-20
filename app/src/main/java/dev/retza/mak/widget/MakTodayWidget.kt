@@ -17,6 +17,8 @@ import androidx.glance.appwidget.action.actionStartActivity
 import androidx.glance.appwidget.appWidgetBackground
 import androidx.glance.appwidget.cornerRadius
 import androidx.glance.appwidget.provideContent
+import androidx.glance.appwidget.lazy.LazyColumn
+import androidx.glance.appwidget.lazy.itemsIndexed
 import androidx.glance.action.clickable
 import androidx.glance.background
 import androidx.glance.layout.Alignment
@@ -29,6 +31,8 @@ import androidx.glance.layout.fillMaxWidth
 import androidx.glance.layout.height
 import androidx.glance.layout.padding
 import androidx.glance.layout.width
+import androidx.glance.semantics.semantics
+import androidx.glance.semantics.testTag
 import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
@@ -90,44 +94,51 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
             }
             is WidgetUiState.Error -> WidgetMessage(state.message)
             is WidgetUiState.Ready -> {
-                val visibleItems = state.items.take(layoutPolicy.itemLimit)
-                visibleItems.forEachIndexed { index, item ->
-                    WidgetOccurrenceRow(item, openTodayAction, layoutPolicy)
-                    if (index < visibleItems.lastIndex) {
-                        Spacer(
-                            GlanceModifier
-                                .fillMaxWidth()
-                                .height(1.dp)
-                                .background(GlanceTheme.colors.surfaceVariant)
-                        )
-                        Spacer(
-                            GlanceModifier.height(
-                                layoutPolicy.rowSpacing
-                            )
-                        )
-                    }
-                }
-                widgetOverflowLabel(state.items.size, visibleItems.size)?.let { overflowLabel ->
-                    Spacer(GlanceModifier.defaultWeight())
-                    Spacer(GlanceModifier.height(layoutPolicy.overflowSpacing))
-                    Text(
-                        text = overflowLabel,
-                        modifier = GlanceModifier.height(layoutPolicy.footerHeight),
-                        style = TextStyle(
-                            color = GlanceTheme.colors.onSurfaceVariant,
-                            fontSize = 11.sp
-                        )
-                    )
-                }
+                WidgetOccurrenceList(
+                    items = state.items,
+                    openTodayAction = openTodayAction,
+                    layoutPolicy = layoutPolicy,
+                    modifier = GlanceModifier.fillMaxWidth().defaultWeight()
+                )
             }
         }
     }
 }
 
 @Composable
-private fun WidgetHeader(state: WidgetUiState) {
+internal fun WidgetOccurrenceList(
+    items: List<WidgetOccurrenceUi>,
+    openTodayAction: androidx.glance.action.Action,
+    layoutPolicy: WidgetLayoutPolicy,
+    modifier: GlanceModifier
+) {
+    LazyColumn(
+        modifier = modifier.semantics { testTag = "widget-list" }
+    ) {
+        itemsIndexed(
+            items = items,
+            itemId = { _, item -> widgetOccurrenceItemId(item.id) }
+        ) { index, item ->
+            WidgetOccurrenceRow(item, openTodayAction, layoutPolicy)
+            if (index < items.lastIndex) {
+                Spacer(
+                    GlanceModifier
+                        .fillMaxWidth()
+                        .height(1.dp)
+                        .background(GlanceTheme.colors.surfaceVariant)
+                )
+                Spacer(GlanceModifier.height(layoutPolicy.rowSpacing))
+            }
+        }
+    }
+}
+
+@Composable
+internal fun WidgetHeader(state: WidgetUiState) {
     Row(
-        modifier = GlanceModifier.fillMaxWidth(),
+        modifier = GlanceModifier
+            .fillMaxWidth()
+            .semantics { testTag = "widget-header" },
         verticalAlignment = Alignment.CenterVertically
     ) {
         Column(modifier = GlanceModifier.defaultWeight()) {
@@ -251,25 +262,88 @@ private fun WidgetOccurrenceRow(
                 ),
                 maxLines = 1
             )
-            val statusLabel = widgetStatusLabel(item, layoutPolicy.statusMode)
-            if (statusLabel != null) {
-                Box(
-                    modifier = GlanceModifier
-                        .background(GlanceTheme.colors.tertiaryContainer)
-                        .cornerRadius(4.dp)
-                        .padding(horizontal = 4.dp, vertical = 1.dp)
-                ) {
-                    Text(
-                        text = statusLabel,
-                        style = TextStyle(
-                            color = GlanceTheme.colors.onTertiaryContainer,
-                            fontSize = 10.sp
-                        ),
-                        maxLines = 1
-                    )
-                }
+            if (widgetShouldShowConflict(item, layoutPolicy)) {
+                WidgetConflictAlert(item, layoutPolicy)
+            }
+            if (widgetShouldShowNote(item, layoutPolicy)) {
+                WidgetNoteLabel()
             }
         }
+    }
+}
+
+@Composable
+private fun WidgetConflictAlert(
+    item: WidgetOccurrenceUi,
+    layoutPolicy: WidgetLayoutPolicy
+) {
+    val firstConflict = item.conflicts.first()
+    Row(
+        modifier = GlanceModifier
+            .fillMaxWidth()
+            .background(GlanceTheme.colors.errorContainer)
+            .cornerRadius(4.dp)
+            .padding(4.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Box(
+            modifier = GlanceModifier
+                .width(3.dp)
+                .height(30.dp)
+                .background(GlanceTheme.colors.error)
+        ) {}
+        Spacer(GlanceModifier.width(4.dp))
+        Column(modifier = GlanceModifier.defaultWeight()) {
+            Text(
+                text = "Kolizja ${firstConflict.timeRange}",
+                style = TextStyle(
+                    color = GlanceTheme.colors.onErrorContainer,
+                    fontSize = 10.sp,
+                    fontWeight = FontWeight.Bold
+                ),
+                maxLines = 1
+            )
+            Text(
+                text = "Z: ${truncateWidgetText(
+                    firstConflict.otherOccurrenceName,
+                    layoutPolicy.metadataCharacterLimit
+                )}",
+                style = TextStyle(
+                    color = GlanceTheme.colors.onErrorContainer,
+                    fontSize = 10.sp
+                ),
+                maxLines = 1
+            )
+            if (item.conflicts.size > 1) {
+                Text(
+                    text = "Jeszcze ${widgetConflictCountLabel(item.conflicts.size - 1)}",
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onErrorContainer,
+                        fontSize = 10.sp
+                    ),
+                    maxLines = 1
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun WidgetNoteLabel() {
+    Box(
+        modifier = GlanceModifier
+            .background(GlanceTheme.colors.surfaceVariant)
+            .cornerRadius(4.dp)
+            .padding(horizontal = 4.dp, vertical = 1.dp)
+    ) {
+        Text(
+            text = "Notatka",
+            style = TextStyle(
+                color = GlanceTheme.colors.onSurfaceVariant,
+                fontSize = 10.sp
+            ),
+            maxLines = 1
+        )
     }
 }
 

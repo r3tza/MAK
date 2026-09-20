@@ -4,13 +4,12 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
 internal enum class WidgetStatusMode {
-    Hidden,
+    ConflictOnly,
     Primary,
     All
 }
 
 internal data class WidgetLayoutPolicy(
-    val itemLimit: Int,
     val accentHeight: Dp,
     val headerSpacing: Dp,
     val nameMaxLines: Int,
@@ -18,29 +17,23 @@ internal data class WidgetLayoutPolicy(
     val rowSpacing: Dp,
     val statusMode: WidgetStatusMode,
     val includeTeacher: Boolean,
-    val metadataCharacterLimit: Int,
-    val overflowSpacing: Dp,
-    val footerHeight: Dp
+    val metadataCharacterLimit: Int
 )
 
 internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
     val wide = mode.width == WidgetWidthMode.Wide
-    return when (mode.height) {
+    val policy = when (mode.height) {
         WidgetHeightMode.Compact -> WidgetLayoutPolicy(
-            itemLimit = 1,
             accentHeight = 28.dp,
             headerSpacing = 6.dp,
             nameMaxLines = 1,
             nameCharacterLimit = if (wide) 36 else 28,
             rowSpacing = 0.dp,
-            statusMode = WidgetStatusMode.Hidden,
+            statusMode = WidgetStatusMode.ConflictOnly,
             includeTeacher = wide,
-            metadataCharacterLimit = if (wide) 36 else 28,
-            overflowSpacing = 2.dp,
-            footerHeight = 14.dp
+            metadataCharacterLimit = if (wide) 36 else 28
         )
         WidgetHeightMode.Medium -> WidgetLayoutPolicy(
-            itemLimit = 2,
             accentHeight = 42.dp,
             headerSpacing = 6.dp,
             nameMaxLines = 1,
@@ -48,12 +41,9 @@ internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
             rowSpacing = 4.dp,
             statusMode = WidgetStatusMode.Primary,
             includeTeacher = wide,
-            metadataCharacterLimit = if (wide) 42 else 34,
-            overflowSpacing = 2.dp,
-            footerHeight = 14.dp
+            metadataCharacterLimit = if (wide) 42 else 34
         )
         WidgetHeightMode.Large -> WidgetLayoutPolicy(
-            itemLimit = 3,
             accentHeight = 52.dp,
             headerSpacing = 6.dp,
             nameMaxLines = if (wide) 2 else 1,
@@ -61,24 +51,27 @@ internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
             rowSpacing = 6.dp,
             statusMode = WidgetStatusMode.All,
             includeTeacher = wide,
-            metadataCharacterLimit = if (wide) 52 else 42,
-            overflowSpacing = 2.dp,
-            footerHeight = 14.dp
+            metadataCharacterLimit = if (wide) 52 else 42
+        )
+        WidgetHeightMode.ExtraLarge -> WidgetLayoutPolicy(
+            accentHeight = 52.dp,
+            headerSpacing = 6.dp,
+            nameMaxLines = if (wide) 2 else 1,
+            nameCharacterLimit = if (wide) 56 else 42,
+            rowSpacing = 6.dp,
+            statusMode = WidgetStatusMode.All,
+            includeTeacher = wide,
+            metadataCharacterLimit = if (wide) 52 else 42
         )
     }
+    return policy
 }
-
-internal fun widgetItemLimit(mode: WidgetLayoutMode): Int =
-    widgetLayoutPolicy(mode).itemLimit
 
 internal fun widgetNameMaxLines(mode: WidgetLayoutMode): Int =
     widgetLayoutPolicy(mode).nameMaxLines
 
 internal fun widgetNameCharacterLimit(mode: WidgetLayoutMode): Int =
     widgetLayoutPolicy(mode).nameCharacterLimit
-
-internal fun widgetOverflowLabel(total: Int, visible: Int): String? =
-    if (visible < total) "Jeszcze ${total - visible}" else null
 
 internal fun widgetCountLabel(count: Int): String = when {
     count == 1 -> "1 zajęcie"
@@ -90,25 +83,26 @@ internal fun truncateWidgetText(value: String, maxCharacters: Int): String =
     if (value.length <= maxCharacters) value
     else value.take((maxCharacters - 1).coerceAtLeast(1)) + "…"
 
-internal fun widgetStatusLabel(
+internal fun widgetShouldShowConflict(
     item: WidgetOccurrenceUi,
-    statusMode: WidgetStatusMode
-): String? {
-    val conflict = item.conflictLabel?.takeIf(String::isNotBlank)
-    val note = item.hasNote.takeIf { it }?.let { "Notatka" }
-    return when (statusMode) {
-        WidgetStatusMode.Hidden -> null
-        WidgetStatusMode.Primary -> conflict?.let { truncateWidgetText(it, STATUS_CHARACTER_LIMIT) }
-            ?: note
-        WidgetStatusMode.All -> when {
-            conflict != null && note != null -> {
-                val suffix = ", $note"
-                truncateWidgetText(conflict, STATUS_CHARACTER_LIMIT - suffix.length) + suffix
-            }
-            conflict != null -> truncateWidgetText(conflict, STATUS_CHARACTER_LIMIT)
-            else -> note
-        }
-    }
+    policy: WidgetLayoutPolicy
+): Boolean = when (policy.statusMode) {
+    WidgetStatusMode.ConflictOnly,
+    WidgetStatusMode.Primary,
+    WidgetStatusMode.All -> item.conflicts.isNotEmpty()
 }
 
-private const val STATUS_CHARACTER_LIMIT = 30
+internal fun widgetShouldShowNote(
+    item: WidgetOccurrenceUi,
+    policy: WidgetLayoutPolicy
+): Boolean = item.hasNote && when (policy.statusMode) {
+    WidgetStatusMode.ConflictOnly -> false
+    WidgetStatusMode.Primary -> item.conflicts.isEmpty()
+    WidgetStatusMode.All -> true
+}
+
+internal fun widgetConflictCountLabel(count: Int): String = when {
+    count == 1 -> "1 kolizja"
+    count in 2..4 -> "$count kolizje"
+    else -> "$count kolizji"
+}

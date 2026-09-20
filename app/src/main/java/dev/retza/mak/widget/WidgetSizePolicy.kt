@@ -11,6 +11,8 @@ internal object MakWidgetSizes {
     val mediumWide = DpSize(240.dp, 175.dp)
     val largeNarrow = DpSize(180.dp, 240.dp)
     val largeWide = DpSize(240.dp, 240.dp)
+    val extraLargeNarrow = DpSize(180.dp, 340.dp)
+    val extraLargeWide = DpSize(240.dp, 340.dp)
 
     val responsiveSizes = setOf(
         compactNarrow,
@@ -18,14 +20,17 @@ internal object MakWidgetSizes {
         mediumNarrow,
         mediumWide,
         largeNarrow,
-        largeWide
+        largeWide,
+        extraLargeNarrow,
+        extraLargeWide
     )
 }
 
 internal enum class WidgetHeightMode {
     Compact,
     Medium,
-    Large
+    Large,
+    ExtraLarge
 }
 
 internal enum class WidgetWidthMode {
@@ -43,7 +48,13 @@ internal fun widgetLayoutMode(width: Dp, height: Dp): WidgetLayoutMode =
         height = when {
             height < 160.dp -> WidgetHeightMode.Compact
             height < 220.dp -> WidgetHeightMode.Medium
-            else -> WidgetHeightMode.Large
+            height < 300.dp -> WidgetHeightMode.Large
+            else -> WidgetHeightMode.ExtraLarge
         },
         width = if (width < 240.dp) WidgetWidthMode.Narrow else WidgetWidthMode.Wide
     )
+
+internal fun widgetOccurrenceItemId(id: String): Long =
+    (id.fold(1125899906842597L) { hash, character ->
+        hash * 31 + character.code
+    } and 0x3FFF_FFFF_FFFF_FFFFL) + 1

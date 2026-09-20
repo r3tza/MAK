@@ -47,78 +47,100 @@ class WidgetPresenterTest {
     }
 
     @Test
-    fun presenterKeepsProviderOrderAndMapsConflictAndNoteIndicators() {
+    fun presenterMapsSortedDeduplicatedConflictsToBothOccurrences() {
         val classes = listOf(
-            classItem("first", LocalTime.of(9, 0), LocalTime.of(10, 0), "Stała notatka"),
-            classItem("second", LocalTime.of(9, 30), LocalTime.of(10, 30)),
-            classItem("third", LocalTime.of(12, 0), LocalTime.of(13, 0))
+            classItem("first", LocalTime.of(9, 0), LocalTime.of(11, 0), "Stała notatka"),
+            classItem("second", LocalTime.of(9, 30), LocalTime.of(10, 0)),
+            classItem("third", LocalTime.of(10, 15), LocalTime.of(10, 45))
         )
-        val plan = ActivePlanProvider().resolve(
+        val resolved = ActivePlanProvider().resolve(
             ActivePlanData(semester, classes, courses = listOf(course)),
             date
         )
-        val state = WidgetPresenter().present(date, semester.name, plan) as WidgetUiState.Ready
+        val duplicatedPlan = resolved.copy(
+            collisions = resolved.collisions + resolved.collisions.first()
+        )
+        val state = WidgetPresenter().present(
+            date,
+            semester.name,
+            duplicatedPlan
+        ) as WidgetUiState.Ready
 
         assertEquals(listOf("first:$date", "second:$date", "third:$date"), state.items.map { it.id })
-        assertEquals("Kolizja 09:30-10:00", state.items[0].conflictLabel)
-        assertEquals("Kolizja 09:30-10:00", state.items[1].conflictLabel)
+        assertEquals(
+            listOf(
+                WidgetConflictUi("09:30-10:00", "second"),
+                WidgetConflictUi("10:15-10:45", "third")
+            ),
+            state.items[0].conflicts
+        )
+        assertEquals(listOf(WidgetConflictUi("09:30-10:00", "first")), state.items[1].conflicts)
+        assertEquals(listOf(WidgetConflictUi("10:15-10:45", "first")), state.items[2].conflicts)
         assertTrue(state.items[0].hasNote)
-        assertFalse(state.items[1].hasNote)
         assertEquals("Sala niepodana", state.items[0].roomLabel)
     }
 
     @Test
-    fun layoutPolicyClassifiesAllResponsiveSizesOnBothAxes() {
+    fun layoutPolicyClassifiesResponsiveSizesAndKeepsRowsIndependentOfWidth() {
         val sizes = listOf(
             180.dp to 110.dp,
             240.dp to 110.dp,
             180.dp to 175.dp,
             240.dp to 175.dp,
             180.dp to 240.dp,
-            240.dp to 240.dp
+            240.dp to 240.dp,
+            180.dp to 340.dp,
+            240.dp to 340.dp
         )
         val modes = sizes.map { (width, height) -> widgetLayoutMode(width, height) }
 
-        assertEquals(6, MakWidgetSizes.responsiveSizes.size)
-        assertTrue(modes.all { it.width == WidgetWidthMode.Narrow || it.width == WidgetWidthMode.Wide })
-        assertEquals(WidgetHeightMode.Compact, modes[0].height)
-        assertEquals(WidgetHeightMode.Compact, modes[1].height)
-        assertEquals(WidgetHeightMode.Medium, modes[2].height)
-        assertEquals(WidgetHeightMode.Medium, modes[3].height)
-        assertEquals(WidgetHeightMode.Large, modes[4].height)
-        assertEquals(WidgetHeightMode.Large, modes[5].height)
-        assertEquals(WidgetWidthMode.Narrow, modes[0].width)
-        assertEquals(WidgetWidthMode.Wide, modes[1].width)
-        assertEquals(WidgetWidthMode.Narrow, modes[2].width)
-        assertEquals(WidgetWidthMode.Wide, modes[3].width)
-        assertEquals(WidgetWidthMode.Narrow, modes[4].width)
-        assertEquals(WidgetWidthMode.Wide, modes[5].width)
-
-        assertEquals(1, widgetItemLimit(modes[0]))
-        assertEquals(1, widgetItemLimit(modes[1]))
-        assertEquals(2, widgetItemLimit(modes[2]))
-        assertEquals(2, widgetItemLimit(modes[3]))
-        assertEquals(3, widgetItemLimit(modes[4]))
-        assertEquals(3, widgetItemLimit(modes[5]))
+        assertEquals(8, MakWidgetSizes.responsiveSizes.size)
+        assertEquals(
+            listOf(
+                WidgetHeightMode.Compact,
+                WidgetHeightMode.Compact,
+                WidgetHeightMode.Medium,
+                WidgetHeightMode.Medium,
+                WidgetHeightMode.Large,
+                WidgetHeightMode.Large,
+                WidgetHeightMode.ExtraLarge,
+                WidgetHeightMode.ExtraLarge
+            ),
+            modes.map { it.height }
+        )
+        assertEquals(
+            listOf(
+                WidgetWidthMode.Narrow,
+                WidgetWidthMode.Wide,
+                WidgetWidthMode.Narrow,
+                WidgetWidthMode.Wide,
+                WidgetWidthMode.Narrow,
+                WidgetWidthMode.Wide,
+                WidgetWidthMode.Narrow,
+                WidgetWidthMode.Wide
+            ),
+            modes.map { it.width }
+        )
         assertEquals(28f, widgetLayoutPolicy(modes[0]).accentHeight.value, 0f)
         assertEquals(42f, widgetLayoutPolicy(modes[2]).accentHeight.value, 0f)
         assertEquals(52f, widgetLayoutPolicy(modes[4]).accentHeight.value, 0f)
-        assertEquals(6f, widgetLayoutPolicy(modes[0]).headerSpacing.value, 0f)
-        assertEquals(4f, widgetLayoutPolicy(modes[2]).rowSpacing.value, 0f)
-        assertEquals(6f, widgetLayoutPolicy(modes[4]).rowSpacing.value, 0f)
+        assertEquals(4, widgetLayoutPolicy(modes[2]).rowSpacing.value.toInt())
+        assertEquals(6, widgetLayoutPolicy(modes[4]).rowSpacing.value.toInt())
         assertEquals(1, widgetNameMaxLines(modes[4]))
         assertEquals(2, widgetNameMaxLines(modes[5]))
-        assertEquals(42, widgetNameCharacterLimit(modes[4]))
-        assertEquals(56, widgetNameCharacterLimit(modes[5]))
-        assertEquals(WidgetStatusMode.Hidden, widgetLayoutPolicy(modes[0]).statusMode)
+        assertEquals(2, widgetNameMaxLines(modes[7]))
+        assertEquals(WidgetStatusMode.ConflictOnly, widgetLayoutPolicy(modes[0]).statusMode)
         assertEquals(WidgetStatusMode.Primary, widgetLayoutPolicy(modes[2]).statusMode)
         assertEquals(WidgetStatusMode.All, widgetLayoutPolicy(modes[4]).statusMode)
-        assertEquals(2f, widgetLayoutPolicy(modes[2]).overflowSpacing.value, 0f)
-        assertEquals(14f, widgetLayoutPolicy(modes[4]).footerHeight.value, 0f)
-        assertEquals("Jeszcze 3", widgetOverflowLabel(total = 5, visible = 2))
-        assertEquals("Jeszcze 1", widgetOverflowLabel(total = 4, visible = 3))
-        assertEquals(null, widgetOverflowLabel(total = 3, visible = 3))
-        assertEquals(null, widgetOverflowLabel(total = 2, visible = 2))
+        assertEquals(WidgetStatusMode.All, widgetLayoutPolicy(modes[6]).statusMode)
+        assertEquals(
+            widgetLayoutPolicy(modes[2]).nameCharacterLimit,
+            widgetLayoutPolicy(modes[3]).nameCharacterLimit - 8
+        )
+        assertEquals(
+            widgetLayoutPolicy(modes[2]).metadataCharacterLimit,
+            widgetLayoutPolicy(modes[3]).metadataCharacterLimit - 8
+        )
     }
 
     @Test
@@ -132,7 +154,7 @@ class WidgetPresenterTest {
             courseColor = "#137B71",
             roomLabel = "Sala 101",
             teacherName = "Jan Kowalski",
-            conflictLabel = "Kolizja 09:30-10:00",
+            conflicts = emptyList(),
             hasNote = true
         )
 
@@ -165,41 +187,34 @@ class WidgetPresenterTest {
             courseColor = "#137B71",
             roomLabel = "Sala 101",
             teacherName = "Jan Kowalski",
-            conflictLabel = "Kolizja 09:30-10:00",
+            conflicts = listOf(WidgetConflictUi("09:30-10:00", "Inny przedmiot")),
             hasNote = true
         )
 
-        assertEquals(
-            null,
-            widgetStatusLabel(
-                item,
-                widgetLayoutPolicy(widgetLayoutMode(180.dp, 110.dp)).statusMode
-            )
-        )
-        assertEquals(
-            "Kolizja 09:30-10:00",
-            widgetStatusLabel(
-                item,
-                widgetLayoutPolicy(widgetLayoutMode(180.dp, 175.dp)).statusMode
-            )
-        )
-        assertEquals(
-            "Kolizja 09:30-10:00, Notatka",
-            widgetStatusLabel(
-                item,
-                widgetLayoutPolicy(widgetLayoutMode(180.dp, 240.dp)).statusMode
-            )
-        )
+        val compactPolicy = widgetLayoutPolicy(widgetLayoutMode(180.dp, 110.dp))
+        val mediumPolicy = widgetLayoutPolicy(widgetLayoutMode(180.dp, 175.dp))
+        val largePolicy = widgetLayoutPolicy(widgetLayoutMode(180.dp, 240.dp))
+        assertTrue(widgetShouldShowConflict(item, compactPolicy))
+        assertFalse(widgetShouldShowNote(item, compactPolicy))
+        assertTrue(widgetShouldShowConflict(item, mediumPolicy))
+        assertFalse(widgetShouldShowNote(item, mediumPolicy))
+        assertTrue(widgetShouldShowConflict(item, largePolicy))
+        assertTrue(widgetShouldShowNote(item, largePolicy))
+    }
 
-        val multipleConflicts = item.copy(
-            conflictLabel = "Kolizje: 09:30-10:00, 10:15-10:30"
-        )
-        assertEquals(
-            "Kolizje: 09:30-10:00…, Notatka",
-            widgetStatusLabel(
-                multipleConflicts,
-                widgetLayoutPolicy(widgetLayoutMode(240.dp, 240.dp)).statusMode
-            )
+    @Test
+    fun conflictCountUsesCorrectPolishInflection() {
+        assertEquals("1 kolizja", widgetConflictCountLabel(1))
+        assertEquals("2 kolizje", widgetConflictCountLabel(2))
+        assertEquals("5 kolizji", widgetConflictCountLabel(5))
+    }
+
+    @Test
+    fun stableItemIdIsDerivedFromOccurrenceId() {
+        assertEquals(widgetOccurrenceItemId("class:2026-09-21"), widgetOccurrenceItemId("class:2026-09-21"))
+        assertTrue(
+            widgetOccurrenceItemId("class:2026-09-21") !=
+                widgetOccurrenceItemId("class:2026-09-22")
         )
     }
 

@@ -160,6 +160,159 @@ Po implementacji uruchomić `gradlew.bat test` oraz kompilację testów Android.
 - Wszystkie akcje mają semantyczne etykiety, widoczny focus i obszar dotyku co najmniej 48 dp.
 - Układ pozostaje czytelny w motywie jasnym i ciemnym przy szerokości 320-390 dp.
 
+## 1.4. Plan poprawy ekranu szczegółów terminu
+
+Zmiany dotyczą `OccurrenceDetailsScreen` oraz topbara aplikacji. Ekran ma pokazywać szczegóły, notatkę i formularz zmiany w jednej przewidywalnej kolejności. Akcje nawigacyjne i główne nie mogą znajdować się pomiędzy informacjami.
+
+### Etap 1: usunięcie powtórzonego nagłówka i rozwinięcie notatki
+
+1. Pozostawić tekst „Termin” wyłącznie w globalnym topbarze.
+2. Zastąpić `MakSectionHeader` prywatnym nagłówkiem ekranu pokazującym nazwę zajęć oraz opis „Zmiana dotyczy tylko wybranego wystąpienia zajęć.”.
+3. Nie wyświetlać lokalnej etykiety `TERMIN` nad nazwą zajęć.
+4. Usunąć `showNoteForm` oraz `MakExpandableSection` z etykietą „Pokaż notatkę”.
+5. Renderować `NotesBlock` bezpośrednio po `Facts`, w stanie rozwiniętym od pierwszego wyświetlenia ekranu.
+6. Zachować wspólną notatkę, pole notatki do wystąpienia oraz akcje zapisu i usunięcia bez zmiany ich działania.
+
+Kryterium etapu: ekran kompiluje się, tekst „Termin” występuje tylko w topbarze, a notatka jest widoczna bez dodatkowego kliknięcia.
+
+### Etap 2: obsługa akcji po prawej stronie topbara
+
+1. Dodać do `MakTopBar` opcjonalny slot `actions` typu `@Composable RowScope.() -> Unit`.
+2. Zachować obecną akcję ustawień na ekranach głównych. Jeśli przekazano slot, renderować go po prawej stronie topbara.
+3. Dla trasy szczegółów terminu przekazać do slotu `MakActionMenu` z akcjami dostępnymi w stanie: „Odwołaj termin”, „Edytuj bazowe zajęcia” i „Usuń zajęcia”.
+4. Nadać przyciskowi opis „Więcej opcji”. Zachować obszar dotyku 48 dp, focus i obsługę klawiatury.
+5. Nie używać `Modifier.fillMaxWidth()` dla menu w topbarze. Wyrównać przycisk do prawej krawędzi z paddingiem 4 dp, symetrycznie do przycisku cofnięcia.
+6. Usunąć `MakActionMenu` z przewijanej treści `OccurrenceDetailsScreen`.
+
+Kryterium etapu: trzy kropki znajdują się na wysokości przycisku cofnięcia i nie zajmują miejsca w treści ekranu.
+
+### Etap 3: podłączenie akcji topbara do nawigacji
+
+1. W `MakNavHostApp` budować listę akcji tylko wtedy, gdy bieżąca trasa to `MakRoutes.Occurrence`.
+2. Akcję edycji bazowych zajęć podłączyć do istniejącego `openEditClass` i przejścia do `editRoute`.
+3. Akcję odwołania podłączyć do `cancelSelectedOccurrence`.
+4. Akcję usunięcia podłączyć do `requestClassDeletion`. Sam dialog potwierdzenia nadal renderować w `OccurrenceDetailsScreen`.
+5. Usunąć z parametrów `OccurrenceDetailsScreen` callbacki używane już wyłącznie przez topbar: `onEditBaseClass`, `onRequestDeleteBaseClass` i `onCancelOccurrence`.
+6. Zaktualizować oba miejsca wywołujące ekran, w tym nieużywany przebieg legacy, aby cały moduł nadal się kompilował.
+
+Kryterium etapu: każda pozycja menu wykonuje tę samą operację co wcześniej, a usunięcie nadal wymaga potwierdzenia.
+
+### Etap 4: akcje przy dolnej krawędzi
+
+1. Zastąpić przewijanie całego `MakScreenContent` nadrzędną `Column` wypełniającą ekran.
+2. Umieścić `MakScreenContent` z `verticalScroll` i `Modifier.weight(1f)` jako przewijaną treść.
+3. Dodać pod nią prywatny komponent `OccurrenceBottomActions` poza obszarem przewijania.
+4. W stanie podstawowym pokazać w dolnym komponencie „Przywróć termin”, jeśli wystąpienie można przywrócić, albo „Zmień termin”, jeśli można je zmienić lub przenieść. „Zamknij” pozostaje drugą, zawsze dostępną akcją.
+5. Ułożyć przyciski pionowo na pełną szerokość. Użyć poziomego paddingu `MakSpacing.lg`, odstępu `MakSpacing.sm` i dolnego paddingu uwzględniającego bezpieczny obszar przekazany przez nadrzędny `Scaffold`.
+6. Po otwarciu formularza zmiany ukryć dolny przycisk „Zmień termin”, pozostawiając „Zamknij”. Akcje „Zapisz zmianę” i „Przenieś termin” pozostają częścią formularza.
+
+Kryterium etapu: przewijanie treści nie przesuwa przycisku „Zamknij” ani podstawowej akcji terminu.
+
+### Etap 5: uproszczenie formularza zmiany terminu
+
+1. Zachować lokalny stan `showChangeForm`, domyślnie `false`.
+2. Dolny przycisk „Zmień termin” ustawia `showChangeForm = true`.
+3. Usunąć `MakExpandableSection` oraz tekst „Pokaż zmiana terminu”.
+4. Gdy `showChangeForm` jest prawdziwy, renderować `OccurrenceForm` bezpośrednio pod blokiem notatki.
+5. Zachować pickery daty i czasu, pole sali oraz przyciski „Zapisz zmianę” i „Przenieś termin”.
+6. Nie zwijać automatycznie formularza po zmianie wartości. Nawigacja po udanym zapisie pozostaje odpowiedzialnością istniejącego ViewModelu.
+
+Kryterium etapu: na ekranie nie ma tekstu „Pokaż zmiana terminu”, a formularz otwiera się wyłącznie przez dolny przycisk „Zmień termin”.
+
+### Etap 6: testy i odbiór
+
+1. Dodać test Compose dla ekranu z długą nazwą zajęć przy szerokości 320 dp.
+2. Potwierdzić brak lokalnej etykiety `TERMIN`, „Pokaż notatkę” oraz „Pokaż zmiana terminu”.
+3. Potwierdzić, że notatka i fakty są widoczne w przewijanej treści.
+4. Potwierdzić, że „Zmień termin” i „Zamknij” pozostają w dolnym obszarze po przewinięciu treści.
+5. Potwierdzić otwarcie formularza przez „Zmień termin” oraz widoczność „Zapisz zmianę” i „Przenieś termin”.
+6. Dodać test topbara dla menu „Więcej opcji” i każdej dostępnej akcji.
+7. Sprawdzić wariant przywracania, odwołany termin, brak uprawnień do zmiany oraz dialog usunięcia.
+8. Uruchomić `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug`.
+
+Kryterium zakończenia: treść ma kolejność nazwa, opis, status, fakty, notatka i opcjonalny formularz. Menu znajduje się w topbarze, a podstawowe akcje pozostają przy dolnej krawędzi.
+
+## 1.5. Plan uproszczenia sekcji rozwijanych
+
+Zmiany dotyczą przede wszystkim konfiguracji semestru. Rozbudowane funkcje zarządzania nie powinny rozwijać długich formularzy i list wewnątrz ekranu nadrzędnego. Osobny ekran jest domyślnym rozwiązaniem, gdy ujawniana treść ma własne akcje, formularz, listę elementów albo może znacząco zwiększyć wysokość widoku.
+
+### Etap 1: wydzielenie tras podrzędnych semestru
+
+1. Dodać trasy `semester/{semesterId}/courses` oraz `semester/{semesterId}/week-overrides` do `MakRoutes`.
+2. Dodać funkcje budujące obie trasy z identyfikatorem semestru. Nie przekazywać całego stanu przez argumenty nawigacji.
+3. Przypisać tytuły topbara „Kierunki” oraz „Korekty tygodni” i włączyć na obu ekranach standardowy przycisk cofnięcia.
+4. Zachować istniejący `semesterId` jako źródło wyboru danych. Wejście na trasę ma odtworzyć właściwy semestr także po odtworzeniu procesu aplikacji.
+5. Nie tworzyć równoległego lokalnego źródła danych. Ekrany mają używać istniejącego stanu semestru i istniejących operacji ViewModelu.
+
+Kryterium etapu: obie trasy można otworzyć bez utraty wyboru semestru, a systemowy gest wstecz wraca do konfiguracji tego samego semestru.
+
+### Etap 2: uproszczenie ekranu konfiguracji semestru
+
+1. Usunąć lokalne stany `showCourses` i `showOverrides` z `SemesterScreen`.
+2. Usunąć oba użycia `MakExpandableSection` oraz teksty „Pokaż kierunki” i „Pokaż korekty tygodni”.
+3. Pozostawić na ekranie formularz podstawowych danych semestru: nazwę, zakres dat, pierwszy tydzień oraz zapis.
+4. Pod formularzem dodać dwie zwarte pozycje nawigacyjne:
+   - „Kierunki” z liczbą zapisanych kierunków,
+   - „Korekty tygodni” z liczbą zapisanych korekt.
+5. Każda pozycja ma mieć czytelną nazwę, krótkie objaśnienie, opcjonalny licznik oraz ikonę przejścia w prawo. Cały wiersz powinien być klikalny i mieć obszar dotyku co najmniej 48 dp.
+6. Aktywacja pozycji ma otwierać odpowiedni ekran podrzędny. Nie rozwijać treści na ekranie konfiguracji.
+7. Zachować akcję powrotu do ustawień, dopóki globalny topbar i gest wstecz nie zapewnią jednoznacznego powrotu we wszystkich ścieżkach wejścia.
+
+Kryterium etapu: konfiguracja semestru nie zwiększa wysokości po wybraniu „Kierunki” lub „Korekty tygodni”, a obie funkcje są dostępne przez jednoznaczne pozycje nawigacyjne.
+
+### Etap 3: osobny ekran kierunków
+
+1. Przenieść `CoursesBlock` do publicznego ekranu `SemesterCoursesScreen` albo równoważnie nazwanego komponentu w pakiecie semestru.
+2. Na początku ekranu pokazać krótkie objaśnienie, że kierunki należą tylko do wybranego semestru.
+3. Następnie pokazać listę kierunków, stan pusty oraz formularz dodawania z nazwą i wyborem koloru.
+4. Zachować istniejące operacje dodawania i usuwania. Usunięcie nadal musi korzystać z obowiązujących zabezpieczeń danych.
+5. Robocza nazwa i kolor nie mogą znikać po chwilowym przejściu aplikacji do tła ani po odtworzeniu ekranu. Stan formularza powinien należeć do ViewModelu albo `SavedStateHandle`, nie do lokalnego `remember`.
+6. Długie nazwy mają zawijać się bez poziomego przewijania. Akcje nie mogą zostać obcięte przy szerokości 320 dp.
+
+Kryterium etapu: pełne zarządzanie kierunkami odbywa się na osobnym ekranie, a powrót prowadzi do konfiguracji właściwego semestru.
+
+### Etap 4: osobny ekran korekt tygodni
+
+1. Przenieść `WeekOverridesSection`, listę korekt i formularz korekty do `SemesterWeekOverridesScreen` albo równoważnie nazwanego komponentu.
+2. Na początku ekranu wyjaśnić krótko różnicę między zakresem „Tylko ten tydzień” i „Od tego tygodnia”.
+3. Pokazać listę istniejących korekt, stan pusty i akcję „Dodaj korektę”.
+4. Formularz dodawania lub edycji może pojawić się na tym ekranie, ponieważ bezpośrednio należy do zarządzanej listy. Powinien być widoczny po akcji „Dodaj” albo „Edytuj” i znajdować się bezpośrednio przy kontekście tej akcji.
+5. Zachować edycję, usuwanie, anulowanie oraz istniejące reguły daty, typu tygodnia i zakresu korekty.
+6. Stan edycji i wprowadzone wartości mają przetrwać odtworzenie ekranu. Powrót z aktywnym, niezapisanym formularzem nie może po cichu zapisać ani usunąć danych.
+
+Kryterium etapu: lista i formularz korekt nie zajmują miejsca na ekranie podstawowych danych semestru, a wszystkie dotychczasowe operacje są dostępne na ekranie podrzędnym.
+
+### Etap 5: wizualne powiązanie treści rozwijanej z przyciskiem
+
+1. Przejrzeć pozostałe użycia `MakExpandableSection` i sklasyfikować każde z nich:
+   - osobny ekran, gdy treść zawiera listę, większy formularz lub niezależny przepływ,
+   - rozwinięcie w miejscu, gdy treść jest krótka, pomocnicza i potrzebna w kontekście bieżącego widoku,
+   - dialog lub arkusz, gdy użytkownik wykonuje krótką, zamkniętą decyzję i powinien pozostać w tym samym miejscu.
+2. Dla sekcji pozostawionych w miejscu zmienić wygląd `MakExpandableSection` tak, aby przycisk i treść tworzyły jeden komponent:
+   - wspólny kształt i szerokość,
+   - wyróżnione tło przycisku,
+   - po rozwinięciu tło treści w innym odcieniu tego samego kontenera,
+   - brak przerwy sugerującej, że treść jest niezależnym blokiem,
+   - wspólne obramowanie albo ciągłość zaokrągleń.
+3. Przycisk ma pokazywać ikonę kierunku rozwinięcia oraz stan „Rozwinięte” lub „Zwinięte” w semantyce.
+4. Ponowne użycie przycisku zwija wyłącznie treść, którą bezpośrednio kontroluje. Nie może wpływać na sąsiednie sekcje.
+5. Zachować kontrast w jasnym i ciemnym motywie, widoczny focus oraz minimalny obszar dotyku 48 dp.
+6. Nie używać samej zmiany koloru jako jedynego sygnału powiązania lub stanu.
+
+Kryterium etapu: każda treść rozwijana w miejscu jest wizualnie i semantycznie podpięta pod sterujący nią przycisk, a rozbudowane przepływy otwierają osobne ekrany.
+
+### Etap 6: testy nawigacji i dostępności
+
+1. Dodać test tras dla wejścia z konfiguracji semestru do kierunków i korekt oraz powrotu do tego samego semestru.
+2. Dodać test odtworzenia trasy podrzędnej z `semesterId` bez wcześniejszego otwarcia ekranu nadrzędnego.
+3. Dodać test ekranu konfiguracji potwierdzający brak tekstów „Pokaż kierunki” i „Pokaż korekty tygodni” oraz obecność dwóch pozycji nawigacyjnych z licznikami.
+4. Zachować testy dodawania i usuwania kierunku oraz tworzenia, edycji i usuwania korekty po przeniesieniu komponentów.
+5. Dla pozostałego `MakExpandableSection` dodać test rozwinięcia, zwinięcia, semantyki i ciągłości kontenera.
+6. Sprawdzić szerokości 320 dp i 390 dp, motyw jasny i ciemny, obsługę TalkBack, klawiaturę, systemowy gest wstecz oraz zachowanie po odtworzeniu procesu.
+7. Po implementacji uruchomić `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug`.
+
+Kryterium zakończenia: konfiguracja semestru pozostaje krótka, zarządzanie kierunkami i korektami ma własne ekrany, a każda zachowana sekcja rozwijana jasno wskazuje, który przycisk steruje jej treścią.
+
 ## 2. Technologie
 
 - Kotlin;
@@ -456,7 +609,7 @@ Kryterium etapu: widget można dodać do ekranu głównego, zmienić jego rozmia
 
 #### Etap 3: mały widget
 
-1. Dla małego progu pokazać datę, tydzień A/B oraz jedno lub dwa najbliższe zajęcia, zależnie od dostępnej wysokości.
+1. Dla małego progu pokazać datę, tydzień A/B oraz przewijaną listę dzisiejszych zajęć. Dostępna wysokość steruje gęstością wierszy, nie liczbą pobranych pozycji.
 2. Każdy wiersz zawiera godzinę rozpoczęcia, nazwę, kierunek i salę. Pomija puste metadane zamiast zostawiać separatory.
 3. Długą nazwę zajęć ograniczyć do jednej linii, a drugorzędne informacje do jednej linii. Nie używać poziomego przewijania.
 4. Kolor kierunku może być paskiem pomocniczym, ale nazwa kierunku pozostaje tekstem. Kolor nie może być jedyną informacją.
@@ -466,9 +619,9 @@ Kryterium etapu: przy minimalnym rozmiarze wszystkie teksty mieszczą się bez n
 
 #### Etap 4: duży widget i rozmiary pośrednie
 
-1. Dla dużego progu pokazać pełniejszą listę dzisiejszych zajęć. Liczbę wierszy wyliczać z wybranego progu rozmiaru, a nie z modelu launchera albo stałej liczby wszystkich zajęć.
+1. Dla dużego progu pokazać pełniejszą, przewijaną listę dzisiejszych zajęć. Próg rozmiaru steruje gęstością wierszy i metadanymi, a nie stałym limitem liczby wszystkich zajęć.
 2. Duży wiersz zawiera godzinę, nazwę, kierunek, salę oraz opcjonalnie prowadzącego. Notatkę przedstawia wskaźnik, nie pełny wielowierszowy tekst.
-3. Jeśli zajęć jest więcej niż mieści układ, pokazać informację „Jeszcze {liczba}” zamiast ściskać wiersze.
+3. Jeśli zajęć jest więcej niż mieści widoczny obszar, lista ma przewijać się w `LazyColumn`; nie dodawać stopki „Jeszcze {liczba}” ani nie ściskać wierszy.
 4. Dla rozmiaru pośredniego użyć małego albo dużego wariantu wybranego przez `SizeMode.Responsive`. Nie tworzyć osobnego układu dla każdego możliwego wymiaru.
 5. Sprawdzić promień tła widgetu, padding systemowy, motyw jasny i ciemny oraz kontrast małego tekstu.
 
@@ -506,7 +659,7 @@ Kryterium etapu: usunięcie semestru, pusta baza, błąd odczytu i ponowne utwor
 
 #### Etap 8: testy i odbiór
 
-1. Testy JVM obejmują stany `WidgetUiState`, sortowanie, limit pozycji, „Jeszcze {liczba}”, wskaźnik notatki, kolizję i datę poza semestrem.
+1. Testy JVM obejmują stany `WidgetUiState`, sortowanie, pełną listę pozycji, wskaźnik notatki, kolizję i datę poza semestrem.
 2. Test integracyjny potwierdza, że loader korzysta z `ActivePlanProvider` i zwraca ten sam zestaw wystąpień co ekran „Dzisiaj” dla wstrzykniętej daty.
 3. Nie powielać testów reguł tygodni A/B, zmian wystąpień i kolizji w testach Glance.
 4. Uruchomić `gradlew.bat test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug`.
@@ -534,13 +687,13 @@ Status: obecny widget działa na launcherze, ale duży wariant wykorzystuje prze
 
 #### Etap 2: układ responsywny
 
-1. Traktować widget jako kompaktowy, gdy ma mniej niż 260 dp szerokości albo mniej niż 160 dp wysokości.
-2. W wariancie kompaktowym pokazać jedno najbliższe zajęcie. Pokazać nazwę, czas i salę, a pominąć prowadzącego i dodatkowe opisy.
-3. Jeśli wariant kompaktowy nie mieści wszystkich zajęć, pokazać tekst „Jeszcze {liczba}”.
-4. W wariancie rozszerzonym pokazać do trzech zajęć wraz z salą, prowadzącym i statusem kolizji albo notatki.
-5. Wiersze powinny wykorzystać pełną szerokość widgetu. Wariant rozszerzony ma używać większych odstępów i pełniejszych metadanych, a nie tylko zwiększać limit rekordów.
+1. Traktować widget jako kompaktowy, gdy ma mniej niż 240 dp szerokości albo mniej niż 160 dp wysokości.
+2. W wariancie kompaktowym pokazać przewijaną listę dzisiejszych zajęć. Pokazać nazwę, czas i salę, pominąć prowadzącego oraz osobną etykietę notatki, ale zachować alert kolizji.
+3. Jeśli wariant kompaktowy nie mieści wszystkich zajęć, użyć przewijanej listy zamiast tekstu „Jeszcze {liczba}”.
+4. W wariancie rozszerzonym pokazać przewijaną listę dzisiejszych zajęć wraz z salą, prowadzącym i statusem kolizji albo notatki.
+5. Wiersze powinny wykorzystać pełną szerokość widgetu. Wariant rozszerzony ma używać większych odstępów i pełniejszych metadanych, a nie tylko zwiększać wysokość listy.
 6. Ograniczać prowadzącego i lokalizację wielokropkiem. Nie ucinać czasu. Nazwa zajęć może zająć dwa wiersze, jeśli pozwala na to wysokość wariantu.
-7. Ograniczyć maksymalny rozmiar widgetu do około 360 na 260 dp, aby launcher nie tworzył nadmiernie pustego układu.
+7. Ograniczyć maksymalny rozmiar widgetu do 360 na 420 dp, aby launcher nie tworzył nadmiernie pustego układu.
 8. Dodać statyczny podgląd używany przez systemowy wybór widgetów.
 
 #### Etap 3: zachowanie i odświeżanie
@@ -564,7 +717,7 @@ Status: obecny widget działa na launcherze, ale duży wariant wykorzystuje prze
 Testy JVM powinny obejmować:
 
 - wariant kompaktowy i rozszerzony;
-- limit widocznych zajęć oraz tekst „Jeszcze {liczba}”;
+- przewijaną listę wszystkich zajęć bez stopki „Jeszcze {liczba}”;
 - pusty dzień, brak semestru, datę poza semestrem i błąd odczytu;
 - kolizję, notatkę i długie metadane;
 - zgodność kolejności zajęć z `ActivePlanProvider`.
@@ -582,6 +735,74 @@ Na launcherze Androida 12 lub nowszego sprawdzić:
 - otwarcie ekranu „Dzisiaj” po zimnym i ciepłym starcie.
 
 Kryterium zakończenia: żaden wariant nie ucina czasu, nie nakłada tekstów i nie wymaga koloru do zrozumienia informacji. Duży wariant wykorzystuje dodatkowe miejsce na pełniejsze metadane i czytelniejsze odstępy.
+
+### 13.3. Plan separatorów i licznika kolizji widgetu
+
+Zmiany naprawiają nakładanie separatora na treść elementu `LazyColumn` i dodają do nagłówka liczbę unikalnych kolizji. Zadania wykonywać kolejno. Każdy etap powinien kończyć się kompilującym przyrostem.
+
+#### Etap 1. Poprawna struktura elementu listy i separator
+
+1. W `MakTodayWidget.kt` wydziel prywatny komponent pojedynczego elementu listy z jednym głównym `Column`.
+2. Wewnątrz tego komponentu umieść kolejno:
+   - istniejący `WidgetOccurrenceRow`,
+   - odstęp `2.dp`,
+   - poziomy separator o wysokości `1.dp` i pełnej dostępnej szerokości,
+   - odstęp `2.dp`.
+3. Użyj koloru `surfaceVariant` dla separatora, aby był widoczny, ale nie konkurował z informacją o kolizji.
+4. Nie pokazuj separatora ani końcowego odstępu po ostatnim wpisie.
+5. W `itemsIndexed` zwracaj wyłącznie ten jeden komponent. Kilka elementów najwyższego poziomu może zostać ułożonych przez Glance jeden na drugim, co obecnie powoduje kreski przechodzące przez godzinę i treść zajęć.
+6. Zachowaj pionowy znacznik koloru zajęć, przewijanie listy i obsługę kliknięcia.
+
+Kryterium zakończenia: poziomy separator znajduje się tylko między wpisami i nie przecina godziny, nazwy, metadanych ani komunikatu o kolizji.
+
+#### Etap 2. Jednoznaczne liczenie kolizji
+
+1. Dodaj `collisionCount: Int` do `WidgetUiState.Ready`.
+2. Wylicz wartość w `WidgetPresenter` na podstawie `ActivePlan.collisions`, a nie przez sumowanie komunikatów przypisanych do wierszy.
+3. Dla każdej kolizji zbuduj stabilny klucz zawierający:
+   - posortowaną parę identyfikatorów wystąpień,
+   - początek części wspólnej,
+   - koniec części wspólnej.
+4. Usuń duplikaty kluczy i użyj liczby pozostałych elementów jako `collisionCount`.
+5. Jedna para zajęć nachodząca na siebie w jednym przedziale ma dawać jedną kolizję. Trzy różne pary mają dawać trzy kolizje.
+
+Kryterium zakończenia: ta sama kolizja reprezentowana przy obu wpisach jest liczona tylko raz.
+
+#### Etap 3. Licznik kolizji w nagłówku
+
+1. Rozszerz `WidgetHeaderDetails` o parametr `collisionCount`.
+2. Dla stanu `Ready` przekaż liczbę z modelu. Dla stanu pustego przekaż zero.
+3. Gdy liczba jest większa od zera, pokaż ją obok liczby zajęć z odstępem `6.dp`.
+4. Użyj koloru błędu, pogrubienia i rozmiaru `11.sp`. Nie stosuj kolejnego pilla, aby komunikat miał inną wagę wizualną niż oznaczenie tygodnia.
+5. Zastosuj poprawne formy:
+   - `1 kolizja`,
+   - `2 kolizje`, `3 kolizje`, `4 kolizje`,
+   - `5 kolizji` i pozostałe wartości.
+6. Dla zera nie pokazuj żadnej informacji o kolizjach.
+7. Zachowaj pojedynczy wiersz szczegółów nagłówka oraz istniejący pill tygodnia.
+
+Kryterium zakończenia: nagłówek może pokazać na przykład `3 zajęcia` i `1 kolizja`, bez pogorszenia czytelności daty i oznaczenia tygodnia.
+
+#### Etap 4. Test struktury listy
+
+1. Dodaj stabilne znaczniki testowe separatorów zależne od indeksu wpisu.
+2. W teście kompozycji Glance sprawdź, że separator występuje między pierwszym i drugim wpisem oraz nie występuje po ostatnim.
+3. Zachowaj test potwierdzający obecność wszystkich elementów w przewijanej liście i brak tekstu `Jeszcze N`.
+4. Test powinien wykrywać regresję, w której wiersz i separator ponownie stają się oddzielnymi elementami najwyższego poziomu nakładanymi przez kontener.
+
+Kryterium zakończenia: test opisuje strukturę elementu listy, a nie tylko obecność tekstów na ekranie.
+
+#### Etap 5. Test licznika i weryfikacja całości
+
+1. Dodaj test prezentera, w którym jedna para nachodzących zajęć daje `collisionCount = 1`.
+2. Dodaj test prezentera dla trzech unikalnych par kolizji.
+3. Dodaj test nagłówka dla wartości zero oraz wartości dodatniej.
+4. Zaktualizuj wszystkie konstruktory `WidgetUiState.Ready` w testach i podglądach.
+5. Uruchom pełny zestaw testów Gradle po zakończeniu implementacji.
+6. Sprawdź ręcznie mały i duży widżet w launcherze: przewijanie, położenie separatorów, licznik w nagłówku i komunikaty przy wpisach.
+7. Po akceptacji uzupełnij `JOURNAL.md` i status wykonania tego planu.
+
+Kryterium zakończenia: automatyczne testy potwierdzają unikalne liczenie kolizji i poprawną strukturę listy, a kontrola w launcherze potwierdza brak nakładających się kresek.
 
 ## 14. Ustawienia i dane
 
