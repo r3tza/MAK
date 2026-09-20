@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Separatory i licznik kolizji widgetu
+
+- Fakty: Wpis listy widgetu zawiera teraz wiersz, odstęp, separator i końcowy odstęp w jednym komponencie `Column`. Separator występuje tylko między wpisami i ma stabilny znacznik testowy.
+- Decyzja: Liczyć kolizje na podstawie unikalnej pary identyfikatorów wystąpień oraz zakresu części wspólnej. Ta sama kolizja przypisana do obu wpisów pozostaje jednym zdarzeniem.
+- Interfejs: Nagłówek widgetu pokazuje liczbę kolizji obok liczby zajęć tylko wtedy, gdy liczba jest większa od zera. Licznik korzysta z koloru błędu i poprawnej polskiej odmiany.
+- Weryfikacja: `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą. Test kompozycji sprawdza separatory między wpisami i ich brak po ostatnim wpisie. Kontrola na launcherze pozostaje wymagana.
+
 ## 2026-09-20: Modernizacja układu widgetu
 
 - Fakty: Widget otrzymał nagłówek z datą 16 sp, etykietę tygodnia, licznik zajęć, pasek koloru kierunku, stałą kolumnę czasu, osobne metadane i krótkie etykiety kolizji oraz notatek. `SizeMode.Responsive` udostępnia osiem rozmiarów: `180x110`, `240x110`, `180x175`, `240x175`, `180x240`, `240x240`, `180x340` i `240x340 dp`. Zakres providera pozostaje od `180x110` do `360x420 dp`.

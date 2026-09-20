@@ -740,6 +740,8 @@ Kryterium zakończenia: żaden wariant nie ucina czasu, nie nakłada tekstów i 
 
 Zmiany naprawiają nakładanie separatora na treść elementu `LazyColumn` i dodają do nagłówka liczbę unikalnych kolizji. Zadania wykonywać kolejno. Każdy etap powinien kończyć się kompilującym przyrostem.
 
+Postęp: etapy 1-4 są zaimplementowane i objęte testami JVM oraz testem kompozycji Glance. Etap 5 ma zakończoną walidację Gradle. Odbiór na launcherze pozostaje do wykonania.
+
 #### Etap 1. Poprawna struktura elementu listy i separator
 
 1. W `MakTodayWidget.kt` wydziel prywatny komponent pojedynczego elementu listy z jednym głównym `Column`.
