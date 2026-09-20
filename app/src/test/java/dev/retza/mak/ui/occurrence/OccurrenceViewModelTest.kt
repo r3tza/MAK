@@ -322,12 +322,77 @@ class OccurrenceViewModelTest {
         advanceUntilIdle()
         assertEquals("Odwołano termin", sink.published.single().message)
         assertEquals(OccurrenceStatusUi.Cancelled, viewModel.details.value.status)
+        assertTrue(viewModel.details.value.canRestoreOccurrence)
+        assertFalse(viewModel.details.value.canCancelOccurrence)
 
         viewModel.restoreOccurrence()
         advanceUntilIdle()
         assertEquals(2, sink.published.size)
         assertEquals("Przywrócono termin", sink.published.last().message)
         assertEquals(OccurrenceStatusUi.Scheduled, viewModel.details.value.status)
+        assertFalse(viewModel.details.value.canRestoreOccurrence)
+        assertTrue(viewModel.details.value.canCancelOccurrence)
+    }
+
+    @Test
+    fun invalidTimeRangeIsRejectedWithoutSaveOrFeedback() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "10:30") }
+        advanceUntilIdle()
+        viewModel.saveOccurrenceChange()
+        advanceUntilIdle()
+
+        assertNotNull(viewModel.details.value.draftErrors[OccurrenceEditField.EndTime])
+        assertTrue(repository.occurrenceChanges.isEmpty())
+        assertTrue(sink.published.isEmpty())
+    }
+
+    @Test
+    fun outOfSemesterDateIsRejectedWithoutSaveOrFeedback() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.updateDraft { it.copy(targetDateDraft = "2026-12-01") }
+        advanceUntilIdle()
+        viewModel.saveOccurrenceChange()
+        advanceUntilIdle()
+
+        assertNotNull(viewModel.details.value.draftErrors[OccurrenceEditField.Date])
+        assertTrue(repository.occurrenceChanges.isEmpty())
+        assertTrue(sink.published.isEmpty())
+    }
+
+    @Test
+    fun occurrenceChangeErrorKeepsDraftAndPublishesOneError() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "12:30") }
+        advanceUntilIdle()
+        repository.failSaves = true
+        viewModel.saveOccurrenceChange()
+        advanceUntilIdle()
+
+        val state = viewModel.details.value
+        assertEquals(1, sink.published.size)
+        assertEquals(UiFeedbackKind.Error, sink.published.single().kind)
+        assertEquals("11:00", state.startTimeDraft)
+        assertEquals("Nie udało się zapisać zmian.", state.draftError)
+        assertFalse(state.isSaving)
     }
 
     @Test

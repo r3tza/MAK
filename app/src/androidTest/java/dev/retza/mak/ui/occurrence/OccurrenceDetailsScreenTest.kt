@@ -17,6 +17,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.espresso.Espresso
+import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -271,5 +272,59 @@ class OccurrenceDetailsScreenTest {
         Espresso.pressBack()
         composeTestRule.onNodeWithText("Edytuj ten termin").assertIsDisplayed()
         assertEquals(0, dismissCalls)
+    }
+
+    @Test
+    fun editDialogShowsFieldValidationErrorAt320Dp() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(
+                    modifier = Modifier
+                        .width(320.dp)
+                        .height(900.dp)
+                ) {
+                    OccurrenceDetailsScreen(
+                        state = OccurrenceDetailsUiState(
+                            dateLabel = "Poniedziałek, 21 września",
+                            currentDate = "2026-09-21",
+                            startTime = "09:00",
+                            endTime = "10:30",
+                            targetDateDraft = "2026-09-21",
+                            startTimeDraft = "11:00",
+                            endTimeDraft = "10:30",
+                            baseDate = "2026-09-21",
+                            baseStartTime = "09:00",
+                            baseEndTime = "10:30",
+                            showEditDialog = true,
+                            draftErrors = mapOf(
+                                OccurrenceEditField.EndTime to FieldErrorUi(
+                                    "Koniec musi być późniejszy niż początek tego samego dnia."
+                                )
+                            )
+                        ),
+                        onDeleteBaseClass = {},
+                        onDismissDeleteConfirmation = {},
+                        onOpenOccurrenceEdit = {},
+                        onDismissOccurrenceEdit = {},
+                        onSaveOccurrenceChange = {},
+                        onRestoreOccurrence = {},
+                        onOccurrenceNoteDraftChanged = {},
+                        onSharedNoteDraftChanged = {},
+                        onTargetDateDraftChanged = {},
+                        onStartTimeDraftChanged = {},
+                        onEndTimeDraftChanged = {},
+                        onRoomDraftChanged = {},
+                        onSaveSharedNote = {},
+                        onSaveOccurrenceNote = {},
+                        onBack = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Edytuj ten termin").assertIsDisplayed()
+        composeTestRule
+            .onNodeWithText("Koniec musi być późniejszy niż początek tego samego dnia.")
+            .assertIsDisplayed()
     }
 }
