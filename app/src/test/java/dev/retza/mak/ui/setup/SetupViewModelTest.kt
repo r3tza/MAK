@@ -121,10 +121,11 @@ class SetupViewModelTest {
     }
 
     @Test
-    fun doubleClickRunsOneTransaction() = runTest(mainDispatcher) {
+    fun doubleClickRunsOneTransactionAndOneFeedback() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         repository.saveGate = CompletableDeferred()
-        val viewModel = viewModel(repository)
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink)
         viewModel.fillValidSemester()
         viewModel.next()
         advanceUntilIdle()
@@ -139,6 +140,7 @@ class SetupViewModelTest {
         advanceUntilIdle()
 
         assertEquals(1, repository.events.count { it == "saveSetupConfiguration" })
+        assertEquals(1, sink.published.size)
         assertFalse(viewModel.setup.value.isSaving)
     }
 
@@ -166,10 +168,11 @@ class SetupViewModelTest {
     }
 
     @Test
-    fun startDuringSaveResetsTheWizardWithoutPartialState() = runTest(mainDispatcher) {
+    fun startDuringSaveResetsTheWizardWithoutFeedback() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         repository.saveGate = CompletableDeferred()
-        val viewModel = viewModel(repository)
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink)
         viewModel.fillValidSemester()
         viewModel.next()
         advanceUntilIdle()
@@ -183,6 +186,7 @@ class SetupViewModelTest {
 
         assertEquals(SetupWizardUiState(), viewModel.setup.value)
         assertFalse(viewModel.setup.value.isSaving)
+        assertTrue(sink.published.isEmpty())
     }
 
     @Test
