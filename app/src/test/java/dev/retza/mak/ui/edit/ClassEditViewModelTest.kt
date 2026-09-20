@@ -74,6 +74,43 @@ class ClassEditViewModelTest {
     }
 
     @Test
+    fun openEditWaitsForFirstSemesterDataEmission() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.occurrenceDataGate = kotlinx.coroutines.CompletableDeferred()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.openEdit("1:2026-09-21")
+        advanceUntilIdle()
+        assertEquals("", viewModel.editor.value.name)
+
+        repository.occurrenceDataGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals("Edytuj zajęcia", viewModel.editor.value.title)
+        assertEquals("Programowanie", viewModel.editor.value.name)
+    }
+
+    @Test
+    fun lastOpenEditWinsWhenDataArrivesLate() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.classes += repository.classes.single().copy(id = 2L, name = "Matematyka")
+        repository.occurrenceDataGate = kotlinx.coroutines.CompletableDeferred()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.openEdit("1:2026-09-21")
+        viewModel.openEdit("2:2026-09-21")
+        advanceUntilIdle()
+        assertEquals("", viewModel.editor.value.name)
+
+        repository.occurrenceDataGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals("Matematyka", viewModel.editor.value.name)
+    }
+
+    @Test
     fun saveRejectsInvalidTime() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val viewModel = viewModel(repository)

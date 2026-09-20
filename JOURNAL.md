@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: `openEdit` czeka na dane semestru
+
+- Fakty: `ClassEditViewModel.openEdit` czytał `activeSemesterData.value` i kończył działanie, gdy niezależny kolektor nie otrzymał jeszcze danych. Użytkownik mógł zobaczyć pusty albo poprzedni formularz, mimo że `MakViewModel` ustawił trasę edycji.
+- Decyzja: `openEdit` anuluje poprzednie zadanie, zeruje identyfikator i czyści formularz, czeka na pierwsze niepuste dane semestru, a dopiero potem wczytuje klasę. `openNew` także anuluje oczekujące zadanie. To ten sam wzorzec co w `OccurrenceViewModel`.
+- Powód: Dane semestru pochodzą z asynchronicznego przepływu Room, więc otwarcie edycji nie może zależeć od tego, czy pierwsza emisja już dotarła.
+- Weryfikacja: Dodano testy `openEditWaitsForFirstSemesterDataEmission` i `lastOpenEditWinsWhenDataArrivesLate`. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-20: Start etapu 8 od `ClassEditViewModel`
 
 - Fakty: Logika formularza zajęć, walidacji i zapisu mieszkała w `MakViewModel` razem z planem, semestrem i ustawieniami. `ClassEditUiState` i pola formularza są już w `ui/edit`.

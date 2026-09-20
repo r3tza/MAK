@@ -16,10 +16,12 @@ import dev.retza.mak.ui.feedback.FeedbackSink
 import java.time.DayOfWeek
 import java.time.LocalDate
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
@@ -35,6 +37,7 @@ class ClassEditViewModel(
     val editor: StateFlow<ClassEditUiState> = state.asStateFlow()
 
     private var editingClassId: Long? = null
+    private var openJob: Job? = null
 
     private val activeSemesterData = repository.observeActiveSemester()
         .flatMapLatest { semester ->
@@ -57,6 +60,7 @@ class ClassEditViewModel(
     }
 
     fun openNew(oneOffDate: LocalDate? = null) {
+        openJob?.cancel()
         editingClassId = null
         val recurrenceId = if (oneOffDate == null) "every_week" else "once"
         state.value = withActiveOptions(
@@ -70,36 +74,41 @@ class ClassEditViewModel(
 
     fun openEdit(occurrenceId: String) {
         val classId = occurrenceId.substringBefore(':').toLongOrNull() ?: return
-        val data = activeSemesterData.value ?: return
-        val item = data.classes.firstOrNull { it.id == classId } ?: return
-        val course = data.courses.firstOrNull { it.id == item.courseId }
-        val teacher = data.teachers.firstOrNull { it.id == item.teacherId }
-        val recurrenceId = when (item.recurrence) {
-            Recurrence.EVERY_WEEK -> "every_week"
-            Recurrence.A_WEEK -> "a_week"
-            Recurrence.B_WEEK -> "b_week"
-            Recurrence.ONCE -> "once"
-        }
-        editingClassId = classId
-        state.value = withActiveOptions(
-            defaultClassEditState().copy(
-                title = "Edytuj zajęcia",
-                name = item.name,
-                courseName = course?.name.orEmpty(),
-                type = item.type,
-                dayLabel = classEditDayNames[item.dayOfWeek].orEmpty(),
-                startTime = item.startTime.toString(),
-                endTime = item.endTime.toString(),
-                recurrenceId = recurrenceId,
-                recurrenceLabel = classEditRecurrenceLabel(recurrenceId),
-                occurrenceDate = item.date?.toString().orEmpty(),
-                room = item.room.orEmpty(),
-                building = item.building.orEmpty(),
-                group = item.group.orEmpty(),
-                teacher = teacher?.name.orEmpty(),
-                note = item.classNote.orEmpty()
+        openJob?.cancel()
+        editingClassId = null
+        state.value = withActiveOptions(defaultClassEditState())
+        openJob = viewModelScope.launch {
+            val data = activeSemesterData.first { it != null } ?: return@launch
+            val item = data.classes.firstOrNull { it.id == classId } ?: return@launch
+            val course = data.courses.firstOrNull { it.id == item.courseId }
+            val teacher = data.teachers.firstOrNull { it.id == item.teacherId }
+            val recurrenceId = when (item.recurrence) {
+                Recurrence.EVERY_WEEK -> "every_week"
+                Recurrence.A_WEEK -> "a_week"
+                Recurrence.B_WEEK -> "b_week"
+                Recurrence.ONCE -> "once"
+            }
+            editingClassId = classId
+            state.value = withActiveOptions(
+                defaultClassEditState().copy(
+                    title = "Edytuj zajęcia",
+                    name = item.name,
+                    courseName = course?.name.orEmpty(),
+                    type = item.type,
+                    dayLabel = classEditDayNames[item.dayOfWeek].orEmpty(),
+                    startTime = item.startTime.toString(),
+                    endTime = item.endTime.toString(),
+                    recurrenceId = recurrenceId,
+                    recurrenceLabel = classEditRecurrenceLabel(recurrenceId),
+                    occurrenceDate = item.date?.toString().orEmpty(),
+                    room = item.room.orEmpty(),
+                    building = item.building.orEmpty(),
+                    group = item.group.orEmpty(),
+                    teacher = teacher?.name.orEmpty(),
+                    note = item.classNote.orEmpty()
+                )
             )
-        )
+        }
     }
 
     fun update(transform: (ClassEditUiState) -> ClassEditUiState) {

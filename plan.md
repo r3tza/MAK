@@ -176,7 +176,7 @@ Status etapu: zrealizowane. Audyt potwierdził, że `MakViewModel` nie ma pól `
 
 Kryterium etapu: nadrzędny stan koordynuje wyłącznie dane wspólne, a logika formularzy i operacji należy do ViewModelu właściwego przepływu.
 
-Status etapu: rozpoczęty od `ClassEditViewModel`. Nowy ViewModel przejmuje otwieranie formularza, wczytywanie bazowych zajęć, walidację i zapis, a `MakViewModel` tymczasowo deleguje te operacje i nadal odpowiada za nawigację. Kolejne kroki to podłączenie ekranu bezpośrednio do `ClassEditViewModel`, efekt zamknięcia po zapisie oraz feedback operacji.
+Status etapu: rozpoczęty od `ClassEditViewModel`. Nowy ViewModel przejmuje otwieranie formularza, wczytywanie bazowych zajęć, walidację i zapis, a `MakViewModel` tymczasowo deleguje te operacje i nadal odpowiada za nawigację. `openEdit` anuluje poprzednie zadanie, czyści formularz i czeka na pierwsze dane semestru, więc wygrywa ostatnie otwarcie. Kolejne kroki to podłączenie ekranu bezpośrednio do `ClassEditViewModel`, efekt zamknięcia po zapisie oraz feedback operacji.
 
 Po każdym etapie uruchomić `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` oraz sprawdzić, że commit nie zawiera niezwiązanych zmian. Pierwsze zadanie wykonawcze obejmuje wyłącznie etapy 1 i 2. Wydzielanie `OccurrenceViewModel` rozpoczyna się po zaakceptowaniu granicy `FeedbackController`.
 
