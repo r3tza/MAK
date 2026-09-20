@@ -82,6 +82,7 @@ class MainActivity : ComponentActivity() {
                 MakApp(
                     viewModel = viewModel,
                     occurrenceViewModel = occurrenceViewModel,
+                    classEditViewModel = classEditViewModel,
                     feedback = application.feedbackController.feedback,
                     onCreateExportDocument = { exportLauncher.launch("mak-plan.json") }
                 )

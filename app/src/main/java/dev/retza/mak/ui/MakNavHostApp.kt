@@ -18,6 +18,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -36,6 +37,7 @@ import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakIconButton
 import dev.retza.mak.ui.components.MakNavBar
 import dev.retza.mak.ui.edit.ClassEditScreen
+import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.MakSnackbarHost
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.occurrence.OccurrenceDetailsScreen
@@ -49,12 +51,14 @@ import dev.retza.mak.ui.settings.SettingsScreen
 import dev.retza.mak.ui.setup.SetupWizard
 import dev.retza.mak.ui.today.TodayScreen
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MakApp(
     viewModel: MakViewModel,
     occurrenceViewModel: OccurrenceViewModel,
+    classEditViewModel: ClassEditViewModel,
     feedback: Flow<UiFeedback>,
     onCreateExportDocument: () -> Unit
 ) {
@@ -119,11 +123,12 @@ fun MakApp(
 
             !state.requiresSetup &&
                 currentRoute != MakRoutes.Occurrence &&
+                currentRoute != MakRoutes.Edit &&
                 !destinationMatchesRoute(state.destination, currentRoute) -> {
                 when (state.destination) {
                     MakDestination.Today -> openRoot(MakDestination.Today, MakRoutes.Today)
                     MakDestination.Schedule -> openRoot(MakDestination.Schedule, MakRoutes.Schedule)
-                    MakDestination.EditClass -> openChild(MakDestination.EditClass, MakRoutes.Edit)
+                    MakDestination.EditClass -> Unit
                     MakDestination.OccurrenceDetails -> Unit
                     MakDestination.Semester -> {
                         state.settings.activeSemesterId?.let {
@@ -147,7 +152,7 @@ fun MakApp(
             if (occurrenceDetails.canEditBaseClass) {
                 "Edytuj bazowe zajęcia" to {
                     occurrenceViewModel.selectedClassId.value?.let { id ->
-                        viewModel.openEditClass("$id:${occurrenceDetails.targetDateDraft}")
+                        classEditViewModel.openEdit("$id:${occurrenceDetails.targetDateDraft}")
                         navController.navigate(editRoute(id, occurrenceDetails.targetDateDraft))
                     }
                 }
@@ -197,7 +202,7 @@ fun MakApp(
                     onToday = { openRoot(MakDestination.Today, MakRoutes.Today) },
                     onPlan = { openRoot(MakDestination.Schedule, MakRoutes.Schedule) },
                     onAdd = {
-                        viewModel.openNewClass()
+                        classEditViewModel.openNew()
                         navController.navigate(MakRoutes.Edit)
                     }
                 )
@@ -268,32 +273,33 @@ fun MakApp(
                 val date = entry.arguments?.getString("date")
                 LaunchedEffect(classId, date) {
                     if (classId != null && date != null) {
-                        viewModel.openEditClass("$classId:$date")
+                        classEditViewModel.openEdit("$classId:$date")
                     }
                 }
+                val scope = rememberCoroutineScope()
                 ClassEditScreen(
-                    state = state.editor,
-                    onNameChanged = { value -> viewModel.updateEditor { it.copy(name = value) } },
-                    onCourseChanged = { value -> viewModel.updateEditor { it.copy(courseName = value) } },
-                    onTypeChanged = { value -> viewModel.updateEditor { it.copy(type = value) } },
-                    onDayChanged = { value -> viewModel.updateEditor { it.copy(dayLabel = value) } },
-                    onStartTimeChanged = { value -> viewModel.updateEditor { it.copy(startTime = value) } },
-                    onEndTimeChanged = { value -> viewModel.updateEditor { it.copy(endTime = value) } },
+                    state = classEditViewModel.editor.collectAsStateWithLifecycle().value,
+                    onNameChanged = { value -> classEditViewModel.update { it.copy(name = value) } },
+                    onCourseChanged = { value -> classEditViewModel.update { it.copy(courseName = value) } },
+                    onTypeChanged = { value -> classEditViewModel.update { it.copy(type = value) } },
+                    onDayChanged = { value -> classEditViewModel.update { it.copy(dayLabel = value) } },
+                    onStartTimeChanged = { value -> classEditViewModel.update { it.copy(startTime = value) } },
+                    onEndTimeChanged = { value -> classEditViewModel.update { it.copy(endTime = value) } },
                     onRecurrenceChanged = { value ->
-                        viewModel.updateEditor {
+                        classEditViewModel.update {
                             it.copy(
                                 recurrenceId = value,
                                 recurrenceLabel = recurrenceLabelForUi(value)
                             )
                         }
                     },
-                    onOccurrenceDateChanged = { value -> viewModel.updateEditor { it.copy(occurrenceDate = value) } },
-                    onRoomChanged = { value -> viewModel.updateEditor { it.copy(room = value) } },
-                    onBuildingChanged = { value -> viewModel.updateEditor { it.copy(building = value) } },
-                    onGroupChanged = { value -> viewModel.updateEditor { it.copy(group = value) } },
-                    onTeacherChanged = { value -> viewModel.updateEditor { it.copy(teacher = value) } },
-                    onNoteChanged = { value -> viewModel.updateEditor { it.copy(note = value) } },
-                    onSave = viewModel::saveClass,
+                    onOccurrenceDateChanged = { value -> classEditViewModel.update { it.copy(occurrenceDate = value) } },
+                    onRoomChanged = { value -> classEditViewModel.update { it.copy(room = value) } },
+                    onBuildingChanged = { value -> classEditViewModel.update { it.copy(building = value) } },
+                    onGroupChanged = { value -> classEditViewModel.update { it.copy(group = value) } },
+                    onTeacherChanged = { value -> classEditViewModel.update { it.copy(teacher = value) } },
+                    onNoteChanged = { value -> classEditViewModel.update { it.copy(note = value) } },
+                    onSave = { scope.launch { if (classEditViewModel.save()) navController.popBackStack() } },
                     onCancel = ::navigateBack,
                     onRetry = {},
                     modifier = Modifier.fillMaxSize()
@@ -469,7 +475,7 @@ fun MakApp(
                     onBack = viewModel::setupBack,
                     onAddClass = {
                         viewModel.finishSetup()
-                        viewModel.openNewClass()
+                        classEditViewModel.openNew()
                         navController.navigate(MakRoutes.Edit)
                     },
                     onFinish = {

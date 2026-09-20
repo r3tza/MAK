@@ -19,7 +19,6 @@ import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.SemesterUi
-import dev.retza.mak.ui.edit.ClassEditUiState
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
@@ -79,7 +78,6 @@ data class MakUiState(
     val requiresSetup: Boolean = true,
     val today: TodayUiState = emptyTodayState(),
     val schedule: ScheduleUiState = emptyScheduleState(),
-    val editor: ClassEditUiState = ClassEditUiState(),
     val semester: SemesterScreenUiState = SemesterScreenUiState(),
     val themeId: String = "system",
     val settings: SettingsUiState = SettingsUiState(),
@@ -127,13 +125,8 @@ class MakViewModel(
         if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
     }
 
-    val uiState = combine(
-        semesters,
-        activeSemesterData,
-        controls,
-        classEditViewModel.editor
-    ) { semesterList, activeData, control, editorState ->
-        buildState(semesterList, activeData, control, editorState)
+    val uiState = combine(semesters, activeSemesterData, controls) { semesterList, activeData, control ->
+        buildState(semesterList, activeData, control)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -207,30 +200,8 @@ class MakViewModel(
         }
     }
 
-    fun openNewClass(oneOffDate: LocalDate? = null) {
-        classEditViewModel.openNew(oneOffDate)
-        controls.update { it.copy(destination = MakDestination.EditClass) }
-    }
-
-    fun openEditClass(occurrenceId: String) {
-        classEditViewModel.openEdit(occurrenceId)
-        controls.update { it.copy(destination = MakDestination.EditClass) }
-    }
-
     fun openNewClassForSelectedCalendarDay() {
-        openNewClass(controls.value.calendarDate)
-    }
-
-    fun updateEditor(transform: (ClassEditUiState) -> ClassEditUiState) {
-        classEditViewModel.update(transform)
-    }
-
-    fun saveClass() {
-        viewModelScope.launch {
-            if (classEditViewModel.save()) {
-                controls.update { it.copy(destination = MakDestination.Today) }
-            }
-        }
+        classEditViewModel.openNew(controls.value.calendarDate)
     }
 
     fun selectScheduleView(view: ScheduleView) {
@@ -524,8 +495,7 @@ class MakViewModel(
     private fun buildState(
         semesterList: List<SemesterEntity>,
         activeData: SemesterWithData?,
-        control: Controls,
-        editorState: ClassEditUiState
+        control: Controls
     ): MakUiState {
         val requiresSetup = control.forceSetup || semesterList.isEmpty() ||
             activeData != null && activeData.courses.isEmpty()
@@ -535,7 +505,6 @@ class MakViewModel(
             requiresSetup = requiresSetup,
             today = buildToday(activeData, control.todayDate),
             schedule = buildSchedule(activeData, control),
-            editor = editorState,
             themeId = control.themeId,
             semester = control.semesterDraft.copy(
                 overrides = activeData?.weekOverrides?.map { override ->
