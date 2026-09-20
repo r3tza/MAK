@@ -68,39 +68,61 @@ class WidgetPresenterTest {
     }
 
     @Test
-    fun layoutPolicyClassifiesAllResponsiveSizesAndShowsExplicitLimits() {
-        val smallMode = widgetLayoutMode(180.dp, 110.dp)
-        val mediumMode = widgetLayoutMode(280.dp, 180.dp)
-        val largeMode = widgetLayoutMode(360.dp, 260.dp)
+    fun layoutPolicyClassifiesAllResponsiveSizesOnBothAxes() {
+        val sizes = listOf(
+            180.dp to 110.dp,
+            240.dp to 110.dp,
+            180.dp to 175.dp,
+            240.dp to 175.dp,
+            180.dp to 240.dp,
+            240.dp to 240.dp
+        )
+        val modes = sizes.map { (width, height) -> widgetLayoutMode(width, height) }
 
-        assertEquals(WidgetLayoutMode.Compact, smallMode)
-        assertEquals(WidgetLayoutMode.ExpandedMedium, mediumMode)
-        assertEquals(WidgetLayoutMode.ExpandedLarge, largeMode)
-        assertEquals(1, widgetItemLimit(smallMode))
-        assertEquals(2, widgetItemLimit(mediumMode))
-        assertEquals(3, widgetItemLimit(largeMode))
-        assertEquals(28f, widgetLayoutPolicy(smallMode).accentHeight.value, 0f)
-        assertEquals(42f, widgetLayoutPolicy(mediumMode).accentHeight.value, 0f)
-        assertEquals(52f, widgetLayoutPolicy(largeMode).accentHeight.value, 0f)
-        assertEquals(4f, widgetLayoutPolicy(smallMode).headerSpacing.value, 0f)
-        assertEquals(6f, widgetLayoutPolicy(mediumMode).headerSpacing.value, 0f)
-        assertEquals(6f, widgetLayoutPolicy(largeMode).headerSpacing.value, 0f)
-        assertEquals(1, widgetNameMaxLines(mediumMode))
-        assertEquals(2, widgetNameMaxLines(largeMode))
-        assertEquals(42, widgetNameCharacterLimit(mediumMode))
-        assertEquals(56, widgetNameCharacterLimit(largeMode))
-        assertEquals(0f, widgetLayoutPolicy(smallMode).rowSpacing.value, 0f)
-        assertEquals(4f, widgetLayoutPolicy(mediumMode).rowSpacing.value, 0f)
-        assertEquals(6f, widgetLayoutPolicy(largeMode).rowSpacing.value, 0f)
-        assertEquals(WidgetStatusMode.Hidden, widgetLayoutPolicy(smallMode).statusMode)
-        assertEquals(WidgetStatusMode.Primary, widgetLayoutPolicy(mediumMode).statusMode)
-        assertEquals(WidgetStatusMode.All, widgetLayoutPolicy(largeMode).statusMode)
+        assertEquals(6, MakWidgetSizes.responsiveSizes.size)
+        assertTrue(modes.all { it.width == WidgetWidthMode.Narrow || it.width == WidgetWidthMode.Wide })
+        assertEquals(WidgetHeightMode.Compact, modes[0].height)
+        assertEquals(WidgetHeightMode.Compact, modes[1].height)
+        assertEquals(WidgetHeightMode.Medium, modes[2].height)
+        assertEquals(WidgetHeightMode.Medium, modes[3].height)
+        assertEquals(WidgetHeightMode.Large, modes[4].height)
+        assertEquals(WidgetHeightMode.Large, modes[5].height)
+        assertEquals(WidgetWidthMode.Narrow, modes[0].width)
+        assertEquals(WidgetWidthMode.Wide, modes[1].width)
+        assertEquals(WidgetWidthMode.Narrow, modes[2].width)
+        assertEquals(WidgetWidthMode.Wide, modes[3].width)
+        assertEquals(WidgetWidthMode.Narrow, modes[4].width)
+        assertEquals(WidgetWidthMode.Wide, modes[5].width)
+
+        assertEquals(1, widgetItemLimit(modes[0]))
+        assertEquals(1, widgetItemLimit(modes[1]))
+        assertEquals(2, widgetItemLimit(modes[2]))
+        assertEquals(2, widgetItemLimit(modes[3]))
+        assertEquals(3, widgetItemLimit(modes[4]))
+        assertEquals(3, widgetItemLimit(modes[5]))
+        assertEquals(28f, widgetLayoutPolicy(modes[0]).accentHeight.value, 0f)
+        assertEquals(42f, widgetLayoutPolicy(modes[2]).accentHeight.value, 0f)
+        assertEquals(52f, widgetLayoutPolicy(modes[4]).accentHeight.value, 0f)
+        assertEquals(6f, widgetLayoutPolicy(modes[0]).headerSpacing.value, 0f)
+        assertEquals(4f, widgetLayoutPolicy(modes[2]).rowSpacing.value, 0f)
+        assertEquals(6f, widgetLayoutPolicy(modes[4]).rowSpacing.value, 0f)
+        assertEquals(1, widgetNameMaxLines(modes[4]))
+        assertEquals(2, widgetNameMaxLines(modes[5]))
+        assertEquals(42, widgetNameCharacterLimit(modes[4]))
+        assertEquals(56, widgetNameCharacterLimit(modes[5]))
+        assertEquals(WidgetStatusMode.Hidden, widgetLayoutPolicy(modes[0]).statusMode)
+        assertEquals(WidgetStatusMode.Primary, widgetLayoutPolicy(modes[2]).statusMode)
+        assertEquals(WidgetStatusMode.All, widgetLayoutPolicy(modes[4]).statusMode)
+        assertEquals(2f, widgetLayoutPolicy(modes[2]).overflowSpacing.value, 0f)
+        assertEquals(14f, widgetLayoutPolicy(modes[4]).footerHeight.value, 0f)
         assertEquals("Jeszcze 3", widgetOverflowLabel(total = 5, visible = 2))
+        assertEquals("Jeszcze 1", widgetOverflowLabel(total = 4, visible = 3))
+        assertEquals(null, widgetOverflowLabel(total = 3, visible = 3))
         assertEquals(null, widgetOverflowLabel(total = 2, visible = 2))
     }
 
     @Test
-    fun metadataUsesCommasAndOmitsTeacherOnlyInCompactMode() {
+    fun metadataUsesWidthToShowTeacher() {
         val item = WidgetOccurrenceUi(
             id = "class:date",
             startTime = "09:00",
@@ -116,11 +138,19 @@ class WidgetPresenterTest {
 
         assertEquals(
             "Matematyka, Sala 101",
-            widgetMetadataLabel(item, widgetLayoutPolicy(WidgetLayoutMode.Compact))
+            widgetMetadataLabel(item, widgetLayoutPolicy(widgetLayoutMode(180.dp, 175.dp)))
         )
         assertEquals(
             "Matematyka, Sala 101, Jan Kowalski",
-            widgetMetadataLabel(item, widgetLayoutPolicy(WidgetLayoutMode.ExpandedMedium))
+            widgetMetadataLabel(item, widgetLayoutPolicy(widgetLayoutMode(240.dp, 175.dp)))
+        )
+        assertEquals(
+            "Matematyka, Sala 101",
+            widgetMetadataLabel(item, widgetLayoutPolicy(widgetLayoutMode(180.dp, 240.dp)))
+        )
+        assertEquals(
+            "Matematyka, Sala 101, Jan Kowalski",
+            widgetMetadataLabel(item, widgetLayoutPolicy(widgetLayoutMode(240.dp, 240.dp)))
         )
     }
 
@@ -141,15 +171,24 @@ class WidgetPresenterTest {
 
         assertEquals(
             null,
-            widgetStatusLabel(item, widgetLayoutPolicy(WidgetLayoutMode.Compact).statusMode)
+            widgetStatusLabel(
+                item,
+                widgetLayoutPolicy(widgetLayoutMode(180.dp, 110.dp)).statusMode
+            )
         )
         assertEquals(
             "Kolizja 09:30-10:00",
-            widgetStatusLabel(item, widgetLayoutPolicy(WidgetLayoutMode.ExpandedMedium).statusMode)
+            widgetStatusLabel(
+                item,
+                widgetLayoutPolicy(widgetLayoutMode(180.dp, 175.dp)).statusMode
+            )
         )
         assertEquals(
             "Kolizja 09:30-10:00, Notatka",
-            widgetStatusLabel(item, widgetLayoutPolicy(WidgetLayoutMode.ExpandedLarge).statusMode)
+            widgetStatusLabel(
+                item,
+                widgetLayoutPolicy(widgetLayoutMode(180.dp, 240.dp)).statusMode
+            )
         )
 
         val multipleConflicts = item.copy(
@@ -159,7 +198,7 @@ class WidgetPresenterTest {
             "Kolizje: 09:30-10:00…, Notatka",
             widgetStatusLabel(
                 multipleConflicts,
-                widgetLayoutPolicy(WidgetLayoutMode.ExpandedLarge).statusMode
+                widgetLayoutPolicy(widgetLayoutMode(240.dp, 240.dp)).statusMode
             )
         )
     }

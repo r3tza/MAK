@@ -18,43 +18,54 @@ internal data class WidgetLayoutPolicy(
     val rowSpacing: Dp,
     val statusMode: WidgetStatusMode,
     val includeTeacher: Boolean,
-    val metadataCharacterLimit: Int
+    val metadataCharacterLimit: Int,
+    val overflowSpacing: Dp,
+    val footerHeight: Dp
 )
 
-internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy = when (mode) {
-    WidgetLayoutMode.Compact -> WidgetLayoutPolicy(
-        itemLimit = 1,
-        accentHeight = 28.dp,
-        headerSpacing = 4.dp,
-        nameMaxLines = 1,
-        nameCharacterLimit = 28,
-        rowSpacing = 0.dp,
-        statusMode = WidgetStatusMode.Hidden,
-        includeTeacher = false,
-        metadataCharacterLimit = 28
-    )
-    WidgetLayoutMode.ExpandedMedium -> WidgetLayoutPolicy(
-        itemLimit = 2,
-        accentHeight = 42.dp,
-        headerSpacing = 6.dp,
-        nameMaxLines = 1,
-        nameCharacterLimit = 42,
-        rowSpacing = 4.dp,
-        statusMode = WidgetStatusMode.Primary,
-        includeTeacher = true,
-        metadataCharacterLimit = 34
-    )
-    WidgetLayoutMode.ExpandedLarge -> WidgetLayoutPolicy(
-        itemLimit = 3,
-        accentHeight = 52.dp,
-        headerSpacing = 6.dp,
-        nameMaxLines = 2,
-        nameCharacterLimit = 56,
-        rowSpacing = 6.dp,
-        statusMode = WidgetStatusMode.All,
-        includeTeacher = true,
-        metadataCharacterLimit = 42
-    )
+internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
+    val wide = mode.width == WidgetWidthMode.Wide
+    return when (mode.height) {
+        WidgetHeightMode.Compact -> WidgetLayoutPolicy(
+            itemLimit = 1,
+            accentHeight = 28.dp,
+            headerSpacing = 6.dp,
+            nameMaxLines = 1,
+            nameCharacterLimit = if (wide) 36 else 28,
+            rowSpacing = 0.dp,
+            statusMode = WidgetStatusMode.Hidden,
+            includeTeacher = wide,
+            metadataCharacterLimit = if (wide) 36 else 28,
+            overflowSpacing = 2.dp,
+            footerHeight = 14.dp
+        )
+        WidgetHeightMode.Medium -> WidgetLayoutPolicy(
+            itemLimit = 2,
+            accentHeight = 42.dp,
+            headerSpacing = 6.dp,
+            nameMaxLines = 1,
+            nameCharacterLimit = if (wide) 50 else 42,
+            rowSpacing = 4.dp,
+            statusMode = WidgetStatusMode.Primary,
+            includeTeacher = wide,
+            metadataCharacterLimit = if (wide) 42 else 34,
+            overflowSpacing = 2.dp,
+            footerHeight = 14.dp
+        )
+        WidgetHeightMode.Large -> WidgetLayoutPolicy(
+            itemLimit = 3,
+            accentHeight = 52.dp,
+            headerSpacing = 6.dp,
+            nameMaxLines = if (wide) 2 else 1,
+            nameCharacterLimit = if (wide) 56 else 42,
+            rowSpacing = 6.dp,
+            statusMode = WidgetStatusMode.All,
+            includeTeacher = wide,
+            metadataCharacterLimit = if (wide) 52 else 42,
+            overflowSpacing = 2.dp,
+            footerHeight = 14.dp
+        )
+    }
 }
 
 internal fun widgetItemLimit(mode: WidgetLayoutMode): Int =

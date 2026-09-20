@@ -108,9 +108,11 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
                     }
                 }
                 widgetOverflowLabel(state.items.size, visibleItems.size)?.let { overflowLabel ->
-                    Spacer(GlanceModifier.height(2.dp))
+                    Spacer(GlanceModifier.defaultWeight())
+                    Spacer(GlanceModifier.height(layoutPolicy.overflowSpacing))
                     Text(
                         text = overflowLabel,
+                        modifier = GlanceModifier.height(layoutPolicy.footerHeight),
                         style = TextStyle(
                             color = GlanceTheme.colors.onSurfaceVariant,
                             fontSize = 11.sp

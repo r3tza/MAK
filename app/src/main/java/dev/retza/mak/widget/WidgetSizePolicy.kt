@@ -5,22 +5,45 @@ import androidx.compose.ui.unit.DpSize
 import androidx.compose.ui.unit.dp
 
 internal object MakWidgetSizes {
-    val small = DpSize(180.dp, 110.dp)
-    val medium = DpSize(280.dp, 180.dp)
-    val large = DpSize(360.dp, 260.dp)
+    val compactNarrow = DpSize(180.dp, 110.dp)
+    val compactWide = DpSize(240.dp, 110.dp)
+    val mediumNarrow = DpSize(180.dp, 175.dp)
+    val mediumWide = DpSize(240.dp, 175.dp)
+    val largeNarrow = DpSize(180.dp, 240.dp)
+    val largeWide = DpSize(240.dp, 240.dp)
 
-    val responsiveSizes = setOf(small, medium, large)
+    val responsiveSizes = setOf(
+        compactNarrow,
+        compactWide,
+        mediumNarrow,
+        mediumWide,
+        largeNarrow,
+        largeWide
+    )
 }
 
-internal enum class WidgetLayoutMode {
+internal enum class WidgetHeightMode {
     Compact,
-    ExpandedMedium,
-    ExpandedLarge
+    Medium,
+    Large
 }
+
+internal enum class WidgetWidthMode {
+    Narrow,
+    Wide
+}
+
+internal data class WidgetLayoutMode(
+    val height: WidgetHeightMode,
+    val width: WidgetWidthMode
+)
 
 internal fun widgetLayoutMode(width: Dp, height: Dp): WidgetLayoutMode =
-    when {
-        width < 260.dp || height < 160.dp -> WidgetLayoutMode.Compact
-        width < 320.dp || height < 220.dp -> WidgetLayoutMode.ExpandedMedium
-        else -> WidgetLayoutMode.ExpandedLarge
-    }
+    WidgetLayoutMode(
+        height = when {
+            height < 160.dp -> WidgetHeightMode.Compact
+            height < 220.dp -> WidgetHeightMode.Medium
+            else -> WidgetHeightMode.Large
+        },
+        width = if (width < 240.dp) WidgetWidthMode.Narrow else WidgetWidthMode.Wide
+    )
