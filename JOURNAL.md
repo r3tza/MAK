@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Zwolnienie stanu zapisu po anulowaniu
+
+- Fakty: `CancellationException` był ponownie rzucany, ale zapis notatki wspólnej, notatki wystąpienia i zmiany terminu nie zwalniał flagi zapisu przy wyjściu z korutyny przez anulowanie, więc akcja mogła zostać zablokowana.
+- Decyzja: Dodać `finally`, który zeruje `isSavingSharedNote`, `isSavingOccurrenceNote` albo `isSaving`, zachowując ponowne rzucenie `CancellationException`. Flaga odwołania i przywrócenia była już zwalniana w `finally`.
+- Powód: Anulowanie operacji nie może zostawić przycisku zapisu trwale wyłączonego, nawet jeśli ViewModel nie został zniszczony.
+- Weryfikacja: Test `cancellationDoesNotPublishErrorAndClearsSavingFlags` anuluje wszystkie trzy operacje i sprawdza brak komunikatu oraz wyzerowanie każdej flagi. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-20: Blokada powtórzeń i anulowanie bez fałszywego błędu
 
 - Fakty: Stan zapisu był ustawiany dopiero wewnątrz korutyny, a `cancelOccurrence` i `restoreOccurrence` nie miały blokady, więc dwa szybkie kliknięcia mogły wykonać dwa zapisy i dwa komunikaty. Dodatkowo `catch (Exception)` przechwytywał `CancellationException`, więc wyczyszczenie ViewModelu mogło opublikować fałszywy błąd do aplikacyjnego kontrolera.

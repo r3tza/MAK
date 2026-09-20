@@ -514,19 +514,33 @@ class OccurrenceViewModelTest {
     }
 
     @Test
-    fun cancellationDoesNotPublishError() = runTest(mainDispatcher) {
+    fun cancellationDoesNotPublishErrorAndClearsSavingFlags() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
-        viewModel.updateSharedNoteDraft("Nowa")
-        advanceUntilIdle()
 
         repository.cancelSaves = true
+
+        viewModel.updateSharedNoteDraft("Nowa")
+        advanceUntilIdle()
         viewModel.saveSharedNote()
         advanceUntilIdle()
+        assertFalse(viewModel.details.value.isSavingSharedNote)
+
+        viewModel.updateOccurrenceNoteDraft("Notatka daty")
+        advanceUntilIdle()
+        viewModel.saveOccurrenceNote()
+        advanceUntilIdle()
+        assertFalse(viewModel.details.value.isSavingOccurrenceNote)
+
+        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "12:30") }
+        advanceUntilIdle()
+        viewModel.saveOccurrenceChange()
+        advanceUntilIdle()
+        assertFalse(viewModel.details.value.isSaving)
 
         assertTrue(sink.published.isEmpty())
     }

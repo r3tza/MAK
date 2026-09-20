@@ -233,6 +233,8 @@ class OccurrenceViewModel(
                     it.copy(isSavingSharedNote = false, sharedNoteError = "Nie udało się zapisać notatki.")
                 }
                 feedbackSink.publish(UiFeedback("Nie udało się zapisać notatki.", UiFeedbackKind.Error))
+            } finally {
+                update { it.copy(isSavingSharedNote = false) }
             }
         }
     }
@@ -277,6 +279,8 @@ class OccurrenceViewModel(
                     it.copy(isSavingOccurrenceNote = false, occurrenceNoteError = "Nie udało się zapisać notatki.")
                 }
                 feedbackSink.publish(UiFeedback("Nie udało się zapisać notatki.", UiFeedbackKind.Error))
+            } finally {
+                update { it.copy(isSavingOccurrenceNote = false) }
             }
         }
     }
@@ -355,6 +359,8 @@ class OccurrenceViewModel(
                     } catch (error: Exception) {
                         update { it.copy(isSaving = false, draftError = "Nie udało się zapisać zmian.") }
                         feedbackSink.publish(UiFeedback("Nie udało się zapisać zmian.", UiFeedbackKind.Error))
+                    } finally {
+                        update { it.copy(isSaving = false) }
                     }
                 }
             }
