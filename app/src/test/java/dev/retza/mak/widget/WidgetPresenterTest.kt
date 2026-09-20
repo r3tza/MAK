@@ -79,9 +79,12 @@ class WidgetPresenterTest {
         assertEquals(1, widgetItemLimit(smallMode))
         assertEquals(2, widgetItemLimit(mediumMode))
         assertEquals(3, widgetItemLimit(largeMode))
-        assertEquals(30f, widgetLayoutPolicy(smallMode).accentHeight.value, 0f)
+        assertEquals(28f, widgetLayoutPolicy(smallMode).accentHeight.value, 0f)
         assertEquals(42f, widgetLayoutPolicy(mediumMode).accentHeight.value, 0f)
         assertEquals(52f, widgetLayoutPolicy(largeMode).accentHeight.value, 0f)
+        assertEquals(4f, widgetLayoutPolicy(smallMode).headerSpacing.value, 0f)
+        assertEquals(6f, widgetLayoutPolicy(mediumMode).headerSpacing.value, 0f)
+        assertEquals(6f, widgetLayoutPolicy(largeMode).headerSpacing.value, 0f)
         assertEquals(1, widgetNameMaxLines(mediumMode))
         assertEquals(2, widgetNameMaxLines(largeMode))
         assertEquals(42, widgetNameCharacterLimit(mediumMode))
@@ -147,6 +150,17 @@ class WidgetPresenterTest {
         assertEquals(
             "Kolizja 09:30-10:00, Notatka",
             widgetStatusLabel(item, widgetLayoutPolicy(WidgetLayoutMode.ExpandedLarge).statusMode)
+        )
+
+        val multipleConflicts = item.copy(
+            conflictLabel = "Kolizje: 09:30-10:00, 10:15-10:30"
+        )
+        assertEquals(
+            "Kolizje: 09:30-10:00…, Notatka",
+            widgetStatusLabel(
+                multipleConflicts,
+                widgetLayoutPolicy(WidgetLayoutMode.ExpandedLarge).statusMode
+            )
         )
     }
 

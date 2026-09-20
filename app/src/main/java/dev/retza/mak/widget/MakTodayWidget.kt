@@ -62,6 +62,7 @@ class MakTodayWidgetReceiver : GlanceAppWidgetReceiver() {
 @Composable
 private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
     val layoutMode = widgetLayoutMode(LocalSize.current.width, LocalSize.current.height)
+    val layoutPolicy = widgetLayoutPolicy(layoutMode)
     val openTodayAction = actionStartActivity(
         Intent(context, MainActivity::class.java).putExtra(
             MainActivity.EXTRA_OPEN_TODAY,
@@ -80,7 +81,7 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
         horizontalAlignment = Alignment.Start
     ) {
         WidgetHeader(state)
-        Spacer(GlanceModifier.height(6.dp))
+        Spacer(GlanceModifier.height(layoutPolicy.headerSpacing))
         when (state) {
             is WidgetUiState.NoActiveSemester -> WidgetMessage("Brak aktywnego semestru")
             is WidgetUiState.OutsideSemester -> WidgetMessage("Poza zakresem semestru")
@@ -89,7 +90,6 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
             }
             is WidgetUiState.Error -> WidgetMessage(state.message)
             is WidgetUiState.Ready -> {
-                val layoutPolicy = widgetLayoutPolicy(layoutMode)
                 val visibleItems = state.items.take(layoutPolicy.itemLimit)
                 visibleItems.forEachIndexed { index, item ->
                     WidgetOccurrenceRow(item, openTodayAction, layoutPolicy)
@@ -250,7 +250,6 @@ private fun WidgetOccurrenceRow(
                 maxLines = 1
             )
             val statusLabel = widgetStatusLabel(item, layoutPolicy.statusMode)
-                ?.let { truncateWidgetText(it, 30) }
             if (statusLabel != null) {
                 Box(
                     modifier = GlanceModifier

@@ -12,6 +12,7 @@ internal enum class WidgetStatusMode {
 internal data class WidgetLayoutPolicy(
     val itemLimit: Int,
     val accentHeight: Dp,
+    val headerSpacing: Dp,
     val nameMaxLines: Int,
     val nameCharacterLimit: Int,
     val rowSpacing: Dp,
@@ -23,7 +24,8 @@ internal data class WidgetLayoutPolicy(
 internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy = when (mode) {
     WidgetLayoutMode.Compact -> WidgetLayoutPolicy(
         itemLimit = 1,
-        accentHeight = 30.dp,
+        accentHeight = 28.dp,
+        headerSpacing = 4.dp,
         nameMaxLines = 1,
         nameCharacterLimit = 28,
         rowSpacing = 0.dp,
@@ -34,6 +36,7 @@ internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy = wh
     WidgetLayoutMode.ExpandedMedium -> WidgetLayoutPolicy(
         itemLimit = 2,
         accentHeight = 42.dp,
+        headerSpacing = 6.dp,
         nameMaxLines = 1,
         nameCharacterLimit = 42,
         rowSpacing = 4.dp,
@@ -44,6 +47,7 @@ internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy = wh
     WidgetLayoutMode.ExpandedLarge -> WidgetLayoutPolicy(
         itemLimit = 3,
         accentHeight = 52.dp,
+        headerSpacing = 6.dp,
         nameMaxLines = 2,
         nameCharacterLimit = 56,
         rowSpacing = 6.dp,
@@ -83,9 +87,17 @@ internal fun widgetStatusLabel(
     val note = item.hasNote.takeIf { it }?.let { "Notatka" }
     return when (statusMode) {
         WidgetStatusMode.Hidden -> null
-        WidgetStatusMode.Primary -> conflict ?: note
-        WidgetStatusMode.All -> listOfNotNull(conflict, note)
-            .joinToString(", ")
-            .takeIf(String::isNotBlank)
+        WidgetStatusMode.Primary -> conflict?.let { truncateWidgetText(it, STATUS_CHARACTER_LIMIT) }
+            ?: note
+        WidgetStatusMode.All -> when {
+            conflict != null && note != null -> {
+                val suffix = ", $note"
+                truncateWidgetText(conflict, STATUS_CHARACTER_LIMIT - suffix.length) + suffix
+            }
+            conflict != null -> truncateWidgetText(conflict, STATUS_CHARACTER_LIMIT)
+            else -> note
+        }
     }
 }
+
+private const val STATUS_CHARACTER_LIMIT = 30
