@@ -74,6 +74,11 @@ private class FakeMakRepository : MakRepository {
 
     override suspend fun updateSemester(entity: SemesterEntity): Long = entity.id
 
+    override suspend fun saveSetupConfiguration(
+        semester: SemesterEntity,
+        course: CourseEntity
+    ): SetupConfigurationIds = SetupConfigurationIds(semester.id, course.id)
+
     override suspend fun setActiveSemester(id: Long) = Unit
     override suspend fun clearActiveSemester() = Unit
     override suspend fun deleteSemester(id: Long) = Unit

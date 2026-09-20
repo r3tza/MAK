@@ -68,7 +68,12 @@ internal class FakeMakRepository : MakRepository {
     var occurrenceDataGate: CompletableDeferred<Unit>? = null
     var failSaves = false
     var cancelSaves = false
+    var failSetupConfiguration = false
     var activeSemesterId: Long = 1L
+    var lastSetupSemester: SemesterEntity? = null
+    var lastSetupCourse: CourseEntity? = null
+    private var generatedSemesterId = 100L
+    private var generatedCourseId = 100L
 
     private fun semesterById(id: Long): SemesterEntity? =
         listOf(semester, secondSemester).firstOrNull { it.id == id }
@@ -132,6 +137,21 @@ internal class FakeMakRepository : MakRepository {
         val index = courses.indexOfFirst { it.id == entity.id }
         if (index >= 0) courses[index] = entity else courses += entity.copy(id = (courses.size + 1).toLong())
         return entity.id
+    }
+
+    override suspend fun saveSetupConfiguration(
+        semester: SemesterEntity,
+        course: CourseEntity
+    ): dev.retza.mak.data.repository.SetupConfigurationIds {
+        awaitSave()
+        events += "saveSetupConfiguration"
+        if (failSetupConfiguration) throw IllegalStateException("setup configuration failed")
+        val semesterId = if (semester.id == 0L) generatedSemesterId++ else semester.id
+        val courseId = if (course.id == 0L) generatedCourseId++ else course.id
+        lastSetupSemester = semester.copy(id = semesterId, isActive = true)
+        lastSetupCourse = course.copy(id = courseId, semesterId = semesterId)
+        activeSemesterId = semesterId
+        return dev.retza.mak.data.repository.SetupConfigurationIds(semesterId, courseId)
     }
 
     override suspend fun deleteCourse(id: Long) {

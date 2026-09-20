@@ -15,6 +15,8 @@ import dev.retza.mak.data.entity.WeekOverrideEntity
 import kotlinx.coroutines.flow.Flow
 import java.time.DayOfWeek
 
+data class SetupConfigurationIds(val semesterId: Long, val courseId: Long)
+
 interface MakRepository {
     fun observeSemesters(): Flow<List<SemesterEntity>>
 
@@ -55,6 +57,11 @@ interface MakRepository {
     suspend fun deleteSemester(id: Long)
 
     suspend fun saveCourse(entity: CourseEntity): Long
+
+    suspend fun saveSetupConfiguration(
+        semester: SemesterEntity,
+        course: CourseEntity
+    ): SetupConfigurationIds
 
     suspend fun deleteCourse(id: Long)
 
@@ -180,6 +187,39 @@ class RoomMakRepository(
         require(existing.semesterId == entity.semesterId) { "Course semester cannot change" }
         courses.update(entity)
         return entity.id
+    }
+
+    override suspend fun saveSetupConfiguration(
+        semester: SemesterEntity,
+        course: CourseEntity
+    ): SetupConfigurationIds {
+        require(semester.name.isNotBlank()) { "Semester name cannot be blank" }
+        require(!semester.endDate.isBefore(semester.startDate)) {
+            "Semester end date cannot be before start date"
+        }
+        require(course.name.isNotBlank()) { "Course name cannot be blank" }
+        return database.withTransaction {
+            val semesterId = if (semester.id == 0L) {
+                semesters.clearActive()
+                semesters.insert(semester.copy(isActive = true))
+            } else {
+                require(semesters.findById(semester.id) != null) { "Semester does not exist" }
+                semesters.clearActive()
+                semesters.update(semester.copy(isActive = true))
+                semester.id
+            }
+            val courseId = if (course.id == 0L) {
+                courses.insert(course.copy(semesterId = semesterId))
+            } else {
+                val existing = courses.findById(course.id)
+                require(existing != null && existing.semesterId == semesterId) {
+                    "Course must belong to the semester"
+                }
+                courses.update(course.copy(semesterId = semesterId))
+                course.id
+            }
+            SetupConfigurationIds(semesterId, courseId)
+        }
     }
 
     override suspend fun deleteCourse(id: Long) = courses.deleteById(id)
