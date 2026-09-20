@@ -9,6 +9,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -62,8 +65,15 @@ class MakFormControlsTest {
             }
         }
 
+        composeTestRule.onNodeWithContentDescription("więcej opcji")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Zwinięte"))
+        composeTestRule.onNodeWithText("Sala").assertDoesNotExist()
         composeTestRule.onNodeWithText("Pokaż więcej opcji").performClick()
         composeTestRule.onNodeWithText("Sala").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("więcej opcji")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.StateDescription, "Rozwinięte"))
+        composeTestRule.onNodeWithText("Ukryj więcej opcji").performClick()
+        composeTestRule.onNodeWithText("Sala").assertDoesNotExist()
     }
 
     @Test

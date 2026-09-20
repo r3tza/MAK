@@ -336,28 +336,6 @@ fun MakApp(viewModel: MakViewModel, onCreateExportDocument: () -> Unit) {
                         viewModel.updateSemester { it.copy(semester = it.semester.copy(firstWeek = value)) }
                     },
                     onSaveSemester = viewModel::saveSemesterConfiguration,
-                    onOverrideWeekStartDateChanged = { value ->
-                        viewModel.updateSemester { it.copy(overrideForm = it.overrideForm.copy(weekStartDate = value)) }
-                    },
-                    onOverrideWeekTypeChanged = { value ->
-                        viewModel.updateSemester { it.copy(overrideForm = it.overrideForm.copy(weekType = value)) }
-                    },
-                    onOverrideScopeChanged = { value ->
-                        viewModel.updateSemester { it.copy(overrideForm = it.overrideForm.copy(scope = value)) }
-                    },
-                    onNewOverride = viewModel::newWeekOverride,
-                    onEditOverride = viewModel::editWeekOverride,
-                    onSaveOverride = viewModel::saveWeekOverride,
-                    onDeleteOverride = viewModel::deleteWeekOverride,
-                    onCancelOverrideEdit = viewModel::cancelWeekOverrideEdit,
-                    onCourseNameChanged = { value ->
-                        viewModel.updateSemester { it.copy(courseNameDraft = value) }
-                    },
-                    onCourseColorChanged = { value ->
-                        viewModel.updateSemester { it.copy(courseColorDraft = value) }
-                    },
-                    onAddCourse = viewModel::addCourse,
-                    onDeleteCourse = viewModel::deleteCourse,
                     onOpenCourses = {
                         state.settings.activeSemesterId?.let { id ->
                             navController.navigate(semesterCoursesRoute(id))

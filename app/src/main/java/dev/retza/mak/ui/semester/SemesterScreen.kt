@@ -81,7 +81,8 @@ data class WeekOverrideFormUiState(
     val weekType: WeekTypeUi = WeekTypeUi.A,
     val scope: WeekOverrideScopeUi = WeekOverrideScopeUi.ONE_WEEK,
     val weekStartDateError: String? = null,
-    val isSaving: Boolean = false
+    val isSaving: Boolean = false,
+    val isOpen: Boolean = false
 ) {
     val isEditing: Boolean
         get() = id != null
@@ -105,20 +106,8 @@ fun SemesterScreen(
     onSemesterEndDateChanged: (String) -> Unit,
     onSemesterFirstWeekChanged: (WeekTypeUi) -> Unit,
     onSaveSemester: () -> Unit,
-    onOverrideWeekStartDateChanged: (String) -> Unit,
-    onOverrideWeekTypeChanged: (WeekTypeUi) -> Unit,
-    onOverrideScopeChanged: (WeekOverrideScopeUi) -> Unit,
-    onNewOverride: () -> Unit,
-    onEditOverride: (String) -> Unit,
-    onSaveOverride: () -> Unit,
-    onDeleteOverride: (String) -> Unit,
-    onCancelOverrideEdit: () -> Unit,
-    onCourseNameChanged: (String) -> Unit,
-    onCourseColorChanged: (String) -> Unit,
-    onAddCourse: () -> Unit,
-    onDeleteCourse: (String) -> Unit,
-    onOpenCourses: () -> Unit = {},
-    onOpenOverrides: () -> Unit = {},
+    onOpenCourses: () -> Unit,
+    onOpenOverrides: () -> Unit,
     onBack: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
@@ -388,6 +377,16 @@ private fun WeekOverridesSection(
             MakTextAction(text = "Dodaj", onClick = onNewOverride)
         }
         MakHelperText("Każda korekta dotyczy poniedziałku wybranego tygodnia.")
+        if (form.isOpen && form.id == null) {
+            WeekOverrideForm(
+                state = form,
+                onWeekStartDateChanged = onWeekStartDateChanged,
+                onWeekTypeChanged = onWeekTypeChanged,
+                onScopeChanged = onScopeChanged,
+                onSave = onSaveOverride,
+                onCancel = onCancelEdit
+            )
+        }
         if (overrides.isEmpty()) {
             MakEmptyState("Automatyczne oznaczenie tygodni A/B działa bez ręcznych zmian.")
         } else {
@@ -397,16 +396,18 @@ private fun WeekOverridesSection(
                     onEdit = { onEditOverride(override.id) },
                     onDelete = { onDeleteOverride(override.id) }
                 )
+                if (form.isOpen && form.id == override.id) {
+                    WeekOverrideForm(
+                        state = form,
+                        onWeekStartDateChanged = onWeekStartDateChanged,
+                        onWeekTypeChanged = onWeekTypeChanged,
+                        onScopeChanged = onScopeChanged,
+                        onSave = onSaveOverride,
+                        onCancel = onCancelEdit
+                    )
+                }
             }
         }
-        WeekOverrideForm(
-            state = form,
-            onWeekStartDateChanged = onWeekStartDateChanged,
-            onWeekTypeChanged = onWeekTypeChanged,
-            onScopeChanged = onScopeChanged,
-            onSave = onSaveOverride,
-            onCancel = onCancelEdit
-        )
     }
 }
 
@@ -505,14 +506,12 @@ private fun WeekOverrideForm(
                 modifier = Modifier.weight(1f),
                 enabled = !state.isSaving
             )
-            if (state.isEditing) {
-                MakSecondaryAction(
-                    text = "Anuluj",
-                    onClick = onCancel,
-                    modifier = Modifier.weight(1f),
-                    enabled = !state.isSaving
-                )
-            }
+            MakSecondaryAction(
+                text = "Anuluj",
+                onClick = onCancel,
+                modifier = Modifier.weight(1f),
+                enabled = !state.isSaving
+            )
         }
     }
 }

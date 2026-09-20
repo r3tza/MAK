@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Osobne ekrany kierunków i korekt tygodni
+
+- Fakty: Konfiguracja semestru pokazuje wyłącznie formularz danych, a zarządzanie kierunkami i korektami tygodni odbywa się na trasach `semester/{semesterId}/courses` oraz `semester/{semesterId}/week-overrides`. Formularz korekty pojawia się dopiero po akcji „Dodaj” albo „Edytuj”, a zapis i usunięcie nie opuszczają już ekranu podrzędnego. Sekcja rozwijana tworzy jeden kontener, w którym przycisk i treść mają wspólne obramowanie, a stan jest widoczny przez ikonę kierunku i opis „Rozwinięte” albo „Zwinięte”.
+- Decyzja: Formularz korekty steruje polem `isOpen` w `WeekOverrideFormUiState`, a robocze wartości formularza pozostają w stanie ViewModelu. Użycia `MakExpandableSection` w `ClassEditScreen`, `ScheduleScreen` i `SettingsScreen` zostają rozwinięciem w miejscu, ponieważ ich treść jest krótka i potrzebna w kontekście bieżącego widoku.
+- Weryfikacja: Dodano testy Compose dla szerokości 320 dp i motywu ciemnego przy 390 dp oraz test semantyki sekcji rozwijanej. `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą. Odbiór na emulatorze albo urządzeniu pozostaje wymagany.
+
+
 ## 2026-09-20: Podrzędne ekrany konfiguracji semestru
 
 - Fakty: Konfiguracja semestru pokazuje teraz krótkie pozycje „Kierunki” i „Korekty tygodni” z licznikami zamiast rozwijanych list.

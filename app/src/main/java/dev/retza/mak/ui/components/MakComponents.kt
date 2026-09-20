@@ -40,6 +40,8 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.ExpandLess
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material.icons.outlined.WarningAmber
@@ -878,15 +880,64 @@ fun MakExpandableSection(
     modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(modifier = modifier.fillMaxWidth()) {
-        MakSecondaryAction(
-            text = if (expanded) "Ukryj $label" else "Pokaż $label",
-            onClick = { onExpandedChange(!expanded) }
-        )
+    val shape = RoundedCornerShape(14.dp)
+    var focused by remember { mutableStateOf(false) }
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(shape)
+            .border(
+                width = 1.dp,
+                color = if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                shape = shape
+            )
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    if (expanded) MaterialTheme.colorScheme.secondaryContainer
+                    else MaterialTheme.colorScheme.surfaceContainerHigh
+                )
+                .clickable(role = Role.Button, onClick = { onExpandedChange(!expanded) })
+                .focusable()
+                .onFocusChanged { focused = it.isFocused }
+                .heightIn(min = 48.dp)
+                .padding(horizontal = MakSpacing.md, vertical = MakSpacing.sm)
+                .semantics {
+                    contentDescription = label
+                    stateDescription = if (expanded) "Rozwinięte" else "Zwinięte"
+                },
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = if (expanded) "Ukryj $label" else "Pokaż $label",
+                modifier = Modifier.weight(1f),
+                fontSize = 12.sp,
+                fontWeight = FontWeight.Bold,
+                color = if (expanded) {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+            Icon(
+                imageVector = if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
+                contentDescription = null,
+                tint = if (expanded) {
+                    MaterialTheme.colorScheme.onSecondaryContainer
+                } else {
+                    MaterialTheme.colorScheme.onSurfaceVariant
+                }
+            )
+        }
         if (expanded) {
             Column(
-                modifier = Modifier.padding(top = 12.dp),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceVariant)
+                    .padding(horizontal = MakSpacing.md, vertical = MakSpacing.md),
+                verticalArrangement = Arrangement.spacedBy(MakSpacing.md),
                 content = content
             )
         }

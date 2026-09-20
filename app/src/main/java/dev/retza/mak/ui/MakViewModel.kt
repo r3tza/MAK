@@ -670,16 +670,28 @@ class MakViewModel(
         }
     }
 
-    fun newWeekOverride() = updateSemester { it.copy(overrideForm = WeekOverrideFormUiState()) }
+    fun newWeekOverride() = updateSemester {
+        it.copy(overrideForm = WeekOverrideFormUiState(isOpen = true))
+    }
 
     fun editWeekOverride(id: String) {
         val item = controls.value.semesterDraft.overrides.firstOrNull { it.id == id } ?: return
         updateSemester {
-            it.copy(overrideForm = WeekOverrideFormUiState(item.id, item.weekStartDate, item.weekType, item.scope))
+            it.copy(
+                overrideForm = WeekOverrideFormUiState(
+                    id = item.id,
+                    weekStartDate = item.weekStartDate,
+                    weekType = item.weekType,
+                    scope = item.scope,
+                    isOpen = true
+                )
+            )
         }
     }
 
-    fun cancelWeekOverrideEdit() = newWeekOverride()
+    fun cancelWeekOverrideEdit() = updateSemester {
+        it.copy(overrideForm = WeekOverrideFormUiState())
+    }
 
     fun saveWeekOverride() {
         val semesterId = controls.value.semesterEditId ?: return
@@ -699,13 +711,13 @@ class MakViewModel(
                     scope = dev.retza.mak.data.entity.WeekOverrideScope.valueOf(form.scope.name)
                 )
             )
-            controls.update { it.copy(destination = MakDestination.Settings) }
+            updateSemester { it.copy(overrideForm = WeekOverrideFormUiState()) }
         }
     }
 
     fun deleteWeekOverride(id: String) {
         id.toLongOrNull()?.let { overrideId -> viewModelScope.launch { repository.deleteWeekOverride(overrideId) } }
-        controls.update { it.copy(destination = MakDestination.Settings) }
+        updateSemester { it.copy(overrideForm = WeekOverrideFormUiState()) }
     }
 
     fun addCourse() {

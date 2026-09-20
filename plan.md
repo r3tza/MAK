@@ -238,7 +238,7 @@ Kryterium zakończenia: treść ma kolejność nazwa, opis, status, fakty, notat
 
 Zmiany dotyczą przede wszystkim konfiguracji semestru. Rozbudowane funkcje zarządzania nie powinny rozwijać długich formularzy i list wewnątrz ekranu nadrzędnego. Osobny ekran jest domyślnym rozwiązaniem, gdy ujawniana treść ma własne akcje, formularz, listę elementów albo może znacząco zwiększyć wysokość widoku.
 
-Postęp: etapy 1-2 są zaimplementowane. Dodano trasy podrzędne oraz zwarte pozycje nawigacyjne dla kierunków i korekt tygodni. Etapy 3-6 pozostają do wykonania.
+Postęp: etapy 1-6 są zaimplementowane. Trasy podrzędne semestru, osobne ekrany „Kierunki” oraz „Korekty tygodni”, formularz korekty otwierany akcją oraz ujednolicona sekcja rozwijana mają testy kompilujące się dla Androida i testy JVM. Pozostaje uruchomienie testów instrumentacyjnych i ręczna weryfikacja z punktu 6 na emulatorze albo urządzeniu.
 
 ### Etap 1: wydzielenie tras podrzędnych semestru
 

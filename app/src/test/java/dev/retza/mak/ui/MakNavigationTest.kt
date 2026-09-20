@@ -25,4 +25,17 @@ class MakNavigationTest {
         assertTrue(destinationMatchesRoute(MakDestination.Semester, MakRoutes.SemesterCourses))
         assertTrue(destinationMatchesRoute(MakDestination.Settings, MakRoutes.Settings))
     }
+
+    @Test
+    fun semesterSubRoutesKeepTheirSemesterIdWhenRestored() {
+        val courses = semesterCoursesRoute("9")
+        val overrides = semesterOverridesRoute("9")
+        assertTrue(courses.startsWith("semester/9/"))
+        assertTrue(overrides.startsWith("semester/9/"))
+        assertTrue(courses.endsWith("/courses"))
+        assertTrue(overrides.endsWith("/week-overrides"))
+        assertTrue(courses != overrides)
+        assertTrue(destinationMatchesRoute(MakDestination.Semester, MakRoutes.SemesterCourses))
+        assertTrue(destinationMatchesRoute(MakDestination.Semester, MakRoutes.SemesterOverrides))
+    }
 }
