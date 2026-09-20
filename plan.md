@@ -69,7 +69,7 @@ Kryteria zakończenia porządkowania:
 
 Refaktor należy wykonać przed podłączeniem feedbacku do wszystkich operacji z etapu 6 sekcji 1.6. Nie przepisywać całego ViewModelu jednocześnie. Każdy etap ma kończyć się kompilującym stanem, testami odpowiednimi do zmiany i osobnym commitem.
 
-Status: etapy 1-7 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`, etap 3 dodaje `OccurrenceArgs` i utrzymuje `OccurrenceDetailsUiState` bez typów warstwy danych ani stanu nawigacji, etap 4 przenosi logikę szczegółów do `OccurrenceViewModel`, etap 5 podłącza ekran szczegółów bezpośrednio do `OccurrenceViewModel` i usuwa delegację oraz stan szczegółów z `MakUiState`, etap 6 podłącza komunikaty do zmiany, przeniesienia, przywrócenia i odwołania terminu oraz obu notatek, a etap 7 potwierdził brak pozostałości szczegółów w `MakViewModel`, a etap 8 zakończył `ClassEditViewModel`.
+Status: etapy 1-7 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`, etap 3 dodaje `OccurrenceArgs` i utrzymuje `OccurrenceDetailsUiState` bez typów warstwy danych ani stanu nawigacji, etap 4 przenosi logikę szczegółów do `OccurrenceViewModel`, etap 5 podłącza ekran szczegółów bezpośrednio do `OccurrenceViewModel` i usuwa delegację oraz stan szczegółów z `MakUiState`, etap 6 podłącza komunikaty do zmiany, przeniesienia, przywrócenia i odwołania terminu oraz obu notatek, a etap 7 potwierdził brak pozostałości szczegółów w `MakViewModel`. Etap 8 zakończył `ClassEditViewModel` oraz `SetupViewModel` z atomowym zapisem semestru i pierwszego kierunku.
 
 #### Etap 1: inwentaryzacja odpowiedzialności
 
@@ -185,6 +185,12 @@ Po każdym etapie uruchomić `gradlew.bat test compileDebugAndroidTestKotlin lin
 Status: zrealizowane w sześciu etapach. `SemesterViewModel` przejmuje formularz semestru, kierunki i korekty tygodni. `open(semesterId)` anuluje poprzednie otwarcie, czyści stan, ustawia wskazany semestr jako aktywny i czeka na jego dane, więc wygrywa ostatnie otwarcie, a błędny identyfikator nie pozostawia poprzednich danych. Zapis semestru emituje `UiFeedback` i `SemesterEffect.CloseConfiguration`, zbierany na poziomie `MakApp` tylko na trasie `semester/{semesterId}`. Kierunki i korekty mają osobne flagi zapisu i usuwania, blokadę powtórzeń oraz komunikaty sukcesu i bezpieczne komunikaty błędu, a walidacja nie emituje feedbacku. Ekrany semestru, kierunków i korekt czytają stan i wywołują akcje `SemesterViewModel`, a `semesterId` trasy trafia do `open`. `MakViewModel` nie zawiera już `SemesterScreenUiState`, `semesterDraft`, `semesterEditId` ani metod konfiguracji semestru i nie importuje `SemesterViewModel`.
 
 Poza tym refaktorem pozostają: wybór, dodawanie i usuwanie całych semestrów w przyszłym `SettingsViewModel` oraz szybka korekta widocznego tygodnia w przyszłym `ScheduleViewModel`. Nie zmieniano schematu Room ani wyglądu ekranów.
+
+#### SetupViewModel
+
+Status: zrealizowane w sześciu etapach. `SetupViewModel` przejmuje stan kreatora konfiguracji, walidację, przechodzenie między krokami oraz efekt zakończenia, powrotu do ustawień i otwarcia edytora zajęć. Krok semestru tylko waliduje dane, a krok kierunku uruchamia `MakRepository.saveSetupConfiguration`, który w jednej transakcji tworzy albo aktualizuje semestr i pierwszy kierunek, ustawia semestr jako aktywny i zwraca oba identyfikatory. Ponowny zapis po cofnięciu aktualizuje te same rekordy, a awaria nie pozostawia częściowych danych. Synchroniczne `isSaving` blokuje wielokrotne kliknięcie, błąd zachowuje drafty i krok, a `CancellationException` jest ponownie rzucany. Sukces publikuje „Utworzono semestr i kierunek” albo „Zaktualizowano konfigurację”, a błąd „Nie udało się zapisać konfiguracji.”. Ekran kreatora czyta `SetupViewModel.setup` i wywołuje jego akcje, efekty są zbierane w `MakApp` tylko na trasie `setup`, a nawigacją do kreatora steruje `requiresSetup` bez pola `forceSetup`. `MakViewModel` nie zawiera już `SetupWizardUiState`, `SetupStep`, `SetupField` ani metod kreatora.
+
+Nie zmieniano wyglądu trzech kroków kreatora ani `SettingsViewModel` i `ScheduleViewModel`.
 
 ## 1.3. Plan poprawy ekranu „Plan”
 

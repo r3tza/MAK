@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: SetupViewModel i atomowy zapis konfiguracji
+
+- Fakty: Kreator konfiguracji trzymał stan i zapisywał semestr w `MakViewModel`. Semestr powstawał w kroku semestru, a kierunek w kroku kierunku, więc przerwanie między krokami mogło pozostawić sam semestr. Nawigację z kreatora wymuszał `forceSetup`.
+- Decyzja: Wydzielono `SetupViewModel`, który prowadzi stan, walidację i kroki kreatora. Dodano `MakRepository.saveSetupConfiguration`, który w jednej transakcji tworzy albo aktualizuje semestr i pierwszy kierunek, ustawia semestr jako aktywny i zwraca oba identyfikatory. Krok semestru tylko waliduje, a krok kierunku uruchamia ten zapis. Ponowny zapis po cofnięciu używa zapisanych identyfikatorów, więc nie tworzy duplikatów. Usunięto z `MakViewModel` stan kreatora, delegacje i `forceSetup`, a ekran czyta `SetupViewModel` bezpośrednio.
+- Powód: Zestaw semestr i pierwszy kierunek ma być trwały dopiero po udanym przejściu do kroku zajęć, a awaria nie może pozostawić częściowych danych.
+- Weryfikacja: `SetupViewModelTest` sprawdza walidację bez zapisu, brak zapisu w kroku semestru, wspólny zapis semestru i kierunku z poprawnym powiązaniem, brak częściowych danych przy awarii, blokadę dwukrotnego kliknięcia, aktualizację istniejących rekordów po cofnięciu, zachowanie draftów i kroku po błędzie oraz jednokrotne efekty. `MakNavigationTest` pilnuje obsługi efektów kreatora tylko na trasie `setup`. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-20: Zapis semestru nie reaktywuje poprzedniego
 
 - Fakty: `SemesterViewModel.saveSemester` zapisywał encję z `isActive = true`, a `RoomMakRepository.saveSemester` przy takiej encji czyścił aktywny semestr. Spóźniony zapis semestru A po otwarciu B ponownie ustawiał A jako aktywny, mimo że token blokował już interfejs, feedback i efekt.
