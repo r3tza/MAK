@@ -9,6 +9,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.theme.MAKTheme
@@ -43,8 +44,8 @@ class OccurrenceDetailsScreenTest {
                             canEditBaseClass = false,
                             canDeleteBaseClass = false,
                             canCancelOccurrence = false,
-                            canChangeOccurrence = false,
-                            canMoveOccurrence = false,
+                            canChangeOccurrence = true,
+                            canMoveOccurrence = true,
                             canEditOccurrenceNote = false
                         ),
                         onDeleteBaseClass = {},
@@ -68,7 +69,13 @@ class OccurrenceDetailsScreenTest {
         composeTestRule.onNodeWithText("Bardzo długa nazwa zajęć do sprawdzenia układu").assertIsDisplayed()
         composeTestRule.onNodeWithText("Notatka wspólna").assertIsDisplayed()
         composeTestRule.onNodeWithText("Notatka tylko dla tego terminu").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zmień termin").assertIsDisplayed()
         composeTestRule.onAllNodesWithText("TERMIN").assertCountEquals(0)
         composeTestRule.onAllNodesWithText("Pokaż notatkę").assertCountEquals(0)
+
+        composeTestRule.onNodeWithText("Zmień termin").performClick()
+        composeTestRule.onNodeWithText("Zapisz zmianę").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Przenieś termin").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zamknij").assertIsDisplayed()
     }
 }

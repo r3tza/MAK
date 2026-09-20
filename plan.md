@@ -164,7 +164,7 @@ Po implementacji uruchomić `gradlew.bat test` oraz kompilację testów Android.
 
 Zmiany dotyczą `OccurrenceDetailsScreen` oraz topbara aplikacji. Ekran ma pokazywać szczegóły, notatkę i formularz zmiany w jednej przewidywalnej kolejności. Akcje nawigacyjne i główne nie mogą znajdować się pomiędzy informacjami.
 
-Postęp: etapy 1-3 są zaimplementowane i mają testy Compose oraz testy topbara. Etapy 4-6 pozostają do wykonania.
+Postęp: etapy 1-6 są zaimplementowane. Testy Compose, testy JVM, kompilacja testów Android, lint i assemble przechodzą. Odbiór na emulatorze lub urządzeniu pozostaje do wykonania.
 
 ### Etap 1: usunięcie powtórzonego nagłówka i rozwinięcie notatki
 

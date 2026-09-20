@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -16,11 +17,11 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.navigationBarsPadding
 import java.time.LocalDate
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakFactRow
-import dev.retza.mak.ui.components.MakExpandableSection
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakPrimaryAction
@@ -49,45 +50,43 @@ fun OccurrenceDetailsScreen(
     modifier: Modifier = Modifier
 ) {
     var showChangeForm by remember { mutableStateOf(false) }
-    MakScreenContent(
-        modifier = modifier.verticalScroll(rememberScrollState())
-    ) {
-        OccurrenceHeader(
-            title = state.subjectName.ifBlank { state.title },
-            subtitle = "Zmiana dotyczy tylko wybranego wystąpienia zajęć."
-        )
-        StatusTag(state)
-        Facts(state)
-        NotesBlock(
-            state = state,
-            onOccurrenceNoteDraftChanged = onOccurrenceNoteDraftChanged,
-            onSaveOccurrenceNote = onSaveOccurrenceNote,
-            onDeleteOccurrenceNote = onDeleteOccurrenceNote
-        )
-        if (state.canRestoreOccurrence) {
-            MakPrimaryAction(text = "Przywróć termin", onClick = onRestoreOccurrence)
-        } else if (state.canChangeOccurrence || state.canMoveOccurrence) {
-            MakPrimaryAction(
-                text = "Zmień termin",
-                onClick = { showChangeForm = true }
-            )
-        }
-        MakExpandableSection(
-            label = "zmiana terminu",
-            expanded = showChangeForm,
-            onExpandedChange = { showChangeForm = it }
+    Column(modifier = modifier.fillMaxSize()) {
+        MakScreenContent(
+            modifier = Modifier
+                .weight(1f)
+                .verticalScroll(rememberScrollState())
         ) {
-            OccurrenceForm(
-                state = state,
-                onTargetDateDraftChanged = onTargetDateDraftChanged,
-                onStartTimeDraftChanged = onStartTimeDraftChanged,
-                onEndTimeDraftChanged = onEndTimeDraftChanged,
-                onRoomDraftChanged = onRoomDraftChanged,
-                onChangeOccurrence = onChangeOccurrence,
-                onMoveOccurrence = onMoveOccurrence
+            OccurrenceHeader(
+                title = state.subjectName.ifBlank { state.title },
+                subtitle = "Zmiana dotyczy tylko wybranego wystąpienia zajęć."
             )
+            StatusTag(state)
+            Facts(state)
+            NotesBlock(
+                state = state,
+                onOccurrenceNoteDraftChanged = onOccurrenceNoteDraftChanged,
+                onSaveOccurrenceNote = onSaveOccurrenceNote,
+                onDeleteOccurrenceNote = onDeleteOccurrenceNote
+            )
+            if (showChangeForm) {
+                OccurrenceForm(
+                    state = state,
+                    onTargetDateDraftChanged = onTargetDateDraftChanged,
+                    onStartTimeDraftChanged = onStartTimeDraftChanged,
+                    onEndTimeDraftChanged = onEndTimeDraftChanged,
+                    onRoomDraftChanged = onRoomDraftChanged,
+                    onChangeOccurrence = onChangeOccurrence,
+                    onMoveOccurrence = onMoveOccurrence
+                )
+            }
         }
-        MakSecondaryAction(text = "Zamknij", onClick = onBack)
+        OccurrenceBottomActions(
+            state = state,
+            showChangeForm = showChangeForm,
+            onShowChangeForm = { showChangeForm = true },
+            onRestoreOccurrence = onRestoreOccurrence,
+            onBack = onBack
+        )
     }
 
     if (state.showDeleteConfirmation) {
@@ -106,6 +105,44 @@ fun OccurrenceDetailsScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun OccurrenceBottomActions(
+    state: OccurrenceDetailsUiState,
+    showChangeForm: Boolean,
+    onShowChangeForm: () -> Unit,
+    onRestoreOccurrence: () -> Unit,
+    onBack: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .navigationBarsPadding()
+            .padding(horizontal = MakSpacing.lg, vertical = MakSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+    ) {
+        if (!showChangeForm) {
+            if (state.canRestoreOccurrence) {
+                MakPrimaryAction(
+                    text = "Przywróć termin",
+                    onClick = onRestoreOccurrence,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else if (state.canChangeOccurrence || state.canMoveOccurrence) {
+                MakPrimaryAction(
+                    text = "Zmień termin",
+                    onClick = onShowChangeForm,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        }
+        MakSecondaryAction(
+            text = "Zamknij",
+            onClick = onBack,
+            modifier = Modifier.fillMaxWidth()
+        )
     }
 }
 

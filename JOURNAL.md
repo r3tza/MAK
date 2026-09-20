@@ -1,5 +1,11 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Stałe akcje ekranu szczegółów terminu
+
+- Fakty: Treść ekranu szczegółów terminu jest przewijana niezależnie od dolnego obszaru akcji. Akcja „Zmień termin” albo „Przywróć termin” oraz „Zamknij” pozostają dostępne przy dolnej krawędzi.
+- Decyzja: Formularz zmiany terminu jest renderowany bezpośrednio pod notatką po aktywacji dolnej akcji. Po jego otwarciu dolny przycisk zmiany jest ukrywany, a przyciski zapisu i przeniesienia pozostają przy formularzu.
+- Weryfikacja: Test Compose sprawdza szerokość 320 dp, widoczność dolnych akcji oraz otwarcie formularza. `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą. Odbiór runtime pozostaje wymagany.
+
 ## 2026-09-20: Akcje ekranu szczegółów w topbarze
 
 - Fakty: `MakTopBar` obsługuje opcjonalny slot akcji. Dla trasy szczegółów terminu pokazuje menu „Więcej opcji” po prawej stronie przycisku cofania.
