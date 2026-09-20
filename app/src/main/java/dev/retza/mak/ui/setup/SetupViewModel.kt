@@ -42,7 +42,8 @@ data class SetupWizardUiState(
     val courseColor: String = "#137B71",
     val errors: Map<SetupField, FieldErrorUi> = emptyMap(),
     val status: ScreenStatus = ScreenStatus.Ready,
-    val canSkipClasses: Boolean = true
+    val canSkipClasses: Boolean = true,
+    val isSaving: Boolean = false
 )
 
 class SetupViewModel(
@@ -72,7 +73,7 @@ class SetupViewModel(
     fun next() {
         when (state.value.step) {
             SetupStep.Semester -> advanceFromSemester()
-            SetupStep.Course -> saveCourse()
+            SetupStep.Course -> saveConfiguration()
             SetupStep.Classes -> Unit
         }
     }
@@ -104,39 +105,14 @@ class SetupViewModel(
             state.update { it.copy(errors = errors) }
             return
         }
-        val token = sessionToken
-        saveJob = viewModelScope.launch {
-            try {
-                val id = repository.saveSemester(
-                    SemesterEntity(
-                        id = semesterId ?: 0L,
-                        name = current.semesterName.trim(),
-                        startDate = start,
-                        endDate = end,
-                        firstWeekType = WeekType.valueOf(current.firstWeekLabel),
-                        isActive = true
-                    )
-                )
-                if (token != sessionToken) return@launch
-                semesterId = id
-                state.update { it.copy(step = SetupStep.Course, errors = emptyMap()) }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                if (token != sessionToken) return@launch
-                state.update {
-                    it.copy(
-                        errors = mapOf(
-                            SetupField.SemesterName to FieldErrorUi("Nie udało się zapisać semestru.")
-                        )
-                    )
-                }
-            }
-        }
+        state.update { it.copy(step = SetupStep.Course, errors = emptyMap()) }
     }
 
-    private fun saveCourse() {
+    private fun saveConfiguration() {
+        if (state.value.isSaving) return
         val current = state.value
+        val start = current.startDate.toLocalDateOrNull() ?: return
+        val end = current.endDate.toLocalDateOrNull() ?: return
         val name = current.courseName.trim()
         if (name.isBlank()) {
             state.update {
@@ -144,31 +120,38 @@ class SetupViewModel(
             }
             return
         }
+        val existingSemester = semesterId
+        val existingCourse = courseId
+        state.update { it.copy(isSaving = true, errors = emptyMap()) }
         val token = sessionToken
         saveJob = viewModelScope.launch {
             try {
-                val targetSemester = semesterId ?: return@launch
-                val id = repository.saveCourse(
+                val ids = repository.saveSetupConfiguration(
+                    SemesterEntity(
+                        id = existingSemester ?: 0L,
+                        name = current.semesterName.trim(),
+                        startDate = start,
+                        endDate = end,
+                        firstWeekType = WeekType.valueOf(current.firstWeekLabel),
+                        isActive = true
+                    ),
                     CourseEntity(
-                        id = courseId ?: 0L,
-                        semesterId = targetSemester,
+                        id = existingCourse ?: 0L,
+                        semesterId = existingSemester ?: 0L,
                         name = name,
                         color = current.courseColor.ifBlank { "#137b71" }
                     )
                 )
                 if (token != sessionToken) return@launch
-                courseId = id
+                semesterId = ids.semesterId
+                courseId = ids.courseId
                 state.update { it.copy(step = SetupStep.Classes, errors = emptyMap()) }
             } catch (error: CancellationException) {
                 throw error
-            } catch (error: Exception) {
-                if (token != sessionToken) return@launch
-                state.update {
-                    it.copy(
-                        errors = mapOf(
-                            SetupField.CourseName to FieldErrorUi("Nie udało się zapisać kierunku.")
-                        )
-                    )
+            } catch (_: Exception) {
+            } finally {
+                if (token == sessionToken) {
+                    state.update { it.copy(isSaving = false) }
                 }
             }
         }

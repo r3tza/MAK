@@ -161,8 +161,8 @@ private fun CourseStep(
             selectedColor = state.courseColor,
             onColorSelected = onCourseColorChanged
         )
-        MakPrimaryAction(text = "Zapisz kierunek", onClick = onNext)
-        MakSecondaryAction(text = "Wstecz", onClick = onBack)
+        MakPrimaryAction(text = "Zapisz kierunek", onClick = onNext, enabled = !state.isSaving)
+        MakSecondaryAction(text = "Wstecz", onClick = onBack, enabled = !state.isSaving)
     }
 }
 
