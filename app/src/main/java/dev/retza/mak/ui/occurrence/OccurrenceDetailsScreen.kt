@@ -12,6 +12,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
@@ -25,7 +27,6 @@ import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
-import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakTag
 import dev.retza.mak.ui.components.MakTimePickerField
@@ -52,17 +53,21 @@ fun OccurrenceDetailsScreen(
     modifier: Modifier = Modifier
 ) {
     var showChangeForm by remember { mutableStateOf(false) }
-    var showNoteForm by remember { mutableStateOf(false) }
     MakScreenContent(
         modifier = modifier.verticalScroll(rememberScrollState())
     ) {
-        MakSectionHeader(
-            eyebrow = "Termin",
+        OccurrenceHeader(
             title = state.subjectName.ifBlank { state.title },
             subtitle = "Zmiana dotyczy tylko wybranego wystąpienia zajęć."
         )
         StatusTag(state)
         Facts(state)
+        NotesBlock(
+            state = state,
+            onOccurrenceNoteDraftChanged = onOccurrenceNoteDraftChanged,
+            onSaveOccurrenceNote = onSaveOccurrenceNote,
+            onDeleteOccurrenceNote = onDeleteOccurrenceNote
+        )
         if (state.canRestoreOccurrence) {
             MakPrimaryAction(text = "Przywróć termin", onClick = onRestoreOccurrence)
         } else if (state.canChangeOccurrence || state.canMoveOccurrence) {
@@ -84,18 +89,6 @@ fun OccurrenceDetailsScreen(
                 onRoomDraftChanged = onRoomDraftChanged,
                 onChangeOccurrence = onChangeOccurrence,
                 onMoveOccurrence = onMoveOccurrence
-            )
-        }
-        MakExpandableSection(
-            label = "notatkę",
-            expanded = showNoteForm,
-            onExpandedChange = { showNoteForm = it }
-        ) {
-            NotesBlock(
-                state = state,
-                onOccurrenceNoteDraftChanged = onOccurrenceNoteDraftChanged,
-                onSaveOccurrenceNote = onSaveOccurrenceNote,
-                onDeleteOccurrenceNote = onDeleteOccurrenceNote
             )
         }
         MakActionMenu(
@@ -125,6 +118,30 @@ fun OccurrenceDetailsScreen(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun OccurrenceHeader(
+    title: String,
+    subtitle: String
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = MakSpacing.xs, vertical = MakSpacing.sm)
+    ) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.headlineSmall,
+            color = MaterialTheme.colorScheme.onBackground
+        )
+        Text(
+            text = subtitle,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.padding(top = MakSpacing.sm)
+        )
     }
 }
 

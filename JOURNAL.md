@@ -1,5 +1,11 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Pierwszy etap ekranu szczegółów terminu
+
+- Fakty: Ekran szczegółów terminu nie pokazuje już lokalnej etykiety „TERMIN”. Nazwa zajęć i opis zmiany są prezentowane przez prywatny nagłówek.
+- Decyzja: Notatka wspólna oraz notatka do wystąpienia są renderowane bezpośrednio po faktach, bez dodatkowego rozwijania.
+- Weryfikacja: Dodano test Compose dla szerokości 320 dp. Test potwierdza widoczność długiej nazwy, obu notatek oraz brak tekstów „TERMIN” i „Pokaż notatkę”. `test` i `compileDebugAndroidTestKotlin` przechodzą.
+
 ## 2026-09-20: Separatory i licznik kolizji widgetu
 
 - Fakty: Wpis listy widgetu zawiera teraz wiersz, odstęp, separator i końcowy odstęp w jednym komponencie `Column`. Separator występuje tylko między wpisami i ma stabilny znacznik testowy.
