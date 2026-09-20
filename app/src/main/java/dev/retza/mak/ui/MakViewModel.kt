@@ -4,16 +4,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import dev.retza.mak.data.database.SemesterWithData
-import dev.retza.mak.data.entity.ClassEntity
 import dev.retza.mak.data.entity.CourseEntity
 import dev.retza.mak.data.entity.SemesterEntity
-import dev.retza.mak.data.entity.TeacherEntity
 import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.toActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
-import dev.retza.mak.domain.ClassForm
-import dev.retza.mak.domain.ClassValidationError
-import dev.retza.mak.domain.ClassValidator
 import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.Recurrence
@@ -24,9 +19,8 @@ import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.SemesterUi
-import dev.retza.mak.ui.edit.ClassEditField
 import dev.retza.mak.ui.edit.ClassEditUiState
-import dev.retza.mak.ui.edit.RecurrenceOptionUi
+import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
@@ -85,7 +79,7 @@ data class MakUiState(
     val requiresSetup: Boolean = true,
     val today: TodayUiState = emptyTodayState(),
     val schedule: ScheduleUiState = emptyScheduleState(),
-    val editor: ClassEditUiState = defaultEditorState(),
+    val editor: ClassEditUiState = ClassEditUiState(),
     val semester: SemesterScreenUiState = SemesterScreenUiState(),
     val themeId: String = "system",
     val settings: SettingsUiState = SettingsUiState(),
@@ -104,8 +98,6 @@ private data class Controls(
     val showCancelled: Boolean = false,
     val setup: SetupWizardUiState = SetupWizardUiState(),
     val forceSetup: Boolean = false,
-    val editor: ClassEditUiState = defaultEditorState(),
-    val editorClassId: Long? = null,
     val semesterDraft: SemesterScreenUiState = SemesterScreenUiState(),
     val semesterEditId: Long? = null,
     val semesterToDeleteId: String? = null,
@@ -116,6 +108,7 @@ private data class Controls(
 class MakViewModel(
     private val repository: MakRepository,
     private val feedbackSink: FeedbackSink,
+    private val classEditViewModel: ClassEditViewModel,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val activePlanProvider: ActivePlanProvider = ActivePlanProvider()
 ) : ViewModel() {
@@ -134,8 +127,13 @@ class MakViewModel(
         if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
     }
 
-    val uiState = combine(semesters, activeSemesterData, controls) { semesterList, activeData, control ->
-        buildState(semesterList, activeData, control)
+    val uiState = combine(
+        semesters,
+        activeSemesterData,
+        controls,
+        classEditViewModel.editor
+    ) { semesterList, activeData, control, editorState ->
+        buildState(semesterList, activeData, control, editorState)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -210,55 +208,13 @@ class MakViewModel(
     }
 
     fun openNewClass(oneOffDate: LocalDate? = null) {
-        val recurrenceId = if (oneOffDate == null) "every_week" else "once"
-        controls.update {
-            it.copy(
-                destination = MakDestination.EditClass,
-                editor = defaultEditorState().copy(
-                    recurrenceId = recurrenceId,
-                    recurrenceLabel = recurrenceLabel(recurrenceId),
-                    occurrenceDate = oneOffDate?.toString().orEmpty()
-                ),
-                editorClassId = null
-            )
-        }
+        classEditViewModel.openNew(oneOffDate)
+        controls.update { it.copy(destination = MakDestination.EditClass) }
     }
 
     fun openEditClass(occurrenceId: String) {
-        val classId = occurrenceId.substringBefore(':').toLongOrNull() ?: return
-        val data = uiState.value.activeSemesterData ?: return
-        val item = data.classes.firstOrNull { it.id == classId } ?: return
-        val course = data.courses.firstOrNull { it.id == item.courseId }
-        val teacher = data.teachers.firstOrNull { it.id == item.teacherId }
-        val recurrenceId = when (item.recurrence) {
-            dev.retza.mak.data.entity.Recurrence.EVERY_WEEK -> "every_week"
-            dev.retza.mak.data.entity.Recurrence.A_WEEK -> "a_week"
-            dev.retza.mak.data.entity.Recurrence.B_WEEK -> "b_week"
-            dev.retza.mak.data.entity.Recurrence.ONCE -> "once"
-        }
-        controls.update {
-            it.copy(
-                destination = MakDestination.EditClass,
-                editorClassId = classId,
-                editor = defaultEditorState().copy(
-                    title = "Edytuj zajęcia",
-                    name = item.name,
-                    courseName = course?.name.orEmpty(),
-                    type = item.type,
-                    dayLabel = dayNames[item.dayOfWeek].orEmpty(),
-                    startTime = item.startTime.toString(),
-                    endTime = item.endTime.toString(),
-                    recurrenceId = recurrenceId,
-                    recurrenceLabel = recurrenceLabel(recurrenceId),
-                    occurrenceDate = item.date?.toString().orEmpty(),
-                    room = item.room.orEmpty(),
-                    building = item.building.orEmpty(),
-                    group = item.group.orEmpty(),
-                    teacher = teacher?.name.orEmpty(),
-                    note = item.classNote.orEmpty()
-                )
-            )
-        }
+        classEditViewModel.openEdit(occurrenceId)
+        controls.update { it.copy(destination = MakDestination.EditClass) }
     }
 
     fun openNewClassForSelectedCalendarDay() {
@@ -266,94 +222,13 @@ class MakViewModel(
     }
 
     fun updateEditor(transform: (ClassEditUiState) -> ClassEditUiState) {
-        controls.update { it.copy(editor = transform(it.editor).copy(errors = emptyMap())) }
+        classEditViewModel.update(transform)
     }
 
     fun saveClass() {
-        val data = uiState.value.activeSemesterData ?: return
-        val editor = controls.value.editor
-        val start = editor.startTime.toLocalTimeOrNull()
-        val end = editor.endTime.toLocalTimeOrNull()
-        val recurrence = recurrenceFromId(editor.recurrenceId)
-        val date = editor.occurrenceDate.toLocalDateOrNull()
-        val course = data.courses.firstOrNull { it.name == editor.courseName }
-        val validation = ClassValidator.validate(
-            ClassForm(
-                name = editor.name,
-                courseId = course?.id?.toString(),
-                startTime = start,
-                endTime = end,
-                recurrence = recurrence,
-                date = date
-            )
-        )
-        val errors = buildMap {
-            if (ClassValidationError.NAME_REQUIRED in validation.errors) {
-                put(ClassEditField.Name, FieldErrorUi("Podaj nazwę przedmiotu."))
-            }
-            if (ClassValidationError.COURSE_REQUIRED in validation.errors) {
-                put(ClassEditField.Course, FieldErrorUi("Wybierz kierunek."))
-            }
-            if (ClassValidationError.START_TIME_REQUIRED in validation.errors) {
-                put(ClassEditField.StartTime, FieldErrorUi("Podaj godzinę rozpoczęcia."))
-            }
-            if (ClassValidationError.END_TIME_REQUIRED in validation.errors) {
-                put(ClassEditField.EndTime, FieldErrorUi("Podaj godzinę zakończenia."))
-            }
-            if (
-                ClassValidationError.END_NOT_AFTER_START in validation.errors ||
-                ClassValidationError.CROSSES_MIDNIGHT in validation.errors
-            ) {
-                put(ClassEditField.EndTime, FieldErrorUi("Koniec musi być późniejszy niż początek tego samego dnia."))
-            }
-            if (ClassValidationError.DATE_REQUIRED in validation.errors) {
-                put(ClassEditField.Date, FieldErrorUi("Podaj datę zajęć jednorazowych."))
-            }
-            if (recurrence == Recurrence.ONCE && date != null &&
-                (date.isBefore(data.semester.startDate) || date.isAfter(data.semester.endDate))
-            ) {
-                put(ClassEditField.Date, FieldErrorUi("Data musi należeć do aktywnego semestru."))
-            }
-            if (editor.dayLabel !in dayNames.values) {
-                put(ClassEditField.Day, FieldErrorUi("Wybierz dzień tygodnia."))
-            }
-            if (editor.type.isBlank()) {
-                put(ClassEditField.Type, FieldErrorUi("Wybierz typ zajęć."))
-            }
-        }
-        if (errors.isNotEmpty() || course == null || start == null || end == null) {
-            controls.update { it.copy(editor = editor.copy(errors = errors)) }
-            return
-        }
-
         viewModelScope.launch {
-            val teacherId = editor.teacher.trim().takeIf(String::isNotEmpty)?.let { name ->
-                data.teachers.firstOrNull { it.name.equals(name, ignoreCase = true) }?.id
-                    ?: repository.saveTeacher(
-                        TeacherEntity(semesterId = data.semester.id, name = name)
-                    )
-            }
-            repository.saveClass(
-                ClassEntity(
-                    id = controls.value.editorClassId ?: 0,
-                    semesterId = data.semester.id,
-                    name = editor.name.trim(),
-                    type = editor.type,
-                    courseId = course.id,
-                    teacherId = teacherId,
-                    dayOfWeek = dayNames.entries.first { it.value == editor.dayLabel }.key,
-                    startTime = start,
-                    endTime = end,
-                    room = editor.room.trim().ifEmpty { null },
-                    building = editor.building.trim().ifEmpty { null },
-                    group = editor.group.trim().ifEmpty { null },
-                    recurrence = dev.retza.mak.data.entity.Recurrence.valueOf(recurrence.name),
-                    date = if (recurrence == Recurrence.ONCE) date else null,
-                    classNote = editor.note.trim().ifEmpty { null }
-                )
-            )
-            controls.update {
-                it.copy(destination = MakDestination.Today, editor = defaultEditorState(), editorClassId = null)
+            if (classEditViewModel.save()) {
+                controls.update { it.copy(destination = MakDestination.Today) }
             }
         }
     }
@@ -649,22 +524,18 @@ class MakViewModel(
     private fun buildState(
         semesterList: List<SemesterEntity>,
         activeData: SemesterWithData?,
-        control: Controls
+        control: Controls,
+        editorState: ClassEditUiState
     ): MakUiState {
         val requiresSetup = control.forceSetup || semesterList.isEmpty() ||
             activeData != null && activeData.courses.isEmpty()
         val destination = if (requiresSetup) MakDestination.Setup else control.destination
-        val editor = control.editor.copy(
-            courseOptions = activeData?.courses?.map { it.name }.orEmpty(),
-            semesterStartDate = activeData?.semester?.startDate?.toString(),
-            semesterEndDate = activeData?.semester?.endDate?.toString()
-        )
         return MakUiState(
             destination = destination,
             requiresSetup = requiresSetup,
             today = buildToday(activeData, control.todayDate),
             schedule = buildSchedule(activeData, control),
-            editor = editor,
+            editor = editorState,
             themeId = control.themeId,
             semester = control.semesterDraft.copy(
                 overrides = activeData?.weekOverrides?.map { override ->
@@ -832,12 +703,13 @@ class MakViewModel(
 
     class Factory(
         private val repository: MakRepository,
-        private val feedbackSink: FeedbackSink
+        private val feedbackSink: FeedbackSink,
+        private val classEditViewModel: ClassEditViewModel
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(MakViewModel::class.java))
-            return MakViewModel(repository, feedbackSink) as T
+            return MakViewModel(repository, feedbackSink, classEditViewModel) as T
         }
     }
 }
@@ -912,17 +784,6 @@ private fun PlannedOccurrence.toUi(conflictLabel: String?): ClassItemUi {
     )
 }
 
-private fun defaultEditorState() = ClassEditUiState(
-    typeOptions = listOf("Wykład", "Ćwiczenia", "Laboratorium", "Projekt", "Seminarium", "Inne"),
-    dayOptions = dayNames.values.toList(),
-    recurrenceOptions = listOf(
-        RecurrenceOptionUi("every_week", "Co tydzień"),
-        RecurrenceOptionUi("a_week", "Tydzień A"),
-        RecurrenceOptionUi("b_week", "Tydzień B"),
-        RecurrenceOptionUi("once", "Jednorazowo")
-    )
-)
-
 private fun emptyTodayState() = TodayUiState(
     dateLabel = "Brak aktywnego semestru",
     semesterLabel = "",
@@ -937,20 +798,6 @@ private fun emptyScheduleState() = ScheduleUiState(
     weekSourceLabel = "",
     status = ScreenStatus.Ready
 )
-
-private fun recurrenceFromId(id: String): Recurrence = when (id) {
-    "a_week" -> Recurrence.A_WEEK
-    "b_week" -> Recurrence.B_WEEK
-    "once" -> Recurrence.ONCE
-    else -> Recurrence.EVERY_WEEK
-}
-
-private fun recurrenceLabel(id: String): String = when (id) {
-    "a_week" -> "Tydzień A"
-    "b_week" -> "Tydzień B"
-    "once" -> "Jednorazowo"
-    else -> "Co tydzień"
-}
 
 private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
 

@@ -17,6 +17,7 @@ import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.retza.mak.ui.MakApp
 import dev.retza.mak.ui.MakViewModel
+import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.theme.MAKTheme
 import kotlinx.coroutines.launch
@@ -32,8 +33,15 @@ class MainActivity : ComponentActivity() {
             val occurrenceViewModel: OccurrenceViewModel = viewModel(
                 factory = OccurrenceViewModel.Factory(application.repository, application.feedbackController)
             )
+            val classEditViewModel: ClassEditViewModel = viewModel(
+                factory = ClassEditViewModel.Factory(application.repository, application.feedbackController)
+            )
             val viewModel: MakViewModel = viewModel(
-                factory = MakViewModel.Factory(application.repository, application.feedbackController)
+                factory = MakViewModel.Factory(
+                    application.repository,
+                    application.feedbackController,
+                    classEditViewModel
+                )
             )
             makViewModel = viewModel
             LaunchedEffect(viewModel) {
