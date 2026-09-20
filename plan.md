@@ -180,6 +180,12 @@ Status etapu: `ClassEditViewModel` zakończony. Ekran edycji czyta `ClassEditVie
 
 Po każdym etapie uruchomić `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` oraz sprawdzić, że commit nie zawiera niezwiązanych zmian. Pierwsze zadanie wykonawcze obejmuje wyłącznie etapy 1 i 2. Wydzielanie `OccurrenceViewModel` rozpoczyna się po zaakceptowaniu granicy `FeedbackController`.
 
+#### SemesterViewModel
+
+Status: zrealizowane w sześciu etapach. `SemesterViewModel` przejmuje formularz semestru, kierunki i korekty tygodni. `open(semesterId)` anuluje poprzednie otwarcie, czyści stan, ustawia wskazany semestr jako aktywny i czeka na jego dane, więc wygrywa ostatnie otwarcie, a błędny identyfikator nie pozostawia poprzednich danych. Zapis semestru emituje `UiFeedback` i `SemesterEffect.CloseConfiguration`, zbierany na poziomie `MakApp` tylko na trasie `semester/{semesterId}`. Kierunki i korekty mają osobne flagi zapisu i usuwania, blokadę powtórzeń oraz komunikaty sukcesu i bezpieczne komunikaty błędu, a walidacja nie emituje feedbacku. Ekrany semestru, kierunków i korekt czytają stan i wywołują akcje `SemesterViewModel`, a `semesterId` trasy trafia do `open`. `MakViewModel` nie zawiera już `SemesterScreenUiState`, `semesterDraft`, `semesterEditId` ani metod konfiguracji semestru i nie importuje `SemesterViewModel`.
+
+Poza tym refaktorem pozostają: wybór, dodawanie i usuwanie całych semestrów w przyszłym `SettingsViewModel` oraz szybka korekta widocznego tygodnia w przyszłym `ScheduleViewModel`. Nie zmieniano schematu Room ani wyglądu ekranów.
+
 ## 1.3. Plan poprawy ekranu „Plan”
 
 Zmiany dotyczą widoku listy na ekranie „Plan”. Widok kalendarza zachowuje obecny zakres funkcji. Zmiany wykonać przy użyciu komponentów Material 3 i istniejących tokenów `MakSpacing`.

@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Wydzielenie `SemesterViewModel`
+
+- Fakty: Konfiguracja semestru, kierunki i korekty tygodni mieszkały w `MakViewModel` razem z planem, ustawieniami i edycją zajęć. Stan semestru był w `Controls`, a ekrany czytały `MakUiState.semester`.
+- Decyzja: Utworzono `SemesterViewModel` z `MakRepository` i `FeedbackSink`. Przeniesiono formularz, walidację i zapis semestru, kierunki oraz korekty tygodni, a `open(semesterId)` czeka na dane i wygrywa ostatnie otwarcie. Zapis semestru emituje `SemesterEffect.CloseConfiguration`, zbierany na poziomie `MakApp` tylko na trasie semestru. Trzy ekrany czytają stan i wywołują akcje `SemesterViewModel`, a `semesterId` trasy trafia do `open`. Usunięto `semester`, `semesterDraft`, `semesterEditId` i delegacje z `MakViewModel`.
+- Powód: Semestr jest osobnym przepływem z własnymi danymi i komunikatami, a `MakViewModel` ma koordynować wyłącznie dane wspólne.
+- Odrzucone: Łączenie refaktoru z `SetupViewModel` lub `SettingsViewModel`; zmiana schematu Room i wyglądu ekranów.
+- Weryfikacja: `SemesterViewModelTest` obejmuje mapowanie, oczekiwanie na dane, ostatnie otwarcie, błędny identyfikator, walidację bez feedbacku, pojedynczy zapis, sukces, błąd, anulowanie, kierunki i korekty. `MakNavigationTest` sprawdza trasę zamykaną przez efekt i mapowanie podrzędnych tras semestru. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi po każdym etapie.
+
 ## 2026-09-20: `ClassEditViewModel` zakończony
 
 - Fakty: `ClassEditViewModel` istniał z tymczasową delegacją z `MakViewModel`. Trasa edycji była nadal synchronizowana przez `MakDestination`, a zapis nawigował z komponentu bez efektu.
