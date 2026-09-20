@@ -103,7 +103,11 @@ internal class FakeMakRepository : MakRepository {
     override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeEntity>> = flowOf(occurrenceChanges)
     override suspend fun getAllSemesterData(): List<SemesterWithData> = emptyList()
 
-    override suspend fun saveSemester(entity: SemesterEntity): Long = 1L
+    override suspend fun saveSemester(entity: SemesterEntity): Long {
+        awaitSave()
+        events += "saveSemester"
+        return entity.id
+    }
     override suspend fun setActiveSemester(id: Long) = Unit
     override suspend fun clearActiveSemester() = Unit
     override suspend fun deleteSemester(id: Long) = Unit

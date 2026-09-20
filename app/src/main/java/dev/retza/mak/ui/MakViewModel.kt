@@ -317,27 +317,7 @@ class MakViewModel(
     }
 
     fun saveSemesterConfiguration() {
-        val id = semesterViewModel.semesterId.value ?: return
-        val draft = semesterViewModel.semester.value.semester
-        val start = draft.startDate.toLocalDateOrNull()
-        val end = draft.endDate.toLocalDateOrNull()
-        if (draft.name.isBlank() || start == null || end == null || end.isBefore(start)) {
-            semesterViewModel.update {
-                it.copy(semester = draft.copy(
-                    nameError = if (draft.name.isBlank()) "Podaj nazwę semestru." else null,
-                    startDateError = if (start == null) "Podaj poprawną datę." else null,
-                    endDateError = if (end == null) "Podaj poprawną datę." else null,
-                    dateRangeError = if (start != null && end != null && end.isBefore(start)) "Koniec nie może być wcześniejszy od początku." else null
-                ))
-            }
-            return
-        }
-        viewModelScope.launch {
-            repository.saveSemester(
-                SemesterEntity(id, draft.name.trim(), start, end, dev.retza.mak.data.entity.WeekType.valueOf(draft.firstWeek.name), true)
-            )
-            controls.update { it.copy(destination = MakDestination.Settings) }
-        }
+        semesterViewModel.saveSemester()
     }
 
     fun newWeekOverride() = semesterViewModel.update {
