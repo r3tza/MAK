@@ -21,6 +21,7 @@ import dev.retza.mak.domain.OccurrenceSlot
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.decideOccurrenceEdit
+import dev.retza.mak.domain.noteContentChanged
 import dev.retza.mak.domain.occurrenceRoomOverride
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarMarkerColor
@@ -370,29 +371,70 @@ class MakViewModel(
         }
     }
 
+    fun updateSharedNoteDraft(value: String) = updateOccurrence {
+        it.copy(sharedNoteDraft = value, sharedNoteError = null)
+    }
+
+    fun updateOccurrenceNoteDraft(value: String) = updateOccurrence {
+        it.copy(occurrenceNoteDraft = value, occurrenceNoteError = null)
+    }
+
+    fun saveSharedNote() {
+        val data = uiState.value.activeSemesterData ?: return
+        val classId = controls.value.selectedClassId ?: return
+        val base = data.classes.firstOrNull { it.id == classId } ?: return
+        val draft = controls.value.occurrenceDraft
+        val note = draft.sharedNoteDraft.trim().ifEmpty { null }
+        if (!noteContentChanged(draft.sharedNoteDraft, draft.sharedNote)) return
+        viewModelScope.launch {
+            updateOccurrence { it.copy(isSavingSharedNote = true, sharedNoteError = null) }
+            try {
+                repository.saveClass(base.copy(classNote = note))
+                updateOccurrence {
+                    it.copy(
+                        sharedNote = note,
+                        sharedNoteDraft = note.orEmpty(),
+                        isSavingSharedNote = false
+                    )
+                }
+            } catch (error: Exception) {
+                updateOccurrence {
+                    it.copy(isSavingSharedNote = false, sharedNoteError = "Nie udało się zapisać notatki.")
+                }
+            }
+        }
+    }
+
     fun saveOccurrenceNote() {
         val data = uiState.value.activeSemesterData ?: return
         val classId = controls.value.selectedClassId ?: return
         val date = controls.value.selectedNoteDate ?: return
-        val body = controls.value.occurrenceDraft.occurrenceNoteDraft.trim()
-        if (body.isEmpty()) return
+        val draft = controls.value.occurrenceDraft
+        val note = draft.occurrenceNoteDraft.trim().ifEmpty { null }
+        if (!noteContentChanged(draft.occurrenceNoteDraft, draft.occurrenceNote)) return
         val existing = data.occurrenceNotes.firstOrNull { it.classId == classId && it.occurrenceDate == date }
         viewModelScope.launch {
-            repository.saveOccurrenceNote(
-                OccurrenceNoteEntity(existing?.id ?: 0, data.semester.id, classId, date, body)
-            )
-            controls.update { it.copy(destination = MakDestination.Schedule) }
-        }
-    }
-
-    fun deleteOccurrenceNote() {
-        val data = uiState.value.activeSemesterData ?: return
-        val classId = controls.value.selectedClassId ?: return
-        val date = controls.value.selectedNoteDate ?: return
-        val note = data.occurrenceNotes.firstOrNull { it.classId == classId && it.occurrenceDate == date } ?: return
-        viewModelScope.launch {
-            repository.deleteOccurrenceNote(note.id)
-            controls.update { it.copy(destination = MakDestination.Schedule) }
+            updateOccurrence { it.copy(isSavingOccurrenceNote = true, occurrenceNoteError = null) }
+            try {
+                if (note == null) {
+                    existing?.let { repository.deleteOccurrenceNote(it.id) }
+                } else {
+                    repository.saveOccurrenceNote(
+                        OccurrenceNoteEntity(existing?.id ?: 0, data.semester.id, classId, date, note)
+                    )
+                }
+                updateOccurrence {
+                    it.copy(
+                        occurrenceNote = note,
+                        occurrenceNoteDraft = note.orEmpty(),
+                        isSavingOccurrenceNote = false
+                    )
+                }
+            } catch (error: Exception) {
+                updateOccurrence {
+                    it.copy(isSavingOccurrenceNote = false, occurrenceNoteError = "Nie udało się zapisać notatki.")
+                }
+            }
         }
     }
 
@@ -948,7 +990,17 @@ class MakViewModel(
             today = buildToday(activeData, control.todayDate),
             schedule = buildSchedule(activeData, control),
             editor = editor,
-            occurrence = control.occurrenceDraft.copy(canSaveOccurrenceEdit = occurrenceCanSave(control.occurrenceDraft)),
+            occurrence = control.occurrenceDraft.copy(
+                canSaveOccurrenceEdit = occurrenceCanSave(control.occurrenceDraft),
+                canSaveSharedNote = noteContentChanged(
+                    control.occurrenceDraft.sharedNoteDraft,
+                    control.occurrenceDraft.sharedNote
+                ),
+                canSaveOccurrenceNote = noteContentChanged(
+                    control.occurrenceDraft.occurrenceNoteDraft,
+                    control.occurrenceDraft.occurrenceNote
+                )
+            ),
             selectedClassId = control.selectedClassId,
             themeId = control.themeId,
             semester = control.semesterDraft.copy(

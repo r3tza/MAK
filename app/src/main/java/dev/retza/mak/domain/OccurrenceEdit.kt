@@ -63,6 +63,11 @@ fun occurrenceRoomOverride(baseRoom: String?, draftRoom: String?): String? {
     }
 }
 
+fun noteContentChanged(draft: String, stored: String?): Boolean =
+    normalizeNote(draft) != normalizeNote(stored)
+
+private fun normalizeNote(value: String?): String? = value?.trim()?.ifEmpty { null }
+
 internal fun normalizeRoom(room: String?): String? = room?.trim()?.ifEmpty { null }
 
 private fun parseDate(value: String): LocalDate? =

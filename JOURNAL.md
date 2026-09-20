@@ -1,5 +1,12 @@
 # MAK — dziennik decyzji
 
+## 2026-09-20: Dwie notatki na ekranie szczegółów
+
+- Fakty: Ekran szczegółów pokazywał notatkę wspólną tylko jako tekst, a notatkę wystąpienia w jednym polu z osobnym przyciskiem usuwania i powrotem do planu po zapisie.
+- Decyzja: Blok notatek zawiera dwa niezależne pola: „Notatka dla wszystkich terminów” (aktualizuje `classNote` bazowych zajęć) oraz „Notatka tylko dla tej daty” (zapisuje lub usuwa `OccurrenceNote`). Każde pole ma własny opis zakresu i akcję zapisu. Puste pole usuwa notatkę, a zapis jest nieaktywny, gdy wartość jest zgodna z zapisaną lub nie ma czego usunąć. Flagi `isSavingSharedNote` i `isSavingOccurrenceNote` blokują tylko właściwą akcję. Po sukcesie ekran pozostaje na szczegółach i aktualizuje właściwą notatkę bez wpływu na drugą.
+- Powód: Użytkownik ma zarządzać obiema notatkami z jednego ekranu bez wchodzenia w edycję całych zajęć, a niezapisana wartość drugiego pola nie może zniknąć.
+- Weryfikacja: `noteContentChanged` traktuje pusty i brakujący tekst tak samo, z testem JVM. Test Compose sprawdza obecność obu pól i niezależne wywołanie obu akcji zapisu przy 320 dp. `test`, `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą.
+
 ## 2026-09-20: Poprawki po recenzji edycji terminu
 
 - Fakty: Klasyfikacja przeniesienia opierała się na poprzednim stanie edycji, więc powrót do daty bazowej z nową godziną był błędnie uznawany za przeniesienie. Wyczyszczenie sali nie miało efektu, bo `newRoom = null` uruchamiało wartość bazową. Dialog można było zamknąć podczas zapisu.

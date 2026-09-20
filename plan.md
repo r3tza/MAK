@@ -335,7 +335,7 @@ Kryterium zakończenia: konfiguracja semestru pozostaje krótka, zarządzanie ki
 
 Zmiany upraszczają edycję pojedynczego wystąpienia, przywracają możliwość edycji notatki wspólnej i wprowadzają spójny feedback po operacjach. Edycja terminu odbywa się w jednym dialogu z jedną akcją zapisu. Po zapisaniu, odwołaniu albo przywróceniu użytkownik pozostaje na ekranie szczegółów i od razu widzi aktualny stan.
 
-Status: etapy 1-3 są zaimplementowane wraz z poprawkami po recenzji. Przeniesienie jest klasyfikowane względem daty bazowej, pusta sala działa jako jawne nadpisanie bez migracji Room, a dialog blokuje zamknięcie podczas zapisu. Edycja terminu korzysta z jednego dialogu, decyzję o modyfikacji, przeniesieniu albo przywróceniu wybiera czysta funkcja `decideOccurrenceEdit`, a ekran szczegółów aktualizuje się po udanej operacji bez zmiany trasy. Etapy 4-7 pozostają do wykonania.
+Status: etapy 1-4 są zaimplementowane wraz z poprawkami po recenzji. Edycja terminu korzysta z jednego dialogu, a decyzję o modyfikacji, przeniesieniu albo przywróceniu wybiera czysta funkcja `decideOccurrenceEdit`; przeniesienie liczy się względem daty bazowej, pusta sala jest jawnym nadpisaniem bez migracji Room, a dialog blokuje zamknięcie podczas zapisu. Ekran szczegółów pokazuje dwa niezależne pola notatek: wspólną dla wszystkich terminów (aktualizacja `classNote`) i tylko dla wybranej daty (zapis lub usunięcie `OccurrenceNote`). Puste pole usuwa notatkę, a zapis blokuje tylko właściwą akcję. Etapy 5-7 pozostają do wykonania.
 
 ### Etap 1: model różnicy i walidacja terminu
 

@@ -177,13 +177,14 @@ private fun LegacyMakApp(viewModel: MakViewModel, onCreateExportDocument: () -> 
                 onDismissOccurrenceEdit = viewModel::dismissOccurrenceEditDialog,
                 onSaveOccurrenceChange = viewModel::saveSelectedOccurrenceChange,
                 onRestoreOccurrence = viewModel::restoreSelectedOccurrence,
-                onOccurrenceNoteDraftChanged = { value -> viewModel.updateOccurrence { it.copy(occurrenceNoteDraft = value) } },
+                onOccurrenceNoteDraftChanged = viewModel::updateOccurrenceNoteDraft,
+                onSharedNoteDraftChanged = viewModel::updateSharedNoteDraft,
                 onTargetDateDraftChanged = { value -> viewModel.updateOccurrenceDraft { it.copy(targetDateDraft = value) } },
                 onStartTimeDraftChanged = { value -> viewModel.updateOccurrenceDraft { it.copy(startTimeDraft = value) } },
                 onEndTimeDraftChanged = { value -> viewModel.updateOccurrenceDraft { it.copy(endTimeDraft = value) } },
                 onRoomDraftChanged = { value -> viewModel.updateOccurrenceDraft { it.copy(roomDraft = value) } },
+                onSaveSharedNote = viewModel::saveSharedNote,
                 onSaveOccurrenceNote = viewModel::saveOccurrenceNote,
-                onDeleteOccurrenceNote = viewModel::deleteOccurrenceNote,
                 onBack = { viewModel.navigate(MakDestination.Schedule) },
                 modifier = baseModifier
             )

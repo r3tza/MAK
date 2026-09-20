@@ -29,7 +29,7 @@ class OccurrenceDetailsScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun detailsShowExpandedNoteAndSingleEditDialogAt320Dp() {
+    fun detailsShowBothNotesAndSingleEditDialogAt320Dp() {
         var state by mutableStateOf(
             OccurrenceDetailsUiState(
                 subjectName = "Bardzo długa nazwa zajęć do sprawdzenia układu",
@@ -53,7 +53,6 @@ class OccurrenceDetailsScreenTest {
                 canChangeOccurrence = true,
                 canMoveOccurrence = true,
                 canRestoreOccurrence = false,
-                canEditOccurrenceNote = false,
                 canSaveOccurrenceEdit = true
             )
         )
@@ -74,12 +73,13 @@ class OccurrenceDetailsScreenTest {
                         onSaveOccurrenceChange = {},
                         onRestoreOccurrence = {},
                         onOccurrenceNoteDraftChanged = {},
+                        onSharedNoteDraftChanged = {},
                         onTargetDateDraftChanged = {},
                         onStartTimeDraftChanged = {},
                         onEndTimeDraftChanged = {},
                         onRoomDraftChanged = {},
+                        onSaveSharedNote = {},
                         onSaveOccurrenceNote = {},
-                        onDeleteOccurrenceNote = {},
                         onBack = {}
                     )
                 }
@@ -87,7 +87,8 @@ class OccurrenceDetailsScreenTest {
         }
 
         composeTestRule.onNodeWithText("Bardzo długa nazwa zajęć do sprawdzenia układu").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Notatka do zajęć: Notatka wspólna").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Notatki").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Notatka wspólna").assertIsDisplayed()
         composeTestRule.onNodeWithText("Notatka tylko dla tego terminu").assertIsDisplayed()
         composeTestRule.onNodeWithText("Zmień termin").assertIsDisplayed()
         composeTestRule.onNodeWithText("Zamknij").assertIsDisplayed()
@@ -106,6 +107,60 @@ class OccurrenceDetailsScreenTest {
         composeTestRule.onNodeWithText("Do").assertIsDisplayed()
         composeTestRule.onNodeWithText("Anuluj").assertIsDisplayed()
         composeTestRule.onNodeWithText("Zapisz").assertIsDisplayed()
+    }
+
+    @Test
+    fun notesFieldsSaveIndependentlyAt320Dp() {
+        var sharedSaves = 0
+        var occurrenceSaves = 0
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(
+                    modifier = Modifier
+                        .width(320.dp)
+                        .height(900.dp)
+                ) {
+                    OccurrenceDetailsScreen(
+                        state = OccurrenceDetailsUiState(
+                            dateLabel = "Poniedziałek, 21 września",
+                            currentDate = "2026-09-21",
+                            startTime = "09:00",
+                            endTime = "10:30",
+                            sharedNote = "Wspólna",
+                            sharedNoteDraft = "Wspólna",
+                            occurrenceNote = "Daty",
+                            occurrenceNoteDraft = "Daty",
+                            canSaveSharedNote = true,
+                            canSaveOccurrenceNote = true
+                        ),
+                        onDeleteBaseClass = {},
+                        onDismissDeleteConfirmation = {},
+                        onOpenOccurrenceEdit = {},
+                        onDismissOccurrenceEdit = {},
+                        onSaveOccurrenceChange = {},
+                        onRestoreOccurrence = {},
+                        onOccurrenceNoteDraftChanged = {},
+                        onSharedNoteDraftChanged = {},
+                        onTargetDateDraftChanged = {},
+                        onStartTimeDraftChanged = {},
+                        onEndTimeDraftChanged = {},
+                        onRoomDraftChanged = {},
+                        onSaveSharedNote = { sharedSaves += 1 },
+                        onSaveOccurrenceNote = { occurrenceSaves += 1 },
+                        onBack = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Notatka dla wszystkich terminów").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Notatka tylko dla tej daty").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zapisz notatkę dla wszystkich terminów").assertIsDisplayed().performClick()
+        assertEquals(1, sharedSaves)
+        assertEquals(0, occurrenceSaves)
+        composeTestRule.onNodeWithText("Zapisz notatkę dla tej daty").assertIsDisplayed().performClick()
+        assertEquals(1, occurrenceSaves)
     }
 
     @Test
@@ -133,8 +188,7 @@ class OccurrenceDetailsScreenTest {
                             baseEndTime = "12:30",
                             canChangeOccurrence = false,
                             canMoveOccurrence = false,
-                            canRestoreOccurrence = true,
-                            canEditOccurrenceNote = false
+                            canRestoreOccurrence = true
                         ),
                         onDeleteBaseClass = {},
                         onDismissDeleteConfirmation = {},
@@ -143,12 +197,13 @@ class OccurrenceDetailsScreenTest {
                         onSaveOccurrenceChange = {},
                         onRestoreOccurrence = { restoreClicks += 1 },
                         onOccurrenceNoteDraftChanged = {},
+                        onSharedNoteDraftChanged = {},
                         onTargetDateDraftChanged = {},
                         onStartTimeDraftChanged = {},
                         onEndTimeDraftChanged = {},
                         onRoomDraftChanged = {},
+                        onSaveSharedNote = {},
                         onSaveOccurrenceNote = {},
-                        onDeleteOccurrenceNote = {},
                         onBack = {}
                     )
                 }
@@ -198,12 +253,13 @@ class OccurrenceDetailsScreenTest {
                         onSaveOccurrenceChange = {},
                         onRestoreOccurrence = {},
                         onOccurrenceNoteDraftChanged = {},
+                        onSharedNoteDraftChanged = {},
                         onTargetDateDraftChanged = {},
                         onStartTimeDraftChanged = {},
                         onEndTimeDraftChanged = {},
                         onRoomDraftChanged = {},
+                        onSaveSharedNote = {},
                         onSaveOccurrenceNote = {},
-                        onDeleteOccurrenceNote = {},
                         onBack = {}
                     )
                 }

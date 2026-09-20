@@ -3,6 +3,7 @@ package dev.retza.mak.domain
 import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -131,6 +132,16 @@ class OccurrenceEditTest {
         assertEquals("L301", occurrenceRoomOverride("L204", "L301"))
         assertEquals(null, occurrenceRoomOverride(null, null))
         assertEquals("L301", occurrenceRoomOverride(null, "L301"))
+    }
+
+    @Test
+    fun noteContentChangeTreatsEmptyAndNullAsSame() {
+        assertFalse(noteContentChanged("", null))
+        assertFalse(noteContentChanged("   ", null))
+        assertFalse(noteContentChanged("abc", "abc"))
+        assertFalse(noteContentChanged(" abc ", "abc"))
+        assertTrue(noteContentChanged("abc", null))
+        assertTrue(noteContentChanged("", "abc"))
     }
 
     private fun ready(decision: OccurrenceEditDecision): OccurrenceEditDecision.Ready {

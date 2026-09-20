@@ -13,6 +13,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import dev.retza.mak.ui.components.FieldError
@@ -39,12 +40,13 @@ fun OccurrenceDetailsScreen(
     onSaveOccurrenceChange: () -> Unit,
     onRestoreOccurrence: () -> Unit,
     onOccurrenceNoteDraftChanged: (String) -> Unit,
+    onSharedNoteDraftChanged: (String) -> Unit,
     onTargetDateDraftChanged: (String) -> Unit,
     onStartTimeDraftChanged: (String) -> Unit,
     onEndTimeDraftChanged: (String) -> Unit,
     onRoomDraftChanged: (String) -> Unit,
+    onSaveSharedNote: () -> Unit,
     onSaveOccurrenceNote: () -> Unit,
-    onDeleteOccurrenceNote: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -63,8 +65,9 @@ fun OccurrenceDetailsScreen(
             NotesBlock(
                 state = state,
                 onOccurrenceNoteDraftChanged = onOccurrenceNoteDraftChanged,
-                onSaveOccurrenceNote = onSaveOccurrenceNote,
-                onDeleteOccurrenceNote = onDeleteOccurrenceNote
+                onSharedNoteDraftChanged = onSharedNoteDraftChanged,
+                onSaveSharedNote = onSaveSharedNote,
+                onSaveOccurrenceNote = onSaveOccurrenceNote
             )
         }
         OccurrenceBottomActions(
@@ -273,8 +276,9 @@ private fun Facts(state: OccurrenceDetailsUiState) {
 private fun NotesBlock(
     state: OccurrenceDetailsUiState,
     onOccurrenceNoteDraftChanged: (String) -> Unit,
-    onSaveOccurrenceNote: () -> Unit,
-    onDeleteOccurrenceNote: () -> Unit
+    onSharedNoteDraftChanged: (String) -> Unit,
+    onSaveSharedNote: () -> Unit,
+    onSaveOccurrenceNote: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -282,35 +286,41 @@ private fun NotesBlock(
             .padding(bottom = 18.dp),
         verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
-        MakHelperText(
-            if (state.sharedNote.isNullOrBlank()) {
-                "Brak wspólnej notatki do zajęć."
-            } else {
-                "Notatka do zajęć: ${state.sharedNote}"
-            }
+        Text(
+            text = "Notatki",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold
         )
         MakField(
-            label = "Notatka do wystąpienia",
+            label = "Notatka dla wszystkich terminów",
+            value = state.sharedNoteDraft,
+            onValueChange = onSharedNoteDraftChanged,
+            singleLine = false,
+            minLines = 3,
+            isError = state.sharedNoteError != null
+        )
+        MakHelperText("Wspólna dla każdego wystąpienia tych zajęć.")
+        FieldError(state.sharedNoteError?.let(::FieldErrorUi))
+        MakPrimaryAction(
+            text = "Zapisz notatkę dla wszystkich terminów",
+            onClick = onSaveSharedNote,
+            enabled = state.canSaveSharedNote && !state.isSavingSharedNote
+        )
+        MakField(
+            label = "Notatka tylko dla tej daty",
             value = state.occurrenceNoteDraft,
             onValueChange = onOccurrenceNoteDraftChanged,
-            enabled = state.canEditOccurrenceNote,
             singleLine = false,
-            minLines = 3
+            minLines = 3,
+            isError = state.occurrenceNoteError != null
         )
         MakHelperText("Dotyczy tylko daty ${state.dateLabel}.")
-        if (state.canEditOccurrenceNote) {
-            MakPrimaryAction(
-                text = "Zapisz notatkę dla daty",
-                onClick = onSaveOccurrenceNote,
-                enabled = state.occurrenceNoteDraft.isNotBlank()
-            )
-            if (!state.occurrenceNote.isNullOrBlank()) {
-                MakSecondaryAction(
-                    text = "Usuń notatkę dla daty",
-                    onClick = onDeleteOccurrenceNote
-                )
-            }
-        }
+        FieldError(state.occurrenceNoteError?.let(::FieldErrorUi))
+        MakPrimaryAction(
+            text = "Zapisz notatkę dla tej daty",
+            onClick = onSaveOccurrenceNote,
+            enabled = state.canSaveOccurrenceNote && !state.isSavingOccurrenceNote
+        )
     }
 }
 
