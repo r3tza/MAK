@@ -1,5 +1,33 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: Aktualizacja stabilnego zestawu narzędzi
+
+- Fakty: Zestaw stał na Kotlin 2.2.10, AGP 9.1.1, Compose BOM 2024.09.00, Lifecycle 2.10.0, Navigation 2.9.5, Core KTX 1.18.0 i DataStore 1.1.7. Koin 4.2 z compiler pluginem wymaga Kotlin 2.3 lub nowszego, a KSP 2.3.12 jest zbudowany przeciw Kotlin 2.3.20.
+- Decyzja: Podniesiono Kotlin do 2.3.21, AGP do 9.4.1, Compose BOM do 2026.09.00, Lifecycle do 2.11.0, Navigation do 2.10.1, Core KTX do 1.19.0, `kotlinx.coroutines` i `kotlinx.serialization` do 1.11.0 oraz DataStore do 1.2.1. Gradle 9.7.1, KSP 2.3.12, Room 2.8.5, Glance 1.2.0, Espresso 3.7.0 i `androidx.test.ext:junit` 1.3.0 są już najnowsze stabilne. `compileSdk` podniesiono do 37.2, bo nowe AndroidX wymagają API 37, a `targetSdk` pozostawiono 36, aby nie zmieniać zachowania. Nie dodano Koin ani nie zmieniono kodu aplikacji poza `compileSdk`.
+- Powód: Aktualizacja jest osobnym etapem przed Koin, aby oddzielić źródło regresji, i musi używać wersji wzajemnie zgodnych i wyłącznie stabilnych.
+- Odrzucone: Kotlin 2.4.x bez wspierającego go KSP; podniesienie `targetSdk` razem z `compileSdk`; migracja `createComposeRule` do wersji v2 w tym samym commicie, bo zmienia dyspozytor testów.
+- Weryfikacja: `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi na nowym zestawie. Pozostają deprecacje `androidx.compose.ui.test.junit4.createComposeRule` w testach instrumentowanych.
+
+## 2026-09-21: Wizualna hierarchia widgetu
+
+- Fakty: Widget mieści potrzebne informacje, ale duże czerwone bloki kolizji dominują nad nazwami zajęć, a kierunek, sala, budynek i prowadzący tworzą ucinany ciąg metadanych. Nagłówek nie oddziela wyraźnie daty od podsumowania dnia.
+- Decyzja: Wydzielić neutralny nagłówek z datą oraz drugim wierszem tygodnia, liczby zajęć i małego pilla kolizji. Wpis zachowuje stałą kolumnę czasu, a pasek kierunku staje się prostą osią czasu. Kierunek i lokalizacja trafiają do osobnych wierszy. Prowadzącego pokazywać tylko w szerszych wariantach.
+- Kolizje: Zastąpić duży czerwony blok zwartym jasnym ostrzeżeniem z zakresem oraz nazwą drugich zajęć. Mały pill licznika w nagłówku zastępuje wcześniejszy czerwony tekst bez tła.
+- Czas: Dopuścić stany „Teraz” i „Następne” oraz lekkie przygaszenie zakończonych zajęć, jeśli mieszczą się w danym progu rozmiaru. Stan jest prawdziwy na moment odświeżenia i nie oznacza aktualizacji co minutę.
+- Kolory: Kolor kierunku oznacza oś i nazwę kierunku, czerwony kolizję, niebieski lub indygo tydzień A/B, a neutralny metadane i zakończone zajęcia. Każdy kolor ma etykietę tekstową lub inną informację niezależną od barwy.
+- Powód: Wyraźna kolejność informacji poprawia wygląd bez dodawania treści i pozostaje możliwa do wdrożenia w ograniczeniach Glance.
+- Odbiór: Ostateczne odcienie, odstępy i gęstość wybrać po porównaniu wariantów na launcherze w jasnym i ciemnym motywie oraz kilku rozmiarach.
+- Odrzucone: Osobna pełna karta dla każdego wpisu; duża powierzchnia błędu dla kolizji; prowadzący w każdym wariancie; prezentacja sugerująca odświeżanie stanu co minutę.
+
+## 2026-09-21: Hierarchia ekranu ustawień
+
+- Fakty: Ekran ustawień pokazuje jednocześnie wybór i kartę semestru, jego konfigurację, główny przycisk dodawania, motyw oraz rozwijane bloki danych i powiadomień. Powtarza też tytuł topbara przez lokalną etykietę, duży nagłówek i opis.
+- Decyzja: Ekran główny dzieli treść na sekcje „Plan”, „Wygląd”, „Powiadomienia”, „Dane” i „O aplikacji”. Pokazuje krótkie wartości i prowadzi do osobnych ekranów zarządzania semestrami, ustawień powiadomień oraz kopii zapasowej i importu. Aktywny semestr i motyw pozostają dostępne bezpośrednio.
+- Nawigacja: Ekrany „Semestry”, „Powiadomienia” i „Dane” mają osobne trasy w jednym `NavHost`. Lista semestrów, konfiguracja, usuwanie i dodawanie należą do ekranu „Semestry”. Rozbudowane ustawienia nie używają akordeonów na ekranie głównym.
+- Interfejs: Usunąć lokalną etykietę „USTAWIENIA”, nagłówek „Semestry i wygląd” oraz opis. Sekcje używają neutralnych kontenerów, odstępu 16 dp, krótkich podsumowań i subtelnych separatorów. „Dodaj semestr” nie jest główną akcją całych ustawień.
+- Powód: Hierarchia ogranicza liczbę widocznych kontrolek i nadaje podobną wagę elementom o podobnej częstotliwości użycia.
+- Odrzucone: Jeden długi formularz ustawień; rozwijane bloki danych i powiadomień na ekranie głównym; duży główny przycisk dodawania semestru na tym ekranie.
+
 ## 2026-09-21: Odstępy i neutralne sekcje rozwijane
 
 - Fakty: Nawigacja tygodnia, karta oznaczenia A/B, kalendarz i przyciski rozwiniętych opcji mają zbyt małe odstępy. Zielone tło rozwiniętego nagłówka nadaje zwykłemu stanowi komponentu znaczenie akcentu lub sukcesu.

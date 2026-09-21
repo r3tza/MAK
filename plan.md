@@ -257,6 +257,8 @@ Kryterium: ustawienia, semestry, motyw i eksport nie przechodzą przez `MakViewM
 
 Kryterium: projekt działa na aktualnym stabilnym zestawie, Kotlin ma wersję zgodną z compiler pluginem Koin 4.2, a dotychczasowe zachowanie aplikacji pozostaje bez zmian.
 
+Status: zrealizowane 2026-09-21. Podniesiono Kotlin do 2.3.21, AGP do 9.4.1, Compose BOM do 2026.09.00, Lifecycle do 2.11.0, Navigation do 2.10.1, Core KTX do 1.19.0, `kotlinx.coroutines` i `kotlinx.serialization` do 1.11.0 oraz DataStore do 1.2.1. Kotlin 2.4.x pominięto, ponieważ KSP 2.3.12 jest zbudowany przeciw Kotlin 2.3.20. `compileSdk` podniesiono do 37.2 (wymóg nowych AndroidX), a `targetSdk` pozostawiono 36, aby nie zmieniać zachowania. Gradle 9.7.1, KSP 2.3.12, Room 2.8.5, Glance 1.2.0, Espresso 3.7.0 i `androidx.test.ext:junit` 1.3.0 są już najnowsze stabilne. Kod aplikacji nie wymagał zmian poza konfiguracją `compileSdk`. Deprecacje `createComposeRule` w testach instrumentowanych pozostają do osobnej migracji.
+
 #### Dalszy etap 3: ScheduleViewModel
 
 Wykonać zakres i kryterium opisane w sekcji `ScheduleViewModel`. Nadal używać obecnej granicy danych, aby nie mieszać podziału stanu ze zmianą schematu.
@@ -1249,18 +1251,54 @@ Kryterium zakończenia: test opisuje strukturę elementu listy, a nie tylko obec
 
 Kryterium zakończenia: automatyczne testy potwierdzają unikalne liczenie kolizji i poprawną strukturę listy, a kontrola w launcherze potwierdza brak nakładających się kresek.
 
+### 13.4. Wizualne dopracowanie widgetu
+
+Zmiana ma poprawić hierarchię i atrakcyjność widgetu bez zwiększania liczby informacji ani pogarszania czytelności. Ostateczne odcienie, odstępy i gęstość zatwierdzić po porównaniu na launcherze w jasnym i ciemnym motywie.
+
+1. Wydzielić nagłówek subtelnie odmiennym neutralnym tłem. Data pozostaje informacją główną. W drugim wierszu pokazać pill tygodnia A/B, liczbę zajęć oraz mały jasnoczerwony pill liczby kolizji, gdy liczba jest większa od zera. Ten układ zastępuje wcześniejszą decyzję o czerwonym tekście kolizji bez pilla w nagłówku.
+2. Zachować spokojne neutralne tło całego widgetu i zaokrąglony kontener. Nie tworzyć osobnej pełnej karty dla każdego wpisu, ponieważ ograniczałoby to miejsce na plan.
+3. Połączyć pionowy pasek kierunku z wizualną linią czasu. Dopuszczalna jest mała kropka przy początku przedziału i cienka linia w pełnym kolorze kierunku. Czas pozostaje w stałej kolumnie i nie może być ucinany.
+4. Nazwę kierunku oznaczyć jego kolorem. W wąskim wariancie użyć krótkiego kolorowego tekstu albo małego pilla. Nazwa zawsze towarzyszy kolorowi.
+5. Rozdzielić kierunek od lokalizacji. W pierwszym wierszu metadanych pokazać kierunek, w następnym najważniejszą lokalizację. Prowadzącego pokazywać tylko w wariantach, w których mieści się bez wypierania czasu, nazwy, kierunku, sali lub kolizji.
+6. Zmniejszyć wizualny ciężar kolizji przy zajęciach. Zamiast dużego czerwonego bloku użyć jasnego tła ostrzegawczego, małej ikony lub znacznika, tekstu „Kolizja {zakres}” oraz nazwy drugich zajęć w kolejnym wierszu. Zakres i druga nazwa muszą pozostać dostępne bez polegania na kolorze.
+7. Separator renderować wyłącznie między zajęciami. Wewnątrz wpisu budować hierarchię przez odstępy, wagę tekstu i role kolorów.
+8. Dodać prezentacyjne stany „Teraz” i „Następne” tylko wtedy, gdy mieszczą się w danym progu rozmiaru. Zakończone zajęcia można lekko przygasić. Stan wynika z czasu odczytanego przez wstrzyknięty `Clock` podczas odświeżenia i nie może sugerować aktualizacji co minutę.
+9. Zachować role kolorów: kolor kierunku dla osi czasu i nazwy kierunku, czerwony dla kolizji, niebieski lub indygo dla tygodnia A/B oraz neutralny dla lokalizacji, prowadzącego i zakończonych zajęć.
+10. Dla każdego progu rozmiaru ustalić jawnie widoczne metadane, maksymalną liczbę linii oraz obecność stanów „Teraz” i „Następne”. Nie polegać na przypadkowym przycinaniu przez `RemoteViews`.
+
+Odbiór na launcherze obejmuje mały, pośredni i duży rozmiar, oba motywy, brak kolizji, jedną i kilka kolizji, długie nazwy, trwające, następne i zakończone zajęcia oraz brak danych. Porównać co najmniej dwa warianty odcieni nagłówka i intensywności tła kolizji.
+
+Kryterium zakończenia: użytkownik najpierw odczytuje datę, czas i nazwę zajęć, następnie kierunek oraz lokalizację, a dopiero później szczegóły kolizji. Żaden wariant nie ucina czasu, nie wymaga koloru do zrozumienia stanu ani nie oddaje kolizji większej powierzchni niż podstawowym informacjom o zajęciach.
+
 ## 14. Ustawienia i dane
 
-Ustawienia powinny zawierać:
+Główny ekran ustawień ma służyć do szybkiego odczytu i przejścia do właściwego obszaru. Nie umieszczać na nim rozbudowanych formularzy, list zarządzania ani rozwijanych bloków. Topbar „Ustawienia” jest jedynym nagłówkiem strony. Usunąć lokalną etykietę „USTAWIENIA”, nagłówek „Semestry i wygląd” oraz opis powtarzający zakres ekranu.
 
-- listę semestrów z możliwością dodania, wyboru, konfiguracji i usunięcia;
-- konfigurację przypisań kierunków, wspólnych lub osobnych kalendarzy oraz korekt tygodni A/B;
-- listę globalnych kierunków i ich kolorów;
-- globalny próg długości okienka, domyślnie 30 minut;
-- ustawienia powiadomień;
-- eksport planu;
-- import planu;
-- informację o wersji aplikacji.
+Ekran główny dzieli ustawienia na sekcje:
+
+1. „Plan”:
+   - wybór aktywnego semestru, ponieważ wpływa na ekrany, widget i powiadomienia;
+   - pozycja „Zarządzaj semestrami” prowadząca do osobnego ekranu.
+2. „Wygląd”:
+   - pozycja „Motyw” z bieżącą wartością „Systemowy”, „Jasny” albo „Ciemny”; dopóki jest to jedyne ustawienie wyglądu, wybór może pozostać na ekranie głównym.
+3. „Powiadomienia”:
+   - pozycja „Powiadomienia o kolizjach” z wartością „Włączone” albo „Wyłączone”;
+   - drugi wiersz podsumowania pokazuje ustawioną godzinę i wyprzedzenie, np. „20:00 dzień wcześniej, 30 min przed zajęciami”;
+   - pozycja prowadzi do osobnego ekranu ustawień powiadomień.
+4. „Dane”:
+   - pozycja „Kopia zapasowa i import” prowadząca do osobnego ekranu danych.
+5. „O aplikacji”:
+   - informacja o wersji jako zwarty wiersz; osobny ekran dodać dopiero wraz z licencjami albo większą liczbą informacji.
+
+Sekcje umieścić w neutralnych kontenerach i rozdzielić odstępem 16 dp. Wiersze tej samej sekcji mogą używać subtelnych separatorów. Każdy wiersz pokazuje nazwę, bieżącą wartość lub krótkie podsumowanie i ikonę przejścia, jeśli otwiera ekran podrzędny. Ikony Material są pomocnicze i nie zastępują tekstu. Nie nadawać wszystkim pozycjom wagi przycisku głównego.
+
+Ekran „Semestry” zawiera listę semestrów, wybór aktywnego, konfigurację, usuwanie i akcję „Dodaj semestr”. Konfiguracja przypisań kierunków, wspólnych lub osobnych kalendarzy i korekt A/B pozostaje częścią przepływu wybranego semestru. Lista globalnych kierunków i kolorów jest dostępna z tego przepływu. „Dodaj semestr” nie jest główną akcją całych ustawień.
+
+Ekran „Powiadomienia” zawiera główny przełącznik, osobne przełączniki obu rodzajów powiadomień, godzinę wieczorną oraz wyprzedzenie przed zajęciami.
+
+Ekran „Dane” zawiera eksport, import oraz opis skutków pełnego zastąpienia danych. Globalny próg długości okienka, domyślnie 30 minut, umieścić w ustawieniach planu. Jeśli przybędzie więcej ustawień planu niezwiązanych z semestrem, wydzielić dla nich osobny ekran zamiast rozbudowywać ekran główny.
+
+Ekrany podrzędne mają własne trasy w jednym `NavHost`, przewidywalny systemowy powrót i tytuł w topbarze. Stan ekranu głównego po powrocie nie może się resetować ani automatycznie otwierać innej sekcji.
 
 Eksport i import mogą używać lokalnego pliku JSON. Format powinien mieć pole `schemaVersion`, aby można było zmieniać model danych bez utraty zgodności ze starszymi eksportami.
 

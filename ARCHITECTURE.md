@@ -52,6 +52,10 @@ Interfejs ma szybko odpowiadać na pytania: jakie zajęcia są dziś, co wymaga 
 
 Wspólne prymitywy, przewidywalne odstępy, jawny grid, powtarzalne akcje i udokumentowane wyjątki mają pierwszeństwo przed ręcznym dopieszczaniem każdej funkcji osobno.
 
+Duże sekcje ekranu rozdziela odstęp 16 dp, powiązane elementy wewnątrz sekcji 12 dp, a krótką etykietę od jej wartości 8 dp. Przycisk pełnej szerokości ma co najmniej 12 dp wolnego miejsca nad i pod nim. Elementy sterujące nie mogą wizualnie stykać się z sąsiednimi kontenerami.
+
+Sekcja rozwijana zachowuje neutralne tło `surfaceContainer` albo `surfaceContainerLow` w obu stanach. Rozwinięcie wskazują tekst, kierunek ikony i semantyka, nie stała zmiana na kolor akcentowy. Nagłówek i treść pozostają jednym kontenerem ze wspólnym kształtem oraz subtelnym obramowaniem. Treść ma 16 dp wewnętrznego paddingu.
+
 ### Material 3 jako podstawa konstrukcji
 
 Interfejs budujemy na komponentach i zasadach Material 3. Dopuszczalne są własne kolory, typografia, kształty, karty, nawigacja i układ, jeśli zachowują semantykę oraz przewidywalne zachowanie komponentów Material 3.
@@ -83,6 +87,10 @@ Karta zajęć używa dwukolumnowej siatki z osobną kolumną godzin oraz sekcjam
 ### Gęstość ekranu planu
 
 Ekran „Plan” grupuje zakres dat, nawigację tygodnia, oznaczenie A/B i źródło korekty w jednej sekcji. Akcja zmiany tygodnia A/B znajduje się przy tej informacji, a nie w odłączonym menu. Zwinięte filtry pokazują aktywny kierunek. Karty zajęć rozdzielają nazwę, kierunek i typ, metadane, kolizję oraz notatkę na czytelne wiersze. Układ nie może ukrywać pierwszych zajęć przez nadmiernie wysokie elementy sterujące.
+
+### Hierarchia ustawień
+
+Główny ekran ustawień pokazuje wyłącznie sekcje „Plan”, „Wygląd”, „Powiadomienia”, „Dane” i „O aplikacji” oraz krótkie podsumowania bieżących wartości. Aktywny semestr i motyw można zmienić bezpośrednio. Zarządzanie semestrami, konfiguracja powiadomień oraz kopia zapasowa i import mają osobne ekrany. Rozbudowane formularze i listy nie rozwijają się na ekranie głównym. Topbar jest jedynym nagłówkiem strony, a akcje rzadkie nie otrzymują wagi głównej akcji całych ustawień.
 
 ### Konfiguracja początkowa
 
@@ -137,7 +145,7 @@ Aplikacja składa się z lokalnej warstwy danych, logiki domenowej, ekranów Com
 - **Warstwa danych** (`data`) przechowuje globalne kierunki, semestry, przypisania kierunków, kalendarze akademickie, zajęcia, korekty, notatki i zmiany wystąpień w Room nad SQLite. Zajęcia należą do `SemesterProgram`, korekty do `AcademicCalendar`, a prowadzący jest tekstem zajęć. `SemesterRepository` i `ScheduleRepository` są granicami odczytu i zapisu, a DAO nie wychodzą poza `data`. Warstwa udostępnia pełny snapshot kopii zapasowej oraz atomowe zastąpienie danych, ale nie koduje JSON i nie obsługuje `Uri`.
 - **Warstwa domenowa** (`domain`) oblicza oznaczenie tygodnia A/B, aktywny plan dla daty, kolizje i okienka. `WeekCalculator` jest używany wewnątrz `ScheduleResolver`. Wynik resolvera zawiera plan aktywny, oznaczenie A/B i źródło korekty. `CollisionDetector` działa na już złożonym planie. Okienko jest przerwą dłuższą niż globalny próg, domyślnie 30 minut, między połączonymi blokami aktywnych zajęć. Nie obejmuje czasu przed pierwszymi ani po ostatnich zajęciach. Walidacja formularza to czysta funkcja wywoływana z ViewModelu.
 - **Warstwa interfejsu** (`ui`) udostępnia kreator pierwszej konfiguracji, ekrany „Dzisiaj”, „Plan” w widoku listy lub kalendarza, formularze edycji i ustawienia. Ustawienia pozwalają zarządzać semestrami oraz wskazać aktywny semestr. ViewModel składa stan ekranu z repozytorium, wyniku `ScheduleResolver` i w razie potrzeby `CollisionDetector` albo eksportera. ViewModel nie woła DAO i nie liczy planu sam. Datę do testów wstrzykuje się (`Clock` albo `LocalDate`), nie `LocalDate.now()`.
-- **Widget** (`widget`) nie ma ViewModelu. Czyta dane przez repozytorium, mapuje je na modele domenowe i woła `ActivePlanProvider` z wstrzykniętą datą. Room pozostaje źródłem planu, a widget nie przechowuje jego kopii w preferencjach Glance.
+- **Widget** (`widget`) nie ma ViewModelu. Czyta dane przez repozytorium, mapuje je na modele domenowe i woła `ActivePlanProvider` z wstrzykniętą datą. Room pozostaje źródłem planu, a widget nie przechowuje jego kopii w preferencjach Glance. Nagłówek oddziela datę od zwartego podsumowania tygodnia, zajęć i kolizji. Wpis używa stałej kolumny czasu, kolorowej osi kierunku, osobnych wierszy kierunku i lokalizacji oraz zwartego ostrzeżenia o kolizji. Zakończone, trwające i następne zajęcia mogą różnić się prezentacją wyłącznie według czasu odczytanego przy odświeżeniu; widget nie obiecuje aktualizacji co minutę.
 - **Eksport i import** (`export`) kodują oraz odczytują lokalny plik JSON z wersją schematu. UI wybiera plik przez systemowy wybór dokumentu. `PlanBackupService` albo dedykowany use case łączy kodek ze snapshotem i atomową operacją warstwy danych. Domain nie zna `Uri`.
 - **Powiadomienia** korzystają z lokalnych danych aktywnego semestru i ostrzegają o kolizjach wieczorem dnia poprzedniego oraz przed rozpoczęciem kolidujących zajęć. Domyślna godzina powiadomienia wieczornego to 20:00, a domyślne wyprzedzenie drugiego powiadomienia wynosi 30 minut. Oba rodzaje można osobno wyłączyć, a ich czas skonfigurować globalnie. Dostarczenie obsługuje `AlarmManager` przez alarmy przybliżone. Aplikacja nie żąda dostępu do dokładnych alarmów i nie obiecuje dostarczenia o dokładnej godzinie.
 
