@@ -150,6 +150,28 @@ internal class FakeMakRepository : MakRepository {
         events += "deleteSemester"
         semesterFlow.value = semesterFlow.value.filterNot { it.id == id }
     }
+
+    override suspend fun deleteSemesterAndSelectFallback(
+        id: Long
+    ): dev.retza.mak.data.repository.SemesterDeletionResult {
+        awaitSave()
+        events += "deleteSemesterAndSelectFallback"
+        val target = semesterById(id) ?: error("Semester does not exist")
+        val wasActive = activeSemesterFlow.value == id
+        semesterFlow.value = semesterFlow.value.filterNot { it.id == id }
+        val remaining = semesterFlow.value
+        if (remaining.isEmpty()) {
+            activeSemesterFlow.value = 0L
+            return dev.retza.mak.data.repository.SemesterDeletionResult(null)
+        }
+        return if (wasActive) {
+            val chosen = remaining.first()
+            activeSemesterFlow.value = chosen.id
+            dev.retza.mak.data.repository.SemesterDeletionResult(chosen.id)
+        } else {
+            dev.retza.mak.data.repository.SemesterDeletionResult(activeSemesterFlow.value)
+        }
+    }
     override suspend fun saveCourse(entity: CourseEntity): Long {
         awaitSave()
         events += "saveCourse"

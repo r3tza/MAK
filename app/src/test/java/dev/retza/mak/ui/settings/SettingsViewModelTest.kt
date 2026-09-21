@@ -11,6 +11,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -169,10 +170,9 @@ class SettingsViewModelTest {
     @Test
     fun deletingInactiveSemesterKeepsActive() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
-        val viewModel = viewModel(repository)
-        val effects = mutableListOf<SettingsEffect>()
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink = sink)
         backgroundScope.launch { viewModel.settings.collect {} }
-        backgroundScope.launch { viewModel.effects.collect { effects += it } }
         advanceUntilIdle()
 
         viewModel.requestSemesterDeletion("2")
@@ -181,7 +181,7 @@ class SettingsViewModelTest {
 
         assertEquals(1L, repository.activeSemesterId)
         assertEquals(listOf("1"), viewModel.settings.value.semesters.map { it.id })
-        assertTrue(effects.isEmpty())
+        assertEquals(listOf("Usunięto semestr"), sink.published.map { it.message })
     }
 
     @Test
@@ -200,12 +200,10 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun deletingLastSemesterEmitsSingleOpenSetup() = runTest(mainDispatcher) {
+    fun deletingLastSemesterClearsActive() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val viewModel = viewModel(repository)
-        val effects = mutableListOf<SettingsEffect>()
         backgroundScope.launch { viewModel.settings.collect {} }
-        backgroundScope.launch { viewModel.effects.collect { effects += it } }
         advanceUntilIdle()
 
         viewModel.requestSemesterDeletion("1")
@@ -217,7 +215,65 @@ class SettingsViewModelTest {
 
         assertEquals(0L, repository.activeSemesterId)
         assertTrue(viewModel.settings.value.semesters.isEmpty())
-        assertEquals(listOf(SettingsEffect.OpenSetup), effects)
+    }
+
+    @Test
+    fun deleteFailureKeepsDialogAndPublishesError() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.failSaves = true
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink = sink)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        viewModel.requestSemesterDeletion("2")
+        viewModel.confirmSemesterDeletion()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf("Nie udało się usunąć semestru."),
+            sink.published.map { it.message }
+        )
+        assertEquals("2", viewModel.settings.value.semesterToDeleteId)
+        assertEquals(listOf("1", "2"), viewModel.settings.value.semesters.map { it.id })
+        assertFalse(viewModel.settings.value.isDeletingSemester)
+    }
+
+    @Test
+    fun doubleConfirmRunsOneDeletion() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.saveGate = CompletableDeferred()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        viewModel.requestSemesterDeletion("1")
+        viewModel.confirmSemesterDeletion()
+        viewModel.confirmSemesterDeletion()
+        advanceUntilIdle()
+
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "deleteSemesterAndSelectFallback" })
+    }
+
+    @Test
+    fun cancelledDeletionPublishesNoErrorAndClearsFlag() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.cancelSaves = true
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink = sink)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        viewModel.requestSemesterDeletion("2")
+        viewModel.confirmSemesterDeletion()
+        advanceUntilIdle()
+
+        assertTrue(sink.published.isEmpty())
+        assertFalse(viewModel.settings.value.isDeletingSemester)
+        assertEquals(listOf("1", "2"), viewModel.settings.value.semesters.map { it.id })
     }
 
     @Test

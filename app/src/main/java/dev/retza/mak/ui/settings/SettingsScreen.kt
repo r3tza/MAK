@@ -40,6 +40,7 @@ data class SettingsUiState(
     val notificationsLabel: String = "Obsługiwane przez aplikację, treść i moment wysyłki do ustalenia",
     val notificationsDetails: String = "Treść i moment wysyłki zostaną ustalone.",
     val semesterToDeleteId: String? = null,
+    val isDeletingSemester: Boolean = false,
     val status: ScreenStatus = ScreenStatus.Ready
 )
 
@@ -138,11 +139,17 @@ fun SettingsScreen(
             onDismiss = onCancelDelete
         ) {
             Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
-                MakSecondaryAction(text = "Anuluj", onClick = onCancelDelete, modifier = Modifier.weight(1f))
+                MakSecondaryAction(
+                    text = "Anuluj",
+                    onClick = onCancelDelete,
+                    modifier = Modifier.weight(1f),
+                    enabled = !state.isDeletingSemester
+                )
                 MakSecondaryAction(
                     text = "Usuń",
                     onClick = onConfirmDelete,
                     modifier = Modifier.weight(1f),
+                    enabled = !state.isDeletingSemester,
                     destructive = true
                 )
             }

@@ -17,6 +17,8 @@ import java.time.DayOfWeek
 
 data class SetupConfigurationIds(val semesterId: Long, val courseId: Long)
 
+data class SemesterDeletionResult(val activeSemesterId: Long?)
+
 interface MakRepository {
     fun observeSemesters(): Flow<List<SemesterEntity>>
 
@@ -55,6 +57,8 @@ interface MakRepository {
     suspend fun clearActiveSemester()
 
     suspend fun deleteSemester(id: Long)
+
+    suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult
 
     suspend fun saveCourse(entity: CourseEntity): Long
 
@@ -177,6 +181,31 @@ class RoomMakRepository(
     override suspend fun clearActiveSemester() = semesters.clearActive()
 
     override suspend fun deleteSemester(id: Long) = semesters.deleteById(id)
+
+    override suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult =
+        database.withTransaction {
+            val target = semesters.findById(id) ?: error("Semester does not exist")
+            val wasActive = target.isActive
+            semesters.deleteById(id)
+            val remaining = semesters.getAll()
+            if (remaining.isEmpty()) {
+                semesters.clearActive()
+                return@withTransaction SemesterDeletionResult(null)
+            }
+            val fallbackId = if (wasActive) {
+                val chosen = remaining.first()
+                semesters.clearActive()
+                semesters.markActive(chosen.id)
+                chosen.id
+            } else {
+                remaining.firstOrNull { it.isActive }?.id ?: run {
+                    val chosen = remaining.first()
+                    semesters.markActive(chosen.id)
+                    chosen.id
+                }
+            }
+            SemesterDeletionResult(fallbackId)
+        }
 
     override suspend fun saveCourse(entity: CourseEntity): Long {
         require(coursesSemesterExists(entity.semesterId))

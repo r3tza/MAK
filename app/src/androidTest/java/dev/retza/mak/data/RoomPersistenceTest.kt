@@ -24,6 +24,7 @@ import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
 import org.junit.Before
 import org.junit.Test
@@ -148,6 +149,59 @@ class RoomPersistenceTest {
         assertEquals(before, after)
         assertNull(after.firstOrNull { it.name == "Nowy semestr" })
     }
+
+    @Test
+    fun deletingInactiveSemesterKeepsActive() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val first = database!!.semesterDao().insert(semester("Pierwszy", 2026, 1, 1, false))
+        val second = database!!.semesterDao().insert(semester("Drugi", 2026, 6, 1, true))
+        database!!.semesterDao().markActive(second)
+
+        val result = repository.deleteSemesterAndSelectFallback(first)
+
+        assertEquals(second, result.activeSemesterId)
+        assertEquals(second, repository.observeActiveSemester().first()?.id)
+        assertEquals(listOf(second), repository.observeSemesters().first().map { it.id })
+    }
+
+    @Test
+    fun deletingActiveSemesterSelectsDeterministicFallback() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val first = database!!.semesterDao().insert(semester("Pierwszy", 2026, 1, 1, false))
+        val second = database!!.semesterDao().insert(semester("Drugi", 2026, 6, 1, false))
+        val third = database!!.semesterDao().insert(semester("Trzeci", 2026, 9, 1, false))
+        database!!.semesterDao().markActive(second)
+
+        val result = repository.deleteSemesterAndSelectFallback(second)
+
+        assertEquals(first, result.activeSemesterId)
+        assertEquals(first, repository.observeActiveSemester().first()?.id)
+        assertEquals(listOf(first, third), repository.observeSemesters().first().map { it.id })
+    }
+
+    @Test
+    fun deletingLastSemesterClearsActive() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val only = database!!.semesterDao().insert(semester("Jedyny", 2026, 1, 1, true))
+        database!!.semesterDao().markActive(only)
+
+        val result = repository.deleteSemesterAndSelectFallback(only)
+
+        assertNull(result.activeSemesterId)
+        assertNull(repository.observeActiveSemester().first())
+        assertTrue(repository.observeSemesters().first().isEmpty())
+    }
+
+    private fun semester(name: String, year: Int, month: Int, day: Int, active: Boolean) = SemesterEntity(
+        name = name,
+        startDate = LocalDate.of(year, month, day),
+        endDate = LocalDate.of(year, month, day).plusMonths(4),
+        firstWeekType = WeekType.A,
+        isActive = active
+    )
 
     private fun openDatabase(): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, databaseFileName).build()

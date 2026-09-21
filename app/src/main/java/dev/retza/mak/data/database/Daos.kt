@@ -23,6 +23,9 @@ interface SemesterDao {
     @Query("SELECT * FROM semesters WHERE is_active = 1 LIMIT 1")
     fun observeActive(): Flow<SemesterEntity?>
 
+    @Query("SELECT * FROM semesters ORDER BY start_date, id")
+    suspend fun getAll(): List<SemesterEntity>
+
     @Query("SELECT * FROM semesters WHERE id = :id")
     suspend fun findById(id: Long): SemesterEntity?
 

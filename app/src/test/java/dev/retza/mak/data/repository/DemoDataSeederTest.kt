@@ -83,6 +83,9 @@ private class FakeMakRepository : MakRepository {
     override suspend fun clearActiveSemester() = Unit
     override suspend fun deleteSemester(id: Long) = Unit
 
+    override suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult =
+        SemesterDeletionResult(null)
+
     override suspend fun saveCourse(entity: CourseEntity): Long {
         val id = courses.size + 1L
         courses += entity.copy(id = id)

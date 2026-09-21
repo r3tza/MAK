@@ -16,21 +16,15 @@ import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-
-sealed interface SettingsEffect {
-    data object OpenSetup : SettingsEffect
-}
 
 private data class SettingsLocalState(
     val semesterToDeleteId: String? = null,
@@ -46,9 +40,6 @@ class SettingsViewModel(
     private val feedbackSink: FeedbackSink
 ) : ViewModel() {
     private val local = MutableStateFlow(SettingsLocalState())
-
-    private val effectsChannel = Channel<SettingsEffect>(Channel.BUFFERED)
-    val effects = effectsChannel.receiveAsFlow()
 
     private val activeSemesterData = repository.observeActiveSemester().flatMapLatest { semester ->
         if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
@@ -95,18 +86,26 @@ class SettingsViewModel(
     }
 
     fun cancelSemesterDeletion() {
+        if (local.value.isDeletingSemester) return
         local.update { it.copy(semesterToDeleteId = null) }
     }
 
     fun confirmSemesterDeletion() {
+        if (local.value.isDeletingSemester) return
         val id = local.value.semesterToDeleteId?.toLongOrNull() ?: return
-        val remaining = settings.value.semesters.firstOrNull { it.id != id.toString() }
+        local.update { it.copy(isDeletingSemester = true) }
         viewModelScope.launch {
-            repository.deleteSemester(id)
-            if (remaining != null) repository.setActiveSemester(remaining.id.toLong())
-            else repository.clearActiveSemester()
-            local.update { it.copy(semesterToDeleteId = null) }
-            if (remaining == null) effectsChannel.trySend(SettingsEffect.OpenSetup)
+            try {
+                repository.deleteSemesterAndSelectFallback(id)
+                local.update { it.copy(semesterToDeleteId = null) }
+                feedbackSink.publish(UiFeedback("Usunięto semestr", UiFeedbackKind.Success))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                feedbackSink.publish(UiFeedback("Nie udało się usunąć semestru.", UiFeedbackKind.Error))
+            } finally {
+                local.update { it.copy(isDeletingSemester = false) }
+            }
         }
     }
 
@@ -171,7 +170,8 @@ private fun buildSettingsState(
         ThemeOptionUi("light", "Jasny", theme == ThemeMode.Light),
         ThemeOptionUi("dark", "Ciemny", theme == ThemeMode.Dark)
     ),
-    semesterToDeleteId = local.semesterToDeleteId
+    semesterToDeleteId = local.semesterToDeleteId,
+    isDeletingSemester = local.isDeletingSemester
 )
 
 private val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.forLanguageTag("pl-PL"))
