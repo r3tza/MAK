@@ -304,10 +304,14 @@ class ClassEditViewModelTest {
         val viewModel = viewModel(repository)
         advanceUntilIdle()
         viewModel.openNew()
+        val secondOption = viewModel.editor.value.courseOptions.first {
+            it.id == secondAssignmentId.toString()
+        }
+        assertEquals("Informatyka", secondOption.label)
+        viewModel.selectCourse(secondOption.id)
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                semesterProgramId = secondAssignmentId.toString(),
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "12:00",

@@ -945,13 +945,14 @@ fun MakExpandableSection(
 }
 
 @Composable
-fun MakSelectField(
+fun <T> MakSelectField(
     label: String,
     value: String,
-    options: List<String>,
-    onSelected: (String) -> Unit,
+    options: List<T>,
+    onSelected: (T) -> Unit,
     modifier: Modifier = Modifier,
-    isError: Boolean = false
+    isError: Boolean = false,
+    optionLabel: (T) -> String = { it.toString() }
 ) {
     var expanded by remember { mutableStateOf(false) }
     var focused by remember { mutableStateOf(false) }
@@ -995,7 +996,7 @@ fun MakSelectField(
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 options.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(option, fontSize = 13.sp) },
+                        text = { Text(optionLabel(option), fontSize = 13.sp) },
                         onClick = {
                             onSelected(option)
                             expanded = false

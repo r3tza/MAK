@@ -121,12 +121,9 @@ fun ClassEditScreen(
                         MakSelectField(
                             label = "Kierunek",
                             value = state.courseName,
-                            options = state.courseOptions.map { it.label },
-                            onSelected = { label ->
-                                state.courseOptions.firstOrNull { it.label == label }?.let {
-                                    onCourseChanged(it.id)
-                                }
-                            },
+                            options = state.courseOptions,
+                            onSelected = { option -> onCourseChanged(option.id) },
+                            optionLabel = { it.label },
                             isError = state.errors.containsKey(ClassEditField.Course)
                         )
                         FieldError(state.errors[ClassEditField.Course])
