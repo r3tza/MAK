@@ -15,9 +15,15 @@ class WidgetPresenter {
         plan: ActivePlan
     ): WidgetUiState {
         val dateLabel = widgetDateLabel(date)
-        val weekLabel = plan.schedule.weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem"
-        if (plan.schedule.weekType == null) {
+        val weekType = plan.schedule.weekType
+        val mixedWeekTypes = plan.schedule.hasMixedWeekTypes
+        if (weekType == null && !mixedWeekTypes) {
             return WidgetUiState.OutsideSemester(dateLabel, semesterName)
+        }
+        val weekLabel = if (mixedWeekTypes) {
+            "Różne tygodnie"
+        } else {
+            weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem"
         }
         if (plan.schedule.occurrences.isEmpty()) {
             return WidgetUiState.EmptyDay(dateLabel, weekLabel)

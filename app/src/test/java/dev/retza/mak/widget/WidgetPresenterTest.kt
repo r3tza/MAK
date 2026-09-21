@@ -47,6 +47,47 @@ class WidgetPresenterTest {
     }
 
     @Test
+    fun presenterShowsPlanWhenActiveCalendarsHaveMixedWeekTypes() {
+        val calendarA = dev.retza.mak.domain.AcademicCalendar(
+            id = "calendar-a",
+            startDate = date,
+            endDate = date.plusDays(7),
+            firstWeekType = dev.retza.mak.domain.WeekType.A
+        )
+        val calendarB = dev.retza.mak.domain.AcademicCalendar(
+            id = "calendar-b",
+            startDate = date,
+            endDate = date.plusDays(7),
+            firstWeekType = dev.retza.mak.domain.WeekType.B
+        )
+        val secondCourse = StudyProgram("course-2", "Matematyka", "#2244AA")
+        val programs = listOf(
+            dev.retza.mak.domain.SemesterProgram("assignment-a", semester.id, course.id, calendarA.id),
+            dev.retza.mak.domain.SemesterProgram("assignment-b", semester.id, secondCourse.id, calendarB.id)
+        )
+        val classes = listOf(
+            classItem("first", LocalTime.of(9, 0), LocalTime.of(10, 0)),
+            classItem("second", LocalTime.of(9, 30), LocalTime.of(10, 30), courseId = secondCourse.id)
+        )
+        val plan = ActivePlanProvider().resolve(
+            ActivePlanData(
+                semester = semester,
+                classes = classes,
+                courses = listOf(course, secondCourse),
+                semesterPrograms = programs,
+                calendars = listOf(calendarA, calendarB)
+            ),
+            date
+        )
+        assertTrue(plan.schedule.hasMixedWeekTypes)
+
+        val state = WidgetPresenter().present(date, semester.name, plan) as WidgetUiState.Ready
+
+        assertEquals("Różne tygodnie", state.weekLabel)
+        assertEquals(2, state.items.size)
+    }
+
+    @Test
     fun presenterMapsSortedDeduplicatedConflictsToBothOccurrences() {
         val classes = listOf(
             classItem("first", LocalTime.of(9, 0), LocalTime.of(11, 0), "Stała notatka"),
@@ -248,13 +289,14 @@ class WidgetPresenterTest {
         id: String,
         start: LocalTime,
         end: LocalTime,
-        note: String? = null
+        note: String? = null,
+        courseId: String = course.id
     ) = ClassItem(
         id = id,
         semesterId = semester.id,
         name = id,
         type = "Wykład",
-        courseId = course.id,
+        courseId = courseId,
         dayOfWeek = DayOfWeek.MONDAY,
         startTime = start,
         endTime = end,
