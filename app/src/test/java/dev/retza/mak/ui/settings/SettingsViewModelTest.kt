@@ -290,6 +290,53 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun exportSuccessPublishesSingleMessage() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink = sink)
+
+        viewModel.exportJson { }
+        advanceUntilIdle()
+        viewModel.reportExportFinished(true)
+        advanceUntilIdle()
+
+        assertEquals(listOf("Wyeksportowano plan"), sink.published.map { it.message })
+    }
+
+    @Test
+    fun exportReadFailurePublishesSingleError() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.failGetAllSemesterData = true
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink = sink)
+
+        viewModel.exportJson { }
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf("Nie udało się wyeksportować planu."),
+            sink.published.map { it.message }
+        )
+    }
+
+    @Test
+    fun exportWriteFailurePublishesSingleError() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink = sink)
+
+        viewModel.exportJson { }
+        advanceUntilIdle()
+        viewModel.reportExportFinished(false)
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf("Nie udało się wyeksportować planu."),
+            sink.published.map { it.message }
+        )
+    }
+
+    @Test
     fun preferencesRestoreThemeForNewInstance() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val preferences = InMemorySettingsPreferences()

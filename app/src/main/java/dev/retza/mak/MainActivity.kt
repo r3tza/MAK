@@ -90,9 +90,13 @@ class MainActivity : ComponentActivity() {
                     ActivityResultContracts.CreateDocument("application/json")
                 ) { uri ->
                     if (uri != null) {
-                        viewModel.exportJson { bytes ->
+                        settingsViewModel.exportJson { bytes ->
                             scope.launch {
-                                contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                                val success = runCatching {
+                                    contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                                        ?: error("No output stream")
+                                }.isSuccess
+                                settingsViewModel.reportExportFinished(success)
                             }
                         }
                     }

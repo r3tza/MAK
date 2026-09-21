@@ -30,7 +30,8 @@ private data class SettingsLocalState(
     val semesterToDeleteId: String? = null,
     val isDeletingSemester: Boolean = false,
     val isSelectingSemester: Boolean = false,
-    val isSavingTheme: Boolean = false
+    val isSavingTheme: Boolean = false,
+    val isExporting: Boolean = false
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -127,9 +128,31 @@ class SettingsViewModel(
     }
 
     fun exportJson(onReady: (ByteArray) -> Unit) {
+        if (local.value.isExporting) return
+        local.update { it.copy(isExporting = true) }
         viewModelScope.launch {
-            onReady(JsonExportCodec.encode(ExportSnapshot.from(repository.getAllSemesterData())))
+            try {
+                onReady(JsonExportCodec.encode(ExportSnapshot.from(repository.getAllSemesterData())))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                feedbackSink.publish(
+                    UiFeedback("Nie udało się wyeksportować planu.", UiFeedbackKind.Error)
+                )
+            } finally {
+                local.update { it.copy(isExporting = false) }
+            }
         }
+    }
+
+    fun reportExportFinished(success: Boolean) {
+        feedbackSink.publish(
+            if (success) {
+                UiFeedback("Wyeksportowano plan", UiFeedbackKind.Success)
+            } else {
+                UiFeedback("Nie udało się wyeksportować planu.", UiFeedbackKind.Error)
+            }
+        )
     }
 
     class Factory(

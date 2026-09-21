@@ -74,6 +74,7 @@ internal class FakeMakRepository : MakRepository {
     var failSetActiveSemester = false
     var activeSemesterGate: CompletableDeferred<Unit>? = null
     var setActiveCount = 0
+    var failGetAllSemesterData = false
     var lastSetupSemester: SemesterEntity? = null
     var lastSetupCourse: CourseEntity? = null
     private var generatedSemesterId = 100L
@@ -119,7 +120,10 @@ internal class FakeMakRepository : MakRepository {
     override fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeEntity>> = flowOf(occurrenceChanges)
     override fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteEntity>> = flowOf(occurrenceNotes)
     override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeEntity>> = flowOf(occurrenceChanges)
-    override suspend fun getAllSemesterData(): List<SemesterWithData> = emptyList()
+    override suspend fun getAllSemesterData(): List<SemesterWithData> {
+        if (failGetAllSemesterData) throw IllegalStateException("export failed")
+        return emptyList()
+    }
 
     override suspend fun saveSemester(entity: SemesterEntity): Long {
         awaitSave()
