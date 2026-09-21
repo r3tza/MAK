@@ -150,5 +150,3 @@ private fun emptyTodayState() = TodayUiState(
     weekLabel = "",
     summaryLabel = "0 zajęć"
 )
-
-
