@@ -277,11 +277,13 @@ fun MakApp(
                     onToday = { openRoot(MakDestination.Today, MakRoutes.Today) },
                     onPlan = { openRoot(MakDestination.Schedule, MakRoutes.Schedule) },
                     onAdd = {
-                        if (state.requiresSetup) {
-                            startSetup()
-                        } else {
-                            classEditViewModel.openNew()
-                            navController.navigate(MakRoutes.Edit)
+                        when (addAction(state.hasLoadedData, state.requiresSetup)) {
+                            AddAction.None -> Unit
+                            AddAction.Setup -> startSetup()
+                            AddAction.Editor -> {
+                                classEditViewModel.openNew()
+                                navController.navigate(MakRoutes.Edit)
+                            }
                         }
                     }
                 )
@@ -653,6 +655,18 @@ internal fun shouldCloseSemesterConfiguration(currentRoute: String?): Boolean =
 
 internal fun shouldHandleSetupEffect(currentRoute: String?): Boolean =
     currentRoute == MakRoutes.Setup
+
+internal enum class AddAction {
+    None,
+    Setup,
+    Editor
+}
+
+internal fun addAction(hasLoadedData: Boolean, requiresSetup: Boolean): AddAction = when {
+    !hasLoadedData -> AddAction.None
+    requiresSetup -> AddAction.Setup
+    else -> AddAction.Editor
+}
 
 fun destinationForRoute(route: String?): MakDestination = when (route) {
     MakRoutes.Schedule -> MakDestination.Schedule

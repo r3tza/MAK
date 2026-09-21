@@ -57,6 +57,14 @@ class MakNavigationTest {
     }
 
     @Test
+    fun addActionWaitsForDataBeforeOpeningEditor() {
+        assertEquals(AddAction.None, addAction(hasLoadedData = false, requiresSetup = false))
+        assertEquals(AddAction.None, addAction(hasLoadedData = false, requiresSetup = true))
+        assertEquals(AddAction.Setup, addAction(hasLoadedData = true, requiresSetup = true))
+        assertEquals(AddAction.Editor, addAction(hasLoadedData = true, requiresSetup = false))
+    }
+
+    @Test
     fun setupEffectAppliesOnlyOnWizardRoute() {
         assertTrue(shouldHandleSetupEffect(MakRoutes.Setup))
         assertFalse(shouldHandleSetupEffect(MakRoutes.Today))

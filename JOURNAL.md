@@ -6,7 +6,7 @@
 - Decyzja: Stan konfiguracji przeniesiono w całości do `AppViewModel`. `AppUiState` ma teraz `hasLoadedData` (ustawiane dopiero po pierwszej emisji aktywnego semestru), `requiresSetup` (fałszywe przed odczytem) oraz prezentacyjny `setupResume: SetupSemesterResume?` bez encji Room. Tylko `AppUiState` decyduje o pokazaniu przycisku i o tym, czy kreator wznawia istniejący semestr. `SetupViewModel.start` przyjmuje `SetupSemesterResume` zamiast `SemesterEntity`. Dolny „Dodaj” na pustym starcie otwiera konfigurację zamiast edytora zajęć.
 - Powód: Stan „jeszcze nie wczytano” nie może wyglądać jak „brak semestru”, bo użytkownik z istniejącym planem mógłby nieświadomie utworzyć drugi semestr.
 - Odrzucone: Trzymanie `requiresSetup` w stanach ekranów bez informacji o wczytaniu; wystawianie `SemesterWithData` w `AppUiState`; pokazywanie przycisku przed pierwszym odczytem.
-- Weryfikacja: `AppViewModelTest` sprawdza, że pusta baza zostaje na `Today`, że przed odczytem `hasLoadedData` i `requiresSetup` są fałszywe, a po odczycie semestr z kierunkiem nie wymaga konfiguracji, oraz że semestr bez kierunku daje `setupResume`. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+- Weryfikacja: `AppViewModelTest` sprawdza, że pusta baza zostaje na `Today`, że przed odczytem `hasLoadedData` i `requiresSetup` są fałszywe, a po odczycie semestr z kierunkiem nie wymaga konfiguracji, oraz że semestr bez kierunku daje `setupResume`. `MakNavigationTest` sprawdza, że `addAction` przed odczytem daje `None`, przy wymaganej konfiguracji `Setup`, a przy gotowym planie `Editor`. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
 
 ## 2026-09-21: Przekrojowe preferencje projektowe użytkownika
 
