@@ -75,7 +75,7 @@ Kryteria zakończenia porządkowania:
 
 Refaktor należy wykonać przed podłączeniem feedbacku do wszystkich operacji z etapu 6 sekcji 1.6. Nie przepisywać całego ViewModelu jednocześnie. Każdy etap ma kończyć się kompilującym stanem, testami odpowiednimi do zmiany i osobnym commitem.
 
-Status: etapy 1-7 są zakończone. W etapie 8 zakończono `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel`, a `MakViewModel` zastąpiono małym `AppViewModel`. Świeża pusta baza pozostaje w głównej aplikacji i pokazuje stan pusty z przyciskiem „Skonfiguruj plan”. Koin jest wdrożony. Pozostają podział `NavHost` i dalsze etapy z sekcji kolejności prac.
+Status: etapy 1-7 są zakończone. W etapie 8 zakończono `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel`, a `MakViewModel` zastąpiono małym `AppViewModel`. Świeża pusta baza pozostaje w głównej aplikacji i pokazuje stan pusty z przyciskiem „Skonfiguruj plan”. Koin jest wdrożony, a `NavHost` podzielony na grupy tras. Pozostają dalsze etapy z sekcji kolejności prac.
 
 #### Etap 1: inwentaryzacja odpowiedzialności
 
@@ -184,9 +184,9 @@ Status etapu: zrealizowane. Audyt potwierdził, że `MakViewModel` nie ma pól `
 
 Kryterium etapu: każdy ekran ma własny ViewModel, `NavController` pozostaje jedynym źródłem trasy, a stan nadrzędny odpowiada najwyżej za uruchomienie aplikacji i wymuszenie konfiguracji.
 
-Status etapu: zakończono `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel`. `MakViewModel` zastąpiono małym `AppViewModel`. Koin jest wdrożony. Pozostają podział `NavHost` i dalsze etapy.
+Status etapu: zakończono `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel`. `MakViewModel` zastąpiono małym `AppViewModel`. Koin jest wdrożony, a `NavHost` podzielony na grupy tras. Pozostają dalsze etapy.
 
-Każdy kolejny etap realizować i weryfikować osobno. Bieżąca kolejność to podział `NavHost` i dalsze etapy z sekcji kolejności prac. Po każdym zakończonym etapie sprawdzić, że commit nie zawiera zmian z następnego etapu.
+Każdy kolejny etap realizować i weryfikować osobno. Bieżąca kolejność to dalsze etapy z sekcji kolejności prac, poczynając od modeli `StudyProgram` i `AcademicCalendar`. Po każdym zakończonym etapie sprawdzić, że commit nie zawiera zmian z następnego etapu.
 
 #### SemesterViewModel
 
@@ -286,6 +286,8 @@ Status: zrealizowane. Dodano Koin 4.2.2 przez `koin-bom` i Koin compiler plugin 
 4. Nie dodawać dodatkowych kontrolerów ani osobnej warstwy nawigacyjnej.
 
 Kryterium: zmiana trasy jednego przepływu nie wymaga edycji hostów pozostałych przepływów.
+
+Status: zrealizowane. Trasy i efekty podzielono na grupy w osobnych plikach: `TodayScheduleRoutes.kt` (Dzisiaj i Plan, `ScheduleEffect`), `ClassOccurrenceRoutes.kt` (edycja zajęć i szczegóły wystąpienia, `OccurrenceEffect`/`ClassEditEffect`, akcje topbaru), `SemesterRoutes.kt` (semestr, kierunki, korekty; `SemesterEffect`), `SettingsRoutes.kt` (ustawienia) i `SetupRoutes.kt` (kreator; `SetupEffect`). Wspólne stałe tras i mapowanie przeniesiono do `MakRoutes.kt`. `MakApp` pozostał jednym hostem: jeden `NavController`, jeden `Scaffold`, topbar, dolna nawigacja i globalny snackbar; wywołuje tylko `NavGraphBuilder`-owe rozszerzenia grup i zbiera ich efekty. Zmiana trasy wewnątrz grupy nie wymaga edycji pozostałych grup.
 
 #### Dalszy etap 8: modele StudyProgram i AcademicCalendar
 

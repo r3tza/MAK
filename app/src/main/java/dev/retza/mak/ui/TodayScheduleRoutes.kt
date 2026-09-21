@@ -1,0 +1,88 @@
+package dev.retza.mak.ui
+
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
+import androidx.navigation.NavGraphBuilder
+import androidx.navigation.compose.composable
+import dev.retza.mak.ui.edit.ClassEditViewModel
+import dev.retza.mak.ui.schedule.ScheduleEffect
+import dev.retza.mak.ui.schedule.ScheduleScreen
+import dev.retza.mak.ui.schedule.ScheduleViewModel
+import dev.retza.mak.ui.today.TodayScreen
+import dev.retza.mak.ui.today.TodayViewModel
+
+internal fun NavGraphBuilder.todayRoute(
+    appState: AppUiState,
+    todayViewModel: TodayViewModel,
+    onOpenPlan: () -> Unit,
+    onOpenOccurrence: (String) -> Unit,
+    startSetup: () -> Unit
+) {
+    composable(MakRoutes.Today) {
+        val todayState = todayViewModel.today.collectAsStateWithLifecycle().value
+        TodayScreen(
+            state = todayState,
+            onOpenPlan = onOpenPlan,
+            onOpenClass = onOpenOccurrence,
+            onStartSetup = startSetup,
+            onRetry = {},
+            requiresSetup = appState.requiresSetup,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
+internal fun NavGraphBuilder.scheduleRoute(
+    appState: AppUiState,
+    scheduleViewModel: ScheduleViewModel,
+    onOpenOccurrence: (String) -> Unit,
+    startSetup: () -> Unit
+) {
+    composable(MakRoutes.Schedule) {
+        val scheduleState = scheduleViewModel.schedule.collectAsStateWithLifecycle().value
+        ScheduleScreen(
+            state = scheduleState,
+            onViewChanged = scheduleViewModel::selectView,
+            onPreviousWeek = { scheduleViewModel.changeWeek(-1) },
+            onNextWeek = { scheduleViewModel.changeWeek(1) },
+            onDaySelected = scheduleViewModel::selectDay,
+            onFilterSelected = scheduleViewModel::selectCourseFilter,
+            onPreviousMonth = { scheduleViewModel.changeMonth(-1) },
+            onNextMonth = { scheduleViewModel.changeMonth(1) },
+            onCalendarDaySelected = scheduleViewModel::selectCalendarDay,
+            onShowCancelledChanged = scheduleViewModel::setShowCancelled,
+            onAddOneOff = scheduleViewModel::openNewClassForSelectedCalendarDay,
+            onOpenClass = onOpenOccurrence,
+            onSaveWeekCorrection = scheduleViewModel::saveVisibleWeekOverride,
+            onClearWeekCorrection = scheduleViewModel::clearVisibleWeekOverride,
+            onStartSetup = startSetup,
+            onRetry = {},
+            requiresSetup = appState.requiresSetup,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+}
+
+@Composable
+internal fun ScheduleEffects(
+    scheduleViewModel: ScheduleViewModel,
+    classEditViewModel: ClassEditViewModel,
+    navController: NavController
+) {
+    LaunchedEffect(scheduleViewModel, navController) {
+        scheduleViewModel.effects.collect { effect ->
+            when (effect) {
+                is ScheduleEffect.OpenNewClassEditor -> {
+                    if (navController.currentBackStackEntry?.destination?.route == MakRoutes.Schedule) {
+                        classEditViewModel.openNew(effect.date)
+                        navController.navigate(MakRoutes.Edit)
+                    }
+                }
+            }
+        }
+    }
+}

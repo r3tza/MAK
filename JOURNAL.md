@@ -1,5 +1,14 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: Podział NavHosta na grupy tras
+
+- Fakty: `MakNavHostApp.kt` miał ponad 700 linii: jeden `NavHost` zawierał wszystkie trasy, argumenty, efekty i akcje topbaru, więc zmiana jednego przepływu dotykała wspólnego pliku.
+- Decyzja: Trasy i efekty podzielono na grupy w osobnych plikach: `TodayScheduleRoutes.kt` (Dzisiaj i Plan, `ScheduleEffect`), `ClassOccurrenceRoutes.kt` (edycja zajęć i szczegóły wystąpienia, `OccurrenceEffect`/`ClassEditEffect`, akcje topbaru), `SemesterRoutes.kt` (semestr, kierunki, korekty; `SemesterEffect`), `SettingsRoutes.kt` (ustawienia) i `SetupRoutes.kt` (kreator; `SetupEffect`). Wspólne stałe i mapowanie tras trafiły do `MakRoutes.kt`. Każda grupa to rozszerzenie `NavGraphBuilder` albo funkcja `@Composable` zbierająca efekty.
+- Stan nadrzędny: `MakApp` pozostał jednym hostem z jednym `NavController`, jednym `Scaffold`, topbarem, dolną nawigacją i globalnym snackbarem; wywołuje rozszerzenia grup i zbiera ich efekty, ale nie zna ich tras wewnętrznych.
+- Powód: Zmiana trasy w jednym przepływie nie powinna wymagać edycji plików pozostałych przepływów, a nawigacja powinna mieć jedno źródło trasy.
+- Odrzucone: Osobny `NavHost` albo `NavController` dla każdej grupy; dodatkowa warstwa nawigacyjna; trzymanie wszystkich tras w jednym pliku hosta.
+- Weryfikacja: `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. `MakNavigationTest` nadal pilnuje budowy tras i reguł `destinationMatchesRoute`/`addAction`.
+
 ## 2026-09-21: Koin jako composition root
 
 - Fakty: Ręczne `ViewModelProvider.Factory` w każdym ViewModelu i składanie grafu w `MainActivity` rosły z każdym wydzielonym przepływem. Compiler plugin Koin wymaga Kotlin 2.3.20, a KSP też jest zbudowany przeciw tej wersji.
