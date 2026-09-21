@@ -608,6 +608,39 @@ class SemesterViewModelTest {
     }
 
     @Test
+    fun addCourseRejectsProgramAlreadyAssigned() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.selectCourseProgram("1")
+        viewModel.addCourse()
+        advanceUntilIdle()
+
+        assertNotNull(viewModel.semester.value.courseNameError)
+        assertTrue(repository.events.none { it == "saveStudyProgramAssignment" })
+        assertTrue(sink.published.isEmpty())
+    }
+
+    @Test
+    fun refreshDropsCourseCalendarThatWasRemoved() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.update { it.copy(courseCalendarId = "999") }
+        viewModel.selectOverrideCalendar(repository.calendar.id.toString())
+        advanceUntilIdle()
+
+        assertEquals(repository.calendar.id.toString(), viewModel.semester.value.courseCalendarId)
+    }
+
+    @Test
     fun selectingOverrideCalendarShowsOnlyItsOverrides() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val sink = RecordingFeedbackSink()

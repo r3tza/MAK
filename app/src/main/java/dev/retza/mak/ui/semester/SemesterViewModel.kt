@@ -193,6 +193,12 @@ class SemesterViewModel(
             update { it.copy(courseNameError = "Podaj nazwę kierunku.") }
             return
         }
+        if (existingProgramId != null &&
+            draft.courseItems.any { it.programId == existingProgramId.toString() }
+        ) {
+            update { it.copy(courseNameError = "Ten kierunek jest już przypięty do semestru.") }
+            return
+        }
         val sourceCalendarId = draft.courseCalendarId?.toLongOrNull() ?: selectedCalendarId
         if (sourceCalendarId == null) {
             update { it.copy(courseNameError = "Brak kalendarza semestru.") }
@@ -380,11 +386,15 @@ class SemesterViewModel(
         val current = state.value
         selectedCalendarId = data.academicCalendars.firstOrNull { it.id == selectedCalendarId }?.id
             ?: data.sharedCalendar()?.id
+        val requestedCourseCalendarId = current.courseCalendarId?.toLongOrNull()
+        val courseCalendarId = requestedCourseCalendarId
+            ?.takeIf { id -> data.academicCalendars.any { it.id == id } }
+            ?: selectedCalendarId
         state.value = data.toSemesterScreenState(selectedCalendarId).copy(
             courseNameDraft = current.courseNameDraft,
             courseColorDraft = current.courseColorDraft,
             courseCalendarMode = current.courseCalendarMode,
-            courseCalendarId = current.courseCalendarId ?: selectedCalendarId?.toString(),
+            courseCalendarId = courseCalendarId?.toString(),
             courseProgramId = current.courseProgramId,
             overrideForm = current.overrideForm
         )
@@ -494,6 +504,7 @@ private fun SemesterWithData.toSemesterScreenState(selectedCalendarId: Long?): S
         val calendar = academicCalendars.firstOrNull { it.id == assignment.academicCalendarId }
         SemesterCourseUi(
             assignmentId = assignment.id.toString(),
+            programId = assignment.studyProgramId.toString(),
             name = program.name,
             color = program.color,
             calendarId = calendar?.id?.toString().orEmpty(),

@@ -95,6 +95,7 @@ enum class CourseCalendarModeUi {
 
 data class SemesterCourseUi(
     val assignmentId: String,
+    val programId: String,
     val name: String,
     val color: String,
     val calendarId: String,

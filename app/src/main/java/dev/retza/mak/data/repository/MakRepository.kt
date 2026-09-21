@@ -276,7 +276,6 @@ class RoomMakRepository(
                 require(studyPrograms.findById(studyProgram.id) != null) {
                     "Study program does not exist"
                 }
-                studyPrograms.update(studyProgram)
                 studyProgram.id
             }
             val existing = semesterPrograms.findByProgram(semesterId, studyProgramId)
@@ -312,7 +311,6 @@ class RoomMakRepository(
                 require(studyPrograms.findById(studyProgram.id) != null) {
                     "Study program does not exist"
                 }
-                studyPrograms.update(studyProgram)
                 studyProgram.id
             }
             val calendarId = calendars.insert(
