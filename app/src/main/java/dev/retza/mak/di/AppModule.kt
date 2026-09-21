@@ -6,6 +6,8 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import dev.retza.mak.data.database.AppDatabase
 import java.time.Clock
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Configuration
 import org.koin.core.annotation.Module
@@ -25,4 +27,7 @@ class AppModule {
 
     @Single
     fun provideClock(): Clock = Clock.systemDefaultZone()
+
+    @Single
+    fun provideBackgroundDispatcher(): CoroutineDispatcher = Dispatchers.Default
 }

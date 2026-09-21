@@ -26,9 +26,11 @@ import dev.retza.mak.ui.settings.ThemeMode
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.theme.MAKTheme
 import dev.retza.mak.ui.today.TodayViewModel
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
 
@@ -76,10 +78,12 @@ class MainActivity : ComponentActivity() {
                     if (uri != null) {
                         settingsViewModel.exportJson { bytes ->
                             scope.launch {
-                                val success = runCatching {
-                                    contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
-                                        ?: error("No output stream")
-                                }.isSuccess
+                                val success = withContext(Dispatchers.IO) {
+                                    runCatching {
+                                        contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                                            ?: error("No output stream")
+                                    }.isSuccess
+                                }
                                 settingsViewModel.reportExportFinished(success)
                             }
                         }
@@ -90,9 +94,11 @@ class MainActivity : ComponentActivity() {
                 ) { uri ->
                     if (uri != null) {
                         scope.launch {
-                            val bytes = runCatching {
-                                contentResolver.openInputStream(uri)?.use { it.readBytes() }
-                            }.getOrNull()
+                            val bytes = withContext(Dispatchers.IO) {
+                                runCatching {
+                                    contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                                }.getOrNull()
+                            }
                             if (bytes == null) {
                                 settingsViewModel.reportImportReadError()
                             } else {

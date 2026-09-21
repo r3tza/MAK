@@ -18,6 +18,8 @@ import dev.retza.mak.ui.feedback.UiFeedbackKind
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -30,6 +32,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 
 sealed interface SettingsEffect {
     data object OpenImportPreview : SettingsEffect
@@ -54,7 +57,8 @@ private data class SettingsLocalState(
 class SettingsViewModel(
     private val repository: MakRepository,
     private val preferences: SettingsPreferences,
-    private val feedbackSink: FeedbackSink
+    private val feedbackSink: FeedbackSink,
+    private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
     private val local = MutableStateFlow(SettingsLocalState())
 
@@ -153,14 +157,15 @@ class SettingsViewModel(
         local.update { it.copy(isExporting = true) }
         viewModelScope.launch {
             try {
-                onReady(
+                val bytes = withContext(backgroundDispatcher) {
                     JsonExportCodec.encode(
                         ExportSnapshot.from(
                             repository.getAllSemesterData(),
                             repository.getAllStudyPrograms()
                         )
                     )
-                )
+                }
+                onReady(bytes)
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Exception) {
@@ -188,8 +193,10 @@ class SettingsViewModel(
         local.update { it.copy(isPreparingImport = true, importErrorMessage = null) }
         viewModelScope.launch {
             try {
-                val snapshot = JsonExportCodec.decode(bytes)
-                when (val result = ExportImporter.prepare(snapshot)) {
+                val result = withContext(backgroundDispatcher) {
+                    ExportImporter.prepare(JsonExportCodec.decode(bytes))
+                }
+                when (result) {
                     is ImportSnapshotResult.Invalid -> local.update {
                         it.copy(
                             importErrorMessage = result.errors.firstOrNull()

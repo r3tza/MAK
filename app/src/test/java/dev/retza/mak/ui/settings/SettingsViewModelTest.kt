@@ -33,7 +33,7 @@ class SettingsViewModelTest {
         repository: FakeMakRepository,
         preferences: SettingsPreferences = InMemorySettingsPreferences(),
         sink: FeedbackSink = RecordingFeedbackSink()
-    ) = SettingsViewModel(repository, preferences, sink)
+    ) = SettingsViewModel(repository, preferences, sink, mainDispatcher)
 
     @Test
     fun settingsStateMapsSemestersActiveAndTheme() = runTest(mainDispatcher) {
