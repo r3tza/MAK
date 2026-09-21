@@ -57,6 +57,7 @@ import dev.retza.mak.ui.setup.SetupEffect
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.setup.SetupWizard
 import dev.retza.mak.ui.today.TodayScreen
+import dev.retza.mak.ui.today.TodayViewModel
 import kotlinx.coroutines.flow.Flow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -69,6 +70,7 @@ fun MakApp(
     setupViewModel: SetupViewModel,
     settingsViewModel: SettingsViewModel,
     scheduleViewModel: ScheduleViewModel,
+    todayViewModel: TodayViewModel,
     feedback: Flow<UiFeedback>,
     onCreateExportDocument: () -> Unit
 ) {
@@ -289,8 +291,9 @@ fun MakApp(
                 .padding(padding)
         ) {
             composable(MakRoutes.Today) {
+                val todayState = todayViewModel.today.collectAsStateWithLifecycle().value
                 TodayScreen(
-                    state = state.today,
+                    state = todayState,
                     onOpenPlan = { openRoot(MakDestination.Schedule, MakRoutes.Schedule) },
                     onOpenClass = { occurrenceId ->
                         occurrenceViewModel.open(occurrenceId)

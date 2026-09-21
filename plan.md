@@ -210,14 +210,7 @@ Status: zrealizowane. `ScheduleViewModel` prowadzi widok listy i kalendarza, wyb
 
 #### TodayViewModel
 
-Status: zaakceptowane, do wykonania po `ScheduleViewModel`.
-
-1. Przenieść bieżącą datę, `refreshToday` i składanie `TodayUiState`.
-2. Korzystać z `Clock` oraz `ActivePlanProvider`; nie wywoływać `LocalDate.now()` bezpośrednio.
-3. Odświeżać datę po wznowieniu aplikacji, aby ekran nie pozostawał na poprzednim dniu.
-4. Zachować zgodność wyniku z ekranem „Plan” i widgetem dla tej samej daty oraz danych.
-
-Kryterium zakończenia: ekran „Dzisiaj” czyta wyłącznie `TodayViewModel`, a nadrzędny stan nie zawiera `TodayUiState`, daty dnia ani logiki składania planu.
+Status: zrealizowane. `TodayViewModel` prowadzi bieżącą datę, `refreshToday` i składanie `TodayUiState` przez wspólny `ActivePlanProvider`, korzystając z wstrzykniętego `Clock` (bez `LocalDate.now()` w prezenterze). `MainActivity` wywołuje `refreshToday` po wznowieniu aplikacji, więc ekran nie zostaje na poprzednim dniu. Ekran „Dzisiaj” czyta `TodayViewModel.today`, a `MakViewModel` nie zawiera już `TodayUiState`, daty dnia ani logiki składania planu dnia. Prezentacja korzysta z tych samych helperów co „Plan” (`ui/PlanMapping.kt`), więc wynik dla tej samej daty i danych pozostaje spójny.
 
 #### AppViewModel i usunięcie MakViewModel
 

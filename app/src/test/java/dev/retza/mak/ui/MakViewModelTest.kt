@@ -4,9 +4,6 @@ import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.edit.ClassEditViewModel
-import java.time.Clock
-import java.time.Instant
-import java.time.ZoneId
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -18,10 +15,6 @@ import org.junit.Test
 @OptIn(kotlinx.coroutines.ExperimentalCoroutinesApi::class)
 class MakViewModelTest {
     private val mainDispatcher = UnconfinedTestDispatcher()
-    private val clock = Clock.fixed(
-        Instant.parse("2026-09-21T08:00:00Z"),
-        ZoneId.of("Europe/Warsaw")
-    )
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
@@ -31,7 +24,7 @@ class MakViewModelTest {
         val controller = FeedbackController()
         val repository = FakeMakRepository()
         val classEditViewModel = ClassEditViewModel(repository, controller)
-        val viewModel = MakViewModel(repository, controller, classEditViewModel, clock)
+        val viewModel = MakViewModel(repository, controller, classEditViewModel)
         val received = mutableListOf<UiFeedback>()
         backgroundScope.launch(mainDispatcher) {
             controller.feedback.collect { received += it }

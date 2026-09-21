@@ -25,6 +25,7 @@ import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.settings.ThemeMode
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.theme.MAKTheme
+import dev.retza.mak.ui.today.TodayViewModel
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
@@ -57,6 +58,9 @@ class MainActivity : ComponentActivity() {
             val scheduleViewModel: ScheduleViewModel = viewModel(
                 factory = ScheduleViewModel.Factory(application.repository)
             )
+            val todayViewModel: TodayViewModel = viewModel(
+                factory = TodayViewModel.Factory(application.repository)
+            )
             val viewModel: MakViewModel = viewModel(
                 factory = MakViewModel.Factory(
                     application.repository,
@@ -83,7 +87,7 @@ class MainActivity : ComponentActivity() {
                 val lifecycleOwner = LocalLifecycleOwner.current
                 DisposableEffect(lifecycleOwner) {
                     val observer = LifecycleEventObserver { _, event ->
-                        if (event == Lifecycle.Event.ON_RESUME) viewModel.refreshToday()
+                        if (event == Lifecycle.Event.ON_RESUME) todayViewModel.refreshToday()
                     }
                     lifecycleOwner.lifecycle.addObserver(observer)
                     onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
@@ -112,6 +116,7 @@ class MainActivity : ComponentActivity() {
                     setupViewModel = setupViewModel,
                     settingsViewModel = settingsViewModel,
                     scheduleViewModel = scheduleViewModel,
+                    todayViewModel = todayViewModel,
                     feedback = application.feedbackController.feedback,
                     onCreateExportDocument = { exportLauncher.launch("mak-plan.json") }
                 )

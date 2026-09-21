@@ -6,16 +6,10 @@ import androidx.lifecycle.viewModelScope
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.SemesterEntity
 import dev.retza.mak.data.repository.MakRepository
-import dev.retza.mak.data.repository.toActivePlanData
-import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
-import dev.retza.mak.ui.schedule.conflictLabels
-import dev.retza.mak.ui.today.TodayUiState
-import java.time.Clock
-import java.time.LocalDate
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.combine
@@ -40,25 +34,20 @@ data class MakUiState(
     val destination: MakDestination = MakDestination.Today,
     val requiresSetup: Boolean = true,
     val hasLoadedData: Boolean = false,
-    val today: TodayUiState = emptyTodayState(),
     val activeSemesterData: SemesterWithData? = null
 )
 
 private data class Controls(
-    val destination: MakDestination = MakDestination.Today,
-    val todayDate: LocalDate
+    val destination: MakDestination = MakDestination.Today
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MakViewModel(
     private val repository: MakRepository,
     private val feedbackSink: FeedbackSink,
-    private val classEditViewModel: ClassEditViewModel,
-    private val clock: Clock = Clock.systemDefaultZone(),
-    private val activePlanProvider: ActivePlanProvider = ActivePlanProvider()
+    private val classEditViewModel: ClassEditViewModel
 ) : ViewModel() {
-    private val today = LocalDate.now(clock)
-    private val controls = MutableStateFlow(Controls(todayDate = today))
+    private val controls = MutableStateFlow(Controls())
 
     private val semesters = repository.observeSemesters()
     private val activeSemesterData = repository.observeActiveSemester().flatMapLatest { semester ->
@@ -93,10 +82,6 @@ class MakViewModel(
         controls.update { it.copy(destination = destination) }
     }
 
-    fun refreshToday() {
-        controls.update { it.copy(todayDate = LocalDate.now(clock)) }
-    }
-
     private fun buildState(
         semesterList: List<SemesterEntity>,
         activeData: SemesterWithData?,
@@ -109,27 +94,9 @@ class MakViewModel(
             destination = destination,
             requiresSetup = requiresSetup,
             hasLoadedData = true,
-            today = buildToday(activeData, control.todayDate),
             activeSemesterData = activeData
         )
     }
-
-    private fun buildToday(data: SemesterWithData?, date: LocalDate): TodayUiState {
-        if (data == null) return emptyTodayState()
-        val plan = activePlan(data, date)
-        val schedule = plan.schedule
-        val labels = conflictLabels(plan.collisions)
-        return TodayUiState(
-            dateLabel = date.format(todayTitleFormatter).replaceFirstChar { it.titlecase(polishLocale) },
-            semesterLabel = data.semester.name,
-            weekLabel = schedule.weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem",
-            summaryLabel = classCountLabel(schedule.occurrences.size),
-            items = schedule.occurrences.map { it.toUi(labels[it.id]) }
-        )
-    }
-
-    private fun activePlan(data: SemesterWithData, date: LocalDate) =
-        activePlanProvider.resolve(data.toActivePlanData(), date)
 
     class Factory(
         private val repository: MakRepository,
@@ -143,10 +110,3 @@ class MakViewModel(
         }
     }
 }
-
-private fun emptyTodayState() = TodayUiState(
-    dateLabel = "Brak aktywnego semestru",
-    semesterLabel = "",
-    weekLabel = "",
-    summaryLabel = "0 zajęć"
-)

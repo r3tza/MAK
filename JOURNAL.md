@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: TodayViewModel
+
+- Fakty: Bieżąca data, `refreshToday` i składanie `TodayUiState` mieszkały w `MakViewModel` obok wspólnego stanu aplikacji. Data odświeżała się po wznowieniu przez metodę nadrzędnego ViewModelu.
+- Decyzja: Wydzielono `TodayViewModel`, który prowadzi datę, `refreshToday` i plan dnia przez wspólny `ActivePlanProvider` z wstrzykniętym `Clock`. `MainActivity` odświeża datę po wznowieniu przez `TodayViewModel`. Ekran „Dzisiaj” czyta `TodayViewModel.today`, a `MakViewModel` nie zawiera już `TodayUiState`, daty ani logiki planu dnia. Prezentacja korzysta ze wspólnych helperów z `ui/PlanMapping.kt`, więc wyniki dla tej samej daty i danych są spójne z „Planem” i widgetem.
+- Powód: Ekran „Dzisiaj” jest samodzielnym przepływem z własnym cyklem życia daty, a nadrzędny ViewModel nie powinien zawierać jego stanu.
+- Odrzucone: Pozostawienie daty i planu dnia w `MakViewModel`; wywoływanie `LocalDate.now()` w prezenterze zamiast wstrzykniętego `Clock`.
+- Weryfikacja: `TodayViewModelTest` sprawdza mapowanie aktywnego semestru, odświeżenie daty po zmianie zegara i stan pusty bez semestru. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-21: ScheduleViewModel
 
 - Fakty: `MakViewModel` łączył stan i kontrolki ekranu „Plan” (widok listy i kalendarza, wybrane daty, miesiąc, filtr kierunku, widoczność odwołanych zajęć, korekty widocznego tygodnia) ze wspólnym stanem aplikacji oraz składał plan dnia i plan tygodnia w jednym miejscu.
