@@ -9,11 +9,12 @@
 
 ## 2. Język i środowisko uruchomieniowe
 
-- Kotlin 2.2.10.
-- Android, `minSdk` 31, `targetSdk` 36 i `compileSdk` 36.1.
-- Android Gradle Plugin 9.1.1 i Gradle 9.7.1.
-- Compose BOM 2024.09.00, Material Icons Extended, Room 2.8.5, Lifecycle 2.10.0, Navigation 2.9.5, KSP 2.3.12 i Glance 1.2.0.
-- Przed wdrożeniem Koin zaktualizować cały zestaw do najnowszych stabilnych, wzajemnie zgodnych wersji. Dokładne numery zapisać w tym pliku po zakończonej weryfikacji aktualizacji.
+- Kotlin 2.3.21.
+- Android, `minSdk` 31, `targetSdk` 36 i `compileSdk` 37.2.
+- Android Gradle Plugin 9.4.1 i Gradle 9.7.1.
+- Compose BOM 2026.09.00, Material Icons Extended, Room 2.8.5, Lifecycle 2.11.0, Navigation 2.10.1, KSP 2.3.12, Glance 1.2.0, Core KTX 1.19.0, `kotlinx.coroutines` 1.11.0 i `kotlinx.serialization` 1.11.0.
+- Stabilny zestaw zaktualizowano 2026-09-21. KSP 2.3.12 jest zbudowany przeciw Kotlin 2.3.20, dlatego Kotlin wybrano w linii 2.3.21, a nie 2.4.x. `compileSdk` podniesiono do 37.2, ponieważ nowe AndroidX wymagają API 37; `targetSdk` pozostaje 36, aby nie zmieniać zachowania działania.
+- Deprecacje `androidx.compose.ui.test.junit4.createComposeRule` pozostają; migrację do `v2.createComposeRule` wykonamy osobno, ponieważ zmienia dyspozytor testów.
 
 ## 3. Warstwa aplikacji
 
@@ -27,7 +28,7 @@
 
 - Room jako warstwa dostępu do danych.
 - SQLite jako lokalna baza danych.
-- Preferences DataStore 1.1.7 do trwałych ustawień, w tym motywu.
+- Preferences DataStore 1.2.1 do trwałych ustawień, w tym motywu.
 - `kotlinx.serialization` do importu i eksportu JSON.
 - Brak backendu, kont i synchronizacji sieciowej.
 
