@@ -5,6 +5,7 @@ import dev.retza.mak.ui.FakeMakRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -64,6 +65,52 @@ class SettingsViewModelTest {
         advanceUntilIdle()
 
         assertEquals(ThemeMode.System, viewModel.themeMode.value)
+    }
+
+    @Test
+    fun storedUnknownThemeFallsBackToSystem() {
+        assertEquals(ThemeMode.System, themeModeFromStored(null))
+        assertEquals(ThemeMode.System, themeModeFromStored("neon"))
+        assertEquals(ThemeMode.Dark, themeModeFromStored("Dark"))
+    }
+
+    @Test
+    fun themeWriteFailurePublishesSingleErrorAndClearsFlag() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val preferences = InMemorySettingsPreferences()
+        preferences.failNextWrite = true
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, preferences, sink)
+
+        viewModel.selectTheme("dark")
+        advanceUntilIdle()
+
+        assertEquals(listOf("Nie udało się zapisać motywu."), sink.published.map { it.message })
+
+        viewModel.selectTheme("dark")
+        advanceUntilIdle()
+
+        assertEquals(ThemeMode.Dark, viewModel.themeMode.value)
+        assertEquals(1, sink.published.size)
+    }
+
+    @Test
+    fun doubleThemeSelectionRunsOneWrite() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val preferences = InMemorySettingsPreferences()
+        preferences.writeGate = CompletableDeferred()
+        val viewModel = viewModel(repository, preferences)
+
+        viewModel.selectTheme("dark")
+        viewModel.selectTheme("light")
+        advanceUntilIdle()
+        assertEquals(0, preferences.writeCount)
+
+        preferences.writeGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, preferences.writeCount)
+        assertEquals(ThemeMode.Dark, viewModel.themeMode.value)
     }
 
     @Test

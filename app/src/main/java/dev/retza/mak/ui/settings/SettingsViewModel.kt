@@ -10,8 +10,11 @@ import dev.retza.mak.export.ExportSnapshot
 import dev.retza.mak.export.JsonExportCodec
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.feedback.FeedbackSink
+import dev.retza.mak.ui.feedback.UiFeedback
+import dev.retza.mak.ui.feedback.UiFeedbackKind
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -94,8 +97,19 @@ class SettingsViewModel(
     }
 
     fun selectTheme(id: String) {
+        if (local.value.isSavingTheme) return
+        val mode = themeModeFromId(id)
+        local.update { it.copy(isSavingTheme = true) }
         viewModelScope.launch {
-            runCatching { preferences.setTheme(themeModeFromId(id)) }
+            try {
+                preferences.setTheme(mode)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                feedbackSink.publish(UiFeedback("Nie udało się zapisać motywu.", UiFeedbackKind.Error))
+            } finally {
+                local.update { it.copy(isSavingTheme = false) }
+            }
         }
     }
 

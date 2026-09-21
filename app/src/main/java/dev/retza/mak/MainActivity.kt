@@ -21,6 +21,7 @@ import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
+import dev.retza.mak.ui.settings.ThemeMode
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.theme.MAKTheme
 import kotlinx.coroutines.launch
@@ -67,13 +68,13 @@ class MainActivity : ComponentActivity() {
                     intent.removeExtra(EXTRA_OPEN_TODAY)
                 }
             }
-            val state = viewModel.uiState.collectAsStateWithLifecycle().value
+            val themeMode = settingsViewModel.themeMode.collectAsStateWithLifecycle().value
             val systemDark = isSystemInDarkTheme()
             MAKTheme(
-                darkTheme = when (state.themeId) {
-                    "light" -> false
-                    "dark" -> true
-                    else -> systemDark
+                darkTheme = when (themeMode) {
+                    ThemeMode.Light -> false
+                    ThemeMode.Dark -> true
+                    ThemeMode.System -> systemDark
                 }
             ) {
                 val lifecycleOwner = LocalLifecycleOwner.current

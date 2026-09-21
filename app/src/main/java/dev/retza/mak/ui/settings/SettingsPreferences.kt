@@ -14,17 +14,8 @@ interface SettingsPreferences {
     suspend fun setTheme(mode: ThemeMode)
 }
 
-class InMemorySettingsPreferences(
-    initialTheme: ThemeMode = ThemeMode.System
-) : SettingsPreferences {
-    private val state = kotlinx.coroutines.flow.MutableStateFlow(initialTheme)
-
-    override val theme: Flow<ThemeMode> = state
-
-    override suspend fun setTheme(mode: ThemeMode) {
-        state.value = mode
-    }
-}
+fun themeModeFromStored(value: String?): ThemeMode =
+    ThemeMode.entries.firstOrNull { it.name == value } ?: ThemeMode.System
 
 fun themeModeFromId(id: String): ThemeMode = when (id) {
     "light" -> ThemeMode.Light
