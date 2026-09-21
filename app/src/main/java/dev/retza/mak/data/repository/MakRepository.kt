@@ -80,6 +80,12 @@ interface MakRepository {
         academicCalendarId: Long
     ): SetupConfigurationIds
 
+    suspend fun addSeparatedSemesterProgram(
+        semesterId: Long,
+        studyProgram: StudyProgramEntity,
+        sourceCalendarId: Long
+    ): SetupConfigurationIds
+
     suspend fun saveCalendar(entity: AcademicCalendarEntity): Long
 
     suspend fun updateSemesterWithCalendar(semester: SemesterEntity, calendar: AcademicCalendarEntity)
@@ -287,6 +293,47 @@ class RoomMakRepository(
                 existing.id
             }
             SetupConfigurationIds(semesterId, studyProgramId, academicCalendarId, semesterProgramId)
+        }
+    }
+
+    override suspend fun addSeparatedSemesterProgram(
+        semesterId: Long,
+        studyProgram: StudyProgramEntity,
+        sourceCalendarId: Long
+    ): SetupConfigurationIds {
+        require(studyProgram.name.isNotBlank()) { "Study program name cannot be blank" }
+        return database.withTransaction {
+            require(semesters.findById(semesterId) != null) { "Semester does not exist" }
+            val source = calendars.findById(sourceCalendarId) ?: error("Calendar does not exist")
+            require(source.semesterId == semesterId) { "Calendar must belong to the semester" }
+            val studyProgramId = if (studyProgram.id == 0L) {
+                studyPrograms.insert(studyProgram)
+            } else {
+                require(studyPrograms.findById(studyProgram.id) != null) {
+                    "Study program does not exist"
+                }
+                studyPrograms.update(studyProgram)
+                studyProgram.id
+            }
+            val calendarId = calendars.insert(
+                AcademicCalendarEntity(
+                    semesterId = semesterId,
+                    startDate = source.startDate,
+                    endDate = source.endDate,
+                    firstWeekType = source.firstWeekType
+                )
+            )
+            weekOverrides.getForCalendar(source.id).forEach { override ->
+                weekOverrides.insert(override.copy(id = 0, academicCalendarId = calendarId))
+            }
+            val semesterProgramId = semesterPrograms.insert(
+                SemesterProgramEntity(
+                    semesterId = semesterId,
+                    studyProgramId = studyProgramId,
+                    academicCalendarId = calendarId
+                )
+            )
+            SetupConfigurationIds(semesterId, studyProgramId, calendarId, semesterProgramId)
         }
     }
 

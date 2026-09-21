@@ -4,15 +4,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
 import dev.retza.mak.data.database.SemesterWithData
-import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
 import dev.retza.mak.data.entity.Recurrence
-import dev.retza.mak.data.entity.SemesterProgramEntity
 import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.domain.ClassForm
 import dev.retza.mak.domain.ClassValidationError
 import dev.retza.mak.domain.ClassValidator
 import dev.retza.mak.domain.Recurrence as DomainRecurrence
+import dev.retza.mak.ui.calendarForAssignment
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
@@ -64,7 +63,7 @@ class ClassEditViewModel(
         viewModelScope.launch {
             activeSemesterData.collect { data ->
                 state.update { current ->
-                    val calendar = data?.sharedCalendar()
+                    val calendar = data?.calendarForAssignment(current.semesterProgramId?.toLongOrNull())
                     current.copy(
                         courseOptions = data?.courseOptions().orEmpty(),
                         semesterStartDate = calendar?.startDate?.toString(),
@@ -135,12 +134,15 @@ class ClassEditViewModel(
     }
 
     fun selectCourse(optionId: String) {
+        val calendar = activeSemesterData.value?.calendarForAssignment(optionId.toLongOrNull())
         update {
             it.copy(
                 semesterProgramId = optionId,
                 courseName = it.courseOptions.firstOrNull { option -> option.id == optionId }
                     ?.label
-                    .orEmpty()
+                    .orEmpty(),
+                semesterStartDate = calendar?.startDate?.toString(),
+                semesterEndDate = calendar?.endDate?.toString()
             )
         }
     }
@@ -189,7 +191,7 @@ class ClassEditViewModel(
             if (ClassValidationError.DATE_REQUIRED in validation.errors) {
                 put(ClassEditField.Date, FieldErrorUi("Podaj datę zajęć jednorazowych."))
             }
-            val calendar = data.calendarFor(assignment)
+            val calendar = data.calendarForAssignment(assignment?.id)
             if (recurrence == DomainRecurrence.ONCE && date != null && calendar != null &&
                 (date.isBefore(calendar.startDate) || date.isAfter(calendar.endDate))
             ) {
@@ -247,7 +249,7 @@ class ClassEditViewModel(
 
     private fun withActiveOptions(value: ClassEditUiState): ClassEditUiState {
         val data = activeSemesterData.value
-        val calendar = data?.sharedCalendar()
+        val calendar = data?.calendarForAssignment(value.semesterProgramId?.toLongOrNull())
         return value.copy(
             courseOptions = data?.courseOptions().orEmpty(),
             semesterStartDate = calendar?.startDate?.toString(),
@@ -256,20 +258,12 @@ class ClassEditViewModel(
     }
 }
 
-private fun SemesterWithData.sharedCalendar(): AcademicCalendarEntity? =
-    academicCalendars.minByOrNull { it.id }
-
 private fun SemesterWithData.courseOptions(): List<ClassCourseOptionUi> =
     semesterPrograms.mapNotNull { assignment ->
         val program = studyPrograms.firstOrNull { it.id == assignment.studyProgramId }
             ?: return@mapNotNull null
         ClassCourseOptionUi(assignment.id.toString(), program.name)
     }
-
-private fun SemesterWithData.calendarFor(assignment: SemesterProgramEntity?): AcademicCalendarEntity? {
-    val calendarId = assignment?.academicCalendarId ?: return sharedCalendar()
-    return academicCalendars.firstOrNull { it.id == calendarId }
-}
 
 private fun defaultClassEditState() = ClassEditUiState(
     typeOptions = listOf("Wykład", "Ćwiczenia", "Laboratorium", "Projekt", "Seminarium", "Inne"),

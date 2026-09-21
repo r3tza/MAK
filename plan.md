@@ -365,7 +365,7 @@ Podział na kroki samodzielnie sprawdzalne:
 3. Interfejs Compose: ekrany „Kierunki" i „Kalendarze", przepływ dodawania z dwiema akcjami wyboru kierunku i trybem dat, wybór kalendarza w korektach oraz dialog ostrzeżenia przy ponownym połączeniu. Testy Compose kompilowalne dla dodania kierunku z osobnym kalendarzem, połączenia z ostrzeżeniem, wyboru kalendarza w korektach i braku poziomego przewijania przy 320 dp.
 4. Odbiór końcowy: kompilacja testów Android i odbiór na emulatorze albo urządzeniu. `ARCHITECTURE.md` i `JOURNAL.md` są aktualizowane razem z zachowaniem w krokach 1-3.
 
-Postęp: krok 1 zrealizowany (operacje kalendarzy w repozytorium, `RoomPersistenceTest`, `FakeMakRepository`).
+Postęp: krok 1 zrealizowany (operacje kalendarzy w repozytorium, `RoomPersistenceTest`, `FakeMakRepository`). Krok 2 zrealizowany (stan kalendarzy w `SemesterScreenUiState`, akcje `SemesterViewModel`, audyt odczytów w `ScheduleViewModel`, `OccurrenceViewModel` i `ClassEditViewModel`, `addSeparatedSemesterProgram`). Pozostaje krok 3 (interfejs Compose) i odbiór końcowy.
 
 #### Dalszy etap 13: import przez pełne zastąpienie
 

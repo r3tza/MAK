@@ -14,6 +14,7 @@ import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
+import dev.retza.mak.ui.sharedCalendar
 import java.time.DayOfWeek
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -46,14 +47,14 @@ class SemesterViewModel(
 
     private var openJob: Job? = null
     private var sessionToken = 0L
-    private var calendarId: Long? = null
+    private var selectedCalendarId: Long? = null
 
     fun open(id: String) {
         sessionToken += 1
         val token = sessionToken
         openJob?.cancel()
         semesterIdState.value = null
-        calendarId = null
+        selectedCalendarId = null
         state.value = SemesterScreenUiState()
         val parsed = id.toLongOrNull() ?: return
         openJob = viewModelScope.launch {
@@ -62,8 +63,8 @@ class SemesterViewModel(
                 val data = repository.observeSemesterData(parsed).first() ?: return@launch
                 if (token != sessionToken) return@launch
                 semesterIdState.value = parsed
-                calendarId = data.sharedCalendar()?.id
-                state.value = data.toSemesterScreenState()
+                selectedCalendarId = data.sharedCalendar()?.id
+                state.value = data.toSemesterScreenState(selectedCalendarId)
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
@@ -81,7 +82,7 @@ class SemesterViewModel(
     fun saveSemester() {
         if (state.value.semester.isSaving) return
         val id = semesterIdState.value ?: return
-        val currentCalendarId = calendarId ?: return
+        val currentCalendarId = selectedCalendarId ?: return
         val form = state.value.semester
         val start = form.startDate.toLocalDateOrNull()
         val end = form.endDate.toLocalDateOrNull()
@@ -151,32 +152,80 @@ class SemesterViewModel(
         it.copy(courseColorDraft = value)
     }
 
+    fun selectCourseProgram(id: String?) = update { current ->
+        val option = id?.let { selected -> current.courseProgramOptions.firstOrNull { it.id == selected } }
+        if (option == null) {
+            current.copy(courseProgramId = null)
+        } else {
+            current.copy(
+                courseProgramId = option.id,
+                courseNameDraft = option.name,
+                courseColorDraft = option.color,
+                courseNameError = null
+            )
+        }
+    }
+
+    fun setCourseCalendarMode(mode: CourseCalendarModeUi) = update { current ->
+        current.copy(
+            courseCalendarMode = mode,
+            courseCalendarId = current.courseCalendarId ?: current.selectedCalendarId
+        )
+    }
+
+    fun selectCourseCalendar(calendarId: String) = update {
+        it.copy(courseCalendarId = calendarId, courseCalendarMode = CourseCalendarModeUi.SHARED)
+    }
+
+    fun selectOverrideCalendar(calendarId: String) {
+        selectedCalendarId = calendarId.toLongOrNull()
+        val token = sessionToken
+        viewModelScope.launch { refresh(token) }
+    }
+
     fun addCourse() {
         if (state.value.isAddingCourse) return
         val id = semesterIdState.value ?: return
-        val currentCalendarId = calendarId ?: return
         val draft = state.value
+        val existingProgramId = draft.courseProgramId?.toLongOrNull()
         val name = draft.courseNameDraft.trim()
         if (name.isBlank()) {
             update { it.copy(courseNameError = "Podaj nazwę kierunku.") }
             return
         }
+        val sourceCalendarId = draft.courseCalendarId?.toLongOrNull() ?: selectedCalendarId
+        if (sourceCalendarId == null) {
+            update { it.copy(courseNameError = "Brak kalendarza semestru.") }
+            return
+        }
+        val program = StudyProgramEntity(
+            id = existingProgramId ?: 0L,
+            name = name,
+            color = draft.courseColorDraft.ifBlank { "#137b71" }
+        )
         update { it.copy(isAddingCourse = true, courseNameError = null) }
         val token = sessionToken
         viewModelScope.launch {
             try {
-                repository.saveStudyProgramAssignment(
-                    semesterId = id,
-                    studyProgram = StudyProgramEntity(
-                        name = name,
-                        color = draft.courseColorDraft.ifBlank { "#137b71" }
-                    ),
-                    academicCalendarId = currentCalendarId
-                )
+                if (draft.courseCalendarMode == CourseCalendarModeUi.SEPARATE) {
+                    repository.addSeparatedSemesterProgram(
+                        semesterId = id,
+                        studyProgram = program,
+                        sourceCalendarId = sourceCalendarId
+                    )
+                } else {
+                    repository.saveStudyProgramAssignment(
+                        semesterId = id,
+                        studyProgram = program,
+                        academicCalendarId = sourceCalendarId
+                    )
+                }
                 if (!isCurrentSession(token)) return@launch
                 refresh(token)
                 if (!isCurrentSession(token)) return@launch
-                update { it.copy(courseNameDraft = "", isAddingCourse = false) }
+                update {
+                    it.copy(courseNameDraft = "", courseProgramId = null, isAddingCourse = false)
+                }
                 feedbackSink.publish(UiFeedback("Dodano kierunek", UiFeedbackKind.Success))
             } catch (error: CancellationException) {
                 throw error
@@ -187,6 +236,113 @@ class SemesterViewModel(
                 if (isCurrentSession(token)) {
                     update { it.copy(isAddingCourse = false) }
                 }
+            }
+        }
+    }
+
+    fun separateCourseCalendar(assignmentId: String) {
+        if (state.value.isSeparatingCalendar) return
+        val id = assignmentId.toLongOrNull() ?: return
+        update { it.copy(isSeparatingCalendar = true) }
+        val token = sessionToken
+        viewModelScope.launch {
+            try {
+                repository.separateSemesterProgramCalendar(id)
+                if (!isCurrentSession(token)) return@launch
+                refresh(token)
+                if (!isCurrentSession(token)) return@launch
+                feedbackSink.publish(UiFeedback("Rozdzielono kalendarz kierunku", UiFeedbackKind.Success))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                if (!isCurrentSession(token)) return@launch
+                feedbackSink.publish(UiFeedback("Nie udało się rozdzielić kalendarza.", UiFeedbackKind.Error))
+            } finally {
+                if (isCurrentSession(token)) {
+                    update { it.copy(isSeparatingCalendar = false) }
+                }
+            }
+        }
+    }
+
+    fun requestReconnect(assignmentId: String, calendarId: String) {
+        val assignmentValue = assignmentId.toLongOrNull() ?: return
+        val calendarValue = calendarId.toLongOrNull() ?: return
+        val semesterId = semesterIdState.value ?: return
+        val token = sessionToken
+        viewModelScope.launch {
+            val data = repository.observeSemesterData(semesterId).first() ?: return@launch
+            if (!isCurrentSession(token)) return@launch
+            val assignment = data.semesterPrograms.firstOrNull { it.id == assignmentValue } ?: return@launch
+            val sourceBecomesUnused = assignment.academicCalendarId != calendarValue &&
+                data.semesterPrograms.none {
+                    it.academicCalendarId == assignment.academicCalendarId && it.id != assignmentValue
+                }
+            val programName = data.studyPrograms
+                .firstOrNull { it.id == assignment.studyProgramId }
+                ?.name
+                .orEmpty()
+            update {
+                it.copy(
+                    pendingReconnect = ReconnectCalendarUi(
+                        assignmentId = assignmentId,
+                        calendarId = calendarId,
+                        programName = programName,
+                        sourceBecomesUnused = sourceBecomesUnused
+                    ),
+                    reconnectError = null
+                )
+            }
+        }
+    }
+
+    fun cancelReconnect() = update { it.copy(pendingReconnect = null, reconnectError = null) }
+
+    fun confirmReconnect() {
+        val pending = state.value.pendingReconnect ?: return
+        if (state.value.isReconnectingCalendar) return
+        val assignmentId = pending.assignmentId.toLongOrNull() ?: return
+        val calendarId = pending.calendarId.toLongOrNull() ?: return
+        update { it.copy(isReconnectingCalendar = true) }
+        val token = sessionToken
+        viewModelScope.launch {
+            try {
+                repository.reconnectSemesterProgram(assignmentId, calendarId)
+                if (!isCurrentSession(token)) return@launch
+                refresh(token)
+                if (!isCurrentSession(token)) return@launch
+                update { it.copy(pendingReconnect = null) }
+                feedbackSink.publish(UiFeedback("Połączono kierunek z kalendarzem", UiFeedbackKind.Success))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                if (!isCurrentSession(token)) return@launch
+                update { it.copy(reconnectError = "Nie udało się połączyć kalendarza.") }
+                feedbackSink.publish(UiFeedback("Nie udało się połączyć kalendarza.", UiFeedbackKind.Error))
+            } finally {
+                if (isCurrentSession(token)) {
+                    update { it.copy(isReconnectingCalendar = false) }
+                }
+            }
+        }
+    }
+
+    fun deleteUnusedCalendar(calendarId: String) {
+        val id = calendarId.toLongOrNull() ?: return
+        val token = sessionToken
+        viewModelScope.launch {
+            try {
+                repository.deleteCalendar(id)
+                if (!isCurrentSession(token)) return@launch
+                if (selectedCalendarId == id) selectedCalendarId = null
+                refresh(token)
+                if (!isCurrentSession(token)) return@launch
+                feedbackSink.publish(UiFeedback("Usunięto kalendarz", UiFeedbackKind.Success))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                if (!isCurrentSession(token)) return@launch
+                feedbackSink.publish(UiFeedback("Nie udało się usunąć kalendarza.", UiFeedbackKind.Error))
             }
         }
     }
@@ -222,10 +378,14 @@ class SemesterViewModel(
         val data = repository.observeSemesterData(id).first() ?: return
         if (!isCurrentSession(token)) return
         val current = state.value
-        calendarId = data.sharedCalendar()?.id
-        state.value = data.toSemesterScreenState().copy(
+        selectedCalendarId = data.academicCalendars.firstOrNull { it.id == selectedCalendarId }?.id
+            ?: data.sharedCalendar()?.id
+        state.value = data.toSemesterScreenState(selectedCalendarId).copy(
             courseNameDraft = current.courseNameDraft,
             courseColorDraft = current.courseColorDraft,
+            courseCalendarMode = current.courseCalendarMode,
+            courseCalendarId = current.courseCalendarId ?: selectedCalendarId?.toString(),
+            courseProgramId = current.courseProgramId,
             overrideForm = current.overrideForm
         )
     }
@@ -256,7 +416,7 @@ class SemesterViewModel(
     fun saveWeekOverride() {
         if (state.value.overrideForm.isSaving) return
         val semester = semesterIdState.value ?: return
-        val currentCalendarId = calendarId ?: return
+        val currentCalendarId = selectedCalendarId ?: return
         val form = state.value.overrideForm
         val date = form.weekStartDate.toLocalDateOrNull()
         if (date == null || date.dayOfWeek != DayOfWeek.MONDAY) {
@@ -326,29 +486,62 @@ class SemesterViewModel(
 private fun String.toLocalDateOrNull(): java.time.LocalDate? =
     runCatching { java.time.LocalDate.parse(this) }.getOrNull()
 
-private fun SemesterWithData.sharedCalendar(): dev.retza.mak.data.entity.AcademicCalendarEntity? =
-    academicCalendars.minByOrNull { it.id }
-
-private fun SemesterWithData.toSemesterScreenState(): SemesterScreenUiState {
-    val calendar = sharedCalendar()
+private fun SemesterWithData.toSemesterScreenState(selectedCalendarId: Long?): SemesterScreenUiState {
+    val selected = academicCalendars.firstOrNull { it.id == selectedCalendarId } ?: sharedCalendar()
+    val courseItems = semesterPrograms.mapNotNull { assignment ->
+        val program = studyPrograms.firstOrNull { it.id == assignment.studyProgramId }
+            ?: return@mapNotNull null
+        val calendar = academicCalendars.firstOrNull { it.id == assignment.academicCalendarId }
+        SemesterCourseUi(
+            assignmentId = assignment.id.toString(),
+            name = program.name,
+            color = program.color,
+            calendarId = calendar?.id?.toString().orEmpty(),
+            calendarLabel = calendarLabel(calendar),
+            sharesCalendar = semesterPrograms.count {
+                it.academicCalendarId == assignment.academicCalendarId
+            } > 1
+        )
+    }
     return SemesterScreenUiState(
         semester = SemesterFormUiState(
             name = semester.name,
-            startDate = calendar?.startDate?.toString().orEmpty(),
-            endDate = calendar?.endDate?.toString().orEmpty(),
-            firstWeek = calendar?.let { WeekTypeUi.valueOf(it.firstWeekType.name) } ?: WeekTypeUi.A
+            startDate = selected?.startDate?.toString().orEmpty(),
+            endDate = selected?.endDate?.toString().orEmpty(),
+            firstWeek = selected?.let { WeekTypeUi.valueOf(it.firstWeekType.name) } ?: WeekTypeUi.A
         ),
-        overrides = weekOverrides.map { override ->
-            WeekOverrideUi(
-                override.id.toString(),
-                override.weekStartDate.toString(),
-                WeekTypeUi.valueOf(override.weekType.name),
-                WeekOverrideScopeUi.valueOf(override.scope.name)
+        overrides = weekOverrides
+            .filter { it.academicCalendarId == selected?.id }
+            .map { override ->
+                WeekOverrideUi(
+                    override.id.toString(),
+                    override.weekStartDate.toString(),
+                    WeekTypeUi.valueOf(override.weekType.name),
+                    WeekOverrideScopeUi.valueOf(override.scope.name)
+                )
+            },
+        courses = courseItems.map { it.assignmentId to it.name },
+        courseItems = courseItems,
+        calendars = academicCalendars.map { calendar ->
+            SemesterCalendarUi(
+                id = calendar.id.toString(),
+                startDate = calendar.startDate.toString(),
+                endDate = calendar.endDate.toString(),
+                firstWeek = WeekTypeUi.valueOf(calendar.firstWeekType.name),
+                courseNames = semesterPrograms
+                    .filter { it.academicCalendarId == calendar.id }
+                    .mapNotNull { assignment ->
+                        studyPrograms.firstOrNull { it.id == assignment.studyProgramId }?.name
+                    }
             )
         },
-        courses = semesterPrograms.map { assignment ->
-            val program = studyPrograms.firstOrNull { it.id == assignment.studyProgramId }
-            assignment.id.toString() to (program?.name ?: "")
+        selectedCalendarId = selected?.id?.toString(),
+        courseCalendarId = selected?.id?.toString(),
+        courseProgramOptions = studyPrograms.map {
+            SemesterProgramOptionUi(it.id.toString(), it.name, it.color)
         }
     )
 }
+
+private fun calendarLabel(calendar: AcademicCalendarEntity?): String =
+    calendar?.let { "${it.startDate} - ${it.endDate}" }.orEmpty()

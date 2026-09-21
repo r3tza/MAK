@@ -260,6 +260,42 @@ internal class FakeMakRepository : MakRepository {
         return SetupConfigurationIds(semesterId, studyProgramId, academicCalendarId, semesterProgramId)
     }
 
+    override suspend fun addSeparatedSemesterProgram(
+        semesterId: Long,
+        studyProgram: StudyProgramEntity,
+        sourceCalendarId: Long
+    ): SetupConfigurationIds {
+        awaitSave()
+        events += "addSeparatedSemesterProgram"
+        val source = calendars.firstOrNull { it.id == sourceCalendarId }
+            ?: error("Calendar does not exist")
+        val studyProgramId = if (studyProgram.id == 0L) {
+            val id = generatedStudyProgramId++
+            studyProgramState.value = studyPrograms + studyProgram.copy(id = id)
+            id
+        } else {
+            studyProgram.id
+        }
+        val calendarId = generatedCalendarId++
+        calendarState.value = calendars + source.copy(id = calendarId)
+        weekOverrides
+            .filter { it.academicCalendarId == sourceCalendarId }
+            .forEach { override ->
+                weekOverrides += override.copy(
+                    id = (weekOverrides.maxOfOrNull { it.id } ?: 0L) + 1L,
+                    academicCalendarId = calendarId
+                )
+            }
+        val semesterProgramId = generatedProgramId++
+        semesterProgramState.value = semesterPrograms + SemesterProgramEntity(
+            id = semesterProgramId,
+            semesterId = semesterId,
+            studyProgramId = studyProgramId,
+            academicCalendarId = calendarId
+        )
+        return SetupConfigurationIds(semesterId, studyProgramId, calendarId, semesterProgramId)
+    }
+
     override suspend fun getAllStudyPrograms(): List<StudyProgramEntity> = studyPrograms
 
     override suspend fun saveCalendar(entity: AcademicCalendarEntity): Long {

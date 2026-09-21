@@ -289,6 +289,61 @@ class ClassEditViewModelTest {
     }
 
     @Test
+    fun selectCourseUsesAssignmentCalendarDates() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val result = repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(
+                name = "Fizyka",
+                color = "#000000"
+            ),
+            sourceCalendarId = 1L
+        )
+        repository.saveCalendar(
+            repository.calendars.first { it.id == result.academicCalendarId }
+                .copy(endDate = LocalDate.of(2026, 12, 20))
+        )
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openNew()
+        advanceUntilIdle()
+
+        viewModel.selectCourse(result.semesterProgramId.toString())
+        advanceUntilIdle()
+
+        assertEquals("2026-12-20", viewModel.editor.value.semesterEndDate)
+    }
+
+    @Test
+    fun openEditUsesAssignmentCalendarDates() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val result = repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(
+                name = "Fizyka",
+                color = "#000000"
+            ),
+            sourceCalendarId = 1L
+        )
+        repository.saveCalendar(
+            repository.calendars.first { it.id == result.academicCalendarId }
+                .copy(endDate = LocalDate.of(2026, 12, 20))
+        )
+        repository.classes += repository.classes.single().copy(
+            id = 2L,
+            semesterProgramId = result.semesterProgramId,
+            name = "Fizyka zajęcia"
+        )
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.openEdit("2:2026-09-21")
+        advanceUntilIdle()
+
+        assertEquals("2026-12-20", viewModel.editor.value.semesterEndDate)
+    }
+
+    @Test
     fun saveKeepsSelectedAssignmentWhenProgramNamesMatch() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val secondProgramId = repository.saveStudyProgram(

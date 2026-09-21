@@ -88,17 +88,63 @@ data class WeekOverrideFormUiState(
         get() = id != null
 }
 
+enum class CourseCalendarModeUi {
+    SHARED,
+    SEPARATE
+}
+
+data class SemesterCourseUi(
+    val assignmentId: String,
+    val name: String,
+    val color: String,
+    val calendarId: String,
+    val calendarLabel: String,
+    val sharesCalendar: Boolean
+)
+
+data class SemesterCalendarUi(
+    val id: String,
+    val startDate: String,
+    val endDate: String,
+    val firstWeek: WeekTypeUi,
+    val courseNames: List<String>
+)
+
+data class SemesterProgramOptionUi(
+    val id: String,
+    val name: String,
+    val color: String
+)
+
+data class ReconnectCalendarUi(
+    val assignmentId: String,
+    val calendarId: String,
+    val programName: String,
+    val sourceBecomesUnused: Boolean
+)
+
 data class SemesterScreenUiState(
     val semester: SemesterFormUiState = SemesterFormUiState(),
     val overrides: List<WeekOverrideUi> = emptyList(),
     val overrideForm: WeekOverrideFormUiState = WeekOverrideFormUiState(),
     val courses: List<Pair<String, String>> = emptyList(),
+    val courseItems: List<SemesterCourseUi> = emptyList(),
+    val calendars: List<SemesterCalendarUi> = emptyList(),
+    val selectedCalendarId: String? = null,
     val courseNameDraft: String = "",
     val courseColorDraft: String = "#137b71",
+    val courseCalendarMode: CourseCalendarModeUi = CourseCalendarModeUi.SHARED,
+    val courseCalendarId: String? = null,
+    val courseProgramId: String? = null,
+    val courseProgramOptions: List<SemesterProgramOptionUi> = emptyList(),
     val courseNameError: String? = null,
     val isAddingCourse: Boolean = false,
     val isDeletingCourse: Boolean = false,
     val isDeletingOverride: Boolean = false,
+    val isSeparatingCalendar: Boolean = false,
+    val isReconnectingCalendar: Boolean = false,
+    val pendingReconnect: ReconnectCalendarUi? = null,
+    val reconnectError: String? = null,
     val status: ScreenStatus = ScreenStatus.Ready
 )
 

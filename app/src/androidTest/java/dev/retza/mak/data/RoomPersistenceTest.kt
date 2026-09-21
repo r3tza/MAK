@@ -304,6 +304,39 @@ class RoomPersistenceTest {
     }
 
     @Test
+    fun addingSeparatedProgramCopiesSourceCalendarAndOverrides() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val sourceCalendarId = insertCalendar(semesterId)
+        database!!.weekOverrideDao().insert(
+            WeekOverrideEntity(
+                semesterId = semesterId,
+                academicCalendarId = sourceCalendarId,
+                weekStartDate = LocalDate.of(2026, 10, 5),
+                weekType = WeekType.B,
+                scope = WeekOverrideScope.ONE_WEEK
+            )
+        )
+
+        val result = repository.addSeparatedSemesterProgram(
+            semesterId = semesterId,
+            studyProgram = StudyProgramEntity(name = "Informatyka", color = "#112233"),
+            sourceCalendarId = sourceCalendarId
+        )
+
+        val separated = database!!.academicCalendarDao().findById(result.academicCalendarId)
+        assertEquals(LocalDate.of(2026, 10, 1), separated?.startDate)
+        assertEquals(
+            result.academicCalendarId,
+            database!!.semesterProgramDao().findById(result.semesterProgramId)?.academicCalendarId
+        )
+        assertEquals(1, database!!.weekOverrideDao().getForCalendar(result.academicCalendarId).size)
+        assertEquals(1, database!!.weekOverrideDao().getForCalendar(sourceCalendarId).size)
+        assertEquals(sourceCalendarId, database!!.academicCalendarDao().findById(sourceCalendarId)?.id)
+    }
+
+    @Test
     fun reconnectingDeletesOrphanCalendarWithOverrides() = runBlocking {
         database = openDatabase()
         val repository = RoomMakRepository(database!!)

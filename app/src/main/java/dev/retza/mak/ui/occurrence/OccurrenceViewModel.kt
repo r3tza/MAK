@@ -15,6 +15,7 @@ import dev.retza.mak.domain.OccurrenceSlot
 import dev.retza.mak.domain.decideOccurrenceEdit
 import dev.retza.mak.domain.noteContentChanged
 import dev.retza.mak.domain.occurrenceRoomOverride
+import dev.retza.mak.ui.calendarForAssignment
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
@@ -431,8 +432,10 @@ class OccurrenceViewModel(
             baseStartTime = base.startTime.toString(),
             baseEndTime = base.endTime.toString(),
             baseRoom = base.room?.trim()?.ifEmpty { null },
-            semesterStartDate = data.sharedCalendar()?.startDate?.toString().orEmpty(),
-            semesterEndDate = data.sharedCalendar()?.endDate?.toString().orEmpty(),
+            semesterStartDate = data.calendarForAssignment(base.semesterProgramId)
+                ?.startDate?.toString().orEmpty(),
+            semesterEndDate = data.calendarForAssignment(base.semesterProgramId)
+                ?.endDate?.toString().orEmpty(),
             canCancelOccurrence = canEdit && change == null,
             canChangeOccurrence = canEdit,
             canMoveOccurrence = canEdit,
@@ -447,8 +450,6 @@ class OccurrenceViewModel(
         val assignment = semesterPrograms.firstOrNull { it.id == assignmentId } ?: return ""
         return studyPrograms.firstOrNull { it.id == assignment.studyProgramId }?.name.orEmpty()
     }
-
-    private fun SemesterWithData.sharedCalendar() = academicCalendars.minByOrNull { it.id }
 
     private fun derive(value: OccurrenceDetailsUiState): OccurrenceDetailsUiState = value.copy(
         canSaveOccurrenceEdit = canSaveOccurrenceEdit(value),

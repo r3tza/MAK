@@ -87,6 +87,50 @@ class ScheduleViewModelTest {
     }
 
     @Test
+    fun savingVisibleOverrideTargetsSelectedCourseCalendar() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val result = repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(
+                name = "Fizyka",
+                color = "#000000"
+            ),
+            sourceCalendarId = 1L
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        viewModel.selectCourseFilter(result.semesterProgramId.toString())
+        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.weekOverrides.size)
+        assertEquals(result.academicCalendarId, repository.weekOverrides.single().academicCalendarId)
+    }
+
+    @Test
+    fun savingVisibleOverrideWithAllAndMultipleCalendarsIsIgnored() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(
+                name = "Fizyka",
+                color = "#000000"
+            ),
+            sourceCalendarId = 1L
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        advanceUntilIdle()
+
+        assertTrue(repository.weekOverrides.isEmpty())
+    }
+
+    @Test
     fun selectCalendarDayUpdatesSelection() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val viewModel = viewModel(repository)

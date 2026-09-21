@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: Etap 12.2, stan kalendarzy i audyt odczytów
+
+- Fakty: `SemesterViewModel` i ekran semestru sprowadzały dane do jednego wspólnego kalendarza. Formularz zajęć, szczegóły wystąpienia i szybka korekta z ekranu Planu brały zakres dat z pierwszego kalendarza, więc po rozdzieleniu kalendarzy dzień, walidacja albo zapis mogły dotyczyć złego kalendarza.
+- Decyzja: Rozstrzyganie kalendarza przeniesiono do wspólnych funkcji `SemesterWithData`: `sharedCalendar`, `calendarForAssignment` i `calendarsForAssignment`. `SemesterScreenUiState` niesie listę kalendarzy, powiązanie każdego kierunku z kalendarzem, listę programów do wyboru oraz tryb dodawania kierunku (wspólne albo osobne daty). `SemesterViewModel` obsługuje `addCourse` w obu trybach, `selectCourseProgram`, `separateCourseCalendar`, `requestReconnect` i `confirmReconnect` z ostrzeżeniem o osieroconym kalendarzu oraz `deleteUnusedCalendar`. `ScheduleViewModel` włącza dzień, gdy obejmuje go dowolny kalendarz, a szybka korekta trafia do kalendarza wybranego filtra; przy filtrze „Wszystkie" i wielu kalendarzach jest pomijana. `OccurrenceViewModel` i `ClassEditViewModel` biorą zakres dat z kalendarza kierunku zajęć. Dodano `MakRepository.addSeparatedSemesterProgram`, które w jednej transakcji tworzy kierunek, kopię kalendarza i jego korekt oraz przypisanie.
+- Powód: Model i resolver są wielokalendarzowe, więc każdy odczyt zakresu dat musi wskazywać kalendarz właściwego kierunku, a nie pierwszy kalendarz semestru.
+- Odrzucone: Rozstrzyganie kalendarza osobno w każdym ViewModelu; rozdzielenie nowego kierunku w dwóch transakcjach; zgadywanie kalendarza przy filtrze „Wszystkie".
+- Weryfikacja: `SemesterViewModelTest` (dodanie kierunku wspólne i osobne, wybór istniejącego programu, wybór kalendarza korekt, rozdzielenie, ponowne połączenie z osieroconym kalendarzem), `ScheduleViewModelTest` (korekta trafia do kalendarza filtra, pominięcie przy wielu kalendarzach), `OccurrenceViewModelTest` i `ClassEditViewModelTest` (zakres dat z kalendarza kierunku). `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-21: Etap 12.1, operacje kalendarzy w repozytorium
 
 - Fakty: Przypisanie kierunku do semestru ma jeden kalendarz akademicki, a korekty tygodni należą do kalendarza. Ekran celował we wspólny kalendarz i nie było operacji rozdzielenia ani ponownego połączenia.

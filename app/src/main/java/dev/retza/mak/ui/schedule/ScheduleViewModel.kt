@@ -13,6 +13,7 @@ import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.Recurrence
+import dev.retza.mak.ui.calendarForAssignment
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarMarkerColor
@@ -119,11 +120,12 @@ class ScheduleViewModel(
 
     fun saveVisibleWeekOverride(weekType: WeekTypeUi, scope: WeekOverrideScopeUi) {
         val data = activeSemesterData.value ?: return
-        val calendarId = data.sharedCalendar()?.id ?: return
+        val calendarId = visibleWeekCalendarId(data) ?: return
         val monday = controls.value.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val entityScope = WeekOverrideScope.valueOf(scope.name)
         val existing = data.weekOverrides.firstOrNull {
-            it.weekStartDate == monday && it.scope == entityScope
+            it.academicCalendarId == calendarId &&
+                it.weekStartDate == monday && it.scope == entityScope
         }
         viewModelScope.launch {
             repository.saveWeekOverride(
@@ -141,12 +143,21 @@ class ScheduleViewModel(
 
     fun clearVisibleWeekOverride(scope: WeekOverrideScopeUi) {
         val data = activeSemesterData.value ?: return
+        val calendarId = visibleWeekCalendarId(data) ?: return
         val monday = controls.value.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val entityScope = WeekOverrideScope.valueOf(scope.name)
         val existing = data.weekOverrides.firstOrNull {
-            it.weekStartDate == monday && it.scope == entityScope
+            it.academicCalendarId == calendarId &&
+                it.weekStartDate == monday && it.scope == entityScope
         } ?: return
         viewModelScope.launch { repository.deleteWeekOverride(existing.id) }
+    }
+
+    private fun visibleWeekCalendarId(data: SemesterWithData): Long? {
+        val filterId = controls.value.courseFilterId
+        if (filterId == "all") return data.academicCalendars.singleOrNull()?.id
+        val assignment = data.semesterPrograms.firstOrNull { it.id.toString() == filterId } ?: return null
+        return data.calendarForAssignment(assignment.id)?.id
     }
 
     private fun buildSchedule(data: SemesterWithData?, control: ScheduleControls): ScheduleUiState {
@@ -189,6 +200,14 @@ class ScheduleViewModel(
             activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
         }
         val calendarLabels = conflictLabels(calendarPlan.collisions)
+        val relevantCalendarIds = if (activeFilter == "all") {
+            data.academicCalendars.mapTo(mutableSetOf()) { it.id }
+        } else {
+            setOfNotNull(
+                data.semesterPrograms.firstOrNull { it.id.toString() == activeFilter }
+                    ?.let { data.calendarForAssignment(it.id)?.id }
+            )
+        }
         return ScheduleUiState(
             view = control.scheduleView,
             weekRangeLabel = "${monday.format(shortDateFormatter)} - ${monday.plusDays(6).format(shortDateFormatter)}",
@@ -216,9 +235,9 @@ class ScheduleViewModel(
                     dateLabel = date.dayOfMonth.toString(),
                     accessibilityLabel = date.format(fullDateFormatter),
                     isSelected = date == control.scheduleDate,
-                    isEnabled = data.sharedCalendar()?.let { calendar ->
+                    isEnabled = data.academicCalendars.any { calendar ->
                         !date.isBefore(calendar.startDate) && !date.isAfter(calendar.endDate)
-                    } ?: false
+                    }
                 )
             },
             filters = listOf(ScheduleFilterUi("all", "Wszystkie", activeFilter == "all")) +
@@ -241,10 +260,12 @@ class ScheduleViewModel(
                 if (control.showCancelled) cancelledItems(data, control.calendarDate) else emptyList(),
             showCancelled = control.showCancelled,
             hasOneWeekCorrection = data.weekOverrides.any {
-                it.weekStartDate == monday && it.scope == WeekOverrideScope.ONE_WEEK
+                it.academicCalendarId in relevantCalendarIds &&
+                    it.weekStartDate == monday && it.scope == WeekOverrideScope.ONE_WEEK
             },
             hasFromWeekCorrection = data.weekOverrides.any {
-                it.weekStartDate == monday && it.scope == WeekOverrideScope.FROM_WEEK
+                it.academicCalendarId in relevantCalendarIds &&
+                    it.weekStartDate == monday && it.scope == WeekOverrideScope.FROM_WEEK
             }
         )
     }
@@ -280,9 +301,6 @@ class ScheduleViewModel(
 }
 
 private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
-
-private fun SemesterWithData.sharedCalendar() =
-    academicCalendars.minByOrNull { it.id }
 
 private fun emptyScheduleState() = ScheduleUiState(
     weekRangeLabel = "",

@@ -549,6 +549,155 @@ class SemesterViewModelTest {
     }
 
     @Test
+    fun addCourseWithSeparateCalendarCreatesCopy() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+        val sourceCalendarId = viewModel.semester.value.selectedCalendarId
+
+        viewModel.updateCourseName("Fizyka")
+        viewModel.setCourseCalendarMode(CourseCalendarModeUi.SEPARATE)
+        viewModel.addCourse()
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "addSeparatedSemesterProgram" })
+        val newProgramId = repository.studyPrograms.first { it.name == "Fizyka" }.id
+        val assignment = repository.semesterPrograms.first { it.studyProgramId == newProgramId }
+        assertTrue(assignment.academicCalendarId.toString() != sourceCalendarId)
+        assertEquals(2, viewModel.semester.value.calendars.size)
+        assertEquals(
+            listOf(UiFeedback("Dodano kierunek", UiFeedbackKind.Success)),
+            sink.published
+        )
+    }
+
+    @Test
+    fun addCourseSharedModeUsesSelectedCalendar() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.updateCourseName("Fizyka")
+        viewModel.addCourse()
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "saveStudyProgramAssignment" })
+        assertEquals(1, viewModel.semester.value.calendars.size)
+        assertEquals(2, viewModel.semester.value.courseItems.size)
+    }
+
+    @Test
+    fun selectCourseProgramPrefillsNameAndColor() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.selectCourseProgram("1")
+
+        assertEquals("Informatyka", viewModel.semester.value.courseNameDraft)
+        assertEquals("#137B71", viewModel.semester.value.courseColorDraft)
+        assertEquals("1", viewModel.semester.value.courseProgramId)
+    }
+
+    @Test
+    fun selectingOverrideCalendarShowsOnlyItsOverrides() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.updateCourseName("Fizyka")
+        viewModel.setCourseCalendarMode(CourseCalendarModeUi.SEPARATE)
+        viewModel.addCourse()
+        advanceUntilIdle()
+        val newProgramId = repository.studyPrograms.first { it.name == "Fizyka" }.id
+        val separatedCalendarId = repository.semesterPrograms
+            .first { it.studyProgramId == newProgramId }
+            .academicCalendarId
+        repository.weekOverrides += WeekOverrideEntity(
+            id = 7L,
+            semesterId = 1L,
+            academicCalendarId = separatedCalendarId,
+            weekStartDate = LocalDate.of(2026, 10, 5),
+            weekType = WeekType.A,
+            scope = WeekOverrideScope.ONE_WEEK
+        )
+
+        viewModel.selectOverrideCalendar(repository.calendar.id.toString())
+        advanceUntilIdle()
+        assertTrue(viewModel.semester.value.overrides.isEmpty())
+
+        viewModel.selectOverrideCalendar(separatedCalendarId.toString())
+        advanceUntilIdle()
+        assertEquals(1, viewModel.semester.value.overrides.size)
+    }
+
+    @Test
+    fun reconnectMarksUnusedSourceAndMovesAssignment() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.updateCourseName("Fizyka")
+        viewModel.setCourseCalendarMode(CourseCalendarModeUi.SEPARATE)
+        viewModel.addCourse()
+        advanceUntilIdle()
+        val newProgramId = repository.studyPrograms.first { it.name == "Fizyka" }.id
+        val separatedCalendarId = repository.semesterPrograms
+            .first { it.studyProgramId == newProgramId }
+            .academicCalendarId
+        val informatykaId = viewModel.semester.value.courseItems
+            .first { it.name == "Informatyka" }
+            .assignmentId
+
+        viewModel.requestReconnect(informatykaId, separatedCalendarId.toString())
+        advanceUntilIdle()
+        assertEquals(true, viewModel.semester.value.pendingReconnect?.sourceBecomesUnused)
+        assertEquals("Informatyka", viewModel.semester.value.pendingReconnect?.programName)
+
+        viewModel.confirmReconnect()
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "reconnectSemesterProgram" })
+        assertEquals(null, viewModel.semester.value.pendingReconnect)
+        assertTrue(repository.calendars.none { it.id == repository.calendar.id })
+    }
+
+    @Test
+    fun separateCourseCalendarPublishesSuccess() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        val assignmentId = viewModel.semester.value.courseItems.first().assignmentId
+        viewModel.separateCourseCalendar(assignmentId)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "separateSemesterProgramCalendar" })
+        assertEquals(2, viewModel.semester.value.calendars.size)
+        assertEquals(
+            listOf(UiFeedback("Rozdzielono kalendarz kierunku", UiFeedbackKind.Success)),
+            sink.published
+        )
+    }
+
+    @Test
     fun unparsableIdClearsPreviousSemester() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val viewModel = viewModel(repository)

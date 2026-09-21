@@ -149,7 +149,7 @@ Po zakończeniu zadania możesz samodzielnie utworzyć commit obejmujący jego l
 
 Nie dodawaj stopki `Co-authored-by:` przypisującej pracę agentowi.
 
-Używaj krótkiego, konkretnego tematu w trybie rozkazującym. Dozwolone są prefiksy `feat:`, `fix:`, `chore:` i `docs:`.
+Używaj krótkiego, konkretnego tematu w trybie rozkazującym i po angielsku. Dozwolone są prefiksy `feat:`, `fix:`, `chore:` i `docs:`.
 
 ## Zakres
 

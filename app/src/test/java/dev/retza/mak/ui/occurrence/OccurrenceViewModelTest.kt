@@ -53,6 +53,36 @@ class OccurrenceViewModelTest {
     }
 
     @Test
+    fun detailsUseAssignmentCalendarRange() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val result = repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(
+                name = "Fizyka",
+                color = "#000000"
+            ),
+            sourceCalendarId = 1L
+        )
+        repository.saveCalendar(
+            repository.calendars.first { it.id == result.academicCalendarId }
+                .copy(startDate = LocalDate.of(2026, 11, 1), endDate = LocalDate.of(2026, 12, 20))
+        )
+        repository.classes += repository.classes.single().copy(
+            id = 2L,
+            semesterProgramId = result.semesterProgramId,
+            name = "Fizyka zajęcia"
+        )
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.open("2:2026-11-02")
+        advanceUntilIdle()
+
+        assertEquals("2026-11-01", viewModel.details.value.semesterStartDate)
+        assertEquals("2026-12-20", viewModel.details.value.semesterEndDate)
+    }
+
+    @Test
     fun openInvalidArgsLeavesDetailsEmpty() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val viewModel = occurrenceViewModel(repository)

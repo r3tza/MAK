@@ -93,6 +93,12 @@ private class FakeMakRepository : MakRepository {
 
     override suspend fun deleteStudyProgram(id: Long) = Unit
 
+    override suspend fun addSeparatedSemesterProgram(
+        semesterId: Long,
+        studyProgram: StudyProgramEntity,
+        sourceCalendarId: Long
+    ): SetupConfigurationIds = SetupConfigurationIds(1L, 1L, 1L, 1L)
+
     override suspend fun getAllStudyPrograms(): List<StudyProgramEntity> = studyPrograms
 
     override suspend fun saveStudyProgramAssignment(
