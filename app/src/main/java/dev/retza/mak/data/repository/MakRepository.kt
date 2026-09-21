@@ -86,6 +86,12 @@ interface MakRepository {
 
     suspend fun deleteCalendarIfUnused(id: Long)
 
+    suspend fun deleteCalendar(id: Long)
+
+    suspend fun separateSemesterProgramCalendar(assignmentId: Long): SetupConfigurationIds
+
+    suspend fun reconnectSemesterProgram(assignmentId: Long, calendarId: Long): SetupConfigurationIds
+
     suspend fun saveSemesterProgram(entity: SemesterProgramEntity): Long
 
     suspend fun deleteSemesterProgram(id: Long)
@@ -324,6 +330,65 @@ class RoomMakRepository(
                 calendars.deleteById(id)
             }
         }
+    }
+
+    override suspend fun deleteCalendar(id: Long) {
+        database.withTransaction {
+            require(calendars.findById(id) != null) { "Calendar does not exist" }
+            require(calendars.countAssignments(id) == 0) {
+                "Calendar is assigned to a study program"
+            }
+            calendars.deleteById(id)
+        }
+    }
+
+    override suspend fun separateSemesterProgramCalendar(assignmentId: Long): SetupConfigurationIds =
+        database.withTransaction {
+            val assignment = semesterPrograms.findById(assignmentId)
+                ?: error("Assignment does not exist")
+            val source = calendars.findById(assignment.academicCalendarId)
+                ?: error("Calendar does not exist")
+            val newCalendarId = calendars.insert(
+                AcademicCalendarEntity(
+                    semesterId = source.semesterId,
+                    startDate = source.startDate,
+                    endDate = source.endDate,
+                    firstWeekType = source.firstWeekType
+                )
+            )
+            weekOverrides.getForCalendar(source.id).forEach { override ->
+                weekOverrides.insert(override.copy(id = 0, academicCalendarId = newCalendarId))
+            }
+            semesterPrograms.update(assignment.copy(academicCalendarId = newCalendarId))
+            SetupConfigurationIds(
+                semesterId = assignment.semesterId,
+                studyProgramId = assignment.studyProgramId,
+                academicCalendarId = newCalendarId,
+                semesterProgramId = assignment.id
+            )
+        }
+
+    override suspend fun reconnectSemesterProgram(
+        assignmentId: Long,
+        calendarId: Long
+    ): SetupConfigurationIds = database.withTransaction {
+        val assignment = semesterPrograms.findById(assignmentId)
+            ?: error("Assignment does not exist")
+        val target = calendars.findById(calendarId) ?: error("Calendar does not exist")
+        require(target.semesterId == assignment.semesterId) {
+            "Calendar must belong to the semester"
+        }
+        val previousCalendarId = assignment.academicCalendarId
+        semesterPrograms.update(assignment.copy(academicCalendarId = calendarId))
+        if (previousCalendarId != calendarId && calendars.countAssignments(previousCalendarId) == 0) {
+            calendars.deleteById(previousCalendarId)
+        }
+        SetupConfigurationIds(
+            semesterId = assignment.semesterId,
+            studyProgramId = assignment.studyProgramId,
+            academicCalendarId = calendarId,
+            semesterProgramId = assignment.id
+        )
     }
 
     override suspend fun saveSemesterProgram(entity: SemesterProgramEntity): Long {

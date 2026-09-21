@@ -356,6 +356,17 @@ Kryterium: kod aplikacji nie zależy od `MakRepository`, a testy potwierdzają r
 
 Kryterium: użytkownik może połączyć i rozdzielić kalendarze bez zmiany zajęć oraz bez utraty ustawień innych kierunków.
 
+Status zaakceptowany 2026-09-21. Układ: ekran semestru pokazuje pola dat tylko wtedy, gdy semestr ma jeden kalendarz; przy wielu pokazuje etykietę „Różne kalendarze" i wiersz „Kalendarze (N)". Kierunki pokazują swój kalendarz, a dodawanie kierunku daje dwie jawne akcje „Wybierz istniejący" i „Utwórz nowy" oraz wybór „Wspólne daty i tygodnie" (domyślnie) albo „Osobne daty i tygodnie". Ekran „Kalendarze" listuje kalendarze z datami, oznaczeniem tygodnia i kierunkami, które ich używają. Korekty tygodni mają wybór kalendarza, gdy jest ich wiele. Ponowne połączenie ostrzega, że gdy dotychczasowy kalendarz przestanie być używany, zostanie usunięty razem ze swoimi korektami, bez scalania; kalendarz docelowy i korekty innych kierunków pozostają bez zmian.
+
+Podział na kroki samodzielnie sprawdzalne:
+
+1. Repozytorium i testy warstwy danych: `separateSemesterProgramCalendar(assignmentId)` kopiuje daty, rytm i korekty kalendarza przypisania do nowego kalendarza i przepina przypisanie; `reconnectSemesterProgram(assignmentId, calendarId)` przepina przypisanie i usuwa dotychczasowy kalendarz razem z korektami, gdy zostaje bez przypisań; `deleteCalendar(id)` usuwa nieużywany kalendarz z korektami i blokuje usunięcie używanego. Testy w `RoomPersistenceTest` (kopiowanie korekt, brak scalania, sprzątanie osieroconego kalendarza, blokada usunięcia używanego) oraz aktualizacja `FakeMakRepository` i `DemoDataSeederTest`.
+2. Stan i audyt odczytów kalendarza: `SemesterViewModel` i `SemesterUiState` niosą listę kalendarzy, kalendarz każdego kierunku i wybór kalendarza dla korekt; dodawanie kierunku przyjmuje tryb wspólny albo osobny. Audyt obejmuje `ScheduleViewModel` (zakres dni i zapis korekty z ekranu Planu), `OccurrenceViewModel` (zakres dat edycji wystąpienia) i `ClassEditViewModel` (daty nagłówka i walidacja zajęć jednorazowych), aby każdy używał kalendarza właściwego dla kierunku. Testy JVM w `SemesterViewModelTest`, `ScheduleViewModelTest`, `OccurrenceViewModelTest` i `ClassEditViewModelTest`.
+3. Interfejs Compose: ekrany „Kierunki" i „Kalendarze", przepływ dodawania z dwiema akcjami wyboru kierunku i trybem dat, wybór kalendarza w korektach oraz dialog ostrzeżenia przy ponownym połączeniu. Testy Compose kompilowalne dla dodania kierunku z osobnym kalendarzem, połączenia z ostrzeżeniem, wyboru kalendarza w korektach i braku poziomego przewijania przy 320 dp.
+4. Odbiór końcowy: kompilacja testów Android i odbiór na emulatorze albo urządzeniu. `ARCHITECTURE.md` i `JOURNAL.md` są aktualizowane razem z zachowaniem w krokach 1-3.
+
+Postęp: krok 1 zrealizowany (operacje kalendarzy w repozytorium, `RoomPersistenceTest`, `FakeMakRepository`).
+
 #### Dalszy etap 13: import przez pełne zastąpienie
 
 1. Zwiększyć `schemaVersion` formatu i eksportować globalne kierunki, semestry, powiązania, kalendarze oraz pozostałe dane planu.

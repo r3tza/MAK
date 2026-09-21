@@ -318,6 +318,70 @@ internal class FakeMakRepository : MakRepository {
         }
     }
 
+    override suspend fun deleteCalendar(id: Long) {
+        awaitSave()
+        events += "deleteCalendar"
+        require(semesterPrograms.none { it.academicCalendarId == id }) {
+            "Calendar is assigned to a study program"
+        }
+        calendarState.value = calendars.filterNot { it.id == id }
+        weekOverrides.removeAll { it.academicCalendarId == id }
+    }
+
+    override suspend fun separateSemesterProgramCalendar(assignmentId: Long): SetupConfigurationIds {
+        awaitSave()
+        events += "separateSemesterProgramCalendar"
+        val assignment = semesterPrograms.firstOrNull { it.id == assignmentId }
+            ?: error("Assignment does not exist")
+        val source = calendars.firstOrNull { it.id == assignment.academicCalendarId }
+            ?: error("Calendar does not exist")
+        val newCalendarId = generatedCalendarId++
+        calendarState.value = calendars + source.copy(id = newCalendarId)
+        weekOverrides
+            .filter { it.academicCalendarId == source.id }
+            .forEach { override ->
+                weekOverrides += override.copy(
+                    id = (weekOverrides.maxOfOrNull { it.id } ?: 0L) + 1L,
+                    academicCalendarId = newCalendarId
+                )
+            }
+        semesterProgramState.value = semesterPrograms.map {
+            if (it.id == assignment.id) it.copy(academicCalendarId = newCalendarId) else it
+        }
+        return SetupConfigurationIds(
+            semesterId = assignment.semesterId,
+            studyProgramId = assignment.studyProgramId,
+            academicCalendarId = newCalendarId,
+            semesterProgramId = assignment.id
+        )
+    }
+
+    override suspend fun reconnectSemesterProgram(
+        assignmentId: Long,
+        calendarId: Long
+    ): SetupConfigurationIds {
+        awaitSave()
+        events += "reconnectSemesterProgram"
+        val assignment = semesterPrograms.firstOrNull { it.id == assignmentId }
+            ?: error("Assignment does not exist")
+        val previousCalendarId = assignment.academicCalendarId
+        semesterProgramState.value = semesterPrograms.map {
+            if (it.id == assignment.id) it.copy(academicCalendarId = calendarId) else it
+        }
+        if (previousCalendarId != calendarId &&
+            semesterPrograms.none { it.academicCalendarId == previousCalendarId }
+        ) {
+            calendarState.value = calendars.filterNot { it.id == previousCalendarId }
+            weekOverrides.removeAll { it.academicCalendarId == previousCalendarId }
+        }
+        return SetupConfigurationIds(
+            semesterId = assignment.semesterId,
+            studyProgramId = assignment.studyProgramId,
+            academicCalendarId = calendarId,
+            semesterProgramId = assignment.id
+        )
+    }
+
     override suspend fun saveSetupConfiguration(
         semester: SemesterEntity,
         studyProgram: StudyProgramEntity,

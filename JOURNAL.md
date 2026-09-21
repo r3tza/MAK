@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: Etap 12.1, operacje kalendarzy w repozytorium
+
+- Fakty: Przypisanie kierunku do semestru ma jeden kalendarz akademicki, a korekty tygodni należą do kalendarza. Ekran celował we wspólny kalendarz i nie było operacji rozdzielenia ani ponownego połączenia.
+- Decyzja: Dodano `separateSemesterProgramCalendar(assignmentId)`, `reconnectSemesterProgram(assignmentId, calendarId)` i `deleteCalendar(id)`. Rozdzielenie w jednej transakcji kopiuje daty, rytm i korekty kalendarza przypisania do nowego kalendarza i przepina przypisanie, a kalendarz źródłowy zostaje. Ponowne połączenie przepina przypisanie i usuwa dotychczasowy kalendarz razem z jego korektami, gdy zostaje bez przypisań; korekty nie są scalane. `deleteCalendar` blokuje usunięcie używanego kalendarza. Dodano `WeekOverrideDao.getForCalendar`.
+- Powód: Etap 12 wymaga łączenia i rozdzielania kalendarzy bez zmiany zajęć i bez utraty ustawień innych kierunków. Operacje muszą być atomowe, a osierocony kalendarz nie może udawać ustawień innego kierunku.
+- Odrzucone: Kopiowanie korekt przy ponownym połączeniu; zachowanie osieroconego kalendarza jako nieużywanego (wybrano usunięcie razem z korektami); zmiana kalendarza poza transakcją.
+- Weryfikacja: `RoomPersistenceTest` sprawdza kopiowanie kalendarza i korekt przy rozdzieleniu, brak scalania i usunięcie osieroconego kalendarza z korektami przy ponownym połączeniu, zachowanie kalendarza wciąż używanego oraz blokadę usunięcia używanego kalendarza. `FakeMakRepository` i `DemoDataSeederTest` odwzorowują nowe operacje. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-21: Migracja Room do v2
 
 - Fakty: Schemat v1 trzymał kierunki i prowadzących w osobnych tabelach przypisanych do semestru, daty i rytm A/B w semestrze, a zajęcia wskazywały `course_id` i `teacher_id`. Nowy model wymaga globalnych kierunków, kalendarzy akademickich i przypisań.

@@ -259,6 +259,145 @@ class RoomPersistenceTest {
         assertEquals(programId, database!!.studyProgramDao().findById(programId)?.id)
     }
 
+    @Test
+    fun separatingCalendarCopiesOverridesAndKeepsSource() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val sourceCalendarId = insertCalendar(semesterId)
+        val firstProgramId = insertProgram("Informatyka")
+        val secondProgramId = insertProgram("Matematyka")
+        val firstAssignmentId = insertAssignment(semesterId, firstProgramId, sourceCalendarId)
+        val secondAssignmentId = insertAssignment(semesterId, secondProgramId, sourceCalendarId)
+        val monday = LocalDate.of(2026, 10, 5)
+        database!!.weekOverrideDao().insert(
+            WeekOverrideEntity(
+                semesterId = semesterId,
+                academicCalendarId = sourceCalendarId,
+                weekStartDate = monday,
+                weekType = WeekType.B,
+                scope = WeekOverrideScope.ONE_WEEK
+            )
+        )
+
+        val result = repository.separateSemesterProgramCalendar(firstAssignmentId)
+
+        val separated = database!!.academicCalendarDao().findById(result.academicCalendarId)
+        assertEquals(LocalDate.of(2026, 10, 1), separated?.startDate)
+        assertEquals(LocalDate.of(2027, 2, 28), separated?.endDate)
+        assertEquals(WeekType.A, separated?.firstWeekType)
+        assertEquals(
+            result.academicCalendarId,
+            database!!.semesterProgramDao().findById(firstAssignmentId)?.academicCalendarId
+        )
+        assertEquals(
+            sourceCalendarId,
+            database!!.semesterProgramDao().findById(secondAssignmentId)?.academicCalendarId
+        )
+        val copied = database!!.weekOverrideDao().getForCalendar(result.academicCalendarId)
+        assertEquals(1, copied.size)
+        assertEquals(monday, copied.single().weekStartDate)
+        assertEquals(WeekType.B, copied.single().weekType)
+        assertEquals(WeekOverrideScope.ONE_WEEK, copied.single().scope)
+        assertEquals(1, database!!.weekOverrideDao().getForCalendar(sourceCalendarId).size)
+        assertEquals(sourceCalendarId, database!!.academicCalendarDao().findById(sourceCalendarId)?.id)
+    }
+
+    @Test
+    fun reconnectingDeletesOrphanCalendarWithOverrides() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val sourceCalendarId = insertCalendar(semesterId)
+        val targetCalendarId = insertCalendar(semesterId)
+        val firstProgramId = insertProgram("Informatyka")
+        val secondProgramId = insertProgram("Matematyka")
+        val firstAssignmentId = insertAssignment(semesterId, firstProgramId, sourceCalendarId)
+        insertAssignment(semesterId, secondProgramId, targetCalendarId)
+        database!!.weekOverrideDao().insert(
+            WeekOverrideEntity(
+                semesterId = semesterId,
+                academicCalendarId = sourceCalendarId,
+                weekStartDate = LocalDate.of(2026, 10, 5),
+                weekType = WeekType.B,
+                scope = WeekOverrideScope.ONE_WEEK
+            )
+        )
+
+        repository.reconnectSemesterProgram(firstAssignmentId, targetCalendarId)
+
+        assertNull(database!!.academicCalendarDao().findById(sourceCalendarId))
+        assertTrue(database!!.weekOverrideDao().getForCalendar(sourceCalendarId).isEmpty())
+        assertEquals(
+            targetCalendarId,
+            database!!.semesterProgramDao().findById(firstAssignmentId)?.academicCalendarId
+        )
+    }
+
+    @Test
+    fun reconnectingKeepsSourceCalendarWhenStillUsed() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val sourceCalendarId = insertCalendar(semesterId)
+        val targetCalendarId = insertCalendar(semesterId)
+        val firstProgramId = insertProgram("Informatyka")
+        val secondProgramId = insertProgram("Matematyka")
+        val firstAssignmentId = insertAssignment(semesterId, firstProgramId, sourceCalendarId)
+        insertAssignment(semesterId, secondProgramId, sourceCalendarId)
+
+        repository.reconnectSemesterProgram(firstAssignmentId, targetCalendarId)
+
+        assertEquals(sourceCalendarId, database!!.academicCalendarDao().findById(sourceCalendarId)?.id)
+        assertEquals(
+            targetCalendarId,
+            database!!.semesterProgramDao().findById(firstAssignmentId)?.academicCalendarId
+        )
+    }
+
+    @Test
+    fun deletingUsedCalendarIsBlocked() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val calendarId = insertCalendar(semesterId)
+        val programId = insertProgram("Informatyka")
+        insertAssignment(semesterId, programId, calendarId)
+
+        try {
+            repository.deleteCalendar(calendarId)
+            fail("Expected deletion of a used calendar to fail")
+        } catch (_: IllegalArgumentException) {
+        }
+
+        assertEquals(calendarId, database!!.academicCalendarDao().findById(calendarId)?.id)
+    }
+
+    private suspend fun insertCalendar(semesterId: Long): Long =
+        database!!.academicCalendarDao().insert(
+            AcademicCalendarEntity(
+                semesterId = semesterId,
+                startDate = LocalDate.of(2026, 10, 1),
+                endDate = LocalDate.of(2027, 2, 28),
+                firstWeekType = WeekType.A
+            )
+        )
+
+    private suspend fun insertProgram(name: String): Long =
+        database!!.studyProgramDao().insert(StudyProgramEntity(name = name, color = "#112233"))
+
+    private suspend fun insertAssignment(
+        semesterId: Long,
+        studyProgramId: Long,
+        calendarId: Long
+    ): Long = database!!.semesterProgramDao().insert(
+        SemesterProgramEntity(
+            semesterId = semesterId,
+            studyProgramId = studyProgramId,
+            academicCalendarId = calendarId
+        )
+    )
+
     private fun semester(name: String, active: Boolean) = SemesterEntity(
         name = name,
         isActive = active

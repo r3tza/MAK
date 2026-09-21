@@ -179,6 +179,12 @@ interface WeekOverrideDao {
     )
     fun observeForCalendar(calendarId: Long): Flow<List<WeekOverrideEntity>>
 
+    @Query(
+        "SELECT * FROM week_overrides " +
+            "WHERE academic_calendar_id = :calendarId ORDER BY week_start_date, scope, id"
+    )
+    suspend fun getForCalendar(calendarId: Long): List<WeekOverrideEntity>
+
     @Query("SELECT * FROM week_overrides WHERE id = :id")
     suspend fun findById(id: Long): WeekOverrideEntity?
 
