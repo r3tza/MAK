@@ -14,6 +14,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -46,5 +47,27 @@ class MakViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf("Test", "Błąd"), received.map { it.message })
+    }
+
+    @Test
+    fun changingSemesterDropsFilterThatNoLongerExists() = runTest(mainDispatcher) {
+        val controller = FeedbackController()
+        val repository = FakeMakRepository()
+        val classEditViewModel = ClassEditViewModel(repository, controller)
+        val settingsViewModel = SettingsViewModel(repository, InMemorySettingsPreferences(), controller)
+        val viewModel = MakViewModel(repository, controller, classEditViewModel, settingsViewModel, clock)
+        backgroundScope.launch(mainDispatcher) { viewModel.uiState.collect {} }
+        advanceUntilIdle()
+
+        viewModel.selectCourseFilter("1")
+        advanceUntilIdle()
+        assertTrue(viewModel.uiState.value.schedule.filters.any { it.id == "1" && it.isSelected })
+
+        settingsViewModel.selectSemester("2")
+        advanceUntilIdle()
+
+        val filters = viewModel.uiState.value.schedule.filters
+        assertTrue(filters.any { it.id == "all" && it.isSelected })
+        assertTrue(filters.none { it.id == "1" })
     }
 }

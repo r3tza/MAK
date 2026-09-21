@@ -263,10 +263,13 @@ class MakViewModel(
 
     private fun buildSchedule(data: SemesterWithData?, control: Controls): ScheduleUiState {
         if (data == null) return emptyScheduleState()
+        val activeFilter = control.courseFilterId.takeIf { id ->
+            id == "all" || data.courses.any { it.id.toString() == id }
+        } ?: "all"
         val selectedPlan = activePlan(data, control.scheduleDate)
         val selected = selectedPlan.schedule
         val filtered = selected.occurrences.filter {
-            control.courseFilterId == "all" || it.classItem.courseId == control.courseFilterId
+            activeFilter == "all" || it.classItem.courseId == activeFilter
         }
         val cancelled = if (control.showCancelled) cancelledItems(data, control.scheduleDate) else emptyList()
         val labels = conflictLabels(selectedPlan.collisions)
@@ -274,7 +277,7 @@ class MakViewModel(
         val currentWeekMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val calendarDays = calendarDates(control.calendarMonth).map { date ->
             val occurrences = activePlan(data, date).schedule.occurrences.filter {
-                control.courseFilterId == "all" || it.classItem.courseId == control.courseFilterId
+                activeFilter == "all" || it.classItem.courseId == activeFilter
             }
             CalendarDayUi(
                 id = date.toString(),
@@ -295,7 +298,7 @@ class MakViewModel(
         val calendarPlan = activePlan(data, control.calendarDate)
         val calendarSchedule = calendarPlan.schedule
         val calendarFiltered = calendarSchedule.occurrences.filter {
-            control.courseFilterId == "all" || it.classItem.courseId == control.courseFilterId
+            activeFilter == "all" || it.classItem.courseId == activeFilter
         }
         val calendarLabels = conflictLabels(calendarPlan.collisions)
         return ScheduleUiState(
@@ -316,9 +319,9 @@ class MakViewModel(
                     isEnabled = !date.isBefore(data.semester.startDate) && !date.isAfter(data.semester.endDate)
                 )
             },
-            filters = listOf(ScheduleFilterUi("all", "Wszystkie", control.courseFilterId == "all")) +
+            filters = listOf(ScheduleFilterUi("all", "Wszystkie", activeFilter == "all")) +
                 data.courses.map {
-                    ScheduleFilterUi(it.id.toString(), it.name, control.courseFilterId == it.id.toString())
+                    ScheduleFilterUi(it.id.toString(), it.name, activeFilter == it.id.toString())
                 },
             selectedDayLabel = dayNames[control.scheduleDate.dayOfWeek].orEmpty(),
             selectedDayCountLabel = classCountLabel(filtered.size + cancelled.size),

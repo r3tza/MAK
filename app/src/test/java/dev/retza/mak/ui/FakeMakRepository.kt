@@ -71,6 +71,9 @@ internal class FakeMakRepository : MakRepository {
     var failSaves = false
     var cancelSaves = false
     var failSetupConfiguration = false
+    var failSetActiveSemester = false
+    var activeSemesterGate: CompletableDeferred<Unit>? = null
+    var setActiveCount = 0
     var lastSetupSemester: SemesterEntity? = null
     var lastSetupCourse: CourseEntity? = null
     private var generatedSemesterId = 100L
@@ -132,6 +135,9 @@ internal class FakeMakRepository : MakRepository {
     }
 
     override suspend fun setActiveSemester(id: Long) {
+        activeSemesterGate?.await()
+        if (failSetActiveSemester) throw IllegalStateException("set active failed")
+        setActiveCount += 1
         if (semesterById(id) != null) activeSemesterFlow.value = id
     }
 

@@ -114,6 +114,59 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun selectSemesterPublishesSuccessAndSetsActive() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink = sink)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        viewModel.selectSemester("2")
+        advanceUntilIdle()
+
+        assertEquals(2L, repository.activeSemesterId)
+        assertEquals(listOf("Zmieniono aktywny semestr"), sink.published.map { it.message })
+    }
+
+    @Test
+    fun selectSemesterFailureKeepsActiveAndPublishesError() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.failSetActiveSemester = true
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink = sink)
+        advanceUntilIdle()
+
+        viewModel.selectSemester("2")
+        advanceUntilIdle()
+
+        assertEquals(1L, repository.activeSemesterId)
+        assertEquals(
+            listOf("Nie udało się zmienić aktywnego semestru."),
+            sink.published.map { it.message }
+        )
+    }
+
+    @Test
+    fun doubleSemesterSelectionRunsOneOperation() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        repository.activeSemesterGate = CompletableDeferred()
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink = sink)
+
+        viewModel.selectSemester("2")
+        viewModel.selectSemester("1")
+        advanceUntilIdle()
+        assertEquals(0, repository.setActiveCount)
+
+        repository.activeSemesterGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.setActiveCount)
+        assertEquals(listOf("Zmieniono aktywny semestr"), sink.published.map { it.message })
+        assertEquals(2L, repository.activeSemesterId)
+    }
+
+    @Test
     fun deletingInactiveSemesterKeepsActive() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val viewModel = viewModel(repository)

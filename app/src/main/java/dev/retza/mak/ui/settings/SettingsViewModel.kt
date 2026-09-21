@@ -71,8 +71,22 @@ class SettingsViewModel(
     )
 
     fun selectSemester(id: String) {
-        id.toLongOrNull()?.let { semesterId ->
-            viewModelScope.launch { repository.setActiveSemester(semesterId) }
+        if (local.value.isSelectingSemester) return
+        val semesterId = id.toLongOrNull() ?: return
+        local.update { it.copy(isSelectingSemester = true) }
+        viewModelScope.launch {
+            try {
+                repository.setActiveSemester(semesterId)
+                feedbackSink.publish(UiFeedback("Zmieniono aktywny semestr", UiFeedbackKind.Success))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                feedbackSink.publish(
+                    UiFeedback("Nie udało się zmienić aktywnego semestru.", UiFeedbackKind.Error)
+                )
+            } finally {
+                local.update { it.copy(isSelectingSemester = false) }
+            }
         }
     }
 
