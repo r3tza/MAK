@@ -195,6 +195,28 @@ class RoomPersistenceTest {
         assertTrue(repository.observeSemesters().first().isEmpty())
     }
 
+    @Test
+    fun deleteTransactionRollsBackWhenFallbackWriteFails() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val first = database!!.semesterDao().insert(semester("Pierwszy", 2026, 1, 1, false))
+        val second = database!!.semesterDao().insert(semester("Drugi", 2026, 6, 1, false))
+        database!!.semesterDao().markActive(second)
+        database!!.openHelper.writableDatabase.execSQL(
+            "CREATE TRIGGER fail_mark_active BEFORE UPDATE OF is_active ON semesters " +
+                "WHEN NEW.is_active = 1 BEGIN SELECT RAISE(ABORT, 'mark active failed'); END"
+        )
+
+        try {
+            repository.deleteSemesterAndSelectFallback(second)
+            fail("Expected the delete transaction to fail")
+        } catch (_: Exception) {
+        }
+
+        assertEquals(listOf(first, second), repository.observeSemesters().first().map { it.id })
+        assertEquals(second, repository.observeActiveSemester().first()?.id)
+    }
+
     private fun semester(name: String, year: Int, month: Int, day: Int, active: Boolean) = SemesterEntity(
         name = name,
         startDate = LocalDate.of(year, month, day),

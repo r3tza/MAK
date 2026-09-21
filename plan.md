@@ -202,7 +202,7 @@ Nie zmieniano wyglądu trzech kroków kreatora ani `SettingsViewModel` i `Schedu
 
 #### SettingsViewModel
 
-Status: zrealizowane. `SettingsViewModel` składa `SettingsUiState` ze strumieni semestrów, aktywnego semestru i preferencji motywu i nie wystawia encji Room. Motyw jest zapisywany w Preferences DataStore jako `ThemeMode`; brakująca lub nieznana wartość oznacza `System`, a `selectTheme` blokuje powtórzenie i publikuje błąd tylko przy nieudanym zapisie. Wybór aktywnego semestru ma synchroniczną blokadę, publikuje „Zmieniono aktywny semestr”, a przy błędzie zachowuje poprzedni wybór. Usunięcie semestru korzysta z `MakRepository.deleteSemesterAndSelectFallback`, który w jednej transakcji usuwa semestr i deterministycznie wybiera następny aktywny według `startDate, id` albo czyści aktywny semestr, gdy nic nie zostało. Eksport przygotowuje bajty w ViewModelu, a `MainActivity` zapisuje strumień i zwraca wynik; sukces publikuje „Wyeksportowano plan”, a odczyt lub zapis błędu „Nie udało się wyeksportować planu.”. Ekran ustawień czyta `SettingsViewModel` bezpośrednio, a `MakViewModel` i `MakUiState` nie zawierają już `settings`, `themeId` ani metod ustawień. Filtr kierunku nie jest resetowany w `SettingsViewModel`; `buildSchedule` traktuje nieistniejący identyfikator jak „Wszystkie”, a docelowy reset pozostaje w przyszłym `ScheduleViewModel`.
+Status: zrealizowane. `SettingsViewModel` składa `SettingsUiState` ze strumieni semestrów, aktywnego semestru i preferencji motywu i nie wystawia encji Room. Motyw jest zapisywany w Preferences DataStore jako `ThemeMode`; brakująca lub nieznana wartość oznacza `System`, a `selectTheme` blokuje powtórzenie i publikuje błąd tylko przy nieudanym zapisie. Odczyt `DataStore` łapie `IOException` i emituje `emptyPreferences()`, więc awaria pliku preferencji nie kończy strumienia motywu. Wybór aktywnego semestru ma synchroniczną blokadę, publikuje „Zmieniono aktywny semestr”, a przy błędzie zachowuje poprzedni wybór. Usunięcie semestru korzysta z `MakRepository.deleteSemesterAndSelectFallback`, który w jednej transakcji usuwa semestr i deterministycznie wybiera następny aktywny według `startDate, id` albo czyści aktywny semestr, gdy nic nie zostało. Eksport przygotowuje bajty w ViewModelu, a `MainActivity` zapisuje strumień i zwraca wynik; sukces publikuje „Wyeksportowano plan”, a odczyt lub zapis błędu „Nie udało się wyeksportować planu.”. Ekran ustawień czyta `SettingsViewModel` bezpośrednio, a `MakViewModel` i `MakUiState` nie zawierają już `settings`, `themeId` ani metod ustawień. Filtr kierunku nie jest resetowany w `SettingsViewModel`; `buildSchedule` traktuje nieistniejący identyfikator jak „Wszystkie”, a docelowy reset pozostaje w przyszłym `ScheduleViewModel`.
 
 #### ScheduleViewModel
 
@@ -771,6 +771,24 @@ Powinien pokazywać:
 Okienko jest przerwą dłuższą niż ustawiony próg między końcem jednego bloku zajęć a początkiem następnego. Domyślny próg wynosi 30 minut, więc przerwa trwająca dokładnie 30 minut nie jest okienkiem. Użytkownik może zmienić próg globalnie w ustawieniach. Nie liczyć czasu przed pierwszymi ani po ostatnich zajęciach dnia. Odwołane zajęcia pominąć, a zmiany i przeniesienia uwzględnić. Nakładające się zajęcia najpierw połączyć w blok czasu, aby kolizja nie tworzyła fałszywego okienka.
 
 Obliczanie liczby okienek należy do domeny i korzysta z tego samego aktywnego planu co wykrywanie kolizji. `TodayViewModel` umieszcza liczbę zajęć, unikalnych kolizji i okienek w stanie widoku. Karta zachowuje obecny gradient, ma subtelne pionowe separatory i nie pokazuje ozdobnej ikony. Przy braku zajęć pokazuje tekst „Dziś bez zajęć” oraz trzy wartości równe zero. Układ musi zachować czytelność i semantykę przy szerokości 320 dp oraz w motywie jasnym i ciemnym.
+
+### Struktura karty zajęć
+
+Kartę zajęć zbudować jako czytelną siatkę z dwiema głównymi kolumnami. Lewa kolumna ma stałą szerokość i pokazuje godzinę rozpoczęcia oraz zakończenia. Prawa zawiera dane zajęć. Kolumny rozdziela subtelny pionowy separator. W prawej części użyć cienkich poziomych separatorów między informacjami podstawowymi, statusem kolizji i notatkami. Nie obramowywać każdej komórki osobno.
+
+Kolejność sekcji w prawej kolumnie:
+
+1. Nazwa zajęć.
+2. Pill z nazwą kierunku oraz neutralny tekst typu zajęć.
+3. Sala, budynek i prowadzący.
+4. Status kolizji, jeśli występuje.
+5. Notatki, jeśli występują.
+
+Pionowy pasek przy krawędzi karty używa pełnego koloru kierunku. Pill z nazwą kierunku używa jaśniejszego wariantu tego samego koloru i tekstu o sprawdzonym kontraście. Nie kolorować całej karty według kierunku. Typ zajęć pozostaje neutralnym tekstem obok pilla. Kolor kierunku zawsze występuje razem z jego nazwą, więc nie jest jedynym nośnikiem informacji.
+
+Notatkę wspólną oznaczyć niebieskim lub indygo pillem „Notatka do zajęć”. Notatkę pojedynczego wystąpienia oznaczyć fioletowym pillem „Notatka na dziś”. Treść wyświetlić obok etykiety albo pod nią, bez zamykania całej długiej treści w pillu. Jeśli istnieją oba rodzaje notatek, pokazać dwa osobne wiersze. Kolizja zachowuje pomarańczowy styl ostrzegawczy. Kierunek, kolizja i oba rodzaje notatek mają osobne role kolorystyczne oraz jawne etykiety tekstowe.
+
+Karta musi zachować wspólne wyrównanie wierszy, poprawne zawijanie długich nazw i notatek, kontrast oraz czytelność przy szerokości 320 dp. Semantyka czytnika ekranu ma przekazywać godziny, nazwę, kierunek, typ, metadane, kolizję i zakres każdej notatki w logicznej kolejności.
 
 Przykładowy element:
 
