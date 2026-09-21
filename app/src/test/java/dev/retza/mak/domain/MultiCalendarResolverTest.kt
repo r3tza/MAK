@@ -4,6 +4,9 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class MultiCalendarResolverTest {
@@ -69,6 +72,41 @@ class MultiCalendarResolverTest {
         val plan = provider.resolve(data(listOf(first, second)), monday)
 
         assertEquals(listOf("a"), plan.schedule.occurrences.map { it.classId })
+    }
+
+    @Test
+    fun oneOffOutsideProgramCalendarIsNotShown() {
+        val outside = LocalDate.of(2026, 9, 28)
+        val once = classItem("once", programA.id, Recurrence.ONCE, LocalTime.of(9, 0), LocalTime.of(10, 0))
+            .copy(date = outside)
+
+        val plan = provider.resolve(data(listOf(once)), outside)
+
+        assertTrue(plan.schedule.occurrences.isEmpty())
+    }
+
+    @Test
+    fun mixedWeekTypesAreReportedInsteadOfOneLabel() {
+        val plan = provider.resolve(data(emptyList()), monday)
+
+        assertTrue(plan.schedule.hasMixedWeekTypes)
+        assertNull(plan.schedule.week)
+    }
+
+    @Test
+    fun singleCalendarKeepsOneWeekLabel() {
+        val singleData = ActivePlanData(
+            semester = semester,
+            classes = emptyList(),
+            courses = listOf(programA),
+            semesterPrograms = listOf(programs.first()),
+            calendars = listOf(calendarA)
+        )
+
+        val plan = provider.resolve(singleData, monday)
+
+        assertFalse(plan.schedule.hasMixedWeekTypes)
+        assertEquals(WeekType.A, plan.schedule.weekType)
     }
 
     @Test

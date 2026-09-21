@@ -191,9 +191,21 @@ class ScheduleViewModel(
             view = control.scheduleView,
             weekRangeLabel = "${monday.format(shortDateFormatter)} - ${monday.plusDays(6).format(shortDateFormatter)}",
             weekSubtitle = if (monday == currentWeekMonday) "Bieżący tydzień" else data.semester.name,
-            weekTypeLabel = selected.weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem",
-            weekSourceLabel = if (selected.correction == null) "Wyliczony automatycznie" else "Korekta ręczna",
-            weekType = selected.weekType?.let { WeekTypeUi.valueOf(it.name) },
+            weekTypeLabel = if (selected.hasMixedWeekTypes) {
+                "Różne tygodnie"
+            } else {
+                selected.weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem"
+            },
+            weekSourceLabel = when {
+                selected.hasMixedWeekTypes -> "Różne kalendarze"
+                selected.correction == null -> "Wyliczony automatycznie"
+                else -> "Korekta ręczna"
+            },
+            weekType = if (selected.hasMixedWeekTypes) {
+                null
+            } else {
+                selected.weekType?.let { WeekTypeUi.valueOf(it.name) }
+            },
             days = (0L..6L).map { offset ->
                 val date = monday.plusDays(offset)
                 ScheduleDayUi(

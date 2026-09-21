@@ -32,7 +32,6 @@ class ScheduleResolver(
         val semesterCalendars = programs.mapNotNull { calendarsById[it.academicCalendarId] }
             .distinctBy { it.id }
         val fallbackCalendar = semester.toAcademicCalendar()
-        val primaryCalendar = semesterCalendars.minByOrNull { it.id } ?: fallbackCalendar
 
         val changesByClass = occurrenceChanges
             .groupBy { it.classId }
@@ -56,16 +55,22 @@ class ScheduleResolver(
             }
             .sortedWith(compareBy<PlannedOccurrence> { it.startTime }.thenBy { it.name }.thenBy { it.id })
 
-        val week = (semesterCalendars + fallbackCalendar)
-            .mapNotNull { weekCalculator.calculate(it, date, weekOverrides) }
-            .firstOrNull()
-            ?: weekCalculator.calculate(primaryCalendar, date, weekOverrides)
+        val contributingCalendars = semesterCalendars.ifEmpty { listOf(fallbackCalendar) }
+        val weeks = contributingCalendars
+            .mapNotNull { calendar ->
+                weekCalculator.calculate(calendar, date, weekOverrides)?.let { calendar.id to it }
+            }
+            .toMap()
+        val distinctWeekTypes = weeks.values.map { it.weekType }.distinct()
+        val hasMixedWeekTypes = distinctWeekTypes.size > 1
+        val sharedWeek = if (hasMixedWeekTypes) null else weeks.values.firstOrNull()
 
         return ResolvedSchedule(
             date = date,
             semesterId = semester.id,
-            week = week,
-            occurrences = occurrences
+            week = sharedWeek,
+            occurrences = occurrences,
+            hasMixedWeekTypes = hasMixedWeekTypes
         )
     }
 
@@ -105,6 +110,7 @@ class ScheduleResolver(
     ): List<PlannedOccurrence> {
         if (classItem.recurrence == Recurrence.ONCE) {
             if (classItem.date != date) return emptyList()
+            if (date.isBefore(calendar.startDate) || date.isAfter(calendar.endDate)) return emptyList()
             return listOf(
                 render(
                     classItem = classItem,

@@ -56,7 +56,11 @@ class TodayViewModel(
         return TodayUiState(
             dateLabel = day.format(todayTitleFormatter).replaceFirstChar { it.titlecase(polishLocale) },
             semesterLabel = data.semester.name,
-            weekLabel = schedule.weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem",
+            weekLabel = if (schedule.hasMixedWeekTypes) {
+                "Różne tygodnie"
+            } else {
+                schedule.weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem"
+            },
             summaryLabel = classCountLabel(schedule.occurrences.size),
             items = schedule.occurrences.map { it.toUi(labels[it.id]) }
         )

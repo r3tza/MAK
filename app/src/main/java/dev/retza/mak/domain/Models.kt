@@ -182,7 +182,8 @@ data class ResolvedSchedule(
     val date: LocalDate,
     val semesterId: String,
     val week: WeekCalculation?,
-    val occurrences: List<PlannedOccurrence>
+    val occurrences: List<PlannedOccurrence>,
+    val hasMixedWeekTypes: Boolean = false
 ) {
     val items: List<PlannedOccurrence>
         get() = occurrences
