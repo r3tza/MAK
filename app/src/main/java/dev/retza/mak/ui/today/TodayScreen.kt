@@ -27,8 +27,7 @@ data class TodayUiState(
     val status: ScreenStatus = ScreenStatus.Ready,
     val emptyTitle: String = "Brak zajęć",
     val emptyMessage: String = "Nie masz dziś zajęć.",
-    val showPlanAction: Boolean = true,
-    val requiresSetup: Boolean = false
+    val showPlanAction: Boolean = true
 )
 
 @Composable
@@ -38,6 +37,7 @@ fun TodayScreen(
     onOpenClass: (String) -> Unit,
     onStartSetup: () -> Unit,
     onRetry: () -> Unit,
+    requiresSetup: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
@@ -63,7 +63,7 @@ fun TodayScreen(
                         emptyTitle = state.emptyTitle,
                         emptyMessage = state.emptyMessage
                     )
-                    if (state.requiresSetup) {
+                    if (requiresSetup) {
                         MakPrimaryAction(text = "Skonfiguruj plan", onClick = onStartSetup)
                     }
                 }

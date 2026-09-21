@@ -63,7 +63,6 @@ class TodayViewModelTest {
 
         assertEquals("Brak aktywnego semestru", viewModel.today.value.dateLabel)
         assertTrue(viewModel.today.value.items.isEmpty())
-        assertTrue(viewModel.today.value.requiresSetup)
     }
 }
 

@@ -50,18 +50,6 @@ class ScheduleViewModelTest {
     }
 
     @Test
-    fun emptyRepositoryRequiresSetup() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
-        repository.clearActiveSemester()
-        val viewModel = viewModel(repository)
-        backgroundScope.launch { viewModel.schedule.collect {} }
-        advanceUntilIdle()
-
-        assertTrue(viewModel.schedule.value.requiresSetup)
-        assertTrue(viewModel.schedule.value.items.isEmpty())
-    }
-
-    @Test
     fun changingSemesterDropsFilterThatNoLongerExists() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val viewModel = viewModel(repository)

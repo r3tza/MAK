@@ -3,8 +3,8 @@ package dev.retza.mak.ui
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.repository.MakRepository
+import dev.retza.mak.ui.setup.SetupSemesterResume
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -27,7 +27,9 @@ enum class MakDestination {
 
 data class AppUiState(
     val destination: MakDestination = MakDestination.Today,
-    val activeSemesterData: SemesterWithData? = null
+    val hasLoadedData: Boolean = false,
+    val requiresSetup: Boolean = false,
+    val setupResume: SetupSemesterResume? = null
 )
 
 private data class Controls(
@@ -45,7 +47,24 @@ class AppViewModel(
     }
 
     val uiState = combine(activeSemesterData, controls) { activeData, control ->
-        AppUiState(destination = control.destination, activeSemesterData = activeData)
+        val requiresSetup = activeData == null || activeData.courses.isEmpty()
+        AppUiState(
+            destination = control.destination,
+            hasLoadedData = true,
+            requiresSetup = requiresSetup,
+            setupResume = activeData
+                ?.takeIf { it.courses.isEmpty() }
+                ?.semester
+                ?.let { semester ->
+                    SetupSemesterResume(
+                        semesterId = semester.id,
+                        name = semester.name,
+                        startDate = semester.startDate.toString(),
+                        endDate = semester.endDate.toString(),
+                        firstWeekLabel = semester.firstWeekType.name
+                    )
+                }
+        )
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),

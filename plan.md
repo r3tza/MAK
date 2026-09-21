@@ -263,7 +263,7 @@ Wykonać zakres i kryterium opisane w sekcji `TodayViewModel`. Potwierdzić zgod
 
 Kryterium: świeża pusta baza pozostaje w głównej aplikacji, a konfiguracja zaczyna się dopiero po użyciu przycisku.
 
-Status: zrealizowane. `MakViewModel` zastąpiono małym `AppViewModel`, który prowadzi wyłącznie kopię trasy dla uzgodnienia z `NavController` oraz aktywny semestr potrzebny do wznowienia kreatora. Usunięto automatyczne przejście do kreatora przy braku semestrów oraz pola `requiresSetup` i `hasLoadedData`. `TodayViewModel` i `ScheduleViewModel` wystawiają `requiresSetup`, a ekrany „Dzisiaj” i „Plan” pokazują stan pusty z przyciskiem „Skonfiguruj plan”, który uruchamia `SetupViewModel.start(existingSemester)`. Po usunięciu ostatniego semestru aplikacja wraca do stanu pustego i nie otwiera kreatora.
+Status: zrealizowane. `MakViewModel` zastąpiono małym `AppViewModel`, który prowadzi wyłącznie kopię trasy dla uzgodnienia z `NavController` oraz rozpoznanie stanu konfiguracji. `AppViewModel` rozróżnia „dane jeszcze nie wczytane” (`hasLoadedData = false`, `requiresSetup = false`) od „naprawdę pusto” (`hasLoadedData = true`, `requiresSetup = true`), a `SetupViewModel.start` przyjmuje prezentacyjny `SetupSemesterResume` zamiast encji Room. `AppUiState` nie wystawia typu `SemesterWithData`. Ekrany „Dzisiaj” i „Plan” pokazują stan pusty z przyciskiem „Skonfiguruj plan” tylko po wczytaniu danych; przycisk uruchamia `SetupViewModel.start(setupResume)` i nie tworzy pustego kreatora przed odczytem. Dolny „Dodaj” na pustym starcie prowadzi do konfiguracji zamiast edytora zajęć. Po usunięciu ostatniego semestru aplikacja wraca do stanu pustego.
 
 #### Dalszy etap 6: Koin
 

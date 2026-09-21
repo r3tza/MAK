@@ -119,11 +119,10 @@ fun MakApp(
     }
 
     val startSetup: () -> Unit = {
-        val existingSemester = state.activeSemesterData
-            ?.takeIf { it.courses.isEmpty() }
-            ?.semester
-        setupViewModel.start(existingSemester)
-        navigateToSetup()
+        if (state.hasLoadedData) {
+            setupViewModel.start(state.setupResume)
+            navigateToSetup()
+        }
     }
 
     LaunchedEffect(occurrenceViewModel, navController) {
@@ -278,8 +277,12 @@ fun MakApp(
                     onToday = { openRoot(MakDestination.Today, MakRoutes.Today) },
                     onPlan = { openRoot(MakDestination.Schedule, MakRoutes.Schedule) },
                     onAdd = {
-                        classEditViewModel.openNew()
-                        navController.navigate(MakRoutes.Edit)
+                        if (state.requiresSetup) {
+                            startSetup()
+                        } else {
+                            classEditViewModel.openNew()
+                            navController.navigate(MakRoutes.Edit)
+                        }
                     }
                 )
             }
@@ -303,6 +306,7 @@ fun MakApp(
                     },
                     onStartSetup = startSetup,
                     onRetry = {},
+                    requiresSetup = state.requiresSetup,
                     modifier = Modifier.fillMaxSize()
                 )
             }
@@ -329,6 +333,7 @@ fun MakApp(
                     onClearWeekCorrection = scheduleViewModel::clearVisibleWeekOverride,
                     onStartSetup = startSetup,
                     onRetry = {},
+                    requiresSetup = state.requiresSetup,
                     modifier = Modifier.fillMaxSize()
                 )
             }

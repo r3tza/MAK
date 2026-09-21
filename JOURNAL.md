@@ -1,5 +1,21 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: Rozróżnienie „nie wczytano” od „pusto” przy starcie
+
+- Fakty: `TodayViewModel` i `ScheduleViewModel` ustawiały `requiresSetup = true` także dla stanu początkowego i `data == null`, więc przycisk „Skonfiguruj plan” był klikalny przed pierwszym odczytem. `startSetup` czytał wtedy jeszcze `null` z `AppViewModel` i mógł otworzyć pusty kreator mimo istniejącego semestru. `AppUiState` wystawiał dodatkowo `SemesterWithData`, czyli typ Room, do hosta.
+- Decyzja: Stan konfiguracji przeniesiono w całości do `AppViewModel`. `AppUiState` ma teraz `hasLoadedData` (ustawiane dopiero po pierwszej emisji aktywnego semestru), `requiresSetup` (fałszywe przed odczytem) oraz prezentacyjny `setupResume: SetupSemesterResume?` bez encji Room. Tylko `AppUiState` decyduje o pokazaniu przycisku i o tym, czy kreator wznawia istniejący semestr. `SetupViewModel.start` przyjmuje `SetupSemesterResume` zamiast `SemesterEntity`. Dolny „Dodaj” na pustym starcie otwiera konfigurację zamiast edytora zajęć.
+- Powód: Stan „jeszcze nie wczytano” nie może wyglądać jak „brak semestru”, bo użytkownik z istniejącym planem mógłby nieświadomie utworzyć drugi semestr.
+- Odrzucone: Trzymanie `requiresSetup` w stanach ekranów bez informacji o wczytaniu; wystawianie `SemesterWithData` w `AppUiState`; pokazywanie przycisku przed pierwszym odczytem.
+- Weryfikacja: `AppViewModelTest` sprawdza, że pusta baza zostaje na `Today`, że przed odczytem `hasLoadedData` i `requiresSetup` są fałszywe, a po odczycie semestr z kierunkiem nie wymaga konfiguracji, oraz że semestr bez kierunku daje `setupResume`. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
+## 2026-09-21: Przekrojowe preferencje projektowe użytkownika
+
+- Fakty: Decyzje dotyczące ViewModeli, repozytoriów, DI, danych, ustawień, kart zajęć i widgetu pokazują powtarzalne kryteria wyboru niezależne od jednej funkcji MAK.
+- Decyzja: Dopisać do `AGENTS.md` preferencje architektoniczne i interfejsowe jako wskazówki dla kolejnych agentów. Obejmują modularność według odpowiedzialności, umiarkowaną liczbę abstrakcji, jawne zależności, jedno źródło reguł domenowych, atomowe operacje, etapowe refaktory, czytelną hierarchię, neutralne powierzchnie, znaczeniowe użycie koloru, dostępność i projektowanie od małych ekranów.
+- Granica: Konkretne modele, ekrany, kolory, odstępy, godziny, reguły planu i zachowanie widgetu pozostają w `ARCHITECTURE.md`, `STACK.md` i `plan.md`. Nie przenosić ich do ogólnych preferencji.
+- Organizacja pracy: Przy opłacalnym audycie lub porównaniu wielu plików preferować subagenta Luna. Nie delegować małego odczytu, jeśli koordynacja kosztuje więcej niż wykonanie lokalne.
+- Powód: Kolejny agent powinien znać kryteria oceny nowych propozycji bez wyciągania ich ponownie z historii rozmów i bez mylenia ich ze szczegółami jednej funkcji.
+
 ## 2026-09-21: AppViewModel i pusty start
 
 - Fakty: Po wydzieleniu wszystkich przepływów `MakViewModel` trzymał jeszcze kopię trasy, obserwację aktywnego semestru i wymuszał automatyczne otwarcie kreatora, gdy brakowało semestru albo semestr nie miał kierunku. Świeża pusta baza trafiała więc od razu do kreatora.

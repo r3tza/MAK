@@ -84,6 +84,11 @@ internal class FakeMakRepository : MakRepository {
     private val activeSemesterFlow = MutableStateFlow(1L)
     val activeSemesterId: Long get() = activeSemesterFlow.value
 
+    fun clearSemesters() {
+        semesterFlow.value = emptyList()
+        activeSemesterFlow.value = 0L
+    }
+
     private fun semesterById(id: Long): SemesterEntity? =
         semesterFlow.value.firstOrNull { it.id == id }
 

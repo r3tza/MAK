@@ -56,6 +56,14 @@ sealed interface SetupEffect {
     data object OpenNewClassEditor : SetupEffect
 }
 
+data class SetupSemesterResume(
+    val semesterId: Long,
+    val name: String,
+    val startDate: String,
+    val endDate: String,
+    val firstWeekLabel: String
+)
+
 class SetupViewModel(
     private val repository: MakRepository,
     private val feedbackSink: FeedbackSink
@@ -71,22 +79,22 @@ class SetupViewModel(
     private var saveJob: Job? = null
     private var sessionToken = 0L
 
-    fun start(existingSemester: SemesterEntity? = null) {
+    fun start(resume: SetupSemesterResume? = null) {
         sessionToken += 1
         saveJob?.cancel()
-        if (existingSemester == null) {
+        if (resume == null) {
             semesterId = null
             courseId = null
             state.value = SetupWizardUiState()
         } else {
-            semesterId = existingSemester.id
+            semesterId = resume.semesterId
             courseId = null
             state.value = SetupWizardUiState(
                 step = SetupStep.Course,
-                semesterName = existingSemester.name,
-                startDate = existingSemester.startDate.toString(),
-                endDate = existingSemester.endDate.toString(),
-                firstWeekLabel = existingSemester.firstWeekType.name
+                semesterName = resume.name,
+                startDate = resume.startDate,
+                endDate = resume.endDate,
+                firstWeekLabel = resume.firstWeekLabel
             )
         }
     }

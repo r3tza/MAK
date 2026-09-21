@@ -223,8 +223,7 @@ class ScheduleViewModel(
             },
             hasFromWeekCorrection = data.weekOverrides.any {
                 it.weekStartDate == monday && it.scope == WeekOverrideScope.FROM_WEEK
-            },
-            requiresSetup = data.courses.isEmpty()
+            }
         )
     }
 
@@ -273,8 +272,7 @@ private fun emptyScheduleState() = ScheduleUiState(
     weekSubtitle = "",
     weekTypeLabel = "",
     weekSourceLabel = "",
-    status = ScreenStatus.Ready,
-    requiresSetup = true
+    status = ScreenStatus.Ready
 )
 
 private fun markerColor(

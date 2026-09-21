@@ -111,8 +111,7 @@ data class ScheduleUiState(
     val hasOneWeekCorrection: Boolean = false,
     val hasFromWeekCorrection: Boolean = false,
     val status: ScreenStatus = ScreenStatus.Ready,
-    val emptyMessage: String = "Brak zajęć w tym dniu dla wybranego kierunku.",
-    val requiresSetup: Boolean = false
+    val emptyMessage: String = "Brak zajęć w tym dniu dla wybranego kierunku."
 )
 
 @Composable
@@ -133,6 +132,7 @@ fun ScheduleScreen(
     onClearWeekCorrection: (WeekOverrideScopeUi) -> Unit,
     onStartSetup: () -> Unit,
     onRetry: () -> Unit,
+    requiresSetup: Boolean = false,
     modifier: Modifier = Modifier
 ) {
     var showWeekDialog by remember { mutableStateOf(false) }
@@ -155,7 +155,7 @@ fun ScheduleScreen(
             state.status != ScreenStatus.Ready ->
                 MakStateMessage(status = state.status, onRetry = onRetry)
 
-            state.requiresSetup -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
+            requiresSetup -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 MakEmptyState("Nie masz jeszcze aktywnego planu. Skonfiguruj semestr i kierunek.")
                 MakPrimaryAction(text = "Skonfiguruj plan", onClick = onStartSetup)
             }

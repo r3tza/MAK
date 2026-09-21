@@ -57,8 +57,7 @@ class TodayViewModel(
             semesterLabel = data.semester.name,
             weekLabel = schedule.weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem",
             summaryLabel = classCountLabel(schedule.occurrences.size),
-            items = schedule.occurrences.map { it.toUi(labels[it.id]) },
-            requiresSetup = data.courses.isEmpty()
+            items = schedule.occurrences.map { it.toUi(labels[it.id]) }
         )
     }
 
@@ -78,6 +77,5 @@ private fun emptyTodayState() = TodayUiState(
     semesterLabel = "",
     weekLabel = "",
     summaryLabel = "0 zajęć",
-    emptyMessage = "Nie masz jeszcze aktywnego semestru.",
-    requiresSetup = true
+    emptyMessage = "Nie masz jeszcze aktywnego semestru."
 )

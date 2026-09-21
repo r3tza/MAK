@@ -270,7 +270,15 @@ class SetupViewModelTest {
         val repository = FakeMakRepository()
         val viewModel = viewModel(repository)
 
-        viewModel.start(repository.semester)
+        viewModel.start(
+            SetupSemesterResume(
+                semesterId = repository.semester.id,
+                name = repository.semester.name,
+                startDate = repository.semester.startDate.toString(),
+                endDate = repository.semester.endDate.toString(),
+                firstWeekLabel = repository.semester.firstWeekType.name
+            )
+        )
 
         val state = viewModel.setup.value
         assertEquals(SetupStep.Course, state.step)
