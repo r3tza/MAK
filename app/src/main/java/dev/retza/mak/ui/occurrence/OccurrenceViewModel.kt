@@ -1,8 +1,8 @@
 package dev.retza.mak.ui.occurrence
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import org.koin.core.annotation.KoinViewModel
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
@@ -43,6 +43,7 @@ sealed interface OccurrenceEffect {
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@KoinViewModel
 class OccurrenceViewModel(
     private val repository: MakRepository,
     private val activePlanProvider: ActivePlanProvider = ActivePlanProvider(),
@@ -448,17 +449,6 @@ class OccurrenceViewModel(
         canSaveSharedNote = noteContentChanged(value.sharedNoteDraft, value.sharedNote),
         canSaveOccurrenceNote = noteContentChanged(value.occurrenceNoteDraft, value.occurrenceNote)
     )
-
-    class Factory(
-        private val repository: MakRepository,
-        private val feedbackSink: FeedbackSink
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            require(modelClass.isAssignableFrom(OccurrenceViewModel::class.java))
-            return OccurrenceViewModel(repository, feedbackSink = feedbackSink) as T
-        }
-    }
 }
 
 private fun emptyOccurrenceDetails(): OccurrenceDetailsUiState = OccurrenceDetailsUiState(

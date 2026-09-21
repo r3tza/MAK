@@ -1,8 +1,8 @@
 package dev.retza.mak.ui.schedule
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import org.koin.core.annotation.KoinViewModel
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
@@ -60,6 +60,7 @@ private data class ScheduleControls(
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@KoinViewModel
 class ScheduleViewModel(
     private val repository: MakRepository,
     private val clock: Clock = Clock.systemDefaultZone(),
@@ -253,16 +254,6 @@ class ScheduleViewModel(
 
     private fun activePlan(data: SemesterWithData, date: LocalDate) =
         activePlanProvider.resolve(data.toActivePlanData(), date)
-
-    class Factory(
-        private val repository: MakRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            require(modelClass.isAssignableFrom(ScheduleViewModel::class.java))
-            return ScheduleViewModel(repository) as T
-        }
-    }
 }
 
 private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()

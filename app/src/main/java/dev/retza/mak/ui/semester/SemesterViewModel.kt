@@ -1,8 +1,8 @@
 package dev.retza.mak.ui.semester
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import org.koin.core.annotation.KoinViewModel
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.CourseEntity
 import dev.retza.mak.data.entity.SemesterEntity
@@ -29,6 +29,7 @@ sealed interface SemesterEffect {
     data object CloseConfiguration : SemesterEffect
 }
 
+@KoinViewModel
 class SemesterViewModel(
     private val repository: MakRepository,
     private val feedbackSink: FeedbackSink
@@ -308,17 +309,6 @@ class SemesterViewModel(
                     update { it.copy(isDeletingOverride = false) }
                 }
             }
-        }
-    }
-
-    class Factory(
-        private val repository: MakRepository,
-        private val feedbackSink: FeedbackSink
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            require(modelClass.isAssignableFrom(SemesterViewModel::class.java))
-            return SemesterViewModel(repository, feedbackSink) as T
         }
     }
 }

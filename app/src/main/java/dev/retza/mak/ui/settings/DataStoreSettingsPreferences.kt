@@ -15,6 +15,7 @@ private val themeKey = stringPreferencesKey("theme_mode")
 
 private const val readRetryDelayMillis = 100L
 
+@org.koin.core.annotation.Single(binds = [SettingsPreferences::class])
 class DataStoreSettingsPreferences(
     private val dataStore: DataStore<Preferences>
 ) : SettingsPreferences {

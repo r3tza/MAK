@@ -1,8 +1,8 @@
 package dev.retza.mak.ui.edit
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import org.koin.core.annotation.KoinViewModel
 import dev.retza.mak.data.entity.ClassEntity
 import dev.retza.mak.data.entity.Recurrence
 import dev.retza.mak.data.entity.TeacherEntity
@@ -38,6 +38,7 @@ sealed interface ClassEditEffect {
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@KoinViewModel
 class ClassEditViewModel(
     private val repository: MakRepository,
     private val feedbackSink: FeedbackSink
@@ -234,17 +235,6 @@ class ClassEditViewModel(
             semesterStartDate = data?.semester?.startDate?.toString(),
             semesterEndDate = data?.semester?.endDate?.toString()
         )
-    }
-
-    class Factory(
-        private val repository: MakRepository,
-        private val feedbackSink: FeedbackSink
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            require(modelClass.isAssignableFrom(ClassEditViewModel::class.java))
-            return ClassEditViewModel(repository, feedbackSink) as T
-        }
     }
 }
 

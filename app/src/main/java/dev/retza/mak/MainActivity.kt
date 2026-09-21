@@ -14,10 +14,11 @@ import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.activity.enableEdgeToEdge
-import androidx.lifecycle.viewmodel.compose.viewModel
 import dev.retza.mak.ui.AppViewModel
 import dev.retza.mak.ui.MakApp
+import dev.retza.mak.ui.MakDestination
 import dev.retza.mak.ui.edit.ClassEditViewModel
+import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.schedule.ScheduleViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
@@ -27,47 +28,27 @@ import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.theme.MAKTheme
 import dev.retza.mak.ui.today.TodayViewModel
 import kotlinx.coroutines.launch
+import org.koin.android.ext.android.inject
+import org.koin.androidx.viewmodel.ext.android.viewModel
 
 class MainActivity : ComponentActivity() {
-    private var appViewModel: AppViewModel? = null
+    private val appViewModel: AppViewModel by viewModel()
+    private val occurrenceViewModel: OccurrenceViewModel by viewModel()
+    private val classEditViewModel: ClassEditViewModel by viewModel()
+    private val semesterViewModel: SemesterViewModel by viewModel()
+    private val setupViewModel: SetupViewModel by viewModel()
+    private val settingsViewModel: SettingsViewModel by viewModel()
+    private val scheduleViewModel: ScheduleViewModel by viewModel()
+    private val todayViewModel: TodayViewModel by viewModel()
+    private val feedbackController: FeedbackController by inject()
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
-            val application = application as MakApplication
-            val occurrenceViewModel: OccurrenceViewModel = viewModel(
-                factory = OccurrenceViewModel.Factory(application.repository, application.feedbackController)
-            )
-            val classEditViewModel: ClassEditViewModel = viewModel(
-                factory = ClassEditViewModel.Factory(application.repository, application.feedbackController)
-            )
-            val semesterViewModel: SemesterViewModel = viewModel(
-                factory = SemesterViewModel.Factory(application.repository, application.feedbackController)
-            )
-            val setupViewModel: SetupViewModel = viewModel(
-                factory = SetupViewModel.Factory(application.repository, application.feedbackController)
-            )
-            val settingsViewModel: SettingsViewModel = viewModel(
-                factory = SettingsViewModel.Factory(
-                    application.repository,
-                    application.settingsPreferences,
-                    application.feedbackController
-                )
-            )
-            val scheduleViewModel: ScheduleViewModel = viewModel(
-                factory = ScheduleViewModel.Factory(application.repository)
-            )
-            val todayViewModel: TodayViewModel = viewModel(
-                factory = TodayViewModel.Factory(application.repository)
-            )
-            val viewModel: AppViewModel = viewModel(
-                factory = AppViewModel.Factory(application.repository)
-            )
-            appViewModel = viewModel
-            LaunchedEffect(viewModel) {
+            LaunchedEffect(appViewModel) {
                 if (intent.getBooleanExtra(EXTRA_OPEN_TODAY, false)) {
-                    viewModel.navigate(dev.retza.mak.ui.MakDestination.Today)
+                    appViewModel.navigate(MakDestination.Today)
                     intent.removeExtra(EXTRA_OPEN_TODAY)
                 }
             }
@@ -105,7 +86,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
                 MakApp(
-                    viewModel = viewModel,
+                    viewModel = appViewModel,
                     occurrenceViewModel = occurrenceViewModel,
                     classEditViewModel = classEditViewModel,
                     semesterViewModel = semesterViewModel,
@@ -113,7 +94,7 @@ class MainActivity : ComponentActivity() {
                     settingsViewModel = settingsViewModel,
                     scheduleViewModel = scheduleViewModel,
                     todayViewModel = todayViewModel,
-                    feedback = application.feedbackController.feedback,
+                    feedback = feedbackController.feedback,
                     onCreateExportDocument = { exportLauncher.launch("mak-plan.json") }
                 )
             }
@@ -124,7 +105,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         if (intent.getBooleanExtra(EXTRA_OPEN_TODAY, false)) {
-            appViewModel?.navigate(dev.retza.mak.ui.MakDestination.Today)
+            appViewModel.navigate(MakDestination.Today)
             intent.removeExtra(EXTRA_OPEN_TODAY)
         }
     }

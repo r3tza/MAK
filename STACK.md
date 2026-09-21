@@ -9,18 +9,18 @@
 
 ## 2. Język i środowisko uruchomieniowe
 
-- Kotlin 2.3.21.
+- Kotlin 2.3.20.
 - Android, `minSdk` 31, `targetSdk` 36 i `compileSdk` 37.2.
 - Android Gradle Plugin 9.4.1 i Gradle 9.7.1.
 - Compose BOM 2026.09.00, Material Icons Extended, Room 2.8.5, Lifecycle 2.11.0, Navigation 2.10.1, KSP 2.3.12, Glance 1.2.0, Core KTX 1.19.0, `kotlinx.coroutines` 1.11.0 i `kotlinx.serialization` 1.11.0.
-- Stabilny zestaw zaktualizowano 2026-09-21. KSP 2.3.12 jest zbudowany przeciw Kotlin 2.3.20, dlatego Kotlin wybrano w linii 2.3.21, a nie 2.4.x. `compileSdk` podniesiono do 37.2, ponieważ nowe AndroidX wymagają API 37; `targetSdk` pozostaje 36, aby nie zmieniać zachowania działania.
+- Stabilny zestaw zaktualizowano 2026-09-21. Kotlin 2.3.20 jest zweryfikowany przez Koin compiler plugin 1.2.1 i zgodny z KSP 2.3.12; linii 2.4.x nie użyto, bo KSP 2.3.12 jest zbudowany przeciw Kotlin 2.3.20. `compileSdk` podniesiono do 37.2, ponieważ nowe AndroidX wymagają API 37; `targetSdk` pozostaje 36, aby nie zmieniać zachowania działania.
 - Deprecacje `androidx.compose.ui.test.junit4.createComposeRule` pozostają; migrację do `v2.createComposeRule` wykonamy osobno, ponieważ zmienia dyspozytor testów.
 
 ## 3. Warstwa aplikacji
 
 - Jetpack Compose do budowy interfejsu.
 - Jetpack Glance do widgetu.
-- Zaakceptowany cel: Koin 4.2 z compiler pluginem do składania zależności i ViewModeli po aktualizacji Kotlin do zgodnej stabilnej wersji. Obowiązuje constructor injection; klasy aplikacji nie pobierają zależności z globalnego kontenera.
+- Koin 4.2.2 (BOM `io.insert-koin:koin-bom`) z Koin compiler plugin 1.2.1 (`io.insert-koin.compiler.plugin`) do składania zależności i ViewModeli. Obowiązuje constructor injection; ViewModele są pobierane wyłącznie na granicy hostów przez `viewModel()`/`koinViewModel`, a `get()` i `koinInject()` nie występują w ViewModelach, domenie ani komponentach ekranów. Graf jest walidowany podczas kompilacji, a `KoinGraphTest` sprawdza uruchomienie modułów na urządzeniu.
 - Systemowe powiadomienia Androida planowane przybliżonymi alarmami `AlarmManager`. Aplikacja nie wymaga dokładnych alarmów ani ciągłego serwisu w tle.
 - Lokalny font Inter.
 

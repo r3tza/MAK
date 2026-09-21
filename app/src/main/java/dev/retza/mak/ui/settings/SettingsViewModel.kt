@@ -1,8 +1,8 @@
 package dev.retza.mak.ui.settings
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import org.koin.core.annotation.KoinViewModel
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.SemesterEntity
 import dev.retza.mak.data.repository.MakRepository
@@ -35,6 +35,7 @@ private data class SettingsLocalState(
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@KoinViewModel
 class SettingsViewModel(
     private val repository: MakRepository,
     private val preferences: SettingsPreferences,
@@ -153,18 +154,6 @@ class SettingsViewModel(
                 UiFeedback("Nie udało się wyeksportować planu.", UiFeedbackKind.Error)
             }
         )
-    }
-
-    class Factory(
-        private val repository: MakRepository,
-        private val preferences: SettingsPreferences,
-        private val feedbackSink: FeedbackSink
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            require(modelClass.isAssignableFrom(SettingsViewModel::class.java))
-            return SettingsViewModel(repository, preferences, feedbackSink) as T
-        }
     }
 }
 

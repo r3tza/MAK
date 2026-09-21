@@ -17,6 +17,7 @@ data class ActivePlan(
     val collisions: List<Collision>
 )
 
+@org.koin.core.annotation.Single
 class ActivePlanProvider(
     private val resolver: ScheduleResolver = ScheduleResolver(),
     private val collisionDetector: CollisionDetector = CollisionDetector()

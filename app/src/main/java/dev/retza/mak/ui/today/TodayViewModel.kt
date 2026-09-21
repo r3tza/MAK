@@ -1,8 +1,8 @@
 package dev.retza.mak.ui.today
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import org.koin.core.annotation.KoinViewModel
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.toActivePlanData
@@ -24,6 +24,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@KoinViewModel
 class TodayViewModel(
     private val repository: MakRepository,
     private val clock: Clock = Clock.systemDefaultZone(),
@@ -59,16 +60,6 @@ class TodayViewModel(
             summaryLabel = classCountLabel(schedule.occurrences.size),
             items = schedule.occurrences.map { it.toUi(labels[it.id]) }
         )
-    }
-
-    class Factory(
-        private val repository: MakRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            require(modelClass.isAssignableFrom(TodayViewModel::class.java))
-            return TodayViewModel(repository) as T
-        }
     }
 }
 

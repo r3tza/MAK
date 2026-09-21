@@ -90,6 +90,7 @@ interface MakRepository {
     suspend fun deleteOccurrenceChange(id: Long)
 }
 
+@org.koin.core.annotation.Single(binds = [MakRepository::class])
 class RoomMakRepository(
     private val database: AppDatabase
 ) : MakRepository {

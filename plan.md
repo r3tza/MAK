@@ -75,7 +75,7 @@ Kryteria zakończenia porządkowania:
 
 Refaktor należy wykonać przed podłączeniem feedbacku do wszystkich operacji z etapu 6 sekcji 1.6. Nie przepisywać całego ViewModelu jednocześnie. Każdy etap ma kończyć się kompilującym stanem, testami odpowiednimi do zmiany i osobnym commitem.
 
-Status: etapy 1-7 są zakończone. W etapie 8 zakończono `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel`, a `MakViewModel` zastąpiono małym `AppViewModel`. Świeża pusta baza pozostaje w głównej aplikacji i pokazuje stan pusty z przyciskiem „Skonfiguruj plan”. Pozostają Koin, podział `NavHost` i dalsze etapy z sekcji kolejności prac.
+Status: etapy 1-7 są zakończone. W etapie 8 zakończono `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel`, a `MakViewModel` zastąpiono małym `AppViewModel`. Świeża pusta baza pozostaje w głównej aplikacji i pokazuje stan pusty z przyciskiem „Skonfiguruj plan”. Koin jest wdrożony. Pozostają podział `NavHost` i dalsze etapy z sekcji kolejności prac.
 
 #### Etap 1: inwentaryzacja odpowiedzialności
 
@@ -184,9 +184,9 @@ Status etapu: zrealizowane. Audyt potwierdził, że `MakViewModel` nie ma pól `
 
 Kryterium etapu: każdy ekran ma własny ViewModel, `NavController` pozostaje jedynym źródłem trasy, a stan nadrzędny odpowiada najwyżej za uruchomienie aplikacji i wymuszenie konfiguracji.
 
-Status etapu: zakończono `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel`. `MakViewModel` zastąpiono małym `AppViewModel`. Pozostają Koin, podział `NavHost` i dalsze etapy.
+Status etapu: zakończono `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel`. `MakViewModel` zastąpiono małym `AppViewModel`. Koin jest wdrożony. Pozostają podział `NavHost` i dalsze etapy.
 
-Każdy kolejny etap realizować i weryfikować osobno. Bieżąca kolejność to Koin, podział `NavHost` i dalsze etapy z sekcji kolejności prac. Po każdym zakończonym etapie sprawdzić, że commit nie zawiera zmian z następnego etapu.
+Każdy kolejny etap realizować i weryfikować osobno. Bieżąca kolejność to podział `NavHost` i dalsze etapy z sekcji kolejności prac. Po każdym zakończonym etapie sprawdzić, że commit nie zawiera zmian z następnego etapu.
 
 #### SemesterViewModel
 
@@ -275,6 +275,8 @@ Status: zrealizowane. `MakViewModel` zastąpiono małym `AppViewModel`, który p
 6. Włączyć walidację pełnego grafu podczas kompilacji. Dodać test uruchomienia modułów, jeśli compiler plugin nie pokrywa typów Androida.
 
 Kryterium: aplikacja nie ma ręcznych fabryk ViewModeli, a błędny graf zatrzymuje kompilację albo test konfiguracji.
+
+Status: zrealizowane. Dodano Koin 4.2.2 przez `koin-bom` i Koin compiler plugin 1.2.1. `AppModule` (`@Module`, `@Configuration`, `@ComponentScan("dev.retza.mak")`) definiuje `AppDatabase` i `DataStore<Preferences>`; `RoomMakRepository`, `DataStoreSettingsPreferences`, `FeedbackController` i `ActivePlanProvider` mają adnotacje `@Single` z `binds`, a ViewModele `@KoinViewModel`. `MakApplication` ma `@KoinApplication` i uruchamia Koin przez `startKoin<MakApplication>`. `MainActivity` pobiera ViewModele przez `viewModel()` i `FeedbackController` przez `inject()`; ręczne `ViewModelProvider.Factory` oraz ręczne składanie grafu usunięto. Kotlin obniżono do 2.3.20, aby był zweryfikowany przez compiler plugin i zgodny z KSP. Graf jest walidowany podczas kompilacji, a `KoinGraphTest` sprawdza uruchomienie modułów na urządzeniu.
 
 #### Dalszy etap 7: podział NavHosta
 

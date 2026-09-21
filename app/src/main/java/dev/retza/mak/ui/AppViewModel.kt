@@ -1,8 +1,8 @@
 package dev.retza.mak.ui
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import org.koin.core.annotation.KoinViewModel
 import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.ui.setup.SetupSemesterResume
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -37,6 +37,7 @@ private data class Controls(
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
+@KoinViewModel
 class AppViewModel(
     private val repository: MakRepository
 ) : ViewModel() {
@@ -85,15 +86,5 @@ class AppViewModel(
 
     fun navigate(destination: MakDestination) {
         controls.update { it.copy(destination = destination) }
-    }
-
-    class Factory(
-        private val repository: MakRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            require(modelClass.isAssignableFrom(AppViewModel::class.java))
-            return AppViewModel(repository) as T
-        }
     }
 }

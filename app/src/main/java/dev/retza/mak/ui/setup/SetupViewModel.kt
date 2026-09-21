@@ -1,8 +1,8 @@
 package dev.retza.mak.ui.setup
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import org.koin.core.annotation.KoinViewModel
 import dev.retza.mak.data.entity.CourseEntity
 import dev.retza.mak.data.entity.SemesterEntity
 import dev.retza.mak.data.entity.WeekType
@@ -64,6 +64,7 @@ data class SetupSemesterResume(
     val firstWeekLabel: String
 )
 
+@KoinViewModel
 class SetupViewModel(
     private val repository: MakRepository,
     private val feedbackSink: FeedbackSink
@@ -213,17 +214,6 @@ class SetupViewModel(
                     state.update { it.copy(isSaving = false) }
                 }
             }
-        }
-    }
-
-    class Factory(
-        private val repository: MakRepository,
-        private val feedbackSink: FeedbackSink
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            require(modelClass.isAssignableFrom(SetupViewModel::class.java))
-            return SetupViewModel(repository, feedbackSink) as T
         }
     }
 }
