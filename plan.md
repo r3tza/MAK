@@ -289,6 +289,8 @@ Kryterium: zmiana trasy jednego przepływu nie wymaga edycji hostów pozostałyc
 
 Luka weryfikacyjna: brak jeszcze testu kliknięcia widgetu, gdy aplikacja jest otwarta na ekranie podrzędnym, oraz testu odtworzenia stosu nawigacji po ponownym utworzeniu aktywności. Do domknięcia na urządzeniu; nie blokuje etapu.
 
+Luka weryfikacyjna: brak testu Compose, który klika drugą z dwóch jednakowo opisanych pozycji w polu „Kierunek" i sprawdza zapis na właściwym przypisaniu. Warstwa `MakSelectField` zwraca teraz identyfikator opcji, a test ViewModelu pokrywa `selectCourse`; sam gest w interfejsie pozostaje do sprawdzenia na emulatorze albo urządzeniu.
+
 Status: zrealizowane. Trasy i efekty podzielono na grupy w osobnych plikach: `TodayScheduleRoutes.kt` (Dzisiaj i Plan, `ScheduleEffect`), `ClassOccurrenceRoutes.kt` (edycja zajęć i szczegóły wystąpienia, `OccurrenceEffect`/`ClassEditEffect`, akcje topbaru), `SemesterRoutes.kt` (semestr, kierunki, korekty; `SemesterEffect`), `SettingsRoutes.kt` (ustawienia) i `SetupRoutes.kt` (kreator; `SetupEffect`). Wspólne stałe tras i mapowanie przeniesiono do `MakRoutes.kt`. `MakApp` pozostał jednym hostem: jeden `NavController`, jeden `Scaffold`, topbar, dolna nawigacja i globalny snackbar; wywołuje tylko `NavGraphBuilder`-owe rozszerzenia grup i zbiera ich efekty. Zmiana trasy wewnątrz grupy nie wymaga edycji pozostałych grup.
 
 #### Dalszy etap 8: modele StudyProgram i AcademicCalendar
