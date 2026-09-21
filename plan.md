@@ -206,14 +206,7 @@ Status: zrealizowane. `SettingsViewModel` składa `SettingsUiState` ze strumieni
 
 #### ScheduleViewModel
 
-Status: do wykonania po `SettingsViewModel`.
-
-1. Przenieść widok listy i kalendarza, wybrane daty, miesiąc, filtr kierunku, widoczność odwołanych zajęć oraz zmianę widocznego tygodnia.
-2. Składać plan wyłącznie przez wspólny `ActivePlanProvider`.
-3. Przenieść otwieranie nowych zajęć dla wybranego dnia do jawnego efektu albo argumentu wywołania `ClassEditViewModel` bez delegacji przez stan nadrzędny.
-4. Zachować stan roboczy potrzebny po odtworzeniu procesu.
-
-Kryterium zakończenia: ekran „Plan” czyta wyłącznie `ScheduleViewModel`, a `MakViewModel` nie zawiera stanu listy, kalendarza, filtrów ani korekt widocznego tygodnia.
+Status: zrealizowane. `ScheduleViewModel` prowadzi widok listy i kalendarza, wybrane daty, miesiąc, filtr kierunku, widoczność odwołanych zajęć oraz korekty widocznego tygodnia i składa plan wyłącznie przez wspólny `ActivePlanProvider`. Nieistniejący identyfikator filtra jest traktowany jak „Wszystkie”. Otwarcie nowych zajęć dla wybranego dnia to jednorazowy efekt `ScheduleEffect.OpenNewClassEditor(date)` zbierany w `MakApp` na trasie `schedule`; `ClassEditViewModel` dostaje datę bez delegacji przez stan nadrzędny. Ekran „Plan” czyta `ScheduleViewModel.schedule`, a `MakViewModel` nie zawiera już stanu listy, kalendarza, filtrów ani korekt widocznego tygodnia. Wspólne mapowanie prezentacyjne (`toUi`, `classCountLabel`, formaty dat) przeniesiono do `ui/PlanMapping.kt`, aby nie duplikować go między planem i „Dzisiaj”.
 
 #### TodayViewModel
 

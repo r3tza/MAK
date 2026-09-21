@@ -19,6 +19,7 @@ import dev.retza.mak.ui.MakApp
 import dev.retza.mak.ui.MakViewModel
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
+import dev.retza.mak.ui.schedule.ScheduleViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.settings.ThemeMode
@@ -52,6 +53,9 @@ class MainActivity : ComponentActivity() {
                     application.settingsPreferences,
                     application.feedbackController
                 )
+            )
+            val scheduleViewModel: ScheduleViewModel = viewModel(
+                factory = ScheduleViewModel.Factory(application.repository)
             )
             val viewModel: MakViewModel = viewModel(
                 factory = MakViewModel.Factory(
@@ -107,6 +111,7 @@ class MainActivity : ComponentActivity() {
                     semesterViewModel = semesterViewModel,
                     setupViewModel = setupViewModel,
                     settingsViewModel = settingsViewModel,
+                    scheduleViewModel = scheduleViewModel,
                     feedback = application.feedbackController.feedback,
                     onCreateExportDocument = { exportLauncher.launch("mak-plan.json") }
                 )

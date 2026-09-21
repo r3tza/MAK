@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: ScheduleViewModel
+
+- Fakty: `MakViewModel` łączył stan i kontrolki ekranu „Plan” (widok listy i kalendarza, wybrane daty, miesiąc, filtr kierunku, widoczność odwołanych zajęć, korekty widocznego tygodnia) ze wspólnym stanem aplikacji oraz składał plan dnia i plan tygodnia w jednym miejscu.
+- Decyzja: Wydzielono `ScheduleViewModel`, który prowadzi kontrolki i składa `ScheduleUiState` wyłącznie przez wspólny `ActivePlanProvider`. Otwarcie nowych zajęć dla wybranego dnia przeniesiono do jednorazowego efektu `ScheduleEffect.OpenNewClassEditor(date)`; `MakApp` zbiera go tylko na trasie `schedule` i przekazuje datę do `ClassEditViewModel` bez delegacji przez stan nadrzędny. Ekran „Plan” czyta `ScheduleViewModel.schedule`. Wspólne mapowanie prezentacyjne (`toUi`, `classCountLabel`, formaty dat, `dayNames`) przeniesiono do `ui/PlanMapping.kt`, aby korzystały z niego plan i przyszły `TodayViewModel` bez duplikacji.
+- Powód: Ekran „Plan” jest samodzielnym przepływem, a nadrzędny stan nie powinien przechowywać kontrolek ani składać planu.
+- Odrzucone: Delegacja metod przez `MakViewModel`; pozostawienie `buildSchedule` w `MakViewModel`; duplikowanie mapowania `PlannedOccurrence` między planem i „Dzisiaj”.
+- Weryfikacja: `ScheduleViewModelTest` sprawdza mapowanie aktywnego semestru, samokorektę filtra po zmianie semestru, nawigację tygodnia i miesiąca, wybór dnia, jednokrotny efekt otwarcia edytora z wybraną datą oraz zapis i usunięcie korekty widocznego tygodnia. `MakViewModelTest` ograniczono do sprawdzenia feedbacku. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-21: Aktualizacja stabilnego zestawu narzędzi
 
 - Fakty: Zestaw stał na Kotlin 2.2.10, AGP 9.1.1, Compose BOM 2024.09.00, Lifecycle 2.10.0, Navigation 2.9.5, Core KTX 1.18.0 i DataStore 1.1.7. Koin 4.2 z compiler pluginem wymaga Kotlin 2.3 lub nowszego, a KSP 2.3.12 jest zbudowany przeciw Kotlin 2.3.20.

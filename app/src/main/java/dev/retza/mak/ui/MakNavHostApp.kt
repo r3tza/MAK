@@ -43,7 +43,9 @@ import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.occurrence.OccurrenceDetailsScreen
 import dev.retza.mak.ui.occurrence.OccurrenceEffect
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
+import dev.retza.mak.ui.schedule.ScheduleEffect
 import dev.retza.mak.ui.schedule.ScheduleScreen
+import dev.retza.mak.ui.schedule.ScheduleViewModel
 import dev.retza.mak.ui.semester.SemesterCoursesScreen
 import dev.retza.mak.ui.semester.SemesterEffect
 import dev.retza.mak.ui.semester.SemesterScreen
@@ -66,6 +68,7 @@ fun MakApp(
     semesterViewModel: SemesterViewModel,
     setupViewModel: SetupViewModel,
     settingsViewModel: SettingsViewModel,
+    scheduleViewModel: ScheduleViewModel,
     feedback: Flow<UiFeedback>,
     onCreateExportDocument: () -> Unit
 ) {
@@ -159,6 +162,19 @@ fun MakApp(
                 SetupEffect.OpenNewClassEditor -> {
                     classEditViewModel.openNew()
                     navController.navigate(MakRoutes.Edit)
+                }
+            }
+        }
+    }
+
+    LaunchedEffect(scheduleViewModel, navController) {
+        scheduleViewModel.effects.collect { effect ->
+            when (effect) {
+                is ScheduleEffect.OpenNewClassEditor -> {
+                    if (navController.currentBackStackEntry?.destination?.route == MakRoutes.Schedule) {
+                        classEditViewModel.openNew(effect.date)
+                        navController.navigate(MakRoutes.Edit)
+                    }
                 }
             }
         }
@@ -286,27 +302,25 @@ fun MakApp(
             }
 
             composable(MakRoutes.Schedule) {
+                val scheduleState = scheduleViewModel.schedule.collectAsStateWithLifecycle().value
                 ScheduleScreen(
-                    state = state.schedule,
-                    onViewChanged = viewModel::selectScheduleView,
-                    onPreviousWeek = { viewModel.changeWeek(-1) },
-                    onNextWeek = { viewModel.changeWeek(1) },
-                    onDaySelected = viewModel::selectScheduleDay,
-                    onFilterSelected = viewModel::selectCourseFilter,
-                    onPreviousMonth = { viewModel.changeMonth(-1) },
-                    onNextMonth = { viewModel.changeMonth(1) },
-                    onCalendarDaySelected = viewModel::selectCalendarDay,
-                    onShowCancelledChanged = viewModel::setShowCancelled,
-                    onAddOneOff = {
-                        viewModel.openNewClassForSelectedCalendarDay()
-                        navController.navigate(MakRoutes.Edit)
-                    },
+                    state = scheduleState,
+                    onViewChanged = scheduleViewModel::selectView,
+                    onPreviousWeek = { scheduleViewModel.changeWeek(-1) },
+                    onNextWeek = { scheduleViewModel.changeWeek(1) },
+                    onDaySelected = scheduleViewModel::selectDay,
+                    onFilterSelected = scheduleViewModel::selectCourseFilter,
+                    onPreviousMonth = { scheduleViewModel.changeMonth(-1) },
+                    onNextMonth = { scheduleViewModel.changeMonth(1) },
+                    onCalendarDaySelected = scheduleViewModel::selectCalendarDay,
+                    onShowCancelledChanged = scheduleViewModel::setShowCancelled,
+                    onAddOneOff = scheduleViewModel::openNewClassForSelectedCalendarDay,
                     onOpenClass = { occurrenceId ->
                         occurrenceViewModel.open(occurrenceId)
                         navController.navigate(occurrenceRoute(occurrenceId))
                     },
-                    onSaveWeekCorrection = viewModel::saveVisibleWeekOverride,
-                    onClearWeekCorrection = viewModel::clearVisibleWeekOverride,
+                    onSaveWeekCorrection = scheduleViewModel::saveVisibleWeekOverride,
+                    onClearWeekCorrection = scheduleViewModel::clearVisibleWeekOverride,
                     onRetry = {},
                     modifier = Modifier.fillMaxSize()
                 )
