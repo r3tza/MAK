@@ -57,14 +57,6 @@ class MakNavigationTest {
     }
 
     @Test
-    fun forcedSetupWaitsForInitialDataLoad() {
-        assertFalse(shouldOpenSetup(MakUiState()))
-        assertTrue(shouldOpenSetup(MakUiState(requiresSetup = true, hasLoadedData = true)))
-        assertFalse(shouldOpenSetup(MakUiState(requiresSetup = false, hasLoadedData = true)))
-        assertFalse(shouldOpenSetup(MakUiState(requiresSetup = false, hasLoadedData = false)))
-    }
-
-    @Test
     fun setupEffectAppliesOnlyOnWizardRoute() {
         assertTrue(shouldHandleSetupEffect(MakRoutes.Setup))
         assertFalse(shouldHandleSetupEffect(MakRoutes.Today))

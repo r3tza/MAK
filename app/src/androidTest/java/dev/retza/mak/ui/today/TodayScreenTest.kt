@@ -56,6 +56,7 @@ class TodayScreenTest {
                         ),
                         onOpenPlan = {},
                         onOpenClass = { openedClassId = it },
+                        onStartSetup = {},
                         onRetry = {}
                     )
                 }

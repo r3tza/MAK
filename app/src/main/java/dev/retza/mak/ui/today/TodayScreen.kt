@@ -9,6 +9,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import dev.retza.mak.ui.components.ClassCard
 import dev.retza.mak.ui.components.ClassItemUi
+import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakRowTitle
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSectionHeader
@@ -26,7 +27,8 @@ data class TodayUiState(
     val status: ScreenStatus = ScreenStatus.Ready,
     val emptyTitle: String = "Brak zajęć",
     val emptyMessage: String = "Nie masz dziś zajęć.",
-    val showPlanAction: Boolean = true
+    val showPlanAction: Boolean = true,
+    val requiresSetup: Boolean = false
 )
 
 @Composable
@@ -34,6 +36,7 @@ fun TodayScreen(
     state: TodayUiState,
     onOpenPlan: () -> Unit,
     onOpenClass: (String) -> Unit,
+    onStartSetup: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -54,11 +57,16 @@ fun TodayScreen(
         MakRowTitle(title = "Zajęcia", meta = "Od najwcześniejszego")
         when (state.status) {
             ScreenStatus.Ready -> if (state.items.isEmpty()) {
-                MakStateMessage(
-                    status = state.status,
-                    emptyTitle = state.emptyTitle,
-                    emptyMessage = state.emptyMessage
-                )
+                Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
+                    MakStateMessage(
+                        status = state.status,
+                        emptyTitle = state.emptyTitle,
+                        emptyMessage = state.emptyMessage
+                    )
+                    if (state.requiresSetup) {
+                        MakPrimaryAction(text = "Skonfiguruj plan", onClick = onStartSetup)
+                    }
+                }
             } else {
                 Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                     state.items.forEach { item ->

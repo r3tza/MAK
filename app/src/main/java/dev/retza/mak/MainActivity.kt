@@ -15,8 +15,8 @@ import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.activity.enableEdgeToEdge
 import androidx.lifecycle.viewmodel.compose.viewModel
+import dev.retza.mak.ui.AppViewModel
 import dev.retza.mak.ui.MakApp
-import dev.retza.mak.ui.MakViewModel
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.schedule.ScheduleViewModel
@@ -29,7 +29,7 @@ import dev.retza.mak.ui.today.TodayViewModel
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
-    private var makViewModel: MakViewModel? = null
+    private var appViewModel: AppViewModel? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -61,14 +61,10 @@ class MainActivity : ComponentActivity() {
             val todayViewModel: TodayViewModel = viewModel(
                 factory = TodayViewModel.Factory(application.repository)
             )
-            val viewModel: MakViewModel = viewModel(
-                factory = MakViewModel.Factory(
-                    application.repository,
-                    application.feedbackController,
-                    classEditViewModel
-                )
+            val viewModel: AppViewModel = viewModel(
+                factory = AppViewModel.Factory(application.repository)
             )
-            makViewModel = viewModel
+            appViewModel = viewModel
             LaunchedEffect(viewModel) {
                 if (intent.getBooleanExtra(EXTRA_OPEN_TODAY, false)) {
                     viewModel.navigate(dev.retza.mak.ui.MakDestination.Today)
@@ -128,7 +124,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         if (intent.getBooleanExtra(EXTRA_OPEN_TODAY, false)) {
-            makViewModel?.navigate(dev.retza.mak.ui.MakDestination.Today)
+            appViewModel?.navigate(dev.retza.mak.ui.MakDestination.Today)
             intent.removeExtra(EXTRA_OPEN_TODAY)
         }
     }

@@ -44,7 +44,7 @@ Pozostaje do wykonania:
 
 Zmiany należy wprowadzać stopniowo podczas rozwoju wersji 0.2 i 0.3. Nie wymagają podziału projektu na osobne moduły Gradle. Po wydzieleniu ViewModeli należy wprowadzić Koin jako jeden composition root i usunąć ręczne fabryki.
 
-Status: wspólny `ActivePlanProvider`, mapowanie Room poza ViewModelem oraz osobne `OccurrenceViewModel`, `ClassEditViewModel`, `SemesterViewModel` i `SetupViewModel` są zaimplementowane. `SettingsViewModel` jest zakończony. Następne są `ScheduleViewModel`, `TodayViewModel` i ograniczenie stanu nadrzędnego do uruchomienia aplikacji.
+Status: wspólny `ActivePlanProvider`, mapowanie Room poza ViewModelem oraz osobne `OccurrenceViewModel`, `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel` są zaimplementowane. Nadrzędny stan to mały `AppViewModel`; świeża pusta baza pozostaje w głównej aplikacji ze stanem pustym i jawym przyciskiem „Skonfiguruj plan”.
 
 Kolejność prac:
 
@@ -75,7 +75,7 @@ Kryteria zakończenia porządkowania:
 
 Refaktor należy wykonać przed podłączeniem feedbacku do wszystkich operacji z etapu 6 sekcji 1.6. Nie przepisywać całego ViewModelu jednocześnie. Każdy etap ma kończyć się kompilującym stanem, testami odpowiednimi do zmiany i osobnym commitem.
 
-Status: etapy 1-7 są zakończone. W etapie 8 zakończono `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel` i `SettingsViewModel`. Następne są `ScheduleViewModel` i `TodayViewModel`, a potem ocena pozostałego stanu nadrzędnego i zastąpienie `MakViewModel` małym `AppViewModel` albo usunięcie go, jeśli nie będzie miał własnej odpowiedzialności.
+Status: etapy 1-7 są zakończone. W etapie 8 zakończono `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel`, a `MakViewModel` zastąpiono małym `AppViewModel`. Świeża pusta baza pozostaje w głównej aplikacji i pokazuje stan pusty z przyciskiem „Skonfiguruj plan”. Pozostają Koin, podział `NavHost` i dalsze etapy z sekcji kolejności prac.
 
 #### Etap 1: inwentaryzacja odpowiedzialności
 
@@ -184,9 +184,9 @@ Status etapu: zrealizowane. Audyt potwierdził, że `MakViewModel` nie ma pól `
 
 Kryterium etapu: każdy ekran ma własny ViewModel, `NavController` pozostaje jedynym źródłem trasy, a stan nadrzędny odpowiada najwyżej za uruchomienie aplikacji i wymuszenie konfiguracji.
 
-Status etapu: zakończono `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel` i `SettingsViewModel`. Pozostają `ScheduleViewModel`, `TodayViewModel` i końcowe ograniczenie stanu nadrzędnego.
+Status etapu: zakończono `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel`. `MakViewModel` zastąpiono małym `AppViewModel`. Pozostają Koin, podział `NavHost` i dalsze etapy.
 
-Każdy kolejny przepływ realizować i weryfikować osobno. Bieżąca kolejność to wydzielenie `ScheduleViewModel`, wydzielenie `TodayViewModel` i końcowa ocena `AppViewModel`. Po każdym zakończonym etapie sprawdzić, że commit nie zawiera zmian z następnego przepływu.
+Każdy kolejny etap realizować i weryfikować osobno. Bieżąca kolejność to Koin, podział `NavHost` i dalsze etapy z sekcji kolejności prac. Po każdym zakończonym etapie sprawdzić, że commit nie zawiera zmian z następnego etapu.
 
 #### SemesterViewModel
 
@@ -214,7 +214,7 @@ Status: zrealizowane. `TodayViewModel` prowadzi bieżącą datę, `refreshToday`
 
 #### AppViewModel i usunięcie MakViewModel
 
-Status: zaakceptowany kierunek końcowy. Decyzję o całkowitym usunięciu podjąć po wydzieleniu `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel` na podstawie pozostałego kodu.
+Status: częściowo zrealizowane. Po wydzieleniu `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel` `MakViewModel` zastąpiono małym `AppViewModel` zależnym tylko od `MakRepository`. Prowadzi on kopię trasy dla uzgodnienia z `NavController` oraz obserwację aktywnego semestru dla wznowienia kreatora; nie zawiera modeli ekranów, motywu, filtrów, formularzy, eksportu ani delegacji. Automatyczne wymuszanie kreatora usunięto. Całkowite usunięcie klasy i jej kopii trasy zależy od przyszłego podziału `NavHost` (Dalszy etap 7).
 
 1. Usunąć z `MakViewModel` delegacje, stan ekranów, kopię trasy i logikę prezentacji.
 2. Jeśli nadal potrzebny jest właściciel stanu uruchomienia, zastąpić `MakViewModel` małym `AppViewModel`.
@@ -262,6 +262,8 @@ Wykonać zakres i kryterium opisane w sekcji `TodayViewModel`. Potwierdzić zgod
 5. Po usunięciu ostatniego semestru wrócić do stanu pustego zamiast otwierać kreator.
 
 Kryterium: świeża pusta baza pozostaje w głównej aplikacji, a konfiguracja zaczyna się dopiero po użyciu przycisku.
+
+Status: zrealizowane. `MakViewModel` zastąpiono małym `AppViewModel`, który prowadzi wyłącznie kopię trasy dla uzgodnienia z `NavController` oraz aktywny semestr potrzebny do wznowienia kreatora. Usunięto automatyczne przejście do kreatora przy braku semestrów oraz pola `requiresSetup` i `hasLoadedData`. `TodayViewModel` i `ScheduleViewModel` wystawiają `requiresSetup`, a ekrany „Dzisiaj” i „Plan” pokazują stan pusty z przyciskiem „Skonfiguruj plan”, który uruchamia `SetupViewModel.start(existingSemester)`. Po usunięciu ostatniego semestru aplikacja wraca do stanu pustego i nie otwiera kreatora.
 
 #### Dalszy etap 6: Koin
 

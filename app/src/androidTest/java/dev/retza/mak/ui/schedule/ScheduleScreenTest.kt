@@ -148,6 +148,7 @@ class ScheduleScreenTest {
                         onOpenClass = {},
                         onSaveWeekCorrection = { _, _ -> },
                         onClearWeekCorrection = {},
+                        onStartSetup = {},
                         onRetry = {}
                     )
                 }

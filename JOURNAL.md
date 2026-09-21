@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: AppViewModel i pusty start
+
+- Fakty: Po wydzieleniu wszystkich przepływów `MakViewModel` trzymał jeszcze kopię trasy, obserwację aktywnego semestru i wymuszał automatyczne otwarcie kreatora, gdy brakowało semestru albo semestr nie miał kierunku. Świeża pusta baza trafiała więc od razu do kreatora.
+- Decyzja: Zastąpiono `MakViewModel` małym `AppViewModel` zależnym tylko od `MakRepository`. Prowadzi on kopię trasy dla uzgodnienia z `NavController` i obserwację aktywnego semestru potrzebną do wznowienia kreatora; nie zawiera modeli ekranów, motywu, filtrów, formularzy, eksportu ani delegacji. Usunięto automatyczne przejście do kreatora oraz pola `requiresSetup` i `hasLoadedData`. `TodayViewModel` i `ScheduleViewModel` wystawiają `requiresSetup`, a ekrany „Dzisiaj” i „Plan” pokazują stan pusty z przyciskiem „Skonfiguruj plan”. Przycisk uruchamia `SetupViewModel.start(existingSemester)`, więc semestr bez kierunku nadal jest wznawiany. Po usunięciu ostatniego semestru aplikacja wraca do stanu pustego.
+- Powód: Użytkownik ma zachować kontrolę nad rozpoczęciem konfiguracji, a nadrzędny ViewModel nie może wymuszać trasy ani zawierać stanu ekranów. Świeża pusta baza powinna pozostać w głównej aplikacji.
+- Odrzucone: Utrzymywanie `requiresSetup` w stanie nadrzędnym i automatyczne otwieranie kreatora; pozostawienie `MakViewModel` jako kontenera delegacji.
+- Weryfikacja: `AppViewModelTest` sprawdza wybór pierwszego semestru przy braku aktywnego, ekspozycję danych aktywnego semestru i aktualizację trasy. `TodayViewModelTest` i `ScheduleViewModelTest` sprawdzają `requiresSetup` dla pustego stanu. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Całkowite usunięcie `AppViewModel` i kopii trasy pozostaje do podziału `NavHost`.
+
 ## 2026-09-21: TodayViewModel
 
 - Fakty: Bieżąca data, `refreshToday` i składanie `TodayUiState` mieszkały w `MakViewModel` obok wspólnego stanu aplikacji. Data odświeżała się po wznowieniu przez metodę nadrzędnego ViewModelu.

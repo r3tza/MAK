@@ -111,7 +111,8 @@ data class ScheduleUiState(
     val hasOneWeekCorrection: Boolean = false,
     val hasFromWeekCorrection: Boolean = false,
     val status: ScreenStatus = ScreenStatus.Ready,
-    val emptyMessage: String = "Brak zajęć w tym dniu dla wybranego kierunku."
+    val emptyMessage: String = "Brak zajęć w tym dniu dla wybranego kierunku.",
+    val requiresSetup: Boolean = false
 )
 
 @Composable
@@ -130,6 +131,7 @@ fun ScheduleScreen(
     onOpenClass: (String) -> Unit,
     onSaveWeekCorrection: (WeekTypeUi, WeekOverrideScopeUi) -> Unit,
     onClearWeekCorrection: (WeekOverrideScopeUi) -> Unit,
+    onStartSetup: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -149,30 +151,34 @@ fun ScheduleScreen(
             onSecond = { onViewChanged(ScheduleView.Calendar) },
             modifier = Modifier.padding(bottom = 4.dp)
         )
-        when (state.status) {
-            ScreenStatus.Ready -> when (state.view) {
-                ScheduleView.List -> ListView(
-                    state = state,
-                    onPreviousWeek = onPreviousWeek,
-                    onNextWeek = onNextWeek,
-                    onDaySelected = onDaySelected,
-                    onFilterSelected = onFilterSelected,
-                    onOpenClass = onOpenClass,
-                    onEditWeek = { showWeekDialog = true }
-                )
+        when {
+            state.status != ScreenStatus.Ready ->
+                MakStateMessage(status = state.status, onRetry = onRetry)
 
-                ScheduleView.Calendar -> CalendarView(
-                    state = state,
-                    onPreviousMonth = onPreviousMonth,
-                    onNextMonth = onNextMonth,
-                    onCalendarDaySelected = onCalendarDaySelected,
-                    onShowCancelledChanged = onShowCancelledChanged,
-                    onAddOneOff = onAddOneOff,
-                    onOpenClass = onOpenClass
-                )
+            state.requiresSetup -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
+                MakEmptyState("Nie masz jeszcze aktywnego planu. Skonfiguruj semestr i kierunek.")
+                MakPrimaryAction(text = "Skonfiguruj plan", onClick = onStartSetup)
             }
 
-            else -> MakStateMessage(status = state.status, onRetry = onRetry)
+            state.view == ScheduleView.List -> ListView(
+                state = state,
+                onPreviousWeek = onPreviousWeek,
+                onNextWeek = onNextWeek,
+                onDaySelected = onDaySelected,
+                onFilterSelected = onFilterSelected,
+                onOpenClass = onOpenClass,
+                onEditWeek = { showWeekDialog = true }
+            )
+
+            else -> CalendarView(
+                state = state,
+                onPreviousMonth = onPreviousMonth,
+                onNextMonth = onNextMonth,
+                onCalendarDaySelected = onCalendarDaySelected,
+                onShowCancelledChanged = onShowCancelledChanged,
+                onAddOneOff = onAddOneOff,
+                onOpenClass = onOpenClass
+            )
         }
     }
     if (showWeekDialog) {

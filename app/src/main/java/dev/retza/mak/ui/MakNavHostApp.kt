@@ -63,7 +63,7 @@ import kotlinx.coroutines.flow.Flow
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MakApp(
-    viewModel: MakViewModel,
+    viewModel: AppViewModel,
     occurrenceViewModel: OccurrenceViewModel,
     classEditViewModel: ClassEditViewModel,
     semesterViewModel: SemesterViewModel,
@@ -85,7 +85,7 @@ fun MakApp(
     val showBack = currentRoute != null &&
         currentRoute != MakRoutes.Today &&
         currentRoute != MakRoutes.Schedule &&
-        (!state.requiresSetup || currentRoute != MakRoutes.Setup)
+        currentRoute != MakRoutes.Setup
 
     fun openRoot(destination: MakDestination, route: String) {
         viewModel.navigate(destination)
@@ -108,6 +108,22 @@ fun MakApp(
         } else {
             openRoot(MakDestination.Today, MakRoutes.Today)
         }
+    }
+
+    fun navigateToSetup() {
+        viewModel.navigate(MakDestination.Setup)
+        navController.navigate(MakRoutes.Setup) {
+            popUpTo(MakRoutes.Today) { saveState = true }
+            launchSingleTop = true
+        }
+    }
+
+    val startSetup: () -> Unit = {
+        val existingSemester = state.activeSemesterData
+            ?.takeIf { it.courses.isEmpty() }
+            ?.semester
+        setupViewModel.start(existingSemester)
+        navigateToSetup()
     }
 
     LaunchedEffect(occurrenceViewModel, navController) {
@@ -182,36 +198,22 @@ fun MakApp(
         }
     }
 
-    LaunchedEffect(state.requiresSetup, state.hasLoadedData, state.destination, currentRoute) {
-        when {
-            shouldOpenSetup(state) && currentRoute != MakRoutes.Setup -> {
-                val existingSemester = state.activeSemesterData
-                    ?.takeIf { it.courses.isEmpty() }
-                    ?.semester
-                setupViewModel.start(existingSemester)
-                viewModel.navigate(MakDestination.Setup)
-                navController.navigate(MakRoutes.Setup) {
-                    popUpTo(MakRoutes.Today) { saveState = true }
-                    launchSingleTop = true
-                }
-            }
-
-            !state.requiresSetup &&
-                currentRoute != MakRoutes.Occurrence &&
-                currentRoute != MakRoutes.Edit &&
-                currentRoute != MakRoutes.Semester &&
-                currentRoute != MakRoutes.SemesterCourses &&
-                currentRoute != MakRoutes.SemesterOverrides &&
-                !destinationMatchesRoute(state.destination, currentRoute) -> {
-                when (state.destination) {
-                    MakDestination.Today -> openRoot(MakDestination.Today, MakRoutes.Today)
-                    MakDestination.Schedule -> openRoot(MakDestination.Schedule, MakRoutes.Schedule)
-                    MakDestination.EditClass -> Unit
-                    MakDestination.OccurrenceDetails -> Unit
-                    MakDestination.Semester -> Unit
-                    MakDestination.Settings -> openChild(MakDestination.Settings, MakRoutes.Settings)
-                    MakDestination.Setup -> Unit
-                }
+    LaunchedEffect(state.destination, currentRoute) {
+        if (currentRoute != MakRoutes.Occurrence &&
+            currentRoute != MakRoutes.Edit &&
+            currentRoute != MakRoutes.Semester &&
+            currentRoute != MakRoutes.SemesterCourses &&
+            currentRoute != MakRoutes.SemesterOverrides &&
+            !destinationMatchesRoute(state.destination, currentRoute)
+        ) {
+            when (state.destination) {
+                MakDestination.Today -> openRoot(MakDestination.Today, MakRoutes.Today)
+                MakDestination.Schedule -> openRoot(MakDestination.Schedule, MakRoutes.Schedule)
+                MakDestination.EditClass -> Unit
+                MakDestination.OccurrenceDetails -> Unit
+                MakDestination.Semester -> Unit
+                MakDestination.Settings -> openChild(MakDestination.Settings, MakRoutes.Settings)
+                MakDestination.Setup -> Unit
             }
         }
     }
@@ -250,7 +252,7 @@ fun MakApp(
             MakTopBar(
                 title = titleForRoute(currentRoute),
                 showBack = showBack,
-                showSettings = !state.requiresSetup && isRoot,
+                showSettings = isRoot,
                 onBack = ::navigateBack,
                 onSettings = {
                     openChild(MakDestination.Settings, MakRoutes.Settings)
@@ -268,7 +270,7 @@ fun MakApp(
             )
         },
         bottomBar = {
-            if (!state.requiresSetup && isRoot) {
+            if (isRoot) {
                 MakNavBar(
                     todaySelected = currentRoute == MakRoutes.Today,
                     planSelected = currentRoute == MakRoutes.Schedule,
@@ -299,6 +301,7 @@ fun MakApp(
                         occurrenceViewModel.open(occurrenceId)
                         navController.navigate(occurrenceRoute(occurrenceId))
                     },
+                    onStartSetup = startSetup,
                     onRetry = {},
                     modifier = Modifier.fillMaxSize()
                 )
@@ -324,6 +327,7 @@ fun MakApp(
                     },
                     onSaveWeekCorrection = scheduleViewModel::saveVisibleWeekOverride,
                     onClearWeekCorrection = scheduleViewModel::clearVisibleWeekOverride,
+                    onStartSetup = startSetup,
                     onRetry = {},
                     modifier = Modifier.fillMaxSize()
                 )
@@ -511,8 +515,7 @@ fun MakApp(
                     onSemesterSelected = settingsViewModel::selectSemester,
                     onAddSemester = {
                         setupViewModel.start()
-                        viewModel.navigate(MakDestination.Setup)
-                        navController.navigate(MakRoutes.Setup)
+                        navigateToSetup()
                     },
                     onConfigureSemester = { id ->
                         navController.navigate(semesterRoute(id))
@@ -645,9 +648,6 @@ internal fun shouldCloseSemesterConfiguration(currentRoute: String?): Boolean =
 
 internal fun shouldHandleSetupEffect(currentRoute: String?): Boolean =
     currentRoute == MakRoutes.Setup
-
-internal fun shouldOpenSetup(state: MakUiState): Boolean =
-    state.requiresSetup && state.hasLoadedData
 
 fun destinationForRoute(route: String?): MakDestination = when (route) {
     MakRoutes.Schedule -> MakDestination.Schedule
