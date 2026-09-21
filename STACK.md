@@ -5,7 +5,7 @@
 - Źródło prawdy dla narzędzi i wersji: ten plik.
 - Język dokumentacji: polski.
 - Język odpowiedzi dla użytkownika: polski.
-- Ostatnia zaakceptowana aktualizacja: 2026-09-20.
+- Ostatnia zaakceptowana aktualizacja: 2026-09-21.
 
 ## 2. Język i środowisko uruchomieniowe
 
@@ -13,12 +13,14 @@
 - Android, `minSdk` 31, `targetSdk` 36 i `compileSdk` 36.1.
 - Android Gradle Plugin 9.1.1 i Gradle 9.7.1.
 - Compose BOM 2024.09.00, Material Icons Extended, Room 2.8.5, Lifecycle 2.10.0, Navigation 2.9.5, KSP 2.3.12 i Glance 1.2.0.
+- Przed wdrożeniem Koin zaktualizować cały zestaw do najnowszych stabilnych, wzajemnie zgodnych wersji. Dokładne numery zapisać w tym pliku po zakończonej weryfikacji aktualizacji.
 
 ## 3. Warstwa aplikacji
 
 - Jetpack Compose do budowy interfejsu.
 - Jetpack Glance do widgetu.
-- Systemowe powiadomienia Androida; zdarzenia i treść pozostają do ustalenia.
+- Zaakceptowany cel: Koin 4.2 z compiler pluginem do składania zależności i ViewModeli po aktualizacji Kotlin do zgodnej stabilnej wersji. Obowiązuje constructor injection; klasy aplikacji nie pobierają zależności z globalnego kontenera.
+- Systemowe powiadomienia Androida planowane przybliżonymi alarmami `AlarmManager`. Aplikacja nie wymaga dokładnych alarmów ani ciągłego serwisu w tle.
 - Lokalny font Inter.
 
 ## 4. Dane i przechowywanie
@@ -40,6 +42,7 @@
 - Sprawdzenie obsługi klawiatury, focusu, etykiet semantycznych, kontrastu, motywu ciemnego, `reduced motion` i dotyku.
 - Sprawdzenie braku poziomego przewijania oraz obciętych akcji.
 - Weryfikacja, że ekran i widget pokazują ten sam aktywny plan.
+- Walidacja pełnej konfiguracji Koin podczas kompilacji. Jeśli typy Androida nie są objęte compiler pluginem, dodać uzupełniający test uruchomienia modułów.
 
 ## 6. Narzędzia
 

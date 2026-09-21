@@ -1,5 +1,53 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: Przybliżone powiadomienia o kolizjach
+
+- Fakty: Powiadomienie wieczorne nie wymaga dostarczenia co do minuty. Powiadomienie przed zajęciami ma pozostać użyteczne bez żądania specjalnego dostępu do dokładnych alarmów. `WorkManager` nie zapewnia czasu dostarczenia odpowiedniego dla ostrzeżenia przed zajęciami.
+- Decyzja: Domyślnie wysyłać powiadomienie o 20:00 dnia poprzedniego oraz 30 minut przed kolidującymi zajęciami. Użytkownik może globalnie zmienić oba czasy, wyłączyć każdy rodzaj osobno oraz wyłączyć wszystkie powiadomienia o kolizjach.
+- Mechanizm: Używać przybliżonych alarmów `AlarmManager`. Powiadomienie przed zajęciami planować domyślnie w oknie od 45 do 30 minut przed rozpoczęciem. Nie żądać dostępu do dokładnych alarmów i nie używać ciągłego serwisu. Po zmianie planu, ustawień, aktywnego semestru, czasu lub ponownym uruchomieniu urządzenia zastępować przyszłe alarmy aktualnym zestawem.
+- Powód: Rozwiązanie ogranicza zużycie baterii i nie wymaga dodatkowej zgody systemowej, a nadal ostrzega z praktycznym wyprzedzeniem.
+- Odrzucone: `WorkManager` jako mechanizm dostarczenia powiadomień; dokładne alarmy w pierwszej wersji; obietnica dostarczenia o dokładnej godzinie.
+- Wznowić decyzję tylko gdy: pomiary na docelowym urządzeniu pokażą, że opóźnienia alarmów przybliżonych odbierają powiadomieniom użyteczność.
+
+## 2026-09-21: Globalne kierunki i współdzielone kalendarze akademickie
+
+- Fakty: Kierunek studiów trwa dłużej niż jeden semestr, a użytkownik może studiować na kilku uczelniach z różnymi datami i rytmem A/B. Obecny `CourseEntity` należy bezpośrednio do semestru, semestr przechowuje kalendarz, a prowadzący ma osobną tabelę.
+- Decyzja: Wprowadzić globalny `StudyProgram`, nazwany `Semester`, łączący je `SemesterProgram` oraz `AcademicCalendar`. Przypisanie kierunku wskazuje kalendarz, a zajęcia wskazują `semesterProgramId`. Daty, pierwszy tydzień A/B i korekty są jednym niepodzielnym kalendarzem. Kilka kierunków domyślnie współdzieli kalendarz, ale kierunek może otrzymać jego kopię i działać osobno. Prowadzący staje się opcjonalnym tekstem zajęć bez osobnej kartoteki.
+- Zachowanie: Rozdzielenie kalendarza kopiuje jego bieżące ustawienia. Ponowne połączenie wymaga wyboru kalendarza i ostrzeżenia; korekty nie są scalane. Usunięcie semestru zachowuje globalne kierunki, a usunięcie używanego kierunku jest blokowane.
+- Powód: Model odpowiada cyklowi życia kierunku i pozwala poprawnie obliczać wspólny plan oraz kolizje między uczelniami.
+- Migracja: Każdy stary semestr otrzymuje jeden kalendarz. Stare kierunki pozostają osobnymi `StudyProgram`, bez automatycznego łączenia po nazwie. Zajęcia, korekty, notatki i zmiany wystąpień muszą zostać zachowane.
+- Odrzucone: Kierunek należący do jednego semestru; prosty przełącznik „wszystko wspólne albo wszystko osobne”; osobne współdzielenie dat i rytmu A/B; osobna baza prowadzących.
+
+## 2026-09-21: Pusty start, import i powiadomienia o kolizjach
+
+- Decyzja: Brak semestrów pokazuje stan pusty z przyciskiem „Skonfiguruj plan”. Aplikacja nie otwiera kreatora automatycznie, także po usunięciu ostatniego semestru. Import początkowo obsługuje wyłącznie pełne zastąpienie wszystkich danych po podglądzie i potwierdzeniu, w jednej transakcji.
+- Powiadomienia: Aplikacja ma ostrzegać o kolizjach wieczorem poprzedniego dnia oraz przed rozpoczęciem kolidujących zajęć. Dokładne czasy, konfiguracja i mechanizm dostarczenia pozostają otwarte.
+- Stan sesji: Wybrana data, filtry i drafty mogą przetrwać odtworzenie bieżącego ekranu, ale po świeżym uruchomieniu wracają do wartości domyślnych.
+- Powód: Użytkownik zachowuje kontrolę nad rozpoczęciem konfiguracji i importem, a stan sesji nie staje się trwałą preferencją bez potrzeby.
+
+## 2026-09-21: Aktualny stabilny toolchain przed Koin
+
+- Decyzja: Przed wdrożeniem Koin wykonać osobną aktualizację całego zestawu narzędzi do najnowszych stabilnych, wzajemnie zgodnych wersji. Następnie użyć Koin 4.2 z compiler pluginem i constructor injection.
+- Powód: Utrzymywanie Koin 4.1.1 wyłącznie dla Kotlin 2.2.10 nie daje korzyści. Oddzielny etap aktualizacji ogranicza źródło regresji.
+- Zasady: Nie używać wydań alpha, beta, RC ani wersji dynamicznych. Dokładne numery zapisać w `STACK.md` dopiero po sprawdzeniu zgodności i zakończeniu aktualizacji.
+- Zastępuje: Decyzję z wpisu „Koin i repozytoria według obszarów danych” o pozostaniu przy Koin 4.1.1 i `verify()`.
+
+## 2026-09-21: Koin i repozytoria według obszarów danych
+
+- Fakty: Po wydzieleniu kolejnych ViewModeli ręczne fabryki i składanie zależności w `MainActivity` będą rosły. `MakRepository` jest jedną fasadą całej bazy, wystawia encje Room i łączy semestry, plan, wystąpienia oraz kopie zapasowe. Koin 4.2 z compiler pluginem wymaga Kotlin 2.3 lub nowszego, a projekt używa Kotlin 2.2.10.
+- Decyzja: Po zakończeniu podziału ViewModeli wprowadzić Koin 4.1.1 przez BOM. Stosować constructor injection, ograniczyć dostęp do kontenera do composition rootu i hostów ViewModeli oraz weryfikować graf przez `verify()` w teście JVM. Compiler plugin rozważyć przy aktualizacji Kotlina.
+- Granice danych: Zastąpić `MakRepository` przez `SemesterRepository`, `ScheduleRepository` i istniejące `SettingsPreferences`. Warstwa danych udostępni snapshot oraz atomową operację dla kopii zapasowej, a `PlanBackupService` lub use case połączy ją z kodem JSON w `export`. Operacje wieloetapowe zachowują jedną transakcję w `data`.
+- Powód: Podział według stabilnych obszarów danych ogranicza zależności ViewModeli bez tworzenia repozytorium dla każdej tabeli albo ekranu. Koin usuwa ręczne fabryki, ale nie ukrywa zależności klas.
+- Odrzucone: Hilt; pozostawienie jednego `MakRepository` jako docelowej granicy; repozytorium dla każdej tabeli; `get()` wewnątrz ViewModeli i Composable; aktualizacja Kotlina wyłącznie w celu użycia compiler pluginu Koin.
+
+## 2026-09-21: TodayViewModel i końcowy zakres stanu aplikacji
+
+- Fakty: Po wydzieleniu przepływów szczegółów, edycji zajęć, semestru i kreatora `MakViewModel` nadal składa stan ekranów „Dzisiaj” i „Plan”, przechowuje ich kontrolki oraz deleguje część ustawień. Wydzielanie `SettingsViewModel` jest pracą w toku, a `ScheduleViewModel` pozostaje do wykonania.
+- Decyzja: Po zakończeniu `SettingsViewModel` wydzielić kolejno `ScheduleViewModel` i `TodayViewModel`. `TodayViewModel` przejmie bieżącą datę, odświeżenie po wznowieniu i składanie planu dnia przez `ActivePlanProvider`. Po wydzieleniu przepływów usunąć delegacje oraz stany ekranów z `MakViewModel`.
+- Stan nadrzędny: Jeśli nadal będzie potrzebny do rozpoznania gotowości danych i wymuszenia albo wznowienia konfiguracji, zastąpić `MakViewModel` małym `AppViewModel`. Jeśli ta odpowiedzialność zniknie, usunąć nadrzędny ViewModel całkowicie. `NavController` pozostaje jedynym źródłem bieżącej trasy.
+- Powód: Ekran „Dzisiaj” jest samodzielnym przepływem z własną datą i cyklem odświeżania. Nadrzędny ViewModel nie powinien istnieć jako kontener modeli ekranów ani warstwa delegacji.
+- Odrzucone: Pozostawienie `TodayUiState` w `MakViewModel`; utrzymywanie `MakViewModel` bez własnej odpowiedzialności; przeniesienie obserwacji repozytorium i decyzji o wymaganej konfiguracji bezpośrednio do Composable.
+
 ## 2026-09-20: Wznowienie kreatora dla semestru bez kierunku
 
 - Fakty: Po poprzedniej dwuetapowej implementacji użytkownik mógł mieć aktywny semestr bez kierunku. `requiresSetup` było wtedy prawdziwe, ale `SetupViewModel.start()` otwierał pusty kreator bez identyfikatora istniejącego semestru, więc zapis tworzył drugi semestr zamiast dodać pierwszy kierunek.

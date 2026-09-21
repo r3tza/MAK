@@ -21,7 +21,7 @@ Po jednorazowym skonfigurowaniu planu użytkownik powinien korzystać głównie 
 
 ## 1.1. Stan wdrożenia
 
-Stan na 2026-09-19:
+Stan na 2026-09-21:
 
 - Warstwa danych, kalkulator tygodni A/B, resolver planu, kolizje, Room i eksport JSON są zaimplementowane i objęte testami JVM.
 - Kreator pierwszej konfiguracji, semestry, kierunki, zajęcia, notatki, zmiany pojedynczych wystąpień, ekran „Dzisiaj”, plan, kalendarz i ustawienia są dostępne w aplikacji Compose.
@@ -42,19 +42,22 @@ Pozostaje do wykonania:
 
 ## 1.2. Plan porządkowania architektury
 
-Zmiany należy wprowadzać stopniowo podczas rozwoju wersji 0.2 i 0.3. Nie wymagają podziału projektu na osobne moduły Gradle ani dodania frameworka wstrzykiwania zależności.
+Zmiany należy wprowadzać stopniowo podczas rozwoju wersji 0.2 i 0.3. Nie wymagają podziału projektu na osobne moduły Gradle. Po wydzieleniu ViewModeli należy wprowadzić Koin jako jeden composition root i usunąć ręczne fabryki.
 
-Status: wspólny `ActivePlanProvider` oraz mapowanie Room poza ViewModelem są zaimplementowane. Pozostałe punkty realizować podczas zmian odpowiednich przepływów.
+Status: wspólny `ActivePlanProvider`, mapowanie Room poza ViewModelem oraz osobne `OccurrenceViewModel`, `ClassEditViewModel`, `SemesterViewModel` i `SetupViewModel` są zaimplementowane. Trwa wydzielanie `SettingsViewModel`. Następne są `ScheduleViewModel`, `TodayViewModel` i ograniczenie stanu nadrzędnego do uruchomienia aplikacji.
 
 Kolejność prac:
 
 1. Przed implementacją widgetu wydzielić wspólny `ActivePlanProvider`. Komponent przyjmuje dane domenowe i datę, wywołuje `ScheduleResolver` oraz w razie potrzeby `CollisionDetector`, a następnie zwraca aktywny plan. Mapowanie danych Room na modele domenowe przenieść z ViewModelu do wspólnej granicy danych. Kod nie może zależeć od Compose ani Glance. Ekran „Dzisiaj”, plan, kalendarz i widget mają korzystać z tej samej ścieżki obliczeń.
 2. Ustawić `NavController` jako jedyne źródło bieżącej trasy. ViewModel może zgłaszać jednorazowy zamiar przejścia po zapisie, usunięciu albo zakończeniu konfiguracji, ale nie przechowuje kopii aktualnej trasy.
-3. Rozdzielać `MakViewModel` według przepływów podczas zmian odpowiednich ekranów. Docelowy podział obejmuje `ScheduleViewModel`, `ClassEditViewModel`, `OccurrenceViewModel`, `SemesterViewModel`, `SetupViewModel` i `SettingsViewModel`. Stan nadrzędny może koordynować aktywny semestr i ustawienia wspólne, ale nie zawiera logiki formularzy poszczególnych ekranów.
+3. Rozdzielać `MakViewModel` według przepływów podczas zmian odpowiednich ekranów. Docelowy podział obejmuje `TodayViewModel`, `ScheduleViewModel`, `ClassEditViewModel`, `OccurrenceViewModel`, `SemesterViewModel`, `SetupViewModel` i `SettingsViewModel`. Po wydzieleniu przepływów zastąpić `MakViewModel` małym `AppViewModel` tylko wtedy, gdy pozostanie własny stan uruchomienia. Nie utrzymywać go jako delegata ani używać do automatycznego wymuszania kreatora.
 4. Nie wystawiać typów Room w publicznym stanie UI. `SemesterWithData` i encje pozostają po stronie danych albo prywatnego składania stanu. Ekrany otrzymują modele prezentacyjne i identyfikatory potrzebne do akcji.
-5. Zapisy obejmujące kilka rekordów wykonywać atomowo. Dotyczy to co najmniej zapisu zajęć z nowym prowadzącym, utworzenia semestru z pierwszym kierunkiem, zmiany aktywnego semestru po usunięciu oraz przyszłego importu. Import zapisuje cały plik albo nie zmienia bazy.
+5. Zapisy obejmujące kilka rekordów wykonywać atomowo. Dotyczy to co najmniej utworzenia semestru z pierwszym kierunkiem i kalendarzem, zmiany aktywnego semestru po usunięciu oraz przyszłego importu. Import zapisuje cały plik albo nie zmienia bazy.
 6. Wprowadzić wspólny stan operacji zapisu: `Saving`, `Saved`, `ValidationError` i `StorageError`. Błąd nie może zamknąć formularza ani usunąć wpisanych wartości. Komunikat wskazuje użytkownikowi pole albo operację, której dotyczy.
-7. Zapisać trwałe preferencje, w tym motyw, poza pamięcią ViewModelu. Stan nawigacyjny, wybrana data, filtry i robocze wartości formularza powinny przetrwać odtworzenie procesu przy użyciu `SavedStateHandle` albo równoważnego mechanizmu.
+7. Zapisać trwałe preferencje, w tym motyw, poza pamięcią ViewModelu. Wybrana data, filtry i drafty mogą przetrwać odtworzenie bieżącego ekranu przez `SavedStateHandle`, ale po świeżym uruchomieniu aplikacji wracają do wartości domyślnych.
+8. Po aktualizacji stabilnego zestawu narzędzi wprowadzić najnowszy zgodny Koin 4.2 z compiler pluginem i constructor injection. Nie używać `get()` ani `koinInject()` wewnątrz ViewModeli, domeny i komponentów ekranów.
+9. Zastąpić szeroki `MakRepository` granicami `SemesterRepository`, `ScheduleRepository`, `SettingsPreferences` i operacją kopii zapasowej. Nie tworzyć repozytorium dla każdej tabeli ani ekranu.
+10. Po zakończeniu podziału ViewModeli wydzielić grupy tras z `MakNavHostApp`, zachowując jeden `NavController` i jeden główny `Scaffold`.
 
 Kryteria zakończenia porządkowania:
 
@@ -63,13 +66,16 @@ Kryteria zakończenia porządkowania:
 - systemowy back i odtworzenie procesu nie rozjeżdżają trasy ze stanem ekranu;
 - awaria operacji wieloetapowej nie zostawia częściowo zapisanych danych;
 - błąd zapisu pozostawia formularz otwarty z zachowanymi wartościami;
-- ponowne utworzenie procesu przywraca trwałe preferencje i istotny stan roboczy.
+- ponowne utworzenie bieżącego ekranu przywraca jego istotny stan roboczy, a świeże uruchomienie zaczyna od domyślnych filtrów i dat;
+- Koin składa pełny graf bez ręcznych fabryk ViewModeli, a compiler plugin wykrywa brakujące definicje;
+- ViewModele zależą od wąskich kontraktów danych i nie używają encji Room w publicznym stanie;
+- główny NavHost rejestruje mniejsze grupy tras korzystające z jednego `NavController`.
 
 ### Obecne zadanie: etapowy refaktor `MakViewModel`
 
 Refaktor należy wykonać przed podłączeniem feedbacku do wszystkich operacji z etapu 6 sekcji 1.6. Nie przepisywać całego ViewModelu jednocześnie. Każdy etap ma kończyć się kompilującym stanem, testami odpowiednimi do zmiany i osobnym commitem.
 
-Status: etapy 1-7 zrealizowane. Etap 1 to inwentaryzacja odpowiedzialności zapisana poniżej, etap 2 wydziela `FeedbackSink` i aplikacyjny `FeedbackController`, etap 3 dodaje `OccurrenceArgs` i utrzymuje `OccurrenceDetailsUiState` bez typów warstwy danych ani stanu nawigacji, etap 4 przenosi logikę szczegółów do `OccurrenceViewModel`, etap 5 podłącza ekran szczegółów bezpośrednio do `OccurrenceViewModel` i usuwa delegację oraz stan szczegółów z `MakUiState`, etap 6 podłącza komunikaty do zmiany, przeniesienia, przywrócenia i odwołania terminu oraz obu notatek, a etap 7 potwierdził brak pozostałości szczegółów w `MakViewModel`. Etap 8 zakończył `ClassEditViewModel` oraz `SetupViewModel` z atomowym zapisem semestru i pierwszego kierunku.
+Status: etapy 1-7 są zakończone. W etapie 8 zakończono `ClassEditViewModel`, `SemesterViewModel` i `SetupViewModel`. `SettingsViewModel` jest pracą w toku. Po nim należy wydzielić `ScheduleViewModel` i `TodayViewModel`, a następnie ocenić pozostały stan nadrzędny i zastąpić `MakViewModel` małym `AppViewModel` albo usunąć go, jeśli nie będzie miał własnej odpowiedzialności.
 
 #### Etap 1: inwentaryzacja odpowiedzialności
 
@@ -83,22 +89,23 @@ Kryterium etapu: każda publiczna metoda ma wskazanego przyszłego właściciela
 
 Pola i metody według grupy oraz przyszłego właściciela:
 
-1. Dane wspólne i cykl życia (cienki stan nadrzędny): pola `repository`, `clock`, `activePlanProvider`, `today`, `controls`, `semesters`, `activeSemesterData`, `uiState` oraz `refreshToday`.
+1. Uruchomienie aplikacji (`AppViewModel`, jeśli pozostanie potrzebny): odczyt gotowości danych, rozpoznanie wymaganej konfiguracji i przekazanie kreatorowi danych potrzebnych do wznowienia konfiguracji istniejącego semestru.
 2. Nawigacja: `navigate` i pola trasy `destination`. Przyszły właściciel to host nawigacji i `NavController`, nie ViewModel przepływu.
 3. Plan i kalendarz (`ScheduleViewModel`): `selectScheduleView`, `changeWeek`, `selectScheduleDay`, `selectCourseFilter`, `changeMonth`, `selectCalendarDay`, `setShowCancelled`, `saveVisibleWeekOverride`, `clearVisibleWeekOverride`, `openNewClassForSelectedCalendarDay` oraz pola `schedule`, `scheduleDate`, `calendarMonth`, `calendarDate`, `scheduleView`, `courseFilterId`, `showCancelled`.
-4. Szczegóły wystąpienia (`OccurrenceViewModel`): `openOccurrence`, `updateOccurrence`, `updateOccurrenceDraft`, `openOccurrenceEditDialog`, `dismissOccurrenceEditDialog`, `requestClassDeletion`, `cancelClassDeletion`, `deleteSelectedClass`, `cancelSelectedOccurrence`, `restoreSelectedOccurrence`, `updateSharedNoteDraft`, `updateOccurrenceNoteDraft`, `saveSharedNote`, `saveOccurrenceNote`, `saveSelectedOccurrenceChange` oraz pola `occurrence`, `selectedClassId`, `selectedOccurrenceDate`, `selectedNoteDate`, `occurrenceDraft`.
-5. Edycja zajęć (`ClassEditViewModel`): `openNewClass`, `openEditClass`, `updateEditor`, `saveClass` oraz pola `editor`, `editorClassId`.
-6. Semestr (`SemesterViewModel`): `openSemesterConfiguration`, `updateSemester`, `saveSemesterConfiguration`, `newWeekOverride`, `editWeekOverride`, `cancelWeekOverrideEdit`, `saveWeekOverride`, `deleteWeekOverride`, `addCourse`, `deleteCourse` oraz pola `semester`, `semesterDraft`, `semesterEditId`.
-7. Konfiguracja początkowa (`SetupViewModel`): `updateSetup`, `setupNext`, `setupBack`, `finishSetup`, `cancelSetup`, `startSemesterSetup` oraz pola `setup`, `forceSetup`.
-8. Ustawienia (`SettingsViewModel`): `selectSemester`, `requestSemesterDeletion`, `cancelSemesterDeletion`, `confirmSemesterDeletion`, `selectTheme`, `exportJson` oraz pola `settings`, `themeId`, `semesterToDeleteId`.
-9. Feedback (`FeedbackController`): `publishFeedback` i `feedback`. Etap 2 przenosi kanał do kontrolera, a `MakViewModel` otrzymuje `FeedbackSink`.
+4. Ekran „Dzisiaj” (`TodayViewModel`): bieżąca data, `refreshToday`, złożenie `TodayUiState` i ponowny odczyt daty po wznowieniu aplikacji.
+5. Szczegóły wystąpienia (`OccurrenceViewModel`): `openOccurrence`, `updateOccurrence`, `updateOccurrenceDraft`, `openOccurrenceEditDialog`, `dismissOccurrenceEditDialog`, `requestClassDeletion`, `cancelClassDeletion`, `deleteSelectedClass`, `cancelSelectedOccurrence`, `restoreSelectedOccurrence`, `updateSharedNoteDraft`, `updateOccurrenceNoteDraft`, `saveSharedNote`, `saveOccurrenceNote`, `saveSelectedOccurrenceChange` oraz pola `occurrence`, `selectedClassId`, `selectedOccurrenceDate`, `selectedNoteDate`, `occurrenceDraft`.
+6. Edycja zajęć (`ClassEditViewModel`): `openNewClass`, `openEditClass`, `updateEditor`, `saveClass` oraz pola `editor`, `editorClassId`.
+7. Semestr (`SemesterViewModel`): `openSemesterConfiguration`, `updateSemester`, `saveSemesterConfiguration`, `newWeekOverride`, `editWeekOverride`, `cancelWeekOverrideEdit`, `saveWeekOverride`, `deleteWeekOverride`, `addCourse`, `deleteCourse` oraz pola `semester`, `semesterDraft`, `semesterEditId`.
+8. Konfiguracja początkowa (`SetupViewModel`): `updateSetup`, `setupNext`, `setupBack`, `finishSetup`, `cancelSetup`, `startSemesterSetup` oraz pola `setup`, `forceSetup`.
+9. Ustawienia (`SettingsViewModel`): `selectSemester`, `requestSemesterDeletion`, `cancelSemesterDeletion`, `confirmSemesterDeletion`, `selectTheme`, `exportJson` oraz pola `settings`, `themeId`, `semesterToDeleteId`.
+10. Feedback (`FeedbackController`): `publishFeedback` i `feedback`. Etap 2 przenosi kanał do kontrolera, a `MakViewModel` otrzymuje `FeedbackSink`.
 
 Metody koordynujące kilka grup:
 
 - `finishSetup`, `cancelSetup` i `startSemesterSetup` zmieniają stan konfiguracji oraz nawigację, więc `SetupViewModel` zgłosi jednorazowy zamiar przejścia, a trasę zmieni host.
-- `confirmSemesterDeletion` wybiera kolejny aktywny semestr albo otwiera kreator, więc `SettingsViewModel` potrzebuje operacji nadrzędnej na aktywnym semestrze.
-- `selectSemester` i `selectTheme` dotyczą stanu wspólnego, więc aktualizacja przejdzie przez cienki stan nadrzędny.
-- `activePlan`, `buildToday` i `buildSchedule` korzystają ze wspólnego `ActivePlanProvider`, a po podziale każdy ViewModel złoży własny stan z tej samej ścieżki obliczeń.
+- `confirmSemesterDeletion` wybiera kolejny aktywny semestr albo zwraca wynik wymagający pokazania stanu pustego; nie otwiera kreatora automatycznie.
+- `selectSemester` i `selectTheme` należą do `SettingsViewModel`; inne ViewModele obserwują wynik przez repozytorium albo granicę preferencji.
+- `activePlan`, `buildToday` i `buildSchedule` korzystają ze wspólnego `ActivePlanProvider`, a po podziale `TodayViewModel` i `ScheduleViewModel` składają własny stan z tej samej ścieżki obliczeń.
 
 #### Etap 2: kontroler feedbacku niezależny od ViewModelu
 
@@ -169,16 +176,17 @@ Status etapu: zrealizowane. Audyt potwierdził, że `MakViewModel` nie ma pól `
 
 #### Etap 8: kolejne ViewModele
 
-1. Powtórzyć ten sam schemat kolejno dla `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel` i `ScheduleViewModel`.
+1. Powtórzyć ten sam schemat kolejno dla `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel`.
 2. Dla każdego przepływu najpierw wydzielić modele i testy, następnie logikę, nawigację i feedback, a na końcu usunąć stary kod.
 3. Nie przenosić dwóch dużych przepływów w jednym commicie.
 4. Podłączanie feedbacku dla danego przepływu realizuje odpowiednią część etapu 6 sekcji 1.6.
+5. Po wydzieleniu wszystkich przepływów usunąć delegacje z `MakViewModel` i ocenić jego pozostałą odpowiedzialność.
 
-Kryterium etapu: nadrzędny stan koordynuje wyłącznie dane wspólne, a logika formularzy i operacji należy do ViewModelu właściwego przepływu.
+Kryterium etapu: każdy ekran ma własny ViewModel, `NavController` pozostaje jedynym źródłem trasy, a stan nadrzędny odpowiada najwyżej za uruchomienie aplikacji i wymuszenie konfiguracji.
 
-Status etapu: `ClassEditViewModel` zakończony. Ekran edycji czyta `ClassEditViewModel.editor` i wywołuje jego akcje, a `MakViewModel` nie zawiera już `editor`, metod formularza ani delegacji. `openEdit` czeka na dane semestru i wygrywa ostatnie otwarcie. Po udanym zapisie ViewModel emituje `ClassEditEffect.CloseEditor` zbierany na poziomie `MakApp`, a synchroniczny `isSaving` blokuje wielokrotny zapis. Operacje emitują komunikaty „Dodano zajęcia”, „Zapisano zmiany zajęć” oraz „Nie udało się zapisać zajęć.”, a walidacja nie emituje feedbacku. Kolejne przepływy to `SemesterViewModel`, `SetupViewModel`, `SettingsViewModel` i `ScheduleViewModel`.
+Status etapu: zakończono `ClassEditViewModel`, `SemesterViewModel` i `SetupViewModel`. `SettingsViewModel` jest pracą w toku. Pozostają `ScheduleViewModel`, `TodayViewModel` i końcowe ograniczenie stanu nadrzędnego.
 
-Po każdym etapie uruchomić `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` oraz sprawdzić, że commit nie zawiera niezwiązanych zmian. Pierwsze zadanie wykonawcze obejmuje wyłącznie etapy 1 i 2. Wydzielanie `OccurrenceViewModel` rozpoczyna się po zaakceptowaniu granicy `FeedbackController`.
+Każdy kolejny przepływ realizować i weryfikować osobno. Bieżąca kolejność to dokończenie `SettingsViewModel`, wydzielenie `ScheduleViewModel`, wydzielenie `TodayViewModel` i końcowa ocena `AppViewModel`. Po każdym zakończonym etapie sprawdzić, że commit nie zawiera zmian z następnego przepływu.
 
 #### SemesterViewModel
 
@@ -191,6 +199,185 @@ Poza tym refaktorem pozostają: wybór, dodawanie i usuwanie całych semestrów 
 Status: zrealizowane w sześciu etapach. `SetupViewModel` przejmuje stan kreatora konfiguracji, walidację, przechodzenie między krokami oraz efekt zakończenia, powrotu do ustawień i otwarcia edytora zajęć. Gdy istnieje aktywny semestr bez kierunku, `start(existingSemester)` wznawia konfigurację od kroku kierunku i aktualizuje istniejący semestr, więc zapis nie tworzy drugiego semestru. Wymuszona nawigacja do kreatora czeka na `MakUiState.hasLoadedData`, więc zimny start nie otwiera pustego formularza przed odczytem aktywnego semestru. Krok semestru tylko waliduje dane, a krok kierunku uruchamia `MakRepository.saveSetupConfiguration`, który w jednej transakcji tworzy albo aktualizuje semestr i pierwszy kierunek, ustawia semestr jako aktywny i zwraca oba identyfikatory. Ponowny zapis po cofnięciu aktualizuje te same rekordy, a awaria nie pozostawia częściowych danych. Synchroniczne `isSaving` blokuje wielokrotne kliknięcie, błąd zachowuje drafty i krok, a `CancellationException` jest ponownie rzucany. Sukces publikuje „Utworzono semestr i kierunek” albo „Zaktualizowano konfigurację”, a błąd „Nie udało się zapisać konfiguracji.”. Ekran kreatora czyta `SetupViewModel.setup` i wywołuje jego akcje, efekty są zbierane w `MakApp` tylko na trasie `setup`, a nawigacją do kreatora steruje `requiresSetup` bez pola `forceSetup`. `MakViewModel` nie zawiera już `SetupWizardUiState`, `SetupStep`, `SetupField` ani metod kreatora.
 
 Nie zmieniano wyglądu trzech kroków kreatora ani `SettingsViewModel` i `ScheduleViewModel`. Instrumentowany `RoomPersistenceTest` sprawdza, że nieudana część transakcji dla kierunku wycofuje też zapis semestru.
+
+#### SettingsViewModel
+
+Status: praca w toku. Wydzielono stan ustawień, wybór i usuwanie semestru, wybór motywu oraz eksport JSON. Trwa podłączanie trwałych preferencji motywu i usuwanie delegacji z `MakViewModel`. Do zakończenia pozostaje pełne podłączenie ekranu bezpośrednio do `SettingsViewModel`, obsługa błędów operacji, usunięcie starego stanu ustawień z `MakUiState` i aktualizacja dokumentacji po weryfikacji.
+
+#### ScheduleViewModel
+
+Status: do wykonania po `SettingsViewModel`.
+
+1. Przenieść widok listy i kalendarza, wybrane daty, miesiąc, filtr kierunku, widoczność odwołanych zajęć oraz zmianę widocznego tygodnia.
+2. Składać plan wyłącznie przez wspólny `ActivePlanProvider`.
+3. Przenieść otwieranie nowych zajęć dla wybranego dnia do jawnego efektu albo argumentu wywołania `ClassEditViewModel` bez delegacji przez stan nadrzędny.
+4. Zachować stan roboczy potrzebny po odtworzeniu procesu.
+
+Kryterium zakończenia: ekran „Plan” czyta wyłącznie `ScheduleViewModel`, a `MakViewModel` nie zawiera stanu listy, kalendarza, filtrów ani korekt widocznego tygodnia.
+
+#### TodayViewModel
+
+Status: zaakceptowane, do wykonania po `ScheduleViewModel`.
+
+1. Przenieść bieżącą datę, `refreshToday` i składanie `TodayUiState`.
+2. Korzystać z `Clock` oraz `ActivePlanProvider`; nie wywoływać `LocalDate.now()` bezpośrednio.
+3. Odświeżać datę po wznowieniu aplikacji, aby ekran nie pozostawał na poprzednim dniu.
+4. Zachować zgodność wyniku z ekranem „Plan” i widgetem dla tej samej daty oraz danych.
+
+Kryterium zakończenia: ekran „Dzisiaj” czyta wyłącznie `TodayViewModel`, a nadrzędny stan nie zawiera `TodayUiState`, daty dnia ani logiki składania planu.
+
+#### AppViewModel i usunięcie MakViewModel
+
+Status: zaakceptowany kierunek końcowy. Decyzję o całkowitym usunięciu podjąć po wydzieleniu `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel` na podstawie pozostałego kodu.
+
+1. Usunąć z `MakViewModel` delegacje, stan ekranów, kopię trasy i logikę prezentacji.
+2. Jeśli nadal potrzebny jest właściciel stanu uruchomienia, zastąpić `MakViewModel` małym `AppViewModel`.
+3. `AppViewModel` może rozpoznawać, czy dane zostały wczytane, czy konfiguracja jest wymagana i czy kreator ma wznowić istniejący semestr bez kierunku.
+4. `AppViewModel` nie może zawierać modeli ekranów, motywu, filtrów, formularzy, eksportu ani delegacji do innych ViewModeli.
+5. Jeśli wymuszenie konfiguracji da się obsłużyć bez trwałego stanu nadrzędnego i bez obserwowania repozytorium w Composable, usunąć nadrzędny ViewModel całkowicie.
+
+Kryterium zakończenia: nazwa i zakres nadrzędnego ViewModelu opisują jego jedną odpowiedzialność. Brak własnej odpowiedzialności oznacza usunięcie klasy.
+
+### Kolejność dalszych prac
+
+Poniższe etapy wykonywać po kolei. Każdy etap kończy się kompilującym stanem, właściwymi testami i osobnym commitem. Nie łączyć aktualizacji narzędzi, migracji Room, Koin, nowych funkcji ani dwóch dużych przepływów w jednym commicie.
+
+#### Dalszy etap 1: dokończenie SettingsViewModel
+
+1. Dokończyć trwały zapis motywu i bezpieczną obsługę błędów.
+2. Podłączyć ekran ustawień bezpośrednio do `SettingsViewModel`.
+3. Usunąć delegacje, `settings` i `themeId` z `MakViewModel` oraz `MakUiState`.
+4. Zachować bieżący schemat Room i wygląd ekranu.
+
+Kryterium: ustawienia, semestry, motyw i eksport nie przechodzą przez `MakViewModel`.
+
+#### Dalszy etap 2: aktualizacja stabilnego zestawu narzędzi
+
+1. Sprawdzić najnowsze stabilne, wzajemnie zgodne wersje Kotlin, AGP, Gradle, Compose BOM, AndroidX, Room, Navigation, KSP, Glance i bibliotek testowych.
+2. Nie używać wersji alpha, beta, RC ani numerów dynamicznych.
+3. Zaktualizować wersje w jednym commicie i zapisać wynik w `STACK.md`.
+4. Nie dodawać jeszcze Koin ani nie zmieniać kodu aplikacji poza poprawkami zgodności wymaganymi przez nowe wersje.
+
+Kryterium: projekt działa na aktualnym stabilnym zestawie, Kotlin ma wersję zgodną z compiler pluginem Koin 4.2, a dotychczasowe zachowanie aplikacji pozostaje bez zmian.
+
+#### Dalszy etap 3: ScheduleViewModel
+
+Wykonać zakres i kryterium opisane w sekcji `ScheduleViewModel`. Nadal używać obecnej granicy danych, aby nie mieszać podziału stanu ze zmianą schematu.
+
+#### Dalszy etap 4: TodayViewModel
+
+Wykonać zakres i kryterium opisane w sekcji `TodayViewModel`. Potwierdzić zgodność wyniku z planem i widgetem dla tej samej daty.
+
+#### Dalszy etap 5: stan nadrzędny i pusty start
+
+1. Ocenić `MakViewModel` zgodnie z sekcją `AppViewModel i usunięcie MakViewModel`.
+2. Usunąć automatyczne przejście do kreatora przy braku semestrów.
+3. Na ekranie „Dzisiaj” i „Plan” pokazać stan pusty z przyciskiem „Skonfiguruj plan”.
+4. Kreator otwierać wyłącznie po jawnej akcji użytkownika.
+5. Po usunięciu ostatniego semestru wrócić do stanu pustego zamiast otwierać kreator.
+
+Kryterium: świeża pusta baza pozostaje w głównej aplikacji, a konfiguracja zaczyna się dopiero po użyciu przycisku.
+
+#### Dalszy etap 6: Koin
+
+1. Dodać najnowszy stabilny Koin 4.2 przez BOM i zgodny compiler plugin.
+2. Zdefiniować moduły danych, domeny, preferencji, feedbacku i ViewModeli.
+3. Uruchamiać Koin w `MakApplication`; ViewModele pobierać wyłącznie na granicy hostów.
+4. Stosować constructor injection. Nie wywoływać `get()` ani `koinInject()` wewnątrz ViewModeli, domeny i komponentów ekranów.
+5. Usunąć ręczne klasy `ViewModelProvider.Factory` oraz ręczne składanie grafu w `MainActivity`.
+6. Włączyć walidację pełnego grafu podczas kompilacji. Dodać test uruchomienia modułów, jeśli compiler plugin nie pokrywa typów Androida.
+
+Kryterium: aplikacja nie ma ręcznych fabryk ViewModeli, a błędny graf zatrzymuje kompilację albo test konfiguracji.
+
+#### Dalszy etap 7: podział NavHosta
+
+1. Wydzielić grupy tras: start i konfiguracja, „Dzisiaj” i plan, zajęcia i wystąpienia, semestr oraz ustawienia.
+2. Każda grupa deklaruje własne trasy, argumenty, ViewModele i efekty przepływu.
+3. Główny host zachowuje jeden `NavController`, jeden `Scaffold`, topbar, dolną nawigację i globalny snackbar.
+4. Nie dodawać dodatkowych kontrolerów ani osobnej warstwy nawigacyjnej.
+
+Kryterium: zmiana trasy jednego przepływu nie wymaga edycji hostów pozostałych przepływów.
+
+#### Dalszy etap 8: modele StudyProgram i AcademicCalendar
+
+1. Zastąpić domenową nazwę `Course` nazwą `StudyProgram`. Kierunek ma `id`, nazwę i kolor, bez `semesterId`.
+2. Zachować `Semester` jako nazwany kontener aktywnego planu, bez własnych dat i rytmu A/B.
+3. Dodać `SemesterProgram`, które łączy semestr z kierunkiem i wskazuje `academicCalendarId`.
+4. Dodać `AcademicCalendar` zawierający datę początku, datę końca, pierwszy tydzień A/B i korekty tygodni.
+5. Daty, rytm A/B i korekty zawsze są współdzielone razem. Nie dodawać niezależnych przełączników.
+6. Wiele `SemesterProgram` może wskazywać ten sam kalendarz. Domyślnie wszystkie kierunki nowego semestru korzystają ze wspólnego kalendarza.
+7. Zajęcia wskazują `semesterProgramId`; prowadzący jest opcjonalnym tekstem zajęć, bez osobnej bazy prowadzących.
+
+Kryterium: czyste modele i testy opisują jeden kierunek w wielu semestrach, wspólny kalendarz kilku kierunków i osobny kalendarz kierunku z innej uczelni.
+
+#### Dalszy etap 9: resolver wielu kalendarzy
+
+1. Przenieść wejście `WeekCalculator` z semestru na `AcademicCalendar`.
+2. Obliczać plan każdego `SemesterProgram` według wskazanego kalendarza.
+3. Połączyć wystąpienia wszystkich kierunków aktywnego semestru przed uruchomieniem `CollisionDetector`.
+4. Zachować wspólny `ActivePlanProvider` dla ekranu, kalendarza i widgetu.
+5. Przetestować różne daty, przeciwne rytmy A/B, niezależne korekty i kolizje między uczelniami.
+
+Kryterium: dwa kierunki z różnymi kalendarzami pokazują poprawne wystąpienia i wspólne kolizje dla wybranej daty.
+
+#### Dalszy etap 10: migracja Room
+
+1. Dodać tabele `StudyProgram`, `SemesterProgram` i `AcademicCalendar` oraz potrzebne indeksy i klucze obce.
+2. Przenieść daty i pierwszy tydzień z semestru do kalendarza, a korekty powiązać z kalendarzem.
+3. Zmienić zajęcia tak, aby wskazywały `semesterProgramId`.
+4. Przenieść nazwę prowadzącego do zajęć i usunąć zależność od osobnej tabeli prowadzących.
+5. Dla każdego starego semestru utworzyć jeden kalendarz. Każdy stary kierunek zachować jako osobny `StudyProgram`, bez automatycznego scalania po nazwie.
+6. Utworzyć `SemesterProgram` dla każdego starego powiązania i przepisać zajęcia oraz korekty bez utraty danych.
+7. Zachować eksport schematu Room i dodać test migracji na istniejących danych.
+
+Kryterium: migracja zachowuje semestry, kierunki, zajęcia, prowadzących jako tekst, korekty, notatki i zmiany wystąpień.
+
+#### Dalszy etap 11: podział repozytoriów
+
+1. `SemesterRepository` obsługuje semestry, aktywny semestr, globalne kierunki, `SemesterProgram`, kalendarze oraz atomową konfigurację początkową.
+2. `ScheduleRepository` obsługuje zajęcia, zmiany wystąpień, notatki i dane wejściowe planu. Korekty zapisuje przez kalendarz należący do konfiguracji semestru.
+3. `SettingsPreferences` pozostaje osobną granicą trwałych ustawień.
+4. Warstwa danych udostępnia pełny `PlanBackupSnapshot` oraz atomowe zastąpienie danych. Pakiet `export` odpowiada za JSON, a `PlanBackupService` koordynuje operację.
+5. Publiczne kontrakty zwracają modele domenowe lub dedykowane snapshoty, bez encji Room i relacji bazy.
+6. Operacje wieloetapowe pozostają jedną transakcją w `data`; ViewModel nie koordynuje częściowych zapisów.
+7. Usunąć `MakRepository` dopiero po przeniesieniu ostatniego konsumenta, w tym widgetu.
+
+Kryterium: kod aplikacji nie zależy od `MakRepository`, a testy potwierdzają rollback operacji wieloetapowych.
+
+#### Dalszy etap 12: konfiguracja kalendarzy w UI
+
+1. Kreator tworzy semestr, pierwszy globalny kierunek, pierwszy kalendarz i łączące je `SemesterProgram` w jednej transakcji.
+2. Przy dodawaniu kolejnego kierunku domyślnie wybrać „Wspólne daty i tygodnie” oraz pozwolić wybrać „Osobne daty i tygodnie”.
+3. Oddzielenie kalendarza tworzy kopię obecnych dat, rytmu i korekt, którą użytkownik może zmienić.
+4. Ponowne połączenie wymaga wyboru istniejącego kalendarza i ostrzeżenia, że osobne ustawienia przestaną być używane. Nie scalać korekt automatycznie.
+5. Przy trzech lub większej liczbie kierunków pozwolić kilku z nich wskazywać jeden kalendarz, a pozostałym inne kalendarze.
+6. Usunięcie semestru usuwa jego plan, powiązania i nieużywane kalendarze, ale zachowuje globalne kierunki. Usunięcie używanego kierunku jest blokowane.
+
+Kryterium: użytkownik może połączyć i rozdzielić kalendarze bez zmiany zajęć oraz bez utraty ustawień innych kierunków.
+
+#### Dalszy etap 13: import przez pełne zastąpienie
+
+1. Zwiększyć `schemaVersion` formatu i eksportować globalne kierunki, semestry, powiązania, kalendarze oraz pozostałe dane planu.
+2. Przed importem zweryfikować wersję, relacje, daty i brak osieroconych zajęć.
+3. Pokazać podgląd zawartości i ostrzeżenie o zastąpieniu wszystkich lokalnych danych.
+4. Po potwierdzeniu zastąpić dane w jednej transakcji. Błąd pozostawia bazę bez zmian.
+5. Po imporcie odtworzyć aktywny semestr wskazany w pliku albo pokazać stan pusty, jeśli plik nie zawiera semestru.
+6. Dodać test round-trip i rollbacku.
+
+Kryterium: zaakceptowany plik odtwarza pełny plan, a nieprawidłowy plik nie zmienia żadnych danych.
+
+#### Dalszy etap 14: powiadomienia o kolizjach
+
+1. Powiadamiać wieczorem dnia poprzedzającego kolizję oraz przed rozpoczęciem kolidujących zajęć. Domyślna godzina pierwszego powiadomienia to 20:00, a domyślne wyprzedzenie drugiego wynosi 30 minut.
+2. Planować powiadomienia na podstawie wyniku `ActivePlanProvider`, po zmianach danych usuwać nieaktualne i planować nowe.
+3. Deduplikować powiadomienia dla tej samej grupy kolizji.
+4. Dodać w ustawieniach główny przełącznik powiadomień o kolizjach oraz osobne przełączniki powiadomienia wieczornego i powiadomienia przed zajęciami.
+5. Pozwolić zmienić globalnie godzinę powiadomienia wieczornego i wyprzedzenie powiadomienia przed zajęciami. Ustawienia dotyczą aktywnego planu, a nie pojedynczych kierunków ani zajęć.
+6. Używać przybliżonych alarmów `AlarmManager` bez żądania dostępu do dokładnych alarmów. Powiadomienie wieczorne planować około wybranej godziny. Powiadomienie przed zajęciami planować w oknie kończącym się o wybranym wyprzedzeniu, domyślnie od 45 do 30 minut przed rozpoczęciem.
+7. Nie używać `WorkManager` do dostarczenia tych powiadomień i nie uruchamiać ciągłego serwisu. Interfejs nie może obiecywać dostarczenia o dokładnej godzinie.
+8. Po ponownym uruchomieniu urządzenia, zmianie czasu, zmianie ustawień, zmianie aktywnego semestru oraz zmianie danych wpływających na kolizje usunąć nieaktualne alarmy i zaplanować aktualny zestaw.
+
+Kryterium: zmiana, przeniesienie, przywrócenie lub odwołanie zajęć aktualizuje przyszłe powiadomienia bez duplikatów, a wyłączenie rodzaju powiadomienia usuwa odpowiadające mu przyszłe alarmy.
 
 ## 1.3. Plan poprawy ekranu „Plan”
 
@@ -408,7 +595,7 @@ Kryterium etapu: konfiguracja semestru nie zwiększa wysokości po wybraniu „K
 ### Etap 3: osobny ekran kierunków
 
 1. Przenieść `CoursesBlock` do publicznego ekranu `SemesterCoursesScreen` albo równoważnie nazwanego komponentu w pakiecie semestru.
-2. Na początku ekranu pokazać krótkie objaśnienie, że kierunki należą tylko do wybranego semestru.
+2. Na początku ekranu pokazać krótkie objaśnienie, że ekran zarządza przypisaniami globalnych kierunków do wybranego semestru.
 3. Następnie pokazać listę kierunków, stan pusty oraz formularz dodawania z nazwą i wyborem koloru.
 4. Zachować istniejące operacje dodawania i usuwania. Usunięcie nadal musi korzystać z obowiązujących zabezpieczeń danych.
 5. Robocza nazwa i kolor nie mogą znikać po chwilowym przejściu aplikacji do tła ani po odtworzeniu ekranu. Stan formularza powinien należeć do ViewModelu albo `SavedStateHandle`, nie do lokalnego `remember`.
@@ -568,7 +755,7 @@ Dolny pasek zawiera trzy pozycje:
 
 Ustawienia są dostępne z menu w prawym górnym rogu. Kliknięcie zajęć na ekranie „Dzisiaj” lub „Plan” otwiera ekran szczegółów i edycji.
 
-Jeśli aplikacja nie ma jeszcze semestru, zamiast ekranu „Dzisiaj” otwiera kreator pierwszej konfiguracji. Kreator tworzy pierwszy semestr i co najmniej jeden kierunek, a po zakończeniu prowadzi do dodawania zajęć. Ustawienia pozwalają później dodawać, wybierać, konfigurować i usuwać semestry.
+Jeśli aplikacja nie ma jeszcze semestru, ekran „Dzisiaj” pokazuje stan pusty z przyciskiem „Skonfiguruj plan”. Kreator otwiera się po tej akcji i tworzy pierwszy semestr, kierunek, kalendarz oraz przypisanie. Ustawienia pozwalają później dodawać, wybierać, konfigurować i usuwać semestry.
 
 ## 4. Ekran „Dzisiaj”
 
@@ -657,7 +844,7 @@ Formularz ogranicza zajęcia do jednego dnia kalendarzowego. Godzina zakończeni
 
 Podczas dodawania notatki użytkownik wybiera zakres: „Do tych zajęć” albo „Tylko do tego terminu”. Notatkę do konkretnego wystąpienia można dodać z ekranu szczegółów zajęć na ekranie „Dzisiaj” lub „Plan”. Jeśli istnieją oba typy, aplikacja pokazuje je osobno i nie nadpisuje notatki wspólnej.
 
-Prowadzący zapisani wcześniej są proponowani podczas wpisywania. Formularz powinien walidować, że nazwa, kierunek, godzina rozpoczęcia i zakończenia są uzupełnione, a godzina zakończenia jest późniejsza od rozpoczęcia. Zajęcia przechodzące przez północ są nieprawidłowe.
+Prowadzący jest opcjonalnym tekstem zapisanym przy zajęciach. Aplikacja nie prowadzi osobnej bazy prowadzących. Formularz powinien walidować, że nazwa, kierunek, godzina rozpoczęcia i zakończenia są uzupełnione, a godzina zakończenia jest późniejsza od rozpoczęcia. Zajęcia przechodzące przez północ są nieprawidłowe.
 
 Po usunięciu zajęć aplikacja powinna wymagać potwierdzenia. Edycja i usuwanie muszą aktualizować widget.
 
@@ -665,62 +852,51 @@ Po usunięciu zajęć aplikacja powinna wymagać potwierdzenia. Edycja i usuwani
 
 Ustawienia semestru są potrzebne od pierwszej wersji, ponieważ określają automatyczny rytm tygodni A/B.
 
-Użytkownik może mieć wiele semestrów. Każdy semestr ma własne kierunki, prowadzących, zajęcia, korekty tygodni, notatki i zmiany wystąpień. Dane nie przechodzą między semestrami automatycznie. Użytkownik wybiera aktywny semestr w ustawieniach; ekrany, widget i powiadomienia korzystają wyłącznie z jego planu.
+Użytkownik może mieć wiele semestrów. Semestr grupuje kierunki i plan na dany okres, ale globalny kierunek może występować w wielu semestrach. Użytkownik wybiera aktywny semestr w ustawieniach; ekrany, widget i powiadomienia korzystają wyłącznie z jego planu.
 
-Model semestru:
+`Semester` przechowuje identyfikator, nazwę, np. „Semestr zimowy 2026/27”, oraz stan aktywności. Daty i rytm A/B należą do `AcademicCalendar`.
 
-- nazwa, np. „Semestr zimowy 2026/27”;
-- data rozpoczęcia;
-- data zakończenia;
-- oznaczenie pierwszego tygodnia: A lub B.
+`AcademicCalendar` przechowuje datę rozpoczęcia, datę zakończenia, oznaczenie pierwszego tygodnia oraz korekty. `SemesterProgram` łączy semestr z globalnym kierunkiem i wskazuje kalendarz. Kilka kierunków może używać tego samego kalendarza; kierunek z innej uczelni może mieć osobny.
 
 Kalkulator tygodnia powinien:
 
-1. sprawdzić, czy data mieści się w zakresie semestru;
-2. znaleźć poniedziałek tygodnia zawierającego datę rozpoczęcia semestru;
+1. sprawdzić, czy data mieści się w zakresie kalendarza kierunku;
+2. znaleźć poniedziałek tygodnia zawierającego datę rozpoczęcia kalendarza;
 3. obliczyć liczbę pełnych tygodni od tego poniedziałku i naprzemiennie przypisywać A/B;
 4. zastosować ostatnią korektę „Od tego tygodnia” obowiązującą dla wskazanego tygodnia, licząc naprzemienność od jej daty;
 5. jeśli istnieje korekta „Tylko ten tydzień”, zastosować ją zamiast wyniku z poprzedniego kroku.
 
-Każda korekta dotyczy jednego semestru i wskazuje poniedziałek tygodnia, oznaczenie A/B oraz zakres. Zmiana pojedyncza nie wpływa na kolejny tydzień. Zmiana przyszła zaczyna nową sekwencję; następna zmiana przyszła może ją ponownie przestawić. Dla jednego tygodnia i zakresu obowiązuje najwyżej jedna korekta, którą można edytować lub usunąć. Tydzień A/B jest wspólny dla wszystkich kierunków; zmiany konkretnych wystąpień są odrębną funkcją.
+Każda korekta dotyczy jednego `AcademicCalendar` i wskazuje poniedziałek tygodnia, oznaczenie A/B oraz zakres. Zmiana pojedyncza nie wpływa na kolejny tydzień. Zmiana przyszła zaczyna nową sekwencję; następna zmiana przyszła może ją ponownie przestawić. Dla jednego tygodnia i zakresu obowiązuje najwyżej jedna korekta. Kierunki wskazujące ten sam kalendarz zawsze współdzielą daty, rytm A/B i korekty jako jeden zestaw.
 
 Przykład: pierwszy tydzień semestru to A, więc następny to B. Jeśli trzeci tydzień zostanie jednorazowo oznaczony B, czwarty nadal będzie B według automatycznej sekwencji. Jeśli trzeci tydzień zostanie oznaczony B „Od tego tygodnia”, czwarty będzie A.
 
 Poza zakresem semestru aplikacja powinna jasno pokazać, że nie ma aktywnego semestru. Nie należy opierać działania wyłącznie na numerze tygodnia ISO, ponieważ uczelniana numeracja może zaczynać się w innym miejscu.
 
-Ustawienia semestrów umożliwiają dodanie, edycję, wybór i usunięcie semestru. Usunięcie wymaga potwierdzenia i usuwa dane tego semestru. Gdy użytkownik usunie aktywny semestr, aplikacja wybiera inny istniejący semestr albo otwiera kreator, jeśli nie ma już żadnego.
+Ustawienia semestrów umożliwiają dodanie, edycję, wybór i usunięcie semestru. Usunięcie wymaga potwierdzenia, usuwa plan, powiązania i nieużywane kalendarze, ale zachowuje globalne kierunki. Po usunięciu aktywnego semestru aplikacja wybiera inny istniejący semestr. Jeśli nie ma żadnego, pokazuje stan pusty z przyciskiem „Skonfiguruj plan” i nie otwiera kreatora automatycznie.
 
 ## 8. Kierunki
 
-Model `Course`:
+Model `StudyProgram`:
 
 - `id`;
-- `semesterId`;
 - `name`;
 - `color`.
 
-Aplikacja nie jest ograniczona do dwóch kierunków. Kolor kierunku jest widoczny na liście zajęć, w filtrach i w widgetach.
+Aplikacja nie jest ograniczona do dwóch kierunków. Kierunek istnieje niezależnie od semestru i może być użyty ponownie. `SemesterProgram` łączy go z semestrem oraz kalendarzem. Kolor kierunku jest widoczny na liście zajęć, w filtrach i w widgetach.
 
 ## 9. Prowadzący
 
-Model `Teacher`:
-
-- `id`;
-- `semesterId`;
-- `name`.
-
-Pola `email` i `academicTitle` można dodać później, ale nie są potrzebne w MVP. Warto zachować prowadzących jako osobną tabelę, aby autouzupełnianie nie tworzyło wielu kopii tej samej osoby.
+Prowadzący jest opcjonalnym polem tekstowym zajęć. Aplikacja nie utrzymuje osobnej kartoteki, identyfikatorów, adresów e-mail ani tytułów prowadzących.
 
 ## 10. Model danych zajęć
 
 Model aplikacyjny `ClassItem` oraz odpowiadający mu `ClassEntity` powinien zawierać:
 
 - `id`;
-- `semesterId`;
+- `semesterProgramId`;
 - `name`;
 - `type`;
-- `courseId`;
-- `teacherId` — opcjonalne;
+- `teacherName` — opcjonalne;
 - `dayOfWeek`;
 - `startTime`;
 - `endTime`;
@@ -742,7 +918,7 @@ ONCE
 
 W kodzie warto używać nazwy `ClassItem` zamiast samego `Class`, ponieważ `Class` koliduje znaczeniowo z podstawowym typem Kotlin/Java i utrudnia czytanie kodu.
 
-Model korekty tygodnia `WeekOverride` zawiera `id`, `semesterId`, `weekStartDate` (poniedziałek), `weekType` (`A` lub `B`) oraz `scope` (`ONE_WEEK` albo `FROM_WEEK`). Korekty są przechowywane osobno od zajęć i obejmowane eksportem.
+Model korekty tygodnia `WeekOverride` zawiera `id`, `academicCalendarId`, `weekStartDate` (poniedziałek), `weekType` (`A` lub `B`) oraz `scope` (`ONE_WEEK` albo `FROM_WEEK`). Korekty są przechowywane osobno od zajęć i obejmowane eksportem.
 
 Model notatki do konkretnego wystąpienia `OccurrenceNote` zawiera:
 
@@ -1045,8 +1221,8 @@ Kryterium zakończenia: automatyczne testy potwierdzają unikalne liczenie koliz
 Ustawienia powinny zawierać:
 
 - listę semestrów z możliwością dodania, wyboru, konfiguracji i usunięcia;
-- konfigurację aktywnego semestru i korekty tygodni A/B;
-- listę kierunków i ich kolorów;
+- konfigurację przypisań kierunków, wspólnych lub osobnych kalendarzy oraz korekt tygodni A/B;
+- listę globalnych kierunków i ich kolorów;
 - ustawienia powiadomień;
 - eksport planu;
 - import planu;
@@ -1054,14 +1230,15 @@ Ustawienia powinny zawierać:
 
 Eksport i import mogą używać lokalnego pliku JSON. Format powinien mieć pole `schemaVersion`, aby można było zmieniać model danych bez utraty zgodności ze starszymi eksportami.
 
-Eksport jest dostępny od wersji 0.1. Użytkownik wybiera miejsce zapisu przez systemowy wybór dokumentu. Plik zawiera wszystkie semestry oraz przypisane do nich kierunki, prowadzących, zajęcia, korekty tygodni, notatki i zmiany wystąpień. Import pojawia się w wersji 0.3.
+Eksport jest dostępny od wersji 0.1. Użytkownik wybiera miejsce zapisu przez systemowy wybór dokumentu. Docelowy format zawiera globalne kierunki, semestry, przypisania, kalendarze akademickie, zajęcia z tekstem prowadzącego, korekty, notatki i zmiany wystąpień. Import pojawia się w wersji 0.3.
 
 Import powinien:
 
 - sprawdzić poprawność struktury pliku;
 - pokazać podsumowanie danych przed zapisaniem;
-- obsłużyć konflikt istniejących identyfikatorów;
-- nie nadpisywać bieżącego planu bez potwierdzenia.
+- ostrzec, że operacja zastąpi wszystkie lokalne dane;
+- po potwierdzeniu wykonać pełne zastąpienie w jednej transakcji;
+- przy błędzie pozostawić dotychczasową bazę bez zmian.
 
 ## 15. Modularność i orientacyjny podział kodu
 
@@ -1073,25 +1250,34 @@ app/
 │   ├── database/
 │   │   ├── AppDatabase
 │   │   ├── ClassDao
-│   │   ├── TeacherDao
-│   │   ├── CourseDao
+│   │   ├── StudyProgramDao
 │   │   ├── SemesterDao
+│   │   ├── SemesterProgramDao
+│   │   ├── AcademicCalendarDao
 │   │   ├── WeekOverrideDao
 │   │   ├── OccurrenceNoteDao
 │   │   └── OccurrenceChangeDao
 │   ├── entity/
 │   │   ├── ClassEntity
-│   │   ├── TeacherEntity
-│   │   ├── CourseEntity
+│   │   ├── StudyProgramEntity
 │   │   ├── SemesterEntity
+│   │   ├── SemesterProgramEntity
+│   │   ├── AcademicCalendarEntity
 │   │   ├── WeekOverrideEntity
 │   │   ├── OccurrenceNoteEntity
 │   │   └── OccurrenceChangeEntity
-│   └── repository/
+│   ├── repository/
+│   │   ├── SemesterRepository
+│   │   ├── ScheduleRepository
+│   │   ├── RoomSemesterRepository
+│   │   └── RoomScheduleRepository
+│   └── preferences/
+│       └── SettingsPreferences
 ├── domain/
 │   ├── WeekCalculator
 │   ├── ScheduleResolver
-│   └── CollisionDetector
+│   ├── CollisionDetector
+│   └── usecase/
 ├── ui/
 │   ├── today/
 │   ├── schedule/
@@ -1102,9 +1288,11 @@ app/
 │   ├── TodayWidget
 │   └── TodayWidgetReceiver
 └── export/
+    ├── JsonExportCodec
+    └── PlanBackupService
 ```
 
-Logika obliczania planu, tygodni i kolizji powinna być niezależna od Compose. Ułatwi to testowanie i zapewni spójne dane na ekranie oraz w widgetach. ViewModele należą do `ui`. `WeekCalculator` jest używany wewnątrz `ScheduleResolver`. Pakiet `export` nie jest częścią Room. Szczegóły granic: `ARCHITECTURE.md`.
+Logika obliczania planu, tygodni i kolizji powinna być niezależna od Compose. Ułatwi to testowanie i zapewni spójne dane na ekranie oraz w widgetach. ViewModele należą do `ui`. `WeekCalculator` jest używany wewnątrz `ScheduleResolver`. Repozytoria odpowiadają obszarom danych, nie pojedynczym tabelom ani ekranom. Pakiet `export` nie jest częścią Room. Koin składa zależności na granicy aplikacji. Szczegóły granic: `ARCHITECTURE.md`.
 
 ## 16. Kolejność wdrożenia
 
