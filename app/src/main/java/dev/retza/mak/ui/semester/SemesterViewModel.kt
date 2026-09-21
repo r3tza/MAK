@@ -144,6 +144,67 @@ class SemesterViewModel(
         }
     }
 
+    fun saveCalendar() {
+        if (state.value.semester.isSaving) return
+        val semester = semesterIdState.value ?: return
+        val calendarId = selectedCalendarId ?: return
+        val form = state.value.semester
+        val start = form.startDate.toLocalDateOrNull()
+        val end = form.endDate.toLocalDateOrNull()
+        if (start == null || end == null || end.isBefore(start)) {
+            update {
+                it.copy(semester = form.copy(
+                    startDateError = if (start == null) "Podaj poprawną datę." else null,
+                    endDateError = if (end == null) "Podaj poprawną datę." else null,
+                    dateRangeError = if (start != null && end != null && end.isBefore(start)) {
+                        "Koniec nie może być wcześniejszy od początku."
+                    } else {
+                        null
+                    }
+                ))
+            }
+            return
+        }
+        update {
+            it.copy(semester = form.copy(
+                isSaving = true,
+                startDateError = null,
+                endDateError = null,
+                dateRangeError = null
+            ))
+        }
+        val token = sessionToken
+        viewModelScope.launch {
+            try {
+                repository.saveCalendar(
+                    AcademicCalendarEntity(
+                        id = calendarId,
+                        semesterId = semester,
+                        startDate = start,
+                        endDate = end,
+                        firstWeekType = WeekType.valueOf(form.firstWeek.name)
+                    )
+                )
+                if (!isCurrentSession(token)) return@launch
+                refresh(token)
+                if (!isCurrentSession(token)) return@launch
+                feedbackSink.publish(UiFeedback("Zapisano kalendarz", UiFeedbackKind.Success))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                if (!isCurrentSession(token)) return@launch
+                update {
+                    it.copy(semester = it.semester.copy(dateRangeError = "Nie udało się zapisać kalendarza."))
+                }
+                feedbackSink.publish(UiFeedback("Nie udało się zapisać kalendarza.", UiFeedbackKind.Error))
+            } finally {
+                if (isCurrentSession(token)) {
+                    update { it.copy(semester = it.semester.copy(isSaving = false)) }
+                }
+            }
+        }
+    }
+
     fun updateCourseName(value: String) = update {
         it.copy(courseNameDraft = value, courseNameError = null)
     }
@@ -152,12 +213,21 @@ class SemesterViewModel(
         it.copy(courseColorDraft = value)
     }
 
+    fun setCourseProgramMode(mode: CourseProgramModeUi) = update { current ->
+        current.copy(
+            courseProgramMode = mode,
+            courseProgramId = if (mode == CourseProgramModeUi.NEW) null else current.courseProgramId,
+            courseNameError = null
+        )
+    }
+
     fun selectCourseProgram(id: String?) = update { current ->
         val option = id?.let { selected -> current.courseProgramOptions.firstOrNull { it.id == selected } }
         if (option == null) {
             current.copy(courseProgramId = null)
         } else {
             current.copy(
+                courseProgramMode = CourseProgramModeUi.EXISTING,
                 courseProgramId = option.id,
                 courseNameDraft = option.name,
                 courseColorDraft = option.color,
@@ -177,7 +247,7 @@ class SemesterViewModel(
         it.copy(courseCalendarId = calendarId, courseCalendarMode = CourseCalendarModeUi.SHARED)
     }
 
-    fun selectOverrideCalendar(calendarId: String) {
+    fun selectCalendar(calendarId: String) {
         selectedCalendarId = calendarId.toLongOrNull()
         val token = sessionToken
         viewModelScope.launch { refresh(token) }
@@ -187,8 +257,18 @@ class SemesterViewModel(
         if (state.value.isAddingCourse) return
         val id = semesterIdState.value ?: return
         val draft = state.value
-        val existingProgramId = draft.courseProgramId?.toLongOrNull()
-        val name = draft.courseNameDraft.trim()
+        val wantsExisting = draft.courseProgramMode == CourseProgramModeUi.EXISTING
+        val existingProgramId = if (wantsExisting) draft.courseProgramId?.toLongOrNull() else null
+        if (wantsExisting && existingProgramId == null) {
+            update { it.copy(courseNameError = "Wybierz kierunek.") }
+            return
+        }
+        val name = if (wantsExisting) {
+            draft.courseProgramOptions.firstOrNull { it.id == draft.courseProgramId }?.name
+                ?: draft.courseNameDraft.trim()
+        } else {
+            draft.courseNameDraft.trim()
+        }
         if (name.isBlank()) {
             update { it.copy(courseNameError = "Podaj nazwę kierunku.") }
             return
@@ -334,7 +414,9 @@ class SemesterViewModel(
     }
 
     fun deleteUnusedCalendar(calendarId: String) {
+        if (state.value.isDeletingCalendar) return
         val id = calendarId.toLongOrNull() ?: return
+        update { it.copy(isDeletingCalendar = true) }
         val token = sessionToken
         viewModelScope.launch {
             try {
@@ -349,6 +431,10 @@ class SemesterViewModel(
             } catch (error: Exception) {
                 if (!isCurrentSession(token)) return@launch
                 feedbackSink.publish(UiFeedback("Nie udało się usunąć kalendarza.", UiFeedbackKind.Error))
+            } finally {
+                if (isCurrentSession(token)) {
+                    update { it.copy(isDeletingCalendar = false) }
+                }
             }
         }
     }
@@ -395,6 +481,7 @@ class SemesterViewModel(
             courseColorDraft = current.courseColorDraft,
             courseCalendarMode = current.courseCalendarMode,
             courseCalendarId = courseCalendarId?.toString(),
+            courseProgramMode = current.courseProgramMode,
             courseProgramId = current.courseProgramId,
             overrideForm = current.overrideForm
         )
@@ -531,7 +618,6 @@ private fun SemesterWithData.toSemesterScreenState(selectedCalendarId: Long?): S
                     WeekOverrideScopeUi.valueOf(override.scope.name)
                 )
             },
-        courses = courseItems.map { it.assignmentId to it.name },
         courseItems = courseItems,
         calendars = academicCalendars.map { calendar ->
             SemesterCalendarUi(

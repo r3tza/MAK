@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: Etap 12.3, kalendarze w interfejsie
+
+- Fakty: Warstwa danych i ViewModele obsługiwały wiele kalendarzy, ale ekrany nadal pokazywały jeden wspólny kalendarz i nie było sposobu rozdzielić ani połączyć kalendarzy.
+- Decyzja: Ekran semestru pokazuje pola dat tylko przy jednym kalendarzu, a przy wielu etykietę „Różne kalendarze" i wiersz „Kalendarze". Ekran „Kierunki" ma dwie jawne akcje „Nowy kierunek" i „Wybierz istniejący", wybór „Wspólne daty i tygodnie" (z listą kalendarzy) albo „Osobne daty i tygodnie", rozdzielenie kalendarza kierunku, wybór kalendarza przy połączeniu i dialog ostrzegający, że osierocony kalendarz zostanie usunięty razem z korektami. Przy wybranym istniejącym kierunku pola nazwy i koloru są ukryte, a ekran pokazuje, że kierunek jest współdzielony między semestrami. Ekran „Kalendarze" listuje kalendarze z datami, rytmem i kierunkami, pozwala edytować daty wybranego kalendarza i usuwać nieużywane. Korekty tygodni mają wybór kalendarza, gdy jest ich wiele.
+- Powód: Model wielokalendarzowy musi być widoczny i obsługiwalny w interfejsie, a etykiety i role informacji mają prowadzić użytkownika bez zgadywania.
+- Odrzucone: Pokazywanie listy kalendarzy na ekranie semestru; scalanie korekt przy połączeniu; edycja nazwy i koloru globalnego kierunku z poziomu przypięcia.
+- Weryfikacja: Testy Compose kompilowalne (`SemesterScreenTest`) dla ekranu z wieloma kalendarzami, dwóch akcji wyboru kierunku, trybu wspólnego i osobnego, ostrzeżenia przy połączeniu, listy kalendarzy i wyboru kalendarza w korektach, wszystkie przy 320 dp. `SemesterViewModelTest` pokrywa akcje stanu. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór na urządzeniu pozostaje otwarty.
+
 ## 2026-09-21: Etap 12.2, stan kalendarzy i audyt odczytów
 
 - Fakty: `SemesterViewModel` i ekran semestru sprowadzały dane do jednego wspólnego kalendarza. Formularz zajęć, szczegóły wystąpienia i szybka korekta z ekranu Planu brały zakres dat z pierwszego kalendarza, więc po rozdzieleniu kalendarzy dzień, walidacja albo zapis mogły dotyczyć złego kalendarza.
@@ -7,7 +15,7 @@
 - Powód: Model i resolver są wielokalendarzowe, więc każdy odczyt zakresu dat musi wskazywać kalendarz właściwego kierunku, a nie pierwszy kalendarz semestru.
 - Odrzucone: Rozstrzyganie kalendarza osobno w każdym ViewModelu; rozdzielenie nowego kierunku w dwóch transakcjach; zgadywanie kalendarza przy filtrze „Wszystkie".
 - Poprawki po przeglądzie: Przypisanie istniejącego kierunku nie modyfikuje już globalnego kierunku. `saveStudyProgramAssignment` i `addSeparatedSemesterProgram` aktualizują kierunek tylko wtedy, gdy jest nowy, a dla istniejącego używają go bez zmian, więc przypięcie do kolejnego semestru nie zmienia nazwy ani koloru w poprzednich. Ponowne wybranie kierunku już przypiętego do semestru jest blokowane komunikatem zamiast przenoszenia jego przypisania. `refresh` odrzuca `courseCalendarId`, którego nie ma już w danych semestru, i wraca do wybranego kalendarza.
-- Weryfikacja: `SemesterViewModelTest` (dodanie kierunku wspólne i osobne, wybór istniejącego programu, blokada ponownego przypięcia, odrzucenie usuniętego kalendarza, wybór kalendarza korekt, rozdzielenie, ponowne połączenie z osieroconym kalendarzem), `ScheduleViewModelTest` (korekta trafia do kalendarza filtra, pominięcie przy wielu kalendarzach), `OccurrenceViewModelTest` i `ClassEditViewModelTest` (zakres dat z kalendarza kierunku). `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+- Weryfikacja: `SemesterViewModelTest` (dodanie kierunku wspólne i osobne, wybór istniejącego programu, blokada ponownego przypięcia, odrzucenie usuniętego kalendarza, wybór kalendarza korekt, rozdzielenie, ponowne połączenie z osieroconym kalendarzem), `ScheduleViewModelTest` (korekta trafia do kalendarza filtra, pominięcie przy wielu kalendarzach), `OccurrenceViewModelTest` i `ClassEditViewModelTest` (zakres dat z kalendarza kierunku). `RoomPersistenceTest` potwierdza, że przypięcie istniejącego kierunku (`assigningExistingProgramDoesNotChangeItsData`) i dodanie kierunku z osobnym kalendarzem (`separatedAssignmentDoesNotChangeExistingProgram`) nie zmieniają jego nazwy ani koloru. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
 
 ## 2026-09-21: Etap 12.1, operacje kalendarzy w repozytorium
 

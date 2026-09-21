@@ -15,8 +15,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.material3.Icon
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
@@ -93,6 +95,11 @@ enum class CourseCalendarModeUi {
     SEPARATE
 }
 
+enum class CourseProgramModeUi {
+    NEW,
+    EXISTING
+}
+
 data class SemesterCourseUi(
     val assignmentId: String,
     val programId: String,
@@ -128,7 +135,6 @@ data class SemesterScreenUiState(
     val semester: SemesterFormUiState = SemesterFormUiState(),
     val overrides: List<WeekOverrideUi> = emptyList(),
     val overrideForm: WeekOverrideFormUiState = WeekOverrideFormUiState(),
-    val courses: List<Pair<String, String>> = emptyList(),
     val courseItems: List<SemesterCourseUi> = emptyList(),
     val calendars: List<SemesterCalendarUi> = emptyList(),
     val selectedCalendarId: String? = null,
@@ -136,12 +142,14 @@ data class SemesterScreenUiState(
     val courseColorDraft: String = "#137b71",
     val courseCalendarMode: CourseCalendarModeUi = CourseCalendarModeUi.SHARED,
     val courseCalendarId: String? = null,
+    val courseProgramMode: CourseProgramModeUi = CourseProgramModeUi.NEW,
     val courseProgramId: String? = null,
     val courseProgramOptions: List<SemesterProgramOptionUi> = emptyList(),
     val courseNameError: String? = null,
     val isAddingCourse: Boolean = false,
     val isDeletingCourse: Boolean = false,
     val isDeletingOverride: Boolean = false,
+    val isDeletingCalendar: Boolean = false,
     val isSeparatingCalendar: Boolean = false,
     val isReconnectingCalendar: Boolean = false,
     val pendingReconnect: ReconnectCalendarUi? = null,
@@ -159,6 +167,7 @@ fun SemesterScreen(
     onSaveSemester: () -> Unit,
     onOpenCourses: () -> Unit,
     onOpenOverrides: () -> Unit,
+    onOpenCalendars: () -> Unit,
     onBack: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
@@ -176,16 +185,24 @@ fun SemesterScreen(
             ScreenStatus.Ready -> {
                 SemesterForm(
                     state = state.semester,
+                    showDates = state.calendars.size <= 1,
                     onNameChanged = onSemesterNameChanged,
                     onStartDateChanged = onSemesterStartDateChanged,
                     onEndDateChanged = onSemesterEndDateChanged,
                     onFirstWeekChanged = onSemesterFirstWeekChanged,
                     onSave = onSaveSemester
                 )
+                if (state.calendars.size > 1) {
+                    MakNoteBanner(
+                        title = "Różne kalendarze",
+                        subtitle = "Kierunki używają różnych zakresów dat i rytmów A/B. " +
+                            "Zmień daty na ekranie Kalendarze."
+                    )
+                }
                 SemesterNavigationRow(
                     title = "Kierunki",
                     description = "Zajęcia należące do tego semestru.",
-                    count = state.courses.size,
+                    count = state.courseItems.size,
                     onClick = onOpenCourses
                 )
                 SemesterNavigationRow(
@@ -194,6 +211,14 @@ fun SemesterScreen(
                     count = state.overrides.size,
                     onClick = onOpenOverrides
                 )
+                if (state.calendars.size > 1) {
+                    SemesterNavigationRow(
+                        title = "Kalendarze",
+                        description = "Zakresy dat i rytmy A/B kierunków.",
+                        count = state.calendars.size,
+                        onClick = onOpenCalendars
+                    )
+                }
                 MakSecondaryAction(
                     text = "Wróć do ustawień",
                     onClick = onBack,
@@ -243,8 +268,16 @@ fun SemesterCoursesScreen(
     state: SemesterScreenUiState,
     onCourseNameChanged: (String) -> Unit,
     onCourseColorChanged: (String) -> Unit,
+    onProgramModeChanged: (CourseProgramModeUi) -> Unit,
+    onSelectProgram: (String?) -> Unit,
+    onCourseModeChanged: (CourseCalendarModeUi) -> Unit,
+    onCourseCalendarChanged: (String) -> Unit,
     onAddCourse: () -> Unit,
     onDeleteCourse: (String) -> Unit,
+    onSeparateCourse: (String) -> Unit,
+    onRequestReconnect: (String, String) -> Unit,
+    onConfirmReconnect: () -> Unit,
+    onCancelReconnect: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -252,20 +285,30 @@ fun SemesterCoursesScreen(
         MakSectionHeader(
             eyebrow = "Semestr",
             title = "Kierunki",
-            subtitle = "Kierunki należą tylko do wybranego semestru."
+            subtitle = "Kierunki mogą współdzielić kalendarz albo używać własnego."
         )
         CoursesBlock(
-            courses = state.courses,
-            courseNameDraft = state.courseNameDraft,
-            courseColorDraft = state.courseColorDraft,
-            courseNameError = state.courseNameError,
-            isAddingCourse = state.isAddingCourse,
-            isDeletingCourse = state.isDeletingCourse,
+            state = state,
             onCourseNameChanged = onCourseNameChanged,
             onCourseColorChanged = onCourseColorChanged,
+            onProgramModeChanged = onProgramModeChanged,
+            onSelectProgram = onSelectProgram,
+            onCourseModeChanged = onCourseModeChanged,
+            onCourseCalendarChanged = onCourseCalendarChanged,
             onAddCourse = onAddCourse,
-            onDeleteCourse = onDeleteCourse
+            onDeleteCourse = onDeleteCourse,
+            onSeparateCourse = onSeparateCourse,
+            onRequestReconnect = onRequestReconnect
         )
+        state.pendingReconnect?.let { reconnect ->
+            ReconnectCalendarDialog(
+                reconnect = reconnect,
+                isSaving = state.isReconnectingCalendar,
+                error = state.reconnectError,
+                onConfirm = onConfirmReconnect,
+                onCancel = onCancelReconnect
+            )
+        }
         MakSecondaryAction(text = "Wróć do semestru", onClick = onBack)
     }
 }
@@ -273,6 +316,7 @@ fun SemesterCoursesScreen(
 @Composable
 fun SemesterWeekOverridesScreen(
     state: SemesterScreenUiState,
+    onCalendarSelected: (String) -> Unit,
     onWeekStartDateChanged: (String) -> Unit,
     onWeekTypeChanged: (WeekTypeUi) -> Unit,
     onScopeChanged: (WeekOverrideScopeUi) -> Unit,
@@ -290,6 +334,18 @@ fun SemesterWeekOverridesScreen(
             title = "Korekty tygodni",
             subtitle = "Ustaw oznaczenie tylko dla jednego tygodnia albo od wybranego tygodnia w przyszłość."
         )
+        if (state.calendars.size > 1) {
+            MakSelectField(
+                label = "Kalendarz",
+                value = state.calendars
+                    .firstOrNull { it.id == state.selectedCalendarId }
+                    ?.let(::calendarRangeLabel)
+                    .orEmpty(),
+                options = state.calendars,
+                onSelected = { onCalendarSelected(it.id) },
+                optionLabel = { calendarRangeLabel(it) }
+            )
+        }
         WeekOverridesSection(
             overrides = state.overrides,
             form = state.overrideForm,
@@ -307,25 +363,110 @@ fun SemesterWeekOverridesScreen(
 }
 
 @Composable
-private fun SemesterForm(
-    state: SemesterFormUiState,
-    onNameChanged: (String) -> Unit,
+fun SemesterCalendarsScreen(
+    state: SemesterScreenUiState,
+    onCalendarSelected: (String) -> Unit,
     onStartDateChanged: (String) -> Unit,
     onEndDateChanged: (String) -> Unit,
     onFirstWeekChanged: (WeekTypeUi) -> Unit,
-    onSave: () -> Unit
+    onSaveCalendar: () -> Unit,
+    onDeleteCalendar: (String) -> Unit,
+    onBack: () -> Unit,
+    modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = Modifier.padding(bottom = 22.dp),
-        verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
-    ) {
-        MakField(
-            label = "Nazwa semestru",
-            value = state.name,
-            onValueChange = onNameChanged,
-            isError = state.nameError != null
+    MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
+        MakSectionHeader(
+            eyebrow = "Semestr",
+            title = "Kalendarze",
+            subtitle = "Zakres dat i rytm A/B każdego kalendarza."
         )
-        FieldError(state.nameError?.let(::FieldErrorUi))
+        if (state.calendars.size > 1) {
+            MakSelectField(
+                label = "Edytowany kalendarz",
+                value = state.calendars
+                    .firstOrNull { it.id == state.selectedCalendarId }
+                    ?.let(::calendarRangeLabel)
+                    .orEmpty(),
+                options = state.calendars,
+                onSelected = { onCalendarSelected(it.id) },
+                optionLabel = { calendarRangeLabel(it) }
+            )
+        }
+        CalendarDateFields(
+            state = state.semester,
+            onStartDateChanged = onStartDateChanged,
+            onEndDateChanged = onEndDateChanged,
+            onFirstWeekChanged = onFirstWeekChanged
+        )
+        FieldError(state.semester.dateRangeError?.let(::FieldErrorUi))
+        MakPrimaryAction(
+            text = "Zapisz kalendarz",
+            onClick = onSaveCalendar,
+            enabled = !state.semester.isSaving
+        )
+        state.calendars.forEach { calendar ->
+            CalendarCard(
+                calendar = calendar,
+                isDeleting = state.isDeletingCalendar,
+                onDelete = { onDeleteCalendar(calendar.id) }
+            )
+        }
+        MakSecondaryAction(text = "Wróć do semestru", onClick = onBack)
+    }
+}
+
+@Composable
+private fun CalendarCard(
+    calendar: SemesterCalendarUi,
+    isDeleting: Boolean,
+    onDelete: () -> Unit
+) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text("${calendar.startDate} - ${calendar.endDate}", fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = "Pierwszy tydzień: ${calendar.firstWeek.name}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            MakTag(text = "Tydzień ${calendar.firstWeek.name}")
+        }
+        Text(
+            text = if (calendar.courseNames.isEmpty()) {
+                "Brak przypisanych kierunków"
+            } else {
+                "Kierunki: ${calendar.courseNames.joinToString(", ")}"
+            },
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        if (calendar.courseNames.isEmpty()) {
+            MakTextAction(text = "Usuń", onClick = onDelete, enabled = !isDeleting)
+        }
+    }
+}
+
+@Composable
+private fun CalendarDateFields(
+    state: SemesterFormUiState,
+    onStartDateChanged: (String) -> Unit,
+    onEndDateChanged: (String) -> Unit,
+    onFirstWeekChanged: (WeekTypeUi) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
         Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
                 MakDatePickerField(
@@ -348,13 +489,45 @@ private fun SemesterForm(
                 FieldError(state.endDateError?.let(::FieldErrorUi))
             }
         }
-        FieldError(state.dateRangeError?.let(::FieldErrorUi))
         MakSelectField(
             label = "Pierwszy tydzień",
             value = "Tydzień ${state.firstWeek.name}",
             options = listOf("Tydzień A", "Tydzień B"),
             onSelected = { onFirstWeekChanged(if (it.endsWith("B")) WeekTypeUi.B else WeekTypeUi.A) }
         )
+    }
+}
+
+@Composable
+private fun SemesterForm(
+    state: SemesterFormUiState,
+    showDates: Boolean,
+    onNameChanged: (String) -> Unit,
+    onStartDateChanged: (String) -> Unit,
+    onEndDateChanged: (String) -> Unit,
+    onFirstWeekChanged: (WeekTypeUi) -> Unit,
+    onSave: () -> Unit
+) {
+    Column(
+        modifier = Modifier.padding(bottom = 22.dp),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
+    ) {
+        MakField(
+            label = "Nazwa semestru",
+            value = state.name,
+            onValueChange = onNameChanged,
+            isError = state.nameError != null
+        )
+        FieldError(state.nameError?.let(::FieldErrorUi))
+        if (showDates) {
+            CalendarDateFields(
+                state = state,
+                onStartDateChanged = onStartDateChanged,
+                onEndDateChanged = onEndDateChanged,
+                onFirstWeekChanged = onFirstWeekChanged
+            )
+            FieldError(state.dateRangeError?.let(::FieldErrorUi))
+        }
         MakPrimaryAction(
             text = "Zapisz semestr",
             onClick = onSave,
@@ -365,57 +538,232 @@ private fun SemesterForm(
 
 @Composable
 private fun CoursesBlock(
-    courses: List<Pair<String, String>>,
-    courseNameDraft: String,
-    courseColorDraft: String,
-    courseNameError: String?,
-    isAddingCourse: Boolean,
-    isDeletingCourse: Boolean,
+    state: SemesterScreenUiState,
     onCourseNameChanged: (String) -> Unit,
     onCourseColorChanged: (String) -> Unit,
+    onProgramModeChanged: (CourseProgramModeUi) -> Unit,
+    onSelectProgram: (String?) -> Unit,
+    onCourseModeChanged: (CourseCalendarModeUi) -> Unit,
+    onCourseCalendarChanged: (String) -> Unit,
     onAddCourse: () -> Unit,
-    onDeleteCourse: (String) -> Unit
+    onDeleteCourse: (String) -> Unit,
+    onSeparateCourse: (String) -> Unit,
+    onRequestReconnect: (String, String) -> Unit
 ) {
     Column(
         modifier = Modifier.padding(bottom = 22.dp),
         verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
-        MakRowTitle(title = "Kierunki", meta = if (courses.isEmpty()) "Brak" else "${courses.size}")
-        if (courses.isEmpty()) {
+        MakRowTitle(
+            title = "Kierunki",
+            meta = if (state.courseItems.isEmpty()) "Brak" else "${state.courseItems.size}"
+        )
+        if (state.courseItems.isEmpty()) {
             MakEmptyState("Dodaj kierunek, aby przypisać zajęcia.")
         } else {
-            courses.forEach { (id, name) ->
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Text(name, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
-                    MakTextAction(
-                        text = "Usuń",
-                        onClick = { onDeleteCourse(id) },
-                        enabled = !isDeletingCourse
-                    )
-                }
+            state.courseItems.forEach { course ->
+                CourseRow(
+                    course = course,
+                    calendars = state.calendars,
+                    canReconnect = state.calendars.size > 1,
+                    isDeletingCourse = state.isDeletingCourse,
+                    isSeparatingCalendar = state.isSeparatingCalendar,
+                    onDelete = { onDeleteCourse(course.assignmentId) },
+                    onSeparate = { onSeparateCourse(course.assignmentId) },
+                    onReconnect = { calendarId -> onRequestReconnect(course.assignmentId, calendarId) }
+                )
             }
         }
-        MakField(
-            label = "Nazwa nowego kierunku",
-            value = courseNameDraft,
-            onValueChange = onCourseNameChanged,
-            isError = courseNameError != null
+
+        MakNoteBanner(
+            title = "Kierunek w semestrze",
+            subtitle = "Wybierz istniejący kierunek albo utwórz nowy."
         )
-        FieldError(courseNameError?.let(::FieldErrorUi))
-        MakColorPalette(
-            selectedColor = courseColorDraft,
-            onColorSelected = onCourseColorChanged
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                MakChoiceRow(
+                    label = "Nowy kierunek",
+                    selected = state.courseProgramMode == CourseProgramModeUi.NEW,
+                    onClick = { onProgramModeChanged(CourseProgramModeUi.NEW) }
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                MakChoiceRow(
+                    label = "Wybierz istniejący",
+                    selected = state.courseProgramMode == CourseProgramModeUi.EXISTING,
+                    onClick = { onProgramModeChanged(CourseProgramModeUi.EXISTING) }
+                )
+            }
+        }
+        if (state.courseProgramMode == CourseProgramModeUi.NEW) {
+            MakField(
+                label = "Nazwa nowego kierunku",
+                value = state.courseNameDraft,
+                onValueChange = onCourseNameChanged,
+                isError = state.courseNameError != null
+            )
+            FieldError(state.courseNameError?.let(::FieldErrorUi))
+            MakColorPalette(
+                selectedColor = state.courseColorDraft,
+                onColorSelected = onCourseColorChanged
+            )
+        } else {
+            MakSelectField(
+                label = "Istniejący kierunek",
+                value = state.courseProgramOptions
+                    .firstOrNull { it.id == state.courseProgramId }
+                    ?.name
+                    .orEmpty(),
+                options = state.courseProgramOptions,
+                onSelected = { onSelectProgram(it.id) },
+                optionLabel = { it.name },
+                isError = state.courseNameError != null
+            )
+            FieldError(state.courseNameError?.let(::FieldErrorUi))
+            MakHelperText(
+                "Kierunek jest współdzielony między semestrami. Nazwę i kolor zmienia się w kierunku, nie tutaj."
+            )
+        }
+
+        MakChoiceRow(
+            label = "Wspólne daty i tygodnie",
+            selected = state.courseCalendarMode == CourseCalendarModeUi.SHARED,
+            onClick = { onCourseModeChanged(CourseCalendarModeUi.SHARED) }
         )
+        if (state.courseCalendarMode == CourseCalendarModeUi.SHARED && state.calendars.size > 1) {
+            MakSelectField(
+                label = "Kalendarz kierunku",
+                value = state.calendars
+                    .firstOrNull { it.id == state.courseCalendarId }
+                    ?.let(::calendarRangeLabel)
+                    .orEmpty(),
+                options = state.calendars,
+                onSelected = { onCourseCalendarChanged(it.id) },
+                optionLabel = { calendarRangeLabel(it) }
+            )
+        }
+        MakChoiceRow(
+            label = "Osobne daty i tygodnie",
+            selected = state.courseCalendarMode == CourseCalendarModeUi.SEPARATE,
+            onClick = { onCourseModeChanged(CourseCalendarModeUi.SEPARATE) }
+        )
+        if (state.courseCalendarMode == CourseCalendarModeUi.SEPARATE) {
+            MakHelperText("Powstanie kopia dat, rytmu i korekt wybranego kalendarza.")
+        }
+
+        val canAddCourse = when (state.courseProgramMode) {
+            CourseProgramModeUi.NEW -> state.courseNameDraft.isNotBlank()
+            CourseProgramModeUi.EXISTING -> state.courseProgramId != null
+        }
         MakSecondaryAction(
             text = "Dodaj kierunek",
             onClick = onAddCourse,
-            enabled = courseNameDraft.isNotBlank() && !isAddingCourse
+            enabled = canAddCourse && !state.isAddingCourse
         )
     }
 }
+
+@Composable
+private fun CourseRow(
+    course: SemesterCourseUi,
+    calendars: List<SemesterCalendarUi>,
+    canReconnect: Boolean,
+    isDeletingCourse: Boolean,
+    isSeparatingCalendar: Boolean,
+    onDelete: () -> Unit,
+    onSeparate: () -> Unit,
+    onReconnect: (String) -> Unit
+) {
+    val shape = RoundedCornerShape(16.dp)
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
+            .padding(14.dp),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+    ) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(course.name, fontWeight = FontWeight.SemiBold)
+                Text(
+                    text = if (course.sharesCalendar) {
+                        "${course.calendarLabel} (wspólny)"
+                    } else {
+                        "${course.calendarLabel} (osobny)"
+                    },
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            MakTextAction(
+                text = "Usuń",
+                onClick = onDelete,
+                enabled = !isDeletingCourse
+            )
+        }
+        if (canReconnect) {
+            MakSelectField(
+                label = "Kalendarz",
+                value = calendars
+                    .firstOrNull { it.id == course.calendarId }
+                    ?.let(::calendarRangeLabel)
+                    .orEmpty(),
+                options = calendars,
+                onSelected = { onReconnect(it.id) },
+                optionLabel = { calendarRangeLabel(it) }
+            )
+        }
+        if (course.sharesCalendar) {
+            MakTextAction(
+                text = "Rozdziel kalendarz",
+                onClick = onSeparate,
+                enabled = !isSeparatingCalendar
+            )
+        }
+    }
+}
+
+@Composable
+private fun ReconnectCalendarDialog(
+    reconnect: ReconnectCalendarUi,
+    isSaving: Boolean,
+    error: String?,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { if (!isSaving) onCancel() },
+        title = { Text("Połączyć kalendarze?") },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
+                Text("Kierunek ${reconnect.programName} będzie używał wybranego kalendarza.")
+                if (reconnect.sourceBecomesUnused) {
+                    Text(
+                        "Dotychczasowy kalendarz nie będzie już używany i zostanie usunięty " +
+                            "razem ze swoimi korektami. Korekty nie zostaną przeniesione."
+                    )
+                }
+                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+            }
+        },
+        confirmButton = {
+            TextButton(onClick = onConfirm, enabled = !isSaving) { Text("Połącz") }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel, enabled = !isSaving) { Text("Anuluj") }
+        }
+    )
+}
+
+private fun calendarRangeLabel(calendar: SemesterCalendarUi): String =
+    "${calendar.startDate} - ${calendar.endDate} (tydzień ${calendar.firstWeek.name})"
 
 @Composable
 private fun WeekOverridesSection(

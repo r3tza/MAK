@@ -337,6 +337,44 @@ class RoomPersistenceTest {
     }
 
     @Test
+    fun assigningExistingProgramDoesNotChangeItsData() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val calendarId = insertCalendar(semesterId)
+        val programId = insertProgram("Informatyka")
+
+        repository.saveStudyProgramAssignment(
+            semesterId = semesterId,
+            studyProgram = StudyProgramEntity(id = programId, name = "Zmieniona", color = "#FFFFFF"),
+            academicCalendarId = calendarId
+        )
+
+        val stored = database!!.studyProgramDao().findById(programId)
+        assertEquals("Informatyka", stored?.name)
+        assertEquals("#112233", stored?.color)
+    }
+
+    @Test
+    fun separatedAssignmentDoesNotChangeExistingProgram() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val calendarId = insertCalendar(semesterId)
+        val programId = insertProgram("Informatyka")
+
+        repository.addSeparatedSemesterProgram(
+            semesterId = semesterId,
+            studyProgram = StudyProgramEntity(id = programId, name = "Zmieniona", color = "#FFFFFF"),
+            sourceCalendarId = calendarId
+        )
+
+        val stored = database!!.studyProgramDao().findById(programId)
+        assertEquals("Informatyka", stored?.name)
+        assertEquals("#112233", stored?.color)
+    }
+
+    @Test
     fun reconnectingDeletesOrphanCalendarWithOverrides() = runBlocking {
         database = openDatabase()
         val repository = RoomMakRepository(database!!)

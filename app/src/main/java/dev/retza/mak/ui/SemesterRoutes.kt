@@ -10,6 +10,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import dev.retza.mak.ui.semester.SemesterCalendarsScreen
 import dev.retza.mak.ui.semester.SemesterCoursesScreen
 import dev.retza.mak.ui.semester.SemesterEffect
 import dev.retza.mak.ui.semester.SemesterScreen
@@ -50,6 +51,7 @@ internal fun NavGraphBuilder.semesterRoutes(
             onSaveSemester = semesterViewModel::saveSemester,
             onOpenCourses = { semesterId?.let { navController.navigate(semesterCoursesRoute(it)) } },
             onOpenOverrides = { semesterId?.let { navController.navigate(semesterOverridesRoute(it)) } },
+            onOpenCalendars = { semesterId?.let { navController.navigate(semesterCalendarsRoute(it)) } },
             onBack = onBack,
             onRetry = {},
             modifier = Modifier.fillMaxSize()
@@ -68,8 +70,16 @@ internal fun NavGraphBuilder.semesterRoutes(
             state = semesterViewModel.semester.collectAsStateWithLifecycle().value,
             onCourseNameChanged = semesterViewModel::updateCourseName,
             onCourseColorChanged = semesterViewModel::updateCourseColor,
+            onProgramModeChanged = semesterViewModel::setCourseProgramMode,
+            onSelectProgram = semesterViewModel::selectCourseProgram,
+            onCourseModeChanged = semesterViewModel::setCourseCalendarMode,
+            onCourseCalendarChanged = semesterViewModel::selectCourseCalendar,
             onAddCourse = semesterViewModel::addCourse,
             onDeleteCourse = semesterViewModel::deleteCourse,
+            onSeparateCourse = semesterViewModel::separateCourseCalendar,
+            onRequestReconnect = semesterViewModel::requestReconnect,
+            onConfirmReconnect = semesterViewModel::confirmReconnect,
+            onCancelReconnect = semesterViewModel::cancelReconnect,
             onBack = onBack,
             modifier = Modifier.fillMaxSize()
         )
@@ -85,6 +95,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         }
         SemesterWeekOverridesScreen(
             state = semesterViewModel.semester.collectAsStateWithLifecycle().value,
+            onCalendarSelected = semesterViewModel::selectCalendar,
             onWeekStartDateChanged = { value ->
                 semesterViewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekStartDate = value)) }
             },
@@ -99,6 +110,33 @@ internal fun NavGraphBuilder.semesterRoutes(
             onSaveOverride = semesterViewModel::saveWeekOverride,
             onDeleteOverride = semesterViewModel::deleteWeekOverride,
             onCancelOverrideEdit = semesterViewModel::cancelWeekOverrideEdit,
+            onBack = onBack,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+
+    composable(
+        route = MakRoutes.SemesterCalendars,
+        arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
+    ) { entry ->
+        val semesterId = entry.arguments?.getString("semesterId")
+        LaunchedEffect(semesterId) {
+            semesterId?.let(semesterViewModel::open)
+        }
+        SemesterCalendarsScreen(
+            state = semesterViewModel.semester.collectAsStateWithLifecycle().value,
+            onCalendarSelected = semesterViewModel::selectCalendar,
+            onStartDateChanged = { value ->
+                semesterViewModel.update { it.copy(semester = it.semester.copy(startDate = value)) }
+            },
+            onEndDateChanged = { value ->
+                semesterViewModel.update { it.copy(semester = it.semester.copy(endDate = value)) }
+            },
+            onFirstWeekChanged = { value ->
+                semesterViewModel.update { it.copy(semester = it.semester.copy(firstWeek = value)) }
+            },
+            onSaveCalendar = semesterViewModel::saveCalendar,
+            onDeleteCalendar = semesterViewModel::deleteUnusedCalendar,
             onBack = onBack,
             modifier = Modifier.fillMaxSize()
         )

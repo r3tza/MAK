@@ -8,6 +8,7 @@ object MakRoutes {
     const val Semester = "semester/{semesterId}"
     const val SemesterCourses = "semester/{semesterId}/courses"
     const val SemesterOverrides = "semester/{semesterId}/week-overrides"
+    const val SemesterCalendars = "semester/{semesterId}/calendars"
     const val Settings = "settings"
     const val Setup = "setup"
 }
@@ -25,6 +26,8 @@ fun semesterRoute(id: String): String = "semester/$id"
 fun semesterCoursesRoute(id: String): String = "semester/$id/courses"
 
 fun semesterOverridesRoute(id: String): String = "semester/$id/week-overrides"
+
+fun semesterCalendarsRoute(id: String): String = "semester/$id/calendars"
 
 internal fun shouldCloseOccurrenceDetails(currentRoute: String?): Boolean =
     currentRoute == MakRoutes.Occurrence
@@ -57,6 +60,7 @@ internal fun titleForRoute(route: String?): String = when (route) {
     MakRoutes.Semester -> "Semestr"
     MakRoutes.SemesterCourses -> "Kierunki"
     MakRoutes.SemesterOverrides -> "Korekty tygodni"
+    MakRoutes.SemesterCalendars -> "Kalendarze"
     MakRoutes.Settings -> "Ustawienia"
     MakRoutes.Setup -> "Konfiguracja"
     else -> "Dzisiaj"

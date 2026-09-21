@@ -57,7 +57,7 @@ class SemesterViewModelTest {
         assertEquals("2026-09-01", state.semester.startDate)
         assertEquals("2026-10-31", state.semester.endDate)
         assertEquals(WeekTypeUi.A, state.semester.firstWeek)
-        assertEquals(listOf("1" to "Informatyka"), state.courses)
+        assertEquals(listOf("1" to "Informatyka"), state.courseItems.map { it.assignmentId to it.name })
         assertEquals(1, state.overrides.size)
         assertEquals("2026-10-05", state.overrides.single().weekStartDate)
         assertEquals(WeekTypeUi.B, state.overrides.single().weekType)
@@ -634,7 +634,7 @@ class SemesterViewModelTest {
         advanceUntilIdle()
 
         viewModel.update { it.copy(courseCalendarId = "999") }
-        viewModel.selectOverrideCalendar(repository.calendar.id.toString())
+        viewModel.selectCalendar(repository.calendar.id.toString())
         advanceUntilIdle()
 
         assertEquals(repository.calendar.id.toString(), viewModel.semester.value.courseCalendarId)
@@ -666,11 +666,11 @@ class SemesterViewModelTest {
             scope = WeekOverrideScope.ONE_WEEK
         )
 
-        viewModel.selectOverrideCalendar(repository.calendar.id.toString())
+        viewModel.selectCalendar(repository.calendar.id.toString())
         advanceUntilIdle()
         assertTrue(viewModel.semester.value.overrides.isEmpty())
 
-        viewModel.selectOverrideCalendar(separatedCalendarId.toString())
+        viewModel.selectCalendar(separatedCalendarId.toString())
         advanceUntilIdle()
         assertEquals(1, viewModel.semester.value.overrides.size)
     }
