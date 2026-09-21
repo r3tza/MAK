@@ -12,6 +12,7 @@ import dev.retza.mak.data.entity.SemesterProgramEntity
 import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekType
+import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.SetupConfigurationIds
 import java.time.DayOfWeek
@@ -526,6 +527,25 @@ internal class FakeMakRepository : MakRepository {
         awaitSave()
         events += "deleteOccurrenceChange"
         occurrenceChanges.removeAll { it.id == id }
+    }
+
+    override suspend fun replaceAllData(data: BackupData): Long? {
+        awaitSave()
+        events += "replaceAllData"
+        semesterFlow.value = data.semesters.map { it.semester }
+        activeSemesterFlow.value = data.activeSemesterId ?: 0L
+        studyProgramState.value = data.studyPrograms
+        calendarState.value = data.semesters.flatMap { it.calendars }
+        semesterProgramState.value = data.semesters.flatMap { it.programs }
+        classes.clear()
+        classes += data.semesters.flatMap { it.classes }
+        weekOverrides.clear()
+        weekOverrides += data.semesters.flatMap { it.weekOverrides }
+        occurrenceNotes.clear()
+        occurrenceNotes += data.semesters.flatMap { it.occurrenceNotes }
+        occurrenceChanges.clear()
+        occurrenceChanges += data.semesters.flatMap { it.occurrenceChanges }
+        return data.activeSemesterId
     }
 
     private suspend fun awaitSave() {

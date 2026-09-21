@@ -17,7 +17,9 @@ import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
+import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.RoomMakRepository
+import dev.retza.mak.data.repository.SemesterBackup
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -257,6 +259,105 @@ class RoomPersistenceTest {
         }
 
         assertEquals(programId, database!!.studyProgramDao().findById(programId)?.id)
+    }
+
+    @Test
+    fun replaceAllDataSwapsWholeBackup() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val oldSemesterId = database!!.semesterDao().insert(semester("Stary", true))
+        database!!.studyProgramDao().insert(StudyProgramEntity(name = "Stary kierunek", color = "#000000"))
+
+        val newSemester = SemesterEntity(id = 500, name = "Nowy", isActive = true)
+        val newProgram = StudyProgramEntity(id = 500, name = "Nowy kierunek", color = "#111111")
+        val newCalendar = AcademicCalendarEntity(
+            id = 501,
+            semesterId = 500,
+            startDate = LocalDate.of(2026, 10, 1),
+            endDate = LocalDate.of(2027, 2, 28),
+            firstWeekType = WeekType.A
+        )
+        val newAssignment = SemesterProgramEntity(
+            id = 502,
+            semesterId = 500,
+            studyProgramId = 500,
+            academicCalendarId = 501
+        )
+        val newClass = ClassEntity(
+            id = 503,
+            semesterId = 500,
+            semesterProgramId = 502,
+            name = "Nowe zajęcia",
+            type = "Wykład",
+            teacherName = null,
+            dayOfWeek = DayOfWeek.MONDAY,
+            startTime = LocalTime.of(8, 0),
+            endTime = LocalTime.of(9, 30),
+            room = null,
+            building = null,
+            group = null,
+            recurrence = Recurrence.EVERY_WEEK,
+            date = null,
+            classNote = null
+        )
+        val data = BackupData(
+            studyPrograms = listOf(newProgram),
+            semesters = listOf(
+                SemesterBackup(
+                    semester = newSemester,
+                    calendars = listOf(newCalendar),
+                    programs = listOf(newAssignment),
+                    classes = listOf(newClass),
+                    weekOverrides = emptyList(),
+                    occurrenceNotes = emptyList(),
+                    occurrenceChanges = emptyList()
+                )
+            )
+        )
+
+        val activeId = repository.replaceAllData(data)
+
+        assertEquals(500L, activeId)
+        assertNull(database!!.semesterDao().findById(oldSemesterId))
+        assertEquals(listOf(500L), repository.observeSemesters().first().map { it.id })
+        assertEquals(listOf(500L), repository.observeStudyPrograms().first().map { it.id })
+        assertEquals(1, database!!.classDao().observeForSemester(500).first().size)
+    }
+
+    @Test
+    fun replaceAllDataRollsBackOnFailure() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val existingId = database!!.semesterDao().insert(semester("Istniejący", true))
+        database!!.studyProgramDao().insert(StudyProgramEntity(name = "Istniejący kierunek", color = "#000000"))
+        database!!.openHelper.writableDatabase.execSQL(
+            "CREATE TRIGGER fail_program_insert BEFORE INSERT ON study_programs " +
+                "BEGIN SELECT RAISE(ABORT, 'insert failed'); END"
+        )
+        val data = BackupData(
+            studyPrograms = listOf(StudyProgramEntity(id = 900, name = "Nowy", color = "#111111")),
+            semesters = listOf(
+                SemesterBackup(
+                    semester = SemesterEntity(id = 900, name = "Nowy", isActive = true),
+                    calendars = emptyList(),
+                    programs = emptyList(),
+                    classes = emptyList(),
+                    weekOverrides = emptyList(),
+                    occurrenceNotes = emptyList(),
+                    occurrenceChanges = emptyList()
+                )
+            )
+        )
+
+        try {
+            repository.replaceAllData(data)
+            fail("Expected replaceAllData to fail")
+        } catch (_: Exception) {
+        }
+
+        assertEquals(listOf(existingId), repository.observeSemesters().first().map { it.id })
+        assertEquals(existingId, repository.observeActiveSemester().first()?.id)
+        assertEquals(1, repository.observeStudyPrograms().first().size)
     }
 
     @Test

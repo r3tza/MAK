@@ -123,6 +123,8 @@ interface MakRepository {
     suspend fun saveOccurrenceChange(entity: OccurrenceChangeEntity): Long
 
     suspend fun deleteOccurrenceChange(id: Long)
+
+    suspend fun replaceAllData(data: BackupData): Long?
 }
 
 @org.koin.core.annotation.Single(binds = [MakRepository::class])
@@ -635,6 +637,29 @@ class RoomMakRepository(
     }
 
     override suspend fun deleteOccurrenceChange(id: Long) = occurrenceChanges.deleteById(id)
+
+    override suspend fun replaceAllData(data: BackupData): Long? = database.withTransaction {
+        occurrenceChanges.deleteAll()
+        occurrenceNotes.deleteAll()
+        weekOverrides.deleteAll()
+        classes.deleteAll()
+        semesterPrograms.deleteAll()
+        calendars.deleteAll()
+        studyPrograms.deleteAll()
+        semesters.deleteAll()
+
+        data.studyPrograms.forEach { studyPrograms.insert(it) }
+        data.semesters.forEach { backup ->
+            semesters.insert(backup.semester)
+            backup.calendars.forEach { calendars.insert(it) }
+            backup.programs.forEach { semesterPrograms.insert(it) }
+            backup.classes.forEach { classes.insert(it) }
+            backup.weekOverrides.forEach { weekOverrides.insert(it) }
+            backup.occurrenceNotes.forEach { occurrenceNotes.insert(it) }
+            backup.occurrenceChanges.forEach { occurrenceChanges.insert(it) }
+        }
+        data.activeSemesterId
+    }
 
     private suspend fun validateClassOwnership(classId: Long, semesterId: Long) {
         require(semesters.findById(semesterId) != null) { "Semester does not exist" }

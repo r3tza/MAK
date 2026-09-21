@@ -55,6 +55,9 @@ interface SemesterDao {
     @Query("DELETE FROM semesters WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query("DELETE FROM semesters")
+    suspend fun deleteAll()
+
     @Transaction
     @Query("SELECT * FROM semesters WHERE id = :id")
     fun observeWithData(id: Long): Flow<SemesterWithData?>
@@ -87,6 +90,9 @@ interface StudyProgramDao {
     @Query("DELETE FROM study_programs WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query("DELETE FROM study_programs")
+    suspend fun deleteAll()
+
     @Query("SELECT COUNT(*) FROM semester_programs WHERE study_program_id = :id")
     suspend fun countAssignments(id: Long): Int
 }
@@ -110,6 +116,9 @@ interface AcademicCalendarDao {
 
     @Query("DELETE FROM academic_calendars WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM academic_calendars")
+    suspend fun deleteAll()
 
     @Query("SELECT COUNT(*) FROM semester_programs WHERE academic_calendar_id = :id")
     suspend fun countAssignments(id: Long): Int
@@ -137,6 +146,9 @@ interface SemesterProgramDao {
 
     @Query("DELETE FROM semester_programs WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM semester_programs")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -159,6 +171,9 @@ interface ClassDao {
 
     @Query("DELETE FROM classes WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM classes")
+    suspend fun deleteAll()
 
     @Transaction
     @Query("SELECT * FROM classes WHERE id = :id")
@@ -206,6 +221,9 @@ interface WeekOverrideDao {
 
     @Query("DELETE FROM week_overrides WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM week_overrides")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -233,6 +251,9 @@ interface OccurrenceNoteDao {
 
     @Query("DELETE FROM occurrence_notes WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM occurrence_notes")
+    suspend fun deleteAll()
 }
 
 @Dao
@@ -260,4 +281,7 @@ interface OccurrenceChangeDao {
 
     @Query("DELETE FROM occurrence_changes WHERE id = :id")
     suspend fun deleteById(id: Long)
+
+    @Query("DELETE FROM occurrence_changes")
+    suspend fun deleteAll()
 }

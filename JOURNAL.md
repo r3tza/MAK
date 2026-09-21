@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: Etap 13.2, atomowe zastąpienie danych
+
+- Fakty: Walidacja snapshotu istniała, ale nie było operacji podmiany całej bazy i nie było pewności, że błąd zostawi dane bez zmian.
+- Decyzja: Dodano `MakRepository.replaceAllData(data: BackupData): Long?`, które w jednej transakcji czyści tabele od podrzędnych (`occurrence_changes`, `occurrence_notes`, `week_overrides`, `classes`, `semester_programs`, `academic_calendars`, `study_programs`, `semesters`) i wstawia dane kopii razem z identyfikatorami, a na końcu zwraca identyfikator aktywnego semestru albo null. Dodano `deleteAll` do każdego DAO.
+- Powód: Import zastępuje całość danych, więc musi być atomowy. Zapis w jednej transakcji gwarantuje, że nieprawidłowy lub przerwany import nie zostawi częściowych danych.
+- Odrzucone: Czyszczenie poza transakcją; pozostawienie starych wierszy i nadpisywanie tylko pasujących identyfikatorów; kaskadowe usuwanie przez usunięcie samych semestrów, bo globalne kierunki nie zależą od semestru.
+- Weryfikacja: `RoomPersistenceTest` sprawdza pełną podmianę danych oraz rollback po wymuszonym błędzie wstawiania (dane i aktywny semestr pozostają). `FakeMakRepository` i `DemoDataSeederTest` odwzorowują operację. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-21: Etap 13.1, walidacja snapshotu importu
 
 - Fakty: Eksport JSON ma `schemaVersion` 2, ale nie było walidacji przed zapisem ani modelu kopii niezależnego od JSON.

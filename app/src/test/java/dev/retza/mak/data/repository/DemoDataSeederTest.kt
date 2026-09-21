@@ -169,4 +169,24 @@ private class FakeMakRepository : MakRepository {
     }
 
     override suspend fun deleteOccurrenceChange(id: Long) = Unit
+
+    override suspend fun replaceAllData(data: BackupData): Long? {
+        semesters.clear()
+        semesters += data.semesters.map { it.semester }
+        studyPrograms.clear()
+        studyPrograms += data.studyPrograms
+        calendars.clear()
+        calendars += data.semesters.flatMap { it.calendars }
+        semesterPrograms.clear()
+        semesterPrograms += data.semesters.flatMap { it.programs }
+        classes.clear()
+        classes += data.semesters.flatMap { it.classes }
+        weekOverrides.clear()
+        weekOverrides += data.semesters.flatMap { it.weekOverrides }
+        occurrenceNotes.clear()
+        occurrenceNotes += data.semesters.flatMap { it.occurrenceNotes }
+        occurrenceChanges.clear()
+        occurrenceChanges += data.semesters.flatMap { it.occurrenceChanges }
+        return data.activeSemesterId
+    }
 }
