@@ -369,7 +369,7 @@ Postęp: krok 1 zrealizowany (operacje kalendarzy w repozytorium, `RoomPersisten
 
 #### Dalszy etap 13: import przez pełne zastąpienie
 
-1. Zwiększyć `schemaVersion` formatu i eksportować globalne kierunki, semestry, powiązania, kalendarze oraz pozostałe dane planu.
+1. Eksport ma już `schemaVersion` 2 z globalnymi kierunkami, semestrami, powiązaniami, kalendarzami i pozostałymi danymi planu. Import przyjmuje wyłącznie `schemaVersion` 2; plik v1 jest odrzucany z jasnym komunikatem.
 2. Przed importem zweryfikować wersję, relacje, daty i brak osieroconych zajęć.
 3. Pokazać podgląd zawartości i ostrzeżenie o zastąpieniu wszystkich lokalnych danych.
 4. Po potwierdzeniu zastąpić dane w jednej transakcji. Błąd pozostawia bazę bez zmian.
@@ -377,6 +377,10 @@ Postęp: krok 1 zrealizowany (operacje kalendarzy w repozytorium, `RoomPersisten
 6. Dodać test round-trip i rollbacku.
 
 Kryterium: zaakceptowany plik odtwarza pełny plan, a nieprawidłowy plik nie zmienia żadnych danych.
+
+Decyzja 2026-09-21: import obsługuje tylko `schemaVersion` 2. Kolejność kroków: walidacja snapshotu, atomowe zastąpienie w repozytorium, podgląd i potwierdzenie w UI.
+
+Postęp: krok 1 zrealizowany (walidacja i mapowanie snapshotu w `ExportImporter`, model `BackupData`, testy JVM `ExportImporterTest`). Kolejny krok: atomowe zastąpienie w repozytorium.
 
 #### Dalszy etap 14: powiadomienia o kolizjach
 

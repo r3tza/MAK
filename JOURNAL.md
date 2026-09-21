@@ -1,5 +1,22 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: Etap 13.1, walidacja snapshotu importu
+
+- Fakty: Eksport JSON ma `schemaVersion` 2, ale nie było walidacji przed zapisem ani modelu kopii niezależnego od JSON.
+- Decyzja: Dodano `BackupData` i `SemesterBackup` w `data.repository` jako model pełnej kopii z encji Room oraz `ExportImporter.prepare(snapshot)` w `export`, który sprawdza wersję, powtórzone identyfikatory, co najwyżej jeden aktywny semestr, przynależność encji do semestru, istnienie kalendarza, przypisania i zajęć, poprawność dat, godzin i cyklu oraz wymóg daty dla zajęć jednorazowych. Wynik to `Ready(BackupData)` albo `Invalid(errors)`. Mapowanie na encje jest oddzielone od kodeka JSON, więc repozytorium nie zna JSON.
+- Powód: Import zastępuje całość danych, więc musi najpierw odrzucić nieprawidłowy plik bez zmiany bazy, a walidacja ma być testowalna na JVM.
+- Odrzucone: Walidacja przez próbę zapisu i rollback jako główna ścieżka; wrzucanie mapowania i walidacji do repozytorium razem z JSON.
+- Weryfikacja: `ExportImporterTest` pokrywa poprawny snapshot, złą wersję, osierocone zajęcia, kalendarz z innego semestru, dwa aktywne semestry, zajęcia jednorazowe bez daty i powtórzone identyfikatory kierunków. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
+## 2026-09-21: Zakres wersji importu
+
+- Fakty: Eksport ma `schemaVersion` 2 z globalnymi kierunkami, semestrami, powiązaniami i kalendarzami. Użytkownicy mają też pliki z wcześniejszego eksportu, który nie zawierał globalnych kierunków ani wielokalendarzowego modelu.
+- Decyzja: Import przyjmuje wyłącznie `schemaVersion` 2. Plik w innej wersji jest odrzucany z jasnym komunikatem, bez próby mapowania.
+- Powód: Eksport v1 nie niesie danych potrzebnych do odtworzenia obecnego modelu, a zgadywanie mapowania groziłoby cichym zniekształceniem planu.
+- Odrzucone: Import plików v1 przez syntezę kierunków i kalendarza; migracja pliku v1 do v2 po stronie klienta.
+- Wznowić decyzję tylko gdy: pojawi się realna potrzeba odtworzenia danych z plików v1 albo powstanie osobne narzędzie migracji plików.
+- Kolejność etapu 13: walidacja snapshotu, potem atomowe zastąpienie w repozytorium, na końcu podgląd i potwierdzenie w UI.
+
 ## 2026-09-21: Etap 12.3, kalendarze w interfejsie
 
 - Fakty: Warstwa danych i ViewModele obsługiwały wiele kalendarzy, ale ekrany nadal pokazywały jeden wspólny kalendarz i nie było sposobu rozdzielić ani połączyć kalendarzy.
