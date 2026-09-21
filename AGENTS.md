@@ -40,6 +40,43 @@ Nie implementuj elementów oznaczonych jako pytania otwarte lub poza zakresem be
 
 Po zaakceptowanej zmianie architektury, stosu lub zasad pracy zaktualizuj właściwy dokument i dodaj wpis do `JOURNAL.md`. `CHANGELOG.md` aktualizuj dopiero po wydaniu zmiany użytkownikom.
 
+## Preferencje projektowe użytkownika
+
+Traktuj te zasady jako wskazówki przy proponowaniu rozwiązań. Szczegóły produktu i zaakceptowane wyjątki z `ARCHITECTURE.md`, `STACK.md`, `JOURNAL.md` i `plan.md` mają pierwszeństwo.
+
+### Architektura
+
+- Dziel system według odpowiedzialności, stabilnych obszarów danych i przepływów użytkownika. Nie twórz podziału dla każdej tabeli, funkcji ani pliku.
+- Nie skupiaj stanu i operacji całej aplikacji w jednym ViewModelu, repozytorium, hoście ani komponencie delegującym.
+- Dodawaj abstrakcję, warstwę lub moduł Gradle wtedy, gdy tworzy wyraźną granicę, usuwa duplikację reguł albo realnie zmniejsza koszt przyszłych zmian.
+- Preferuj rozwiązania zgodne ze współczesnymi praktykami platformy, ale uwzględniaj skalę projektu. Unikaj zarówno prowizorycznych skrótów utrudniających rozwój, jak i infrastruktury projektowanej bez konkretnej potrzeby.
+- Przekazuj zależności jawnie przez konstruktor. Ogranicz kontener DI do composition rootu i hostów wymaganych przez framework.
+- Utrzymuj logikę domenową niezależnie od UI, bazy i frameworka. Jedna reguła biznesowa ma jedno źródło używane przez wszystkich konsumentów.
+- Pozostaw nawigację właścicielowi platformowego stosu nawigacji. ViewModel może emitować jednorazowy efekt po sukcesie, ale nie powinien utrzymywać drugiej kopii bieżącej trasy.
+- Operacje wieloetapowe wykonuj atomowo. Błąd nie może zostawić częściowych danych ani usunąć pracy użytkownika.
+- Preferuj rozwiązania lokalne, energooszczędne i łatwe w utrzymaniu. Nie dodawaj usług działających stale w tle bez potwierdzonej potrzeby.
+- Aktualizuj narzędzia do najnowszych stabilnych, wzajemnie zgodnych wersji. Nie wybieraj wersji eksperymentalnej wyłącznie dlatego, że jest najnowsza.
+- Duże refaktory dziel na małe etapy o jawnej kolejności, odpowiedzialności, kryterium zakończenia i stanie możliwym do sprawdzenia. Plan ma być wykonalny także przez słabszego agenta bez odgadywania intencji.
+
+### Interfejs
+
+- Stawiaj czytelność, szybkie skanowanie i hierarchię informacji ponad dekorację.
+- Ograniczaj przeciążenie poznawcze. Grupuj opcje w nazwane sekcje, a rozbudowane lub rzadkie przepływy przenoś na osobne ekrany.
+- Preferuj karty, wiersze, krótkie podsumowania, pille i jawny grid, gdy pomagają porównać kilka informacji. Nie dodawaj tabelarycznego układu, jeśli nie poprawia skanowania.
+- Traktuj padding, rytm pionowy, wyrównanie i separację komponentów jako kryteria jakości. Przyciski i kontenery nie mogą wyglądać na przypadkowo sklejone.
+- Buduj na Material 3 i istniejących wzorcach platformy. Własny komponent dodaj wtedy, gdy odtwarza zaakceptowany wzorzec, którego standardowy komponent nie realizuje wystarczająco dobrze.
+- Nadawaj kolorom stałe znaczenie. Powierzchnie pozostawiaj głównie neutralne, a akcentów używaj dla informacji, kategorii, ostrzeżeń i działań o rzeczywistej wadze.
+- Nie używaj koloru jako jedynego nośnika informacji. Dodaj etykietę, ikonę, kształt albo treść semantyczną.
+- Nie używaj koloru akcentowego wyłącznie do pokazania zwykłego stanu komponentu, jeśli tekst, ikona i semantyka wystarczają.
+- Zachowuj jawne działania użytkownika. Nie otwieraj automatycznie kreatora, formularza ani innego przepływu, jeśli stan pusty z jasną akcją daje użytkownikowi większą kontrolę.
+- Projektuj od szerokości 320 dp. Brak obciętych akcji, poziomego przewijania, utraty kontrastu i nieczytelnego zawijania jest częścią kryterium akceptacji.
+- Traktuj dostępność, motyw ciemny, focus, klawiaturę, TalkBack i stan błędu jako część projektu, nie jako końcowy audyt.
+- Przy istotnej zmianie wyglądu najpierw opisz wariant i role informacji. Po akceptacji zapisz decyzję, zaimplementuj ją i porównaj na zrzucie albo urządzeniu przed utrwaleniem drobnych szczegółów wizualnych.
+
+### Organizacja pracy
+
+- Przy zadaniach polegających głównie na czytaniu, porównaniu lub audycie wielu plików użyj subagenta Luna, jeśli równoległy przegląd realnie skróci pracę. Nie deleguj małego, jednoznacznego odczytu, gdy koszt koordynacji będzie większy niż korzyść.
+
 ## Zmiany w kodzie
 
 - Najpierw prześledź kod i przepływ danych, którego dotyczy zmiana.
