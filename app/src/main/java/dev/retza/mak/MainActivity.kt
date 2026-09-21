@@ -57,8 +57,7 @@ class MainActivity : ComponentActivity() {
                 factory = MakViewModel.Factory(
                     application.repository,
                     application.feedbackController,
-                    classEditViewModel,
-                    settingsViewModel
+                    classEditViewModel
                 )
             )
             makViewModel = viewModel

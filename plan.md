@@ -764,11 +764,16 @@ To domyślny ekran otwierany po uruchomieniu aplikacji.
 Powinien pokazywać:
 
 - dzień tygodnia i pełną datę;
-- liczbę zajęć;
+- gradientową kartę „Twój plan na dziś” z trzema równymi kolumnami „Zajęcia”, „Kolizje” i „Okienka”; każda kolumna ma etykietę u góry i liczbę poniżej;
+- czerwony kolor liczby kolizji, gdy jest większa od zera, oraz zielony, gdy wynosi zero; pozostałe liczby zachowują neutralny kolor;
 - wszystkie aktywne zajęcia w kolejności od najwcześniejszego;
 - kolor kierunku;
 - oznaczenie kolizji, gdy ta funkcja zostanie dodana;
 - stan pusty, gdy danego dnia nie ma zajęć.
+
+Okienko jest przerwą dłuższą niż ustawiony próg między końcem jednego bloku zajęć a początkiem następnego. Domyślny próg wynosi 30 minut, więc przerwa trwająca dokładnie 30 minut nie jest okienkiem. Użytkownik może zmienić próg globalnie w ustawieniach. Nie liczyć czasu przed pierwszymi ani po ostatnich zajęciach dnia. Odwołane zajęcia pominąć, a zmiany i przeniesienia uwzględnić. Nakładające się zajęcia najpierw połączyć w blok czasu, aby kolizja nie tworzyła fałszywego okienka.
+
+Obliczanie liczby okienek należy do domeny i korzysta z tego samego aktywnego planu co wykrywanie kolizji. `TodayViewModel` umieszcza liczbę zajęć, unikalnych kolizji i okienek w stanie widoku. Karta zachowuje obecny gradient, ma subtelne pionowe separatory i nie pokazuje ozdobnej ikony. Przy braku zajęć pokazuje tekst „Dziś bez zajęć” oraz trzy wartości równe zero. Układ musi zachować czytelność i semantykę przy szerokości 320 dp oraz w motywie jasnym i ciemnym.
 
 Przykładowy element:
 
@@ -1223,6 +1228,7 @@ Ustawienia powinny zawierać:
 - listę semestrów z możliwością dodania, wyboru, konfiguracji i usunięcia;
 - konfigurację przypisań kierunków, wspólnych lub osobnych kalendarzy oraz korekt tygodni A/B;
 - listę globalnych kierunków i ich kolorów;
+- globalny próg długości okienka, domyślnie 30 minut;
 - ustawienia powiadomień;
 - eksport planu;
 - import planu;

@@ -25,9 +25,6 @@ import dev.retza.mak.ui.schedule.ScheduleFilterUi
 import dev.retza.mak.ui.schedule.conflictLabels
 import dev.retza.mak.ui.schedule.ScheduleUiState
 import dev.retza.mak.ui.schedule.ScheduleView
-import dev.retza.mak.ui.settings.SettingsUiState
-import dev.retza.mak.ui.settings.SettingsViewModel
-import dev.retza.mak.ui.settings.toId
 import dev.retza.mak.ui.today.TodayUiState
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
@@ -68,8 +65,6 @@ data class MakUiState(
     val hasLoadedData: Boolean = false,
     val today: TodayUiState = emptyTodayState(),
     val schedule: ScheduleUiState = emptyScheduleState(),
-    val themeId: String = "system",
-    val settings: SettingsUiState = SettingsUiState(),
     val activeSemesterData: SemesterWithData? = null
 )
 
@@ -89,7 +84,6 @@ class MakViewModel(
     private val repository: MakRepository,
     private val feedbackSink: FeedbackSink,
     private val classEditViewModel: ClassEditViewModel,
-    private val settingsViewModel: SettingsViewModel,
     private val clock: Clock = Clock.systemDefaultZone(),
     private val activePlanProvider: ActivePlanProvider = ActivePlanProvider()
 ) : ViewModel() {
@@ -108,14 +102,8 @@ class MakViewModel(
         if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
     }
 
-    val uiState = combine(
-        semesters,
-        activeSemesterData,
-        controls,
-        settingsViewModel.settings,
-        settingsViewModel.themeMode
-    ) { semesterList, activeData, control, settings, theme ->
-        buildState(semesterList, activeData, control, settings, theme.toId())
+    val uiState = combine(semesters, activeSemesterData, controls) { semesterList, activeData, control ->
+        buildState(semesterList, activeData, control)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -213,24 +201,10 @@ class MakViewModel(
         viewModelScope.launch { repository.deleteWeekOverride(existing.id) }
     }
 
-    fun selectSemester(id: String) = settingsViewModel.selectSemester(id)
-
-    fun requestSemesterDeletion(id: String) = settingsViewModel.requestSemesterDeletion(id)
-
-    fun cancelSemesterDeletion() = settingsViewModel.cancelSemesterDeletion()
-
-    fun confirmSemesterDeletion() = settingsViewModel.confirmSemesterDeletion()
-
-    fun selectTheme(id: String) = settingsViewModel.selectTheme(id)
-
-    fun exportJson(onReady: (ByteArray) -> Unit) = settingsViewModel.exportJson(onReady)
-
     private fun buildState(
         semesterList: List<SemesterEntity>,
         activeData: SemesterWithData?,
-        control: Controls,
-        settings: SettingsUiState,
-        themeId: String
+        control: Controls
     ): MakUiState {
         val requiresSetup = semesterList.isEmpty() ||
             activeData != null && activeData.courses.isEmpty()
@@ -241,8 +215,6 @@ class MakViewModel(
             hasLoadedData = true,
             today = buildToday(activeData, control.todayDate),
             schedule = buildSchedule(activeData, control),
-            themeId = themeId,
-            settings = settings,
             activeSemesterData = activeData
         )
     }
@@ -372,13 +344,12 @@ class MakViewModel(
     class Factory(
         private val repository: MakRepository,
         private val feedbackSink: FeedbackSink,
-        private val classEditViewModel: ClassEditViewModel,
-        private val settingsViewModel: SettingsViewModel
+        private val classEditViewModel: ClassEditViewModel
     ) : ViewModelProvider.Factory {
         @Suppress("UNCHECKED_CAST")
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             require(modelClass.isAssignableFrom(MakViewModel::class.java))
-            return MakViewModel(repository, feedbackSink, classEditViewModel, settingsViewModel) as T
+            return MakViewModel(repository, feedbackSink, classEditViewModel) as T
         }
     }
 }

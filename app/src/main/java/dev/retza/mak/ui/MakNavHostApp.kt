@@ -488,9 +488,10 @@ fun MakApp(
             }
 
             composable(MakRoutes.Settings) {
+                val settingsState = settingsViewModel.settings.collectAsStateWithLifecycle().value
                 SettingsScreen(
-                    state = state.settings,
-                    onSemesterSelected = viewModel::selectSemester,
+                    state = settingsState,
+                    onSemesterSelected = settingsViewModel::selectSemester,
                     onAddSemester = {
                         setupViewModel.start()
                         viewModel.navigate(MakDestination.Setup)
@@ -499,10 +500,10 @@ fun MakApp(
                     onConfigureSemester = { id ->
                         navController.navigate(semesterRoute(id))
                     },
-                    onDeleteSemester = viewModel::requestSemesterDeletion,
-                    onConfirmDelete = viewModel::confirmSemesterDeletion,
-                    onCancelDelete = viewModel::cancelSemesterDeletion,
-                    onThemeSelected = viewModel::selectTheme,
+                    onDeleteSemester = settingsViewModel::requestSemesterDeletion,
+                    onConfirmDelete = settingsViewModel::confirmSemesterDeletion,
+                    onCancelDelete = settingsViewModel::cancelSemesterDeletion,
+                    onThemeSelected = settingsViewModel::selectTheme,
                     onExport = onCreateExportDocument,
                     onRetry = {},
                     modifier = Modifier.fillMaxSize()
@@ -511,6 +512,7 @@ fun MakApp(
 
             composable(MakRoutes.Setup) {
                 val setupState = setupViewModel.setup.collectAsStateWithLifecycle().value
+                val settingsState = settingsViewModel.settings.collectAsStateWithLifecycle().value
                 SetupWizard(
                     state = setupState,
                     onSemesterNameChanged = { value -> setupViewModel.update { it.copy(semesterName = value) } },
@@ -524,7 +526,7 @@ fun MakApp(
                     onAddClass = setupViewModel::addClass,
                     onFinish = setupViewModel::finish,
                     onReturnToSettings = setupViewModel::returnToSettings,
-                    showReturnToSettings = state.settings.semesters.isNotEmpty(),
+                    showReturnToSettings = settingsState.semesters.isNotEmpty(),
                     onRetry = {},
                     modifier = Modifier.fillMaxSize()
                 )

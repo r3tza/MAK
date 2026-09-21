@@ -34,8 +34,7 @@ class MakViewModelTest {
         val controller = FeedbackController()
         val repository = FakeMakRepository()
         val classEditViewModel = ClassEditViewModel(repository, controller)
-        val settingsViewModel = SettingsViewModel(repository, InMemorySettingsPreferences(), controller)
-        val viewModel = MakViewModel(repository, controller, classEditViewModel, settingsViewModel, clock)
+        val viewModel = MakViewModel(repository, controller, classEditViewModel, clock)
         val received = mutableListOf<UiFeedback>()
         backgroundScope.launch(mainDispatcher) {
             controller.feedback.collect { received += it }
@@ -55,7 +54,7 @@ class MakViewModelTest {
         val repository = FakeMakRepository()
         val classEditViewModel = ClassEditViewModel(repository, controller)
         val settingsViewModel = SettingsViewModel(repository, InMemorySettingsPreferences(), controller)
-        val viewModel = MakViewModel(repository, controller, classEditViewModel, settingsViewModel, clock)
+        val viewModel = MakViewModel(repository, controller, classEditViewModel, clock)
         backgroundScope.launch(mainDispatcher) { viewModel.uiState.collect {} }
         advanceUntilIdle()
 

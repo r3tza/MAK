@@ -1,5 +1,14 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: Podsumowanie zajęć, kolizji i okienek
+
+- Fakty: Gradientowa karta ekranu „Dzisiaj” pokazuje obecnie tylko liczbę zajęć i ma niewykorzystane miejsce. Użytkownik potrzebuje szybkiej informacji o zajęciach, kolizjach i przerwach w planie.
+- Decyzja: Zachować gradient i umieścić w nim trzy równe kolumny „Zajęcia”, „Kolizje” i „Okienka”, z etykietą nad liczbą. Usunąć ozdobną ikonę. Liczba kolizji jest czerwona dla wartości większej od zera i zielona dla zera. Pozostałe liczby mają neutralny kolor.
+- Okienka: Okienkiem jest przerwa dłuższa niż 30 minut między połączonymi blokami aktywnych zajęć. Dokładnie 30 minut nie spełnia warunku. Nie liczyć czasu przed pierwszymi ani po ostatnich zajęciach. Pominąć odwołane zajęcia oraz uwzględnić zmiany i przeniesienia. Próg jest globalnym ustawieniem użytkownika.
+- Architektura: Liczenie okienek należy do domeny i korzysta z aktywnego planu po rozwiązaniu zmian wystąpień. `TodayViewModel` wystawia tylko wynik potrzebny prezentacji.
+- Powód: Jedna karta odpowiada na trzy najważniejsze pytania o bieżący dzień bez zwiększania wysokości nagłówka i bez powielania reguł planu w interfejsie.
+- Odrzucone: Traktowanie dokładnie 30 minut jako okienka; liczenie czasu przed pierwszymi i po ostatnich zajęciach; liczenie przerwy osobno wewnątrz nakładających się zajęć.
+
 ## 2026-09-21: Przybliżone powiadomienia o kolizjach
 
 - Fakty: Powiadomienie wieczorne nie wymaga dostarczenia co do minuty. Powiadomienie przed zajęciami ma pozostać użyteczne bez żądania specjalnego dostępu do dokładnych alarmów. `WorkManager` nie zapewnia czasu dostarczenia odpowiedniego dla ostrzeżenia przed zajęciami.
