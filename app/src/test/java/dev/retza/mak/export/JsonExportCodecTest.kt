@@ -1,14 +1,15 @@
 package dev.retza.mak.export
 
 import dev.retza.mak.data.database.SemesterWithData
+import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
-import dev.retza.mak.data.entity.CourseEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceChangeKind
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.data.entity.Recurrence
 import dev.retza.mak.data.entity.SemesterEntity
-import dev.retza.mak.data.entity.TeacherEntity
+import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
@@ -32,32 +33,32 @@ class JsonExportCodecTest {
 
     @Test
     fun snapshotRoundTripPreservesAllSemesterData() {
-        val semester = SemesterEntity(
-            id = 1,
-            name = "Semestr zimowy",
-            startDate = LocalDate.of(2026, 10, 1),
-            endDate = LocalDate.of(2027, 2, 15),
-            firstWeekType = WeekType.B,
-            isActive = true
-        )
-        val course = CourseEntity(
+        val semester = SemesterEntity(id = 1, name = "Semestr zimowy", isActive = true)
+        val calendar = AcademicCalendarEntity(
             id = 2,
             semesterId = semester.id,
+            startDate = LocalDate.of(2026, 10, 1),
+            endDate = LocalDate.of(2027, 2, 15),
+            firstWeekType = WeekType.B
+        )
+        val studyProgram = StudyProgramEntity(
+            id = 3,
             name = "Informatyka",
             color = "#3366FF"
         )
-        val teacher = TeacherEntity(
-            id = 3,
-            semesterId = semester.id,
-            name = "Jan Kowalski"
-        )
-        val classEntity = ClassEntity(
+        val assignment = SemesterProgramEntity(
             id = 4,
             semesterId = semester.id,
+            studyProgramId = studyProgram.id,
+            academicCalendarId = calendar.id
+        )
+        val classEntity = ClassEntity(
+            id = 5,
+            semesterId = semester.id,
+            semesterProgramId = assignment.id,
             name = "Programowanie",
             type = "wykład",
-            courseId = course.id,
-            teacherId = teacher.id,
+            teacherName = "Jan Kowalski",
             dayOfWeek = DayOfWeek.TUESDAY,
             startTime = LocalTime.of(10, 15),
             endTime = LocalTime.of(12, 0),
@@ -69,21 +70,22 @@ class JsonExportCodecTest {
             classNote = "Przynieść projektor"
         )
         val weekOverride = WeekOverrideEntity(
-            id = 5,
+            id = 6,
             semesterId = semester.id,
+            academicCalendarId = calendar.id,
             weekStartDate = LocalDate.of(2026, 10, 5),
             weekType = WeekType.A,
             scope = WeekOverrideScope.FROM_WEEK
         )
         val occurrenceNote = OccurrenceNoteEntity(
-            id = 6,
+            id = 7,
             semesterId = semester.id,
             classId = classEntity.id,
             occurrenceDate = LocalDate.of(2026, 10, 6),
             body = "Kolokwium"
         )
         val occurrenceChange = OccurrenceChangeEntity(
-            id = 7,
+            id = 8,
             semesterId = semester.id,
             classId = classEntity.id,
             originalDate = LocalDate.of(2026, 10, 13),
@@ -93,15 +95,16 @@ class JsonExportCodecTest {
             newEndTime = LocalTime.of(9, 45),
             newRoom = "B-202",
             newBuilding = "Nowy",
-            newTeacherId = teacher.id,
+            newTeacherName = "Jan Kowalski",
             newNote = "Zajęcia przeniesione"
         )
         val source = ExportSnapshot.from(
             listOf(
                 SemesterWithData(
                     semester = semester,
-                    courses = listOf(course),
-                    teachers = listOf(teacher),
+                    semesterPrograms = listOf(assignment),
+                    academicCalendars = listOf(calendar),
+                    studyPrograms = listOf(studyProgram),
                     classes = listOf(classEntity),
                     weekOverrides = listOf(weekOverride),
                     occurrenceNotes = listOf(occurrenceNote),

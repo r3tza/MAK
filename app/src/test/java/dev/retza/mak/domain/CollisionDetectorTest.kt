@@ -8,23 +8,24 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CollisionDetectorTest {
-    private val semester = Semester(
-        id = "semester",
-        name = "Winter",
+    private val semester = Semester(id = "semester", name = "Winter")
+    private val calendar = AcademicCalendar(
+        id = "calendar",
         startDate = LocalDate.of(2026, 1, 1),
         endDate = LocalDate.of(2026, 1, 31),
         firstWeekType = WeekType.A
     )
     private val course = StudyProgram("course", "Course", "#000000")
+    private val assignment = SemesterProgram("assignment", semester.id, course.id, calendar.id)
     private val resolver = ScheduleResolver()
     private val detector = CollisionDetector()
 
     private fun item(id: String, start: LocalTime, end: LocalTime) = ClassItem(
         id = id,
         semesterId = semester.id,
+        semesterProgramId = assignment.id,
         name = id,
         type = "lecture",
-        courseId = course.id,
         dayOfWeek = DayOfWeek.MONDAY,
         startTime = start,
         endTime = end
@@ -36,6 +37,8 @@ class CollisionDetectorTest {
             semester = semester,
             classes = classes,
             courses = listOf(course),
+            semesterPrograms = listOf(assignment),
+            calendars = listOf(calendar),
             occurrenceChanges = changes
         ).occurrences
 

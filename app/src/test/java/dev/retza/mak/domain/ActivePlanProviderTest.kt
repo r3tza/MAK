@@ -10,22 +10,25 @@ class ActivePlanProviderTest {
     @Test
     fun providerReturnsResolvedScheduleAndCollisionsFromTheSamePlan() {
         val date = LocalDate.of(2026, 9, 21)
-        val semester = Semester(
-            id = "semester",
-            name = "Semestr",
+        val semester = Semester(id = "semester", name = "Semestr")
+        val calendar = AcademicCalendar(
+            id = "calendar",
             startDate = date,
             endDate = date.plusDays(7),
             firstWeekType = WeekType.A
         )
         val course = StudyProgram("course", "Informatyka", "#137B71")
-        val first = classItem("first", semester.id, course.id, LocalTime.of(9, 0), LocalTime.of(10, 0))
-        val second = classItem("second", semester.id, course.id, LocalTime.of(9, 30), LocalTime.of(10, 30))
+        val assignment = SemesterProgram("assignment", semester.id, course.id, calendar.id)
+        val first = classItem("first", semester.id, assignment.id, LocalTime.of(9, 0), LocalTime.of(10, 0))
+        val second = classItem("second", semester.id, assignment.id, LocalTime.of(9, 30), LocalTime.of(10, 30))
 
         val plan = ActivePlanProvider().resolve(
             data = ActivePlanData(
                 semester = semester,
                 classes = listOf(first, second),
-                courses = listOf(course)
+                courses = listOf(course),
+                semesterPrograms = listOf(assignment),
+                calendars = listOf(calendar)
             ),
             date = date
         )
@@ -41,15 +44,15 @@ class ActivePlanProviderTest {
     private fun classItem(
         id: String,
         semesterId: String,
-        courseId: String,
+        semesterProgramId: String,
         startTime: LocalTime,
         endTime: LocalTime
     ) = ClassItem(
         id = id,
         semesterId = semesterId,
+        semesterProgramId = semesterProgramId,
         name = id,
         type = "Wykład",
-        courseId = courseId,
         dayOfWeek = DayOfWeek.MONDAY,
         startTime = startTime,
         endTime = endTime

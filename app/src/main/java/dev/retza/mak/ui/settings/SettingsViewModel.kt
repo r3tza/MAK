@@ -165,14 +165,31 @@ private fun buildSettingsState(
 ): SettingsUiState = SettingsUiState(
     semesters = semesterList.map { semester ->
         val isActive = semester.id == activeData?.semester?.id
+        val calendar = activeData?.academicCalendars?.minByOrNull { it.id }
         SemesterUi(
             id = semester.id.toString(),
             name = semester.name,
-            dateRangeLabel = "${semester.startDate.format(shortDateFormatter)} - " +
-                semester.endDate.format(shortDateFormatter),
-            firstWeekLabel = "Pierwszy tydzień ${semester.firstWeekType.name}",
-            courseCountLabel = if (isActive) "${activeData.courses.size} kierunków" else "Dane odizolowane",
-            classCountLabel = if (isActive) classCountLabel(activeData.classes.size) else "Osobny plan",
+            dateRangeLabel = if (isActive && calendar != null) {
+                "${calendar.startDate.format(shortDateFormatter)} - " +
+                    calendar.endDate.format(shortDateFormatter)
+            } else {
+                "Dane odizolowane"
+            },
+            firstWeekLabel = if (isActive && calendar != null) {
+                "Pierwszy tydzień ${calendar.firstWeekType.name}"
+            } else {
+                "Osobny kalendarz"
+            },
+            courseCountLabel = if (isActive) {
+                "${activeData?.semesterPrograms?.size ?: 0} kierunków"
+            } else {
+                "Dane odizolowane"
+            },
+            classCountLabel = if (isActive) {
+                classCountLabel(activeData?.classes?.size ?: 0)
+            } else {
+                "Osobny plan"
+            },
             isActive = isActive
         )
     },

@@ -41,6 +41,7 @@ class SemesterViewModelTest {
         repository.weekOverrides += WeekOverrideEntity(
             id = 5L,
             semesterId = 1L,
+            academicCalendarId = 1L,
             weekStartDate = LocalDate.of(2026, 10, 5),
             weekType = WeekType.B,
             scope = WeekOverrideScope.ONE_WEEK
@@ -169,7 +170,7 @@ class SemesterViewModelTest {
         repository.saveGate?.complete(Unit)
         advanceUntilIdle()
 
-        assertEquals(1, repository.events.count { it == "updateSemester" })
+        assertEquals(1, repository.events.count { it == "updateSemesterWithCalendar" })
         assertEquals(listOf(UiFeedback("Zapisano semestr", UiFeedbackKind.Success)), sink.published)
         assertEquals(listOf(SemesterEffect.CloseConfiguration), effects)
         assertFalse(viewModel.semester.value.semester.isSaving)
@@ -232,7 +233,7 @@ class SemesterViewModelTest {
 
         assertNotNull(viewModel.semester.value.courseNameError)
         assertTrue(sink.published.isEmpty())
-        assertTrue(repository.events.none { it == "saveCourse" })
+        assertTrue(repository.events.none { it == "saveSemesterProgram" })
     }
 
     @Test
@@ -249,7 +250,7 @@ class SemesterViewModelTest {
         viewModel.addCourse()
         advanceUntilIdle()
 
-        assertEquals("#137b71", repository.courses.first { it.name == "Fizyka" }.color)
+        assertEquals("#137b71", repository.studyPrograms.first { it.name == "Fizyka" }.color)
         assertEquals("", viewModel.semester.value.courseNameDraft)
         assertEquals(
             listOf(UiFeedback("Dodano kierunek", UiFeedbackKind.Success)),
@@ -274,9 +275,9 @@ class SemesterViewModelTest {
         repository.saveGate?.complete(Unit)
         advanceUntilIdle()
 
-        assertEquals(1, repository.events.count { it == "saveCourse" })
+        assertEquals(1, repository.events.count { it == "saveSemesterProgram" })
         assertEquals(1, sink.published.size)
-        assertEquals(2, repository.courses.size)
+        assertEquals(2, repository.studyPrograms.size)
     }
 
     @Test
@@ -316,8 +317,8 @@ class SemesterViewModelTest {
         repository.saveGate?.complete(Unit)
         advanceUntilIdle()
 
-        assertEquals(1, repository.events.count { it == "deleteCourse" })
-        assertTrue(repository.courses.isEmpty())
+        assertEquals(1, repository.events.count { it == "deleteSemesterProgram" })
+        assertTrue(repository.semesterPrograms.isEmpty())
         assertEquals(
             listOf(UiFeedback("Usunięto kierunek", UiFeedbackKind.Success)),
             sink.published
@@ -338,7 +339,7 @@ class SemesterViewModelTest {
         viewModel.deleteCourse("1")
         advanceUntilIdle()
 
-        assertEquals(1, repository.courses.size)
+        assertEquals(1, repository.studyPrograms.size)
         assertEquals(1, sink.published.size)
         assertEquals(UiFeedbackKind.Error, sink.published.single().kind)
         assertEquals("Nie udało się usunąć kierunku.", sink.published.single().message)
@@ -419,6 +420,7 @@ class SemesterViewModelTest {
         repository.weekOverrides += WeekOverrideEntity(
             id = 5L,
             semesterId = 1L,
+            academicCalendarId = 1L,
             weekStartDate = LocalDate.of(2026, 10, 5),
             weekType = WeekType.A,
             scope = WeekOverrideScope.ONE_WEEK
@@ -494,6 +496,7 @@ class SemesterViewModelTest {
         repository.weekOverrides += WeekOverrideEntity(
             id = 5L,
             semesterId = 1L,
+            academicCalendarId = 1L,
             weekStartDate = LocalDate.of(2026, 10, 5),
             weekType = WeekType.A,
             scope = WeekOverrideScope.ONE_WEEK
@@ -526,6 +529,7 @@ class SemesterViewModelTest {
         repository.weekOverrides += WeekOverrideEntity(
             id = 5L,
             semesterId = 1L,
+            academicCalendarId = 1L,
             weekStartDate = LocalDate.of(2026, 10, 5),
             weekType = WeekType.A,
             scope = WeekOverrideScope.ONE_WEEK

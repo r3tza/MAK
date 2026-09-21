@@ -152,7 +152,7 @@ class OccurrenceViewModel(
                         newEndTime = null,
                         newRoom = null,
                         newBuilding = null,
-                        newTeacherId = null,
+                        newTeacherName = null,
                         newNote = null
                     )
                 )
@@ -343,7 +343,7 @@ class OccurrenceViewModel(
                                     newEndTime = decision.slot.endTime,
                                     newRoom = occurrenceRoomOverride(base.room, decision.slot.room),
                                     newBuilding = null,
-                                    newTeacherId = null,
+                                    newTeacherName = null,
                                     newNote = null
                                 )
                             )
@@ -406,7 +406,7 @@ class OccurrenceViewModel(
             status != OccurrenceStatusUi.Cancelled
         return OccurrenceDetailsUiState(
             subjectName = base.name,
-            courseName = data.courses.firstOrNull { it.id == base.courseId }?.name.orEmpty(),
+            courseName = data.studyProgramName(base.semesterProgramId),
             typeLabel = base.type,
             dateLabel = effectiveDate.format(occurrenceDateFormatter),
             currentDate = effectiveDate.toString(),
@@ -414,8 +414,7 @@ class OccurrenceViewModel(
             endTime = effectiveEnd.toString(),
             room = effectiveRoom,
             building = change?.newBuilding ?: base.building,
-            teacherName = change?.newTeacherId?.let { id -> data.teachers.firstOrNull { it.id == id }?.name }
-                ?: data.teachers.firstOrNull { it.id == base.teacherId }?.name,
+            teacherName = change?.newTeacherName ?: base.teacherName,
             groupName = base.group,
             weekLabel = activePlan(data, effectiveDate).schedule.weekType?.let { "Tydzień ${it.name}" },
             originalDateLabel = change?.originalDate?.toString(),
@@ -432,8 +431,8 @@ class OccurrenceViewModel(
             baseStartTime = base.startTime.toString(),
             baseEndTime = base.endTime.toString(),
             baseRoom = base.room?.trim()?.ifEmpty { null },
-            semesterStartDate = data.semester.startDate.toString(),
-            semesterEndDate = data.semester.endDate.toString(),
+            semesterStartDate = data.sharedCalendar()?.startDate?.toString().orEmpty(),
+            semesterEndDate = data.sharedCalendar()?.endDate?.toString().orEmpty(),
             canCancelOccurrence = canEdit && change == null,
             canChangeOccurrence = canEdit,
             canMoveOccurrence = canEdit,
@@ -443,6 +442,13 @@ class OccurrenceViewModel(
 
     private fun activePlan(data: SemesterWithData, date: LocalDate) =
         activePlanProvider.resolve(data.toActivePlanData(), date)
+
+    private fun SemesterWithData.studyProgramName(assignmentId: Long): String {
+        val assignment = semesterPrograms.firstOrNull { it.id == assignmentId } ?: return ""
+        return studyPrograms.firstOrNull { it.id == assignment.studyProgramId }?.name.orEmpty()
+    }
+
+    private fun SemesterWithData.sharedCalendar() = academicCalendars.minByOrNull { it.id }
 
     private fun derive(value: OccurrenceDetailsUiState): OccurrenceDetailsUiState = value.copy(
         canSaveOccurrenceEdit = canSaveOccurrenceEdit(value),

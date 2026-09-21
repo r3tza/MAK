@@ -5,7 +5,7 @@ import java.time.LocalTime
 
 data class ClassForm(
     val name: String,
-    val courseId: String?,
+    val semesterProgramId: String?,
     val startTime: LocalTime?,
     val endTime: LocalTime?,
     val recurrence: Recurrence = Recurrence.EVERY_WEEK,
@@ -14,7 +14,7 @@ data class ClassForm(
 
 enum class ClassValidationError {
     NAME_REQUIRED,
-    COURSE_REQUIRED,
+    PROGRAM_REQUIRED,
     START_TIME_REQUIRED,
     END_TIME_REQUIRED,
     END_NOT_AFTER_START,
@@ -39,7 +39,7 @@ fun validateClassForm(form: ClassForm): ClassValidationResult {
     val errors = linkedSetOf<ClassValidationError>()
 
     if (form.name.isBlank()) errors += ClassValidationError.NAME_REQUIRED
-    if (form.courseId.isNullOrBlank()) errors += ClassValidationError.COURSE_REQUIRED
+    if (form.semesterProgramId.isNullOrBlank()) errors += ClassValidationError.PROGRAM_REQUIRED
     if (form.startTime == null) errors += ClassValidationError.START_TIME_REQUIRED
     if (form.endTime == null) errors += ClassValidationError.END_TIME_REQUIRED
 

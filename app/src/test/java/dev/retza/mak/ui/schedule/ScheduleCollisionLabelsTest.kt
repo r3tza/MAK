@@ -2,6 +2,8 @@ package dev.retza.mak.ui.schedule
 
 import dev.retza.mak.domain.ClassItem
 import dev.retza.mak.domain.CollisionDetector
+import dev.retza.mak.domain.AcademicCalendar
+import dev.retza.mak.domain.SemesterProgram
 import dev.retza.mak.domain.StudyProgram
 import dev.retza.mak.domain.Semester
 import dev.retza.mak.domain.ScheduleResolver
@@ -14,14 +16,15 @@ import org.junit.Test
 
 class ScheduleCollisionLabelsTest {
     private val date = LocalDate.of(2026, 9, 21)
-    private val semester = Semester(
-        id = "semester",
-        name = "Semestr",
+    private val semester = Semester(id = "semester", name = "Semestr")
+    private val calendar = AcademicCalendar(
+        id = "calendar",
         startDate = date,
         endDate = date.plusDays(7),
         firstWeekType = WeekType.A
     )
     private val course = StudyProgram("course", "Informatyka", "#137B71")
+    private val assignment = SemesterProgram("assignment", semester.id, course.id, calendar.id)
 
     @Test
     fun oneCollisionGetsTheSameExactRangeForBothClasses() {
@@ -55,7 +58,9 @@ class ScheduleCollisionLabelsTest {
         date = date,
         semester = semester,
         classes = classes.toList(),
-        courses = listOf(course)
+        courses = listOf(course),
+        semesterPrograms = listOf(assignment),
+        calendars = listOf(calendar)
     ).occurrences
 
     private fun classItem(id: String, start: LocalTime, end: LocalTime) = ClassItem(
@@ -63,7 +68,7 @@ class ScheduleCollisionLabelsTest {
         semesterId = semester.id,
         name = id,
         type = "Wykład",
-        courseId = course.id,
+        semesterProgramId = assignment.id,
         dayOfWeek = DayOfWeek.MONDAY,
         startTime = start,
         endTime = end

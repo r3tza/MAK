@@ -1,27 +1,52 @@
 package dev.retza.mak.export
 
 import dev.retza.mak.data.database.SemesterWithData
+import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
-import dev.retza.mak.data.entity.CourseEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.data.entity.SemesterEntity
-import dev.retza.mak.data.entity.TeacherEntity
+import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import kotlinx.serialization.Serializable
 
 object ExportSchema {
-    const val VERSION = 1
+    const val VERSION = 2
 }
 
 @Serializable
 data class ExportSnapshot(
     val schemaVersion: Int = ExportSchema.VERSION,
+    val studyPrograms: List<StudyProgramSnapshot> = emptyList(),
     val semesters: List<SemesterSnapshot> = emptyList()
 ) {
     companion object {
         fun from(semesters: Collection<SemesterWithData>): ExportSnapshot =
-            ExportSnapshot(semesters = semesters.sortedBy { it.semester.id }.map(SemesterSnapshot::from))
+            ExportSnapshot(
+                studyPrograms = semesters
+                    .flatMap { it.studyPrograms }
+                    .distinctBy { it.id }
+                    .sortedBy { it.id }
+                    .map(StudyProgramSnapshot::from),
+                semesters = semesters.sortedBy { it.semester.id }.map(SemesterSnapshot::from)
+            )
+    }
+}
+
+@Serializable
+data class StudyProgramSnapshot(
+    val id: Long,
+    val name: String,
+    val color: String
+) {
+    companion object {
+        fun from(entity: StudyProgramEntity): StudyProgramSnapshot =
+            StudyProgramSnapshot(
+                id = entity.id,
+                name = entity.name,
+                color = entity.color
+            )
     }
 }
 
@@ -29,12 +54,9 @@ data class ExportSnapshot(
 data class SemesterSnapshot(
     val id: Long,
     val name: String,
-    val startDate: String,
-    val endDate: String,
-    val firstWeekType: String,
     val isActive: Boolean,
-    val courses: List<CourseSnapshot>,
-    val teachers: List<TeacherSnapshot>,
+    val calendars: List<AcademicCalendarSnapshot>,
+    val programs: List<SemesterProgramSnapshot>,
     val classes: List<ClassSnapshot>,
     val weekOverrides: List<WeekOverrideSnapshot>,
     val occurrenceNotes: List<OccurrenceNoteSnapshot>,
@@ -45,12 +67,9 @@ data class SemesterSnapshot(
             SemesterSnapshot(
                 id = data.semester.id,
                 name = data.semester.name,
-                startDate = data.semester.startDate.toString(),
-                endDate = data.semester.endDate.toString(),
-                firstWeekType = data.semester.firstWeekType.name,
                 isActive = data.semester.isActive,
-                courses = data.courses.sortedBy { it.id }.map(CourseSnapshot::from),
-                teachers = data.teachers.sortedBy { it.id }.map(TeacherSnapshot::from),
+                calendars = data.academicCalendars.sortedBy { it.id }.map(AcademicCalendarSnapshot::from),
+                programs = data.semesterPrograms.sortedBy { it.id }.map(SemesterProgramSnapshot::from),
                 classes = data.classes.sortedBy { it.id }.map(ClassSnapshot::from),
                 weekOverrides = data.weekOverrides.sortedBy { it.id }.map(WeekOverrideSnapshot::from),
                 occurrenceNotes = data.occurrenceNotes.sortedBy { it.id }.map(OccurrenceNoteSnapshot::from),
@@ -60,35 +79,39 @@ data class SemesterSnapshot(
 }
 
 @Serializable
-data class CourseSnapshot(
+data class AcademicCalendarSnapshot(
     val id: Long,
     val semesterId: Long,
-    val name: String,
-    val color: String
+    val startDate: String,
+    val endDate: String,
+    val firstWeekType: String
 ) {
     companion object {
-        fun from(entity: CourseEntity): CourseSnapshot =
-            CourseSnapshot(
+        fun from(entity: AcademicCalendarEntity): AcademicCalendarSnapshot =
+            AcademicCalendarSnapshot(
                 id = entity.id,
                 semesterId = entity.semesterId,
-                name = entity.name,
-                color = entity.color
+                startDate = entity.startDate.toString(),
+                endDate = entity.endDate.toString(),
+                firstWeekType = entity.firstWeekType.name
             )
     }
 }
 
 @Serializable
-data class TeacherSnapshot(
+data class SemesterProgramSnapshot(
     val id: Long,
     val semesterId: Long,
-    val name: String
+    val studyProgramId: Long,
+    val academicCalendarId: Long
 ) {
     companion object {
-        fun from(entity: TeacherEntity): TeacherSnapshot =
-            TeacherSnapshot(
+        fun from(entity: SemesterProgramEntity): SemesterProgramSnapshot =
+            SemesterProgramSnapshot(
                 id = entity.id,
                 semesterId = entity.semesterId,
-                name = entity.name
+                studyProgramId = entity.studyProgramId,
+                academicCalendarId = entity.academicCalendarId
             )
     }
 }
@@ -97,10 +120,10 @@ data class TeacherSnapshot(
 data class ClassSnapshot(
     val id: Long,
     val semesterId: Long,
+    val semesterProgramId: Long,
     val name: String,
     val type: String,
-    val courseId: Long,
-    val teacherId: Long?,
+    val teacherName: String?,
     val dayOfWeek: String,
     val startTime: String,
     val endTime: String,
@@ -116,10 +139,10 @@ data class ClassSnapshot(
             ClassSnapshot(
                 id = entity.id,
                 semesterId = entity.semesterId,
+                semesterProgramId = entity.semesterProgramId,
                 name = entity.name,
                 type = entity.type,
-                courseId = entity.courseId,
-                teacherId = entity.teacherId,
+                teacherName = entity.teacherName,
                 dayOfWeek = entity.dayOfWeek.name,
                 startTime = entity.startTime.toString(),
                 endTime = entity.endTime.toString(),
@@ -137,6 +160,7 @@ data class ClassSnapshot(
 data class WeekOverrideSnapshot(
     val id: Long,
     val semesterId: Long,
+    val academicCalendarId: Long,
     val weekStartDate: String,
     val weekType: String,
     val scope: String
@@ -146,6 +170,7 @@ data class WeekOverrideSnapshot(
             WeekOverrideSnapshot(
                 id = entity.id,
                 semesterId = entity.semesterId,
+                academicCalendarId = entity.academicCalendarId,
                 weekStartDate = entity.weekStartDate.toString(),
                 weekType = entity.weekType.name,
                 scope = entity.scope.name
@@ -185,7 +210,7 @@ data class OccurrenceChangeSnapshot(
     val endTime: String?,
     val room: String?,
     val building: String?,
-    val teacherId: Long?,
+    val teacherName: String?,
     val note: String?
 ) {
     companion object {
@@ -201,7 +226,7 @@ data class OccurrenceChangeSnapshot(
                 endTime = entity.newEndTime?.toString(),
                 room = entity.newRoom,
                 building = entity.newBuilding,
-                teacherId = entity.newTeacherId,
+                teacherName = entity.newTeacherName,
                 note = entity.newNote
             )
     }

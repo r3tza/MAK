@@ -1,13 +1,14 @@
 package dev.retza.mak.data.repository
 
+import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
-import dev.retza.mak.data.entity.CourseEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceChangeKind
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.data.entity.Recurrence
 import dev.retza.mak.data.entity.SemesterEntity
-import dev.retza.mak.data.entity.TeacherEntity
+import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
@@ -30,38 +31,46 @@ suspend fun MakRepository.seedDemoDataIfEmpty(clock: Clock = Clock.systemDefault
     val semesterId = saveSemester(
         SemesterEntity(
             name = "Semestr demonstracyjny 2026/27",
-            startDate = semesterStart,
-            endDate = semesterEnd,
-            firstWeekType = WeekType.A,
             isActive = true
         )
     )
-
-    val computerScienceId = saveCourse(
-        CourseEntity(
+    val calendarId = saveCalendar(
+        AcademicCalendarEntity(
             semesterId = semesterId,
-            name = "Informatyka",
-            color = "#137B71"
-        )
-    )
-    val managementId = saveCourse(
-        CourseEntity(
-            semesterId = semesterId,
-            name = "Zarządzanie",
-            color = "#334FCE"
+            startDate = semesterStart,
+            endDate = semesterEnd,
+            firstWeekType = WeekType.A
         )
     )
 
-    val nowakId = saveTeacher(TeacherEntity(semesterId = semesterId, name = "dr Anna Nowak"))
-    val kowalskiId = saveTeacher(TeacherEntity(semesterId = semesterId, name = "prof. Jan Kowalski"))
+    val computerScienceId = saveStudyProgram(
+        StudyProgramEntity(name = "Informatyka", color = "#137B71")
+    )
+    val managementId = saveStudyProgram(
+        StudyProgramEntity(name = "Zarządzanie", color = "#334FCE")
+    )
+    val computerScienceProgramId = saveSemesterProgram(
+        SemesterProgramEntity(
+            semesterId = semesterId,
+            studyProgramId = computerScienceId,
+            academicCalendarId = calendarId
+        )
+    )
+    val managementProgramId = saveSemesterProgram(
+        SemesterProgramEntity(
+            semesterId = semesterId,
+            studyProgramId = managementId,
+            academicCalendarId = calendarId
+        )
+    )
 
     saveClass(
         ClassEntity(
             semesterId = semesterId,
+            semesterProgramId = computerScienceProgramId,
             name = "Programowanie aplikacji",
             type = "Laboratorium",
-            courseId = computerScienceId,
-            teacherId = nowakId,
+            teacherName = "dr Anna Nowak",
             dayOfWeek = DayOfWeek.MONDAY,
             startTime = LocalTime.of(8, 0),
             endTime = LocalTime.of(9, 30),
@@ -76,10 +85,10 @@ suspend fun MakRepository.seedDemoDataIfEmpty(clock: Clock = Clock.systemDefault
     saveClass(
         ClassEntity(
             semesterId = semesterId,
+            semesterProgramId = computerScienceProgramId,
             name = "Projekt zespołowy",
             type = "Projekt",
-            courseId = computerScienceId,
-            teacherId = kowalskiId,
+            teacherName = "prof. Jan Kowalski",
             dayOfWeek = DayOfWeek.MONDAY,
             startTime = LocalTime.of(9, 0),
             endTime = LocalTime.of(10, 30),
@@ -94,10 +103,10 @@ suspend fun MakRepository.seedDemoDataIfEmpty(clock: Clock = Clock.systemDefault
     val analyticsId = saveClass(
         ClassEntity(
             semesterId = semesterId,
+            semesterProgramId = managementProgramId,
             name = "Analiza danych",
             type = "Wykład",
-            courseId = managementId,
-            teacherId = kowalskiId,
+            teacherName = "prof. Jan Kowalski",
             dayOfWeek = DayOfWeek.WEDNESDAY,
             startTime = LocalTime.of(12, 15),
             endTime = LocalTime.of(13, 45),
@@ -112,10 +121,10 @@ suspend fun MakRepository.seedDemoDataIfEmpty(clock: Clock = Clock.systemDefault
     saveClass(
         ClassEntity(
             semesterId = semesterId,
+            semesterProgramId = computerScienceProgramId,
             name = "Warsztat UX",
             type = "Ćwiczenia",
-            courseId = computerScienceId,
-            teacherId = nowakId,
+            teacherName = "dr Anna Nowak",
             dayOfWeek = DayOfWeek.THURSDAY,
             startTime = LocalTime.of(14, 0),
             endTime = LocalTime.of(15, 30),
@@ -130,10 +139,10 @@ suspend fun MakRepository.seedDemoDataIfEmpty(clock: Clock = Clock.systemDefault
     val oneOffId = saveClass(
         ClassEntity(
             semesterId = semesterId,
+            semesterProgramId = managementProgramId,
             name = "Konsultacje przed kolokwium",
             type = "Jednorazowe",
-            courseId = managementId,
-            teacherId = nowakId,
+            teacherName = "dr Anna Nowak",
             dayOfWeek = today.dayOfWeek,
             startTime = LocalTime.of(16, 0),
             endTime = LocalTime.of(17, 0),
@@ -150,6 +159,7 @@ suspend fun MakRepository.seedDemoDataIfEmpty(clock: Clock = Clock.systemDefault
     saveWeekOverride(
         WeekOverrideEntity(
             semesterId = semesterId,
+            academicCalendarId = calendarId,
             weekStartDate = currentMonday,
             weekType = WeekType.B,
             scope = WeekOverrideScope.ONE_WEEK
@@ -177,7 +187,7 @@ suspend fun MakRepository.seedDemoDataIfEmpty(clock: Clock = Clock.systemDefault
             newEndTime = LocalTime.of(16, 30),
             newRoom = "A204",
             newBuilding = "Budynek B",
-            newTeacherId = null,
+            newTeacherName = null,
             newNote = "Przykład zmienionego i przeniesionego terminu."
         )
     )

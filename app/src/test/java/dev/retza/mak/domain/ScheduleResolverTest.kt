@@ -9,15 +9,15 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ScheduleResolverTest {
-    private val semester = Semester(
-        id = "semester-1",
-        name = "Winter",
+    private val semester = Semester(id = "semester-1", name = "Winter")
+    private val calendar = AcademicCalendar(
+        id = "calendar-1",
         startDate = LocalDate.of(2026, 1, 1),
         endDate = LocalDate.of(2026, 1, 31),
         firstWeekType = WeekType.A
     )
     private val course = StudyProgram("course-1", "Computer science", "#123456")
-    private val teacher = Teacher("teacher-1", semester.id, "Jan Kowalski")
+    private val assignment = SemesterProgram("assignment-1", semester.id, course.id, calendar.id)
     private val resolver = ScheduleResolver()
 
     private fun classItem(
@@ -32,10 +32,10 @@ class ScheduleResolverTest {
     ) = ClassItem(
         id = id,
         semesterId = semester.id,
+        semesterProgramId = assignment.id,
         name = "Programming",
         type = "lecture",
-        courseId = course.id,
-        teacherId = teacher.id,
+        teacherName = "Jan Kowalski",
         dayOfWeek = day,
         startTime = start,
         endTime = end,
@@ -57,7 +57,8 @@ class ScheduleResolverTest {
         semester = semester,
         classes = classes,
         courses = listOf(course) + extraCourses,
-        teachers = listOf(teacher),
+        semesterPrograms = listOf(assignment),
+        calendars = listOf(calendar),
         weekOverrides = overrides,
         occurrenceChanges = changes,
         occurrenceNotes = notes

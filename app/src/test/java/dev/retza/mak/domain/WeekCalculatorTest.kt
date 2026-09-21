@@ -7,14 +7,13 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class WeekCalculatorTest {
-    private val semester = Semester(
-        id = "semester",
-        name = "Winter",
+    private val semester = Semester(id = "semester", name = "Winter")
+    private val calendar = AcademicCalendar(
+        id = "calendar-semester",
         startDate = LocalDate.of(2026, 1, 7),
         endDate = LocalDate.of(2026, 2, 28),
         firstWeekType = WeekType.A
     )
-    private val calendar = semester.toAcademicCalendar()
     private val calculator = WeekCalculator()
 
     @Test

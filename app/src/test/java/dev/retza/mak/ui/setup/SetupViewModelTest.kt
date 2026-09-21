@@ -91,12 +91,12 @@ class SetupViewModelTest {
         advanceUntilIdle()
 
         val semester = repository.lastSetupSemester
-        val course = repository.lastSetupCourse
+        val course = repository.lastSetupStudyProgram
         assertEquals(1, repository.events.count { it == "saveSetupConfiguration" })
         assertEquals("Nowy", semester?.name)
         assertTrue(semester?.isActive == true)
         assertEquals("Informatyka", course?.name)
-        assertEquals(semester?.id, course?.semesterId)
+        assertEquals(semester?.id, repository.lastSetupCalendar?.semesterId)
         assertEquals(SetupStep.Classes, viewModel.setup.value.step)
     }
 
@@ -114,7 +114,7 @@ class SetupViewModelTest {
         advanceUntilIdle()
 
         assertNull(repository.lastSetupSemester)
-        assertNull(repository.lastSetupCourse)
+        assertNull(repository.lastSetupStudyProgram)
         assertEquals(SetupStep.Course, viewModel.setup.value.step)
         assertEquals("Informatyka", viewModel.setup.value.courseName)
         assertFalse(viewModel.setup.value.isSaving)
@@ -155,7 +155,7 @@ class SetupViewModelTest {
         viewModel.next()
         advanceUntilIdle()
         val firstSemester = repository.lastSetupSemester?.id
-        val firstCourse = repository.lastSetupCourse?.id
+        val firstCourse = repository.lastSetupStudyProgram?.id
 
         viewModel.back()
         viewModel.next()
@@ -163,7 +163,7 @@ class SetupViewModelTest {
 
         assertEquals(2, repository.events.count { it == "saveSetupConfiguration" })
         assertEquals(firstSemester, repository.lastSetupSemester?.id)
-        assertEquals(firstCourse, repository.lastSetupCourse?.id)
+        assertEquals(firstCourse, repository.lastSetupStudyProgram?.id)
         assertEquals(SetupStep.Classes, viewModel.setup.value.step)
     }
 
@@ -273,10 +273,11 @@ class SetupViewModelTest {
         viewModel.start(
             SetupSemesterResume(
                 semesterId = repository.semester.id,
+                calendarId = repository.calendar.id,
                 name = repository.semester.name,
-                startDate = repository.semester.startDate.toString(),
-                endDate = repository.semester.endDate.toString(),
-                firstWeekLabel = repository.semester.firstWeekType.name
+                startDate = repository.calendar.startDate.toString(),
+                endDate = repository.calendar.endDate.toString(),
+                firstWeekLabel = repository.calendar.firstWeekType.name
             )
         )
 

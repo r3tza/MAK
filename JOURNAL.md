@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: Migracja Room do v2
+
+- Fakty: Schemat v1 trzymał kierunki i prowadzących w osobnych tabelach przypisanych do semestru, daty i rytm A/B w semestrze, a zajęcia wskazywały `course_id` i `teacher_id`. Nowy model wymaga globalnych kierunków, kalendarzy akademickich i przypisań.
+- Decyzja: Podniesiono schemat do wersji 2 z tabelami `study_programs`, `academic_calendars` (z `semester_id`), `semester_programs` (studium z `RESTRICT`) oraz zmienionymi `semesters` (id, name, is_active), `classes` (`semester_id`, `semester_program_id`, `teacher_name`), `week_overrides` (`semester_id`, `academic_calendar_id`), `occurrence_changes` (`new_teacher_name`). Złożone klucze obce `(semester_program_id, semester_id)`, `(class_id, semester_id)` i `(academic_calendar_id, semester_id)` uniemożliwiają wskazanie danych z innego semestru. Ręczna `MIGRATION_1_2` kopiuje kierunki, kalendarze, przypisania, zajęcia z nazwą prowadzącego, korekty, notatki i zmiany przez tabele tymczasowe, usuwa stare tabele od podrzędnych i sprawdza `PRAGMA foreign_key_check`, bez polegania na wyłączeniu kluczy obcych. Eksport ma własny `schemaVersion` 2. Ekran semestru czyta wspólny kalendarz; po rozdzieleniu kalendarzy (etap 12) daty pokażą się przy kierunkach, a nagłówek pokaże „Różne kalendarze", a semestr bez przypisań pozostaje stanem pustym.
+- Powód: Model globalnych kierunków i współdzielonych kalendarzy wymaga nowego schematu, a migracja musi zachować dane użytkownika bez częściowych zapisów.
+- Odrzucone: Poleganie na wyłączeniu kluczy obcych w migracji; kaskadowe usuwanie używanego kierunku; automatyczne scalanie kierunków o tej samej nazwie; jeden wspólny tydzień A/B dla różnych kalendarzy; przejściowy podwójny schemat v1 i v2.
+- Weryfikacja: `RoomMigrationTest` tworzy bazę v1 z dwoma kierunkami o tej samej nazwie, zajęciami, korektą, notatką i zmianą, uruchamia migrację i waliduje schemat oraz dane. `RoomPersistenceTest` sprawdza rollback konfiguracji, blokadę usunięcia używanego kierunku i deterministyczny zastępczy semestr. Zaktualizowane testy domenowe i ViewModeli. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-21: Resolver wielu kalendarzy
 
 - Fakty: `WeekCalculator` liczył tydzień z dat semestru, więc wszystkie kierunki w semestrze dzieliły jeden rytm A/B. Po dodaniu `AcademicCalendar` i `SemesterProgram` każdy kierunek może mieć własne daty i rytm.

@@ -1,9 +1,11 @@
 package dev.retza.mak.widget
 
 import dev.retza.mak.data.database.SemesterWithData
+import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
-import dev.retza.mak.data.entity.CourseEntity
 import dev.retza.mak.data.entity.SemesterEntity
+import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.domain.ActivePlanProvider
 import java.lang.reflect.Proxy
@@ -23,27 +25,28 @@ class WidgetPlanLoaderTest {
     @Test
     fun loaderUsesProviderAndReturnsTheSameOccurrenceIdsAsActivePlan() = runTest {
         val date = LocalDate.of(2026, 9, 21)
-        val semester = SemesterEntity(
+        val semester = SemesterEntity(id = 1, name = "Semestr", isActive = true)
+        val calendar = AcademicCalendarEntity(
             id = 1,
-            name = "Semestr",
+            semesterId = semester.id,
             startDate = date,
             endDate = date.plusDays(7),
-            firstWeekType = dev.retza.mak.data.entity.WeekType.A,
-            isActive = true
+            firstWeekType = dev.retza.mak.data.entity.WeekType.A
         )
-        val course = CourseEntity(
-            id = 2,
+        val studyProgram = StudyProgramEntity(id = 2, name = "Informatyka", color = "#137B71")
+        val assignment = SemesterProgramEntity(
+            id = 1,
             semesterId = semester.id,
-            name = "Informatyka",
-            color = "#137B71"
+            studyProgramId = studyProgram.id,
+            academicCalendarId = calendar.id
         )
         val classEntity = ClassEntity(
             id = 3,
             semesterId = semester.id,
+            semesterProgramId = assignment.id,
             name = "Programowanie",
             type = "Wykład",
-            courseId = course.id,
-            teacherId = null,
+            teacherName = null,
             dayOfWeek = DayOfWeek.MONDAY,
             startTime = LocalTime.of(9, 0),
             endTime = LocalTime.of(10, 0),
@@ -56,8 +59,9 @@ class WidgetPlanLoaderTest {
         )
         val data = SemesterWithData(
             semester = semester,
-            courses = listOf(course),
-            teachers = emptyList(),
+            semesterPrograms = listOf(assignment),
+            academicCalendars = listOf(calendar),
+            studyPrograms = listOf(studyProgram),
             classes = listOf(classEntity),
             weekOverrides = emptyList(),
             occurrenceNotes = emptyList(),

@@ -136,6 +136,7 @@ class ScheduleViewModelTest {
         repository.weekOverrides += WeekOverrideEntity(
             id = 1L,
             semesterId = 1L,
+            academicCalendarId = 1L,
             weekStartDate = LocalDate.of(2026, 9, 21),
             weekType = WeekType.B,
             scope = WeekOverrideScope.ONE_WEEK

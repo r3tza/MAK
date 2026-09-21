@@ -14,39 +14,20 @@ data class SemesterEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     val name: String,
-    @ColumnInfo(name = "start_date")
-    val startDate: LocalDate,
-    @ColumnInfo(name = "end_date")
-    val endDate: LocalDate,
-    @ColumnInfo(name = "first_week_type")
-    val firstWeekType: WeekType,
     @ColumnInfo(name = "is_active")
     val isActive: Boolean = false
 )
 
-@Entity(
-    tableName = "courses",
-    foreignKeys = [
-        ForeignKey(
-            entity = SemesterEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["semester_id"],
-            onDelete = ForeignKey.CASCADE
-        )
-    ],
-    indices = [Index(value = ["semester_id"])]
-)
-data class CourseEntity(
+@Entity(tableName = "study_programs")
+data class StudyProgramEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
-    @ColumnInfo(name = "semester_id")
-    val semesterId: Long,
     val name: String,
     val color: String
 )
 
 @Entity(
-    tableName = "teachers",
+    tableName = "academic_calendars",
     foreignKeys = [
         ForeignKey(
             entity = SemesterEntity::class,
@@ -55,14 +36,64 @@ data class CourseEntity(
             onDelete = ForeignKey.CASCADE
         )
     ],
-    indices = [Index(value = ["semester_id"])]
+    indices = [
+        Index(value = ["semester_id"]),
+        Index(value = ["id", "semester_id"], unique = true)
+    ]
 )
-data class TeacherEntity(
+data class AcademicCalendarEntity(
     @PrimaryKey(autoGenerate = true)
     val id: Long = 0,
     @ColumnInfo(name = "semester_id")
     val semesterId: Long,
-    val name: String
+    @ColumnInfo(name = "start_date")
+    val startDate: LocalDate,
+    @ColumnInfo(name = "end_date")
+    val endDate: LocalDate,
+    @ColumnInfo(name = "first_week_type")
+    val firstWeekType: WeekType
+)
+
+@Entity(
+    tableName = "semester_programs",
+    foreignKeys = [
+        ForeignKey(
+            entity = SemesterEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["semester_id"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = StudyProgramEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["study_program_id"],
+            onDelete = ForeignKey.RESTRICT
+        ),
+        ForeignKey(
+            entity = AcademicCalendarEntity::class,
+            parentColumns = ["id", "semester_id"],
+            childColumns = ["academic_calendar_id", "semester_id"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["semester_id"]),
+        Index(value = ["study_program_id"]),
+        Index(value = ["academic_calendar_id"]),
+        Index(value = ["semester_id", "study_program_id"], unique = true),
+        Index(value = ["id", "semester_id"], unique = true),
+        Index(value = ["academic_calendar_id", "semester_id"])
+    ]
+)
+data class SemesterProgramEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    @ColumnInfo(name = "semester_id")
+    val semesterId: Long,
+    @ColumnInfo(name = "study_program_id")
+    val studyProgramId: Long,
+    @ColumnInfo(name = "academic_calendar_id")
+    val academicCalendarId: Long
 )
 
 @Entity(
@@ -75,22 +106,17 @@ data class TeacherEntity(
             onDelete = ForeignKey.CASCADE
         ),
         ForeignKey(
-            entity = CourseEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["course_id"],
+            entity = SemesterProgramEntity::class,
+            parentColumns = ["id", "semester_id"],
+            childColumns = ["semester_program_id", "semester_id"],
             onDelete = ForeignKey.CASCADE
-        ),
-        ForeignKey(
-            entity = TeacherEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["teacher_id"],
-            onDelete = ForeignKey.SET_NULL
         )
     ],
     indices = [
         Index(value = ["semester_id"]),
-        Index(value = ["course_id"]),
-        Index(value = ["teacher_id"])
+        Index(value = ["semester_program_id"]),
+        Index(value = ["id", "semester_id"], unique = true),
+        Index(value = ["semester_program_id", "semester_id"])
     ]
 )
 data class ClassEntity(
@@ -98,12 +124,12 @@ data class ClassEntity(
     val id: Long = 0,
     @ColumnInfo(name = "semester_id")
     val semesterId: Long,
+    @ColumnInfo(name = "semester_program_id")
+    val semesterProgramId: Long,
     val name: String,
     val type: String,
-    @ColumnInfo(name = "course_id")
-    val courseId: Long,
-    @ColumnInfo(name = "teacher_id")
-    val teacherId: Long?,
+    @ColumnInfo(name = "teacher_name")
+    val teacherName: String?,
     @ColumnInfo(name = "day_of_week")
     val dayOfWeek: DayOfWeek,
     @ColumnInfo(name = "start_time")
@@ -127,11 +153,19 @@ data class ClassEntity(
             parentColumns = ["id"],
             childColumns = ["semester_id"],
             onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = AcademicCalendarEntity::class,
+            parentColumns = ["id", "semester_id"],
+            childColumns = ["academic_calendar_id", "semester_id"],
+            onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [
         Index(value = ["semester_id"]),
-        Index(value = ["semester_id", "week_start_date", "scope"], unique = true)
+        Index(value = ["academic_calendar_id"]),
+        Index(value = ["academic_calendar_id", "week_start_date", "scope"], unique = true),
+        Index(value = ["academic_calendar_id", "semester_id"])
     ]
 )
 data class WeekOverrideEntity(
@@ -139,6 +173,8 @@ data class WeekOverrideEntity(
     val id: Long = 0,
     @ColumnInfo(name = "semester_id")
     val semesterId: Long,
+    @ColumnInfo(name = "academic_calendar_id")
+    val academicCalendarId: Long,
     @ColumnInfo(name = "week_start_date")
     val weekStartDate: LocalDate,
     @ColumnInfo(name = "week_type")
@@ -157,15 +193,16 @@ data class WeekOverrideEntity(
         ),
         ForeignKey(
             entity = ClassEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["class_id"],
+            parentColumns = ["id", "semester_id"],
+            childColumns = ["class_id", "semester_id"],
             onDelete = ForeignKey.CASCADE
         )
     ],
     indices = [
         Index(value = ["semester_id"]),
         Index(value = ["class_id"]),
-        Index(value = ["semester_id", "class_id", "occurrence_date"], unique = true)
+        Index(value = ["semester_id", "class_id", "occurrence_date"], unique = true),
+        Index(value = ["class_id", "semester_id"])
     ]
 )
 data class OccurrenceNoteEntity(
@@ -191,22 +228,16 @@ data class OccurrenceNoteEntity(
         ),
         ForeignKey(
             entity = ClassEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["class_id"],
+            parentColumns = ["id", "semester_id"],
+            childColumns = ["class_id", "semester_id"],
             onDelete = ForeignKey.CASCADE
-        ),
-        ForeignKey(
-            entity = TeacherEntity::class,
-            parentColumns = ["id"],
-            childColumns = ["new_teacher_id"],
-            onDelete = ForeignKey.SET_NULL
         )
     ],
     indices = [
         Index(value = ["semester_id"]),
         Index(value = ["class_id"]),
-        Index(value = ["new_teacher_id"]),
-        Index(value = ["semester_id", "class_id", "original_date"], unique = true)
+        Index(value = ["semester_id", "class_id", "original_date"], unique = true),
+        Index(value = ["class_id", "semester_id"])
     ]
 )
 data class OccurrenceChangeEntity(
@@ -229,8 +260,8 @@ data class OccurrenceChangeEntity(
     val newRoom: String?,
     @ColumnInfo(name = "new_building")
     val newBuilding: String?,
-    @ColumnInfo(name = "new_teacher_id")
-    val newTeacherId: Long?,
+    @ColumnInfo(name = "new_teacher_name")
+    val newTeacherName: String?,
     @ColumnInfo(name = "new_note")
     val newNote: String?
 )

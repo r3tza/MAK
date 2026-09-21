@@ -286,7 +286,7 @@ class SettingsViewModelTest {
         advanceUntilIdle()
 
         val snapshot = JsonExportCodec.decode(bytes!!)
-        assertEquals(1, snapshot.schemaVersion)
+        assertEquals(2, snapshot.schemaVersion)
     }
 
     @Test

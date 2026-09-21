@@ -32,19 +32,20 @@ class AppViewModel(
 
     val uiState = activeSemesterData
         .map { activeData ->
+            val calendar = activeData?.academicCalendars?.minByOrNull { it.id }
             AppUiState(
                 hasLoadedData = true,
-                requiresSetup = activeData == null || activeData.courses.isEmpty(),
+                requiresSetup = activeData == null || activeData.semesterPrograms.isEmpty(),
                 setupResume = activeData
-                    ?.takeIf { it.courses.isEmpty() }
-                    ?.semester
-                    ?.let { semester ->
+                    ?.takeIf { it.semesterPrograms.isEmpty() }
+                    ?.let { data ->
                         SetupSemesterResume(
-                            semesterId = semester.id,
-                            name = semester.name,
-                            startDate = semester.startDate.toString(),
-                            endDate = semester.endDate.toString(),
-                            firstWeekLabel = semester.firstWeekType.name
+                            semesterId = data.semester.id,
+                            calendarId = calendar?.id ?: 0L,
+                            name = data.semester.name,
+                            startDate = calendar?.startDate?.toString().orEmpty(),
+                            endDate = calendar?.endDate?.toString().orEmpty(),
+                            firstWeekLabel = calendar?.firstWeekType?.name ?: "A"
                         )
                     }
             )

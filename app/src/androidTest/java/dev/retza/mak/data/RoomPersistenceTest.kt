@@ -5,20 +5,22 @@ import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.data.database.AppDatabase
-import dev.retza.mak.data.entity.SemesterEntity
-import dev.retza.mak.data.entity.CourseEntity
+import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
-import dev.retza.mak.data.entity.Recurrence
-import dev.retza.mak.data.entity.WeekOverrideEntity
-import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceChangeKind
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
+import dev.retza.mak.data.entity.Recurrence
+import dev.retza.mak.data.entity.SemesterEntity
+import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.data.entity.StudyProgramEntity
+import dev.retza.mak.data.entity.WeekOverrideEntity
+import dev.retza.mak.data.entity.WeekOverrideScope
+import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.RoomMakRepository
 import java.time.DayOfWeek
-import java.time.LocalTime
-import dev.retza.mak.data.entity.WeekType
 import java.time.LocalDate
+import java.time.LocalTime
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -50,24 +52,35 @@ class RoomPersistenceTest {
 
     @Test
     fun planRecordsAreReadableAfterOpeningDatabaseAgain() = runBlocking {
-        val expected = SemesterEntity(
-            name = "Semestr zimowy",
-            startDate = LocalDate.of(2026, 10, 1),
-            endDate = LocalDate.of(2027, 2, 28),
-            firstWeekType = WeekType.A,
-            isActive = true
-        )
+        val expected = SemesterEntity(name = "Semestr zimowy", isActive = true)
 
         database = openDatabase()
-        val insertedId = database!!.semesterDao().insert(expected)
-        val courseId = database!!.courseDao().insert(CourseEntity(semesterId = insertedId, name = "Informatyka", color = "#112233"))
+        val semesterId = database!!.semesterDao().insert(expected)
+        val calendarId = database!!.academicCalendarDao().insert(
+            AcademicCalendarEntity(
+                semesterId = semesterId,
+                startDate = LocalDate.of(2026, 10, 1),
+                endDate = LocalDate.of(2027, 2, 28),
+                firstWeekType = WeekType.A
+            )
+        )
+        val programId = database!!.studyProgramDao().insert(
+            StudyProgramEntity(name = "Informatyka", color = "#112233")
+        )
+        val assignmentId = database!!.semesterProgramDao().insert(
+            SemesterProgramEntity(
+                semesterId = semesterId,
+                studyProgramId = programId,
+                academicCalendarId = calendarId
+            )
+        )
         val classId = database!!.classDao().insert(
             ClassEntity(
-                semesterId = insertedId,
+                semesterId = semesterId,
+                semesterProgramId = assignmentId,
                 name = "Programowanie",
                 type = "Wykład",
-                courseId = courseId,
-                teacherId = null,
+                teacherName = "Jan Kowalski",
                 dayOfWeek = DayOfWeek.MONDAY,
                 startTime = LocalTime.of(8, 0),
                 endTime = LocalTime.of(9, 30),
@@ -81,11 +94,17 @@ class RoomPersistenceTest {
         )
         val monday = LocalDate.of(2026, 10, 5)
         val overrideId = database!!.weekOverrideDao().insert(
-            WeekOverrideEntity(semesterId = insertedId, weekStartDate = monday, weekType = WeekType.B, scope = WeekOverrideScope.ONE_WEEK)
+            WeekOverrideEntity(
+                semesterId = semesterId,
+                academicCalendarId = calendarId,
+                weekStartDate = monday,
+                weekType = WeekType.B,
+                scope = WeekOverrideScope.ONE_WEEK
+            )
         )
         val changeId = database!!.occurrenceChangeDao().insert(
             OccurrenceChangeEntity(
-                semesterId = insertedId,
+                semesterId = semesterId,
                 classId = classId,
                 originalDate = monday,
                 kind = OccurrenceChangeKind.CANCELLED,
@@ -94,52 +113,42 @@ class RoomPersistenceTest {
                 newEndTime = null,
                 newRoom = null,
                 newBuilding = null,
-                newTeacherId = null,
+                newTeacherName = null,
                 newNote = null
             )
         )
         val noteId = database!!.occurrenceNoteDao().insert(
-            OccurrenceNoteEntity(semesterId = insertedId, classId = classId, occurrenceDate = monday, body = "Kolokwium")
+            OccurrenceNoteEntity(semesterId = semesterId, classId = classId, occurrenceDate = monday, body = "Kolokwium")
         )
         database!!.close()
 
         database = openDatabase()
-        val actual = database!!.semesterDao().findById(insertedId)
+        val actual = database!!.semesterDao().findById(semesterId)
 
-        assertEquals(expected.copy(id = insertedId), actual)
+        assertEquals(expected.copy(id = semesterId), actual)
         assertEquals(overrideId, database!!.weekOverrideDao().findById(overrideId)?.id)
         assertEquals(changeId, database!!.occurrenceChangeDao().findById(changeId)?.id)
         assertEquals(noteId, database!!.occurrenceNoteDao().findById(noteId)?.id)
     }
 
     @Test
-    fun setupConfigurationRollsBackSemesterWhenCourseFails() = runBlocking {
+    fun setupConfigurationRollsBackSemesterWhenProgramFails() = runBlocking {
         database = openDatabase()
         val repository = RoomMakRepository(database!!)
-        val otherSemesterId = database!!.semesterDao().insert(
-            SemesterEntity(
-                name = "Inny semestr",
-                startDate = LocalDate.of(2026, 10, 1),
-                endDate = LocalDate.of(2027, 2, 28),
-                firstWeekType = WeekType.B,
-                isActive = true
-            )
-        )
-        val otherCourseId = database!!.courseDao().insert(
-            CourseEntity(semesterId = otherSemesterId, name = "Inny kierunek", color = "#112233")
-        )
+        val nextCalendarId = 1000L
         val before = database!!.semesterDao().observeAll().first()
 
         try {
             repository.saveSetupConfiguration(
-                SemesterEntity(
-                    name = "Nowy semestr",
+                SemesterEntity(name = "Nowy semestr", isActive = true),
+                StudyProgramEntity(id = 999L, name = "Kierunek", color = "#445566"),
+                AcademicCalendarEntity(
+                    id = nextCalendarId,
+                    semesterId = 0L,
                     startDate = LocalDate.of(2026, 10, 1),
                     endDate = LocalDate.of(2027, 2, 28),
-                    firstWeekType = WeekType.A,
-                    isActive = true
-                ),
-                CourseEntity(id = otherCourseId, semesterId = 0L, name = "Kierunek", color = "#445566")
+                    firstWeekType = WeekType.A
+                )
             )
             fail("Expected the setup transaction to fail")
         } catch (_: IllegalArgumentException) {
@@ -154,8 +163,8 @@ class RoomPersistenceTest {
     fun deletingInactiveSemesterKeepsActive() = runBlocking {
         database = openDatabase()
         val repository = RoomMakRepository(database!!)
-        val first = database!!.semesterDao().insert(semester("Pierwszy", 2026, 1, 1, false))
-        val second = database!!.semesterDao().insert(semester("Drugi", 2026, 6, 1, true))
+        val first = database!!.semesterDao().insert(semester("Pierwszy", true))
+        val second = database!!.semesterDao().insert(semester("Drugi", true))
         database!!.semesterDao().markActive(second)
 
         val result = repository.deleteSemesterAndSelectFallback(first)
@@ -169,9 +178,9 @@ class RoomPersistenceTest {
     fun deletingActiveSemesterSelectsDeterministicFallback() = runBlocking {
         database = openDatabase()
         val repository = RoomMakRepository(database!!)
-        val first = database!!.semesterDao().insert(semester("Pierwszy", 2026, 1, 1, false))
-        val second = database!!.semesterDao().insert(semester("Drugi", 2026, 6, 1, false))
-        val third = database!!.semesterDao().insert(semester("Trzeci", 2026, 9, 1, false))
+        val first = database!!.semesterDao().insert(semester("Pierwszy", false))
+        val second = database!!.semesterDao().insert(semester("Drugi", false))
+        val third = database!!.semesterDao().insert(semester("Trzeci", false))
         database!!.semesterDao().markActive(second)
 
         val result = repository.deleteSemesterAndSelectFallback(second)
@@ -185,7 +194,7 @@ class RoomPersistenceTest {
     fun deletingLastSemesterClearsActive() = runBlocking {
         database = openDatabase()
         val repository = RoomMakRepository(database!!)
-        val only = database!!.semesterDao().insert(semester("Jedyny", 2026, 1, 1, true))
+        val only = database!!.semesterDao().insert(semester("Jedyny", true))
         database!!.semesterDao().markActive(only)
 
         val result = repository.deleteSemesterAndSelectFallback(only)
@@ -199,8 +208,8 @@ class RoomPersistenceTest {
     fun deleteTransactionRollsBackWhenFallbackWriteFails() = runBlocking {
         database = openDatabase()
         val repository = RoomMakRepository(database!!)
-        val first = database!!.semesterDao().insert(semester("Pierwszy", 2026, 1, 1, false))
-        val second = database!!.semesterDao().insert(semester("Drugi", 2026, 6, 1, false))
+        val first = database!!.semesterDao().insert(semester("Pierwszy", false))
+        val second = database!!.semesterDao().insert(semester("Drugi", false))
         database!!.semesterDao().markActive(second)
         database!!.openHelper.writableDatabase.execSQL(
             "CREATE TRIGGER fail_mark_active BEFORE UPDATE OF is_active ON semesters " +
@@ -217,11 +226,41 @@ class RoomPersistenceTest {
         assertEquals(second, repository.observeActiveSemester().first()?.id)
     }
 
-    private fun semester(name: String, year: Int, month: Int, day: Int, active: Boolean) = SemesterEntity(
+    @Test
+    fun deletingAssignedStudyProgramIsBlocked() = runBlocking {
+        database = openDatabase()
+        val repository = RoomMakRepository(database!!)
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val calendarId = database!!.academicCalendarDao().insert(
+            AcademicCalendarEntity(
+                semesterId = semesterId,
+                startDate = LocalDate.of(2026, 10, 1),
+                endDate = LocalDate.of(2027, 2, 28),
+                firstWeekType = WeekType.A
+            )
+        )
+        val programId = database!!.studyProgramDao().insert(
+            StudyProgramEntity(name = "Informatyka", color = "#112233")
+        )
+        database!!.semesterProgramDao().insert(
+            SemesterProgramEntity(
+                semesterId = semesterId,
+                studyProgramId = programId,
+                academicCalendarId = calendarId
+            )
+        )
+
+        try {
+            repository.deleteStudyProgram(programId)
+            fail("Expected deletion of an assigned study program to fail")
+        } catch (_: IllegalArgumentException) {
+        }
+
+        assertEquals(programId, database!!.studyProgramDao().findById(programId)?.id)
+    }
+
+    private fun semester(name: String, active: Boolean) = SemesterEntity(
         name = name,
-        startDate = LocalDate.of(year, month, day),
-        endDate = LocalDate.of(year, month, day).plusMonths(4),
-        firstWeekType = WeekType.A,
         isActive = active
     )
 

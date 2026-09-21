@@ -37,13 +37,13 @@ internal fun PlannedOccurrence.toUi(conflictLabel: String?): ClassItemUi {
         id = id,
         name = name,
         type = classItem.type,
-        courseName = course?.name.orEmpty(),
-        courseColor = course?.color,
+        courseName = studyProgram?.name.orEmpty(),
+        courseColor = studyProgram?.color,
         startTime = startTime.toString(),
         endTime = endTime.toString(),
         room = room?.trim()?.ifEmpty { null },
         building = building,
-        teacherName = teacher?.name,
+        teacherName = teacherName,
         weekLabel = when (classItem.recurrence) {
             Recurrence.A_WEEK -> "Tydzień A"
             Recurrence.B_WEEK -> "Tydzień B"

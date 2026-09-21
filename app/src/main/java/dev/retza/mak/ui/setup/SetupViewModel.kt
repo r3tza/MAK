@@ -3,8 +3,9 @@ package dev.retza.mak.ui.setup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
-import dev.retza.mak.data.entity.CourseEntity
+import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.SemesterEntity
+import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.ui.components.FieldErrorUi
@@ -58,6 +59,7 @@ sealed interface SetupEffect {
 
 data class SetupSemesterResume(
     val semesterId: Long,
+    val calendarId: Long,
     val name: String,
     val startDate: String,
     val endDate: String,
@@ -77,6 +79,7 @@ class SetupViewModel(
 
     private var semesterId: Long? = null
     private var courseId: Long? = null
+    private var calendarId: Long? = null
     private var saveJob: Job? = null
     private var sessionToken = 0L
 
@@ -86,10 +89,12 @@ class SetupViewModel(
         if (resume == null) {
             semesterId = null
             courseId = null
+            calendarId = null
             state.value = SetupWizardUiState()
         } else {
             semesterId = resume.semesterId
             courseId = null
+            calendarId = resume.calendarId.takeIf { it != 0L }
             state.value = SetupWizardUiState(
                 step = SetupStep.Course,
                 semesterName = resume.name,
@@ -170,6 +175,7 @@ class SetupViewModel(
         }
         val existingSemester = semesterId
         val existingCourse = courseId
+        val existingCalendar = calendarId
         val isUpdate = existingSemester != null
         state.update { it.copy(isSaving = true, errors = emptyMap()) }
         val token = sessionToken
@@ -179,21 +185,25 @@ class SetupViewModel(
                     SemesterEntity(
                         id = existingSemester ?: 0L,
                         name = current.semesterName.trim(),
-                        startDate = start,
-                        endDate = end,
-                        firstWeekType = WeekType.valueOf(current.firstWeekLabel),
                         isActive = true
                     ),
-                    CourseEntity(
+                    StudyProgramEntity(
                         id = existingCourse ?: 0L,
-                        semesterId = existingSemester ?: 0L,
                         name = name,
                         color = current.courseColor.ifBlank { "#137b71" }
+                    ),
+                    AcademicCalendarEntity(
+                        id = existingCalendar ?: 0L,
+                        semesterId = existingSemester ?: 0L,
+                        startDate = start,
+                        endDate = end,
+                        firstWeekType = WeekType.valueOf(current.firstWeekLabel)
                     )
                 )
                 if (token != sessionToken) return@launch
                 semesterId = ids.semesterId
-                courseId = ids.courseId
+                courseId = ids.studyProgramId
+                calendarId = ids.academicCalendarId
                 state.update { it.copy(step = SetupStep.Classes, errors = emptyMap()) }
                 val message = if (isUpdate) {
                     "Zaktualizowano konfigurację"

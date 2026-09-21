@@ -30,23 +30,12 @@ enum class OccurrenceChangeKind {
 
 data class Semester(
     val id: String,
-    val name: String,
-    val startDate: LocalDate,
-    val endDate: LocalDate,
-    val firstWeekType: WeekType
+    val name: String
 ) {
     init {
         require(name.isNotBlank()) { "Semester name must not be blank" }
-        require(!endDate.isBefore(startDate)) { "Semester end must not be before its start" }
     }
 }
-
-fun Semester.toAcademicCalendar(): AcademicCalendar = AcademicCalendar(
-    id = "calendar-$id",
-    startDate = startDate,
-    endDate = endDate,
-    firstWeekType = firstWeekType
-)
 
 data class StudyProgram(
     val id: String,
@@ -74,19 +63,13 @@ data class SemesterProgram(
     val academicCalendarId: String
 )
 
-data class Teacher(
-    val id: String,
-    val semesterId: String,
-    val name: String
-)
-
 data class ClassItem(
     val id: String,
     val semesterId: String,
+    val semesterProgramId: String,
     val name: String,
     val type: String,
-    val courseId: String,
-    val teacherId: String? = null,
+    val teacherName: String? = null,
     val dayOfWeek: DayOfWeek = DayOfWeek.MONDAY,
     val startTime: LocalTime,
     val endTime: LocalTime,
@@ -135,7 +118,7 @@ data class OccurrenceChange(
     val endTime: LocalTime? = null,
     val room: String? = null,
     val building: String? = null,
-    val teacherId: String? = null,
+    val teacherName: String? = null,
     val note: String? = null
 )
 
@@ -153,8 +136,8 @@ data class PlannedOccurrence(
     val endTime: LocalTime,
     val room: String?,
     val building: String?,
-    val teacher: Teacher?,
-    val course: StudyProgram?,
+    val teacherName: String?,
+    val studyProgram: StudyProgram?,
     val classNote: String?,
     val occurrenceNote: OccurrenceNote?,
     val occurrenceChange: OccurrenceChange? = null

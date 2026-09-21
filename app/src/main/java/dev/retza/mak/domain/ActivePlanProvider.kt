@@ -8,7 +8,6 @@ data class ActivePlanData(
     val courses: Collection<StudyProgram> = emptyList(),
     val semesterPrograms: Collection<SemesterProgram> = emptyList(),
     val calendars: Collection<AcademicCalendar> = emptyList(),
-    val teachers: Collection<Teacher> = emptyList(),
     val weekOverrides: Collection<WeekOverride> = emptyList(),
     val occurrenceChanges: Collection<OccurrenceChange> = emptyList(),
     val occurrenceNotes: Collection<OccurrenceNote> = emptyList()
@@ -32,7 +31,6 @@ class ActivePlanProvider(
             courses = data.courses,
             semesterPrograms = data.semesterPrograms,
             calendars = data.calendars,
-            teachers = data.teachers,
             weekOverrides = data.weekOverrides,
             occurrenceChanges = data.occurrenceChanges,
             occurrenceNotes = data.occurrenceNotes

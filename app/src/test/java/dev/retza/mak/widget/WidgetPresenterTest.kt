@@ -17,26 +17,32 @@ import org.junit.Test
 
 class WidgetPresenterTest {
     private val date = LocalDate.of(2026, 9, 21)
-    private val semester = dev.retza.mak.domain.Semester(
-        id = "semester",
-        name = "Semestr",
+    private val semester = dev.retza.mak.domain.Semester(id = "semester", name = "Semestr")
+    private val calendar = dev.retza.mak.domain.AcademicCalendar(
+        id = "calendar",
         startDate = date,
         endDate = date.plusDays(7),
         firstWeekType = dev.retza.mak.domain.WeekType.A
     )
     private val course = StudyProgram("course", "Informatyka", "#137B71")
+    private val assignment = dev.retza.mak.domain.SemesterProgram(
+        "assignment",
+        semester.id,
+        course.id,
+        calendar.id
+    )
 
     @Test
     fun presenterReturnsEmptyAndOutsideSemesterStates() {
         val provider = ActivePlanProvider()
         val presenter = WidgetPresenter()
         val emptyPlan = provider.resolve(
-            ActivePlanData(semester = semester, classes = emptyList(), courses = listOf(course)),
+            ActivePlanData(semester = semester, classes = emptyList(), courses = listOf(course), semesterPrograms = listOf(assignment), calendars = listOf(calendar)),
             date
         )
         val outsideDate = date.minusDays(1)
         val outsidePlan = provider.resolve(
-            ActivePlanData(semester = semester, classes = emptyList(), courses = listOf(course)),
+            ActivePlanData(semester = semester, classes = emptyList(), courses = listOf(course), semesterPrograms = listOf(assignment), calendars = listOf(calendar)),
             outsideDate
         )
 
@@ -66,8 +72,8 @@ class WidgetPresenterTest {
             dev.retza.mak.domain.SemesterProgram("assignment-b", semester.id, secondCourse.id, calendarB.id)
         )
         val classes = listOf(
-            classItem("first", LocalTime.of(9, 0), LocalTime.of(10, 0)),
-            classItem("second", LocalTime.of(9, 30), LocalTime.of(10, 30), courseId = secondCourse.id)
+            classItem("first", LocalTime.of(9, 0), LocalTime.of(10, 0), semesterProgramId = "assignment-a"),
+            classItem("second", LocalTime.of(9, 30), LocalTime.of(10, 30), semesterProgramId = "assignment-b")
         )
         val plan = ActivePlanProvider().resolve(
             ActivePlanData(
@@ -95,7 +101,7 @@ class WidgetPresenterTest {
             classItem("third", LocalTime.of(10, 15), LocalTime.of(10, 45))
         )
         val resolved = ActivePlanProvider().resolve(
-            ActivePlanData(semester, classes, courses = listOf(course)),
+            ActivePlanData(semester, classes, courses = listOf(course), semesterPrograms = listOf(assignment), calendars = listOf(calendar)),
             date
         )
         val duplicatedPlan = resolved.copy(
@@ -130,7 +136,7 @@ class WidgetPresenterTest {
             classItem("third", LocalTime.of(10, 0), LocalTime.of(11, 30))
         )
         val plan = ActivePlanProvider().resolve(
-            ActivePlanData(semester, classes, courses = listOf(course)),
+            ActivePlanData(semester, classes, courses = listOf(course), semesterPrograms = listOf(assignment), calendars = listOf(calendar)),
             date
         )
 
@@ -290,13 +296,13 @@ class WidgetPresenterTest {
         start: LocalTime,
         end: LocalTime,
         note: String? = null,
-        courseId: String = course.id
+        semesterProgramId: String = assignment.id
     ) = ClassItem(
         id = id,
         semesterId = semester.id,
         name = id,
         type = "Wykład",
-        courseId = courseId,
+        semesterProgramId = semesterProgramId,
         dayOfWeek = DayOfWeek.MONDAY,
         startTime = start,
         endTime = end,

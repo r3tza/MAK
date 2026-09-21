@@ -12,26 +12,23 @@ class ScheduleResolver(
         courses: Collection<StudyProgram> = emptyList(),
         semesterPrograms: Collection<SemesterProgram> = emptyList(),
         calendars: Collection<AcademicCalendar> = emptyList(),
-        teachers: Collection<Teacher> = emptyList(),
         weekOverrides: Collection<WeekOverride> = emptyList(),
         occurrenceChanges: Collection<OccurrenceChange> = emptyList(),
         occurrenceNotes: Collection<OccurrenceNote> = emptyList()
     ): ResolvedSchedule {
         val semesterClasses = classes.filter { it.semesterId == semester.id }
-        val coursesById = courses.associateBy { it.id }
-        val teachersById = teachers.filter { it.semesterId == semester.id }
-            .associateBy { it.id }
+        val studyProgramsById = courses.associateBy { it.id }
         val calendarsById = calendars.associateBy { it.id }
-        val programs = semesterPrograms.filter { it.semesterId == semester.id }
+        val assignments = semesterPrograms.filter { it.semesterId == semester.id }
+        val assignmentsById = assignments.associateBy { it.id }
 
         fun calendarFor(classItem: ClassItem): AcademicCalendar? {
-            val program = programs.firstOrNull { it.studyProgramId == classItem.courseId }
-            return program?.let { calendarsById[it.academicCalendarId] }
+            val assignment = assignmentsById[classItem.semesterProgramId] ?: return null
+            return calendarsById[assignment.academicCalendarId]
         }
 
-        val semesterCalendars = programs.mapNotNull { calendarsById[it.academicCalendarId] }
+        val semesterCalendars = assignments.mapNotNull { calendarsById[it.academicCalendarId] }
             .distinctBy { it.id }
-        val fallbackCalendar = semester.toAcademicCalendar()
 
         val changesByClass = occurrenceChanges
             .groupBy { it.classId }
@@ -41,22 +38,23 @@ class ScheduleResolver(
             .mapValues { (_, notes) -> notes.last() }
 
         val occurrences = semesterClasses
-            .flatMap { classItem ->
+            .mapNotNull { classItem ->
+                val calendar = calendarFor(classItem) ?: return@mapNotNull null
                 resolveClass(
                     classItem = classItem,
-                    calendar = calendarFor(classItem) ?: fallbackCalendar,
+                    calendar = calendar,
                     date = date,
                     weekOverrides = weekOverrides,
                     changesByDate = changesByClass[classItem.id].orEmpty(),
-                    courses = coursesById,
-                    teachers = teachersById,
+                    studyPrograms = studyProgramsById,
+                    assignments = assignmentsById,
                     notesByOccurrence = notesByOccurrence
                 )
             }
+            .flatten()
             .sortedWith(compareBy<PlannedOccurrence> { it.startTime }.thenBy { it.name }.thenBy { it.id })
 
-        val contributingCalendars = semesterCalendars.ifEmpty { listOf(fallbackCalendar) }
-        val weeks = contributingCalendars
+        val weeks = semesterCalendars
             .mapNotNull { calendar ->
                 weekCalculator.calculate(calendar, date, weekOverrides)?.let { calendar.id to it }
             }
@@ -81,7 +79,6 @@ class ScheduleResolver(
         courses: Collection<StudyProgram> = emptyList(),
         semesterPrograms: Collection<SemesterProgram> = emptyList(),
         calendars: Collection<AcademicCalendar> = emptyList(),
-        teachers: Collection<Teacher> = emptyList(),
         weekOverrides: Collection<WeekOverride> = emptyList(),
         occurrenceChanges: Collection<OccurrenceChange> = emptyList(),
         occurrenceNotes: Collection<OccurrenceNote> = emptyList()
@@ -92,7 +89,6 @@ class ScheduleResolver(
         courses,
         semesterPrograms,
         calendars,
-        teachers,
         weekOverrides,
         occurrenceChanges,
         occurrenceNotes
@@ -104,8 +100,8 @@ class ScheduleResolver(
         date: LocalDate,
         weekOverrides: Collection<WeekOverride>,
         changesByDate: Map<LocalDate, OccurrenceChange>,
-        courses: Map<String, StudyProgram>,
-        teachers: Map<String, Teacher>,
+        studyPrograms: Map<String, StudyProgram>,
+        assignments: Map<String, SemesterProgram>,
         notesByOccurrence: Map<Pair<String, LocalDate>, OccurrenceNote>
     ): List<PlannedOccurrence> {
         if (classItem.recurrence == Recurrence.ONCE) {
@@ -117,8 +113,8 @@ class ScheduleResolver(
                     actualDate = date,
                     originalDate = date,
                     change = null,
-                    courses = courses,
-                    teachers = teachers,
+                    studyPrograms = studyPrograms,
+                    assignments = assignments,
                     notesByOccurrence = notesByOccurrence
                 )
             )
@@ -149,8 +145,8 @@ class ScheduleResolver(
                 actualDate = actualDate,
                 originalDate = sourceDate,
                 change = change,
-                courses = courses,
-                teachers = teachers,
+                studyPrograms = studyPrograms,
+                assignments = assignments,
                 notesByOccurrence = notesByOccurrence
             )
         }
@@ -175,12 +171,14 @@ class ScheduleResolver(
         actualDate: LocalDate,
         originalDate: LocalDate,
         change: OccurrenceChange?,
-        courses: Map<String, StudyProgram>,
-        teachers: Map<String, Teacher>,
+        studyPrograms: Map<String, StudyProgram>,
+        assignments: Map<String, SemesterProgram>,
         notesByOccurrence: Map<Pair<String, LocalDate>, OccurrenceNote>
     ): PlannedOccurrence {
-        val teacherId = change?.teacherId ?: classItem.teacherId
         val occurrenceNote = notesByOccurrence[classItem.id to actualDate]
+        val studyProgram = assignments[classItem.semesterProgramId]
+            ?.studyProgramId
+            ?.let(studyPrograms::get)
         return PlannedOccurrence(
             classItem = classItem,
             date = actualDate,
@@ -189,8 +187,8 @@ class ScheduleResolver(
             endTime = change?.endTime ?: classItem.endTime,
             room = (change?.room ?: classItem.room)?.trim()?.ifEmpty { null },
             building = change?.building ?: classItem.building,
-            teacher = teacherId?.let(teachers::get),
-            course = courses[classItem.courseId],
+            teacherName = change?.teacherName ?: classItem.teacherName,
+            studyProgram = studyProgram,
             classNote = classItem.classNote,
             occurrenceNote = occurrenceNote,
             occurrenceChange = change

@@ -40,13 +40,13 @@ class WidgetPresenter {
                     startTime = occurrence.startTime.toString(),
                     endTime = occurrence.endTime.toString(),
                     name = occurrence.name,
-                    courseName = occurrence.course?.name.orEmpty(),
-                    courseColor = occurrence.course?.color,
+                    courseName = occurrence.studyProgram?.name.orEmpty(),
+                    courseColor = occurrence.studyProgram?.color,
                     roomLabel = listOfNotNull(
                         occurrence.room?.trim()?.ifEmpty { null } ?: "Sala niepodana",
                         occurrence.building
                     ).joinToString(", "),
-                    teacherName = occurrence.teacher?.name,
+                    teacherName = occurrence.teacherName,
                     conflicts = conflictsByOccurrence[occurrence.id].orEmpty(),
                     hasNote = !occurrence.classNote.isNullOrBlank() ||
                         !occurrence.occurrenceNoteBody.isNullOrBlank()

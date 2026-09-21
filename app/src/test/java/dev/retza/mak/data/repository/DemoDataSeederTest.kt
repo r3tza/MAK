@@ -2,12 +2,13 @@ package dev.retza.mak.data.repository
 
 import dev.retza.mak.data.database.ClassWithDetails
 import dev.retza.mak.data.database.SemesterWithData
+import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
-import dev.retza.mak.data.entity.CourseEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.data.entity.SemesterEntity
-import dev.retza.mak.data.entity.TeacherEntity
+import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import java.time.Clock
 import java.time.Instant
@@ -33,8 +34,9 @@ class DemoDataSeederTest {
         assertEquals(1, repository.semesters.size)
         assertEquals("Semestr demonstracyjny 2026/27", repository.semesters.single().name)
         assertEquals(5, repository.classes.size)
-        assertEquals(2, repository.courses.size)
-        assertEquals(2, repository.teachers.size)
+        assertEquals(2, repository.studyPrograms.size)
+        assertEquals(1, repository.calendars.size)
+        assertEquals(2, repository.semesterPrograms.size)
         assertEquals(1, repository.weekOverrides.size)
         assertEquals(1, repository.occurrenceNotes.size)
         assertEquals(1, repository.occurrenceChanges.size)
@@ -44,8 +46,9 @@ class DemoDataSeederTest {
 
 private class FakeMakRepository : MakRepository {
     val semesters = mutableListOf<SemesterEntity>()
-    val courses = mutableListOf<CourseEntity>()
-    val teachers = mutableListOf<TeacherEntity>()
+    val studyPrograms = mutableListOf<StudyProgramEntity>()
+    val calendars = mutableListOf<AcademicCalendarEntity>()
+    val semesterPrograms = mutableListOf<SemesterProgramEntity>()
     val classes = mutableListOf<ClassEntity>()
     val weekOverrides = mutableListOf<WeekOverrideEntity>()
     val occurrenceNotes = mutableListOf<OccurrenceNoteEntity>()
@@ -55,8 +58,9 @@ private class FakeMakRepository : MakRepository {
     override fun observeActiveSemester(): Flow<SemesterEntity?> = flowOf(semesters.firstOrNull { it.isActive })
     override fun observeSemester(id: Long): Flow<SemesterEntity?> = flowOf(semesters.find { it.id == id })
     override fun observeSemesterData(id: Long): Flow<SemesterWithData?> = flowOf(null)
-    override fun observeCourses(semesterId: Long): Flow<List<CourseEntity>> = flowOf(courses)
-    override fun observeTeachers(semesterId: Long): Flow<List<TeacherEntity>> = flowOf(teachers)
+    override fun observeStudyPrograms(): Flow<List<StudyProgramEntity>> = flowOf(studyPrograms)
+    override fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramEntity>> = flowOf(semesterPrograms)
+    override fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarEntity>> = flowOf(calendars)
     override fun observeClasses(semesterId: Long): Flow<List<ClassEntity>> = flowOf(classes)
     override fun observeClassesWithDetails(semesterId: Long): Flow<List<ClassWithDetails>> = flowOf(emptyList())
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>> = flowOf(weekOverrides)
@@ -74,11 +78,6 @@ private class FakeMakRepository : MakRepository {
 
     override suspend fun updateSemester(entity: SemesterEntity): Long = entity.id
 
-    override suspend fun saveSetupConfiguration(
-        semester: SemesterEntity,
-        course: CourseEntity
-    ): SetupConfigurationIds = SetupConfigurationIds(semester.id, course.id)
-
     override suspend fun setActiveSemester(id: Long) = Unit
     override suspend fun clearActiveSemester() = Unit
     override suspend fun deleteSemester(id: Long) = Unit
@@ -86,21 +85,40 @@ private class FakeMakRepository : MakRepository {
     override suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult =
         SemesterDeletionResult(null)
 
-    override suspend fun saveCourse(entity: CourseEntity): Long {
-        val id = courses.size + 1L
-        courses += entity.copy(id = id)
+    override suspend fun saveStudyProgram(entity: StudyProgramEntity): Long {
+        val id = studyPrograms.size + 1L
+        studyPrograms += entity.copy(id = id)
         return id
     }
 
-    override suspend fun deleteCourse(id: Long) = Unit
+    override suspend fun deleteStudyProgram(id: Long) = Unit
 
-    override suspend fun saveTeacher(entity: TeacherEntity): Long {
-        val id = teachers.size + 1L
-        teachers += entity.copy(id = id)
+    override suspend fun saveCalendar(entity: AcademicCalendarEntity): Long {
+        val id = calendars.size + 1L
+        calendars += entity.copy(id = id)
         return id
     }
 
-    override suspend fun deleteTeacher(id: Long) = Unit
+    override suspend fun updateSemesterWithCalendar(
+        semester: SemesterEntity,
+        calendar: AcademicCalendarEntity
+    ) = Unit
+
+    override suspend fun deleteCalendarIfUnused(id: Long) = Unit
+
+    override suspend fun saveSemesterProgram(entity: SemesterProgramEntity): Long {
+        val id = semesterPrograms.size + 1L
+        semesterPrograms += entity.copy(id = id)
+        return id
+    }
+
+    override suspend fun deleteSemesterProgram(id: Long) = Unit
+
+    override suspend fun saveSetupConfiguration(
+        semester: SemesterEntity,
+        studyProgram: StudyProgramEntity,
+        calendar: AcademicCalendarEntity
+    ): SetupConfigurationIds = SetupConfigurationIds(1L, 1L, 1L, 1L)
 
     override suspend fun saveClass(entity: ClassEntity): Long {
         val id = classes.size + 1L

@@ -4,8 +4,10 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
 import dev.retza.mak.data.database.SemesterWithData
-import dev.retza.mak.data.entity.CourseEntity
+import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.SemesterEntity
+import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
@@ -45,12 +47,14 @@ class SemesterViewModel(
 
     private var openJob: Job? = null
     private var sessionToken = 0L
+    private var calendarId: Long? = null
 
     fun open(id: String) {
         sessionToken += 1
         val token = sessionToken
         openJob?.cancel()
         semesterIdState.value = null
+        calendarId = null
         state.value = SemesterScreenUiState()
         val parsed = id.toLongOrNull() ?: return
         openJob = viewModelScope.launch {
@@ -59,6 +63,7 @@ class SemesterViewModel(
                 val data = repository.observeSemesterData(parsed).first() ?: return@launch
                 if (token != sessionToken) return@launch
                 semesterIdState.value = parsed
+                calendarId = data.sharedCalendar()?.id
                 state.value = data.toSemesterScreenState()
             } catch (error: CancellationException) {
                 throw error
@@ -77,6 +82,7 @@ class SemesterViewModel(
     fun saveSemester() {
         if (state.value.semester.isSaving) return
         val id = semesterIdState.value ?: return
+        val currentCalendarId = calendarId ?: return
         val form = state.value.semester
         val start = form.startDate.toLocalDateOrNull()
         val end = form.endDate.toLocalDateOrNull()
@@ -109,14 +115,14 @@ class SemesterViewModel(
         val token = sessionToken
         viewModelScope.launch {
             try {
-                repository.updateSemester(
-                    SemesterEntity(
-                        id = id,
-                        name = form.name.trim(),
+                repository.updateSemesterWithCalendar(
+                    SemesterEntity(id = id, name = form.name.trim()),
+                    AcademicCalendarEntity(
+                        id = currentCalendarId,
+                        semesterId = id,
                         startDate = start,
                         endDate = end,
-                        firstWeekType = WeekType.valueOf(form.firstWeek.name),
-                        isActive = true
+                        firstWeekType = WeekType.valueOf(form.firstWeek.name)
                     )
                 )
                 if (!isCurrentSession(token)) return@launch
@@ -149,6 +155,7 @@ class SemesterViewModel(
     fun addCourse() {
         if (state.value.isAddingCourse) return
         val id = semesterIdState.value ?: return
+        val currentCalendarId = calendarId ?: return
         val draft = state.value
         val name = draft.courseNameDraft.trim()
         if (name.isBlank()) {
@@ -159,11 +166,17 @@ class SemesterViewModel(
         val token = sessionToken
         viewModelScope.launch {
             try {
-                repository.saveCourse(
-                    CourseEntity(
-                        semesterId = id,
+                val programId = repository.saveStudyProgram(
+                    StudyProgramEntity(
                         name = name,
                         color = draft.courseColorDraft.ifBlank { "#137b71" }
+                    )
+                )
+                repository.saveSemesterProgram(
+                    SemesterProgramEntity(
+                        semesterId = id,
+                        studyProgramId = programId,
+                        academicCalendarId = currentCalendarId
                     )
                 )
                 if (!isCurrentSession(token)) return@launch
@@ -186,12 +199,12 @@ class SemesterViewModel(
 
     fun deleteCourse(id: String) {
         if (state.value.isDeletingCourse) return
-        val courseId = id.toLongOrNull() ?: return
+        val assignmentId = id.toLongOrNull() ?: return
         update { it.copy(isDeletingCourse = true) }
         val token = sessionToken
         viewModelScope.launch {
             try {
-                repository.deleteCourse(courseId)
+                repository.deleteSemesterProgram(assignmentId)
                 if (!isCurrentSession(token)) return@launch
                 refresh(token)
                 if (!isCurrentSession(token)) return@launch
@@ -215,6 +228,7 @@ class SemesterViewModel(
         val data = repository.observeSemesterData(id).first() ?: return
         if (!isCurrentSession(token)) return
         val current = state.value
+        calendarId = data.sharedCalendar()?.id
         state.value = data.toSemesterScreenState().copy(
             courseNameDraft = current.courseNameDraft,
             courseColorDraft = current.courseColorDraft,
@@ -248,6 +262,7 @@ class SemesterViewModel(
     fun saveWeekOverride() {
         if (state.value.overrideForm.isSaving) return
         val semester = semesterIdState.value ?: return
+        val currentCalendarId = calendarId ?: return
         val form = state.value.overrideForm
         val date = form.weekStartDate.toLocalDateOrNull()
         if (date == null || date.dayOfWeek != DayOfWeek.MONDAY) {
@@ -262,6 +277,7 @@ class SemesterViewModel(
                     WeekOverrideEntity(
                         id = form.id?.toLongOrNull() ?: 0,
                         semesterId = semester,
+                        academicCalendarId = currentCalendarId,
                         weekStartDate = date,
                         weekType = WeekType.valueOf(form.weekType.name),
                         scope = WeekOverrideScope.valueOf(form.scope.name)
@@ -316,20 +332,29 @@ class SemesterViewModel(
 private fun String.toLocalDateOrNull(): java.time.LocalDate? =
     runCatching { java.time.LocalDate.parse(this) }.getOrNull()
 
-private fun SemesterWithData.toSemesterScreenState(): SemesterScreenUiState = SemesterScreenUiState(
-    semester = SemesterFormUiState(
-        name = semester.name,
-        startDate = semester.startDate.toString(),
-        endDate = semester.endDate.toString(),
-        firstWeek = WeekTypeUi.valueOf(semester.firstWeekType.name)
-    ),
-    overrides = weekOverrides.map { override ->
-        WeekOverrideUi(
-            override.id.toString(),
-            override.weekStartDate.toString(),
-            WeekTypeUi.valueOf(override.weekType.name),
-            WeekOverrideScopeUi.valueOf(override.scope.name)
-        )
-    },
-    courses = courses.map { course -> course.id.toString() to course.name }
-)
+private fun SemesterWithData.sharedCalendar(): dev.retza.mak.data.entity.AcademicCalendarEntity? =
+    academicCalendars.minByOrNull { it.id }
+
+private fun SemesterWithData.toSemesterScreenState(): SemesterScreenUiState {
+    val calendar = sharedCalendar()
+    return SemesterScreenUiState(
+        semester = SemesterFormUiState(
+            name = semester.name,
+            startDate = calendar?.startDate?.toString().orEmpty(),
+            endDate = calendar?.endDate?.toString().orEmpty(),
+            firstWeek = calendar?.let { WeekTypeUi.valueOf(it.firstWeekType.name) } ?: WeekTypeUi.A
+        ),
+        overrides = weekOverrides.map { override ->
+            WeekOverrideUi(
+                override.id.toString(),
+                override.weekStartDate.toString(),
+                WeekTypeUi.valueOf(override.weekType.name),
+                WeekOverrideScopeUi.valueOf(override.scope.name)
+            )
+        },
+        courses = semesterPrograms.map { assignment ->
+            val program = studyPrograms.firstOrNull { it.id == assignment.studyProgramId }
+            assignment.id.toString() to (program?.name ?: "")
+        }
+    )
+}
