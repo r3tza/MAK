@@ -658,6 +658,14 @@ class SemesterViewModelTest {
             .first { it.studyProgramId == newProgramId }
             .academicCalendarId
         repository.weekOverrides += WeekOverrideEntity(
+            id = 6L,
+            semesterId = 1L,
+            academicCalendarId = repository.calendar.id,
+            weekStartDate = LocalDate.of(2026, 9, 28),
+            weekType = WeekType.B,
+            scope = WeekOverrideScope.ONE_WEEK
+        )
+        repository.weekOverrides += WeekOverrideEntity(
             id = 7L,
             semesterId = 1L,
             academicCalendarId = separatedCalendarId,
@@ -668,11 +676,13 @@ class SemesterViewModelTest {
 
         viewModel.selectCalendar(repository.calendar.id.toString())
         advanceUntilIdle()
-        assertTrue(viewModel.semester.value.overrides.isEmpty())
+        assertEquals(1, viewModel.semester.value.overrides.size)
+        assertEquals(2, viewModel.semester.value.overrideCount)
 
         viewModel.selectCalendar(separatedCalendarId.toString())
         advanceUntilIdle()
         assertEquals(1, viewModel.semester.value.overrides.size)
+        assertEquals(2, viewModel.semester.value.overrideCount)
     }
 
     @Test

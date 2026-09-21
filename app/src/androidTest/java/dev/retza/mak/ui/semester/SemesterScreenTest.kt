@@ -347,9 +347,9 @@ class SemesterScreenTest {
         }
 
         composeTestRule.onNodeWithContentDescription(
-            "Kalendarz: 2026-10-01 - 2027-02-28 (tydzień A)"
+            "Kalendarz: 2026-10-01 - 2027-02-28, tydzień A, brak kierunków"
         ).performClick()
-        composeTestRule.onNodeWithText("2026-11-01 - 2027-03-15 (tydzień A)").performClick()
+        composeTestRule.onNodeWithText("2026-11-01 - 2027-03-15, tydzień A, brak kierunków").performClick()
         assertEquals("2", selected)
     }
 

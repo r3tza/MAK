@@ -618,6 +618,7 @@ private fun SemesterWithData.toSemesterScreenState(selectedCalendarId: Long?): S
                     WeekOverrideScopeUi.valueOf(override.scope.name)
                 )
             },
+        overrideCount = weekOverrides.size,
         courseItems = courseItems,
         calendars = academicCalendars.map { calendar ->
             SemesterCalendarUi(

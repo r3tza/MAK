@@ -135,6 +135,7 @@ data class SemesterScreenUiState(
     val semester: SemesterFormUiState = SemesterFormUiState(),
     val overrides: List<WeekOverrideUi> = emptyList(),
     val overrideForm: WeekOverrideFormUiState = WeekOverrideFormUiState(),
+    val overrideCount: Int = 0,
     val courseItems: List<SemesterCourseUi> = emptyList(),
     val calendars: List<SemesterCalendarUi> = emptyList(),
     val selectedCalendarId: String? = null,
@@ -208,7 +209,7 @@ fun SemesterScreen(
                 SemesterNavigationRow(
                     title = "Korekty tygodni",
                     description = "Ręczne oznaczenia tygodni A/B.",
-                    count = state.overrides.size,
+                    count = state.overrideCount,
                     onClick = onOpenOverrides
                 )
                 if (state.calendars.size > 1) {
@@ -339,11 +340,11 @@ fun SemesterWeekOverridesScreen(
                 label = "Kalendarz",
                 value = state.calendars
                     .firstOrNull { it.id == state.selectedCalendarId }
-                    ?.let(::calendarRangeLabel)
+                    ?.let(::calendarLabel)
                     .orEmpty(),
                 options = state.calendars,
                 onSelected = { onCalendarSelected(it.id) },
-                optionLabel = { calendarRangeLabel(it) }
+                optionLabel = { calendarLabel(it) }
             )
         }
         WeekOverridesSection(
@@ -385,11 +386,11 @@ fun SemesterCalendarsScreen(
                 label = "Edytowany kalendarz",
                 value = state.calendars
                     .firstOrNull { it.id == state.selectedCalendarId }
-                    ?.let(::calendarRangeLabel)
+                    ?.let(::calendarLabel)
                     .orEmpty(),
                 options = state.calendars,
                 onSelected = { onCalendarSelected(it.id) },
-                optionLabel = { calendarRangeLabel(it) }
+                optionLabel = { calendarLabel(it) }
             )
         }
         CalendarDateFields(
@@ -638,11 +639,11 @@ private fun CoursesBlock(
                 label = "Kalendarz kierunku",
                 value = state.calendars
                     .firstOrNull { it.id == state.courseCalendarId }
-                    ?.let(::calendarRangeLabel)
+                    ?.let(::calendarLabel)
                     .orEmpty(),
                 options = state.calendars,
                 onSelected = { onCourseCalendarChanged(it.id) },
-                optionLabel = { calendarRangeLabel(it) }
+                optionLabel = { calendarLabel(it) }
             )
         }
         MakChoiceRow(
@@ -713,11 +714,11 @@ private fun CourseRow(
                 label = "Kalendarz",
                 value = calendars
                     .firstOrNull { it.id == course.calendarId }
-                    ?.let(::calendarRangeLabel)
+                    ?.let(::calendarLabel)
                     .orEmpty(),
                 options = calendars,
                 onSelected = { onReconnect(it.id) },
-                optionLabel = { calendarRangeLabel(it) }
+                optionLabel = { calendarLabel(it) }
             )
         }
         if (course.sharesCalendar) {
@@ -762,8 +763,25 @@ private fun ReconnectCalendarDialog(
     )
 }
 
-private fun calendarRangeLabel(calendar: SemesterCalendarUi): String =
-    "${calendar.startDate} - ${calendar.endDate} (tydzień ${calendar.firstWeek.name})"
+private fun calendarLabel(calendar: SemesterCalendarUi): String {
+    val courses = uniqueCourseNames(calendar.courseNames)
+    val coursePart = if (courses.isEmpty()) "brak kierunków" else courses.joinToString(", ")
+    return "${calendar.startDate} - ${calendar.endDate}, tydzień ${calendar.firstWeek.name}, $coursePart"
+}
+
+private fun uniqueCourseNames(names: List<String>): List<String> {
+    val totals = names.groupingBy { it }.eachCount()
+    val seen = mutableMapOf<String, Int>()
+    return names.map { name ->
+        if (totals.getValue(name) > 1) {
+            val index = (seen[name] ?: 0) + 1
+            seen[name] = index
+            "$name ($index)"
+        } else {
+            name
+        }
+    }
+}
 
 @Composable
 private fun WeekOverridesSection(
