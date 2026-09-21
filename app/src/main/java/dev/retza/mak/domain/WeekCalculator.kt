@@ -9,17 +9,17 @@ class WeekCalculator {
         date.with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
     fun calculate(
-        semester: Semester,
+        calendar: AcademicCalendar,
         date: LocalDate,
         overrides: Collection<WeekOverride> = emptyList()
     ): WeekCalculation? {
-        if (date.isBefore(semester.startDate) || date.isAfter(semester.endDate)) {
+        if (date.isBefore(calendar.startDate) || date.isAfter(calendar.endDate)) {
             return null
         }
 
-        val firstWeekStart = weekStart(semester.startDate)
+        val firstWeekStart = weekStart(calendar.startDate)
         val currentWeekStart = weekStart(date)
-        val relevantOverrides = overrides.filter { it.semesterId == semester.id }
+        val relevantOverrides = overrides.filter { it.academicCalendarId == calendar.id }
 
         val oneWeekOverride = relevantOverrides
             .filter {
@@ -45,7 +45,7 @@ class WeekCalculator {
 
         val weekType = if (fromWeekOverride == null) {
             alternatingType(
-                firstType = semester.firstWeekType,
+                firstType = calendar.firstWeekType,
                 weeksFromAnchor = ChronoUnit.WEEKS.between(firstWeekStart, currentWeekStart)
             )
         } else {
@@ -66,10 +66,10 @@ class WeekCalculator {
     }
 
     fun calculateWeekType(
-        semester: Semester,
+        calendar: AcademicCalendar,
         date: LocalDate,
         overrides: Collection<WeekOverride> = emptyList()
-    ): WeekType? = calculate(semester, date, overrides)?.weekType
+    ): WeekType? = calculate(calendar, date, overrides)?.weekType
 
     private fun alternatingType(firstType: WeekType, weeksFromAnchor: Long): WeekType =
         if (weeksFromAnchor % 2L == 0L) firstType else firstType.toggled()

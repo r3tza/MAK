@@ -12,21 +12,36 @@ import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.OccurrenceNote
 import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.Semester
+import dev.retza.mak.domain.SemesterProgram
 import dev.retza.mak.domain.StudyProgram
+import dev.retza.mak.domain.toAcademicCalendar
 import dev.retza.mak.domain.Teacher
 import dev.retza.mak.domain.WeekOverride
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
 
-fun SemesterWithData.toActivePlanData(): ActivePlanData = ActivePlanData(
-    semester = semester.toDomain(),
-    classes = classes.map(ClassEntity::toDomain),
-    courses = courses.map { it.toDomain() },
-    teachers = teachers.map { it.toDomain() },
-    weekOverrides = weekOverrides.map(WeekOverrideEntity::toDomain),
-    occurrenceChanges = occurrenceChanges.map(OccurrenceChangeEntity::toDomain),
-    occurrenceNotes = occurrenceNotes.map(OccurrenceNoteEntity::toDomain)
-)
+fun SemesterWithData.toActivePlanData(): ActivePlanData {
+    val semesterDomain = semester.toDomain()
+    val calendar = semesterDomain.toAcademicCalendar()
+    return ActivePlanData(
+        semester = semesterDomain,
+        classes = classes.map(ClassEntity::toDomain),
+        courses = courses.map { it.toDomain() },
+        semesterPrograms = courses.map { course ->
+            SemesterProgram(
+                id = "${semester.id}:${course.id}",
+                semesterId = semester.id.toString(),
+                studyProgramId = course.id.toString(),
+                academicCalendarId = calendar.id
+            )
+        },
+        calendars = listOf(calendar),
+        teachers = teachers.map { it.toDomain() },
+        weekOverrides = weekOverrides.map { it.toDomain(calendar.id) },
+        occurrenceChanges = occurrenceChanges.map(OccurrenceChangeEntity::toDomain),
+        occurrenceNotes = occurrenceNotes.map(OccurrenceNoteEntity::toDomain)
+    )
+}
 
 private fun dev.retza.mak.data.entity.SemesterEntity.toDomain() = Semester(
     id = id.toString(),
@@ -60,9 +75,9 @@ private fun ClassEntity.toDomain() = ClassItem(
     classNote = classNote
 )
 
-private fun WeekOverrideEntity.toDomain() = WeekOverride(
+private fun WeekOverrideEntity.toDomain(calendarId: String) = WeekOverride(
     id = id.toString(),
-    semesterId = semesterId.toString(),
+    academicCalendarId = calendarId,
     weekStartDate = weekStartDate,
     weekType = WeekType.valueOf(weekType.name),
     scope = WeekOverrideScope.valueOf(scope.name)

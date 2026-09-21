@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: Resolver wielu kalendarzy
+
+- Fakty: `WeekCalculator` liczył tydzień z dat semestru, więc wszystkie kierunki w semestrze dzieliły jeden rytm A/B. Po dodaniu `AcademicCalendar` i `SemesterProgram` każdy kierunek może mieć własne daty i rytm.
+- Decyzja: `WeekCalculator` przyjmuje `AcademicCalendar`, a `WeekOverride` wskazuje `academicCalendarId`. `ActivePlanData` niesie `semesterPrograms` i `calendars`. `ScheduleResolver` dla każdego wystąpienia wybiera kalendarz na podstawie `SemesterProgram` kierunku zajęć, liczy tydzień względem tego kalendarza, a dopiero potem `CollisionDetector` działa na połączonej liście wszystkich kierunków. `ActivePlanProvider` pozostał wspólnym wejściem. `toActivePlanData` przed migracją Room syntezuje jeden kalendarz z semestru i po jednym przypisaniu na kierunek, więc zachowanie aplikacji się nie zmienia.
+- Powód: Dwa kierunki z różnych uczelni muszą mieć własne daty i rytm, ale wspólne kolizje liczone na jednej osi czasu.
+- Odrzucone: Wspólny rytm A/B wymuszony przez semestr; liczenie kolizji osobno dla każdego kalendarza; zmiana schematu Room razem z resolverem.
+- Weryfikacja: `MultiCalendarResolverTest` pokazuje, że przy przeciwnych rytmach A/B tylko kierunek z właściwego kalendarza ma wystąpienie oraz że dwa kierunki z różnymi kalendarzami dają wspólną kolizję z poprawnym zakresem nakładania. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-21: Modele StudyProgram i AcademicCalendar
 
 - Fakty: Domenowy `Course` należał do jednego semestru, a daty i rytm A/B siedziały w `Semester`. Kierunek studiów trwa dłużej niż semestr, a różne kierunki mogą mieć różne daty i rytm.

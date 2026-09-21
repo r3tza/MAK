@@ -41,6 +41,13 @@ data class Semester(
     }
 }
 
+fun Semester.toAcademicCalendar(): AcademicCalendar = AcademicCalendar(
+    id = "calendar-$id",
+    startDate = startDate,
+    endDate = endDate,
+    firstWeekType = firstWeekType
+)
+
 data class StudyProgram(
     val id: String,
     val name: String,
@@ -99,7 +106,7 @@ data class ClassItem(
 
 data class WeekOverride(
     val id: String,
-    val semesterId: String,
+    val academicCalendarId: String,
     val weekStartDate: LocalDate,
     val weekType: WeekType,
     val scope: WeekOverrideScope

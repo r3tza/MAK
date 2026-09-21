@@ -315,6 +315,8 @@ Status: częściowo zrealizowane. Domenową nazwę `Course` zastąpiono `StudyPr
 
 Kryterium: dwa kierunki z różnymi kalendarzami pokazują poprawne wystąpienia i wspólne kolizje dla wybranej daty.
 
+Status: zrealizowane. `WeekCalculator` przyjmuje `AcademicCalendar` zamiast `Semester`, a `WeekOverride` wskazuje `academicCalendarId`. `ActivePlanData` niesie `semesterPrograms` i `calendars`. `ScheduleResolver` wybiera kalendarz każdego wystąpienia na podstawie `SemesterProgram` kierunku zajęć, liczy tydzień A/B względem tego kalendarza, a potem łączy wystąpienia wszystkich kierunków przed `CollisionDetector`. `ActivePlanProvider` pozostał wspólnym wejściem dla ekranu, kalendarza i widgetu. `toActivePlanData` na czas przed migracją Room syntezuje jeden `AcademicCalendar` z semestru i po jednym `SemesterProgram` na kierunek, mapując korekty na ten kalendarz, więc aplikacja działa jak dotąd. Test `MultiCalendarResolverTest` pokazuje dwa kierunki z przeciwnymi rytmami A/B (tylko jeden pokazuje wystąpienie A) oraz wspólną kolizję między kierunkami z różnymi kalendarzami. `WeekCalculatorTest`, `ScheduleResolverTest`, `ActivePlanProviderTest` i `CollisionDetectorTest` używają kalendarza. `ClassItem.semesterProgramId` i prowadzący jako tekst pozostają do etapu 10, bo wymagają migracji Room.
+
 #### Dalszy etap 10: migracja Room
 
 1. Dodać tabele `StudyProgram`, `SemesterProgram` i `AcademicCalendar` oraz potrzebne indeksy i klucze obce.

@@ -10,25 +10,30 @@ class ScheduleResolver(
         semester: Semester,
         classes: Collection<ClassItem>,
         courses: Collection<StudyProgram> = emptyList(),
+        semesterPrograms: Collection<SemesterProgram> = emptyList(),
+        calendars: Collection<AcademicCalendar> = emptyList(),
         teachers: Collection<Teacher> = emptyList(),
         weekOverrides: Collection<WeekOverride> = emptyList(),
         occurrenceChanges: Collection<OccurrenceChange> = emptyList(),
         occurrenceNotes: Collection<OccurrenceNote> = emptyList()
     ): ResolvedSchedule {
-        val week = weekCalculator.calculate(semester, date, weekOverrides)
-        if (week == null) {
-            return ResolvedSchedule(
-                date = date,
-                semesterId = semester.id,
-                week = null,
-                occurrences = emptyList()
-            )
+        val semesterClasses = classes.filter { it.semesterId == semester.id }
+        val coursesById = courses.associateBy { it.id }
+        val teachersById = teachers.filter { it.semesterId == semester.id }
+            .associateBy { it.id }
+        val calendarsById = calendars.associateBy { it.id }
+        val programs = semesterPrograms.filter { it.semesterId == semester.id }
+
+        fun calendarFor(classItem: ClassItem): AcademicCalendar? {
+            val program = programs.firstOrNull { it.studyProgramId == classItem.courseId }
+            return program?.let { calendarsById[it.academicCalendarId] }
         }
 
-        val semesterClasses = classes.filter { it.semesterId == semester.id }
-        val semesterCourses = courses.associateBy { it.id }
-        val semesterTeachers = teachers.filter { it.semesterId == semester.id }
-            .associateBy { it.id }
+        val semesterCalendars = programs.mapNotNull { calendarsById[it.academicCalendarId] }
+            .distinctBy { it.id }
+        val fallbackCalendar = semester.toAcademicCalendar()
+        val primaryCalendar = semesterCalendars.minByOrNull { it.id } ?: fallbackCalendar
+
         val changesByClass = occurrenceChanges
             .groupBy { it.classId }
             .mapValues { (_, changes) -> changes.associateBy { it.originalDate } }
@@ -40,17 +45,21 @@ class ScheduleResolver(
             .flatMap { classItem ->
                 resolveClass(
                     classItem = classItem,
+                    calendar = calendarFor(classItem) ?: fallbackCalendar,
                     date = date,
-                    week = week,
-                    semester = semester,
                     weekOverrides = weekOverrides,
                     changesByDate = changesByClass[classItem.id].orEmpty(),
-                    courses = semesterCourses,
-                    teachers = semesterTeachers,
+                    courses = coursesById,
+                    teachers = teachersById,
                     notesByOccurrence = notesByOccurrence
                 )
             }
             .sortedWith(compareBy<PlannedOccurrence> { it.startTime }.thenBy { it.name }.thenBy { it.id })
+
+        val week = (semesterCalendars + fallbackCalendar)
+            .mapNotNull { weekCalculator.calculate(it, date, weekOverrides) }
+            .firstOrNull()
+            ?: weekCalculator.calculate(primaryCalendar, date, weekOverrides)
 
         return ResolvedSchedule(
             date = date,
@@ -65,6 +74,8 @@ class ScheduleResolver(
         semester: Semester,
         classes: Collection<ClassItem>,
         courses: Collection<StudyProgram> = emptyList(),
+        semesterPrograms: Collection<SemesterProgram> = emptyList(),
+        calendars: Collection<AcademicCalendar> = emptyList(),
         teachers: Collection<Teacher> = emptyList(),
         weekOverrides: Collection<WeekOverride> = emptyList(),
         occurrenceChanges: Collection<OccurrenceChange> = emptyList(),
@@ -74,6 +85,8 @@ class ScheduleResolver(
         semester,
         classes,
         courses,
+        semesterPrograms,
+        calendars,
         teachers,
         weekOverrides,
         occurrenceChanges,
@@ -82,9 +95,8 @@ class ScheduleResolver(
 
     private fun resolveClass(
         classItem: ClassItem,
+        calendar: AcademicCalendar,
         date: LocalDate,
-        week: WeekCalculation,
-        semester: Semester,
         weekOverrides: Collection<WeekOverride>,
         changesByDate: Map<LocalDate, OccurrenceChange>,
         courses: Map<String, StudyProgram>,
@@ -106,13 +118,14 @@ class ScheduleResolver(
             )
         }
 
+        val week = weekCalculator.calculate(calendar, date, weekOverrides)
         val sourceDates = buildSet {
-            if (isBaseOccurrence(classItem, date, week)) add(date)
+            if (week != null && isBaseOccurrence(classItem, date, week)) add(date)
             changesByDate.values
                 .filter { it.kind == OccurrenceChangeKind.MODIFIED && it.targetDate == date }
                 .map { it.originalDate }
                 .filter {
-                    val sourceWeek = weekCalculator.calculate(semester, it, weekOverrides)
+                    val sourceWeek = weekCalculator.calculate(calendar, it, weekOverrides)
                     sourceWeek != null && isBaseOccurrence(classItem, it, sourceWeek)
                 }
                 .forEach(::add)
