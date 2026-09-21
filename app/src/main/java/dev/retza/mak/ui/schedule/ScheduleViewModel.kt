@@ -64,7 +64,7 @@ private data class ScheduleControls(
 class ScheduleViewModel(
     private val repository: MakRepository,
     private val clock: Clock,
-    private val activePlanProvider: ActivePlanProvider = ActivePlanProvider()
+    private val activePlanProvider: ActivePlanProvider
 ) : ViewModel() {
     private val today = LocalDate.now(clock)
     private val controls = MutableStateFlow(

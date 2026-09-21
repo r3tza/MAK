@@ -3,6 +3,7 @@ package dev.retza.mak.ui.schedule
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
+import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.ui.FakeMakRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
@@ -31,7 +32,7 @@ class ScheduleViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
-    private fun viewModel(repository: FakeMakRepository) = ScheduleViewModel(repository, clock)
+    private fun viewModel(repository: FakeMakRepository) = ScheduleViewModel(repository, clock, ActivePlanProvider())
 
     @Test
     fun initialStateMapsActiveSemesterPlan() = runTest(mainDispatcher) {

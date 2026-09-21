@@ -87,7 +87,11 @@ class WidgetPlanLoaderTest {
             ZoneId.of("UTC")
         )
 
-        val state = WidgetPlanLoader(repository, clock = clock).load()
+        val state = WidgetPlanLoader(
+            repository = repository,
+            activePlanProvider = ActivePlanProvider(),
+            clock = clock
+        ).load()
 
         assertTrue(state is WidgetUiState.NoActiveSemester)
     }

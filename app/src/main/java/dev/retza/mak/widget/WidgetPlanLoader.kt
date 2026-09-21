@@ -9,8 +9,8 @@ import kotlinx.coroutines.flow.first
 
 class WidgetPlanLoader(
     private val repository: MakRepository,
-    private val activePlanProvider: ActivePlanProvider = ActivePlanProvider(),
-    private val clock: Clock = Clock.systemDefaultZone(),
+    private val activePlanProvider: ActivePlanProvider,
+    private val clock: Clock,
     private val presenter: WidgetPresenter = WidgetPresenter()
 ) {
     suspend fun load(): WidgetUiState {

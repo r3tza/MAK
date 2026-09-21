@@ -28,7 +28,7 @@ import kotlinx.coroutines.flow.stateIn
 class TodayViewModel(
     private val repository: MakRepository,
     private val clock: Clock,
-    private val activePlanProvider: ActivePlanProvider = ActivePlanProvider()
+    private val activePlanProvider: ActivePlanProvider
 ) : ViewModel() {
     private val date = MutableStateFlow(LocalDate.now(clock))
 

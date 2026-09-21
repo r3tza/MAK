@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.occurrence
 
+import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.ui.FakeMakRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
@@ -27,12 +28,12 @@ class OccurrenceViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
     private fun occurrenceViewModel(repository: FakeMakRepository) =
-        OccurrenceViewModel(repository, feedbackSink = FeedbackController())
+        OccurrenceViewModel(repository, ActivePlanProvider(), feedbackSink = FeedbackController())
 
     private fun recordingViewModel(
         repository: FakeMakRepository,
         sink: RecordingFeedbackSink
-    ) = OccurrenceViewModel(repository, feedbackSink = sink)
+    ) = OccurrenceViewModel(repository, ActivePlanProvider(), feedbackSink = sink)
 
     @Test
     fun openValidOccurrenceBuildsDetails() = runTest(mainDispatcher) {

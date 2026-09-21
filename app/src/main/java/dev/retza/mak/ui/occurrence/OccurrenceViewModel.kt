@@ -46,7 +46,7 @@ sealed interface OccurrenceEffect {
 @KoinViewModel
 class OccurrenceViewModel(
     private val repository: MakRepository,
-    private val activePlanProvider: ActivePlanProvider = ActivePlanProvider(),
+    private val activePlanProvider: ActivePlanProvider,
     private val feedbackSink: FeedbackSink
 ) : ViewModel() {
     private val state = MutableStateFlow(OccurrenceDetailsUiState())
