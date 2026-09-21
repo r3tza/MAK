@@ -3,6 +3,8 @@ package dev.retza.mak.export
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
+import dev.retza.mak.data.entity.OccurrenceChangeEntity
+import dev.retza.mak.data.entity.OccurrenceChangeKind
 import dev.retza.mak.data.entity.Recurrence
 import dev.retza.mak.data.entity.SemesterEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
@@ -144,6 +146,181 @@ class ExportImporterTest {
                 it.contains("powtórzonym identyfikatorze")
             }
         )
+    }
+
+    @Test
+    fun prepareRejectsInvalidChangeTimeInsteadOfDroppingIt() {
+        val snapshot = snapshotWithChange(
+            OccurrenceChangeEntity(
+                id = 20,
+                semesterId = 1,
+                classId = 1000,
+                originalDate = LocalDate.of(2026, 10, 13),
+                kind = OccurrenceChangeKind.MODIFIED,
+                targetDate = null,
+                newStartTime = LocalTime.of(9, 0),
+                newEndTime = LocalTime.of(10, 0),
+                newRoom = null,
+                newBuilding = null,
+                newTeacherName = null,
+                newNote = null
+            )
+        )
+        val semester = snapshot.semesters.single()
+        val broken = snapshot.copy(
+            semesters = listOf(
+                semester.copy(
+                    occurrenceChanges = semester.occurrenceChanges.map {
+                        it.copy(startTime = "niepoprawna")
+                    }
+                )
+            )
+        )
+
+        val result = ExportImporter.prepare(broken)
+
+        assertTrue(result is ImportSnapshotResult.Invalid)
+        assertTrue(
+            (result as ImportSnapshotResult.Invalid).errors.any {
+                it.contains("niepoprawną godzinę początku")
+            }
+        )
+    }
+
+    @Test
+    fun prepareRejectsChangeEndBeforeStart() {
+        val snapshot = snapshotWithChange(
+            OccurrenceChangeEntity(
+                id = 20,
+                semesterId = 1,
+                classId = 1000,
+                originalDate = LocalDate.of(2026, 10, 13),
+                kind = OccurrenceChangeKind.MODIFIED,
+                targetDate = null,
+                newStartTime = LocalTime.of(11, 0),
+                newEndTime = LocalTime.of(9, 0),
+                newRoom = null,
+                newBuilding = null,
+                newTeacherName = null,
+                newNote = null
+            )
+        )
+
+        val result = ExportImporter.prepare(snapshot)
+
+        assertTrue(result is ImportSnapshotResult.Invalid)
+        assertTrue(
+            (result as ImportSnapshotResult.Invalid).errors.any {
+                it.contains("koniec przed początkiem")
+            }
+        )
+    }
+
+    @Test
+    fun prepareRejectsDuplicateCalendarIdsAcrossSemesters() {
+        val snapshot = ExportSnapshot.from(
+            semesters = listOf(
+                semesterData(1, active = true),
+                semesterData(2, active = false)
+            ),
+            studyPrograms = listOf(program())
+        )
+        val second = snapshot.semesters[1]
+        val broken = snapshot.copy(
+            semesters = listOf(
+                snapshot.semesters[0],
+                second.copy(
+                    calendars = second.calendars.map {
+                        it.copy(id = snapshot.semesters[0].calendars.single().id)
+                    }
+                )
+            )
+        )
+
+        val result = ExportImporter.prepare(broken)
+
+        assertTrue(result is ImportSnapshotResult.Invalid)
+        assertTrue(
+            (result as ImportSnapshotResult.Invalid).errors.any {
+                it.contains("kalendarze o powtórzonym identyfikatorze")
+            }
+        )
+    }
+
+    @Test
+    fun prepareRejectsDuplicateAssignmentInSemester() {
+        val snapshot = validSnapshot()
+        val semester = snapshot.semesters.single()
+        val assignment = semester.programs.single()
+        val broken = snapshot.copy(
+            semesters = listOf(
+                semester.copy(programs = listOf(assignment, assignment.copy(id = 999)))
+            )
+        )
+
+        val result = ExportImporter.prepare(broken)
+
+        assertTrue(result is ImportSnapshotResult.Invalid)
+        assertTrue(
+            (result as ImportSnapshotResult.Invalid).errors.any {
+                it.contains("ten sam kierunek do semestru")
+            }
+        )
+    }
+
+    @Test
+    fun prepareRejectsClassEndNotAfterStart() {
+        val snapshot = validSnapshot()
+        val semester = snapshot.semesters.single()
+        val broken = snapshot.copy(
+            semesters = listOf(
+                semester.copy(
+                    classes = semester.classes.map {
+                        it.copy(startTime = "12:00", endTime = "11:00")
+                    }
+                )
+            )
+        )
+
+        val result = ExportImporter.prepare(broken)
+
+        assertTrue(result is ImportSnapshotResult.Invalid)
+        assertTrue(
+            (result as ImportSnapshotResult.Invalid).errors.any {
+                it.contains("kończą się przed początkiem")
+            }
+        )
+    }
+
+    @Test
+    fun prepareRejectsWeekOverrideNotOnMonday() {
+        val semester = semesterData(1, active = true).copy(
+            weekOverrides = listOf(
+                dev.retza.mak.data.entity.WeekOverrideEntity(
+                    id = 40,
+                    semesterId = 1,
+                    academicCalendarId = 10,
+                    weekStartDate = LocalDate.of(2026, 10, 6),
+                    weekType = WeekType.A,
+                    scope = dev.retza.mak.data.entity.WeekOverrideScope.ONE_WEEK
+                )
+            )
+        )
+        val snapshot = ExportSnapshot.from(listOf(semester), listOf(program()))
+
+        val result = ExportImporter.prepare(snapshot)
+
+        assertTrue(result is ImportSnapshotResult.Invalid)
+        assertTrue(
+            (result as ImportSnapshotResult.Invalid).errors.any {
+                it.contains("musi zaczynać się w poniedziałek")
+            }
+        )
+    }
+
+    private fun snapshotWithChange(change: OccurrenceChangeEntity): ExportSnapshot {
+        val base = semesterData(1, active = true).copy(occurrenceChanges = listOf(change))
+        return ExportSnapshot.from(listOf(base), listOf(program()))
     }
 
     private fun program() = StudyProgramEntity(id = 3, name = "Informatyka", color = "#3366FF")

@@ -55,6 +55,60 @@ object ExportImporter {
             errors += "Plik wskazuje więcej niż jeden aktywny semestr."
         }
 
+        checkUnique(
+            errors,
+            snapshot.semesters.flatMap { it.calendars }.map { it.id },
+            "Plik zawiera kalendarze o powtórzonym identyfikatorze."
+        )
+        checkUnique(
+            errors,
+            snapshot.semesters.flatMap { it.programs }.map { it.id },
+            "Plik zawiera przypisania kierunków o powtórzonym identyfikatorze."
+        )
+        checkUnique(
+            errors,
+            snapshot.semesters.flatMap { it.classes }.map { it.id },
+            "Plik zawiera zajęcia o powtórzonym identyfikatorze."
+        )
+        checkUnique(
+            errors,
+            snapshot.semesters.flatMap { it.weekOverrides }.map { it.id },
+            "Plik zawiera korekty tygodni o powtórzonym identyfikatorze."
+        )
+        checkUnique(
+            errors,
+            snapshot.semesters.flatMap { it.occurrenceNotes }.map { it.id },
+            "Plik zawiera notatki o powtórzonym identyfikatorze."
+        )
+        checkUnique(
+            errors,
+            snapshot.semesters.flatMap { it.occurrenceChanges }.map { it.id },
+            "Plik zawiera zmiany wystąpień o powtórzonym identyfikatorze."
+        )
+        checkUnique(
+            errors,
+            snapshot.semesters.flatMap { it.programs }.map { it.semesterId to it.studyProgramId },
+            "Plik przypisuje ten sam kierunek do semestru więcej niż raz."
+        )
+        checkUnique(
+            errors,
+            snapshot.semesters.flatMap { it.weekOverrides }
+                .map { Triple(it.academicCalendarId, it.weekStartDate, it.scope) },
+            "Plik zawiera powtórzoną korektę tygodnia."
+        )
+        checkUnique(
+            errors,
+            snapshot.semesters.flatMap { it.occurrenceNotes }
+                .map { Triple(it.semesterId, it.classId, it.occurrenceDate) },
+            "Plik zawiera powtórzoną notatkę do wystąpienia."
+        )
+        checkUnique(
+            errors,
+            snapshot.semesters.flatMap { it.occurrenceChanges }
+                .map { Triple(it.semesterId, it.classId, it.originalDate) },
+            "Plik zawiera powtórzoną zmianę wystąpienia."
+        )
+
         val semesters = snapshot.semesters.map { semester ->
             mapSemester(semester, knownProgramIds, errors)
         }
@@ -79,11 +133,7 @@ object ExportImporter {
             errors += "$prefix nie ma nazwy."
         }
 
-        val calendarIdList = semester.calendars.map { it.id }
-        if (calendarIdList.size != calendarIdList.toSet().size) {
-            errors += "$prefix: powtórzony identyfikator kalendarza."
-        }
-        val calendarIds = calendarIdList.toSet()
+        val calendarIds = semester.calendars.map { it.id }.toSet()
         val calendars = mutableListOf<AcademicCalendarEntity>()
         semester.calendars.forEach { calendar ->
             if (calendar.semesterId != semester.id) {
@@ -108,11 +158,7 @@ object ExportImporter {
             calendars += AcademicCalendarEntity(calendar.id, semester.id, start, end, week)
         }
 
-        val programIdList = semester.programs.map { it.id }
-        if (programIdList.size != programIdList.toSet().size) {
-            errors += "$prefix: powtórzony identyfikator przypisania kierunku."
-        }
-        val programIds = programIdList.toSet()
+        val programIds = semester.programs.map { it.id }.toSet()
         val programs = mutableListOf<SemesterProgramEntity>()
         semester.programs.forEach { program ->
             if (program.semesterId != semester.id) {
@@ -135,11 +181,7 @@ object ExportImporter {
             )
         }
 
-        val classIdList = semester.classes.map { it.id }
-        if (classIdList.size != classIdList.toSet().size) {
-            errors += "$prefix: powtórzony identyfikator zajęć."
-        }
-        val classIds = classIdList.toSet()
+        val classIds = semester.classes.map { it.id }.toSet()
         val classes = mutableListOf<ClassEntity>()
         semester.classes.forEach { item ->
             if (item.semesterId != semester.id) {
@@ -158,11 +200,15 @@ object ExportImporter {
             if (item.name.isBlank()) errors += "Zajęcia ${item.id} nie mają nazwy."
             if (day == null) errors += "Zajęcia ${item.id} mają niepoprawny dzień tygodnia."
             if (start == null || end == null) errors += "Zajęcia ${item.id} mają niepoprawną godzinę."
+            if (start != null && end != null && !end.isAfter(start)) {
+                errors += "Zajęcia ${item.id} kończą się przed początkiem."
+            }
             if (recurrence == null) errors += "Zajęcia ${item.id} mają niepoprawny cykl."
             if (recurrence == Recurrence.ONCE && date == null) {
                 errors += "Zajęcia jednorazowe ${item.id} nie mają daty."
             }
             if (day == null || start == null || end == null || recurrence == null ||
+                (start != null && end != null && !end.isAfter(start)) ||
                 (recurrence == Recurrence.ONCE && date == null)
             ) {
                 return@forEach
@@ -186,10 +232,6 @@ object ExportImporter {
             )
         }
 
-        val overrideIdList = semester.weekOverrides.map { it.id }
-        if (overrideIdList.size != overrideIdList.toSet().size) {
-            errors += "$prefix: powtórzony identyfikator korekty tygodnia."
-        }
         val weekOverrides = mutableListOf<WeekOverrideEntity>()
         semester.weekOverrides.forEach { override ->
             if (override.semesterId != semester.id) {
@@ -203,7 +245,11 @@ object ExportImporter {
             val date = override.weekStartDate.toLocalDateOrNull()
             val weekType = override.weekType.toEnumOrNull<WeekType>()
             val scope = override.scope.toEnumOrNull<WeekOverrideScope>()
-            if (date == null || weekType == null || scope == null) {
+            val invalidDate = date != null && date.dayOfWeek != DayOfWeek.MONDAY
+            if (invalidDate) {
+                errors += "Korekta ${override.id} musi zaczynać się w poniedziałek."
+            }
+            if (date == null || weekType == null || scope == null || invalidDate) {
                 errors += "Korekta ${override.id} ma niepoprawne dane."
                 return@forEach
             }
@@ -224,8 +270,14 @@ object ExportImporter {
                 return@forEach
             }
             val date = note.occurrenceDate.toLocalDateOrNull()
+            val blank = note.body.isBlank()
             if (date == null) {
                 errors += "Notatka ${note.id} ma niepoprawną datę."
+            }
+            if (blank) {
+                errors += "Notatka ${note.id} jest pusta."
+            }
+            if (date == null || blank) {
                 return@forEach
             }
             occurrenceNotes += OccurrenceNoteEntity(
@@ -245,19 +297,49 @@ object ExportImporter {
             }
             val originalDate = change.originalDate.toLocalDateOrNull()
             val kind = change.kind.toEnumOrNull<OccurrenceChangeKind>()
+            val targetDate = change.targetDate?.toLocalDateOrNull()
+            val startTime = change.startTime?.toLocalTimeOrNull()
+            val endTime = change.endTime?.toLocalTimeOrNull()
+            var valid = originalDate != null && kind != null
             if (originalDate == null || kind == null) {
                 errors += "Zmiana ${change.id} ma niepoprawne dane."
-                return@forEach
             }
+            if (change.targetDate != null && targetDate == null) {
+                errors += "Zmiana ${change.id} ma niepoprawną datę docelową."
+                valid = false
+            }
+            if (change.startTime != null && startTime == null) {
+                errors += "Zmiana ${change.id} ma niepoprawną godzinę początku."
+                valid = false
+            }
+            if (change.endTime != null && endTime == null) {
+                errors += "Zmiana ${change.id} ma niepoprawną godzinę końca."
+                valid = false
+            }
+            if (change.startTime != null || change.endTime != null) {
+                if (startTime == null || endTime == null) {
+                    if (startTime == null && change.startTime == null) {
+                        errors += "Zmiana ${change.id} wymaga obu godzin."
+                    }
+                    if (endTime == null && change.endTime == null) {
+                        errors += "Zmiana ${change.id} wymaga obu godzin."
+                    }
+                    valid = false
+                } else if (!endTime.isAfter(startTime)) {
+                    errors += "Zmiana ${change.id} ma koniec przed początkiem."
+                    valid = false
+                }
+            }
+            if (originalDate == null || kind == null || !valid) return@forEach
             occurrenceChanges += OccurrenceChangeEntity(
                 id = change.id,
                 semesterId = semester.id,
                 classId = change.classId,
                 originalDate = originalDate,
                 kind = kind,
-                targetDate = change.targetDate?.toLocalDateOrNull(),
-                newStartTime = change.startTime?.toLocalTimeOrNull(),
-                newEndTime = change.endTime?.toLocalTimeOrNull(),
+                targetDate = targetDate,
+                newStartTime = startTime,
+                newEndTime = endTime,
                 newRoom = change.room,
                 newBuilding = change.building,
                 newTeacherName = change.teacherName,
@@ -274,6 +356,12 @@ object ExportImporter {
             occurrenceNotes = occurrenceNotes,
             occurrenceChanges = occurrenceChanges
         )
+    }
+}
+
+private fun <T> checkUnique(errors: MutableList<String>, values: List<T>, message: String) {
+    if (values.size != values.toSet().size) {
+        errors += message
     }
 }
 
