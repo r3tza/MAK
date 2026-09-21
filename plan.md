@@ -202,7 +202,7 @@ Nie zmieniano wyglądu trzech kroków kreatora ani `SettingsViewModel` i `Schedu
 
 #### SettingsViewModel
 
-Status: zrealizowane. `SettingsViewModel` składa `SettingsUiState` ze strumieni semestrów, aktywnego semestru i preferencji motywu i nie wystawia encji Room. Motyw jest zapisywany w Preferences DataStore jako `ThemeMode`; brakująca lub nieznana wartość oznacza `System`, a `selectTheme` blokuje powtórzenie i publikuje błąd tylko przy nieudanym zapisie. Odczyt `DataStore` łapie `IOException` i emituje `emptyPreferences()`, więc awaria pliku preferencji nie kończy strumienia motywu. Wybór aktywnego semestru ma synchroniczną blokadę, publikuje „Zmieniono aktywny semestr”, a przy błędzie zachowuje poprzedni wybór. Usunięcie semestru korzysta z `MakRepository.deleteSemesterAndSelectFallback`, który w jednej transakcji usuwa semestr i deterministycznie wybiera następny aktywny według `startDate, id` albo czyści aktywny semestr, gdy nic nie zostało. Eksport przygotowuje bajty w ViewModelu, a `MainActivity` zapisuje strumień i zwraca wynik; sukces publikuje „Wyeksportowano plan”, a odczyt lub zapis błędu „Nie udało się wyeksportować planu.”. Ekran ustawień czyta `SettingsViewModel` bezpośrednio, a `MakViewModel` i `MakUiState` nie zawierają już `settings`, `themeId` ani metod ustawień. Filtr kierunku nie jest resetowany w `SettingsViewModel`; `buildSchedule` traktuje nieistniejący identyfikator jak „Wszystkie”, a docelowy reset pozostaje w przyszłym `ScheduleViewModel`.
+Status: zrealizowane. `SettingsViewModel` składa `SettingsUiState` ze strumieni semestrów, aktywnego semestru i preferencji motywu i nie wystawia encji Room. Motyw jest zapisywany w Preferences DataStore jako `ThemeMode`; brakująca lub nieznana wartość oznacza `System`, a `selectTheme` blokuje powtórzenie i publikuje błąd tylko przy nieudanym zapisie. Odczyt `DataStore` przy `IOException` emituje `emptyPreferences()` i dalej obserwuje magazyn, więc późniejszy udany odczyt albo zapis aktualizuje motyw; inne wyjątki są przekazywane dalej. Wybór aktywnego semestru ma synchroniczną blokadę, publikuje „Zmieniono aktywny semestr”, a przy błędzie zachowuje poprzedni wybór. Usunięcie semestru korzysta z `MakRepository.deleteSemesterAndSelectFallback`, który w jednej transakcji usuwa semestr i deterministycznie wybiera następny aktywny według `startDate, id` albo czyści aktywny semestr, gdy nic nie zostało. Eksport przygotowuje bajty w ViewModelu, a `MainActivity` zapisuje strumień i zwraca wynik; sukces publikuje „Wyeksportowano plan”, a odczyt lub zapis błędu „Nie udało się wyeksportować planu.”. Ekran ustawień czyta `SettingsViewModel` bezpośrednio, a `MakViewModel` i `MakUiState` nie zawierają już `settings`, `themeId` ani metod ustawień. Filtr kierunku nie jest resetowany w `SettingsViewModel`; `buildSchedule` traktuje nieistniejący identyfikator jak „Wszystkie”, a docelowy reset pozostaje w przyszłym `ScheduleViewModel`.
 
 #### ScheduleViewModel
 
@@ -641,6 +641,19 @@ Kryterium etapu: każda treść rozwijana w miejscu jest wizualnie i semantyczni
 7. Po implementacji uruchomić `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug`.
 
 Kryterium zakończenia: konfiguracja semestru pozostaje krótka, zarządzanie kierunkami i korektami ma własne ekrany, a każda zachowana sekcja rozwijana jasno wskazuje, który przycisk steruje jej treścią.
+
+### Etap 7: odstępy i neutralny stan sekcji rozwijanych
+
+1. Ujednolicić rytm pionowy na ekranie planu i w pozostałych formularzach. Stosować 16 dp między dużymi sekcjami, 12 dp między powiązanymi elementami wewnątrz sekcji oraz 8 dp wyłącznie między krótką etykietą a jej wartością.
+2. Dodać 16 dp między nawigacją tygodnia, kartą oznaczenia A/B i następną sekcją. Przyciski strzałek zachowują obszar dotyku co najmniej 48 dp i nie mogą wizualnie stykać się z sąsiednimi kontenerami.
+3. Oddzielić sekcję opcji kalendarza od siatki kalendarza odstępem 16 dp, aby znaczniki wydarzeń nie wyglądały jak część przycisku rozwijającego.
+4. Zachować neutralne tło nagłówka `MakExpandableSection` zarówno po zwinięciu, jak i rozwinięciu. Użyć `surfaceContainer` albo `surfaceContainerLow`. Nie używać zielonego ani innego koloru akcentowego wyłącznie do oznaczania stanu rozwinięcia.
+5. Stan przekazywać tekstem „Pokaż” albo „Ukryj”, kierunkiem ikony oraz semantyką „Zwinięte” albo „Rozwinięte”. Kolor nie może być dodatkowym stałym sygnałem tego stanu. Dopuszczalny jest krótkotrwały stan naciśnięcia lub focusu zgodny z Material 3.
+6. Zawartość rozwiniętej sekcji otrzymuje 16 dp wewnętrznego paddingu. Elementy formularza rozdziela odstęp 12 dp, a checkbox i główny przycisk 16 dp. Przycisk pełnej szerokości ma co najmniej 12 dp wolnego miejsca nad i pod nim.
+7. Zachować wspólny kontener, kształt i subtelne obramowanie łączące nagłówek z treścią. Nie dodawać przerwy wewnątrz komponentu, która sugerowałaby dwa niezależne bloki.
+8. Zastosować reguły do wszystkich pozostałych użyć `MakExpandableSection`, a lokalne wyjątki dopuścić tylko po opisaniu ich w planie.
+
+Kryterium etapu: na szerokości 320 dp przyciski i sekcje nie stykają się z sąsiednimi komponentami, opcje kalendarza pozostają jednym kontenerem, a rozwinięcie nie zmienia jego neutralnego tła na kolor akcentowy.
 
 ## 1.6. Plan poprawy edycji terminu, notatek i komunikatów zwrotnych
 

@@ -5,19 +5,27 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
 import java.io.IOException
+import java.util.concurrent.atomic.AtomicBoolean
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.cancelAndJoin
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
@@ -81,6 +89,22 @@ class SettingsPreferencesTest {
         }
     }
 
+    @Test
+    fun readRecoversAfterTransientIOException() = runBlocking {
+        val preferences = DataStoreSettingsPreferences(RecoveringDataStore())
+        val last = MutableStateFlow<ThemeMode?>(null)
+        val job = launch(Dispatchers.Default) {
+            preferences.theme.collect { last.value = it }
+        }
+
+        withTimeout(5_000) { while (last.value != ThemeMode.System) delay(10) }
+        preferences.setTheme(ThemeMode.Dark)
+        withTimeout(5_000) { while (last.value != ThemeMode.Dark) delay(10) }
+
+        job.cancelAndJoin()
+        assertEquals(ThemeMode.Dark, last.value)
+    }
+
     private fun preferences(dataStore: DataStore<Preferences>): SettingsPreferences =
         DataStoreSettingsPreferences(dataStore)
 
@@ -96,4 +120,22 @@ private class ThrowingDataStore(private val error: Throwable) : DataStore<Prefer
 
     override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences =
         throw error
+}
+
+private class RecoveringDataStore : DataStore<Preferences> {
+    private val state = MutableStateFlow(emptyPreferences())
+    private val firstReadFailed = AtomicBoolean(false)
+
+    override val data: Flow<Preferences> = flow {
+        if (firstReadFailed.compareAndSet(false, true)) {
+            throw IOException("transient read failure")
+        }
+        emitAll(state)
+    }
+
+    override suspend fun updateData(transform: suspend (t: Preferences) -> Preferences): Preferences {
+        val updated = transform(state.value)
+        state.value = updated
+        return updated
+    }
 }
