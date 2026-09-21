@@ -41,11 +41,30 @@ data class Semester(
     }
 }
 
-data class Course(
+data class StudyProgram(
     val id: String,
-    val semesterId: String,
     val name: String,
     val color: String
+)
+
+data class AcademicCalendar(
+    val id: String,
+    val startDate: LocalDate,
+    val endDate: LocalDate,
+    val firstWeekType: WeekType
+) {
+    init {
+        require(!endDate.isBefore(startDate)) {
+            "Academic calendar end must not be before its start"
+        }
+    }
+}
+
+data class SemesterProgram(
+    val id: String,
+    val semesterId: String,
+    val studyProgramId: String,
+    val academicCalendarId: String
 )
 
 data class Teacher(
@@ -128,7 +147,7 @@ data class PlannedOccurrence(
     val room: String?,
     val building: String?,
     val teacher: Teacher?,
-    val course: Course?,
+    val course: StudyProgram?,
     val classNote: String?,
     val occurrenceNote: OccurrenceNote?,
     val occurrenceChange: OccurrenceChange? = null

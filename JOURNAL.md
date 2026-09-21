@@ -1,5 +1,14 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: Modele StudyProgram i AcademicCalendar
+
+- Fakty: Domenowy `Course` należał do jednego semestru, a daty i rytm A/B siedziały w `Semester`. Kierunek studiów trwa dłużej niż semestr, a różne kierunki mogą mieć różne daty i rytm.
+- Decyzja: Zastąpiono domenowy `Course` przez `StudyProgram` (`id`, nazwa, kolor, bez `semesterId`) i zaktualizowano `DomainMappers`, `ActivePlanProvider`, `ScheduleResolver` oraz testy domenowe. Dodano `AcademicCalendar` (data początku, data końca, pierwszy tydzień A/B) i `SemesterProgram` (`semesterId`, `studyProgramId`, `academicCalendarId`). `AcademicModelsTest` opisuje jeden kierunek w wielu semestrach, wspólny kalendarz kilku kierunków i osobny kalendarz kierunku z innej uczelni.
+- Zakres etapu: to czysto domenowy krok. `Semester` nadal ma daty i rytm, korekty nadal należą do semestru, a `ClassItem` nadal wskazuje `courseId`. Te zmiany, wraz z resolverem wielu kalendarzy i migracją Room, należą do kolejnych etapów, żeby każdy commit pozostał kompilujący i sprawdzalny.
+- Powód: Model musi odpowiadać cyklowi życia kierunku i pozwalać liczyć wspólny plan oraz kolizje między uczelniami, ale nie można zmieniać domeny, resolvera i bazy w jednym kroku.
+- Odrzucone: Kierunek przypisany na stałe do jednego semestru; niezależne współdzielenie dat i rytmu A/B; zmiana `ClassItem`, resolvera i Room razem z nazwą modelu.
+- Weryfikacja: `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi; `AcademicModelsTest` i istniejące testy domenowe działają.
+
 ## 2026-09-21: Podział NavHosta na grupy tras
 
 - Fakty: `MakNavHostApp.kt` miał ponad 700 linii: jeden `NavHost` zawierał wszystkie trasy, argumenty, efekty i akcje topbaru, więc zmiana jednego przepływu dotykała wspólnego pliku.

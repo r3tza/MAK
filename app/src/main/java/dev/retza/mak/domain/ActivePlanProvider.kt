@@ -5,7 +5,7 @@ import java.time.LocalDate
 data class ActivePlanData(
     val semester: Semester,
     val classes: Collection<ClassItem>,
-    val courses: Collection<Course> = emptyList(),
+    val courses: Collection<StudyProgram> = emptyList(),
     val teachers: Collection<Teacher> = emptyList(),
     val weekOverrides: Collection<WeekOverride> = emptyList(),
     val occurrenceChanges: Collection<OccurrenceChange> = emptyList(),

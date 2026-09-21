@@ -16,7 +16,7 @@ class ScheduleResolverTest {
         endDate = LocalDate.of(2026, 1, 31),
         firstWeekType = WeekType.A
     )
-    private val course = Course("course-1", semester.id, "Computer science", "#123456")
+    private val course = StudyProgram("course-1", "Computer science", "#123456")
     private val teacher = Teacher("teacher-1", semester.id, "Jan Kowalski")
     private val resolver = ScheduleResolver()
 
@@ -51,7 +51,7 @@ class ScheduleResolverTest {
         changes: Collection<OccurrenceChange> = emptyList(),
         notes: Collection<OccurrenceNote> = emptyList(),
         overrides: Collection<WeekOverride> = emptyList(),
-        extraCourses: Collection<Course> = emptyList()
+        extraCourses: Collection<StudyProgram> = emptyList()
     ) = resolver.resolve(
         date = date,
         semester = semester,

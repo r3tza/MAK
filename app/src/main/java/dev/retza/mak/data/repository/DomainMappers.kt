@@ -7,12 +7,12 @@ import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ClassItem
-import dev.retza.mak.domain.Course
 import dev.retza.mak.domain.OccurrenceChange
 import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.OccurrenceNote
 import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.Semester
+import dev.retza.mak.domain.StudyProgram
 import dev.retza.mak.domain.Teacher
 import dev.retza.mak.domain.WeekOverride
 import dev.retza.mak.domain.WeekOverrideScope
@@ -37,7 +37,7 @@ private fun dev.retza.mak.data.entity.SemesterEntity.toDomain() = Semester(
 )
 
 private fun dev.retza.mak.data.entity.CourseEntity.toDomain() =
-    Course(id.toString(), semesterId.toString(), name, color)
+    StudyProgram(id.toString(), name, color)
 
 private fun dev.retza.mak.data.entity.TeacherEntity.toDomain() =
     Teacher(id.toString(), semesterId.toString(), name)

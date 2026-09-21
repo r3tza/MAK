@@ -15,7 +15,7 @@ class CollisionDetectorTest {
         endDate = LocalDate.of(2026, 1, 31),
         firstWeekType = WeekType.A
     )
-    private val course = Course("course", semester.id, "Course", "#000000")
+    private val course = StudyProgram("course", "Course", "#000000")
     private val resolver = ScheduleResolver()
     private val detector = CollisionDetector()
 

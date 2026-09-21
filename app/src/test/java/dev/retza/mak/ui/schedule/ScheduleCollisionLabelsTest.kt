@@ -2,7 +2,7 @@ package dev.retza.mak.ui.schedule
 
 import dev.retza.mak.domain.ClassItem
 import dev.retza.mak.domain.CollisionDetector
-import dev.retza.mak.domain.Course
+import dev.retza.mak.domain.StudyProgram
 import dev.retza.mak.domain.Semester
 import dev.retza.mak.domain.ScheduleResolver
 import dev.retza.mak.domain.WeekType
@@ -21,7 +21,7 @@ class ScheduleCollisionLabelsTest {
         endDate = date.plusDays(7),
         firstWeekType = WeekType.A
     )
-    private val course = Course("course", semester.id, "Informatyka", "#137B71")
+    private val course = StudyProgram("course", "Informatyka", "#137B71")
 
     @Test
     fun oneCollisionGetsTheSameExactRangeForBothClasses() {

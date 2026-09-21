@@ -3,7 +3,7 @@ package dev.retza.mak.widget
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.ClassItem
-import dev.retza.mak.domain.Course
+import dev.retza.mak.domain.StudyProgram
 import androidx.compose.ui.unit.dp
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -24,7 +24,7 @@ class WidgetPresenterTest {
         endDate = date.plusDays(7),
         firstWeekType = dev.retza.mak.domain.WeekType.A
     )
-    private val course = Course("course", semester.id, "Informatyka", "#137B71")
+    private val course = StudyProgram("course", "Informatyka", "#137B71")
 
     @Test
     fun presenterReturnsEmptyAndOutsideSemesterStates() {

@@ -303,6 +303,8 @@ Status: zrealizowane. Trasy i efekty podzielono na grupy w osobnych plikach: `To
 
 Kryterium: czyste modele i testy opisują jeden kierunek w wielu semestrach, wspólny kalendarz kilku kierunków i osobny kalendarz kierunku z innej uczelni.
 
+Status: częściowo zrealizowane. Domenową nazwę `Course` zastąpiono `StudyProgram` (`id`, nazwa, kolor, bez `semesterId`) i zaktualizowano `DomainMappers`, `ActivePlanProvider`, `ScheduleResolver` oraz testy domenowe. Dodano modele `AcademicCalendar` (`id`, data początku, data końca, pierwszy tydzień A/B) i `SemesterProgram` (`id`, `semesterId`, `studyProgramId`, `academicCalendarId`). Test `AcademicModelsTest` opisuje jeden kierunek w wielu semestrach, wspólny kalendarz kilku kierunków i osobny kalendarz kierunku z innej uczelni; waliduje też odwrócone daty kalendarza. `ScheduleResolver` nie filtruje już kierunków po semestrze, bo model jest globalny; wejście nadal buduje `toActivePlanData` z kierunków aktywnego semestru. Do etapu 9 pozostają: przeniesienie dat i rytmu A/B z `Semester` do `AcademicCalendar`, przypisanie korekt tygodni do kalendarza, `ClassItem.semesterProgramId` i prowadzący jako tekst zajęć. Nie zmieniano schematu Room.
+
 #### Dalszy etap 9: resolver wielu kalendarzy
 
 1. Przenieść wejście `WeekCalculator` z semestru na `AcademicCalendar`.

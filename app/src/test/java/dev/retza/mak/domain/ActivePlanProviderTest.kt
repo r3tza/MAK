@@ -17,7 +17,7 @@ class ActivePlanProviderTest {
             endDate = date.plusDays(7),
             firstWeekType = WeekType.A
         )
-        val course = Course("course", semester.id, "Informatyka", "#137B71")
+        val course = StudyProgram("course", "Informatyka", "#137B71")
         val first = classItem("first", semester.id, course.id, LocalTime.of(9, 0), LocalTime.of(10, 0))
         val second = classItem("second", semester.id, course.id, LocalTime.of(9, 30), LocalTime.of(10, 30))
 

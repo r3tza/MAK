@@ -9,7 +9,7 @@ class ScheduleResolver(
         date: LocalDate,
         semester: Semester,
         classes: Collection<ClassItem>,
-        courses: Collection<Course> = emptyList(),
+        courses: Collection<StudyProgram> = emptyList(),
         teachers: Collection<Teacher> = emptyList(),
         weekOverrides: Collection<WeekOverride> = emptyList(),
         occurrenceChanges: Collection<OccurrenceChange> = emptyList(),
@@ -26,8 +26,7 @@ class ScheduleResolver(
         }
 
         val semesterClasses = classes.filter { it.semesterId == semester.id }
-        val semesterCourses = courses.filter { it.semesterId == semester.id }
-            .associateBy { it.id }
+        val semesterCourses = courses.associateBy { it.id }
         val semesterTeachers = teachers.filter { it.semesterId == semester.id }
             .associateBy { it.id }
         val changesByClass = occurrenceChanges
@@ -65,7 +64,7 @@ class ScheduleResolver(
         date: LocalDate,
         semester: Semester,
         classes: Collection<ClassItem>,
-        courses: Collection<Course> = emptyList(),
+        courses: Collection<StudyProgram> = emptyList(),
         teachers: Collection<Teacher> = emptyList(),
         weekOverrides: Collection<WeekOverride> = emptyList(),
         occurrenceChanges: Collection<OccurrenceChange> = emptyList(),
@@ -88,7 +87,7 @@ class ScheduleResolver(
         semester: Semester,
         weekOverrides: Collection<WeekOverride>,
         changesByDate: Map<LocalDate, OccurrenceChange>,
-        courses: Map<String, Course>,
+        courses: Map<String, StudyProgram>,
         teachers: Map<String, Teacher>,
         notesByOccurrence: Map<Pair<String, LocalDate>, OccurrenceNote>
     ): List<PlannedOccurrence> {
@@ -157,7 +156,7 @@ class ScheduleResolver(
         actualDate: LocalDate,
         originalDate: LocalDate,
         change: OccurrenceChange?,
-        courses: Map<String, Course>,
+        courses: Map<String, StudyProgram>,
         teachers: Map<String, Teacher>,
         notesByOccurrence: Map<Pair<String, LocalDate>, OccurrenceNote>
     ): PlannedOccurrence {
