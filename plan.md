@@ -214,7 +214,7 @@ Status: zrealizowane. `TodayViewModel` prowadzi bieżącą datę, `refreshToday`
 
 #### AppViewModel i usunięcie MakViewModel
 
-Status: częściowo zrealizowane. Po wydzieleniu `SettingsViewModel`, `ScheduleViewModel` i `TodayViewModel` `MakViewModel` zastąpiono małym `AppViewModel` zależnym tylko od `MakRepository`. Prowadzi on kopię trasy dla uzgodnienia z `NavController` oraz obserwację aktywnego semestru dla wznowienia kreatora; nie zawiera modeli ekranów, motywu, filtrów, formularzy, eksportu ani delegacji. Automatyczne wymuszanie kreatora usunięto. Całkowite usunięcie klasy i jej kopii trasy zależy od przyszłego podziału `NavHost` (Dalszy etap 7).
+Status: zrealizowane. `MakViewModel` zastąpiono małym `AppViewModel` zależnym tylko od `MakRepository`. `AppViewModel` obserwuje aktywny semestr i rozpoznaje `hasLoadedData`, `requiresSetup` i `setupResume`; nie przechowuje trasy, nie ma metody `navigate` ani delegacji. `MakDestination` usunięto. `NavController` jest jedynym źródłem bieżącej trasy, a nawigacja z widgetu do „Dzisiaj” idzie przez jednorazowy sygnał `openTodayRequests`.
 
 1. Usunąć z `MakViewModel` delegacje, stan ekranów, kopię trasy i logikę prezentacji.
 2. Jeśli nadal potrzebny jest właściciel stanu uruchomienia, zastąpić `MakViewModel` małym `AppViewModel`.

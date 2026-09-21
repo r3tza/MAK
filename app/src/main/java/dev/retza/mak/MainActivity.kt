@@ -16,7 +16,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.activity.enableEdgeToEdge
 import dev.retza.mak.ui.AppViewModel
 import dev.retza.mak.ui.MakApp
-import dev.retza.mak.ui.MakDestination
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
@@ -27,6 +26,8 @@ import dev.retza.mak.ui.settings.ThemeMode
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.theme.MAKTheme
 import dev.retza.mak.ui.today.TodayViewModel
+import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
@@ -41,17 +42,16 @@ class MainActivity : ComponentActivity() {
     private val scheduleViewModel: ScheduleViewModel by viewModel()
     private val todayViewModel: TodayViewModel by viewModel()
     private val feedbackController: FeedbackController by inject()
+    private val openTodayRequests = Channel<Unit>(Channel.CONFLATED)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        if (intent.getBooleanExtra(EXTRA_OPEN_TODAY, false)) {
+            openTodayRequests.trySend(Unit)
+            intent.removeExtra(EXTRA_OPEN_TODAY)
+        }
         setContent {
-            LaunchedEffect(appViewModel) {
-                if (intent.getBooleanExtra(EXTRA_OPEN_TODAY, false)) {
-                    appViewModel.navigate(MakDestination.Today)
-                    intent.removeExtra(EXTRA_OPEN_TODAY)
-                }
-            }
             val themeMode = settingsViewModel.themeMode.collectAsStateWithLifecycle().value
             val systemDark = isSystemInDarkTheme()
             MAKTheme(
@@ -95,6 +95,7 @@ class MainActivity : ComponentActivity() {
                     scheduleViewModel = scheduleViewModel,
                     todayViewModel = todayViewModel,
                     feedback = feedbackController.feedback,
+                    openTodayRequests = openTodayRequests.receiveAsFlow(),
                     onCreateExportDocument = { exportLauncher.launch("mak-plan.json") }
                 )
             }
@@ -105,7 +106,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         if (intent.getBooleanExtra(EXTRA_OPEN_TODAY, false)) {
-            appViewModel.navigate(MakDestination.Today)
+            openTodayRequests.trySend(Unit)
             intent.removeExtra(EXTRA_OPEN_TODAY)
         }
     }

@@ -16,18 +16,6 @@ class MakNavigationTest {
     }
 
     @Test
-    fun backStackRoutesMapToTheirScreenDestinations() {
-        assertEquals(MakDestination.Schedule, destinationForRoute(MakRoutes.Schedule))
-        assertEquals(MakDestination.EditClass, destinationForRoute(MakRoutes.Edit))
-        assertEquals(MakDestination.OccurrenceDetails, destinationForRoute(MakRoutes.Occurrence))
-        assertEquals(MakDestination.Semester, destinationForRoute(MakRoutes.Semester))
-        assertEquals(MakDestination.Semester, destinationForRoute(MakRoutes.SemesterCourses))
-        assertEquals(MakDestination.Semester, destinationForRoute(MakRoutes.SemesterOverrides))
-        assertTrue(destinationMatchesRoute(MakDestination.Semester, MakRoutes.SemesterCourses))
-        assertTrue(destinationMatchesRoute(MakDestination.Settings, MakRoutes.Settings))
-    }
-
-    @Test
     fun semesterSubRoutesKeepTheirSemesterIdWhenRestored() {
         val courses = semesterCoursesRoute("9")
         val overrides = semesterOverridesRoute("9")
@@ -36,8 +24,6 @@ class MakNavigationTest {
         assertTrue(courses.endsWith("/courses"))
         assertTrue(overrides.endsWith("/week-overrides"))
         assertTrue(courses != overrides)
-        assertTrue(destinationMatchesRoute(MakDestination.Semester, MakRoutes.SemesterCourses))
-        assertTrue(destinationMatchesRoute(MakDestination.Semester, MakRoutes.SemesterOverrides))
     }
 
     @Test
@@ -70,15 +56,7 @@ class MakNavigationTest {
         assertFalse(shouldHandleSetupEffect(MakRoutes.Today))
         assertFalse(shouldHandleSetupEffect(MakRoutes.Settings))
         assertFalse(shouldHandleSetupEffect(null))
-    }
-
-    @Test
-    fun semesterSubRoutesKeepTheirParentDestination() {
-        assertEquals(MakDestination.Semester, destinationForRoute(MakRoutes.Semester))
-        assertEquals(MakDestination.Semester, destinationForRoute(MakRoutes.SemesterCourses))
-        assertEquals(MakDestination.Semester, destinationForRoute(MakRoutes.SemesterOverrides))
-        assertTrue(destinationMatchesRoute(MakDestination.Semester, MakRoutes.Semester))
-        assertTrue(destinationMatchesRoute(MakDestination.Semester, MakRoutes.SemesterCourses))
-        assertTrue(destinationMatchesRoute(MakDestination.Semester, MakRoutes.SemesterOverrides))
+        assertTrue(isSetupRoute(MakRoutes.Setup))
+        assertFalse(isSetupRoute(MakRoutes.Today))
     }
 }

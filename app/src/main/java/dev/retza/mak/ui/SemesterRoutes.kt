@@ -16,11 +16,14 @@ import dev.retza.mak.ui.semester.SemesterScreen
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.semester.SemesterWeekOverridesScreen
 
+internal fun openSemesterConfiguration(navController: NavController, id: String) {
+    navController.navigate(semesterRoute(id))
+}
+
 internal fun NavGraphBuilder.semesterRoutes(
     semesterViewModel: SemesterViewModel,
-    onBack: () -> Unit,
-    onOpenCourses: (String) -> Unit,
-    onOpenOverrides: (String) -> Unit
+    navController: NavController,
+    onBack: () -> Unit
 ) {
     composable(
         route = MakRoutes.Semester,
@@ -45,8 +48,8 @@ internal fun NavGraphBuilder.semesterRoutes(
                 semesterViewModel.update { it.copy(semester = it.semester.copy(firstWeek = value)) }
             },
             onSaveSemester = semesterViewModel::saveSemester,
-            onOpenCourses = { semesterId?.let(onOpenCourses) },
-            onOpenOverrides = { semesterId?.let(onOpenOverrides) },
+            onOpenCourses = { semesterId?.let { navController.navigate(semesterCoursesRoute(it)) } },
+            onOpenOverrides = { semesterId?.let { navController.navigate(semesterOverridesRoute(it)) } },
             onBack = onBack,
             onRetry = {},
             modifier = Modifier.fillMaxSize()

@@ -9,13 +9,33 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
+import java.time.LocalDate
 import dev.retza.mak.ui.edit.ClassEditEffect
 import dev.retza.mak.ui.edit.ClassEditScreen
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.occurrence.OccurrenceDetailsScreen
 import dev.retza.mak.ui.occurrence.OccurrenceEffect
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
+
+internal fun openOccurrence(
+    occurrenceViewModel: OccurrenceViewModel,
+    navController: NavController,
+    occurrenceId: String
+) {
+    occurrenceViewModel.open(occurrenceId)
+    navController.navigate(occurrenceRoute(occurrenceId))
+}
+
+internal fun openClassEditor(
+    classEditViewModel: ClassEditViewModel,
+    navController: NavController,
+    date: LocalDate? = null
+) {
+    classEditViewModel.openNew(date)
+    navController.navigate(MakRoutes.Edit)
+}
 
 internal fun NavGraphBuilder.classEditRoute(
     classEditViewModel: ClassEditViewModel,
@@ -161,6 +181,8 @@ internal fun occurrenceTopBarActions(
     classEditViewModel: ClassEditViewModel,
     navController: NavController
 ): List<Pair<String, () -> Unit>> {
+    val route = navController.currentBackStackEntryAsState().value?.destination?.route
+    if (route != MakRoutes.Occurrence) return emptyList()
     val details = occurrenceViewModel.details.collectAsStateWithLifecycle().value
     return listOfNotNull(
         if (details.canCancelOccurrence) {

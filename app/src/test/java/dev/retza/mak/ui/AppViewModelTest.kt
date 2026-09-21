@@ -30,7 +30,7 @@ class AppViewModelTest {
     }
 
     @Test
-    fun emptyDatabaseStaysOnToday() = runTest(mainDispatcher) {
+    fun emptyDatabaseRequiresSetup() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         repository.clearSemesters()
         val viewModel = AppViewModel(repository)
@@ -38,7 +38,6 @@ class AppViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.uiState.value
-        assertEquals(MakDestination.Today, state.destination)
         assertTrue(state.hasLoadedData)
         assertTrue(state.requiresSetup)
         assertNull(state.setupResume)
@@ -74,18 +73,5 @@ class AppViewModelTest {
         val state = viewModel.uiState.value
         assertTrue(state.requiresSetup)
         assertEquals(2L, state.setupResume?.semesterId)
-    }
-
-    @Test
-    fun navigateUpdatesDestination() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
-        val viewModel = AppViewModel(repository)
-        backgroundScope.launch { viewModel.uiState.collect {} }
-        advanceUntilIdle()
-
-        viewModel.navigate(MakDestination.Settings)
-        advanceUntilIdle()
-
-        assertEquals(MakDestination.Settings, viewModel.uiState.value.destination)
     }
 }

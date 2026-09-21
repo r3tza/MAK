@@ -50,30 +50,6 @@ internal fun addAction(hasLoadedData: Boolean, requiresSetup: Boolean): AddActio
     else -> AddAction.Editor
 }
 
-fun destinationForRoute(route: String?): MakDestination = when (route) {
-    MakRoutes.Schedule -> MakDestination.Schedule
-    MakRoutes.Settings -> MakDestination.Settings
-    MakRoutes.Setup -> MakDestination.Setup
-    MakRoutes.Occurrence -> MakDestination.OccurrenceDetails
-    MakRoutes.Semester,
-    MakRoutes.SemesterCourses,
-    MakRoutes.SemesterOverrides -> MakDestination.Semester
-    MakRoutes.Edit -> MakDestination.EditClass
-    else -> MakDestination.Today
-}
-
-fun destinationMatchesRoute(destination: MakDestination, route: String?): Boolean = when (destination) {
-    MakDestination.Today -> route == MakRoutes.Today
-    MakDestination.Schedule -> route == MakRoutes.Schedule
-    MakDestination.Settings -> route == MakRoutes.Settings
-    MakDestination.Setup -> route == MakRoutes.Setup
-    MakDestination.OccurrenceDetails -> route == MakRoutes.Occurrence
-    MakDestination.Semester -> route == MakRoutes.Semester ||
-        route == MakRoutes.SemesterCourses ||
-        route == MakRoutes.SemesterOverrides
-    MakDestination.EditClass -> route == MakRoutes.Edit
-}
-
 internal fun titleForRoute(route: String?): String = when (route) {
     MakRoutes.Schedule -> "Plan"
     MakRoutes.Edit -> "Zajęcia"

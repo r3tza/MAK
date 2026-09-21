@@ -4,15 +4,20 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import dev.retza.mak.ui.settings.SettingsScreen
 import dev.retza.mak.ui.settings.SettingsViewModel
 
+internal fun openSettings(navController: NavController) {
+    navController.navigate(MakRoutes.Settings)
+}
+
 internal fun NavGraphBuilder.settingsRoute(
     settingsViewModel: SettingsViewModel,
+    navController: NavController,
     onAddSemester: () -> Unit,
-    onConfigureSemester: (String) -> Unit,
     onExport: () -> Unit
 ) {
     composable(MakRoutes.Settings) {
@@ -21,7 +26,7 @@ internal fun NavGraphBuilder.settingsRoute(
             state = settingsState,
             onSemesterSelected = settingsViewModel::selectSemester,
             onAddSemester = onAddSemester,
-            onConfigureSemester = onConfigureSemester,
+            onConfigureSemester = { id -> openSemesterConfiguration(navController, id) },
             onDeleteSemester = settingsViewModel::requestSemesterDeletion,
             onConfirmDelete = settingsViewModel::confirmSemesterDeletion,
             onCancelDelete = settingsViewModel::cancelSemesterDeletion,

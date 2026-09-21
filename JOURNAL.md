@@ -4,10 +4,11 @@
 
 - Fakty: `MakNavHostApp.kt` miał ponad 700 linii: jeden `NavHost` zawierał wszystkie trasy, argumenty, efekty i akcje topbaru, więc zmiana jednego przepływu dotykała wspólnego pliku.
 - Decyzja: Trasy i efekty podzielono na grupy w osobnych plikach: `TodayScheduleRoutes.kt` (Dzisiaj i Plan, `ScheduleEffect`), `ClassOccurrenceRoutes.kt` (edycja zajęć i szczegóły wystąpienia, `OccurrenceEffect`/`ClassEditEffect`, akcje topbaru), `SemesterRoutes.kt` (semestr, kierunki, korekty; `SemesterEffect`), `SettingsRoutes.kt` (ustawienia) i `SetupRoutes.kt` (kreator; `SetupEffect`). Wspólne stałe i mapowanie tras trafiły do `MakRoutes.kt`. Każda grupa to rozszerzenie `NavGraphBuilder` albo funkcja `@Composable` zbierająca efekty.
-- Stan nadrzędny: `MakApp` pozostał jednym hostem z jednym `NavController`, jednym `Scaffold`, topbarem, dolną nawigacją i globalnym snackbarem; wywołuje rozszerzenia grup i zbiera ich efekty, ale nie zna ich tras wewnętrznych.
-- Powód: Zmiana trasy w jednym przepływie nie powinna wymagać edycji plików pozostałych przepływów, a nawigacja powinna mieć jedno źródło trasy.
-- Odrzucone: Osobny `NavHost` albo `NavController` dla każdej grupy; dodatkowa warstwa nawigacyjna; trzymanie wszystkich tras w jednym pliku hosta.
-- Weryfikacja: `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. `MakNavigationTest` nadal pilnuje budowy tras i reguł `destinationMatchesRoute`/`addAction`.
+- Stan nadrzędny: `MakApp` pozostał jednym hostem z jednym `NavController`, jednym `Scaffold`, topbarem, dolną nawigacją i globalnym snackbarem; wywołuje rozszerzenia grup i zbiera ich efekty. Host zna wyłącznie trasy główne `today` i `schedule` dla dolnej nawigacji; nie zna tras wewnętrznych grup. Grupa wystąpienia sama sprawdza swoją trasę w `occurrenceTopBarActions`, a grupy udostępniają małe funkcje nawigacyjne (`openSetup`, `openSettings`, `openClassEditor`, `openOccurrence`, `openSemesterConfiguration`).
+- Jedna trasa: usunięto `AppUiState.destination` i `AppViewModel.navigate` oraz efekt `LaunchedEffect`, który uzgadniał kopię trasy ze stosem. `MakDestination`, `destinationForRoute` i `destinationMatchesRoute` zniknęły. Nawigacja z widgetu do „Dzisiaj” idzie przez jednorazowy sygnał `openTodayRequests` zbierany w `MakApp`, który woła `NavController`. `NavController` jest jedynym źródłem bieżącej trasy.
+- Powód: Zmiana trasy w jednym przepływie nie powinna wymagać edycji plików pozostałych przepływów, a nawigacja powinna mieć jedno źródło trasy. Druga kopia trasy plus biała lista wyjątków to ten sam rodzaj błędu co drugi zegar.
+- Odrzucone: Osobny `NavHost` albo `NavController` dla każdej grupy; dodatkowa warstwa nawigacyjna; trzymanie kopii trasy w `AppViewModel`; porównywanie tras wewnętrznych w hoście.
+- Weryfikacja: Koin compiler plugin zatrzymał kompilację, gdy przy przepisywaniu `AppViewModel` zniknęła adnotacja `@KoinViewModel`, co potwierdza walidację grafu. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. `MakNavigationTest` pilnuje budowy tras, reguł `close`/`setup` i `addAction`.
 
 ## 2026-09-21: Koin jako composition root
 

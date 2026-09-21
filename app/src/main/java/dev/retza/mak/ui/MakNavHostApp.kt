@@ -54,6 +54,7 @@ fun MakApp(
     scheduleViewModel: ScheduleViewModel,
     todayViewModel: TodayViewModel,
     feedback: Flow<UiFeedback>,
+    openTodayRequests: Flow<Unit>,
     onCreateExportDocument: () -> Unit
 ) {
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
@@ -62,13 +63,9 @@ fun MakApp(
         ?.destination
         ?.route
     val isRoot = currentRoute == MakRoutes.Today || currentRoute == MakRoutes.Schedule
-    val showBack = currentRoute != null &&
-        currentRoute != MakRoutes.Today &&
-        currentRoute != MakRoutes.Schedule &&
-        currentRoute != MakRoutes.Setup
+    val showBack = currentRoute != null && !isRoot && !isSetupRoute(currentRoute)
 
-    fun openRoot(destination: MakDestination, route: String) {
-        viewModel.navigate(destination)
+    fun openRoot(route: String) {
         navController.navigate(route) {
             popUpTo(MakRoutes.Today) { saveState = true }
             launchSingleTop = true
@@ -76,73 +73,36 @@ fun MakApp(
         }
     }
 
-    fun openChild(destination: MakDestination, route: String) {
-        viewModel.navigate(destination)
-        navController.navigate(route)
-    }
-
     fun navigateBack() {
-        val previousRoute = navController.previousBackStackEntry?.destination?.route
-        if (navController.popBackStack()) {
-            viewModel.navigate(destinationForRoute(previousRoute))
-        } else {
-            openRoot(MakDestination.Today, MakRoutes.Today)
-        }
-    }
-
-    fun navigateToSetup() {
-        viewModel.navigate(MakDestination.Setup)
-        navController.navigate(MakRoutes.Setup) {
-            popUpTo(MakRoutes.Today) { saveState = true }
-            launchSingleTop = true
+        if (!navController.popBackStack()) {
+            openRoot(MakRoutes.Today)
         }
     }
 
     val startSetup: () -> Unit = {
         if (state.hasLoadedData) {
             setupViewModel.start(state.setupResume)
-            navigateToSetup()
+            openSetup(navController)
         }
     }
 
-    fun openOccurrence(occurrenceId: String) {
-        occurrenceViewModel.open(occurrenceId)
-        navController.navigate(occurrenceRoute(occurrenceId))
+    val openOccurrenceById: (String) -> Unit = { id ->
+        openOccurrence(occurrenceViewModel, navController, id)
+    }
+
+    LaunchedEffect(openTodayRequests, navController) {
+        openTodayRequests.collect { openRoot(MakRoutes.Today) }
     }
 
     OccurrenceEffects(occurrenceViewModel, navController)
     ClassEditEffects(classEditViewModel, navController)
     SemesterEffects(semesterViewModel, navController)
-    SetupEffects(setupViewModel, classEditViewModel, navController, viewModel::navigate)
+    SetupEffects(setupViewModel, classEditViewModel, navController)
     ScheduleEffects(scheduleViewModel, classEditViewModel, navController)
-
-    LaunchedEffect(state.destination, currentRoute) {
-        if (currentRoute != MakRoutes.Occurrence &&
-            currentRoute != MakRoutes.Edit &&
-            currentRoute != MakRoutes.Semester &&
-            currentRoute != MakRoutes.SemesterCourses &&
-            currentRoute != MakRoutes.SemesterOverrides &&
-            !destinationMatchesRoute(state.destination, currentRoute)
-        ) {
-            when (state.destination) {
-                MakDestination.Today -> openRoot(MakDestination.Today, MakRoutes.Today)
-                MakDestination.Schedule -> openRoot(MakDestination.Schedule, MakRoutes.Schedule)
-                MakDestination.EditClass -> Unit
-                MakDestination.OccurrenceDetails -> Unit
-                MakDestination.Semester -> Unit
-                MakDestination.Settings -> openChild(MakDestination.Settings, MakRoutes.Settings)
-                MakDestination.Setup -> Unit
-            }
-        }
-    }
 
     BackHandler(enabled = showBack) { navigateBack() }
 
-    val occurrenceActions = if (currentRoute == MakRoutes.Occurrence) {
-        occurrenceTopBarActions(occurrenceViewModel, classEditViewModel, navController)
-    } else {
-        emptyList()
-    }
+    val occurrenceActions = occurrenceTopBarActions(occurrenceViewModel, classEditViewModel, navController)
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -157,9 +117,7 @@ fun MakApp(
                 showBack = showBack,
                 showSettings = isRoot,
                 onBack = ::navigateBack,
-                onSettings = {
-                    openChild(MakDestination.Settings, MakRoutes.Settings)
-                },
+                onSettings = { openSettings(navController) },
                 actions = if (occurrenceActions.isEmpty()) {
                     null
                 } else {
@@ -178,16 +136,13 @@ fun MakApp(
                     todaySelected = currentRoute == MakRoutes.Today,
                     planSelected = currentRoute == MakRoutes.Schedule,
                     addSelected = false,
-                    onToday = { openRoot(MakDestination.Today, MakRoutes.Today) },
-                    onPlan = { openRoot(MakDestination.Schedule, MakRoutes.Schedule) },
+                    onToday = { openRoot(MakRoutes.Today) },
+                    onPlan = { openRoot(MakRoutes.Schedule) },
                     onAdd = {
                         when (addAction(state.hasLoadedData, state.requiresSetup)) {
                             AddAction.None -> Unit
                             AddAction.Setup -> startSetup()
-                            AddAction.Editor -> {
-                                classEditViewModel.openNew()
-                                navController.navigate(MakRoutes.Edit)
-                            }
+                            AddAction.Editor -> openClassEditor(classEditViewModel, navController)
                         }
                     }
                 )
@@ -204,31 +159,30 @@ fun MakApp(
             todayRoute(
                 appState = state,
                 todayViewModel = todayViewModel,
-                onOpenPlan = { openRoot(MakDestination.Schedule, MakRoutes.Schedule) },
-                onOpenOccurrence = ::openOccurrence,
+                onOpenPlan = { openRoot(MakRoutes.Schedule) },
+                onOpenOccurrence = openOccurrenceById,
                 startSetup = startSetup
             )
             scheduleRoute(
                 appState = state,
                 scheduleViewModel = scheduleViewModel,
-                onOpenOccurrence = ::openOccurrence,
+                onOpenOccurrence = openOccurrenceById,
                 startSetup = startSetup
             )
             classEditRoute(classEditViewModel = classEditViewModel, onBack = ::navigateBack)
             occurrenceDetailsRoute(occurrenceViewModel = occurrenceViewModel, onBack = ::navigateBack)
             semesterRoutes(
                 semesterViewModel = semesterViewModel,
-                onBack = ::navigateBack,
-                onOpenCourses = { navController.navigate(semesterCoursesRoute(it)) },
-                onOpenOverrides = { navController.navigate(semesterOverridesRoute(it)) }
+                navController = navController,
+                onBack = ::navigateBack
             )
             settingsRoute(
                 settingsViewModel = settingsViewModel,
+                navController = navController,
                 onAddSemester = {
                     setupViewModel.start()
-                    navigateToSetup()
+                    openSetup(navController)
                 },
-                onConfigureSemester = { navController.navigate(semesterRoute(it)) },
                 onExport = onCreateExportDocument
             )
             setupRoute(setupViewModel = setupViewModel, settingsViewModel = settingsViewModel)

@@ -15,6 +15,15 @@ import dev.retza.mak.ui.setup.SetupEffect
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.setup.SetupWizard
 
+internal fun isSetupRoute(route: String?): Boolean = route == MakRoutes.Setup
+
+internal fun openSetup(navController: NavController) {
+    navController.navigate(MakRoutes.Setup) {
+        popUpTo(MakRoutes.Today) { saveState = true }
+        launchSingleTop = true
+    }
+}
+
 internal fun NavGraphBuilder.setupRoute(
     setupViewModel: SetupViewModel,
     settingsViewModel: SettingsViewModel
@@ -46,8 +55,7 @@ internal fun NavGraphBuilder.setupRoute(
 internal fun SetupEffects(
     setupViewModel: SetupViewModel,
     classEditViewModel: ClassEditViewModel,
-    navController: NavController,
-    onNavigate: (MakDestination) -> Unit
+    navController: NavController
 ) {
     LaunchedEffect(setupViewModel, navController) {
         setupViewModel.effects.collect { effect ->
@@ -55,7 +63,6 @@ internal fun SetupEffects(
             if (!shouldHandleSetupEffect(route)) return@collect
             when (effect) {
                 SetupEffect.FinishToToday -> {
-                    onNavigate(MakDestination.Today)
                     navController.navigate(MakRoutes.Today) {
                         popUpTo(MakRoutes.Today) { saveState = true }
                         launchSingleTop = true
@@ -64,18 +71,14 @@ internal fun SetupEffects(
                 }
 
                 SetupEffect.ReturnToSettings -> {
-                    onNavigate(MakDestination.Settings)
                     if (navController.previousBackStackEntry?.destination?.route == MakRoutes.Settings) {
                         navController.popBackStack()
                     } else {
-                        navController.navigate(MakRoutes.Settings)
+                        openSettings(navController)
                     }
                 }
 
-                SetupEffect.OpenNewClassEditor -> {
-                    classEditViewModel.openNew()
-                    navController.navigate(MakRoutes.Edit)
-                }
+                SetupEffect.OpenNewClassEditor -> openClassEditor(classEditViewModel, navController)
             }
         }
     }
