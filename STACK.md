@@ -27,6 +27,7 @@
 
 - Room jako warstwa dostępu do danych.
 - SQLite jako lokalna baza danych.
+- Preferences DataStore 1.1.7 do trwałych ustawień, w tym motywu.
 - `kotlinx.serialization` do importu i eksportu JSON.
 - Brak backendu, kont i synchronizacji sieciowej.
 

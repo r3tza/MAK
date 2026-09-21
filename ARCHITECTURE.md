@@ -116,7 +116,7 @@ ViewModele rozdzielamy według przepływów ekranów. Ekrany „Dzisiaj” i „
 
 Po wydzieleniu przepływów `MakViewModel` nie pozostaje wspólnym kontenerem stanów ekranów. Jeśli uruchomienie aplikacji nadal wymaga właściciela stanu, zastępuje go mały `AppViewModel`, który rozpoznaje gotowość danych i potrzebę uruchomienia albo wznowienia konfiguracji. `AppViewModel` nie przechowuje kopii trasy, modeli ekranów, motywu, filtrów ani formularzy. Jeśli po usunięciu tych odpowiedzialności nie ma własnego stanu, należy usunąć nadrzędny ViewModel.
 
-Trwałe preferencje zapisujemy poza pamięcią ViewModelu, a istotny stan roboczy przygotowujemy do odtworzenia procesu.
+Trwałe preferencje zapisujemy poza pamięcią ViewModelu. Motyw zapisujemy w Preferences DataStore jako `ThemeMode` (`System`, `Light`, `Dark`), a nieznaną albo brakującą wartość traktujemy jako `System`. Istotny stan roboczy przygotowujemy do odtworzenia procesu.
 
 Warstwa danych udostępnia `SemesterRepository` dla semestrów, aktywnego semestru, globalnych kierunków, przypisań i kalendarzy oraz `ScheduleRepository` dla zajęć, wystąpień, notatek i danych planu. Prowadzący jest opcjonalnym tekstem zajęć, bez osobnego repozytorium i kartoteki. `SettingsPreferences` pozostaje osobną granicą trwałych ustawień. Nie tworzymy repozytoriów dla każdej tabeli ani dla każdego ekranu. Publiczne kontrakty nie wystawiają encji Room ani relacji bazy.
 

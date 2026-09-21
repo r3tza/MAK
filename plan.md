@@ -44,7 +44,7 @@ Pozostaje do wykonania:
 
 Zmiany należy wprowadzać stopniowo podczas rozwoju wersji 0.2 i 0.3. Nie wymagają podziału projektu na osobne moduły Gradle. Po wydzieleniu ViewModeli należy wprowadzić Koin jako jeden composition root i usunąć ręczne fabryki.
 
-Status: wspólny `ActivePlanProvider`, mapowanie Room poza ViewModelem oraz osobne `OccurrenceViewModel`, `ClassEditViewModel`, `SemesterViewModel` i `SetupViewModel` są zaimplementowane. Trwa wydzielanie `SettingsViewModel`. Następne są `ScheduleViewModel`, `TodayViewModel` i ograniczenie stanu nadrzędnego do uruchomienia aplikacji.
+Status: wspólny `ActivePlanProvider`, mapowanie Room poza ViewModelem oraz osobne `OccurrenceViewModel`, `ClassEditViewModel`, `SemesterViewModel` i `SetupViewModel` są zaimplementowane. `SettingsViewModel` jest zakończony. Następne są `ScheduleViewModel`, `TodayViewModel` i ograniczenie stanu nadrzędnego do uruchomienia aplikacji.
 
 Kolejność prac:
 
@@ -75,7 +75,7 @@ Kryteria zakończenia porządkowania:
 
 Refaktor należy wykonać przed podłączeniem feedbacku do wszystkich operacji z etapu 6 sekcji 1.6. Nie przepisywać całego ViewModelu jednocześnie. Każdy etap ma kończyć się kompilującym stanem, testami odpowiednimi do zmiany i osobnym commitem.
 
-Status: etapy 1-7 są zakończone. W etapie 8 zakończono `ClassEditViewModel`, `SemesterViewModel` i `SetupViewModel`. `SettingsViewModel` jest pracą w toku. Po nim należy wydzielić `ScheduleViewModel` i `TodayViewModel`, a następnie ocenić pozostały stan nadrzędny i zastąpić `MakViewModel` małym `AppViewModel` albo usunąć go, jeśli nie będzie miał własnej odpowiedzialności.
+Status: etapy 1-7 są zakończone. W etapie 8 zakończono `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel` i `SettingsViewModel`. Następne są `ScheduleViewModel` i `TodayViewModel`, a potem ocena pozostałego stanu nadrzędnego i zastąpienie `MakViewModel` małym `AppViewModel` albo usunięcie go, jeśli nie będzie miał własnej odpowiedzialności.
 
 #### Etap 1: inwentaryzacja odpowiedzialności
 
@@ -184,15 +184,15 @@ Status etapu: zrealizowane. Audyt potwierdził, że `MakViewModel` nie ma pól `
 
 Kryterium etapu: każdy ekran ma własny ViewModel, `NavController` pozostaje jedynym źródłem trasy, a stan nadrzędny odpowiada najwyżej za uruchomienie aplikacji i wymuszenie konfiguracji.
 
-Status etapu: zakończono `ClassEditViewModel`, `SemesterViewModel` i `SetupViewModel`. `SettingsViewModel` jest pracą w toku. Pozostają `ScheduleViewModel`, `TodayViewModel` i końcowe ograniczenie stanu nadrzędnego.
+Status etapu: zakończono `ClassEditViewModel`, `SemesterViewModel`, `SetupViewModel` i `SettingsViewModel`. Pozostają `ScheduleViewModel`, `TodayViewModel` i końcowe ograniczenie stanu nadrzędnego.
 
-Każdy kolejny przepływ realizować i weryfikować osobno. Bieżąca kolejność to dokończenie `SettingsViewModel`, wydzielenie `ScheduleViewModel`, wydzielenie `TodayViewModel` i końcowa ocena `AppViewModel`. Po każdym zakończonym etapie sprawdzić, że commit nie zawiera zmian z następnego przepływu.
+Każdy kolejny przepływ realizować i weryfikować osobno. Bieżąca kolejność to wydzielenie `ScheduleViewModel`, wydzielenie `TodayViewModel` i końcowa ocena `AppViewModel`. Po każdym zakończonym etapie sprawdzić, że commit nie zawiera zmian z następnego przepływu.
 
 #### SemesterViewModel
 
 Status: zrealizowane w sześciu etapach. `SemesterViewModel` przejmuje formularz semestru, kierunki i korekty tygodni. `open(semesterId)` anuluje poprzednie otwarcie, czyści stan, ustawia wskazany semestr jako aktywny i czeka na jego dane, więc wygrywa ostatnie otwarcie, a błędny identyfikator nie pozostawia poprzednich danych. Zapis semestru emituje `UiFeedback` i `SemesterEffect.CloseConfiguration`, zbierany na poziomie `MakApp` tylko na trasie `semester/{semesterId}`. Kierunki i korekty mają osobne flagi zapisu i usuwania, blokadę powtórzeń oraz komunikaty sukcesu i bezpieczne komunikaty błędu, a walidacja nie emituje feedbacku. Ekrany semestru, kierunków i korekt czytają stan i wywołują akcje `SemesterViewModel`, a `semesterId` trasy trafia do `open`. `MakViewModel` nie zawiera już `SemesterScreenUiState`, `semesterDraft`, `semesterEditId` ani metod konfiguracji semestru i nie importuje `SemesterViewModel`.
 
-Poza tym refaktorem pozostają: wybór, dodawanie i usuwanie całych semestrów w przyszłym `SettingsViewModel` oraz szybka korekta widocznego tygodnia w przyszłym `ScheduleViewModel`. Nie zmieniano schematu Room ani wyglądu ekranów.
+Poza tym refaktorem pozostają: szybka korekta widocznego tygodnia w przyszłym `ScheduleViewModel` oraz przyszły `TodayViewModel`. Wybór, dodawanie i usuwanie całych semestrów obsługuje `SettingsViewModel`. Nie zmieniano schematu Room ani wyglądu ekranów.
 
 #### SetupViewModel
 
@@ -202,7 +202,7 @@ Nie zmieniano wyglądu trzech kroków kreatora ani `SettingsViewModel` i `Schedu
 
 #### SettingsViewModel
 
-Status: praca w toku. Wydzielono stan ustawień, wybór i usuwanie semestru, wybór motywu oraz eksport JSON. Trwa podłączanie trwałych preferencji motywu i usuwanie delegacji z `MakViewModel`. Do zakończenia pozostaje pełne podłączenie ekranu bezpośrednio do `SettingsViewModel`, obsługa błędów operacji, usunięcie starego stanu ustawień z `MakUiState` i aktualizacja dokumentacji po weryfikacji.
+Status: zrealizowane. `SettingsViewModel` składa `SettingsUiState` ze strumieni semestrów, aktywnego semestru i preferencji motywu i nie wystawia encji Room. Motyw jest zapisywany w Preferences DataStore jako `ThemeMode`; brakująca lub nieznana wartość oznacza `System`, a `selectTheme` blokuje powtórzenie i publikuje błąd tylko przy nieudanym zapisie. Wybór aktywnego semestru ma synchroniczną blokadę, publikuje „Zmieniono aktywny semestr”, a przy błędzie zachowuje poprzedni wybór. Usunięcie semestru korzysta z `MakRepository.deleteSemesterAndSelectFallback`, który w jednej transakcji usuwa semestr i deterministycznie wybiera następny aktywny według `startDate, id` albo czyści aktywny semestr, gdy nic nie zostało. Eksport przygotowuje bajty w ViewModelu, a `MainActivity` zapisuje strumień i zwraca wynik; sukces publikuje „Wyeksportowano plan”, a odczyt lub zapis błędu „Nie udało się wyeksportować planu.”. Ekran ustawień czyta `SettingsViewModel` bezpośrednio, a `MakViewModel` i `MakUiState` nie zawierają już `settings`, `themeId` ani metod ustawień. Filtr kierunku nie jest resetowany w `SettingsViewModel`; `buildSchedule` traktuje nieistniejący identyfikator jak „Wszystkie”, a docelowy reset pozostaje w przyszłym `ScheduleViewModel`.
 
 #### ScheduleViewModel
 
@@ -244,10 +244,7 @@ Poniższe etapy wykonywać po kolei. Każdy etap kończy się kompilującym stan
 
 #### Dalszy etap 1: dokończenie SettingsViewModel
 
-1. Dokończyć trwały zapis motywu i bezpieczną obsługę błędów.
-2. Podłączyć ekran ustawień bezpośrednio do `SettingsViewModel`.
-3. Usunąć delegacje, `settings` i `themeId` z `MakViewModel` oraz `MakUiState`.
-4. Zachować bieżący schemat Room i wygląd ekranu.
+Status: zrealizowane. Motyw jest zapisywany w Preferences DataStore, operacje mają bezpieczną obsługę błędów, ekran ustawień czyta `SettingsViewModel` bezpośrednio, a `MakViewModel` i `MakUiState` nie zawierają delegacji, `settings` ani `themeId`. Schemat Room i wygląd ekranu pozostały bez zmian poza `deleteSemesterAndSelectFallback`, która nie zmienia schematu.
 
 Kryterium: ustawienia, semestry, motyw i eksport nie przechodzą przez `MakViewModel`.
 

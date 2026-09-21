@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: SettingsViewModel i trwały motyw
+
+- Fakty: Stan i operacje ustawień należały do `MakViewModel`, motyw żył tylko w pamięci procesu i ginął po odtworzeniu, a usunięcie semestru wykonywało się w kilku krokach poza transakcją.
+- Decyzja: Wydzielono `SettingsViewModel` ze stanem złożonym ze strumieni semestrów, aktywnego semestru i preferencji motywu. Motyw zapisujemy w Preferences DataStore jako `ThemeMode` (`System`, `Light`, `Dark`), a brakującą lub nieznaną wartość traktujemy jako `System`. `MainActivity` czyta motyw z `SettingsViewModel`, więc wybór działa po odtworzeniu procesu. Dodano `MakRepository.deleteSemesterAndSelectFallback`, który w jednej transakcji usuwa semestr i deterministycznie wybiera następny aktywny według `startDate, id` albo czyści aktywny semestr, gdy nic nie zostało. Eksport przygotowuje bajty w `SettingsViewModel`, a `MainActivity` zapisuje strumień i zwraca wynik do ViewModelu. Ekran ustawień czyta `SettingsViewModel` bezpośrednio, a `MakViewModel` i `MakUiState` nie zawierają `settings`, `themeId` ani metod ustawień.
+- Powód: Trwałe preferencje muszą żyć poza pamięcią ViewModelu, a usunięcie semestru i wybór następnego nie mogą pozostawić niespójnego stanu.
+- Odrzucone: Trzymanie motywu w `MakViewModel`; reset filtra kierunku w `SettingsViewModel` zamiast w przyszłym `ScheduleViewModel`; automatyczne otwieranie kreatora po usunięciu ostatniego semestru (przyszły stan pusty z przyciskiem „Skonfiguruj plan”).
+- Weryfikacja: `SettingsViewModelTest` sprawdza odtworzenie motywu, nieznaną wartość, blokady powtórzeń, komunikaty sukcesu i błędu, atomowe usunięcie z zastępczym semestrem, brak częściowych danych przy awarii oraz eksport z zachowanym `schemaVersion`. `SettingsPreferencesTest` i nowe przypadki w `RoomPersistenceTest` działają na urządzeniu. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-21: Podsumowanie zajęć, kolizji i okienek
 
 - Fakty: Gradientowa karta ekranu „Dzisiaj” pokazuje obecnie tylko liczbę zajęć i ma niewykorzystane miejsce. Użytkownik potrzebuje szybkiej informacji o zajęciach, kolizjach i przerwach w planie.
