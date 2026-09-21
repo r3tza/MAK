@@ -37,19 +37,16 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import dev.retza.mak.MainActivity
-import dev.retza.mak.MakApplication
-import java.time.Clock
+import org.koin.core.context.GlobalContext
 
-class MakTodayWidget(
-    private val clock: Clock = Clock.systemDefaultZone()
-) : GlanceAppWidget() {
+class MakTodayWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Responsive(MakWidgetSizes.responsiveSizes)
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
-        val application = context.applicationContext as MakApplication
+        val koin = GlobalContext.get()
         val state = WidgetPlanLoader(
-            repository = application.repository,
-            clock = clock
+            repository = koin.get(),
+            clock = koin.get()
         ).load()
 
         provideContent {

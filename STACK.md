@@ -20,7 +20,7 @@
 
 - Jetpack Compose do budowy interfejsu.
 - Jetpack Glance do widgetu.
-- Koin 4.2.2 (BOM `io.insert-koin:koin-bom`) z Koin compiler plugin 1.2.1 (`io.insert-koin.compiler.plugin`) do składania zależności i ViewModeli. Obowiązuje constructor injection; ViewModele są pobierane wyłącznie na granicy hostów przez `viewModel()`/`koinViewModel`, a `get()` i `koinInject()` nie występują w ViewModelach, domenie ani komponentach ekranów. Graf jest walidowany podczas kompilacji, a `KoinGraphTest` sprawdza uruchomienie modułów na urządzeniu.
+- Koin 4.2.2 (BOM `io.insert-koin:koin-bom`) z Koin compiler plugin 1.2.1 (`io.insert-koin.compiler.plugin`) do składania zależności i ViewModeli. Obowiązuje constructor injection; ViewModele są pobierane wyłącznie na granicy hostów przez `viewModel()`/`koinViewModel`, a `get()` i `koinInject()` nie występują w ViewModelach, domenie ani komponentach ekranów. `Clock` jest jednym `@Single` w grafie i nie ma domyślnej wartości w ViewModelach, więc brak zegara zatrzymuje kompilację. Widget pobiera `MakRepository` i `Clock` z Koin, bez rzutowania na `MakApplication`. Graf jest walidowany podczas kompilacji, a `KoinGraphTest` rozwiązuje zależności i wszystkie ViewModele na urządzeniu.
 - Systemowe powiadomienia Androida planowane przybliżonymi alarmami `AlarmManager`. Aplikacja nie wymaga dokładnych alarmów ani ciągłego serwisu w tle.
 - Lokalny font Inter.
 

@@ -18,7 +18,7 @@ import org.koin.plugin.module.dsl.startKoin
 
 @KoinApplication
 class MakApplication : Application() {
-    val repository: MakRepository by inject()
+    private val repository: MakRepository by inject()
 
     private val database: AppDatabase by inject()
 

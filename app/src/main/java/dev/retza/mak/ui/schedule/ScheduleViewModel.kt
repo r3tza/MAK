@@ -63,7 +63,7 @@ private data class ScheduleControls(
 @KoinViewModel
 class ScheduleViewModel(
     private val repository: MakRepository,
-    private val clock: Clock = Clock.systemDefaultZone(),
+    private val clock: Clock,
     private val activePlanProvider: ActivePlanProvider = ActivePlanProvider()
 ) : ViewModel() {
     private val today = LocalDate.now(clock)
