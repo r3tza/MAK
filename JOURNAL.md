@@ -8,6 +8,14 @@
 - Odrzucone: Poleganie na wyłączeniu kluczy obcych w migracji; kaskadowe usuwanie używanego kierunku; automatyczne scalanie kierunków o tej samej nazwie; jeden wspólny tydzień A/B dla różnych kalendarzy; przejściowy podwójny schemat v1 i v2.
 - Weryfikacja: `RoomMigrationTest` tworzy bazę v1 z dwoma kierunkami o tej samej nazwie, zajęciami, korektą, notatką i zmianą, uruchamia migrację i waliduje schemat oraz dane. `RoomPersistenceTest` sprawdza rollback konfiguracji, blokadę usunięcia używanego kierunku i deterministyczny zastępczy semestr. Zaktualizowane testy domenowe i ViewModeli. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
 
+## 2026-09-21: Poprawki po przeglądzie migracji Room v2
+
+- Fakty: Przegląd commita `19cd84f` wskazał trzy problemy. Eksport budował listę kierunków tylko z przypisań semestrów, więc kierunek bez przypisania ginął. Formularz zajęć rozpoznawał kierunek po nazwie, więc przy dwóch kierunkach o tej samej nazwie zapis mógł trafić w pierwszy z nich. `addCourse` wykonywał zapis kierunku i przypisania w dwóch osobnych transakcjach.
+- Decyzja: `ExportSnapshot.from` przyjmuje teraz pełną listę kierunków z `getAllStudyPrograms()` i eksportuje także kierunki bez przypisań. `ClassEditUiState` niesie `semesterProgramId`, a `ClassCourseOptionUi` trzyma `id` i etykietę; wybór kierunku przekazuje identyfikator przypisania, a zapis używa go zamiast dopasowania po nazwie. Dodano atomowe `MakRepository.saveStudyProgramAssignment(semesterId, studyProgram, academicCalendarId)`, które w jednej transakcji zapisuje kierunek i przypisanie; `SemesterViewModel.addCourse` korzysta z niego.
+- Powód: Eksport musi odtwarzać wszystkie dane użytkownika, a identyfikacja po nazwie jest niejednoznaczna i zależna od kolejności. Rozdzielone zapisy mogły zostawić kierunek bez przypisania po błędzie.
+- Odrzucone: Dorzucanie kierunków do eksportu z zastępczego przypisania; ukrywanie duplikatów nazw w interfejsie zamiast wyboru po identyfikatorze; łapanie błędu drugiego zapisu i ręczne wycofywanie pierwszego.
+- Weryfikacja: `JsonExportCodecTest` sprawdza kierunek bez przypisania w eksporcie, `ClassEditViewModelTest` zapis na drugim kierunku o tej samej nazwie, `SemesterViewModelTest` jedno zdarzenie `saveStudyProgramAssignment`, a `RoomMigrationTest` kopiowanie `new_teacher_name` i dane dwóch semestrów. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
+
 ## 2026-09-21: Resolver wielu kalendarzy
 
 - Fakty: `WeekCalculator` liczył tydzień z dat semestru, więc wszystkie kierunki w semestrze dzieliły jeden rytm A/B. Po dodaniu `AcademicCalendar` i `SemesterProgram` każdy kierunek może mieć własne daty i rytm.

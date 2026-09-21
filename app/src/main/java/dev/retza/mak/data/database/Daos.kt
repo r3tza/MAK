@@ -72,6 +72,9 @@ interface StudyProgramDao {
     @Query("SELECT * FROM study_programs ORDER BY name, id")
     fun observeAll(): Flow<List<StudyProgramEntity>>
 
+    @Query("SELECT * FROM study_programs ORDER BY id")
+    suspend fun getAll(): List<StudyProgramEntity>
+
     @Query("SELECT * FROM study_programs WHERE id = :id")
     suspend fun findById(id: Long): StudyProgramEntity?
 

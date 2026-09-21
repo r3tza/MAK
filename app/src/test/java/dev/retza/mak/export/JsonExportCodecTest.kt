@@ -32,6 +32,16 @@ class JsonExportCodecTest {
     }
 
     @Test
+    fun snapshotKeepsStudyProgramsWithoutAssignments() {
+        val program = StudyProgramEntity(id = 9, name = "Fizyka", color = "#ABCDEF")
+
+        val snapshot = ExportSnapshot.from(emptyList(), listOf(program))
+
+        assertEquals(1, snapshot.studyPrograms.size)
+        assertEquals(9L, snapshot.studyPrograms.single().id)
+    }
+
+    @Test
     fun snapshotRoundTripPreservesAllSemesterData() {
         val semester = SemesterEntity(id = 1, name = "Semestr zimowy", isActive = true)
         val calendar = AcademicCalendarEntity(
@@ -99,7 +109,7 @@ class JsonExportCodecTest {
             newNote = "Zajęcia przeniesione"
         )
         val source = ExportSnapshot.from(
-            listOf(
+            semesters = listOf(
                 SemesterWithData(
                     semester = semester,
                     semesterPrograms = listOf(assignment),
@@ -110,7 +120,8 @@ class JsonExportCodecTest {
                     occurrenceNotes = listOf(occurrenceNote),
                     occurrenceChanges = listOf(occurrenceChange)
                 )
-            )
+            ),
+            studyPrograms = listOf(studyProgram)
         )
 
         val restored = JsonExportCodec.decode(JsonExportCodec.encode(source))

@@ -233,7 +233,7 @@ class SemesterViewModelTest {
 
         assertNotNull(viewModel.semester.value.courseNameError)
         assertTrue(sink.published.isEmpty())
-        assertTrue(repository.events.none { it == "saveSemesterProgram" })
+        assertTrue(repository.events.none { it == "saveStudyProgramAssignment" })
     }
 
     @Test
@@ -275,7 +275,7 @@ class SemesterViewModelTest {
         repository.saveGate?.complete(Unit)
         advanceUntilIdle()
 
-        assertEquals(1, repository.events.count { it == "saveSemesterProgram" })
+        assertEquals(1, repository.events.count { it == "saveStudyProgramAssignment" })
         assertEquals(1, sink.published.size)
         assertEquals(2, repository.studyPrograms.size)
     }

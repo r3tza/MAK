@@ -64,7 +64,7 @@ internal fun NavGraphBuilder.classEditRoute(
         ClassEditScreen(
             state = classEditViewModel.editor.collectAsStateWithLifecycle().value,
             onNameChanged = { value -> classEditViewModel.update { it.copy(name = value) } },
-            onCourseChanged = { value -> classEditViewModel.update { it.copy(courseName = value) } },
+            onCourseChanged = classEditViewModel::selectCourse,
             onTypeChanged = { value -> classEditViewModel.update { it.copy(type = value) } },
             onDayChanged = { value -> classEditViewModel.update { it.copy(dayLabel = value) } },
             onStartTimeChanged = { value -> classEditViewModel.update { it.copy(startTime = value) } },

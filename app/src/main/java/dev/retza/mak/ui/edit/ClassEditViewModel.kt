@@ -66,7 +66,7 @@ class ClassEditViewModel(
                 state.update { current ->
                     val calendar = data?.sharedCalendar()
                     current.copy(
-                        courseOptions = data?.assignmentLabels().orEmpty(),
+                        courseOptions = data?.courseOptions().orEmpty(),
                         semesterStartDate = calendar?.startDate?.toString(),
                         semesterEndDate = calendar?.endDate?.toString()
                     )
@@ -112,6 +112,7 @@ class ClassEditViewModel(
                     title = "Edytuj zajęcia",
                     name = item.name,
                     courseName = program?.name.orEmpty(),
+                    semesterProgramId = item.semesterProgramId.toString(),
                     type = item.type,
                     dayLabel = classEditDayNames[item.dayOfWeek].orEmpty(),
                     startTime = item.startTime.toString(),
@@ -133,6 +134,17 @@ class ClassEditViewModel(
         state.update { transform(it).copy(errors = emptyMap()) }
     }
 
+    fun selectCourse(optionId: String) {
+        update {
+            it.copy(
+                semesterProgramId = optionId,
+                courseName = it.courseOptions.firstOrNull { option -> option.id == optionId }
+                    ?.label
+                    .orEmpty()
+            )
+        }
+    }
+
     fun save() {
         if (state.value.isSaving) return
         val data = activeSemesterData.value ?: return
@@ -141,11 +153,14 @@ class ClassEditViewModel(
         val end = editor.endTime.toLocalTimeOrNull()
         val recurrence = classEditRecurrenceFromId(editor.recurrenceId)
         val date = editor.occurrenceDate.toLocalDateOrNull()
-        val assignment = data.assignmentForName(editor.courseName)
+        val assignmentId = editor.semesterProgramId
+        val assignment = assignmentId?.toLongOrNull()?.let { id ->
+            data.semesterPrograms.firstOrNull { it.id == id }
+        }
         val validation = ClassValidator.validate(
             ClassForm(
                 name = editor.name,
-                semesterProgramId = assignment?.id?.toString(),
+                semesterProgramId = assignmentId,
                 startTime = start,
                 endTime = end,
                 recurrence = recurrence,
@@ -234,7 +249,7 @@ class ClassEditViewModel(
         val data = activeSemesterData.value
         val calendar = data?.sharedCalendar()
         return value.copy(
-            courseOptions = data?.assignmentLabels().orEmpty(),
+            courseOptions = data?.courseOptions().orEmpty(),
             semesterStartDate = calendar?.startDate?.toString(),
             semesterEndDate = calendar?.endDate?.toString()
         )
@@ -244,14 +259,11 @@ class ClassEditViewModel(
 private fun SemesterWithData.sharedCalendar(): AcademicCalendarEntity? =
     academicCalendars.minByOrNull { it.id }
 
-private fun SemesterWithData.assignmentLabels(): List<String> =
+private fun SemesterWithData.courseOptions(): List<ClassCourseOptionUi> =
     semesterPrograms.mapNotNull { assignment ->
-        studyPrograms.firstOrNull { it.id == assignment.studyProgramId }?.name
-    }
-
-private fun SemesterWithData.assignmentForName(name: String): SemesterProgramEntity? =
-    semesterPrograms.firstOrNull { assignment ->
-        studyPrograms.firstOrNull { it.id == assignment.studyProgramId }?.name == name
+        val program = studyPrograms.firstOrNull { it.id == assignment.studyProgramId }
+            ?: return@mapNotNull null
+        ClassCourseOptionUi(assignment.id.toString(), program.name)
     }
 
 private fun SemesterWithData.calendarFor(assignment: SemesterProgramEntity?): AcademicCalendarEntity? {

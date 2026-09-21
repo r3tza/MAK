@@ -228,6 +228,40 @@ internal class FakeMakRepository : MakRepository {
         studyProgramState.value = studyPrograms.filterNot { it.id == id }
     }
 
+    override suspend fun saveStudyProgramAssignment(
+        semesterId: Long,
+        studyProgram: StudyProgramEntity,
+        academicCalendarId: Long
+    ): SetupConfigurationIds {
+        awaitSave()
+        events += "saveStudyProgramAssignment"
+        val studyProgramId = if (studyProgram.id == 0L) {
+            val id = generatedStudyProgramId++
+            studyProgramState.value = studyPrograms + studyProgram.copy(id = id)
+            id
+        } else {
+            studyProgram.id
+        }
+        val existing = semesterPrograms.firstOrNull {
+            it.semesterId == semesterId && it.studyProgramId == studyProgramId
+        }
+        val semesterProgramId = if (existing == null) {
+            val id = generatedProgramId++
+            semesterProgramState.value = semesterPrograms + SemesterProgramEntity(
+                id = id,
+                semesterId = semesterId,
+                studyProgramId = studyProgramId,
+                academicCalendarId = academicCalendarId
+            )
+            id
+        } else {
+            existing.id
+        }
+        return SetupConfigurationIds(semesterId, studyProgramId, academicCalendarId, semesterProgramId)
+    }
+
+    override suspend fun getAllStudyPrograms(): List<StudyProgramEntity> = studyPrograms
+
     override suspend fun saveCalendar(entity: AcademicCalendarEntity): Long {
         awaitSave()
         events += "saveCalendar"

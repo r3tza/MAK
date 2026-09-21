@@ -44,7 +44,7 @@ class ClassEditViewModelTest {
         assertEquals("Dodaj zajęcia", editor.title)
         assertEquals("every_week", editor.recurrenceId)
         assertEquals("", editor.occurrenceDate)
-        assertEquals(listOf("Informatyka"), editor.courseOptions)
+        assertEquals(listOf("Informatyka"), editor.courseOptions.map { it.label })
         assertEquals("2026-09-01", editor.semesterStartDate)
         assertEquals("2026-10-31", editor.semesterEndDate)
     }
@@ -127,7 +127,7 @@ class ClassEditViewModelTest {
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                courseName = "Informatyka",
+                semesterProgramId = "1",
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "11:00",
@@ -157,7 +157,7 @@ class ClassEditViewModelTest {
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                courseName = "Informatyka",
+                semesterProgramId = "1",
                 type = "Wykład",
                 dayLabel = "Wtorek",
                 startTime = "12:00",
@@ -182,7 +182,7 @@ class ClassEditViewModelTest {
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                courseName = "Informatyka",
+                semesterProgramId = "1",
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "12:00",
@@ -214,7 +214,7 @@ class ClassEditViewModelTest {
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                courseName = "Informatyka",
+                semesterProgramId = "1",
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "12:00",
@@ -249,7 +249,7 @@ class ClassEditViewModelTest {
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                courseName = "Informatyka",
+                semesterProgramId = "1",
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "12:00",
@@ -289,6 +289,40 @@ class ClassEditViewModelTest {
     }
 
     @Test
+    fun saveKeepsSelectedAssignmentWhenProgramNamesMatch() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val secondProgramId = repository.saveStudyProgram(
+            dev.retza.mak.data.entity.StudyProgramEntity(name = "Informatyka", color = "#222222")
+        )
+        val secondAssignmentId = repository.saveSemesterProgram(
+            dev.retza.mak.data.entity.SemesterProgramEntity(
+                semesterId = 1L,
+                studyProgramId = secondProgramId,
+                academicCalendarId = 1L
+            )
+        )
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openNew()
+        viewModel.update {
+            it.copy(
+                name = "Analiza",
+                semesterProgramId = secondAssignmentId.toString(),
+                type = "Wykład",
+                dayLabel = "Poniedziałek",
+                startTime = "12:00",
+                endTime = "13:30"
+            )
+        }
+        advanceUntilIdle()
+
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals(secondAssignmentId, repository.classes.last().semesterProgramId)
+    }
+
+    @Test
     fun saveErrorPublishesOneErrorAndKeepsForm() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val sink = RecordingFeedbackSink()
@@ -298,7 +332,7 @@ class ClassEditViewModelTest {
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                courseName = "Informatyka",
+                semesterProgramId = "1",
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "12:00",
@@ -329,7 +363,7 @@ class ClassEditViewModelTest {
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                courseName = "Informatyka",
+                semesterProgramId = "1",
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "11:00",

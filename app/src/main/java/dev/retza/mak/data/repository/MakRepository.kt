@@ -56,6 +56,8 @@ interface MakRepository {
 
     suspend fun getAllSemesterData(): List<SemesterWithData>
 
+    suspend fun getAllStudyPrograms(): List<StudyProgramEntity>
+
     suspend fun saveSemester(entity: SemesterEntity): Long
 
     suspend fun updateSemester(entity: SemesterEntity): Long
@@ -71,6 +73,12 @@ interface MakRepository {
     suspend fun saveStudyProgram(entity: StudyProgramEntity): Long
 
     suspend fun deleteStudyProgram(id: Long)
+
+    suspend fun saveStudyProgramAssignment(
+        semesterId: Long,
+        studyProgram: StudyProgramEntity,
+        academicCalendarId: Long
+    ): SetupConfigurationIds
 
     suspend fun saveCalendar(entity: AcademicCalendarEntity): Long
 
@@ -157,6 +165,8 @@ class RoomMakRepository(
 
     override suspend fun getAllSemesterData(): List<SemesterWithData> = semesters.getAllWithData()
 
+    override suspend fun getAllStudyPrograms(): List<StudyProgramEntity> = studyPrograms.getAll()
+
     override suspend fun saveSemester(entity: SemesterEntity): Long {
         require(entity.name.isNotBlank()) { "Semester name cannot be blank" }
         return database.withTransaction {
@@ -234,6 +244,43 @@ class RoomMakRepository(
                 "Study program is assigned to a semester"
             }
             studyPrograms.deleteById(id)
+        }
+    }
+
+    override suspend fun saveStudyProgramAssignment(
+        semesterId: Long,
+        studyProgram: StudyProgramEntity,
+        academicCalendarId: Long
+    ): SetupConfigurationIds {
+        require(studyProgram.name.isNotBlank()) { "Study program name cannot be blank" }
+        return database.withTransaction {
+            require(semesters.findById(semesterId) != null) { "Semester does not exist" }
+            require(calendars.findById(academicCalendarId)?.semesterId == semesterId) {
+                "Calendar must belong to the semester"
+            }
+            val studyProgramId = if (studyProgram.id == 0L) {
+                studyPrograms.insert(studyProgram)
+            } else {
+                require(studyPrograms.findById(studyProgram.id) != null) {
+                    "Study program does not exist"
+                }
+                studyPrograms.update(studyProgram)
+                studyProgram.id
+            }
+            val existing = semesterPrograms.findByProgram(semesterId, studyProgramId)
+            val semesterProgramId = if (existing == null) {
+                semesterPrograms.insert(
+                    SemesterProgramEntity(
+                        semesterId = semesterId,
+                        studyProgramId = studyProgramId,
+                        academicCalendarId = academicCalendarId
+                    )
+                )
+            } else {
+                semesterPrograms.update(existing.copy(academicCalendarId = academicCalendarId))
+                existing.id
+            }
+            SetupConfigurationIds(semesterId, studyProgramId, academicCalendarId, semesterProgramId)
         }
     }
 

@@ -6,7 +6,6 @@ import org.koin.core.annotation.KoinViewModel
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.SemesterEntity
-import dev.retza.mak.data.entity.SemesterProgramEntity
 import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
@@ -166,18 +165,13 @@ class SemesterViewModel(
         val token = sessionToken
         viewModelScope.launch {
             try {
-                val programId = repository.saveStudyProgram(
-                    StudyProgramEntity(
+                repository.saveStudyProgramAssignment(
+                    semesterId = id,
+                    studyProgram = StudyProgramEntity(
                         name = name,
                         color = draft.courseColorDraft.ifBlank { "#137b71" }
-                    )
-                )
-                repository.saveSemesterProgram(
-                    SemesterProgramEntity(
-                        semesterId = id,
-                        studyProgramId = programId,
-                        academicCalendarId = currentCalendarId
-                    )
+                    ),
+                    academicCalendarId = currentCalendarId
                 )
                 if (!isCurrentSession(token)) return@launch
                 refresh(token)

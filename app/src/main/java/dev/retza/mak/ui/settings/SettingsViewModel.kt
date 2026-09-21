@@ -133,7 +133,14 @@ class SettingsViewModel(
         local.update { it.copy(isExporting = true) }
         viewModelScope.launch {
             try {
-                onReady(JsonExportCodec.encode(ExportSnapshot.from(repository.getAllSemesterData())))
+                onReady(
+                    JsonExportCodec.encode(
+                        ExportSnapshot.from(
+                            repository.getAllSemesterData(),
+                            repository.getAllStudyPrograms()
+                        )
+                    )
+                )
             } catch (error: CancellationException) {
                 throw error
             } catch (_: Exception) {

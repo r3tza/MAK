@@ -22,10 +22,12 @@ data class ExportSnapshot(
     val semesters: List<SemesterSnapshot> = emptyList()
 ) {
     companion object {
-        fun from(semesters: Collection<SemesterWithData>): ExportSnapshot =
+        fun from(
+            semesters: Collection<SemesterWithData>,
+            studyPrograms: Collection<StudyProgramEntity>
+        ): ExportSnapshot =
             ExportSnapshot(
-                studyPrograms = semesters
-                    .flatMap { it.studyPrograms }
+                studyPrograms = studyPrograms
                     .distinctBy { it.id }
                     .sortedBy { it.id }
                     .map(StudyProgramSnapshot::from),

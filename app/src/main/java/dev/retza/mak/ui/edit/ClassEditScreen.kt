@@ -45,10 +45,16 @@ data class RecurrenceOptionUi(
     val label: String
 )
 
+data class ClassCourseOptionUi(
+    val id: String,
+    val label: String
+)
+
 data class ClassEditUiState(
     val title: String = "Dodaj zajęcia",
     val name: String = "",
     val courseName: String = "",
+    val semesterProgramId: String? = null,
     val type: String = "",
     val dayLabel: String = "",
     val startTime: String = "",
@@ -63,7 +69,7 @@ data class ClassEditUiState(
     val group: String = "",
     val teacher: String = "",
     val note: String = "",
-    val courseOptions: List<String> = emptyList(),
+    val courseOptions: List<ClassCourseOptionUi> = emptyList(),
     val typeOptions: List<String> = emptyList(),
     val dayOptions: List<String> = emptyList(),
     val recurrenceOptions: List<RecurrenceOptionUi> = emptyList(),
@@ -115,8 +121,12 @@ fun ClassEditScreen(
                         MakSelectField(
                             label = "Kierunek",
                             value = state.courseName,
-                            options = state.courseOptions,
-                            onSelected = onCourseChanged,
+                            options = state.courseOptions.map { it.label },
+                            onSelected = { label ->
+                                state.courseOptions.firstOrNull { it.label == label }?.let {
+                                    onCourseChanged(it.id)
+                                }
+                            },
                             isError = state.errors.containsKey(ClassEditField.Course)
                         )
                         FieldError(state.errors[ClassEditField.Course])
