@@ -1,6 +1,12 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.export.AcademicCalendarSnapshot
+import dev.retza.mak.export.ClassSnapshot
+import dev.retza.mak.export.ExportSnapshot
 import dev.retza.mak.export.JsonExportCodec
+import dev.retza.mak.export.SemesterProgramSnapshot
+import dev.retza.mak.export.SemesterSnapshot
+import dev.retza.mak.export.StudyProgramSnapshot
 import dev.retza.mak.ui.FakeMakRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackSink
@@ -337,6 +343,116 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun prepareImportAcceptsValidSnapshotAndEmitsOpenEffect() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        val effects = mutableListOf<SettingsEffect>()
+        backgroundScope.launch { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+
+        viewModel.prepareImport(validImportBytes())
+        advanceUntilIdle()
+
+        val preview = viewModel.settings.value.importPreview
+        assertEquals(1, preview?.semesterCount)
+        assertEquals(1, preview?.programCount)
+        assertEquals(1, preview?.classCount)
+        assertEquals("Semestr", preview?.activeSemesterName)
+        assertEquals(listOf(SettingsEffect.OpenImportPreview), effects)
+    }
+
+    @Test
+    fun prepareImportRejectsUnsupportedVersion() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        val bytes = JsonExportCodec.encode(validImportSnapshot().copy(schemaVersion = 1))
+        viewModel.prepareImport(bytes)
+        advanceUntilIdle()
+
+        assertTrue(
+            viewModel.settings.value.importErrorMessage?.contains("Nieobsługiwana wersja") == true
+        )
+        assertEquals(null, viewModel.settings.value.importPreview)
+    }
+
+    @Test
+    fun prepareImportRejectsMalformedBytes() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        viewModel.prepareImport(byteArrayOf(1, 2, 3))
+        advanceUntilIdle()
+
+        assertEquals("Nie udało się odczytać pliku.", viewModel.settings.value.importErrorMessage)
+    }
+
+    @Test
+    fun confirmImportReplacesDataAndEmitsCloseEffect() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink = sink)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        val effects = mutableListOf<SettingsEffect>()
+        backgroundScope.launch { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+
+        viewModel.prepareImport(validImportBytes())
+        advanceUntilIdle()
+        viewModel.confirmImport()
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "replaceAllData" })
+        assertEquals(null, viewModel.settings.value.importPreview)
+        assertFalse(viewModel.settings.value.isReplacingData)
+        assertTrue(sink.published.any { it.message == "Zaimportowano plan" })
+        assertEquals(
+            listOf(SettingsEffect.OpenImportPreview, SettingsEffect.CloseImportPreview),
+            effects
+        )
+    }
+
+    @Test
+    fun cancelImportClosesPreviewWithoutReplacing() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        val effects = mutableListOf<SettingsEffect>()
+        backgroundScope.launch { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+
+        viewModel.prepareImport(validImportBytes())
+        advanceUntilIdle()
+        viewModel.cancelImport()
+        advanceUntilIdle()
+
+        assertEquals(null, viewModel.settings.value.importPreview)
+        assertTrue(repository.events.none { it == "replaceAllData" })
+        assertEquals(
+            listOf(SettingsEffect.OpenImportPreview, SettingsEffect.CloseImportPreview),
+            effects
+        )
+    }
+
+    @Test
+    fun importReadErrorSetsMessage() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        viewModel.reportImportReadError()
+        advanceUntilIdle()
+
+        assertEquals("Nie udało się odczytać pliku.", viewModel.settings.value.importErrorMessage)
+    }
+
+    @Test
     fun preferencesRestoreThemeForNewInstance() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val preferences = InMemorySettingsPreferences()
@@ -348,6 +464,45 @@ class SettingsViewModelTest {
 
         assertEquals(ThemeMode.Light, second.themeMode.value)
     }
+    private fun validImportSnapshot(): ExportSnapshot = ExportSnapshot(
+        schemaVersion = 2,
+        studyPrograms = listOf(StudyProgramSnapshot(1, "Informatyka", "#111111")),
+        semesters = listOf(
+            SemesterSnapshot(
+                id = 1,
+                name = "Semestr",
+                isActive = true,
+                calendars = listOf(
+                    AcademicCalendarSnapshot(1, 1, "2026-10-01", "2027-02-28", "A")
+                ),
+                programs = listOf(SemesterProgramSnapshot(1, 1, 1, 1)),
+                classes = listOf(
+                    ClassSnapshot(
+                        id = 1,
+                        semesterId = 1,
+                        semesterProgramId = 1,
+                        name = "Programowanie",
+                        type = "Wykład",
+                        teacherName = null,
+                        dayOfWeek = "MONDAY",
+                        startTime = "08:00",
+                        endTime = "09:30",
+                        room = null,
+                        building = null,
+                        group = null,
+                        recurrence = "EVERY_WEEK",
+                        date = null,
+                        classNote = null
+                    )
+                ),
+                weekOverrides = emptyList(),
+                occurrenceNotes = emptyList(),
+                occurrenceChanges = emptyList()
+            )
+        )
+    )
+
+    private fun validImportBytes(): ByteArray = JsonExportCodec.encode(validImportSnapshot())
 }
 
 private class RecordingFeedbackSink : FeedbackSink {

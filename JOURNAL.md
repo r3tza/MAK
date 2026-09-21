@@ -1,5 +1,13 @@
 # MAK — dziennik decyzji
 
+## 2026-09-21: Etap 13.3, import w interfejsie
+
+- Fakty: Walidacja i atomowe zastąpienie danych istniały, ale nie było sposobu wybrać pliku ani pokazać, co zostanie zastąpione.
+- Decyzja: W sekcji „dane" ustawień dodano akcję „Importuj plan z JSON", która otwiera systemowy wybór pliku. Plik jest czytany poza wątkiem głównym, a `SettingsViewModel.prepareImport` dekoduje go i waliduje przez `ExportImporter`. Poprawny plik ustawia podgląd i efekt `OpenImportPreview`, który nawiguje na osobny ekran `ImportPreview`. Ekran pokazuje liczby semestrów, kierunków, zajęć, korekt, notatek i zmian, nazwę aktywnego semestru oraz ostrzeżenie o zastąpieniu wszystkich danych; „Zastąp dane" woła `replaceAllData`, a „Anuluj" wraca bez zmian. Błąd pliku lub zapisu pokazuje krótki komunikat i nie zmienia danych.
+- Powód: Podgląd przed zastąpieniem chroni przed nieodwracalną utratą planu, a osobny ekran mieści liczby i ostrzeżenie bez ściskania treści na 320 dp.
+- Odrzucone: Import bez podglądu; podgląd jako dialog; czytanie pliku w ViewModelu przez `ContentResolver`; import plików v1.
+- Weryfikacja: `SettingsViewModelTest` pokrywa poprawny plik z efektem otwarcia, złą wersję, uszkodzone bajty, potwierdzenie z `replaceAllData` i komunikatem, anulowanie bez zmiany danych oraz błąd odczytu. `SettingsScreenTest` (kompilowany) sprawdza akcję importu i ekran podglądu przy 320 dp. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór na urządzeniu pozostaje otwarty.
+
 ## 2026-09-21: Etap 13.2, atomowe zastąpienie danych
 
 - Fakty: Walidacja snapshotu istniała, ale nie było operacji podmiany całej bazy i nie było pewności, że błąd zostawi dane bez zmian.

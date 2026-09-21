@@ -380,7 +380,7 @@ Kryterium: zaakceptowany plik odtwarza pełny plan, a nieprawidłowy plik nie zm
 
 Decyzja 2026-09-21: import obsługuje tylko `schemaVersion` 2. Kolejność kroków: walidacja snapshotu, atomowe zastąpienie w repozytorium, podgląd i potwierdzenie w UI.
 
-Postęp: krok 1 zrealizowany (walidacja i mapowanie snapshotu w `ExportImporter`, model `BackupData`, testy JVM `ExportImporterTest`). Krok 2 zrealizowany (`MakRepository.replaceAllData` w jednej transakcji, `deleteAll` w DAO, `RoomPersistenceTest` dla podmiany i rollbacku, `FakeMakRepository`). Kolejny krok: podgląd i potwierdzenie w UI.
+Postęp: krok 1 zrealizowany (walidacja i mapowanie snapshotu w `ExportImporter`, model `BackupData`, testy JVM `ExportImporterTest`). Krok 2 zrealizowany (`MakRepository.replaceAllData` w jednej transakcji, `deleteAll` w DAO, `RoomPersistenceTest` dla podmiany i rollbacku, `FakeMakRepository`). Krok 3 zrealizowany (akcja „Importuj plan z JSON" w ustawieniach, wybór pliku pickerem, odczyt poza wątkiem głównym, walidacja, osobny ekran podglądu z liczbami i ostrzeżeniem, potwierdzenie i zastąpienie danych). Pozostaje odbiór na emulatorze albo urządzeniu.
 
 #### Dalszy etap 14: powiadomienia o kolizjach
 

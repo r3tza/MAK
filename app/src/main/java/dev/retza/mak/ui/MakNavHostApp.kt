@@ -55,7 +55,8 @@ fun MakApp(
     todayViewModel: TodayViewModel,
     feedback: Flow<UiFeedback>,
     openTodayRequests: Flow<Unit>,
-    onCreateExportDocument: () -> Unit
+    onCreateExportDocument: () -> Unit,
+    onImportPlan: () -> Unit
 ) {
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val navController = rememberNavController()
@@ -97,6 +98,7 @@ fun MakApp(
     OccurrenceEffects(occurrenceViewModel, navController)
     ClassEditEffects(classEditViewModel, navController)
     SemesterEffects(semesterViewModel, navController)
+    SettingsEffects(settingsViewModel, navController)
     SetupEffects(setupViewModel, classEditViewModel, navController)
     ScheduleEffects(scheduleViewModel, classEditViewModel, navController)
 
@@ -183,7 +185,8 @@ fun MakApp(
                     setupViewModel.start()
                     openSetup(navController)
                 },
-                onExport = onCreateExportDocument
+                onExport = onCreateExportDocument,
+                onImport = onImportPlan
             )
             setupRoute(setupViewModel = setupViewModel, settingsViewModel = settingsViewModel)
         }

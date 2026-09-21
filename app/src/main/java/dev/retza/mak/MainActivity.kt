@@ -85,6 +85,22 @@ class MainActivity : ComponentActivity() {
                         }
                     }
                 }
+                val importLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.OpenDocument()
+                ) { uri ->
+                    if (uri != null) {
+                        scope.launch {
+                            val bytes = runCatching {
+                                contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                            }.getOrNull()
+                            if (bytes == null) {
+                                settingsViewModel.reportImportReadError()
+                            } else {
+                                settingsViewModel.prepareImport(bytes)
+                            }
+                        }
+                    }
+                }
                 MakApp(
                     viewModel = appViewModel,
                     occurrenceViewModel = occurrenceViewModel,
@@ -96,7 +112,8 @@ class MainActivity : ComponentActivity() {
                     todayViewModel = todayViewModel,
                     feedback = feedbackController.feedback,
                     openTodayRequests = openTodayRequests.receiveAsFlow(),
-                    onCreateExportDocument = { exportLauncher.launch("mak-plan.json") }
+                    onCreateExportDocument = { exportLauncher.launch("mak-plan.json") },
+                    onImportPlan = { importLauncher.launch(arrayOf("application/json")) }
                 )
             }
         }

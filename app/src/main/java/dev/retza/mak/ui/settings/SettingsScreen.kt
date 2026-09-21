@@ -11,7 +11,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakEmptyState
@@ -33,6 +37,16 @@ data class ThemeOptionUi(
     val isSelected: Boolean = false
 )
 
+data class ImportPreviewUi(
+    val semesterCount: Int,
+    val programCount: Int,
+    val classCount: Int,
+    val overrideCount: Int,
+    val noteCount: Int,
+    val changeCount: Int,
+    val activeSemesterName: String?
+)
+
 data class SettingsUiState(
     val semesters: List<SemesterUi> = emptyList(),
     val activeSemesterId: String? = null,
@@ -41,6 +55,10 @@ data class SettingsUiState(
     val notificationsDetails: String = "Treść i moment wysyłki zostaną ustalone.",
     val semesterToDeleteId: String? = null,
     val isDeletingSemester: Boolean = false,
+    val importPreview: ImportPreviewUi? = null,
+    val importErrorMessage: String? = null,
+    val isPreparingImport: Boolean = false,
+    val isReplacingData: Boolean = false,
     val status: ScreenStatus = ScreenStatus.Ready
 )
 
@@ -55,6 +73,8 @@ fun SettingsScreen(
     onCancelDelete: () -> Unit,
     onThemeSelected: (String) -> Unit,
     onExport: () -> Unit,
+    onImport: () -> Unit,
+    onDismissImportError: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -111,6 +131,11 @@ fun SettingsScreen(
                         onClick = onExport
                     )
                     MakSecondaryAction(
+                        text = "Importuj plan z JSON",
+                        onClick = onImport,
+                        enabled = !state.isPreparingImport
+                    )
+                    MakSecondaryAction(
                         text = "Usuń wybrany semestr",
                         onClick = { active?.id?.let(onDeleteSemester) },
                         enabled = active != null,
@@ -154,5 +179,81 @@ fun SettingsScreen(
                 )
             }
         }
+    }
+    if (state.importErrorMessage != null) {
+        MakDialog(
+            title = "Nie udało się zaimportować",
+            description = state.importErrorMessage,
+            onDismiss = onDismissImportError
+        ) {
+            MakSecondaryAction(text = "Zamknij", onClick = onDismissImportError)
+        }
+    }
+}
+
+@Composable
+fun ImportPreviewScreen(
+    state: SettingsUiState,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val preview = state.importPreview
+    MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
+        MakSectionHeader(
+            eyebrow = "Import",
+            title = "Podgląd kopii",
+            subtitle = "Sprawdź zawartość pliku przed zastąpieniem danych."
+        )
+        if (preview == null) {
+            MakEmptyState("Nie wybrano poprawnej kopii do importu.")
+        } else {
+            MakNoteBanner(
+                title = "Zastąpisz wszystkie lokalne dane",
+                subtitle = "Import zastępuje cały plan. Tej operacji nie można cofnąć."
+            )
+            ImportStatRow("Semestry", preview.semesterCount)
+            ImportStatRow("Kierunki", preview.programCount)
+            ImportStatRow("Zajęcia", preview.classCount)
+            ImportStatRow("Korekty tygodni", preview.overrideCount)
+            ImportStatRow("Notatki", preview.noteCount)
+            ImportStatRow("Zmiany wystąpień", preview.changeCount)
+            Text(
+                text = "Aktywny semestr: ${preview.activeSemesterName ?: "brak"}",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            state.importErrorMessage?.let {
+                Text(it, color = MaterialTheme.colorScheme.error)
+            }
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm),
+                modifier = Modifier.fillMaxWidth()
+            ) {
+                MakSecondaryAction(
+                    text = "Anuluj",
+                    onClick = onCancel,
+                    modifier = Modifier.weight(1f),
+                    enabled = !state.isReplacingData
+                )
+                MakPrimaryAction(
+                    text = "Zastąp dane",
+                    onClick = onConfirm,
+                    modifier = Modifier.weight(1f),
+                    enabled = !state.isReplacingData
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun ImportStatRow(label: String, value: Int) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.SpaceBetween
+    ) {
+        Text(label, style = MaterialTheme.typography.bodyMedium)
+        Text(value.toString(), fontWeight = FontWeight.SemiBold)
     }
 }

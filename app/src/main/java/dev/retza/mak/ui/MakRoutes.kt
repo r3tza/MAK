@@ -10,6 +10,7 @@ object MakRoutes {
     const val SemesterOverrides = "semester/{semesterId}/week-overrides"
     const val SemesterCalendars = "semester/{semesterId}/calendars"
     const val Settings = "settings"
+    const val ImportPreview = "settings/import"
     const val Setup = "setup"
 }
 
@@ -38,6 +39,9 @@ internal fun shouldCloseClassEditor(currentRoute: String?): Boolean =
 internal fun shouldCloseSemesterConfiguration(currentRoute: String?): Boolean =
     currentRoute == MakRoutes.Semester
 
+internal fun shouldCloseImportPreview(currentRoute: String?): Boolean =
+    currentRoute == MakRoutes.ImportPreview
+
 internal fun shouldHandleSetupEffect(currentRoute: String?): Boolean =
     currentRoute == MakRoutes.Setup
 
@@ -62,6 +66,7 @@ internal fun titleForRoute(route: String?): String = when (route) {
     MakRoutes.SemesterOverrides -> "Korekty tygodni"
     MakRoutes.SemesterCalendars -> "Kalendarze"
     MakRoutes.Settings -> "Ustawienia"
+    MakRoutes.ImportPreview -> "Import"
     MakRoutes.Setup -> "Konfiguracja"
     else -> "Dzisiaj"
 }
