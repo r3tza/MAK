@@ -9,6 +9,7 @@
 - Powód: Zmiana trasy w jednym przepływie nie powinna wymagać edycji plików pozostałych przepływów, a nawigacja powinna mieć jedno źródło trasy. Druga kopia trasy plus biała lista wyjątków to ten sam rodzaj błędu co drugi zegar.
 - Odrzucone: Osobny `NavHost` albo `NavController` dla każdej grupy; dodatkowa warstwa nawigacyjna; trzymanie kopii trasy w `AppViewModel`; porównywanie tras wewnętrznych w hoście.
 - Weryfikacja: Koin compiler plugin zatrzymał kompilację, gdy przy przepisywaniu `AppViewModel` zniknęła adnotacja `@KoinViewModel`, co potwierdza walidację grafu. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. `MakNavigationTest` pilnuje budowy tras, reguł `close`/`setup` i `addAction`.
+- Otwarte: brak testu kliknięcia widgetu przy otwartym ekranie podrzędnym i odtworzenia stosu po ponownym utworzeniu aktywności. Oba wymagają urządzenia i pozostają do domknięcia później.
 
 ## 2026-09-21: Koin jako composition root
 

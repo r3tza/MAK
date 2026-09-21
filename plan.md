@@ -287,6 +287,8 @@ Status: zrealizowane. Dodano Koin 4.2.2 przez `koin-bom` i Koin compiler plugin 
 
 Kryterium: zmiana trasy jednego przepływu nie wymaga edycji hostów pozostałych przepływów.
 
+Luka weryfikacyjna: brak jeszcze testu kliknięcia widgetu, gdy aplikacja jest otwarta na ekranie podrzędnym, oraz testu odtworzenia stosu nawigacji po ponownym utworzeniu aktywności. Do domknięcia na urządzeniu; nie blokuje etapu.
+
 Status: zrealizowane. Trasy i efekty podzielono na grupy w osobnych plikach: `TodayScheduleRoutes.kt` (Dzisiaj i Plan, `ScheduleEffect`), `ClassOccurrenceRoutes.kt` (edycja zajęć i szczegóły wystąpienia, `OccurrenceEffect`/`ClassEditEffect`, akcje topbaru), `SemesterRoutes.kt` (semestr, kierunki, korekty; `SemesterEffect`), `SettingsRoutes.kt` (ustawienia) i `SetupRoutes.kt` (kreator; `SetupEffect`). Wspólne stałe tras i mapowanie przeniesiono do `MakRoutes.kt`. `MakApp` pozostał jednym hostem: jeden `NavController`, jeden `Scaffold`, topbar, dolna nawigacja i globalny snackbar; wywołuje tylko `NavGraphBuilder`-owe rozszerzenia grup i zbiera ich efekty. Zmiana trasy wewnątrz grupy nie wymaga edycji pozostałych grup.
 
 #### Dalszy etap 8: modele StudyProgram i AcademicCalendar
