@@ -3,11 +3,11 @@ package dev.retza.mak.ui.setup
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
-import dev.retza.mak.data.entity.AcademicCalendarEntity
-import dev.retza.mak.data.entity.SemesterEntity
-import dev.retza.mak.data.entity.StudyProgramEntity
-import dev.retza.mak.data.entity.WeekType
-import dev.retza.mak.data.repository.MakRepository
+import dev.retza.mak.data.repository.AcademicCalendarRecord
+import dev.retza.mak.data.repository.SemesterRecord
+import dev.retza.mak.data.repository.SemesterRepository
+import dev.retza.mak.data.repository.StudyProgramRecord
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.feedback.FeedbackSink
@@ -68,7 +68,7 @@ data class SetupSemesterResume(
 
 @KoinViewModel
 class SetupViewModel(
-    private val repository: MakRepository,
+    private val semesterRepository: SemesterRepository,
     private val feedbackSink: FeedbackSink
 ) : ViewModel() {
     private val state = MutableStateFlow(SetupWizardUiState())
@@ -181,18 +181,18 @@ class SetupViewModel(
         val token = sessionToken
         saveJob = viewModelScope.launch {
             try {
-                val ids = repository.saveSetupConfiguration(
-                    SemesterEntity(
+                val ids = semesterRepository.saveSetupConfiguration(
+                    SemesterRecord(
                         id = existingSemester ?: 0L,
                         name = current.semesterName.trim(),
                         isActive = true
                     ),
-                    StudyProgramEntity(
+                    StudyProgramRecord(
                         id = existingCourse ?: 0L,
                         name = name,
                         color = current.courseColor.ifBlank { "#137b71" }
                     ),
-                    AcademicCalendarEntity(
+                    AcademicCalendarRecord(
                         id = existingCalendar ?: 0L,
                         semesterId = existingSemester ?: 0L,
                         startDate = start,

@@ -120,6 +120,10 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository {
     private fun semesterById(id: Long): SemesterEntity? =
         semesterFlow.value.firstOrNull { it.id == id }
 
+    suspend fun awaitDataGate() {
+        occurrenceDataGate?.await()
+    }
+
     override fun observeSemesters(): Flow<List<SemesterEntity>> = semesterFlow
     override fun observeActiveSemester(): Flow<SemesterEntity?> =
         combine(semesterFlow, activeSemesterFlow) { list, id -> list.firstOrNull { it.id == id } }
@@ -156,7 +160,8 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository {
         flowOf(semesterPrograms.filter { it.semesterId == semesterId })
     override fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarEntity>> =
         flowOf(calendars.filter { it.semesterId == semesterId })
-    override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>> = flowOf(emptyList())
+    override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>> =
+        flowOf(weekOverrides.filter { it.semesterId == semesterId })
     override fun observeClasses(semesterId: Long): Flow<List<ClassRecord>> =
         flowOf(classes.map { it.toRecord() })
     override fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteRecord>> =

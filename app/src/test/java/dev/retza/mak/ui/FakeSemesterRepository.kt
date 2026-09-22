@@ -11,6 +11,8 @@ import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.data.repository.toEntity
 import dev.retza.mak.data.repository.toRecord
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 internal class FakeSemesterRepository(
@@ -22,8 +24,10 @@ internal class FakeSemesterRepository(
     override fun observeActiveSemester(): Flow<SemesterRecord?> =
         delegate.observeActiveSemester().map { it?.toRecord() }
 
-    override fun observeSemester(id: Long): Flow<SemesterRecord?> =
-        delegate.observeSemester(id).map { it?.toRecord() }
+    override fun observeSemester(id: Long): Flow<SemesterRecord?> = flow {
+        delegate.awaitDataGate()
+        emit(delegate.observeSemester(id).first()?.toRecord())
+    }
 
     override fun observeStudyPrograms(): Flow<List<StudyProgramRecord>> =
         delegate.observeStudyPrograms().map { list -> list.map { it.toRecord() } }

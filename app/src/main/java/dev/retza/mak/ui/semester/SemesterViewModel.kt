@@ -3,18 +3,17 @@ package dev.retza.mak.ui.semester
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
-import dev.retza.mak.data.database.SemesterWithData
-import dev.retza.mak.data.entity.AcademicCalendarEntity
-import dev.retza.mak.data.entity.SemesterEntity
-import dev.retza.mak.data.entity.StudyProgramEntity
-import dev.retza.mak.data.entity.WeekOverrideEntity
-import dev.retza.mak.data.entity.WeekOverrideScope
-import dev.retza.mak.data.entity.WeekType
-import dev.retza.mak.data.repository.MakRepository
+import dev.retza.mak.data.repository.AcademicCalendarRecord
+import dev.retza.mak.data.repository.SemesterProgramRecord
+import dev.retza.mak.data.repository.SemesterRecord
+import dev.retza.mak.data.repository.SemesterRepository
+import dev.retza.mak.data.repository.StudyProgramRecord
+import dev.retza.mak.data.repository.WeekOverrideRecord
+import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
-import dev.retza.mak.ui.sharedCalendar
 import java.time.DayOfWeek
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -33,7 +32,7 @@ sealed interface SemesterEffect {
 
 @KoinViewModel
 class SemesterViewModel(
-    private val repository: MakRepository,
+    private val semesterRepository: SemesterRepository,
     private val feedbackSink: FeedbackSink
 ) : ViewModel() {
     private val state = MutableStateFlow(SemesterScreenUiState())
@@ -59,12 +58,12 @@ class SemesterViewModel(
         val parsed = id.toLongOrNull() ?: return
         openJob = viewModelScope.launch {
             try {
-                repository.setActiveSemester(parsed)
-                val data = repository.observeSemesterData(parsed).first() ?: return@launch
+                semesterRepository.setActiveSemester(parsed)
+                val snapshot = loadSnapshot(parsed) ?: return@launch
                 if (token != sessionToken) return@launch
                 semesterIdState.value = parsed
-                selectedCalendarId = data.sharedCalendar()?.id
-                state.value = data.toSemesterScreenState(selectedCalendarId)
+                selectedCalendarId = snapshot.sharedCalendar()?.id
+                state.value = snapshot.toSemesterScreenState(selectedCalendarId)
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {
@@ -115,9 +114,9 @@ class SemesterViewModel(
         val token = sessionToken
         viewModelScope.launch {
             try {
-                repository.updateSemesterWithCalendar(
-                    SemesterEntity(id = id, name = form.name.trim()),
-                    AcademicCalendarEntity(
+                semesterRepository.updateSemesterWithCalendar(
+                    SemesterRecord(id = id, name = form.name.trim()),
+                    AcademicCalendarRecord(
                         id = currentCalendarId,
                         semesterId = id,
                         startDate = start,
@@ -176,8 +175,8 @@ class SemesterViewModel(
         val token = sessionToken
         viewModelScope.launch {
             try {
-                repository.saveCalendar(
-                    AcademicCalendarEntity(
+                semesterRepository.saveCalendar(
+                    AcademicCalendarRecord(
                         id = calendarId,
                         semesterId = semester,
                         startDate = start,
@@ -284,7 +283,7 @@ class SemesterViewModel(
             update { it.copy(courseNameError = "Brak kalendarza semestru.") }
             return
         }
-        val program = StudyProgramEntity(
+        val program = StudyProgramRecord(
             id = existingProgramId ?: 0L,
             name = name,
             color = draft.courseColorDraft.ifBlank { "#137b71" }
@@ -294,13 +293,13 @@ class SemesterViewModel(
         viewModelScope.launch {
             try {
                 if (draft.courseCalendarMode == CourseCalendarModeUi.SEPARATE) {
-                    repository.addSeparatedSemesterProgram(
+                    semesterRepository.addSeparatedSemesterProgram(
                         semesterId = id,
                         studyProgram = program,
                         sourceCalendarId = sourceCalendarId
                     )
                 } else {
-                    repository.saveStudyProgramAssignment(
+                    semesterRepository.saveStudyProgramAssignment(
                         semesterId = id,
                         studyProgram = program,
                         academicCalendarId = sourceCalendarId
@@ -333,7 +332,7 @@ class SemesterViewModel(
         val token = sessionToken
         viewModelScope.launch {
             try {
-                repository.separateSemesterProgramCalendar(id)
+                semesterRepository.separateSemesterProgramCalendar(id)
                 if (!isCurrentSession(token)) return@launch
                 refresh(token)
                 if (!isCurrentSession(token)) return@launch
@@ -357,11 +356,11 @@ class SemesterViewModel(
         val semesterId = semesterIdState.value ?: return
         val token = sessionToken
         viewModelScope.launch {
-            val data = repository.observeSemesterData(semesterId).first() ?: return@launch
+            val data = loadSnapshot(semesterId) ?: return@launch
             if (!isCurrentSession(token)) return@launch
-            val assignment = data.semesterPrograms.firstOrNull { it.id == assignmentValue } ?: return@launch
+            val assignment = data.programs.firstOrNull { it.id == assignmentValue } ?: return@launch
             val sourceBecomesUnused = assignment.academicCalendarId != calendarValue &&
-                data.semesterPrograms.none {
+                data.programs.none {
                     it.academicCalendarId == assignment.academicCalendarId && it.id != assignmentValue
                 }
             val programName = data.studyPrograms
@@ -393,7 +392,7 @@ class SemesterViewModel(
         val token = sessionToken
         viewModelScope.launch {
             try {
-                repository.reconnectSemesterProgram(assignmentId, calendarId)
+                semesterRepository.reconnectSemesterProgram(assignmentId, calendarId)
                 if (!isCurrentSession(token)) return@launch
                 refresh(token)
                 if (!isCurrentSession(token)) return@launch
@@ -420,7 +419,7 @@ class SemesterViewModel(
         val token = sessionToken
         viewModelScope.launch {
             try {
-                repository.deleteCalendar(id)
+                semesterRepository.deleteCalendar(id)
                 if (!isCurrentSession(token)) return@launch
                 if (selectedCalendarId == id) selectedCalendarId = null
                 refresh(token)
@@ -446,7 +445,7 @@ class SemesterViewModel(
         val token = sessionToken
         viewModelScope.launch {
             try {
-                repository.deleteSemesterProgram(assignmentId)
+                semesterRepository.deleteSemesterProgram(assignmentId)
                 if (!isCurrentSession(token)) return@launch
                 refresh(token)
                 if (!isCurrentSession(token)) return@launch
@@ -467,14 +466,14 @@ class SemesterViewModel(
     private suspend fun refresh(token: Long) {
         if (!isCurrentSession(token)) return
         val id = semesterIdState.value ?: return
-        val data = repository.observeSemesterData(id).first() ?: return
+        val data = loadSnapshot(id) ?: return
         if (!isCurrentSession(token)) return
         val current = state.value
-        selectedCalendarId = data.academicCalendars.firstOrNull { it.id == selectedCalendarId }?.id
+        selectedCalendarId = data.calendars.firstOrNull { it.id == selectedCalendarId }?.id
             ?: data.sharedCalendar()?.id
         val requestedCourseCalendarId = current.courseCalendarId?.toLongOrNull()
         val courseCalendarId = requestedCourseCalendarId
-            ?.takeIf { id -> data.academicCalendars.any { it.id == id } }
+            ?.takeIf { value -> data.calendars.any { it.id == value } }
             ?: selectedCalendarId
         state.value = data.toSemesterScreenState(selectedCalendarId).copy(
             courseNameDraft = current.courseNameDraft,
@@ -484,6 +483,17 @@ class SemesterViewModel(
             courseProgramMode = current.courseProgramMode,
             courseProgramId = current.courseProgramId,
             overrideForm = current.overrideForm
+        )
+    }
+
+    private suspend fun loadSnapshot(id: Long): SemesterSnapshot? {
+        val semester = semesterRepository.observeSemester(id).first() ?: return null
+        return SemesterSnapshot(
+            semester = semester,
+            programs = semesterRepository.observeSemesterPrograms(id).first(),
+            studyPrograms = semesterRepository.observeStudyPrograms().first(),
+            calendars = semesterRepository.observeCalendars(id).first(),
+            overrides = semesterRepository.observeWeekOverrides(id).first()
         )
     }
 
@@ -524,8 +534,8 @@ class SemesterViewModel(
         val token = sessionToken
         viewModelScope.launch {
             try {
-                repository.saveWeekOverride(
-                    WeekOverrideEntity(
+                semesterRepository.saveWeekOverride(
+                    WeekOverrideRecord(
                         id = form.id?.toLongOrNull() ?: 0,
                         semesterId = semester,
                         academicCalendarId = currentCalendarId,
@@ -560,7 +570,7 @@ class SemesterViewModel(
         val token = sessionToken
         viewModelScope.launch {
             try {
-                repository.deleteWeekOverride(overrideId)
+                semesterRepository.deleteWeekOverride(overrideId)
                 if (!isCurrentSession(token)) return@launch
                 refresh(token)
                 if (!isCurrentSession(token)) return@launch
@@ -583,12 +593,23 @@ class SemesterViewModel(
 private fun String.toLocalDateOrNull(): java.time.LocalDate? =
     runCatching { java.time.LocalDate.parse(this) }.getOrNull()
 
-private fun SemesterWithData.toSemesterScreenState(selectedCalendarId: Long?): SemesterScreenUiState {
-    val selected = academicCalendars.firstOrNull { it.id == selectedCalendarId } ?: sharedCalendar()
-    val courseItems = semesterPrograms.mapNotNull { assignment ->
+private data class SemesterSnapshot(
+    val semester: SemesterRecord,
+    val programs: List<SemesterProgramRecord>,
+    val studyPrograms: List<StudyProgramRecord>,
+    val calendars: List<AcademicCalendarRecord>,
+    val overrides: List<WeekOverrideRecord>
+)
+
+private fun SemesterSnapshot.sharedCalendar(): AcademicCalendarRecord? =
+    calendars.minByOrNull { it.id }
+
+private fun SemesterSnapshot.toSemesterScreenState(selectedCalendarId: Long?): SemesterScreenUiState {
+    val selected = calendars.firstOrNull { it.id == selectedCalendarId } ?: sharedCalendar()
+    val courseItems = programs.mapNotNull { assignment ->
         val program = studyPrograms.firstOrNull { it.id == assignment.studyProgramId }
             ?: return@mapNotNull null
-        val calendar = academicCalendars.firstOrNull { it.id == assignment.academicCalendarId }
+        val calendar = calendars.firstOrNull { it.id == assignment.academicCalendarId }
         SemesterCourseUi(
             assignmentId = assignment.id.toString(),
             programId = assignment.studyProgramId.toString(),
@@ -596,7 +617,7 @@ private fun SemesterWithData.toSemesterScreenState(selectedCalendarId: Long?): S
             color = program.color,
             calendarId = calendar?.id?.toString().orEmpty(),
             calendarLabel = calendarLabel(calendar),
-            sharesCalendar = semesterPrograms.count {
+            sharesCalendar = programs.count {
                 it.academicCalendarId == assignment.academicCalendarId
             } > 1
         )
@@ -608,7 +629,7 @@ private fun SemesterWithData.toSemesterScreenState(selectedCalendarId: Long?): S
             endDate = selected?.endDate?.toString().orEmpty(),
             firstWeek = selected?.let { WeekTypeUi.valueOf(it.firstWeekType.name) } ?: WeekTypeUi.A
         ),
-        overrides = weekOverrides
+        overrides = overrides
             .filter { it.academicCalendarId == selected?.id }
             .map { override ->
                 WeekOverrideUi(
@@ -618,15 +639,15 @@ private fun SemesterWithData.toSemesterScreenState(selectedCalendarId: Long?): S
                     WeekOverrideScopeUi.valueOf(override.scope.name)
                 )
             },
-        overrideCount = weekOverrides.size,
+        overrideCount = overrides.size,
         courseItems = courseItems,
-        calendars = academicCalendars.map { calendar ->
+        calendars = calendars.map { calendar ->
             SemesterCalendarUi(
                 id = calendar.id.toString(),
                 startDate = calendar.startDate.toString(),
                 endDate = calendar.endDate.toString(),
                 firstWeek = WeekTypeUi.valueOf(calendar.firstWeekType.name),
-                courseNames = semesterPrograms
+                courseNames = programs
                     .filter { it.academicCalendarId == calendar.id }
                     .mapNotNull { assignment ->
                         studyPrograms.firstOrNull { it.id == assignment.studyProgramId }?.name
@@ -641,5 +662,5 @@ private fun SemesterWithData.toSemesterScreenState(selectedCalendarId: Long?): S
     )
 }
 
-private fun calendarLabel(calendar: AcademicCalendarEntity?): String =
+private fun calendarLabel(calendar: AcademicCalendarRecord?): String =
     calendar?.let { "${it.startDate} - ${it.endDate}" }.orEmpty()

@@ -1,6 +1,7 @@
 package dev.retza.mak.ui.setup
 
 import dev.retza.mak.ui.FakeMakRepository
+import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.FeedbackSink
@@ -27,7 +28,7 @@ class SetupViewModelTest {
     private fun viewModel(
         repository: FakeMakRepository,
         sink: FeedbackSink = FeedbackController()
-    ) = SetupViewModel(repository, sink)
+    ) = SetupViewModel(FakeSemesterRepository(repository), sink)
 
     private fun SetupViewModel.fillValidSemester() {
         update { it.copy(semesterName = "Nowy", startDate = "2026-09-01", endDate = "2026-10-01") }

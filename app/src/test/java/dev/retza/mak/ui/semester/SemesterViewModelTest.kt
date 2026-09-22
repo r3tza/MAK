@@ -4,6 +4,7 @@ import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.ui.FakeMakRepository
+import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.FeedbackSink
@@ -30,10 +31,10 @@ class SemesterViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
     private fun viewModel(repository: FakeMakRepository) =
-        SemesterViewModel(repository, FeedbackController())
+        SemesterViewModel(FakeSemesterRepository(repository), FeedbackController())
 
     private fun recordingViewModel(repository: FakeMakRepository, sink: RecordingFeedbackSink) =
-        SemesterViewModel(repository, sink)
+        SemesterViewModel(FakeSemesterRepository(repository), sink)
 
     @Test
     fun openMapsFormCoursesAndOverrides() = runTest(mainDispatcher) {
