@@ -3,17 +3,16 @@ package dev.retza.mak.ui.schedule
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
-import dev.retza.mak.data.database.SemesterWithData
-import dev.retza.mak.data.entity.WeekOverrideEntity
-import dev.retza.mak.data.entity.WeekOverrideScope
-import dev.retza.mak.data.entity.WeekType
-import dev.retza.mak.data.repository.MakRepository
-import dev.retza.mak.data.repository.toActivePlanData
+import dev.retza.mak.data.repository.ScheduleRepository
+import dev.retza.mak.data.repository.SemesterRepository
+import dev.retza.mak.data.repository.WeekOverrideRecord
+import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.Recurrence
-import dev.retza.mak.ui.calendarForAssignment
+import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarMarkerColor
@@ -63,7 +62,8 @@ private data class ScheduleControls(
 @OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class ScheduleViewModel(
-    private val repository: MakRepository,
+    private val semesterRepository: SemesterRepository,
+    private val scheduleRepository: ScheduleRepository,
     private val clock: Clock,
     private val activePlanProvider: ActivePlanProvider
 ) : ViewModel() {
@@ -76,11 +76,17 @@ class ScheduleViewModel(
         )
     )
 
-    private val activeSemesterData = repository.observeActiveSemester().flatMapLatest { semester ->
-        if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    private val activePlanData = semesterRepository.observeActiveSemester()
+        .flatMapLatest { semester ->
+            if (semester == null) {
+                flowOf(null)
+            } else {
+                scheduleRepository.observeActivePlanData(semester.id)
+            }
+        }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val schedule: StateFlow<ScheduleUiState> = combine(activeSemesterData, controls) { data, control ->
+    val schedule: StateFlow<ScheduleUiState> = combine(activePlanData, controls) { data, control ->
         buildSchedule(data, control)
     }.stateIn(
         scope = viewModelScope,
@@ -127,19 +133,19 @@ class ScheduleViewModel(
     }
 
     fun saveVisibleWeekOverride(weekType: WeekTypeUi, scope: WeekOverrideScopeUi) {
-        val data = activeSemesterData.value ?: return
+        val data = activePlanData.value ?: return
         val calendarId = visibleWeekCalendarId(data) ?: return
         val monday = controls.value.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val entityScope = WeekOverrideScope.valueOf(scope.name)
         val existing = data.weekOverrides.firstOrNull {
-            it.academicCalendarId == calendarId &&
+            it.academicCalendarId == calendarId.toString() &&
                 it.weekStartDate == monday && it.scope == entityScope
         }
         viewModelScope.launch {
-            repository.saveWeekOverride(
-                WeekOverrideEntity(
-                    id = existing?.id ?: 0,
-                    semesterId = data.semester.id,
+            semesterRepository.saveWeekOverride(
+                WeekOverrideRecord(
+                    id = existing?.id?.toLongOrNull() ?: 0,
+                    semesterId = data.semester.id.toLong(),
                     academicCalendarId = calendarId,
                     weekStartDate = monday,
                     weekType = WeekType.valueOf(weekType.name),
@@ -150,28 +156,28 @@ class ScheduleViewModel(
     }
 
     fun clearVisibleWeekOverride(scope: WeekOverrideScopeUi) {
-        val data = activeSemesterData.value ?: return
+        val data = activePlanData.value ?: return
         val calendarId = visibleWeekCalendarId(data) ?: return
         val monday = controls.value.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val entityScope = WeekOverrideScope.valueOf(scope.name)
         val existing = data.weekOverrides.firstOrNull {
-            it.academicCalendarId == calendarId &&
+            it.academicCalendarId == calendarId.toString() &&
                 it.weekStartDate == monday && it.scope == entityScope
         } ?: return
-        viewModelScope.launch { repository.deleteWeekOverride(existing.id) }
+        viewModelScope.launch { semesterRepository.deleteWeekOverride(existing.id.toLong()) }
     }
 
-    private fun visibleWeekCalendarId(data: SemesterWithData): Long? {
+    private fun visibleWeekCalendarId(data: ActivePlanData): Long? {
         val filterId = controls.value.courseFilterId
-        if (filterId == "all") return data.academicCalendars.singleOrNull()?.id
-        val assignment = data.semesterPrograms.firstOrNull { it.id.toString() == filterId } ?: return null
-        return data.calendarForAssignment(assignment.id)?.id
+        if (filterId == "all") return data.calendars.singleOrNull()?.id?.toLongOrNull()
+        val assignment = data.semesterPrograms.firstOrNull { it.id == filterId } ?: return null
+        return data.calendars.firstOrNull { it.id == assignment.academicCalendarId }?.id?.toLongOrNull()
     }
 
-    private fun buildSchedule(data: SemesterWithData?, control: ScheduleControls): ScheduleUiState {
+    private fun buildSchedule(data: ActivePlanData?, control: ScheduleControls): ScheduleUiState {
         if (data == null) return emptyScheduleState()
         val activeFilter = control.courseFilterId.takeIf { id ->
-            id == "all" || data.semesterPrograms.any { it.id.toString() == id }
+            id == "all" || data.semesterPrograms.any { it.id == id }
         } ?: "all"
         val selectedPlan = activePlan(data, control.scheduleDate)
         val selected = selectedPlan.schedule
@@ -209,11 +215,10 @@ class ScheduleViewModel(
         }
         val calendarLabels = conflictLabels(calendarPlan.collisions)
         val relevantCalendarIds = if (activeFilter == "all") {
-            data.academicCalendars.mapTo(mutableSetOf()) { it.id }
+            data.calendars.mapTo(mutableSetOf()) { it.id }
         } else {
             setOfNotNull(
-                data.semesterPrograms.firstOrNull { it.id.toString() == activeFilter }
-                    ?.let { data.calendarForAssignment(it.id)?.id }
+                data.semesterPrograms.firstOrNull { it.id == activeFilter }?.academicCalendarId
             )
         }
         return ScheduleUiState(
@@ -243,18 +248,18 @@ class ScheduleViewModel(
                     dateLabel = date.dayOfMonth.toString(),
                     accessibilityLabel = date.format(fullDateFormatter),
                     isSelected = date == control.scheduleDate,
-                    isEnabled = data.academicCalendars.any { calendar ->
+                    isEnabled = data.calendars.any { calendar ->
                         !date.isBefore(calendar.startDate) && !date.isAfter(calendar.endDate)
                     }
                 )
             },
             filters = listOf(ScheduleFilterUi("all", "Wszystkie", activeFilter == "all")) +
                 data.semesterPrograms.map { assignment ->
-                    val program = data.studyPrograms.firstOrNull { it.id == assignment.studyProgramId }
+                    val program = data.courses.firstOrNull { it.id == assignment.studyProgramId }
                     ScheduleFilterUi(
-                        assignment.id.toString(),
+                        assignment.id,
                         program?.name.orEmpty(),
-                        activeFilter == assignment.id.toString()
+                        activeFilter == assignment.id
                     )
                 },
             selectedDayLabel = dayNames[control.scheduleDate.dayOfWeek].orEmpty(),
@@ -278,14 +283,14 @@ class ScheduleViewModel(
         )
     }
 
-    private fun cancelledItems(data: SemesterWithData, date: LocalDate): List<ClassItemUi> =
+    private fun cancelledItems(data: ActivePlanData, date: LocalDate): List<ClassItemUi> =
         data.occurrenceChanges.filter {
-            it.originalDate == date && it.kind == dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED
+            it.originalDate == date && it.kind == OccurrenceChangeKind.CANCELLED
         }.mapNotNull { change ->
             val item = data.classes.firstOrNull { it.id == change.classId } ?: return@mapNotNull null
             val assignment = data.semesterPrograms.firstOrNull { it.id == item.semesterProgramId }
             val program = assignment?.let { link ->
-                data.studyPrograms.firstOrNull { it.id == link.studyProgramId }
+                data.courses.firstOrNull { it.id == link.studyProgramId }
             }
             ClassItemUi(
                 id = "${item.id}:$date",
@@ -304,8 +309,8 @@ class ScheduleViewModel(
             )
         }
 
-    private fun activePlan(data: SemesterWithData, date: LocalDate) =
-        activePlanProvider.resolve(data.toActivePlanData(), date)
+    private fun activePlan(data: ActivePlanData, date: LocalDate) =
+        activePlanProvider.resolve(data, date)
 }
 
 private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
@@ -319,11 +324,11 @@ private fun emptyScheduleState() = ScheduleUiState(
 )
 
 private fun markerColor(
-    data: SemesterWithData,
+    data: ActivePlanData,
     occurrence: PlannedOccurrence
 ): CalendarMarkerColor {
     if (occurrence.occurrenceChange != null) return CalendarMarkerColor.Error
-    val index = data.studyPrograms.indexOfFirst { it.id.toString() == occurrence.studyProgram?.id }
+    val index = data.courses.indexOfFirst { it.id == occurrence.studyProgram?.id }
     return if (index > 0) CalendarMarkerColor.Secondary else CalendarMarkerColor.Primary
 }
 
