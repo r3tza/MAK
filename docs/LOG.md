@@ -10,7 +10,8 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: Dodano `scripts/check_map.py` używający wyłącznie standardowej biblioteki Pythona. Skrypt sprawdza lokalne odnośniki Markdown w `README.md`, `AGENTS.md`, `CLAUDE.md` i `docs/*.md` z uwzględnieniem wielkości liter, wymaga formatu `## N. tytuł (ID)` w `PLAN.md`, limitu pięciu kroków i istnienia kroków w `QUEUE.md`, wykrywa w `QUEUE.md` powtórzone identyfikatory, nieznane statusy i zależności do nieistniejących zadań, a w `LOG.md` przekroczenie 20 wpisów. Wypisuje plik i numer wiersza, zwraca 0 albo 1 i nic nie zapisuje. `scripts/test_check_map.py` pokrywa dziewięć przypadków na katalogach tymczasowych.
 - Powód: Kontrola ma być tania, lokalna i bez dodatkowych pakietów, żeby wychwycić regresję dokumentacji przed commitem.
 - Odrzucone: `scripts/check_text.py` i CI na tym etapie; uruchamianie Gradle albo sieci ze skryptu; zapisywanie plików przez skrypt.
-- Weryfikacja: `python3 scripts/test_check_map.py` przechodzi (9 testów), a `python3 scripts/check_map.py` na bieżącym repozytorium zwraca kod 0. Status I-07 to `gotowe`, a `PLAN.md` startuje teraz od I-04.
+- Narzędzia i mapa: `docs/STACK.md` opisuje Python 3 ze standardową biblioteką i oba skrypty bez sieci oraz Gradle, a `docs/MAP.md` wskazuje `scripts/check_map.py` i jego testy przy pytaniu o spójność dokumentów.
+- Weryfikacja: `python3 scripts/test_check_map.py` przechodzi (9 testów), a `python3 scripts/check_map.py` na bieżącym repozytorium zwraca kod 0. Nadmiar kroku planu i wpisu logu raportowany jest z numerem wiersza. Status I-07 to `gotowe`, a `PLAN.md` startuje teraz od I-04.
 
 ## 2026-09-22: Karty zajęć z dwoma notatkami (I-03)
 

@@ -5,7 +5,7 @@
 - Źródło prawdy dla narzędzi i wersji: ten plik.
 - Język dokumentacji: polski.
 - Język odpowiedzi dla użytkownika: polski.
-- Ostatnia zaakceptowana aktualizacja: 2026-09-21.
+- Ostatnia zaakceptowana aktualizacja: 2026-09-22.
 
 ## 2. Język i środowisko uruchomieniowe
 
@@ -51,6 +51,7 @@
 
 - Android Studio i Gradle do budowania istniejącego projektu aplikacji.
 - Git do historii zmian.
+- Python 3 ze standardową biblioteką do kontroli dokumentacji: `scripts/check_map.py` sprawdza lokalne odnośniki, format `PLAN.md`, spójność `QUEUE.md` i limit `LOG.md`, a `scripts/test_check_map.py` (`unittest`) pokrywa jego przypadki. Skrypt nie używa sieci, nie uruchamia Gradle i nic nie zapisuje.
 - Lokalna baza danych i pliki JSON bez usług zewnętrznych.
 
 ## 7. Środowisko

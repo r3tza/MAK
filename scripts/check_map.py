@@ -159,7 +159,10 @@ def check_plan(plan_path: Path, queue_ids: set[str], errors: list[str]) -> None:
             continue
         steps.append((number, match.group(1)))
     if len(steps) > 5:
-        errors.append(f"{plan_path}: kroków planu jest {len(steps)}, limit to 5.")
+        excess_line = steps[5][0]
+        errors.append(
+            f"{plan_path}:{excess_line}: kroków planu jest {len(steps)}, limit to 5."
+        )
     for number, step_id in steps:
         if step_id not in queue_ids:
             errors.append(
@@ -169,9 +172,16 @@ def check_plan(plan_path: Path, queue_ids: set[str], errors: list[str]) -> None:
 
 def check_log(log_path: Path, errors: list[str]) -> None:
     text = log_path.read_text(encoding="utf-8")
-    entries = [line for line in text.splitlines() if LOG_ENTRY_RE.match(line)]
+    entries = [
+        number
+        for number, line in enumerate(text.splitlines(), start=1)
+        if LOG_ENTRY_RE.match(line)
+    ]
     if len(entries) > 20:
-        errors.append(f"{log_path}: wpisów w logu jest {len(entries)}, limit to 20.")
+        excess_line = entries[20]
+        errors.append(
+            f"{log_path}:{excess_line}: wpisów w logu jest {len(entries)}, limit to 20."
+        )
 
 
 def check_repository(root: Path) -> list[str]:

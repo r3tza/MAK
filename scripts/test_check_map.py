@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import os
+import re
 import sys
 import tempfile
 import unittest
@@ -80,6 +81,13 @@ class CheckMapTest(unittest.TestCase):
             f"Brak błędu zawierającego {needle!r} w {errors!r}",
         )
 
+    def assertErrorMatches(self, pattern: str) -> None:
+        errors = self.errors()
+        self.assertTrue(
+            any(re.search(pattern, error) for error in errors),
+            f"Brak błędu pasującego do {pattern!r} w {errors!r}",
+        )
+
     def test_valid_repository_has_no_errors(self) -> None:
         write_repo(self.root)
         self.assertEqual([], self.errors())
@@ -106,6 +114,7 @@ class CheckMapTest(unittest.TestCase):
         )
         write_repo(self.root, plan=steps, queue=queue)
         self.assertHasError("limit to 5")
+        self.assertErrorMatches(r"PLAN\.md:\d+: kroków planu")
 
     def test_missing_step_id_is_reported(self) -> None:
         write_repo(
@@ -160,6 +169,7 @@ class CheckMapTest(unittest.TestCase):
         )
         write_repo(self.root, log="# Log\n\n" + entries)
         self.assertHasError("limit to 20")
+        self.assertErrorMatches(r"LOG\.md:\d+: wpisów w logu")
 
 
 if __name__ == "__main__":
