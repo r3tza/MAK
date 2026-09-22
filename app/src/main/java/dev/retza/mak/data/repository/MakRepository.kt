@@ -116,7 +116,7 @@ interface MakRepository {
 @org.koin.core.annotation.Single(binds = [MakRepository::class])
 class RoomMakRepository(
     private val database: AppDatabase,
-    private val scheduleRepository: ScheduleRepository = RoomScheduleRepository(database)
+    private val scheduleRepository: ScheduleRepository
 ) : MakRepository {
     private val semesters = database.semesterDao()
     private val studyPrograms = database.studyProgramDao()

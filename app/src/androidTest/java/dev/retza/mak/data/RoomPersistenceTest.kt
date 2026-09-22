@@ -19,6 +19,7 @@ import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.RoomMakRepository
+import dev.retza.mak.data.repository.RoomScheduleRepository
 import dev.retza.mak.data.repository.SemesterBackup
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -136,7 +137,7 @@ class RoomPersistenceTest {
     @Test
     fun setupConfigurationRollsBackSemesterWhenProgramFails() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val nextCalendarId = 1000L
         val before = database!!.semesterDao().observeAll().first()
 
@@ -164,7 +165,7 @@ class RoomPersistenceTest {
     @Test
     fun deletingInactiveSemesterKeepsActive() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val first = database!!.semesterDao().insert(semester("Pierwszy", true))
         val second = database!!.semesterDao().insert(semester("Drugi", true))
         database!!.semesterDao().markActive(second)
@@ -179,7 +180,7 @@ class RoomPersistenceTest {
     @Test
     fun deletingActiveSemesterSelectsDeterministicFallback() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val first = database!!.semesterDao().insert(semester("Pierwszy", false))
         val second = database!!.semesterDao().insert(semester("Drugi", false))
         val third = database!!.semesterDao().insert(semester("Trzeci", false))
@@ -195,7 +196,7 @@ class RoomPersistenceTest {
     @Test
     fun deletingLastSemesterClearsActive() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val only = database!!.semesterDao().insert(semester("Jedyny", true))
         database!!.semesterDao().markActive(only)
 
@@ -209,7 +210,7 @@ class RoomPersistenceTest {
     @Test
     fun deleteTransactionRollsBackWhenFallbackWriteFails() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val first = database!!.semesterDao().insert(semester("Pierwszy", false))
         val second = database!!.semesterDao().insert(semester("Drugi", false))
         database!!.semesterDao().markActive(second)
@@ -231,7 +232,7 @@ class RoomPersistenceTest {
     @Test
     fun deletingAssignedStudyProgramIsBlocked() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
         val calendarId = database!!.academicCalendarDao().insert(
             AcademicCalendarEntity(
@@ -264,7 +265,7 @@ class RoomPersistenceTest {
     @Test
     fun replaceAllDataSwapsWholeBackup() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val oldSemesterId = database!!.semesterDao().insert(semester("Stary", true))
         database!!.studyProgramDao().insert(StudyProgramEntity(name = "Stary kierunek", color = "#000000"))
 
@@ -327,7 +328,7 @@ class RoomPersistenceTest {
     @Test
     fun replaceAllDataRollsBackOnFailure() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val existingId = database!!.semesterDao().insert(semester("Istniejący", true))
         database!!.studyProgramDao().insert(StudyProgramEntity(name = "Istniejący kierunek", color = "#000000"))
         database!!.openHelper.writableDatabase.execSQL(
@@ -363,7 +364,7 @@ class RoomPersistenceTest {
     @Test
     fun separatingCalendarCopiesOverridesAndKeepsSource() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
         val sourceCalendarId = insertCalendar(semesterId)
         val firstProgramId = insertProgram("Informatyka")
@@ -407,7 +408,7 @@ class RoomPersistenceTest {
     @Test
     fun addingSeparatedProgramCopiesSourceCalendarAndOverrides() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
         val sourceCalendarId = insertCalendar(semesterId)
         database!!.weekOverrideDao().insert(
@@ -440,7 +441,7 @@ class RoomPersistenceTest {
     @Test
     fun assigningExistingProgramDoesNotChangeItsData() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
         val calendarId = insertCalendar(semesterId)
         val programId = insertProgram("Informatyka")
@@ -459,7 +460,7 @@ class RoomPersistenceTest {
     @Test
     fun separatedAssignmentDoesNotChangeExistingProgram() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
         val calendarId = insertCalendar(semesterId)
         val programId = insertProgram("Informatyka")
@@ -478,7 +479,7 @@ class RoomPersistenceTest {
     @Test
     fun reconnectingDeletesOrphanCalendarWithOverrides() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
         val sourceCalendarId = insertCalendar(semesterId)
         val targetCalendarId = insertCalendar(semesterId)
@@ -509,7 +510,7 @@ class RoomPersistenceTest {
     @Test
     fun reconnectingKeepsSourceCalendarWhenStillUsed() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
         val sourceCalendarId = insertCalendar(semesterId)
         val targetCalendarId = insertCalendar(semesterId)
@@ -530,7 +531,7 @@ class RoomPersistenceTest {
     @Test
     fun deletingUsedCalendarIsBlocked() = runBlocking {
         database = openDatabase()
-        val repository = RoomMakRepository(database!!)
+        val repository = repository()
         val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
         val calendarId = insertCalendar(semesterId)
         val programId = insertProgram("Informatyka")
@@ -569,6 +570,9 @@ class RoomPersistenceTest {
             academicCalendarId = calendarId
         )
     )
+
+    private fun repository(): RoomMakRepository =
+        RoomMakRepository(database!!, RoomScheduleRepository(database!!))
 
     private fun semester(name: String, active: Boolean) = SemesterEntity(
         name = name,
