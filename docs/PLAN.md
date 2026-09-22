@@ -4,36 +4,36 @@ Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie je
 
 Każdy krok ma być wykonalny także przez słabszego agenta bez odgadywania intencji. Podaj kolejność małych zmian, docelowe pliki lub obszary kodu, zależności, przypadki brzegowe, sposób sprawdzenia i jednoznaczne kryterium zakończenia. Jeśli do wykonania brakuje decyzji, zapisz ją jako bloker zamiast pozostawiać ukryte założenie.
 
-## 1. Uporządkować główne ustawienia i dodać osobne ekrany (I-05)
+## 1. Dokończyć układ widgetu (I-06)
 
-Granice: `FEATURES.md`, sekcja „Ustawienia i dane”; `ARCHITECTURE.md`, sekcja „Hierarchia ustawień”. Nie zmieniaj logiki eksportu, importu ani powiadomień, przenosisz tylko wejścia i upraszczasz ekran. Widgetu (I-06) nie ruszaj.
+Granice: `FEATURES.md`, sekcja „Widget” („Mały widget”, „Duży widget”, „Układ i zachowanie widgetu”); `ARCHITECTURE.md`, sekcja Widget. Nie zmieniaj logiki planu ani powiadomień. Użyj `ActivePlanProvider` i wstrzykniętego `Clock`; nie kopiuj reguł i nie wołaj DAO.
 
-Obecny stan: `SettingsScreen` ma lokalną etykietę „USTAWIENIA”, nagłówek „Semestry i wygląd”, wybór semestru, motyw, próg okienka, rozwijane bloki „dane” i „powiadomienia” oraz akcje usuwania i konfiguracji semestru.
+Obecny stan: `MakTodayWidget`, `WidgetPresenter` i `WidgetPlanLoader` mają bazowy układ, separatory i licznik kolizji; duży wariant nie wykorzystuje w pełni miejsca, brakuje osobnego wiersza kierunku, lekkiego ostrzeżenia o kolizji, odrębnego nagłówka oraz stanów „Teraz” i „Następne”.
 
 Kolejność:
 
-1. Usuń lokalną etykietę i nagłówek strony; jedynym nagłówkiem zostaje topbar. Ekran główny dziel na neutralne sekcje rozdzielone 16 dp i wiersze z nazwą, bieżącą wartością i ikoną przejścia.
-2. Sekcja „Plan”: wybór aktywnego semestru oraz wiersz „Zarządzaj semestrami” do osobnej trasy. Próg okienka zostaje ustawieniem planu (na razie na ekranie głównym).
-3. Sekcja „Wygląd”: motyw z bieżącą wartością.
-4. Sekcja „Powiadomienia”: wiersz z wartością „Włączone”/„Wyłączone” i podsumowaniem godziny oraz wyprzedzenia, prowadzący do nowej trasy „Powiadomienia”; przenieś tam główny przełącznik, przełączniki obu rodzajów, godzinę i wyprzedzenie.
-5. Sekcja „Dane”: wiersz „Kopia zapasowa i import” prowadzący do nowej trasy „Dane”; przenieś tam eksport, import i opis zastąpienia. Podgląd importu zostaje osobnym ekranem.
-6. Sekcja „O aplikacji”: zwarty wiersz z wersją.
-7. Dodaj trasy `settings/semesters`, `settings/notifications` i `settings/data` w `SettingsRoutes.kt` i `MakRoutes.kt` z tytułami w topbarze. Ekran „Semestry” zawiera listę, wybór aktywnego, konfigurację, usuwanie i „Dodaj semestr”. Powrót systemowy działa, a stan ekranu głównego nie resetuje się.
+1. Nagłówek: data jako główny tekst 16 sp, tydzień A/B jako mała etykieta z delikatnym tłem, liczba zajęć obok albo po prawej stronie.
+2. Wiersz zajęć: stała kolumna czasu, pasek koloru kierunku, nazwa zajęć, osobny wiersz metadanych (sala, prowadzący) oraz tekstowa nazwa kierunku, bo kolor nie jest jedynym nośnikiem informacji.
+3. Kolizja i notatka jako krótkie etykiety tekstowe o czytelnym kontraście; oddzielać zajęcia subtelnymi separatorami, bez kart na każde zajęcia.
+4. Wariant kompaktowy (mniej niż 240 dp szerokości albo mniej niż 160 dp wysokości): przewijana lista z nazwą, czasem i salą; pominąć prowadzącego i osobną etykietę notatki, zachować alert kolizji. Bez tekstu „Jeszcze {liczba}”.
+5. Wariant rozszerzony: przewijana lista z salą, prowadzącym i statusem kolizji albo notatki; większe odstępy i pełniejsze metadane, nie tylko wyższa lista.
+6. Zachować jasne tło, wysoki kontrast, brak zdjęć, gradientów, cieni i ozdobnych ikon; dopasować tło do systemowego promienia widgetów. Pokazywać najwyżej „Następne: 10:15”, bez odliczania.
 
 Przypadki brzegowe:
 
-- brak semestrów: sekcja „Plan” pokazuje akcję dodania semestru, bez pustych wierszy;
-- powiadomienia wyłączone: wartość „Wyłączone” i brak podsumowania godzin;
-- brak zgody systemowej: wiersz pokazuje „Zablokowane przez system”;
-- 320 dp, motyw ciemny i TalkBack.
+- brak aktywnego semestru, pusty dzień, data poza semestrem i błąd odczytu;
+- jedna i wiele kolizji, notatka, długie nazwy oraz metadane;
+- mały i duży rozmiar oraz zmiana rozmiaru;
+- motyw jasny i ciemny.
 
 Weryfikacja:
 
-- Uruchom `gradlew.bat test`, `gradlew.bat compileDebugAndroidTestKotlin`, `gradlew.bat lintDebug` i `gradlew.bat assembleDebug`.
-- W `SettingsScreenTest` sprawdź sekcje, brak lokalnego nagłówka, przejścia do tras i 320 dp.
-- Odbiór wyglądu na urządzeniu należy do O-05.
+- Test prezentera widgetu na JVM dla obu wariantów, metadanych, kolizji, notatki i kolejności zgodnej z `ActivePlanProvider`.
+- Sprawdź, że loader woła ten sam `ActivePlanProvider` i wstrzyknięty `Clock`.
+- Uruchom `gradlew.bat test` i `gradlew.bat compileDebugAndroidTestKotlin`.
+- Porównanie wariantów na launcherze i odbiór na urządzeniu należą do O-06.
 
-Kryterium zakończenia: główny ekran nie ma rozwijanych formularzy ani powtórzonego nagłówka, a „Semestry”, „Powiadomienia” i „Dane” są osobnymi trasami w jednym `NavHost`.
+Kryterium zakończenia: oba warianty pokazują dzisiejszy plan z hierarchią z `FEATURES.md`, bez ciągłego serwisu i bez powielania reguł planu.
 
 ## Po tych krokach
 

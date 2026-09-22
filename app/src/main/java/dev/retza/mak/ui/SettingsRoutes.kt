@@ -10,8 +10,11 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import dev.retza.mak.ui.settings.ImportPreviewScreen
+import dev.retza.mak.ui.settings.SettingsDataScreen
 import dev.retza.mak.ui.settings.SettingsEffect
+import dev.retza.mak.ui.settings.SettingsNotificationsScreen
 import dev.retza.mak.ui.settings.SettingsScreen
+import dev.retza.mak.ui.settings.SettingsSemestersScreen
 import dev.retza.mak.ui.settings.SettingsViewModel
 
 internal fun openSettings(navController: NavController) {
@@ -32,26 +35,56 @@ internal fun NavGraphBuilder.settingsRoute(
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
         SettingsScreen(
             state = settingsState,
+            onOpenSemesters = { navController.navigate(MakRoutes.SettingsSemesters) },
+            onOpenNotifications = { navController.navigate(MakRoutes.SettingsNotifications) },
+            onOpenData = { navController.navigate(MakRoutes.SettingsData) },
+            onSemesterSelected = settingsViewModel::selectSemester,
+            onAddSemester = onAddSemester,
+            onThemeSelected = settingsViewModel::selectTheme,
+            onGapThresholdSelected = settingsViewModel::setGapThresholdMinutes,
+            notificationsBlocked = notificationsBlocked,
+            onRetry = {},
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+
+    composable(MakRoutes.SettingsSemesters) {
+        val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
+        SettingsSemestersScreen(
+            state = settingsState,
             onSemesterSelected = settingsViewModel::selectSemester,
             onAddSemester = onAddSemester,
             onConfigureSemester = { id -> openSemesterConfiguration(navController, id) },
             onDeleteSemester = settingsViewModel::requestSemesterDeletion,
             onConfirmDelete = settingsViewModel::confirmSemesterDeletion,
             onCancelDelete = settingsViewModel::cancelSemesterDeletion,
-            onThemeSelected = settingsViewModel::selectTheme,
-            onGapThresholdSelected = settingsViewModel::setGapThresholdMinutes,
-            onExport = onExport,
-            onImport = onImport,
-            onDismissImportError = settingsViewModel::dismissImportError,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+
+    composable(MakRoutes.SettingsNotifications) {
+        val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
+        SettingsNotificationsScreen(
+            state = settingsState,
+            notificationsBlocked = notificationsBlocked,
             onNotificationsEnabled = settingsViewModel::setNotificationsEnabled,
             onEveningNotificationsEnabled = settingsViewModel::setEveningNotificationsEnabled,
             onBeforeClassNotificationsEnabled = settingsViewModel::setBeforeClassNotificationsEnabled,
             onEveningHourSelected = settingsViewModel::setEveningHour,
             onBeforeClassLeadSelected = settingsViewModel::setBeforeClassLeadMinutes,
-            notificationsBlocked = notificationsBlocked,
             onRequestNotificationPermission = onRequestNotificationPermission,
             onOpenAppSettings = onOpenAppSettings,
-            onRetry = {},
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+
+    composable(MakRoutes.SettingsData) {
+        val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
+        SettingsDataScreen(
+            state = settingsState,
+            onExport = onExport,
+            onImport = onImport,
+            onDismissImportError = settingsViewModel::dismissImportError,
             modifier = Modifier.fillMaxSize()
         )
     }

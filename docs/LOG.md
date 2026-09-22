@@ -4,6 +4,14 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-22: Uporządkowane ustawienia i osobne ekrany (I-05)
+
+- Fakty: Ekran główny ustawień miał lokalną etykietę „USTAWIENIA”, nagłówek „Semestry i wygląd”, wybór semestru, motyw, próg okienka, rozwijane bloki „dane” i „powiadomienia” oraz akcje zarządzania semestrem. Wszystkie ustawienia były w jednym miejscu.
+- Decyzja: Ekran główny pokazuje tylko sekcje „Plan”, „Wygląd”, „Powiadomienia”, „Dane” i „O aplikacji” w neutralnych kontenerach rozdzielonych 16 dp, bez lokalnego nagłówka i rozwijanych formularzy. Sekcja „Plan” ma wybór aktywnego semestru, wiersz „Zarządzaj semestrami” i próg okienka. Dodano osobne trasy `settings/semesters`, `settings/notifications` i `settings/data` oraz ekrany `SettingsSemestersScreen` (lista, wybór aktywny, konfiguracja, usuwanie, dodawanie), `SettingsNotificationsScreen` (przełączniki, godzina, wyprzedzenie, blokada systemowa) i `SettingsDataScreen` (eksport, import, opis zastąpienia). Podgląd importu zostaje osobnym ekranem. Tytuły ekranów są w topbarze.
+- Powód: Ekran główny ma służyć szybkiemu odczytowi i przejściu do właściwego obszaru, a rozbudowane formularze mają osobne trasy w jednym `NavHost`.
+- Odrzucone: Rozwijane formularze na ekranie głównym; powtórzony nagłówek; zmiana logiki eksportu, importu i powiadomień; ruszanie widgetu (I-06).
+- Weryfikacja: `SettingsScreenTest` sprawdza sekcje i przejścia na ekranie głównym, ekran „Semestry”, ekran „Powiadomienia”, ekran „Dane” i podgląd importu przy 320 dp. `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór wyglądu i nawigacji na urządzeniu należy do O-05.
+
 ## 2026-09-22: Neutralna sekcja rozwijana i odstępy (I-04)
 
 - Fakty: `MakExpandableSection` zmieniał tło nagłówka na `secondaryContainer` po rozwinięciu i używał `surfaceVariant` w treści, a przycisk „Wróć do ustawień” miał tylko 8 dp odstępu nad sobą.
@@ -155,11 +163,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Odrzucone: Rozstrzyganie kalendarza osobno w każdym ViewModelu; rozdzielenie nowego kierunku w dwóch transakcjach; zgadywanie kalendarza przy filtrze „Wszystkie".
 - Poprawki po przeglądzie: Przypisanie istniejącego kierunku nie modyfikuje już globalnego kierunku. `saveStudyProgramAssignment` i `addSeparatedSemesterProgram` aktualizują kierunek tylko wtedy, gdy jest nowy, a dla istniejącego używają go bez zmian, więc przypięcie do kolejnego semestru nie zmienia nazwy ani koloru w poprzednich. Ponowne wybranie kierunku już przypiętego do semestru jest blokowane komunikatem zamiast przenoszenia jego przypisania. `refresh` odrzuca `courseCalendarId`, którego nie ma już w danych semestru, i wraca do wybranego kalendarza.
 - Weryfikacja: `SemesterViewModelTest` (dodanie kierunku wspólne i osobne, wybór istniejącego programu, blokada ponownego przypięcia, odrzucenie usuniętego kalendarza, wybór kalendarza korekt, rozdzielenie, ponowne połączenie z osieroconym kalendarzem), `ScheduleViewModelTest` (korekta trafia do kalendarza filtra, pominięcie przy wielu kalendarzach), `OccurrenceViewModelTest` i `ClassEditViewModelTest` (zakres dat z kalendarza kierunku). `RoomPersistenceTest` potwierdza, że przypięcie istniejącego kierunku (`assigningExistingProgramDoesNotChangeItsData`) i dodanie kierunku z osobnym kalendarzem (`separatedAssignmentDoesNotChangeExistingProgram`) nie zmieniają jego nazwy ani koloru. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
-
-## 2026-09-21: Etap 12.1, operacje kalendarzy w repozytorium
-
-- Fakty: Przypisanie kierunku do semestru ma jeden kalendarz akademicki, a korekty tygodni należą do kalendarza. Ekran celował we wspólny kalendarz i nie było operacji rozdzielenia ani ponownego połączenia.
-- Decyzja: Dodano `separateSemesterProgramCalendar(assignmentId)`, `reconnectSemesterProgram(assignmentId, calendarId)` i `deleteCalendar(id)`. Rozdzielenie w jednej transakcji kopiuje daty, rytm i korekty kalendarza przypisania do nowego kalendarza i przepina przypisanie, a kalendarz źródłowy zostaje. Ponowne połączenie przepina przypisanie i usuwa dotychczasowy kalendarz razem z jego korektami, gdy zostaje bez przypisań; korekty nie są scalane. `deleteCalendar` blokuje usunięcie używanego kalendarza. Dodano `WeekOverrideDao.getForCalendar`.
-- Powód: Etap 12 wymaga łączenia i rozdzielania kalendarzy bez zmiany zajęć i bez utraty ustawień innych kierunków. Operacje muszą być atomowe, a osierocony kalendarz nie może udawać ustawień innego kierunku.
-- Odrzucone: Kopiowanie korekt przy ponownym połączeniu; zachowanie osieroconego kalendarza jako nieużywanego (wybrano usunięcie razem z korektami); zmiana kalendarza poza transakcją.
-- Weryfikacja: `RoomPersistenceTest` sprawdza kopiowanie kalendarza i korekt przy rozdzieleniu, brak scalania i usunięcie osieroconego kalendarza z korektami przy ponownym połączeniu, zachowanie kalendarza wciąż używanego oraz blokadę usunięcia używanego kalendarza. `FakeMakRepository` i `DemoDataSeederTest` odwzorowują nowe operacje. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
