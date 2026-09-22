@@ -1010,7 +1010,7 @@ fun MakExpandableSection(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(MaterialTheme.colorScheme.surfaceContainer)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
                 .clickable(role = Role.Button, onClick = { onExpandedChange(!expanded) })
                 .focusable()
                 .onFocusChanged { focused = it.isFocused }

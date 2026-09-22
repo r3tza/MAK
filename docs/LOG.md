@@ -7,7 +7,7 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 ## 2026-09-22: Neutralna sekcja rozwijana i odstępy (I-04)
 
 - Fakty: `MakExpandableSection` zmieniał tło nagłówka na `secondaryContainer` po rozwinięciu i używał `surfaceVariant` w treści, a przycisk „Wróć do ustawień” miał tylko 8 dp odstępu nad sobą.
-- Decyzja: Nagłówek używa `surfaceContainer` w obu stanach, a treść `surfaceContainerLow` z paddingiem 16 dp; rozwinięcie pokazują tekst „Ukryj”/„Pokaż”, kierunek ikony i semantyka, bez zmiany na kolor akcentowy. Tekst i ikona mają kolor `onSurfaceVariant`, a obramowanie `outlineVariant` (`primary` tylko przy focusie). Przycisk „Wróć do ustawień” w semestrze dostał 12 dp odstępu.
+- Decyzja: Cały kontener używa jednego neutralnego tła `surfaceContainerLow` w obu stanach, a treść ma 16 dp paddingu; rozwinięcie pokazują tekst „Ukryj”/„Pokaż”, kierunek ikony i semantyka, bez zmiany na kolor akcentowy. Tekst i ikona mają kolor `onSurfaceVariant`, a obramowanie `outlineVariant` (`primary` tylko przy focusie). Przycisk „Wróć do ustawień” w semestrze dostał 12 dp odstępu.
 - Powód: Neutralne tło w obu stanach i przewidywalne odstępy wynikają z `ARCHITECTURE.md`, sekcja „Stały język wizualny”.
 - Odrzucone: Tło kontenera akcentowego po rozwinięciu; zmiany odstępów poza realne naruszenia; ruszanie kart zajęć i podsumowania „Dzisiaj”.
 - Weryfikacja: `SettingsScreenTest.expandableSectionTogglesAt320Dp` sprawdza rozwinięcie i zwinięcie przy 320 dp. `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Koloru tła nie da się sprawdzić bez urządzenia, więc odbiór wizualny należy do O-05.
