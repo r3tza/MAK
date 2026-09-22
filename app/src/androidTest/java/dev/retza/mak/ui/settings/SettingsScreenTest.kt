@@ -44,7 +44,12 @@ class SettingsScreenTest {
                             semesters = listOf(semester),
                             activeSemesterId = "1",
                             themeOptions = listOf(ThemeOptionUi("system", "Systemowy", true)),
-                            gapThresholdOptions = listOf(GapThresholdOptionUi("30", "30 min", true))
+                            gapThresholdOptions = listOf(GapThresholdOptionUi("30", "30 min", true)),
+                            notifications = NotificationSettingsUi(
+                                enabled = true,
+                                eveningHourOptions = listOf(NotificationOptionUi("20:00", "20:00", true)),
+                                leadOptions = listOf(NotificationOptionUi("30", "30 min", true))
+                            )
                         ),
                         onOpenSemesters = { opened = "semesters" },
                         onOpenNotifications = { opened = "notifications" },
@@ -60,12 +65,17 @@ class SettingsScreenTest {
             }
         }
 
+        composeTestRule.onNodeWithText("Semestry i wygląd").assertDoesNotExist()
+        composeTestRule.onNodeWithText("USTAWIENIA").assertDoesNotExist()
         composeTestRule.onNodeWithText("Plan").assertIsDisplayed()
         composeTestRule.onNodeWithText("Wygląd").assertIsDisplayed()
         composeTestRule.onNodeWithText("Powiadomienia").assertIsDisplayed()
         composeTestRule.onNodeWithText("Dane").assertIsDisplayed()
         composeTestRule.onNodeWithText("O aplikacji").assertIsDisplayed()
         composeTestRule.onNodeWithText("Wersja").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Włączone").assertIsDisplayed()
+        composeTestRule.onNodeWithText("20:00 dzień wcześniej, 30 min przed zajęciami")
+            .assertIsDisplayed()
 
         composeTestRule.onNodeWithText("Zarządzaj semestrami").performClick()
         assertEquals("semesters", opened)

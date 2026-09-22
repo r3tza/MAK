@@ -151,9 +151,11 @@ fun SettingsScreen(
                     )
                 }
                 SettingsSection("Powiadomienia") {
+                    val notificationsStatus = notificationsStatus(state.notifications, notificationsBlocked)
                     SettingsNavigationRow(
                         title = "Powiadomienia o kolizjach",
-                        value = notificationsValue(state.notifications, notificationsBlocked),
+                        value = notificationsStatus.first,
+                        details = notificationsStatus.second,
                         onClick = onOpenNotifications
                     )
                 }
@@ -202,6 +204,7 @@ private fun SettingsSection(
 private fun SettingsNavigationRow(
     title: String,
     value: String,
+    details: String? = null,
     onClick: () -> Unit
 ) {
     Row(
@@ -218,6 +221,13 @@ private fun SettingsNavigationRow(
             if (value.isNotBlank()) {
                 Text(
                     text = value,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+            if (!details.isNullOrBlank()) {
+                Text(
+                    text = details,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
@@ -243,15 +253,15 @@ private fun SettingsInfoRow(title: String, value: String) {
     }
 }
 
-private fun notificationsValue(
+private fun notificationsStatus(
     notifications: NotificationSettingsUi,
     blocked: Boolean
-): String {
-    if (!notifications.enabled) return "Wyłączone"
-    if (blocked) return "Włączone, zablokowane przez system"
+): Pair<String, String?> {
+    if (!notifications.enabled) return "Wyłączone" to null
+    if (blocked) return "Włączone" to "Zablokowane przez system"
     val hour = notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty()
     val lead = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty()
-    return "Włączone, $hour dzień wcześniej, $lead przed zajęciami"
+    return "Włączone" to "$hour dzień wcześniej, $lead przed zajęciami"
 }
 
 @Composable
