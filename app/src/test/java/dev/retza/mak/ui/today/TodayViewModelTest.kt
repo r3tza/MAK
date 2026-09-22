@@ -1,11 +1,16 @@
 package dev.retza.mak.ui.today
 
+import dev.retza.mak.data.entity.ClassEntity
+import dev.retza.mak.data.entity.Recurrence
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
+import dev.retza.mak.ui.settings.InMemorySettingsPreferences
 import java.time.Clock
+import java.time.DayOfWeek
 import java.time.Instant
+import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -27,7 +32,7 @@ class TodayViewModelTest {
     @Test
     fun todayStateMapsActiveSemesterPlan() = runTest(mainDispatcher) {
         val repository = FakeRepository()
-        val viewModel = TodayViewModel(FakeSemesterRepository(repository), repository, Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
+        val viewModel = TodayViewModel(FakeSemesterRepository(repository), repository, InMemorySettingsPreferences(), Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
 
@@ -35,7 +40,9 @@ class TodayViewModelTest {
         assertEquals("Poniedziałek, 21 września", state.dateLabel)
         assertEquals("Semestr", state.semesterLabel)
         assertTrue(state.weekLabel.startsWith("Tydzień"))
-        assertEquals("1 zajęcie", state.summaryLabel)
+        assertEquals(1, state.classCount)
+        assertEquals(0, state.collisionCount)
+        assertEquals(0, state.gapCount)
         assertEquals("Programowanie", state.items.single().name)
     }
 
@@ -43,7 +50,7 @@ class TodayViewModelTest {
     fun refreshTodayUpdatesTheDate() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val clock = MutableClock(Instant.parse("2026-09-21T08:00:00Z"), zone)
-        val viewModel = TodayViewModel(FakeSemesterRepository(repository), repository, clock, ActivePlanProvider())
+        val viewModel = TodayViewModel(FakeSemesterRepository(repository), repository, InMemorySettingsPreferences(), clock, ActivePlanProvider())
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
         assertEquals("Poniedziałek, 21 września", viewModel.today.value.dateLabel)
@@ -56,10 +63,46 @@ class TodayViewModelTest {
     }
 
     @Test
+    fun gapCountingUsesThreshold() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.classes += ClassEntity(
+            id = 2L,
+            semesterId = 1L,
+            semesterProgramId = 1L,
+            name = "Analiza",
+            type = "Wykład",
+            teacherName = null,
+            dayOfWeek = DayOfWeek.MONDAY,
+            startTime = LocalTime.of(11, 1),
+            endTime = LocalTime.of(12, 0),
+            room = null,
+            building = null,
+            group = null,
+            recurrence = Recurrence.EVERY_WEEK,
+            date = null,
+            classNote = null
+        )
+        val preferences = InMemorySettingsPreferences(initialGapThresholdMinutes = 30)
+        val viewModel = TodayViewModel(
+            FakeSemesterRepository(repository),
+            repository,
+            preferences,
+            Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone),
+            ActivePlanProvider()
+        )
+        backgroundScope.launch { viewModel.today.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.today.value
+        assertEquals(2, state.classCount)
+        assertEquals(1, state.gapCount)
+    }
+
+    @Test
     fun withoutActiveSemesterShowsEmptyState() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         repository.clearActiveSemester()
-        val viewModel = TodayViewModel(FakeSemesterRepository(repository), repository, Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
+        val viewModel = TodayViewModel(FakeSemesterRepository(repository), repository, InMemorySettingsPreferences(), Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
 

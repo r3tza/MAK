@@ -1,49 +1,10 @@
 # Plan najbliższych prac
 
-Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie są trzy. Pełna lista zadań i oddzielny status odbioru są w `QUEUE.md`. Cel i zakres produktu opisuje `PRODUCT.md`, reguły planu `DOMAIN.md`, a zachowanie ekranów `FEATURES.md`. Po ukończeniu kroku uaktualnij kolejkę i wybierz następny; nie dopisuj tu historii wykonania.
+Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie są dwa. Pełna lista zadań i oddzielny status odbioru są w `QUEUE.md`. Cel i zakres produktu opisuje `PRODUCT.md`, reguły planu `DOMAIN.md`, a zachowanie ekranów `FEATURES.md`. Po ukończeniu kroku uaktualnij kolejkę i wybierz następny; nie dopisuj tu historii wykonania.
 
 Każdy krok ma być wykonalny także przez słabszego agenta bez odgadywania intencji. Podaj kolejność małych zmian, docelowe pliki lub obszary kodu, zależności, przypadki brzegowe, sposób sprawdzenia i jednoznaczne kryterium zakończenia. Jeśli do wykonania brakuje decyzji, zapisz ją jako bloker zamiast pozostawiać ukryte założenie.
 
-## 1. Dokończyć podsumowanie „Dzisiaj” (I-02)
-
-Granice: `DOMAIN.md` sekcja „Okienka”; `FEATURES.md` sekcja „Ekran Dzisiaj”; `ARCHITECTURE.md` sekcja „Kolizja nie jest winą użytkownika”. Nie przebudowuj całego ekranu ustawień (to I-05). Nie zmieniaj karty zajęć (to I-03). Nie licz okienek w Compose.
-
-Obecny stan: `TodayViewModel` ustawia tylko `summaryLabel` z liczby zajęć. `MakSummaryCard` w `MakComponents.kt` pokazuje jedną wartość i ozdobną ikonę. Brak funkcji domenowej dla okienek. `SettingsPreferences` nie ma progu.
-
-Kolejność:
-
-1. Dodaj w `domain` czystą funkcję liczenia okienek, np. `countGaps(occurrences, thresholdMinutes)`. Wejście to aktywne `PlannedOccurrence` z `ActivePlan.schedule.occurrences` (odwołane są już pominięte przez resolver).
-   1. Posortuj według `startTime`.
-   2. Połącz nakładające się przedziały w bloki: następne zajęcia wchodzą do bloku, gdy `next.startTime < block.end`. Styczność godzin (`next.start == block.end`) nie jest nakładką i nie tworzy okienka.
-   3. Dla kolejnych bloków policz przerwę `Duration.between(block.end, next.start)`. Okienko istnieje tylko gdy liczba minut jest ściśle większa od progu.
-   4. Przy mniej niż dwóch blokach wynik to 0. Nie licz czasu przed pierwszym ani po ostatnim bloku.
-2. Dodaj w `domain` funkcję `uniqueCollisionCount(collisions)`. Unikalna kolizja to para posortowanych identyfikatorów wystąpień plus `overlapStart` i `overlapEnd`. Ta sama kolizja przy obu zajęciach liczy się raz. Użyj tego samego wzoru co `widgetCollisionKey` w `WidgetPresenter.kt` i przepnij presenter, żeby liczby się nie rozjechały.
-3. Zapisz próg w `SettingsPreferences` / `DataStoreSettingsPreferences` / `InMemorySettingsPreferences`. Klucz DataStore np. `gap_threshold_minutes`, typ `int`, brakująca wartość 30, zakres 5..180. Domyślny próg to 30.
-4. W `TodayViewModel` wstrzyknij `SettingsPreferences`. Do stanu wystaw trzy liczby: zajęcia = `schedule.occurrences.size`, kolizje = `uniqueCollisionCount(plan.collisions)`, okienka = `countGaps(...)`. Usuń zależność prezentacji od `summaryLabel` jako jedynej wartości.
-5. Zmień `MakSummaryCard` na trzy równe kolumny „Zajęcia”, „Kolizje”, „Okienka”: etykieta nad liczbą, subtelne pionowe separatory, bez ikony. Liczba kolizji jest czerwona, gdy większa od zera, i zielona, gdy wynosi zero. Pozostałe liczby zostają neutralne na gradiencie. Przy braku zajęć karta zostaje i pokazuje zera oraz tekst „Dziś bez zajęć”.
-6. Na obecnym `SettingsScreen` dodaj `MakSelectField` progu w bloku planu (obok aktywnego semestru), opcje 15, 20, 30, 45, 60 minut. Nie wydzielaj nowych tras ustawień.
-
-Przypadki brzegowe do testu JVM w nowym `GapCounterTest` oraz w `TodayViewModelTest`:
-
-- przerwa 30 minut: 0 okienek; 31 minut: 1 okienko;
-- dwa nakładające się zajęcia (kolizja) tworzą jeden blok, więc nie ma okienka wewnątrz nakładki;
-- styk 10:00–11:00 i 11:00–12:00: 0 okienek;
-- odwołanie usuwa zajęcia z aktywnego planu, więc nie tworzy okienka ani nie zasłania przerwy;
-- przeniesienie i zmiana godzin wchodzą do liczenia, bo są w wyniku `ActivePlanProvider`;
-- dwa kierunki z różnymi kalendarzami: liczenie na połączonej liście dnia;
-- brak aktywnego semestru: dotychczasowy stan pusty kreatora, nie karta z zerami dnia;
-- dzień bez zajęć przy istniejącym semestrze: „Dziś bez zajęć” i trzy zera.
-
-Weryfikacja:
-
-- Uruchom `gradlew.bat test`.
-- Uruchom `gradlew.bat compileDebugAndroidTestKotlin`. W `TodayScreenTest` sprawdź trzy etykiety, zera, brak ikony i szerokość 320 dp.
-- W `SettingsViewModelTest` sprawdź domyślne 30 i zapis progu.
-- Nie uruchamiaj emulatora jako warunku zakończenia implementacji. Odbiór wyglądu na urządzeniu należy do kryterium I-02 przy okazji użycia aplikacji, ale sam krok implementacji zamyka test JVM plus kompilacja testu Compose.
-
-Kryterium zakończenia: domena daje ten sam wynik okienek dla kolizji, przeniesień i odwołań. Ekran „Dzisiaj” pokazuje trzy wartości zgodnie z `FEATURES.md`. Próg jest trwały i domyślnie wynosi 30 minut. Widget używa tej samej funkcji unikalnych kolizji.
-
-## 2. Uporządkować karty zajęć (I-03)
+## 1. Uporządkować karty zajęć (I-03)
 
 Granice: `FEATURES.md` sekcja „Struktura karty zajęć”; `ARCHITECTURE.md` ten sam temat. Nie zmieniaj widgetu (I-06). Nie scalaj notatek. Nie koloruj całej karty.
 
@@ -81,7 +42,7 @@ Weryfikacja:
 
 Kryterium zakończenia: oba rodzaje notatek są rozróżnialne etykietą i kolorem. Karta ma sekcje z `FEATURES.md` i mieści się w 320 dp bez poziomego przewijania. Semantyka nie spłaszcza dwóch notatek do jednego tekstu.
 
-## 3. Dodać kontrolę dokumentacji `scripts/check_map.py` (I-07)
+## 2. Dodać kontrolę dokumentacji `scripts/check_map.py` (I-07)
 
 Zadanie nie zależy od zmian w aplikacji. Skrypt ma wyłącznie czytać repozytorium, używać standardowej biblioteki Pythona i nie uruchamiać Gradle ani sieci. Nie implementuj `scripts/check_text.py` ani CI.
 

@@ -39,6 +39,7 @@ internal fun NavGraphBuilder.settingsRoute(
             onConfirmDelete = settingsViewModel::confirmSemesterDeletion,
             onCancelDelete = settingsViewModel::cancelSemesterDeletion,
             onThemeSelected = settingsViewModel::selectTheme,
+            onGapThresholdSelected = settingsViewModel::setGapThresholdMinutes,
             onExport = onExport,
             onImport = onImport,
             onDismissImportError = settingsViewModel::dismissImportError,

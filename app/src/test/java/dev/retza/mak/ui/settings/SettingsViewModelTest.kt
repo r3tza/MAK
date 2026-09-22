@@ -411,6 +411,23 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun gapThresholdDefaultsToThirtyAndPersists() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val preferences = InMemorySettingsPreferences()
+        val viewModel = viewModel(repository, preferences)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        assertTrue(viewModel.settings.value.gapThresholdOptions.first { it.id == "30" }.isSelected)
+
+        viewModel.setGapThresholdMinutes("45")
+        advanceUntilIdle()
+
+        assertEquals(45, preferences.gapThresholdMinutes.first())
+        assertTrue(viewModel.settings.value.gapThresholdOptions.first { it.id == "45" }.isSelected)
+    }
+
+    @Test
     fun prepareImportAcceptsValidSnapshotAndEmitsOpenEffect() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)

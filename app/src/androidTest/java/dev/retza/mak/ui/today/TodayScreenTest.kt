@@ -4,10 +4,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
@@ -51,7 +53,7 @@ class TodayScreenTest {
                             dateLabel = "Poniedziałek, 12 października",
                             semesterLabel = "Semestr zimowy",
                             weekLabel = "Tydzień A",
-                            summaryLabel = "1 zajęcie",
+                            classCount = 1,
                             items = listOf(item)
                         ),
                         onOpenPlan = {},
@@ -65,11 +67,43 @@ class TodayScreenTest {
 
         composeTestRule.onNodeWithText("Dzisiaj").assertIsDisplayed()
         composeTestRule.onNodeWithText("Twój plan na dziś").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zajęcia").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Kolizje").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Okienka").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("✦").assertCountEquals(0)
         composeTestRule.onNodeWithText("Programowanie").assertIsDisplayed()
         composeTestRule
             .onNode(hasText("Programowanie") and hasClickAction())
             .performClick()
 
         assertEquals("class-1", openedClassId)
+    }
+
+    @Test
+    fun summaryShowsZerosAndEmptyTextAt320Dp() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(
+                    modifier = Modifier
+                        .width(320.dp)
+                        .height(400.dp)
+                ) {
+                    TodayScreen(
+                        state = TodayUiState(
+                            dateLabel = "Poniedziałek, 12 października",
+                            semesterLabel = "Semestr zimowy",
+                            weekLabel = "Tydzień A"
+                        ),
+                        onOpenPlan = {},
+                        onOpenClass = {},
+                        onStartSetup = {},
+                        onRetry = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Dziś bez zajęć").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("0").assertCountEquals(3)
     }
 }

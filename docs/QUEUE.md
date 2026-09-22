@@ -5,7 +5,7 @@ Ten plik jest źródłem bieżącego statusu zadań. `PLAN.md` wybiera najwyżej
 | ID | Status | Zadanie i kryterium zakończenia | Zależność |
 |---|---|---|---|
 | I-01 | gotowe | Podzielić `MakRepository` według granic danych, przenieść konsumentów i zachować atomowy import. Zrealizowane: `SemesterRepository`, `ScheduleRepository`, `PlanBackupGateway` i `PlanBackupService` zastąpiły fasadę `MakRepository`; konsumenci zależą od nowych granic, a snapshot i import zostają atomowe. Testy JVM i kompilacja testów Android przechodzą; odbiór na urządzeniu należy do pozycji O-. | brak |
-| I-02 | do implementacji | Pokazać trzy wartości na „Dzisiaj”, policzyć okienka ze wszystkich kierunków i zapisać globalny próg. Reguła: `DOMAIN.md`; układ: `FEATURES.md`; kroki: `PLAN.md`. | brak |
+| I-02 | odbiór otwarty | Pokazać trzy wartości na „Dzisiaj”, policzyć okienka ze wszystkich kierunków i zapisać globalny próg. Zrealizowane: `countGaps`, `uniqueCollisionCount` (wspólne z widgetem), próg `gap_threshold_minutes` (domyślnie 30), trzy liczby w `TodayViewModel` i trzy kolumny w `MakSummaryCard` oraz wybór progu w ustawieniach. Pozostaje odbiór wyglądu na urządzeniu (O-05). | brak |
 | I-03 | do implementacji | Rozdzielić metadane i oba rodzaje notatek na kartach zajęć. `FEATURES.md`: Struktura karty zajęć; kroki: `PLAN.md`. | brak |
 | I-07 | do implementacji | Dodać tylko do odczytu `scripts/check_map.py` dla linków dokumentacji, limitów planu i logu oraz spójności kolejki. Kroki: `PLAN.md`. | brak |
 | I-04 | do implementacji | Poprawić odstępy i neutralny stan sekcji rozwijanych. `ARCHITECTURE.md`: Stały język wizualny. | brak |

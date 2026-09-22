@@ -22,7 +22,11 @@ interface SettingsPreferences {
 
     val collisionNotifications: Flow<CollisionNotificationPreferences>
 
+    val gapThresholdMinutes: Flow<Int>
+
     suspend fun setTheme(mode: ThemeMode)
+
+    suspend fun setGapThresholdMinutes(minutes: Int)
 
     suspend fun setCollisionNotificationsEnabled(enabled: Boolean)
 

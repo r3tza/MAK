@@ -22,7 +22,9 @@ data class TodayUiState(
     val dateLabel: String,
     val semesterLabel: String,
     val weekLabel: String,
-    val summaryLabel: String,
+    val classCount: Int = 0,
+    val collisionCount: Int = 0,
+    val gapCount: Int = 0,
     val items: List<ClassItemUi> = emptyList(),
     val status: ScreenStatus = ScreenStatus.Ready,
     val emptyTitle: String = "Brak zajęć",
@@ -51,7 +53,9 @@ fun TodayScreen(
         )
         MakSummaryCard(
             caption = "Twój plan na dziś",
-            value = state.summaryLabel,
+            classCount = state.classCount,
+            collisionCount = state.collisionCount,
+            gapCount = state.gapCount,
             modifier = Modifier.padding(bottom = MakSpacing.xl)
         )
         MakRowTitle(title = "Zajęcia", meta = "Od najwcześniejszego")

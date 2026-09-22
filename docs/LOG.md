@@ -4,6 +4,14 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-22: Podsumowanie „Dzisiaj” (I-02)
+
+- Fakty: Ekran „Dzisiaj” pokazywał jedną wartość (liczba zajęć), karta miała ozdobną ikonę, a próg okienka nie istniał.
+- Decyzja: Dodano domenowe `countGaps(occurrences, thresholdMinutes)` (łączenie nakładających się zajęć w bloki, okienko tylko gdy przerwa jest ściśle większa od progu, bez czasu przed pierwszym i po ostatnim) oraz `uniqueCollisionCount(collisions)` z kluczem pary wystąpień i zakresu nakładania. `WidgetPresenter` używa teraz `uniqueCollisionCount`, więc widget i ekran liczą kolizje tak samo. Próg zapisano w `SettingsPreferences` (`gap_threshold_minutes`, domyślnie 30, zakres 5..180). `TodayViewModel` wstrzykuje `SettingsPreferences` i wystawia `classCount`, `collisionCount` i `gapCount`; `MakSummaryCard` ma trzy równe kolumny „Zajęcia”, „Kolizje”, „Okienka” z etykietą nad liczbą, subtelnymi separatorami i bez ikony; liczba kolizji jest czerwona powyżej zera i zielona przy zerze, a przy braku zajęć karta pokazuje „Dziś bez zajęć” i trzy zera. Na obecnym `SettingsScreen` doszedł wybór progu 15, 20, 30, 45, 60 minut obok aktywnego semestru.
+- Powód: Reguła okienka i kolizji ma jedno źródło w domenie, a próg jest globalny i trwały.
+- Odrzucone: Liczenie okienek w Compose; drugi wzór klucza kolizji w widgecie; przebudowa całego ekranu ustawień (I-05) albo kart zajęć (I-03); nowa trasa ustawień.
+- Weryfikacja: `GapCounterTest` i `CollisionCountTest` na JVM, `TodayViewModelTest` (liczby, próg, brak semestru) i `SettingsViewModelTest` (domyślne 30 i zapis 45). `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi; `TodayScreenTest` (kompilowany) sprawdza trzy etykiety, zera i brak ikony przy 320 dp. Odbiór wyglądu na urządzeniu należy do O-05.
+
 ## 2026-09-22: Start podziału MakRepository (I-01)
 
 - Fakty: `MakRepository` grupuje odpowiedzialności semestrów, planu i kopii zapasowej, mimo że `ARCHITECTURE.md` przewiduje `SemesterRepository`, `ScheduleRepository` i serwis kopii.
@@ -156,12 +164,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Zakres i etykieta: zajęcia jednorazowe sprawdzają zakres kalendarza kierunku, więc data poza kalendarzem nie pokazuje wystąpienia. `ResolvedSchedule` nie wybiera już arbitralnego tygodnia: gdy aktywne kalendarze mają w danym dniu różne oznaczenia A/B, `hasMixedWeekTypes` jest prawdziwe, a `week` puste, więc ekran pokazuje neutralne „Różne tygodnie", a nie jedno A/B.
 - Widget: `WidgetPresenter` traktował każde `weekType == null` jako „Poza semestrem" i ukrywał plan. Teraz sprawdza `hasMixedWeekTypes`; przy mieszanych tygodniach i niepustych zajęciach zwraca `WidgetUiState.Ready` z etykietą „Różne tygodnie", a `OutsideSemester` tylko wtedy, gdy naprawdę nie ma aktywnego kalendarza.
 - Weryfikacja: `MultiCalendarResolverTest` pokazuje, że przy przeciwnych rytmach A/B tylko kierunek z właściwego kalendarza ma wystąpienie, że dwa kierunki z różnymi kalendarzami dają wspólną kolizję z poprawnym zakresem nakładania, że zajęcia jednorazowe poza kalendarzem nie są pokazywane oraz że mieszane oznaczenia nie są zwijane do jednego. `WidgetPresenterTest` sprawdza, że dzień z różnymi tygodniami i zajęciami daje `Ready` z dwoma pozycjami, a nie `OutsideSemester`. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
-
-## 2026-09-21: Modele StudyProgram i AcademicCalendar
-
-- Fakty: Domenowy `Course` należał do jednego semestru, a daty i rytm A/B siedziały w `Semester`. Kierunek studiów trwa dłużej niż semestr, a różne kierunki mogą mieć różne daty i rytm.
-- Decyzja: Zastąpiono domenowy `Course` przez `StudyProgram` (`id`, nazwa, kolor, bez `semesterId`) i zaktualizowano `DomainMappers`, `ActivePlanProvider`, `ScheduleResolver` oraz testy domenowe. Dodano `AcademicCalendar` (data początku, data końca, pierwszy tydzień A/B) i `SemesterProgram` (`semesterId`, `studyProgramId`, `academicCalendarId`). `AcademicModelsTest` opisuje jeden kierunek w wielu semestrach, wspólny kalendarz kilku kierunków i osobny kalendarz kierunku z innej uczelni.
-- Zakres etapu: to czysto domenowy krok. `Semester` nadal ma daty i rytm, korekty nadal należą do semestru, a `ClassItem` nadal wskazuje `courseId`. Te zmiany, wraz z resolverem wielu kalendarzy i migracją Room, należą do kolejnych etapów, żeby każdy commit pozostał kompilujący i sprawdzalny.
-- Powód: Model musi odpowiadać cyklowi życia kierunku i pozwalać liczyć wspólny plan oraz kolizje między uczelniami, ale nie można zmieniać domeny, resolvera i bazy w jednym kroku.
-- Odrzucone: Kierunek przypisany na stałe do jednego semestru; niezależne współdzielenie dat i rytmu A/B; zmiana `ClassItem`, resolvera i Room razem z nazwą modelu.
-- Weryfikacja: `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi; `AcademicModelsTest` i istniejące testy domenowe działają.

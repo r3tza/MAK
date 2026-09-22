@@ -20,10 +20,14 @@ private val eveningEnabledKey = booleanPreferencesKey("evening_notifications_ena
 private val beforeClassEnabledKey = booleanPreferencesKey("before_class_notifications_enabled")
 private val eveningHourKey = intPreferencesKey("evening_hour_minutes")
 private val leadMinutesKey = intPreferencesKey("before_class_lead_minutes")
+private val gapThresholdMinutesKey = intPreferencesKey("gap_threshold_minutes")
 
 private const val readRetryDelayMillis = 100L
 private const val defaultEveningHourMinutes = 20 * 60
 private const val defaultLeadMinutes = 30
+private const val defaultGapThresholdMinutes = 30
+private const val minGapThresholdMinutes = 5
+private const val maxGapThresholdMinutes = 180
 
 @org.koin.core.annotation.Single(binds = [SettingsPreferences::class])
 class DataStoreSettingsPreferences(
@@ -43,6 +47,11 @@ class DataStoreSettingsPreferences(
 
     override val collisionNotifications: Flow<CollisionNotificationPreferences> =
         preferences.map { stored -> stored.toNotificationPreferences() }
+
+    override val gapThresholdMinutes: Flow<Int> = preferences.map { stored ->
+        (stored[gapThresholdMinutesKey] ?: defaultGapThresholdMinutes)
+            .coerceIn(minGapThresholdMinutes, maxGapThresholdMinutes)
+    }
 
     override suspend fun setTheme(mode: ThemeMode) {
         dataStore.edit { preferences -> preferences[themeKey] = mode.name }
@@ -66,6 +75,13 @@ class DataStoreSettingsPreferences(
 
     override suspend fun setBeforeClassLeadMinutes(minutes: Long) {
         dataStore.edit { preferences -> preferences[leadMinutesKey] = minutes.toInt() }
+    }
+
+    override suspend fun setGapThresholdMinutes(minutes: Int) {
+        dataStore.edit { preferences ->
+            preferences[gapThresholdMinutesKey] =
+                minutes.coerceIn(minGapThresholdMinutes, maxGapThresholdMinutes)
+        }
     }
 }
 

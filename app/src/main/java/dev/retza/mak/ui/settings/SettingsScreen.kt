@@ -44,6 +44,12 @@ data class NotificationOptionUi(
     val isSelected: Boolean = false
 )
 
+data class GapThresholdOptionUi(
+    val id: String,
+    val label: String,
+    val isSelected: Boolean = false
+)
+
 data class NotificationSettingsUi(
     val enabled: Boolean = false,
     val eveningEnabled: Boolean = true,
@@ -66,6 +72,7 @@ data class SettingsUiState(
     val semesters: List<SemesterUi> = emptyList(),
     val activeSemesterId: String? = null,
     val themeOptions: List<ThemeOptionUi> = emptyList(),
+    val gapThresholdOptions: List<GapThresholdOptionUi> = emptyList(),
     val notificationsLabel: String = "Obsługiwane przez aplikację, treść i moment wysyłki do ustalenia",
     val notificationsDetails: String = "Treść i moment wysyłki zostaną ustalone.",
     val semesterToDeleteId: String? = null,
@@ -88,6 +95,7 @@ fun SettingsScreen(
     onConfirmDelete: () -> Unit,
     onCancelDelete: () -> Unit,
     onThemeSelected: (String) -> Unit,
+    onGapThresholdSelected: (String) -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     onDismissImportError: () -> Unit,
@@ -137,6 +145,13 @@ fun SettingsScreen(
                     )
                     MakPrimaryAction(text = "Dodaj semestr", onClick = onAddSemester)
                 }
+                MakSelectField(
+                    label = "Próg okienka",
+                    value = state.gapThresholdOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
+                    options = state.gapThresholdOptions,
+                    onSelected = { onGapThresholdSelected(it.id) },
+                    optionLabel = { it.label }
+                )
                 MakSelectField(
                     label = "Motyw",
                     value = state.themeOptions.firstOrNull { it.isSelected }?.label.orEmpty(),

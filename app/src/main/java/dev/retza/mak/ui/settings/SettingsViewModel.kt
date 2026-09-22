@@ -40,6 +40,12 @@ sealed interface SettingsEffect {
     data object CloseImportPreview : SettingsEffect
 }
 
+private data class PreferencesSnapshot(
+    val theme: ThemeMode,
+    val notifications: CollisionNotificationPreferences,
+    val gapThresholdMinutes: Int
+)
+
 private data class SettingsLocalState(
     val semesterToDeleteId: String? = null,
     val isDeletingSemester: Boolean = false,
@@ -77,14 +83,21 @@ class SettingsViewModel(
     val themeMode: StateFlow<ThemeMode> = preferences.theme
         .stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.System)
 
+    private val preferencesSnapshot = combine(
+        preferences.theme,
+        preferences.collisionNotifications,
+        preferences.gapThresholdMinutes
+    ) { theme, notifications, gapThresholdMinutes ->
+        PreferencesSnapshot(theme, notifications, gapThresholdMinutes)
+    }
+
     val settings: StateFlow<SettingsUiState> = combine(
         semesterRepository.observeSemesters(),
         activePlanData,
-        preferences.theme,
-        preferences.collisionNotifications,
+        preferencesSnapshot,
         local
-    ) { semesters, activeData, theme, notifications, state ->
-        buildSettingsState(semesters, activeData, theme, notifications, state)
+    ) { semesters, activeData, preferencesState, state ->
+        buildSettingsState(semesters, activeData, preferencesState, state)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -206,6 +219,11 @@ class SettingsViewModel(
         saveNotifications { preferences.setBeforeClassLeadMinutes(minutes) }
     }
 
+    fun setGapThresholdMinutes(id: String) {
+        val minutes = id.toIntOrNull() ?: return
+        saveNotifications { preferences.setGapThresholdMinutes(minutes) }
+    }
+
     private fun saveNotifications(block: suspend () -> Unit) {
         if (local.value.isSavingNotifications) return
         local.update { it.copy(isSavingNotifications = true) }
@@ -305,8 +323,7 @@ private fun ImportSummary.toImportPreviewUi(): ImportPreviewUi = ImportPreviewUi
 private fun buildSettingsState(
     semesterList: List<SemesterRecord>,
     activeData: ActivePlanData?,
-    theme: ThemeMode,
-    notifications: CollisionNotificationPreferences,
+    preferences: PreferencesSnapshot,
     local: SettingsLocalState
 ): SettingsUiState = SettingsUiState(
     semesters = semesterList.map { semester ->
@@ -341,10 +358,17 @@ private fun buildSettingsState(
     },
     activeSemesterId = activeData?.semester?.id?.toString(),
     themeOptions = listOf(
-        ThemeOptionUi("system", "Systemowy", theme == ThemeMode.System),
-        ThemeOptionUi("light", "Jasny", theme == ThemeMode.Light),
-        ThemeOptionUi("dark", "Ciemny", theme == ThemeMode.Dark)
+        ThemeOptionUi("system", "Systemowy", preferences.theme == ThemeMode.System),
+        ThemeOptionUi("light", "Jasny", preferences.theme == ThemeMode.Light),
+        ThemeOptionUi("dark", "Ciemny", preferences.theme == ThemeMode.Dark)
     ),
+    gapThresholdOptions = gapThresholdOptions.map { minutes ->
+        GapThresholdOptionUi(
+            id = minutes.toString(),
+            label = "$minutes min",
+            isSelected = preferences.gapThresholdMinutes == minutes
+        )
+    },
     semesterToDeleteId = local.semesterToDeleteId,
     isDeletingSemester = local.isDeletingSemester,
     importPreview = local.importPreview,
@@ -352,18 +376,18 @@ private fun buildSettingsState(
     isPreparingImport = local.isPreparingImport,
     isReplacingData = local.isReplacingData,
     notifications = NotificationSettingsUi(
-        enabled = notifications.enabled,
-        eveningEnabled = notifications.eveningEnabled,
-        beforeClassEnabled = notifications.beforeClassEnabled,
+        enabled = preferences.notifications.enabled,
+        eveningEnabled = preferences.notifications.eveningEnabled,
+        beforeClassEnabled = preferences.notifications.beforeClassEnabled,
         eveningHourOptions = notificationHourOptions.map { hour ->
             val id = "%02d:00".format(hour)
-            NotificationOptionUi(id, id, notifications.eveningHour.hour == hour)
+            NotificationOptionUi(id, id, preferences.notifications.eveningHour.hour == hour)
         },
         leadOptions = notificationLeadOptions.map { minutes ->
             NotificationOptionUi(
                 id = minutes.toString(),
                 label = "$minutes min",
-                isSelected = notifications.leadMinutes == minutes
+                isSelected = preferences.notifications.leadMinutes == minutes
             )
         }
     )
@@ -371,6 +395,7 @@ private fun buildSettingsState(
 
 private val notificationHourOptions = listOf(18, 19, 20, 21, 22)
 private val notificationLeadOptions = listOf(15L, 30L, 45L, 60L)
+private val gapThresholdOptions = listOf(15, 20, 30, 45, 60)
 
 private val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.forLanguageTag("pl-PL"))
 

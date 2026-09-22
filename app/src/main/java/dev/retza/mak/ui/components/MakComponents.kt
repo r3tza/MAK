@@ -289,33 +289,81 @@ fun MakRoundButton(
 @Composable
 fun MakSummaryCard(
     caption: String,
-    value: String,
+    classCount: Int,
+    collisionCount: Int,
+    gapCount: Int,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .shadow(11.dp, RoundedCornerShape(22.dp), spotColor = Color(0x332D46A4))
             .clip(RoundedCornerShape(22.dp))
             .background(Brush.linearGradient(listOf(MakSummaryStart, MakSummaryEnd)))
-            .padding(start = MakSpacing.lg, end = MakSpacing.lg, top = MakSpacing.lg, bottom = MakSpacing.md),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = MakSpacing.lg, vertical = MakSpacing.lg),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
-        Column {
-            Text(caption, color = Color.White.copy(alpha = 0.78f), fontSize = 11.sp)
-            Text(
-                value,
-                color = Color.White,
-                style = MaterialTheme.typography.titleMedium,
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                modifier = Modifier.padding(top = MakSpacing.xs)
+        Text(caption, color = Color.White.copy(alpha = 0.78f), fontSize = 11.sp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            SummaryColumn(
+                label = "Zajęcia",
+                value = classCount,
+                valueColor = Color.White,
+                modifier = Modifier.weight(1f)
+            )
+            SummaryDivider()
+            SummaryColumn(
+                label = "Kolizje",
+                value = collisionCount,
+                valueColor = if (collisionCount > 0) SummaryAlert else SummaryOk,
+                modifier = Modifier.weight(1f)
+            )
+            SummaryDivider()
+            SummaryColumn(
+                label = "Okienka",
+                value = gapCount,
+                valueColor = Color.White,
+                modifier = Modifier.weight(1f)
             )
         }
-        Text("✦", color = Color.White, fontSize = 26.sp, fontWeight = FontWeight.ExtraBold)
+        if (classCount == 0) {
+            Text("Dziś bez zajęć", color = Color.White.copy(alpha = 0.78f), fontSize = 12.sp)
+        }
     }
 }
+
+@Composable
+private fun SummaryColumn(
+    label: String,
+    value: Int,
+    valueColor: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+    ) {
+        Text(label, color = Color.White.copy(alpha = 0.78f), fontSize = 11.sp)
+        Text(value.toString(), color = valueColor, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+    }
+}
+
+@Composable
+private fun SummaryDivider() {
+    Box(
+        modifier = Modifier
+            .width(1.dp)
+            .height(32.dp)
+            .background(Color.White.copy(alpha = 0.25f))
+    )
+}
+
+private val SummaryAlert = Color(0xFFFFB4AB)
+private val SummaryOk = Color(0xFF7FE0A6)
 
 @Composable
 fun MakRowTitle(

@@ -38,6 +38,7 @@ class SettingsScreenTest {
                         onConfirmDelete = {},
                         onCancelDelete = {},
                         onThemeSelected = {},
+                        onGapThresholdSelected = {},
                         onExport = {},
                         onImport = { imported += 1 },
                         onDismissImportError = {},

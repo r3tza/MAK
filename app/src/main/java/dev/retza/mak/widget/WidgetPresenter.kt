@@ -2,6 +2,7 @@ package dev.retza.mak.widget
 
 import dev.retza.mak.domain.ActivePlan
 import dev.retza.mak.domain.Collision
+import dev.retza.mak.domain.uniqueCollisionCount
 import dev.retza.mak.domain.PlannedOccurrence
 import java.time.LocalDate
 import java.time.LocalTime
@@ -33,7 +34,7 @@ class WidgetPresenter {
         return WidgetUiState.Ready(
             dateLabel = dateLabel,
             weekLabel = weekLabel,
-            collisionCount = plan.collisions.map(::widgetCollisionKey).toSet().size,
+            collisionCount = uniqueCollisionCount(plan.collisions),
             items = plan.schedule.occurrences.map { occurrence ->
                 WidgetOccurrenceUi(
                     id = occurrence.id,
@@ -54,16 +55,6 @@ class WidgetPresenter {
             }
         )
     }
-}
-
-private fun widgetCollisionKey(collision: Collision): String {
-    val occurrenceIds = listOf(collision.first.id, collision.second.id).sorted()
-    return listOf(
-        occurrenceIds[0],
-        occurrenceIds[1],
-        collision.overlapStart,
-        collision.overlapEnd
-    ).joinToString("|")
 }
 
 internal fun widgetDateLabel(date: LocalDate): String = date.format(widgetDateFormatter)
