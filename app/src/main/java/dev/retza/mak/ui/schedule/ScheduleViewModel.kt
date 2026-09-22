@@ -114,6 +114,14 @@ class ScheduleViewModel(
 
     fun setShowCancelled(value: Boolean) = controls.update { it.copy(showCancelled = value) }
 
+    fun showDate(id: String) {
+        id.toLocalDateOrNull()?.let { date ->
+            controls.update {
+                it.copy(scheduleDate = date, calendarDate = date, calendarMonth = YearMonth.from(date))
+            }
+        }
+    }
+
     fun openNewClassForSelectedCalendarDay() {
         effectsChannel.trySend(ScheduleEffect.OpenNewClassEditor(controls.value.calendarDate))
     }

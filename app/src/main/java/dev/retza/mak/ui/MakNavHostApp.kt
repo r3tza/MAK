@@ -55,6 +55,7 @@ fun MakApp(
     todayViewModel: TodayViewModel,
     feedback: Flow<UiFeedback>,
     openTodayRequests: Flow<Unit>,
+    openPlanRequests: Flow<String>,
     onCreateExportDocument: () -> Unit,
     onImportPlan: () -> Unit
 ) {
@@ -93,6 +94,13 @@ fun MakApp(
 
     LaunchedEffect(openTodayRequests, navController) {
         openTodayRequests.collect { openRoot(MakRoutes.Today) }
+    }
+
+    LaunchedEffect(openPlanRequests, navController) {
+        openPlanRequests.collect { date ->
+            scheduleViewModel.showDate(date)
+            openRoot(MakRoutes.Schedule)
+        }
     }
 
     OccurrenceEffects(occurrenceViewModel, navController)

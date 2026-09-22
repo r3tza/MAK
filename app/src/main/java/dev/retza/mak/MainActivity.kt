@@ -45,6 +45,7 @@ class MainActivity : ComponentActivity() {
     private val todayViewModel: TodayViewModel by viewModel()
     private val feedbackController: FeedbackController by inject()
     private val openTodayRequests = Channel<Unit>(Channel.CONFLATED)
+    private val openPlanRequests = Channel<String>(Channel.CONFLATED)
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -52,6 +53,10 @@ class MainActivity : ComponentActivity() {
         if (intent.getBooleanExtra(EXTRA_OPEN_TODAY, false)) {
             openTodayRequests.trySend(Unit)
             intent.removeExtra(EXTRA_OPEN_TODAY)
+        }
+        intent.getStringExtra(EXTRA_OPEN_PLAN_DATE)?.let { date ->
+            openPlanRequests.trySend(date)
+            intent.removeExtra(EXTRA_OPEN_PLAN_DATE)
         }
         setContent {
             val themeMode = settingsViewModel.themeMode.collectAsStateWithLifecycle().value
@@ -118,6 +123,7 @@ class MainActivity : ComponentActivity() {
                     todayViewModel = todayViewModel,
                     feedback = feedbackController.feedback,
                     openTodayRequests = openTodayRequests.receiveAsFlow(),
+                    openPlanRequests = openPlanRequests.receiveAsFlow(),
                     onCreateExportDocument = { exportLauncher.launch("mak-plan.json") },
                     onImportPlan = { importLauncher.launch(arrayOf("application/json")) }
                 )
@@ -132,9 +138,14 @@ class MainActivity : ComponentActivity() {
             openTodayRequests.trySend(Unit)
             intent.removeExtra(EXTRA_OPEN_TODAY)
         }
+        intent.getStringExtra(EXTRA_OPEN_PLAN_DATE)?.let { date ->
+            openPlanRequests.trySend(date)
+            intent.removeExtra(EXTRA_OPEN_PLAN_DATE)
+        }
     }
 
     companion object {
         const val EXTRA_OPEN_TODAY = "dev.retza.mak.extra.OPEN_TODAY"
+        const val EXTRA_OPEN_PLAN_DATE = "dev.retza.mak.extra.OPEN_PLAN_DATE"
     }
 }

@@ -52,7 +52,7 @@ class CollisionNotificationPlanner(
         val notifications = mutableListOf<PlannedCollisionNotification>()
         for (offset in 0 until settings.horizonDays) {
             val date = today.plusDays(offset)
-            val groups = collisionGroups(activePlanProvider.resolve(data, date).collisions)
+            val groups = collisionNotificationGroups(activePlanProvider.resolve(data, date).collisions)
             if (groups.isEmpty()) continue
             if (settings.eveningEnabled) {
                 val from = date.minusDays(1).atTime(settings.eveningHour)
@@ -111,35 +111,35 @@ class CollisionNotificationPlanner(
         }
         return key.hashCode() and 0x7fffffff
     }
+}
 
-    private fun collisionGroups(collisions: List<Collision>): List<CollisionNotificationGroup> {
-        if (collisions.isEmpty()) return emptyList()
-        val parent = mutableMapOf<String, String>()
-        fun find(value: String): String {
-            val direct = parent.getOrPut(value) { value }
-            if (direct == value) return value
-            val root = find(direct)
-            parent[value] = root
-            return root
-        }
+fun collisionNotificationGroups(collisions: List<Collision>): List<CollisionNotificationGroup> {
+    if (collisions.isEmpty()) return emptyList()
+    val parent = mutableMapOf<String, String>()
+    fun find(value: String): String {
+        val direct = parent.getOrPut(value) { value }
+        if (direct == value) return value
+        val root = find(direct)
+        parent[value] = root
+        return root
+    }
 
-        fun union(first: String, second: String) {
-            val firstRoot = find(first)
-            val secondRoot = find(second)
-            if (firstRoot != secondRoot) parent[firstRoot] = secondRoot
-        }
+    fun union(first: String, second: String) {
+        val firstRoot = find(first)
+        val secondRoot = find(second)
+        if (firstRoot != secondRoot) parent[firstRoot] = secondRoot
+    }
 
-        collisions.forEach { union(it.first.id, it.second.id) }
-        return collisions.groupBy { find(it.first.id) }.values.map { groupCollisions ->
-            val occurrences = groupCollisions
-                .flatMap { listOf(it.first, it.second) }
-                .distinctBy { it.id }
-            CollisionNotificationGroup(
-                occurrenceIds = occurrences.map { it.id }.sorted(),
-                earliestStart = occurrences.minOf { it.startTime },
-                overlapStart = groupCollisions.minOf { it.overlapStart },
-                overlapEnd = groupCollisions.maxOf { it.overlapEnd }
-            )
-        }
+    collisions.forEach { union(it.first.id, it.second.id) }
+    return collisions.groupBy { find(it.first.id) }.values.map { groupCollisions ->
+        val occurrences = groupCollisions
+            .flatMap { listOf(it.first, it.second) }
+            .distinctBy { it.id }
+        CollisionNotificationGroup(
+            occurrenceIds = occurrences.map { it.id }.sorted(),
+            earliestStart = occurrences.minOf { it.startTime },
+            overlapStart = groupCollisions.minOf { it.overlapStart },
+            overlapEnd = groupCollisions.maxOf { it.overlapEnd }
+        )
     }
 }

@@ -1,5 +1,20 @@
 # MAK — dziennik decyzji
 
+## 2026-09-22: Kontrakt powiadomień o kolizjach
+
+- Decyzja: Powiadomienia są domyślnie wyłączone. Po jawnym włączeniu aplikacja prosi o zgodę systemową, jeśli jest wymagana. Odmowa nie usuwa preferencji użytkownika. Ustawienia pokazują blokadę systemową i pozwalają przejść do ustawień aplikacji.
+- Grupowanie: Spójny łańcuch nakładających się wystąpień to jedna grupa kolizji. Wieczorem wysyłać jedno podsumowanie grup następnego dnia, przed zajęciami jeden alert dla każdej grupy. Wyprzedzenie liczyć od początku najwcześniejszych zajęć w grupie. Treść może pokazywać nazwy zajęć na ekranie blokady. Kliknięcie otwiera dzień planu.
+- Planowanie: Używać stabilnych identyfikatorów alarmów, 14-dniowego horyzontu i jednego alarmu odnawiającego. Przy odbiorze sprawdzać aktualne dane, ustawienia i zgodę. Po zmianach danych, imporcie, ustawień, czasu, strefy lub restarcie urządzenia wymieniać przyszłe alarmy.
+- Powód: Jedno ostrzeżenie na grupę ogranicza duplikaty, a alert względem początku zajęć daje czas na reakcję przed pierwszym kolidującym terminem. Jawna zgoda i ponowna kontrola danych ograniczają niechciane oraz nieaktualne powiadomienia.
+
+## 2026-09-21: Etap 14.1-14.3, planowanie i dostarczanie powiadomień
+
+- Fakty: Aplikacja nie miała żadnego kodu powiadomień ani alarmów, a kolizje były liczone jako pary wystąpień bez grupowania przechodniego.
+- Decyzja: Dodano czysty `CollisionNotificationPlanner` (JVM) na `ActivePlanProvider` i wstrzykniętym `Clock`. Grupą jest spójna składowa kolizji (A-B i B-C to jedna grupa). Planista tworzy jedno powiadomienie wieczorne na dzień z kolizjami (20:00 dnia poprzedniego, okno 15 min) i jedno powiadomienie przed zajęciami na grupę (wyprzedzenie 30 min, okno 15 min, liczone od najwcześniejszego startu w grupie). Identyfikatory alarmów są stabilne i wynikają z rodzaju, daty i identyfikatorów wystąpień. Dodano `CollisionNotificationPreferences` w `SettingsPreferences` i DataStore (domyślnie wyłączone, oba rodzaje włączone, 20:00, 30 min). Warstwa Androida: `CollisionAlarmScheduler` używa `AlarmManager.setWindow` (bez dokładnych alarmów, `WorkManager` i serwisu), planuje horyzont 14 dni i alarm konserwacyjny co 7 dni; `CollisionAlarmReceiver` przed pokazaniem ponownie sprawdza zgodę, przełączniki, aktywny semestr i bieżącą kolizję oraz pomija alert przed zajęciami po zakończeniu grupy; `NotificationRescheduleReceiver` odnawia plan po restarcie i zmianie czasu; `MakApplication` odświeża plan na jednej granicy po zmianie danych, aktywnego semestru lub ustawień. Kliknięcie powiadomienia otwiera ekran Planu na właściwym dniu (`EXTRA_OPEN_PLAN_DATE` i `ScheduleViewModel.showDate`).
+- Powód: Jedno ostrzeżenie na grupę ogranicza duplikaty, a alert względem początku najwcześniejszych zajęć daje czas na reakcję przed pierwszym kolidującym terminem.
+- Odrzucone: Dokładne alarmy i `SCHEDULE_EXACT_ALARM`; `WorkManager` do dostarczenia; ciągły serwis; odświeżanie z każdego ekranu osobno; grupowanie tylko par bez spójnych składowych.
+- Weryfikacja: `CollisionNotificationPlannerTest` pokrywa wyłączenie, brak kolizji, wieczór i przed zajęciami, grupy przechodnie, niezależne grupy, horyzont, stabilne identyfikatory i wyłączenie wieczoru. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Ustawienia i zgoda `POST_NOTIFICATIONS` w interfejsie oraz odbiór na urządzeniu pozostają otwarte.
+
 ## 2026-09-21: Etap 13.3, import w interfejsie
 
 - Fakty: Walidacja i atomowe zastąpienie danych istniały, ale nie było sposobu wybrać pliku ani pokazać, co zostanie zastąpione.

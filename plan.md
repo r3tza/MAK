@@ -384,16 +384,20 @@ Postęp: krok 1 zrealizowany (walidacja i mapowanie snapshotu w `ExportImporter`
 
 #### Dalszy etap 14: powiadomienia o kolizjach
 
-1. Powiadamiać wieczorem dnia poprzedzającego kolizję oraz przed rozpoczęciem kolidujących zajęć. Domyślna godzina pierwszego powiadomienia to 20:00, a domyślne wyprzedzenie drugiego wynosi 30 minut.
-2. Planować powiadomienia na podstawie wyniku `ActivePlanProvider`, po zmianach danych usuwać nieaktualne i planować nowe.
-3. Deduplikować powiadomienia dla tej samej grupy kolizji.
-4. Dodać w ustawieniach główny przełącznik powiadomień o kolizjach oraz osobne przełączniki powiadomienia wieczornego i powiadomienia przed zajęciami.
-5. Pozwolić zmienić globalnie godzinę powiadomienia wieczornego i wyprzedzenie powiadomienia przed zajęciami. Ustawienia dotyczą aktywnego planu, a nie pojedynczych kierunków ani zajęć.
-6. Używać przybliżonych alarmów `AlarmManager` bez żądania dostępu do dokładnych alarmów. Powiadomienie wieczorne planować około wybranej godziny. Powiadomienie przed zajęciami planować w oknie kończącym się o wybranym wyprzedzeniu, domyślnie od 45 do 30 minut przed rozpoczęciem.
-7. Nie używać `WorkManager` do dostarczenia tych powiadomień i nie uruchamiać ciągłego serwisu. Interfejs nie może obiecywać dostarczenia o dokładnej godzinie.
-8. Po ponownym uruchomieniu urządzenia, zmianie czasu, zmianie ustawień, zmianie aktywnego semestru oraz zmianie danych wpływających na kolizje usunąć nieaktualne alarmy i zaplanować aktualny zestaw.
+Decyzja 2026-09-22: powiadomienia są domyślnie wyłączone. Użytkownik włącza je jawnie w ustawieniach. Na Androidzie 13 i nowszym aplikacja prosi o `POST_NOTIFICATIONS` dopiero przy włączaniu funkcji. Preferencję użytkownika trzymaj osobno od stanu zgody systemowej. Po odmowie pokaż „Zablokowane przez system” i jawną drogę do ustawień aplikacji. Nie ponawiaj prośby przy każdym uruchomieniu.
 
-Kryterium: zmiana, przeniesienie, przywrócenie lub odwołanie zajęć aktualizuje przyszłe powiadomienia bez duplikatów, a wyłączenie rodzaju powiadomienia usuwa odpowiadające mu przyszłe alarmy.
+1. Zbudować czysty planista na podstawie `ActivePlanProvider` i wstrzykniętego `Clock`. Grupą kolizji jest spójna grupa wystąpień połączonych nakładającymi się godzinami: jeśli A koliduje z B, a B z C, to jedna grupa. Niezależne grupy tego samego dnia pozostają osobne.
+2. Dla dnia z kolizjami przygotować jedno powiadomienie wieczorne z liczbą grup i godzinami kolizji. Domyślna godzina to 20:00 dnia poprzedniego. Nazwy zajęć mogą występować w treści, także na ekranie blokady.
+3. Dla każdej grupy przygotować jedno powiadomienie przed zajęciami. Wyprzedzenie liczyć od początku najwcześniejszych zajęć należących do grupy, a nie od początku nakładania się godzin. Domyślne wyprzedzenie to 30 minut. Przykład: dla zajęć 8:00-10:00 i 9:00-11:00 planować alert względem 8:00.
+4. Nadawać alarmom stabilne identyfikatory wynikające z daty, rodzaju powiadomienia i identyfikatorów wystąpień w grupie. Ponowne planowanie nie może tworzyć duplikatów. Kliknięcie powiadomienia otwiera odpowiedni dzień planu.
+5. Dodać globalny przełącznik oraz osobne przełączniki powiadomienia wieczornego i przed zajęciami. Pozwolić zmienić globalnie godzinę wieczorną i wyprzedzenie. Ustawienia dotyczą tylko aktywnego semestru, bez konfiguracji osobno dla kierunków lub zajęć.
+6. Dostarczać powiadomienia przez przybliżone alarmy `AlarmManager`, bez dostępu do dokładnych alarmów, `WorkManager` do dostarczenia i ciągłego serwisu. Wieczorny alarm planować około wybranej godziny. Alarm przed zajęciami planować w oknie kończącym się o wybranym wyprzedzeniu, domyślnie od 45 do 30 minut przed początkiem najwcześniejszych zajęć grupy. Interfejs mówi „około” i nie obiecuje punktualności.
+7. Planować ograniczony horyzont, początkowo 14 dni, i odnawiać go jednym lekkim alarmem konserwacyjnym. Odnawianie musi działać także wtedy, gdy w bieżącym horyzoncie nie ma kolizji. Po restarcie urządzenia, zmianie czasu lub strefy, ustawień, aktywnego semestru, imporcie oraz zmianie danych wpływających na kolizje usuwać nieaktualne alarmy i planować aktualny zestaw.
+8. Przed pokazaniem powiadomienia ponownie sprawdzić zgodę systemową, przełączniki, aktywny semestr i bieżącą kolizję. Nie pokazywać alertu przed zajęciami, jeśli opóźniony alarm dotarł po zakończeniu grupy.
+
+Kryterium: zmiana, przeniesienie, przywrócenie lub odwołanie zajęć aktualizuje przyszłe powiadomienia bez duplikatów. Wyłączenie rodzaju powiadomienia usuwa odpowiadające mu przyszłe alarmy. Odmowa zgody systemowej nie zmienia preferencji użytkownika, lecz blokuje dostarczenie i jest czytelna w ustawieniach.
+
+Postęp: krok 1 zrealizowany (czysty `CollisionNotificationPlanner` z grupami spójnymi i stabilnymi identyfikatorami, `CollisionNotificationPlannerTest`). Krok 2 preferencji zrealizowany (`CollisionNotificationPreferences` w `SettingsPreferences` i DataStore). Kroki 4, 6 i 7 zrealizowane w warstwie Androida (`CollisionAlarmScheduler` z `AlarmManager.setWindow`, `CollisionAlarmReceiver` z ponowną weryfikacją zgody, przełączników, aktywnego semestru i kolizji, `NotificationRescheduleReceiver` na boot i zmianę czasu, alarm konserwacyjny oraz wspólna granica odświeżania w `MakApplication`). Pozostaje krok 5: ustawienia i zgoda `POST_NOTIFICATIONS` w interfejsie, potem odbiór na urządzeniu.
 
 ## 1.3. Plan poprawy ekranu „Plan”
 
