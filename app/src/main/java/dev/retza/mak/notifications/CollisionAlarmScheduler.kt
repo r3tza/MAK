@@ -8,6 +8,7 @@ import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.toActivePlanData
 import dev.retza.mak.domain.CollisionNotificationPlanner
 import dev.retza.mak.domain.PlannedCollisionNotification
+import dev.retza.mak.domain.toAlarmPayload
 import dev.retza.mak.ui.settings.SettingsPreferences
 import java.time.Clock
 import java.time.temporal.ChronoUnit
@@ -61,7 +62,7 @@ class CollisionAlarmScheduler(
             AlarmManager.RTC_WAKEUP,
             from,
             (until - from).coerceAtLeast(1L),
-            alarmPendingIntent(item.id)
+            alarmPendingIntent(item)
         )
     }
 
@@ -97,12 +98,21 @@ class CollisionAlarmScheduler(
         if (pending != null) alarmManager.cancel(pending)
     }
 
-    private fun alarmPendingIntent(id: Int): PendingIntent = PendingIntent.getBroadcast(
-        context,
-        id,
-        alarmIntent(),
-        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-    )
+    private fun alarmPendingIntent(item: PlannedCollisionNotification): PendingIntent {
+        val payload = item.toAlarmPayload()
+        val intent = Intent(context, CollisionAlarmReceiver::class.java)
+            .setAction(COLLISION_ALARM_ACTION)
+            .putExtra(EXTRA_NOTIFICATION_ID, payload.notificationId)
+            .putExtra(EXTRA_KIND, payload.kind.name)
+            .putExtra(EXTRA_DATE, payload.date.toString())
+            .putExtra(EXTRA_OCCURRENCE_IDS, payload.occurrenceIds.toTypedArray())
+        return PendingIntent.getBroadcast(
+            context,
+            payload.notificationId,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+    }
 
     private fun alarmIntent(): Intent =
         Intent(context, CollisionAlarmReceiver::class.java).setAction(COLLISION_ALARM_ACTION)

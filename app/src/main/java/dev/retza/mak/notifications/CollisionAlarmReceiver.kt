@@ -16,6 +16,7 @@ import dev.retza.mak.data.repository.toActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.CollisionNotificationKind
 import dev.retza.mak.domain.collisionNotificationGroups
+import dev.retza.mak.domain.shouldShowCollisionNotification
 import dev.retza.mak.ui.settings.SettingsPreferences
 import java.time.Clock
 import java.time.LocalDate
@@ -75,13 +76,11 @@ class CollisionAlarmReceiver : BroadcastReceiver(), KoinComponent {
         val data = repository.observeSemesterData(semester.id).first() ?: return
         val plan = activePlanProvider.resolve(data.toActivePlanData(), date)
         val groups = collisionNotificationGroups(plan.collisions)
-        val currentGroup = groups.firstOrNull { it.occurrenceIds.containsAll(occurrenceIds) } ?: return
         val occurrences = plan.schedule.occurrences.filter { it.id in occurrenceIds }
         if (occurrences.isEmpty()) return
-        if (kind == CollisionNotificationKind.BEFORE_CLASS) {
-            val latestEnd = occurrences.maxOf { it.endTime }
-            if (!LocalDateTime.now(clock).isBefore(date.atTime(latestEnd))) return
-        }
+        val now = LocalDateTime.now(clock)
+        val latestEnd = occurrences.maxOf { it.endTime }
+        if (!shouldShowCollisionNotification(kind, date, occurrenceIds, groups, now, latestEnd)) return
 
         val title: String
         val text: String
@@ -90,8 +89,9 @@ class CollisionAlarmReceiver : BroadcastReceiver(), KoinComponent {
             text = "${groups.size} ${groupLabel(groups.size)}: " +
                 groups.joinToString(", ") { "${it.overlapStart}-${it.overlapEnd}" }
         } else {
+            val group = groups.first { it.occurrenceIds.containsAll(occurrenceIds) }
             title = "Za chwilę kolizja zajęć"
-            text = occurrences.joinToString(" / ") { it.name } + " od ${currentGroup.earliestStart}"
+            text = occurrences.joinToString(" / ") { it.name } + " od ${group.earliestStart}"
         }
 
         ensureCollisionChannel(context)

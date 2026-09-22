@@ -37,6 +37,44 @@ data class PlannedCollisionNotification(
     val groups: List<CollisionNotificationGroup>
 )
 
+data class CollisionAlarmPayload(
+    val notificationId: Int,
+    val kind: CollisionNotificationKind,
+    val date: LocalDate,
+    val occurrenceIds: List<String>
+)
+
+fun PlannedCollisionNotification.toAlarmPayload(): CollisionAlarmPayload =
+    CollisionAlarmPayload(
+        notificationId = id,
+        kind = kind,
+        date = date,
+        occurrenceIds = groups.flatMap { it.occurrenceIds }
+    )
+
+fun shouldShowCollisionNotification(
+    kind: CollisionNotificationKind,
+    date: LocalDate,
+    requestedOccurrenceIds: List<String>,
+    currentGroups: List<CollisionNotificationGroup>,
+    now: LocalDateTime,
+    requestedLatestEnd: LocalTime
+): Boolean {
+    if (requestedOccurrenceIds.isEmpty()) return false
+    return when (kind) {
+        CollisionNotificationKind.EVENING -> {
+            if (now.toLocalDate() != date.minusDays(1)) return false
+            val currentIds = currentGroups.flatMap { it.occurrenceIds }.toSet()
+            currentIds.containsAll(requestedOccurrenceIds)
+        }
+
+        CollisionNotificationKind.BEFORE_CLASS -> {
+            currentGroups.any { it.occurrenceIds.containsAll(requestedOccurrenceIds) } &&
+                now.isBefore(date.atTime(requestedLatestEnd))
+        }
+    }
+}
+
 @org.koin.core.annotation.Single
 class CollisionNotificationPlanner(
     private val activePlanProvider: ActivePlanProvider,
