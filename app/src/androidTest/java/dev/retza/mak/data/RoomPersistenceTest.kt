@@ -20,6 +20,7 @@ import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.RoomMakRepository
 import dev.retza.mak.data.repository.RoomScheduleRepository
+import dev.retza.mak.data.repository.RoomSemesterRepository
 import dev.retza.mak.data.repository.SemesterBackup
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -572,7 +573,11 @@ class RoomPersistenceTest {
     )
 
     private fun repository(): RoomMakRepository =
-        RoomMakRepository(database!!, RoomScheduleRepository(database!!))
+        RoomMakRepository(
+            database!!,
+            RoomScheduleRepository(database!!),
+            RoomSemesterRepository(database!!)
+        )
 
     private fun semester(name: String, active: Boolean) = SemesterEntity(
         name = name,

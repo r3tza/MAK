@@ -106,6 +106,78 @@ private fun OccurrenceChangeEntity.toDomain() = OccurrenceChange(
     note = newNote
 )
 
+internal fun SemesterEntity.toRecord() = SemesterRecord(
+    id = id,
+    name = name,
+    isActive = isActive
+)
+
+internal fun SemesterRecord.toEntity() = SemesterEntity(
+    id = id,
+    name = name,
+    isActive = isActive
+)
+
+internal fun StudyProgramEntity.toRecord() = StudyProgramRecord(
+    id = id,
+    name = name,
+    color = color
+)
+
+internal fun StudyProgramRecord.toEntity() = StudyProgramEntity(
+    id = id,
+    name = name,
+    color = color
+)
+
+internal fun AcademicCalendarEntity.toRecord() = AcademicCalendarRecord(
+    id = id,
+    semesterId = semesterId,
+    startDate = startDate,
+    endDate = endDate,
+    firstWeekType = WeekType.valueOf(firstWeekType.name)
+)
+
+internal fun AcademicCalendarRecord.toEntity() = AcademicCalendarEntity(
+    id = id,
+    semesterId = semesterId,
+    startDate = startDate,
+    endDate = endDate,
+    firstWeekType = dev.retza.mak.data.entity.WeekType.valueOf(firstWeekType.name)
+)
+
+internal fun SemesterProgramEntity.toRecord() = SemesterProgramRecord(
+    id = id,
+    semesterId = semesterId,
+    studyProgramId = studyProgramId,
+    academicCalendarId = academicCalendarId
+)
+
+internal fun SemesterProgramRecord.toEntity() = SemesterProgramEntity(
+    id = id,
+    semesterId = semesterId,
+    studyProgramId = studyProgramId,
+    academicCalendarId = academicCalendarId
+)
+
+internal fun WeekOverrideEntity.toRecord() = WeekOverrideRecord(
+    id = id,
+    semesterId = semesterId,
+    academicCalendarId = academicCalendarId,
+    weekStartDate = weekStartDate,
+    weekType = WeekType.valueOf(weekType.name),
+    scope = WeekOverrideScope.valueOf(scope.name)
+)
+
+internal fun WeekOverrideRecord.toEntity() = WeekOverrideEntity(
+    id = id,
+    semesterId = semesterId,
+    academicCalendarId = academicCalendarId,
+    weekStartDate = weekStartDate,
+    weekType = dev.retza.mak.data.entity.WeekType.valueOf(weekType.name),
+    scope = dev.retza.mak.data.entity.WeekOverrideScope.valueOf(scope.name)
+)
+
 internal fun ClassEntity.toRecord() = ClassRecord(
     id = id,
     semesterId = semesterId,
