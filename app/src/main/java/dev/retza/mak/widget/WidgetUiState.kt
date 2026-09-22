@@ -30,6 +30,13 @@ sealed interface WidgetUiState {
     ) : WidgetUiState
 }
 
+enum class WidgetOccurrencePhase {
+    Past,
+    Current,
+    Next,
+    Scheduled
+}
+
 data class WidgetOccurrenceUi(
     val id: String,
     val startTime: String,
@@ -40,7 +47,8 @@ data class WidgetOccurrenceUi(
     val roomLabel: String,
     val teacherName: String?,
     val conflicts: List<WidgetConflictUi>,
-    val hasNote: Boolean
+    val hasNote: Boolean,
+    val phase: WidgetOccurrencePhase = WidgetOccurrencePhase.Scheduled
 )
 
 data class WidgetConflictUi(

@@ -5,6 +5,7 @@ import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.ActivePlanProvider
 import java.time.Clock
 import java.time.LocalDate
+import java.time.LocalTime
 import kotlinx.coroutines.flow.first
 
 class WidgetPlanLoader(
@@ -23,7 +24,7 @@ class WidgetPlanLoader(
             val planData = scheduleRepository.observeActivePlanData(semester.id).first()
                 ?: return@runCatching WidgetUiState.Error(dateLabel)
             val plan = activePlanProvider.resolve(planData, date)
-            presenter.present(date, planData.semester.name, plan)
+            presenter.present(date, planData.semester.name, plan, LocalTime.now(clock))
         }.getOrElse {
             WidgetUiState.Error(dateLabel)
         }

@@ -46,9 +46,9 @@ class WidgetPresenterTest {
             outsideDate
         )
 
-        assertTrue(presenter.present(date, semester.name, emptyPlan) is WidgetUiState.EmptyDay)
+        assertTrue(presenter.present(date, semester.name, emptyPlan, LocalTime.of(0, 0)) is WidgetUiState.EmptyDay)
         assertTrue(
-            presenter.present(outsideDate, semester.name, outsidePlan) is WidgetUiState.OutsideSemester
+            presenter.present(outsideDate, semester.name, outsidePlan, LocalTime.of(0, 0)) is WidgetUiState.OutsideSemester
         )
     }
 
@@ -87,7 +87,7 @@ class WidgetPresenterTest {
         )
         assertTrue(plan.schedule.hasMixedWeekTypes)
 
-        val state = WidgetPresenter().present(date, semester.name, plan) as WidgetUiState.Ready
+        val state = WidgetPresenter().present(date, semester.name, plan, LocalTime.of(0, 0)) as WidgetUiState.Ready
 
         assertEquals("Różne tygodnie", state.weekLabel)
         assertEquals(2, state.items.size)
@@ -110,7 +110,8 @@ class WidgetPresenterTest {
         val state = WidgetPresenter().present(
             date,
             semester.name,
-            duplicatedPlan
+            duplicatedPlan,
+            LocalTime.of(0, 0)
         ) as WidgetUiState.Ready
 
         assertEquals(listOf("first:$date", "second:$date", "third:$date"), state.items.map { it.id })
@@ -140,9 +141,33 @@ class WidgetPresenterTest {
             date
         )
 
-        val state = WidgetPresenter().present(date, semester.name, plan) as WidgetUiState.Ready
+        val state = WidgetPresenter().present(date, semester.name, plan, LocalTime.of(0, 0)) as WidgetUiState.Ready
 
         assertEquals(3, state.collisionCount)
+    }
+
+    @Test
+    fun presenterMarksCurrentNextAndPastPhases() {
+        val classes = listOf(
+            classItem("first", LocalTime.of(8, 0), LocalTime.of(9, 0)),
+            classItem("second", LocalTime.of(9, 30), LocalTime.of(10, 30)),
+            classItem("third", LocalTime.of(11, 0), LocalTime.of(12, 0))
+        )
+        val plan = ActivePlanProvider().resolve(
+            ActivePlanData(semester, classes, courses = listOf(course), semesterPrograms = listOf(assignment), calendars = listOf(calendar)),
+            date
+        )
+
+        val state = WidgetPresenter().present(
+            date,
+            semester.name,
+            plan,
+            LocalTime.of(9, 45)
+        ) as WidgetUiState.Ready
+
+        assertEquals(WidgetOccurrencePhase.Past, state.items.first { it.id == "first:$date" }.phase)
+        assertEquals(WidgetOccurrencePhase.Current, state.items.first { it.id == "second:$date" }.phase)
+        assertEquals(WidgetOccurrencePhase.Next, state.items.first { it.id == "third:$date" }.phase)
     }
 
     @Test

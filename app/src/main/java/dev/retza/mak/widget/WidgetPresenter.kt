@@ -13,7 +13,8 @@ class WidgetPresenter {
     fun present(
         date: LocalDate,
         semesterName: String,
-        plan: ActivePlan
+        plan: ActivePlan,
+        now: LocalTime
     ): WidgetUiState {
         val dateLabel = widgetDateLabel(date)
         val weekType = plan.schedule.weekType
@@ -31,6 +32,7 @@ class WidgetPresenter {
         }
 
         val conflictsByOccurrence = widgetConflicts(plan.collisions)
+        val nextId = plan.schedule.occurrences.firstOrNull { it.startTime.isAfter(now) }?.id
         return WidgetUiState.Ready(
             dateLabel = dateLabel,
             weekLabel = weekLabel,
@@ -50,7 +52,13 @@ class WidgetPresenter {
                     teacherName = occurrence.teacherName,
                     conflicts = conflictsByOccurrence[occurrence.id].orEmpty(),
                     hasNote = !occurrence.classNote.isNullOrBlank() ||
-                        !occurrence.occurrenceNoteBody.isNullOrBlank()
+                        !occurrence.occurrenceNoteBody.isNullOrBlank(),
+                    phase = when {
+                        !now.isBefore(occurrence.endTime) -> WidgetOccurrencePhase.Past
+                        !now.isBefore(occurrence.startTime) -> WidgetOccurrencePhase.Current
+                        occurrence.id == nextId -> WidgetOccurrencePhase.Next
+                        else -> WidgetOccurrencePhase.Scheduled
+                    }
                 )
             }
         )

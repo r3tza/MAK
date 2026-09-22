@@ -267,26 +267,35 @@ private fun WidgetOccurrenceRow(
                 .cornerRadius(2.dp)
         ) {}
         Spacer(GlanceModifier.width(8.dp))
+        val past = item.phase == WidgetOccurrencePhase.Past
         Text(
             text = "${item.startTime}-${item.endTime}",
             modifier = GlanceModifier.width(62.dp),
             style = TextStyle(
-                color = GlanceTheme.colors.primary,
+                color = if (past) GlanceTheme.colors.onSurfaceVariant else GlanceTheme.colors.primary,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
-            )
+            ),
+            maxLines = 1
         )
         Spacer(GlanceModifier.width(6.dp))
         Column(modifier = GlanceModifier.defaultWeight()) {
-            Text(
-                text = truncateWidgetText(item.name, layoutPolicy.nameCharacterLimit),
-                style = TextStyle(
-                    color = GlanceTheme.colors.onBackground,
-                    fontSize = 12.sp,
-                    fontWeight = FontWeight.Bold
-                ),
-                maxLines = layoutPolicy.nameMaxLines
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = truncateWidgetText(item.name, layoutPolicy.nameCharacterLimit),
+                    modifier = GlanceModifier.defaultWeight(),
+                    style = TextStyle(
+                        color = if (past) GlanceTheme.colors.onSurfaceVariant else GlanceTheme.colors.onBackground,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    ),
+                    maxLines = layoutPolicy.nameMaxLines
+                )
+                if (item.phase == WidgetOccurrencePhase.Current || item.phase == WidgetOccurrencePhase.Next) {
+                    Spacer(GlanceModifier.width(4.dp))
+                    WidgetPhaseLabel(item.phase)
+                }
+            }
             Text(
                 text = widgetMetadataLabel(item, layoutPolicy),
                 style = TextStyle(
@@ -358,6 +367,26 @@ private fun WidgetConflictAlert(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun WidgetPhaseLabel(phase: WidgetOccurrencePhase) {
+    Box(
+        modifier = GlanceModifier
+            .background(GlanceTheme.colors.secondaryContainer)
+            .cornerRadius(4.dp)
+            .padding(horizontal = 4.dp, vertical = 1.dp)
+    ) {
+        Text(
+            text = if (phase == WidgetOccurrencePhase.Current) "Teraz" else "Następne",
+            style = TextStyle(
+                color = GlanceTheme.colors.onSecondaryContainer,
+                fontSize = 10.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            maxLines = 1
+        )
     }
 }
 
