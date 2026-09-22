@@ -14,18 +14,25 @@ import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.MakRepository
+import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SetupConfigurationIds
+import dev.retza.mak.data.repository.toActivePlanData
+import dev.retza.mak.domain.ActivePlanData
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 
-internal class FakeMakRepository : MakRepository {
+@OptIn(ExperimentalCoroutinesApi::class)
+internal class FakeMakRepository : MakRepository, ScheduleRepository {
     val semester = SemesterEntity(id = 1L, name = "Semestr", isActive = true)
     val secondSemester = SemesterEntity(id = 2L, name = "Semestr drugi", isActive = false)
     val calendar = AcademicCalendarEntity(
@@ -136,6 +143,15 @@ internal class FakeMakRepository : MakRepository {
             )
         )
     }
+
+    override fun observeActivePlanData(): Flow<ActivePlanData?> =
+        observeActiveSemester().flatMapLatest { semester ->
+            if (semester == null) {
+                flowOf(null)
+            } else {
+                observeSemesterData(semester.id).map { it?.toActivePlanData() }
+            }
+        }
 
     override fun observeStudyPrograms(): Flow<List<StudyProgramEntity>> = studyProgramState
     override fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramEntity>> =

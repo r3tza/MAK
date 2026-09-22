@@ -3,9 +3,8 @@ package dev.retza.mak.ui.today
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
-import dev.retza.mak.data.database.SemesterWithData
-import dev.retza.mak.data.repository.MakRepository
-import dev.retza.mak.data.repository.toActivePlanData
+import dev.retza.mak.data.repository.ScheduleRepository
+import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.polishLocale
@@ -19,24 +18,20 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class TodayViewModel(
-    private val repository: MakRepository,
+    private val scheduleRepository: ScheduleRepository,
     private val clock: Clock,
     private val activePlanProvider: ActivePlanProvider
 ) : ViewModel() {
     private val date = MutableStateFlow(LocalDate.now(clock))
 
-    private val activeSemesterData = repository.observeActiveSemester().flatMapLatest { semester ->
-        if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
-    }.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+    private val activePlanData = scheduleRepository.observeActivePlanData()
+        .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val today: StateFlow<TodayUiState> = combine(activeSemesterData, date) { data, day ->
+    val today: StateFlow<TodayUiState> = combine(activePlanData, date) { data, day ->
         buildToday(data, day)
     }.stateIn(
         scope = viewModelScope,
@@ -48,9 +43,9 @@ class TodayViewModel(
         date.value = LocalDate.now(clock)
     }
 
-    private fun buildToday(data: SemesterWithData?, day: LocalDate): TodayUiState {
+    private fun buildToday(data: ActivePlanData?, day: LocalDate): TodayUiState {
         if (data == null) return emptyTodayState()
-        val plan = activePlanProvider.resolve(data.toActivePlanData(), day)
+        val plan = activePlanProvider.resolve(data, day)
         val schedule = plan.schedule
         val labels = conflictLabels(plan.collisions)
         return TodayUiState(

@@ -1,14 +1,13 @@
 package dev.retza.mak.widget
 
-import dev.retza.mak.data.repository.MakRepository
-import dev.retza.mak.data.repository.toActivePlanData
+import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.domain.ActivePlanProvider
 import java.time.Clock
 import java.time.LocalDate
 import kotlinx.coroutines.flow.first
 
 class WidgetPlanLoader(
-    private val repository: MakRepository,
+    private val scheduleRepository: ScheduleRepository,
     private val activePlanProvider: ActivePlanProvider,
     private val clock: Clock,
     private val presenter: WidgetPresenter = WidgetPresenter()
@@ -17,13 +16,10 @@ class WidgetPlanLoader(
         val date = LocalDate.now(clock)
         val dateLabel = widgetDateLabel(date)
         return runCatching {
-            val semester = repository.observeActiveSemester().first()
+            val planData = scheduleRepository.observeActivePlanData().first()
                 ?: return@runCatching WidgetUiState.NoActiveSemester(dateLabel)
-            val data = repository.observeSemesterData(semester.id).first()
-                ?: return@runCatching WidgetUiState.Error(dateLabel)
-            val planData = data.toActivePlanData()
             val plan = activePlanProvider.resolve(planData, date)
-            presenter.present(date, data.semester.name, plan)
+            presenter.present(date, planData.semester.name, plan)
         }.getOrElse {
             WidgetUiState.Error(dateLabel)
         }

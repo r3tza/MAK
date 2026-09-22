@@ -4,6 +4,14 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-22: Start podziału MakRepository (I-01)
+
+- Fakty: `MakRepository` grupuje odpowiedzialności semestrów, planu i kopii zapasowej, mimo że `ARCHITECTURE.md` przewiduje `SemesterRepository`, `ScheduleRepository` i serwis kopii.
+- Decyzja: Podział rozpoczęto od granicy odczytu planu. Dodano `ScheduleRepository` z `observeActivePlanData(): Flow<ActivePlanData?>`, zaimplementowany w `RoomScheduleRepository` przez `SemesterWithData.toActivePlanData()`. Pierwszą grupę konsumentów przepięto na nową granicę: `TodayViewModel`, `WidgetPlanLoader`, `MakTodayWidget`, `CollisionAlarmScheduler`, `CollisionAlarmReceiver` i wspólne odświeżanie w `MakApplication`. `MakRepository` i `RoomMakRepository` pozostają tymczasową fasadą dla pozostałych metod i znikną w kolejnych etapach.
+- Powód: Małe, kompilowalne etapy pozwalają przepinać konsumentów po jednej grupie i nie mieszać podziału z I-02, I-03 ani I-06.
+- Odrzucone: Jednorazowa zamiana wszystkich konsumentów; wystawianie encji Room w nowych kontraktach; równoległe drugie mapowanie poza `DomainMappers`.
+- Weryfikacja: `gradlew.bat test` i `compileDebugAndroidTestKotlin` przechodzą; `FakeMakRepository` i `WidgetPlanLoaderTest` używają `ScheduleRepository`, a `KoinGraphTest` sprawdza nowy binding. Status I-01 to `w toku`.
+
 ## 2026-09-22: Doprecyzowanie planu dla słabszych agentów
 
 - Fakty: `PLAN.md` miał cztery kroki zgodne z kolejką, ale I-01, I-02 i I-03 nie podawały plików, podziału metod, kolejności kompilowalnych etapów, przypadków brzegowych ani poleceń weryfikacji. Słabszy agent musiałby odgadywać zakres.
@@ -157,14 +165,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Model musi odpowiadać cyklowi życia kierunku i pozwalać liczyć wspólny plan oraz kolizje między uczelniami, ale nie można zmieniać domeny, resolvera i bazy w jednym kroku.
 - Odrzucone: Kierunek przypisany na stałe do jednego semestru; niezależne współdzielenie dat i rytmu A/B; zmiana `ClassItem`, resolvera i Room razem z nazwą modelu.
 - Weryfikacja: `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi; `AcademicModelsTest` i istniejące testy domenowe działają.
-
-## 2026-09-21: Podział NavHosta na grupy tras
-
-- Fakty: `MakNavHostApp.kt` miał ponad 700 linii: jeden `NavHost` zawierał wszystkie trasy, argumenty, efekty i akcje topbaru, więc zmiana jednego przepływu dotykała wspólnego pliku.
-- Decyzja: Trasy i efekty podzielono na grupy w osobnych plikach: `TodayScheduleRoutes.kt` (Dzisiaj i Plan, `ScheduleEffect`), `ClassOccurrenceRoutes.kt` (edycja zajęć i szczegóły wystąpienia, `OccurrenceEffect`/`ClassEditEffect`, akcje topbaru), `SemesterRoutes.kt` (semestr, kierunki, korekty; `SemesterEffect`), `SettingsRoutes.kt` (ustawienia) i `SetupRoutes.kt` (kreator; `SetupEffect`). Wspólne stałe i mapowanie tras trafiły do `MakRoutes.kt`. Każda grupa to rozszerzenie `NavGraphBuilder` albo funkcja `@Composable` zbierająca efekty.
-- Stan nadrzędny: `MakApp` pozostał jednym hostem z jednym `NavController`, jednym `Scaffold`, topbarem, dolną nawigacją i globalnym snackbarem; wywołuje rozszerzenia grup i zbiera ich efekty. Host zna wyłącznie trasy główne `today` i `schedule` dla dolnej nawigacji; nie zna tras wewnętrznych grup. Grupa wystąpienia sama sprawdza swoją trasę w `occurrenceTopBarActions`, a grupy udostępniają małe funkcje nawigacyjne (`openSetup`, `openSettings`, `openClassEditor`, `openOccurrence`, `openSemesterConfiguration`).
-- Jedna trasa: usunięto `AppUiState.destination` i `AppViewModel.navigate` oraz efekt `LaunchedEffect`, który uzgadniał kopię trasy ze stosem. `MakDestination`, `destinationForRoute` i `destinationMatchesRoute` zniknęły. Nawigacja z widgetu do „Dzisiaj” idzie przez jednorazowy sygnał `openTodayRequests` zbierany w `MakApp`, który woła `NavController`. `NavController` jest jedynym źródłem bieżącej trasy.
-- Powód: Zmiana trasy w jednym przepływie nie powinna wymagać edycji plików pozostałych przepływów, a nawigacja powinna mieć jedno źródło trasy. Druga kopia trasy plus biała lista wyjątków to ten sam rodzaj błędu co drugi zegar.
-- Odrzucone: Osobny `NavHost` albo `NavController` dla każdej grupy; dodatkowa warstwa nawigacyjna; trzymanie kopii trasy w `AppViewModel`; porównywanie tras wewnętrznych w hoście.
-- Weryfikacja: Koin compiler plugin zatrzymał kompilację, gdy przy przepisywaniu `AppViewModel` zniknęła adnotacja `@KoinViewModel`, co potwierdza walidację grafu. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. `MakNavigationTest` pilnuje budowy tras, reguł `close`/`setup` i `addAction`.
-- Otwarte: brak testu kliknięcia widgetu przy otwartym ekranie podrzędnym i odtworzenia stosu po ponownym utworzeniu aktywności. Oba wymagają urządzenia i pozostają do domknięcia później.

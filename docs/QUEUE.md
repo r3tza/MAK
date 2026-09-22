@@ -4,7 +4,7 @@ Ten plik jest źródłem bieżącego statusu zadań. `PLAN.md` wybiera najwyżej
 
 | ID | Status | Zadanie i kryterium zakończenia | Zależność |
 |---|---|---|---|
-| I-01 | do implementacji | Podzielić `MakRepository` według granic danych, przenieść konsumentów i zachować atomowy import. Granice: `ARCHITECTURE.md`; kroki: `PLAN.md`. | brak |
+| I-01 | w toku | Podzielić `MakRepository` według granic danych, przenieść konsumentów i zachować atomowy import. Granice: `ARCHITECTURE.md`; kroki: `PLAN.md`. Zrobione: `ScheduleRepository.observeActivePlanData` i przepięcie grupy odczytu planu (`TodayViewModel`, `WidgetPlanLoader`, `MakTodayWidget`, powiadomienia, `MakApplication`). Pozostaje `SemesterRepository`, `PlanBackupService`, pozostałe grupy konsumentów i usunięcie fasady. | brak |
 | I-02 | do implementacji | Pokazać trzy wartości na „Dzisiaj”, policzyć okienka ze wszystkich kierunków i zapisać globalny próg. Reguła: `DOMAIN.md`; układ: `FEATURES.md`; kroki: `PLAN.md`. | brak |
 | I-03 | do implementacji | Rozdzielić metadane i oba rodzaje notatek na kartach zajęć. `FEATURES.md`: Struktura karty zajęć; kroki: `PLAN.md`. | brak |
 | I-07 | do implementacji | Dodać tylko do odczytu `scripts/check_map.py` dla linków dokumentacji, limitów planu i logu oraz spójności kolejki. Kroki: `PLAN.md`. | brak |

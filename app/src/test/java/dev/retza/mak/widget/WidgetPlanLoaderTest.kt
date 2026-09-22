@@ -6,7 +6,8 @@ import dev.retza.mak.data.entity.ClassEntity
 import dev.retza.mak.data.entity.SemesterEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
 import dev.retza.mak.data.entity.StudyProgramEntity
-import dev.retza.mak.data.repository.MakRepository
+import dev.retza.mak.data.repository.ScheduleRepository
+import dev.retza.mak.data.repository.toActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
 import java.lang.reflect.Proxy
 import java.time.Clock
@@ -74,7 +75,7 @@ class WidgetPlanLoaderTest {
         )
 
         val state = WidgetPlanLoader(
-            repository = repository,
+            scheduleRepository = repository,
             activePlanProvider = ActivePlanProvider(),
             clock = clock
         ).load()
@@ -92,7 +93,7 @@ class WidgetPlanLoaderTest {
         )
 
         val state = WidgetPlanLoader(
-            repository = repository,
+            scheduleRepository = repository,
             activePlanProvider = ActivePlanProvider(),
             clock = clock
         ).load()
@@ -104,14 +105,13 @@ class WidgetPlanLoaderTest {
     private fun repositoryReturning(
         semester: SemesterEntity?,
         data: SemesterWithData?
-    ): MakRepository = Proxy.newProxyInstance(
-        MakRepository::class.java.classLoader,
-        arrayOf(MakRepository::class.java)
+    ): ScheduleRepository = Proxy.newProxyInstance(
+        ScheduleRepository::class.java.classLoader,
+        arrayOf(ScheduleRepository::class.java)
     ) { _, method, _ ->
         when (method.name) {
-            "observeActiveSemester" -> flowOf(semester)
-            "observeSemesterData" -> flowOf(data)
+            "observeActivePlanData" -> flowOf(data?.toActivePlanData())
             else -> error("Unexpected repository call: ${method.name}")
         }
-    } as MakRepository
+    } as ScheduleRepository
 }

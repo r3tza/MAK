@@ -4,8 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
-import dev.retza.mak.data.repository.MakRepository
-import dev.retza.mak.data.repository.toActivePlanData
+import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.domain.CollisionNotificationPlanner
 import dev.retza.mak.domain.PlannedCollisionNotification
 import dev.retza.mak.domain.toAlarmPayload
@@ -21,7 +20,7 @@ private const val MAINTENANCE_REQUEST_CODE = 0x4d414b01
 @org.koin.core.annotation.Single
 class CollisionAlarmScheduler(
     private val context: Context,
-    private val repository: MakRepository,
+    private val scheduleRepository: ScheduleRepository,
     private val planner: CollisionNotificationPlanner,
     private val preferences: SettingsPreferences,
     private val clock: Clock
@@ -35,13 +34,12 @@ class CollisionAlarmScheduler(
             cancelAll()
             return
         }
-        val semester = repository.observeActiveSemester().first()
-        val data = semester?.let { repository.observeSemesterData(it.id).first() }
-        if (data == null) {
+        val planData = scheduleRepository.observeActivePlanData().first()
+        if (planData == null) {
             cancelAll()
             return
         }
-        val planned = planner.plan(data.toActivePlanData(), settings.toPlannerSettings())
+        val planned = planner.plan(planData, settings.toPlannerSettings())
         val plannedIds = planned.map { it.id }.toSet()
         storedIds().subtract(plannedIds).forEach { cancelAlarm(it) }
         planned.forEach { schedule(it) }

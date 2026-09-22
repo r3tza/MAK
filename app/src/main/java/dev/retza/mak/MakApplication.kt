@@ -4,6 +4,7 @@ import android.app.Application
 import android.content.pm.ApplicationInfo
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.repository.MakRepository
+import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.seedDemoDataIfEmpty
 import dev.retza.mak.notifications.CollisionAlarmScheduler
 import dev.retza.mak.notifications.ensureCollisionChannel
@@ -16,8 +17,6 @@ import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
@@ -30,6 +29,8 @@ private const val NOTIFICATION_REFRESH_DEBOUNCE_MILLIS = 1_000L
 @KoinApplication
 class MakApplication : Application() {
     private val repository: MakRepository by inject()
+
+    private val scheduleRepository: ScheduleRepository by inject()
 
     private val database: AppDatabase by inject()
 
@@ -56,10 +57,7 @@ class MakApplication : Application() {
             }
         }
         initializationScope.launch {
-            repository.observeActiveSemester()
-                .flatMapLatest { semester ->
-                    if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
-                }
+            scheduleRepository.observeActivePlanData()
                 .combine(preferences.collisionNotifications) { data, settings -> data to settings }
                 .debounce(NOTIFICATION_REFRESH_DEBOUNCE_MILLIS)
                 .collect { scheduler.refresh() }
