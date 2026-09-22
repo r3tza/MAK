@@ -212,15 +212,15 @@ class OccurrenceViewModel(
 
     fun saveSharedNote() {
         if (state.value.isSavingSharedNote) return
-        val data = activePlanData.value ?: return
         val classId = selectedClassIdState.value ?: return
-        val base = data.classes.firstOrNull { it.id == classId.toString() } ?: return
         val draft = state.value
         val note = draft.sharedNoteDraft.trim().ifEmpty { null }
         if (!noteContentChanged(draft.sharedNoteDraft, draft.sharedNote)) return
         update { it.copy(isSavingSharedNote = true, sharedNoteError = null) }
         viewModelScope.launch {
             try {
+                val base = freshPlanData()?.classes?.firstOrNull { it.id == classId.toString() }
+                    ?: return@launch
                 scheduleRepository.saveClass(base.copy(classNote = note).toRecord())
                 update { current ->
                     val draftUnchanged = !noteContentChanged(current.sharedNoteDraft, note)
