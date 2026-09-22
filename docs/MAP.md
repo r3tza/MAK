@@ -16,5 +16,6 @@ Zacznij od pytania, które rozwiązuje zadanie. Otwórz wskazany dokument i potr
 | Co zostało wydane użytkownikom? | [CHANGELOG.md](CHANGELOG.md): zmiany wydane, nie bieżąca kolejka prac |
 | Jakie braki potwierdzono w obecnym kodzie? | [KNOWN_ISSUES.md](KNOWN_ISSUES.md): problemy i brakujący odbiór, nie docelowa specyfikacja |
 | Jak pisać komunikaty i dokumentację? | [WRITING.md](WRITING.md): język, styl i zasady redakcyjne |
+| Jak recenzować commit albo etap planu? | [mak-code-review](../.cursor/skills/mak-code-review/SKILL.md): kryteria recenzji i podział pracy z Composerem |
 
 `AGENTS.md` zawiera zasady pracy, `README.md` jest krótkim punktem wejścia, a `KNOWN_ISSUES.md` opisuje potwierdzone braki. Mapa nie zastępuje żadnego z tych dokumentów.
