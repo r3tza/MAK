@@ -1,0 +1,20 @@
+# Mapa dokumentacji MAK
+
+Zacznij od pytania, które rozwiązuje zadanie. Otwórz wskazany dokument i potrzebną sekcję, nie cały katalog. Gdy mapa nie wskazuje właściwego miejsca, popraw ją razem ze zmianą dokumentacji.
+
+| Pytanie | Gdzie szukać |
+|---|---|
+| Po co powstaje MAK i co wchodzi do MVP? | [PRODUCT.md](PRODUCT.md): użytkownicy, cel, zakres pierwszej wersji, kryteria MVP i funkcje wyłączone |
+| Jak ma działać ekran lub widget? | [FEATURES.md](FEATURES.md): nawigacja, „Dzisiaj”, „Plan”, formularz zajęć, widget, ustawienia i scenariusze odbioru na urządzeniu |
+| Jak obliczać plan? | [DOMAIN.md](DOMAIN.md): semestry i kalendarze, rytm A/B, zajęcia, zmiany wystąpień, okienka i kolizje |
+| Jakie są granice kodu i zasady UI? | [ARCHITECTURE.md](ARCHITECTURE.md): repozytoria, wspólna logika planu, nawigacja, integracje i zasady interfejsu |
+| Jakich narzędzi i testów używać? | [STACK.md](STACK.md): wersje bibliotek, środowisko, rodzaje kontroli i odrzucone alternatywy |
+| Co wykonać teraz? | [PLAN.md](PLAN.md): najwyżej pięć najbliższych kroków z kryteriami zakończenia. [QUEUE.md](QUEUE.md) zawiera pozostałe zadania, zależności i statusy |
+| Co jest gotowe w kodzie, ale czeka na urządzenie? | [QUEUE.md](QUEUE.md): osobne pozycje odbioru; szczegółowe scenariusze w [FEATURES.md](FEATURES.md) |
+| Jak rozpocząć, sprawdzić i zakończyć zadanie? | [WORKFLOW.md](WORKFLOW.md): kolejność pracy i znaczenie statusów |
+| Co ostatnio zmieniono i dlaczego? | [LOG.md](LOG.md): najwyżej 20 ostatnich wpisów, czytaj kilka górnych. Starsze wpisy są w [archiwum](log_archive/2026.md); log nie zastępuje obowiązujących reguł |
+| Co zostało wydane użytkownikom? | [CHANGELOG.md](CHANGELOG.md): zmiany wydane, nie bieżąca kolejka prac |
+| Jakie braki potwierdzono w obecnym kodzie? | [KNOWN_ISSUES.md](KNOWN_ISSUES.md): problemy i brakujący odbiór, nie docelowa specyfikacja |
+| Jak pisać komunikaty i dokumentację? | [WRITING.md](WRITING.md): język, styl i zasady redakcyjne |
+
+`AGENTS.md` zawiera zasady pracy, `README.md` jest krótkim punktem wejścia, a `KNOWN_ISSUES.md` opisuje potwierdzone braki. Mapa nie zastępuje żadnego z tych dokumentów.

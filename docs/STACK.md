@@ -41,6 +41,7 @@
 - Eksport schematu Room od pierwszej wersji i testowanie kolejnych migracji na zachowanych danych.
 - Testy interfejsu dla szerokości 320–390 px.
 - Testy kompozycji Glance przez `glance-testing` i `glance-appwidget-testing` 1.2.0.
+- Testy JVM widgetu obejmują wariant kompaktowy i rozszerzony, pełną listę bez stopki „Jeszcze {liczba}”, pusty dzień, brak semestru, datę poza semestrem, błąd odczytu, kolizję, notatkę, długie metadane i zgodność kolejności z `ActivePlanProvider`.
 - Sprawdzenie obsługi klawiatury, focusu, etykiet semantycznych, kontrastu, motywu ciemnego, `reduced motion` i dotyku.
 - Sprawdzenie braku poziomego przewijania oraz obciętych akcji.
 - Weryfikacja, że ekran i widget pokazują ten sam aktywny plan.
@@ -48,13 +49,13 @@
 
 ## 6. Narzędzia
 
-- Android Studio i Gradle, gdy powstanie projekt aplikacji.
+- Android Studio i Gradle do budowania istniejącego projektu aplikacji.
 - Git do historii zmian.
 - Lokalna baza danych i pliki JSON bez usług zewnętrznych.
 
 ## 7. Środowisko
 
-Repozytorium zawiera aplikację Android w wersji 0.1, konfigurację Gradle, lokalną bazę Room i testy. Aplikacja jest przeznaczona do użytku własnego na jednym urządzeniu; nie wymaga infrastruktury do obsługi setek użytkowników.
+Repozytorium zawiera aplikację Android w wersji 0.1, konfigurację Gradle, lokalną bazę Room i testy. Aplikacja działa lokalnie na urządzeniu. Planowane testy zewnętrzne nie wymagają infrastruktury serwerowej.
 
 ## 8. Odrzucone alternatywy
 

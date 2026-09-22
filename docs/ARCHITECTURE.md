@@ -4,13 +4,13 @@
 
 - Źródło prawdy dla architektury: ten plik.
 - Zasady pracy agentów: `../AGENTS.md`.
-- Uzasadnienia i odrzucone alternatywy: `JOURNAL.md`.
+- Uzasadnienia i odrzucone alternatywy: `LOG.md` i `log_archive/`.
 - Język dokumentacji: polski.
 - Język odpowiedzi dla użytkownika: polski.
 - Język identyfikatorów i komentarzy w kodzie: angielski.
-- Ostatnia zaakceptowana aktualizacja: 2026-09-21.
+- Ostatnia zaakceptowana aktualizacja: 2026-09-22.
 - Propozycja z rozmowy staje się decyzją po zaakceptowaniu i zapisaniu w odpowiednim pliku.
-- Dokument opisuje zaakceptowaną architekturę i stan docelowy interfejsu. Aktualne braki implementacji i odbioru są w `plan.md`.
+- Dokument opisuje zaakceptowaną architekturę i zasady interfejsu. Cel i zakres są w `PRODUCT.md`, reguły planu w `DOMAIN.md`, dokładne zachowanie ekranów w `FEATURES.md`, a bieżące statusy w `QUEUE.md`.
 
 ## 2. Cel
 
