@@ -5,6 +5,7 @@ import android.content.pm.ApplicationInfo
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.ScheduleRepository
+import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.seedDemoDataIfEmpty
 import dev.retza.mak.notifications.CollisionAlarmScheduler
 import dev.retza.mak.notifications.ensureCollisionChannel
@@ -34,6 +35,8 @@ class MakApplication : Application() {
 
     private val scheduleRepository: ScheduleRepository by inject()
 
+    private val semesterRepository: SemesterRepository by inject()
+
     private val database: AppDatabase by inject()
 
     private val scheduler: CollisionAlarmScheduler by inject()
@@ -59,7 +62,7 @@ class MakApplication : Application() {
             }
         }
         initializationScope.launch {
-            repository.observeActiveSemester()
+            semesterRepository.observeActiveSemester()
                 .flatMapLatest { semester ->
                     if (semester == null) flowOf(null) else scheduleRepository.observeActivePlanData(semester.id)
                 }

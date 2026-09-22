@@ -3,8 +3,8 @@ package dev.retza.mak.ui.today
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
-import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.ScheduleRepository
+import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.ui.classCountLabel
@@ -26,14 +26,14 @@ import kotlinx.coroutines.flow.stateIn
 @OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class TodayViewModel(
-    private val repository: MakRepository,
+    private val semesterRepository: SemesterRepository,
     private val scheduleRepository: ScheduleRepository,
     private val clock: Clock,
     private val activePlanProvider: ActivePlanProvider
 ) : ViewModel() {
     private val date = MutableStateFlow(LocalDate.now(clock))
 
-    private val activePlanData = repository.observeActiveSemester()
+    private val activePlanData = semesterRepository.observeActiveSemester()
         .flatMapLatest { semester ->
             if (semester == null) flowOf(null) else scheduleRepository.observeActivePlanData(semester.id)
         }

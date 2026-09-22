@@ -45,7 +45,7 @@ class MakTodayWidget : GlanceAppWidget() {
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val koin = GlobalContext.get()
         val state = WidgetPlanLoader(
-            repository = koin.get(),
+            semesterRepository = koin.get(),
             scheduleRepository = koin.get(),
             activePlanProvider = koin.get(),
             clock = koin.get()

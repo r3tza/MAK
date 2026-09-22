@@ -2,6 +2,7 @@ package dev.retza.mak.ui.today
 
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.ui.FakeMakRepository
+import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import java.time.Clock
 import java.time.Instant
@@ -26,7 +27,7 @@ class TodayViewModelTest {
     @Test
     fun todayStateMapsActiveSemesterPlan() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
-        val viewModel = TodayViewModel(repository, repository, Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
+        val viewModel = TodayViewModel(FakeSemesterRepository(repository), repository, Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
 
@@ -42,7 +43,7 @@ class TodayViewModelTest {
     fun refreshTodayUpdatesTheDate() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val clock = MutableClock(Instant.parse("2026-09-21T08:00:00Z"), zone)
-        val viewModel = TodayViewModel(repository, repository, clock, ActivePlanProvider())
+        val viewModel = TodayViewModel(FakeSemesterRepository(repository), repository, clock, ActivePlanProvider())
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
         assertEquals("Poniedziałek, 21 września", viewModel.today.value.dateLabel)
@@ -58,7 +59,7 @@ class TodayViewModelTest {
     fun withoutActiveSemesterShowsEmptyState() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         repository.clearActiveSemester()
-        val viewModel = TodayViewModel(repository, repository, Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
+        val viewModel = TodayViewModel(FakeSemesterRepository(repository), repository, Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
 
