@@ -3,6 +3,7 @@ package dev.retza.mak.ui.today
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
+import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
@@ -18,17 +19,24 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.stateIn
 
+@OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class TodayViewModel(
+    private val repository: MakRepository,
     private val scheduleRepository: ScheduleRepository,
     private val clock: Clock,
     private val activePlanProvider: ActivePlanProvider
 ) : ViewModel() {
     private val date = MutableStateFlow(LocalDate.now(clock))
 
-    private val activePlanData = scheduleRepository.observeActivePlanData()
+    private val activePlanData = repository.observeActiveSemester()
+        .flatMapLatest { semester ->
+            if (semester == null) flowOf(null) else scheduleRepository.observeActivePlanData(semester.id)
+        }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val today: StateFlow<TodayUiState> = combine(activePlanData, date) { data, day ->

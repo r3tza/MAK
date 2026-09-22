@@ -2,13 +2,11 @@ package dev.retza.mak.data.repository
 
 import androidx.room.withTransaction
 import dev.retza.mak.data.database.AppDatabase
-import dev.retza.mak.data.database.ClassWithDetails
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
-import dev.retza.mak.data.entity.Recurrence
 import dev.retza.mak.data.entity.SemesterEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
 import dev.retza.mak.data.entity.StudyProgramEntity
@@ -40,19 +38,7 @@ interface MakRepository {
 
     fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarEntity>>
 
-    fun observeClasses(semesterId: Long): Flow<List<ClassEntity>>
-
-    fun observeClassesWithDetails(semesterId: Long): Flow<List<ClassWithDetails>>
-
     fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>>
-
-    fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteEntity>>
-
-    fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeEntity>>
-
-    fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteEntity>>
-
-    fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeEntity>>
 
     suspend fun getAllSemesterData(): List<SemesterWithData>
 
@@ -129,7 +115,8 @@ interface MakRepository {
 
 @org.koin.core.annotation.Single(binds = [MakRepository::class])
 class RoomMakRepository(
-    private val database: AppDatabase
+    private val database: AppDatabase,
+    private val scheduleRepository: ScheduleRepository = RoomScheduleRepository(database)
 ) : MakRepository {
     private val semesters = database.semesterDao()
     private val studyPrograms = database.studyProgramDao()
@@ -156,26 +143,8 @@ class RoomMakRepository(
     override fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarEntity>> =
         calendars.observeForSemester(semesterId)
 
-    override fun observeClasses(semesterId: Long): Flow<List<ClassEntity>> =
-        classes.observeForSemester(semesterId)
-
-    override fun observeClassesWithDetails(semesterId: Long): Flow<List<ClassWithDetails>> =
-        classes.observeWithDetailsForSemester(semesterId)
-
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>> =
         weekOverrides.observeForSemester(semesterId)
-
-    override fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteEntity>> =
-        occurrenceNotes.observeForSemester(semesterId)
-
-    override fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeEntity>> =
-        occurrenceChanges.observeForSemester(semesterId)
-
-    override fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteEntity>> =
-        occurrenceNotes.observeForClass(classId)
-
-    override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeEntity>> =
-        occurrenceChanges.observeForClass(classId)
 
     override suspend fun getAllSemesterData(): List<SemesterWithData> = semesters.getAllWithData()
 
@@ -539,27 +508,10 @@ class RoomMakRepository(
         }
     }
 
-    override suspend fun saveClass(entity: ClassEntity): Long {
-        require(semesters.findById(entity.semesterId) != null) { "Semester does not exist" }
-        require(semesterPrograms.findById(entity.semesterProgramId)?.semesterId == entity.semesterId) {
-            "Assignment must belong to the class semester"
-        }
-        require(entity.name.isNotBlank()) { "Class name cannot be blank" }
-        require(entity.endTime.isAfter(entity.startTime)) {
-            "Class end time must be later than start time"
-        }
-        require(entity.recurrence != Recurrence.ONCE || entity.date != null) {
-            "One-time classes require a date"
-        }
-        if (entity.id == 0L) return classes.insert(entity)
-        val existing = classes.findById(entity.id)
-        require(existing != null) { "Class does not exist" }
-        require(existing.semesterId == entity.semesterId) { "Class semester cannot change" }
-        classes.update(entity)
-        return entity.id
-    }
+    override suspend fun saveClass(entity: ClassEntity): Long =
+        scheduleRepository.saveClass(entity.toRecord())
 
-    override suspend fun deleteClass(id: Long) = classes.deleteById(id)
+    override suspend fun deleteClass(id: Long) = scheduleRepository.deleteClass(id)
 
     override suspend fun saveWeekOverride(entity: WeekOverrideEntity): Long {
         require(semesters.findById(entity.semesterId) != null) { "Semester does not exist" }
@@ -591,52 +543,15 @@ class RoomMakRepository(
 
     override suspend fun deleteWeekOverride(id: Long) = weekOverrides.deleteById(id)
 
-    override suspend fun saveOccurrenceNote(entity: OccurrenceNoteEntity): Long {
-        validateClassOwnership(entity.classId, entity.semesterId)
-        require(entity.body.isNotBlank()) { "Occurrence note cannot be blank" }
-        if (entity.id == 0L) {
-            val existing = occurrenceNotes.findForOccurrence(entity.classId, entity.occurrenceDate)
-            if (existing == null) return occurrenceNotes.insert(entity)
-            occurrenceNotes.update(entity.copy(id = existing.id))
-            return existing.id
-        }
-        val existing = occurrenceNotes.findById(entity.id)
-        require(existing != null) { "Occurrence note does not exist" }
-        require(existing.classId == entity.classId && existing.semesterId == entity.semesterId) {
-            "Occurrence note ownership cannot change"
-        }
-        occurrenceNotes.update(entity)
-        return entity.id
-    }
+    override suspend fun saveOccurrenceNote(entity: OccurrenceNoteEntity): Long =
+        scheduleRepository.saveOccurrenceNote(entity.toRecord())
 
-    override suspend fun deleteOccurrenceNote(id: Long) = occurrenceNotes.deleteById(id)
+    override suspend fun deleteOccurrenceNote(id: Long) = scheduleRepository.deleteOccurrenceNote(id)
 
-    override suspend fun saveOccurrenceChange(entity: OccurrenceChangeEntity): Long {
-        validateClassOwnership(entity.classId, entity.semesterId)
-        if (entity.newStartTime != null || entity.newEndTime != null) {
-            require(entity.newStartTime != null && entity.newEndTime != null) {
-                "Both replacement times are required"
-            }
-            require(entity.newEndTime.isAfter(entity.newStartTime)) {
-                "Replacement end time must be later than start time"
-            }
-        }
-        if (entity.id == 0L) {
-            val existing = occurrenceChanges.findForOccurrence(entity.classId, entity.originalDate)
-            if (existing == null) return occurrenceChanges.insert(entity)
-            occurrenceChanges.update(entity.copy(id = existing.id))
-            return existing.id
-        }
-        val existing = occurrenceChanges.findById(entity.id)
-        require(existing != null) { "Occurrence change does not exist" }
-        require(existing.classId == entity.classId && existing.semesterId == entity.semesterId) {
-            "Occurrence change ownership cannot change"
-        }
-        occurrenceChanges.update(entity)
-        return entity.id
-    }
+    override suspend fun saveOccurrenceChange(entity: OccurrenceChangeEntity): Long =
+        scheduleRepository.saveOccurrenceChange(entity.toRecord())
 
-    override suspend fun deleteOccurrenceChange(id: Long) = occurrenceChanges.deleteById(id)
+    override suspend fun deleteOccurrenceChange(id: Long) = scheduleRepository.deleteOccurrenceChange(id)
 
     override suspend fun replaceAllData(data: BackupData): Long? = database.withTransaction {
         occurrenceChanges.deleteAll()
@@ -661,10 +576,4 @@ class RoomMakRepository(
         data.activeSemesterId
     }
 
-    private suspend fun validateClassOwnership(classId: Long, semesterId: Long) {
-        require(semesters.findById(semesterId) != null) { "Semester does not exist" }
-        require(classes.findById(classId)?.semesterId == semesterId) {
-            "Class must belong to the record semester"
-        }
-    }
 }

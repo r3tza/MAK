@@ -11,6 +11,7 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import dev.retza.mak.MainActivity
 import dev.retza.mak.R
+import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.CollisionNotificationKind
@@ -30,6 +31,7 @@ import org.koin.core.component.inject
 
 class CollisionAlarmReceiver : BroadcastReceiver(), KoinComponent {
     private val scheduler: CollisionAlarmScheduler by inject()
+    private val repository: MakRepository by inject()
     private val scheduleRepository: ScheduleRepository by inject()
     private val activePlanProvider: ActivePlanProvider by inject()
     private val preferences: SettingsPreferences by inject()
@@ -71,7 +73,8 @@ class CollisionAlarmReceiver : BroadcastReceiver(), KoinComponent {
         if (kind == CollisionNotificationKind.EVENING && !settings.eveningEnabled) return
         if (kind == CollisionNotificationKind.BEFORE_CLASS && !settings.beforeClassEnabled) return
 
-        val planData = scheduleRepository.observeActivePlanData().first() ?: return
+        val semester = repository.observeActiveSemester().first() ?: return
+        val planData = scheduleRepository.observeActivePlanData(semester.id).first() ?: return
         val plan = activePlanProvider.resolve(planData, date)
         val groups = collisionNotificationGroups(plan.collisions)
         val occurrences = plan.schedule.occurrences.filter { it.id in occurrenceIds }

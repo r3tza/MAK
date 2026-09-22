@@ -26,7 +26,7 @@ class TodayViewModelTest {
     @Test
     fun todayStateMapsActiveSemesterPlan() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
-        val viewModel = TodayViewModel(repository, Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
+        val viewModel = TodayViewModel(repository, repository, Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
 
@@ -42,7 +42,7 @@ class TodayViewModelTest {
     fun refreshTodayUpdatesTheDate() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         val clock = MutableClock(Instant.parse("2026-09-21T08:00:00Z"), zone)
-        val viewModel = TodayViewModel(repository, clock, ActivePlanProvider())
+        val viewModel = TodayViewModel(repository, repository, clock, ActivePlanProvider())
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
         assertEquals("Poniedziałek, 21 września", viewModel.today.value.dateLabel)
@@ -58,7 +58,7 @@ class TodayViewModelTest {
     fun withoutActiveSemesterShowsEmptyState() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         repository.clearActiveSemester()
-        val viewModel = TodayViewModel(repository, Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
+        val viewModel = TodayViewModel(repository, repository, Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
 

@@ -105,3 +105,85 @@ private fun OccurrenceChangeEntity.toDomain() = OccurrenceChange(
     teacherName = newTeacherName,
     note = newNote
 )
+
+internal fun ClassEntity.toRecord() = ClassRecord(
+    id = id,
+    semesterId = semesterId,
+    semesterProgramId = semesterProgramId,
+    name = name,
+    type = type,
+    teacherName = teacherName,
+    dayOfWeek = dayOfWeek,
+    startTime = startTime,
+    endTime = endTime,
+    room = room,
+    building = building,
+    group = group,
+    recurrence = Recurrence.valueOf(recurrence.name),
+    date = date,
+    classNote = classNote
+)
+
+internal fun ClassRecord.toEntity() = ClassEntity(
+    id = id,
+    semesterId = semesterId,
+    semesterProgramId = semesterProgramId,
+    name = name,
+    type = type,
+    teacherName = teacherName,
+    dayOfWeek = dayOfWeek,
+    startTime = startTime,
+    endTime = endTime,
+    room = room,
+    building = building,
+    group = group,
+    recurrence = dev.retza.mak.data.entity.Recurrence.valueOf(recurrence.name),
+    date = date,
+    classNote = classNote
+)
+
+internal fun OccurrenceNoteEntity.toRecord() = OccurrenceNoteRecord(
+    id = id,
+    semesterId = semesterId,
+    classId = classId,
+    occurrenceDate = occurrenceDate,
+    body = body
+)
+
+internal fun OccurrenceNoteRecord.toEntity() = OccurrenceNoteEntity(
+    id = id,
+    semesterId = semesterId,
+    classId = classId,
+    occurrenceDate = occurrenceDate,
+    body = body
+)
+
+internal fun OccurrenceChangeEntity.toRecord() = OccurrenceChangeRecord(
+    id = id,
+    semesterId = semesterId,
+    classId = classId,
+    originalDate = originalDate,
+    kind = OccurrenceChangeKind.valueOf(kind.name),
+    targetDate = targetDate,
+    startTime = newStartTime,
+    endTime = newEndTime,
+    room = newRoom,
+    building = newBuilding,
+    teacherName = newTeacherName,
+    note = newNote
+)
+
+internal fun OccurrenceChangeRecord.toEntity() = OccurrenceChangeEntity(
+    id = id,
+    semesterId = semesterId,
+    classId = classId,
+    originalDate = originalDate,
+    kind = dev.retza.mak.data.entity.OccurrenceChangeKind.valueOf(kind.name),
+    targetDate = targetDate,
+    newStartTime = startTime,
+    newEndTime = endTime,
+    newRoom = room,
+    newBuilding = building,
+    newTeacherName = teacherName,
+    newNote = note
+)

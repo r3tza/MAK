@@ -1,6 +1,5 @@
 package dev.retza.mak.ui
 
-import dev.retza.mak.data.database.ClassWithDetails
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
@@ -13,10 +12,15 @@ import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
+import dev.retza.mak.data.repository.ClassRecord
 import dev.retza.mak.data.repository.MakRepository
+import dev.retza.mak.data.repository.OccurrenceChangeRecord
+import dev.retza.mak.data.repository.OccurrenceNoteRecord
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SetupConfigurationIds
 import dev.retza.mak.data.repository.toActivePlanData
+import dev.retza.mak.data.repository.toEntity
+import dev.retza.mak.data.repository.toRecord
 import dev.retza.mak.domain.ActivePlanData
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -144,27 +148,25 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository {
         )
     }
 
-    override fun observeActivePlanData(): Flow<ActivePlanData?> =
-        observeActiveSemester().flatMapLatest { semester ->
-            if (semester == null) {
-                flowOf(null)
-            } else {
-                observeSemesterData(semester.id).map { it?.toActivePlanData() }
-            }
-        }
+    override fun observeActivePlanData(semesterId: Long): Flow<ActivePlanData?> =
+        observeSemesterData(semesterId).map { it?.toActivePlanData() }
 
     override fun observeStudyPrograms(): Flow<List<StudyProgramEntity>> = studyProgramState
     override fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramEntity>> =
         flowOf(semesterPrograms.filter { it.semesterId == semesterId })
     override fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarEntity>> =
         flowOf(calendars.filter { it.semesterId == semesterId })
-    override fun observeClasses(semesterId: Long): Flow<List<ClassEntity>> = flowOf(classes)
-    override fun observeClassesWithDetails(semesterId: Long): Flow<List<ClassWithDetails>> = flowOf(emptyList())
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>> = flowOf(emptyList())
-    override fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteEntity>> = flowOf(occurrenceNotes)
-    override fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeEntity>> = flowOf(occurrenceChanges)
-    override fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteEntity>> = flowOf(occurrenceNotes)
-    override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeEntity>> = flowOf(occurrenceChanges)
+    override fun observeClasses(semesterId: Long): Flow<List<ClassRecord>> =
+        flowOf(classes.map { it.toRecord() })
+    override fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteRecord>> =
+        flowOf(occurrenceNotes.map { it.toRecord() })
+    override fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeRecord>> =
+        flowOf(occurrenceChanges.map { it.toRecord() })
+    override fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteRecord>> =
+        flowOf(occurrenceNotes.filter { it.classId == classId }.map { it.toRecord() })
+    override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeRecord>> =
+        flowOf(occurrenceChanges.filter { it.classId == classId }.map { it.toRecord() })
     override suspend fun getAllSemesterData(): List<SemesterWithData> {
         if (failGetAllSemesterData) throw IllegalStateException("export failed")
         return emptyList()
@@ -473,6 +475,8 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository {
         return ids
     }
 
+    override suspend fun saveClass(record: ClassRecord): Long = saveClass(record.toEntity())
+
     override suspend fun saveClass(entity: ClassEntity): Long {
         awaitSave()
         events += "saveClass"
@@ -505,6 +509,9 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository {
         weekOverrides.removeAll { it.id == id }
     }
 
+    override suspend fun saveOccurrenceNote(record: OccurrenceNoteRecord): Long =
+        saveOccurrenceNote(record.toEntity())
+
     override suspend fun saveOccurrenceNote(entity: OccurrenceNoteEntity): Long {
         awaitSave()
         events += "saveOccurrenceNote"
@@ -524,6 +531,9 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository {
         events += "deleteOccurrenceNote"
         occurrenceNotes.removeAll { it.id == id }
     }
+
+    override suspend fun saveOccurrenceChange(record: OccurrenceChangeRecord): Long =
+        saveOccurrenceChange(record.toEntity())
 
     override suspend fun saveOccurrenceChange(entity: OccurrenceChangeEntity): Long {
         awaitSave()

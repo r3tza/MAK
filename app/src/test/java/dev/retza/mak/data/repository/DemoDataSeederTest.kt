@@ -1,6 +1,5 @@
 package dev.retza.mak.data.repository
 
-import dev.retza.mak.data.database.ClassWithDetails
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
@@ -61,13 +60,7 @@ private class FakeMakRepository : MakRepository {
     override fun observeStudyPrograms(): Flow<List<StudyProgramEntity>> = flowOf(studyPrograms)
     override fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramEntity>> = flowOf(semesterPrograms)
     override fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarEntity>> = flowOf(calendars)
-    override fun observeClasses(semesterId: Long): Flow<List<ClassEntity>> = flowOf(classes)
-    override fun observeClassesWithDetails(semesterId: Long): Flow<List<ClassWithDetails>> = flowOf(emptyList())
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>> = flowOf(weekOverrides)
-    override fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteEntity>> = flowOf(occurrenceNotes)
-    override fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeEntity>> = flowOf(occurrenceChanges)
-    override fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteEntity>> = flowOf(occurrenceNotes)
-    override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeEntity>> = flowOf(occurrenceChanges)
     override suspend fun getAllSemesterData(): List<SemesterWithData> = emptyList()
 
     override suspend fun saveSemester(entity: SemesterEntity): Long {
