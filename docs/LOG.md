@@ -4,6 +4,14 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-22: Kontrola dokumentacji `scripts/check_map.py` (I-07)
+
+- Fakty: Dokumenty rosły bez automatycznej kontroli linków, limitów `PLAN.md` i `LOG.md` oraz spójności tabeli `QUEUE.md`, więc łatwo było zostawić martwy odnośnik albo wpis po limicie.
+- Decyzja: Dodano `scripts/check_map.py` używający wyłącznie standardowej biblioteki Pythona. Skrypt sprawdza lokalne odnośniki Markdown w `README.md`, `AGENTS.md`, `CLAUDE.md` i `docs/*.md` z uwzględnieniem wielkości liter, wymaga formatu `## N. tytuł (ID)` w `PLAN.md`, limitu pięciu kroków i istnienia kroków w `QUEUE.md`, wykrywa w `QUEUE.md` powtórzone identyfikatory, nieznane statusy i zależności do nieistniejących zadań, a w `LOG.md` przekroczenie 20 wpisów. Wypisuje plik i numer wiersza, zwraca 0 albo 1 i nic nie zapisuje. `scripts/test_check_map.py` pokrywa dziewięć przypadków na katalogach tymczasowych.
+- Powód: Kontrola ma być tania, lokalna i bez dodatkowych pakietów, żeby wychwycić regresję dokumentacji przed commitem.
+- Odrzucone: `scripts/check_text.py` i CI na tym etapie; uruchamianie Gradle albo sieci ze skryptu; zapisywanie plików przez skrypt.
+- Weryfikacja: `python3 scripts/test_check_map.py` przechodzi (9 testów), a `python3 scripts/check_map.py` na bieżącym repozytorium zwraca kod 0. Status I-07 to `gotowe`, a `PLAN.md` startuje teraz od I-04.
+
 ## 2026-09-22: Karty zajęć z dwoma notatkami (I-03)
 
 - Fakty: `ClassItemUi` miało jedno pole `note` (`occurrenceNoteBody ?: classNote`), a `ClassCard` pokazywał jedną notatkę bez etykiety; pill kierunku używał kontenera motywu, nie koloru kierunku.
@@ -154,11 +162,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Model globalnych kierunków i współdzielonych kalendarzy wymaga nowego schematu, a migracja musi zachować dane użytkownika bez częściowych zapisów.
 - Odrzucone: Poleganie na wyłączeniu kluczy obcych w migracji; kaskadowe usuwanie używanego kierunku; automatyczne scalanie kierunków o tej samej nazwie; jeden wspólny tydzień A/B dla różnych kalendarzy; przejściowy podwójny schemat v1 i v2.
 - Weryfikacja: `RoomMigrationTest` tworzy bazę v1 z dwoma kierunkami o tej samej nazwie, zajęciami, korektą, notatką i zmianą, uruchamia migrację i waliduje schemat oraz dane. `RoomPersistenceTest` sprawdza rollback konfiguracji, blokadę usunięcia używanego kierunku i deterministyczny zastępczy semestr. Zaktualizowane testy domenowe i ViewModeli. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
-
-## 2026-09-21: Poprawki po przeglądzie migracji Room v2
-
-- Fakty: Przegląd commita `19cd84f` wskazał trzy problemy. Eksport budował listę kierunków tylko z przypisań semestrów, więc kierunek bez przypisania ginął. Formularz zajęć rozpoznawał kierunek po nazwie, więc przy dwóch kierunkach o tej samej nazwie zapis mógł trafić w pierwszy z nich. `addCourse` wykonywał zapis kierunku i przypisania w dwóch osobnych transakcjach.
-- Decyzja: `ExportSnapshot.from` przyjmuje teraz pełną listę kierunków z `getAllStudyPrograms()` i eksportuje także kierunki bez przypisań. `ClassEditUiState` niesie `semesterProgramId`, a `ClassCourseOptionUi` trzyma `id` i etykietę. `MakSelectField` jest generyczny, przyjmuje pełne opcje, wyświetla `optionLabel` i zwraca wybraną opcję, więc pole kierunku przekazuje identyfikator przypisania, a zapis używa go zamiast dopasowania po nazwie. Dodano atomowe `MakRepository.saveStudyProgramAssignment(semesterId, studyProgram, academicCalendarId)`, które w jednej transakcji zapisuje kierunek i przypisanie; `SemesterViewModel.addCourse` korzysta z niego.
-- Powód: Eksport musi odtwarzać wszystkie dane użytkownika, a identyfikacja po nazwie jest niejednoznaczna i zależna od kolejności. Rozdzielone zapisy mogły zostawić kierunek bez przypisania po błędzie.
-- Odrzucone: Dorzucanie kierunków do eksportu z zastępczego przypisania; mapowanie etykiety na pierwszą pasującą opcję w ekranie i rozróżnianie duplikatów nazw innym sposobem niż identyfikator; łapanie błędu drugiego zapisu i ręczne wycofywanie pierwszego.
-- Weryfikacja: `JsonExportCodecTest` sprawdza kierunek bez przypisania w eksporcie, `ClassEditViewModelTest` wybór i zapis drugiego kierunku o tej samej nazwie przez `selectCourse` na pełnej opcji, `SemesterViewModelTest` jedno zdarzenie `saveStudyProgramAssignment`, a `RoomMigrationTest` kopiowanie `new_teacher_name` i dane dwóch semestrów. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.

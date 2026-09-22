@@ -14,3 +14,7 @@ local.properties
 *.apk
 *.aab
 *.hprof
+
+# Python
+__pycache__/
+*.pyc
