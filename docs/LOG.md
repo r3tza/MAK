@@ -4,6 +4,12 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-22: Doprecyzowanie planu dla słabszych agentów
+
+- Fakty: `PLAN.md` miał cztery kroki zgodne z kolejką, ale I-01, I-02 i I-03 nie podawały plików, podziału metod, kolejności kompilowalnych etapów, przypadków brzegowych ani poleceń weryfikacji. Słabszy agent musiałby odgadywać zakres.
+- Decyzja: Uzupełniono te kroki o kolejność małych zmian, konkretne pliki, przypisanie metod repozytorium, definicję unikalnej kolizji i okienka, format kontroli `check_map.py` oraz jawne wyłączenia zakresu. I-07 doprecyzowano bez zmiany celu. Nie zmieniono kolejki ani wymagań produktu.
+- Powód: Kroki w `PLAN.md` mają być wykonalne bez zgadywania intencji.
+
 ## 2026-09-22: Mapa pracy, kolejka i krótki log
 
 - Decyzja: `AGENTS.md` kieruje do `MAP.md`, `WORKFLOW.md` opisuje odbiór, a `QUEUE.md` przechowuje status implementacji i odbioru.
@@ -11,6 +17,7 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: ujednolicono nazwy `PLAN.md` i `KNOWN_ISSUES.md` oraz zaktualizowano odwołania w bieżących dokumentach.
 - Korekta: `PLAN.md` pozostawia wymagania produktu i odbioru. Datowany stan wdrożenia oraz statusy poszczególnych ekranów należą do `QUEUE.md` i `KNOWN_ISSUES.md`; technologie i granice modułów są w `STACK.md` i `ARCHITECTURE.md`. Usunięto z planu wykonane zadania konfiguracji wrappera Gradle.
 - Późniejsza decyzja: `PLAN.md` zawiera najwyżej pięć najbliższych kroków. Cel i zakres przeniesiono do `PRODUCT.md`, reguły do `DOMAIN.md`, a zachowanie ekranów i odbiór do `FEATURES.md`. `MAP.md` kieruje do właściwego źródła. Ta decyzja zastępuje poprzedni opis roli planu.
+- Dalszy krok: zaplanowano `scripts/check_map.py` z testami dla linków, limitów planu i logu oraz spójności kolejki. `scripts/check_text.py` i CI pozostają pomysłami do osobnego zatwierdzenia. Plany mają być jednoznaczne także dla słabszych agentów.
 - Powód: Agent ma szybko znaleźć bieżącą pracę i wynik ostatnich zmian bez czytania całej historii.
 
 
@@ -161,12 +168,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Odrzucone: Osobny `NavHost` albo `NavController` dla każdej grupy; dodatkowa warstwa nawigacyjna; trzymanie kopii trasy w `AppViewModel`; porównywanie tras wewnętrznych w hoście.
 - Weryfikacja: Koin compiler plugin zatrzymał kompilację, gdy przy przepisywaniu `AppViewModel` zniknęła adnotacja `@KoinViewModel`, co potwierdza walidację grafu. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. `MakNavigationTest` pilnuje budowy tras, reguł `close`/`setup` i `addAction`.
 - Otwarte: brak testu kliknięcia widgetu przy otwartym ekranie podrzędnym i odtworzenia stosu po ponownym utworzeniu aktywności. Oba wymagają urządzenia i pozostają do domknięcia później.
-
-## 2026-09-21: Koin jako composition root
-
-- Fakty: Ręczne `ViewModelProvider.Factory` w każdym ViewModelu i składanie grafu w `MainActivity` rosły z każdym wydzielonym przepływem. Compiler plugin Koin wymaga Kotlin 2.3.20, a KSP też jest zbudowany przeciw tej wersji.
-- Decyzja: Wprowadzono Koin 4.2.2 przez `koin-bom` i Koin compiler plugin 1.2.1 (`io.insert-koin.compiler.plugin`). `AppModule` z `@Module`, `@Configuration` i `@ComponentScan("dev.retza.mak")` definiuje `AppDatabase` i `DataStore<Preferences>`. `RoomMakRepository`, `DataStoreSettingsPreferences`, `FeedbackController` i `ActivePlanProvider` mają `@Single(binds = ...)`, a ViewModele `@KoinViewModel`. `MakApplication` ma `@KoinApplication` i uruchamia Koin przez `startKoin<MakApplication>`, a `MainActivity` pobiera ViewModele przez `viewModel()` i `FeedbackController` przez `inject()`. Kotlin obniżono z 2.3.21 do 2.3.20, aby był zweryfikowany przez compiler plugin i zgodny z KSP.
-- Powód: Composition root ma być jeden, zależności mają być przekazywane konstruktorem, a błędny graf ma być wykrywany przed uruchomieniem.
-- Odrzucone: Hilt; `get()`/`koinInject()` wewnątrz ViewModeli, domeny i komponentów ekranów; pozostawienie ręcznych fabryk obok Koin; Kotlin 2.4.x bez wsparcia KSP.
-- Zegar i reguły planu: `Clock` i `ActivePlanProvider` są jednym `@Single` w grafie, a `OccurrenceViewModel`, `ScheduleViewModel`, `TodayViewModel` i `WidgetPlanLoader` nie mają domyślnych wartości. Dzięki temu brak zegara albo providera zatrzymuje kompilację, a ekrany i widget korzystają z tego samego źródła czasu i tych samych reguł planu. Widget pobiera `MakRepository`, `ActivePlanProvider` i `Clock` z Koin przez `GlobalContext`, bez rzutowania `context.applicationContext as MakApplication`, więc composition root jest jeden.
-- Weryfikacja: Koin compiler plugin waliduje graf podczas kompilacji, a instrumentowany `KoinGraphTest` sprawdza na urządzeniu, że `MakRepository`, `AppDatabase`, `FeedbackSink`, `SettingsPreferences`, `Clock` oraz wszystkie ViewModele dają się pobrać z uruchomionego Koin. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.

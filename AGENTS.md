@@ -30,6 +30,8 @@ Zacznij od `docs/MAP.md`, potem otwórz tylko dokumenty i kod dotyczące zadania
 
 Aktualny status i zależności są w `docs/QUEUE.md`. `docs/PLAN.md` zawiera tylko najbliższe kroki. Wymagania i scenariusze odbioru są w `docs/PRODUCT.md`, `docs/DOMAIN.md` i `docs/FEATURES.md`. Odróżniaj gotowy kod od potwierdzonego odbioru na urządzeniu. Kompilacja testów Android nie oznacza ich uruchomienia.
 
+Kroki w `docs/PLAN.md` muszą być wykonalne przez słabszego agenta bez zgadywania. Podaj kolejność, granice zmiany, przypadki brzegowe, weryfikację i warunek zakończenia. Niejasność wymagającą decyzji zapisz jako bloker.
+
 ## Pisanie
 
 Stosuj `docs/WRITING.md` do dokumentacji i tekstów dla użytkownika, chyba że bezpośrednia instrukcja użytkownika albo zaakceptowana zasada produktu stanowi inaczej.

@@ -7,6 +7,7 @@ Ten plik jest źródłem bieżącego statusu zadań. `PLAN.md` wybiera najwyżej
 | I-01 | do implementacji | Podzielić `MakRepository` według granic danych, przenieść konsumentów i zachować atomowy import. Granice: `ARCHITECTURE.md`; kroki: `PLAN.md`. | brak |
 | I-02 | do implementacji | Pokazać trzy wartości na „Dzisiaj”, policzyć okienka ze wszystkich kierunków i zapisać globalny próg. Reguła: `DOMAIN.md`; układ: `FEATURES.md`; kroki: `PLAN.md`. | brak |
 | I-03 | do implementacji | Rozdzielić metadane i oba rodzaje notatek na kartach zajęć. `FEATURES.md`: Struktura karty zajęć; kroki: `PLAN.md`. | brak |
+| I-07 | do implementacji | Dodać tylko do odczytu `scripts/check_map.py` dla linków dokumentacji, limitów planu i logu oraz spójności kolejki. Kroki: `PLAN.md`. | brak |
 | I-04 | do implementacji | Poprawić odstępy i neutralny stan sekcji rozwijanych. `ARCHITECTURE.md`: Stały język wizualny. | brak |
 | I-05 | do implementacji | Uporządkować główne ustawienia i dodać osobne ekrany. `FEATURES.md`: Ustawienia i dane. | I-02 dla ustawienia progu okienka |
 | I-06 | do implementacji | Dokończyć układ i wygląd widgetu, potem porównać warianty na launcherze. `FEATURES.md`: Widget. | brak |
@@ -18,3 +19,10 @@ Ten plik jest źródłem bieżącego statusu zadań. `PLAN.md` wybiera najwyżej
 | O-06 | odbiór otwarty | Sprawdzić bazowy widget na launcherze i odświeżanie po zmianach danych. `FEATURES.md`: Odbiór na urządzeniu. | brak |
 
 Odbiór zmian z I-02 do I-06 należy do kryterium tych zadań. O-06 dotyczy istniejącego bazowego widgetu; nie zastępuje odbioru docelowego wyglądu z I-06.
+
+## Pomysły do rozważenia
+
+Poniższe propozycje nie są zatwierdzonymi zadaniami. Przed przeniesieniem do planu trzeba ustalić zakres i kryteria zakończenia.
+
+- `scripts/check_text.py`: kontrola zasad pisania z `WRITING.md` dla nowych lub zmienianych tekstów. Przed wdrożeniem zdecydować, jak traktować historyczne dokumenty i istniejące naruszenia, aby skrypt nie blokował każdej zmiany z powodu starej treści.
+- CI: po sprawdzeniu stabilności `check_map.py` rozważyć uruchamianie go przy zmianach dokumentacji. Jeśli powstanie `check_text.py`, dołączyć go dopiero po ustaleniu zakresu. Nie dodawać hooka ani obowiązkowej bramki CI w kroku I-07.
