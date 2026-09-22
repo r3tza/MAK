@@ -4,45 +4,49 @@ Te zasady obowiązują w całym repozytorium. Szczegóły produktu znajdują si�
 
 ## Źródła prawdy
 
-- `ARCHITECTURE.md` — kształt systemu, zakres, terminologia, zasady interfejsu i pytania otwarte.
-- `STACK.md` — języki, narzędzia, środowisko, testy i odrzucone alternatywy.
-- `CHANGELOG.md` — zmiany wydane użytkownikom.
-- `JOURNAL.md` — fakty, decyzje, uzasadnienia i odrzucone alternatywy.
-- `plan.md` — zaakceptowany plan produktu i przyszłych etapów.
-- `WRITING.md` — zasady pisania dokumentacji i tekstów dla użytkownika.
+- `docs/ARCHITECTURE.md` — kształt systemu, zakres, terminologia, zasady interfejsu i pytania otwarte.
+- `docs/STACK.md` — języki, narzędzia, środowisko, testy i odrzucone alternatywy.
+- `docs/CHANGELOG.md` — zmiany wydane użytkownikom.
+- `docs/JOURNAL.md` — fakty, decyzje, uzasadnienia i odrzucone alternatywy.
+- `docs/plan.md` — zaakceptowany plan produktu i przyszłych etapów.
+- `docs/WRITING.md` — zasady pisania dokumentacji i tekstów dla użytkownika.
 - `README.md` — punkt wejścia do dokumentacji; nie zastępuje źródeł prawdy.
 - Język dokumentacji: polski.
 - Język odpowiedzi dla użytkownika: polski.
 - Identyfikatory i komentarze w kodzie: angielski.
 
+## Aktualny punkt pracy
+
+Wykonane etapy architektury opisują `docs/ARCHITECTURE.md` i `docs/JOURNAL.md`. Aktualne prace są w sekcji 1.2 `docs/plan.md`: podział `MakRepository`, podsumowanie „Dzisiaj” i okienka, karty zajęć, odstępy, ustawienia oraz widget. Konfiguracja wielu kalendarzy, import, powiadomienia, migracja Room i część interfejsu czekają na odbiór na emulatorze albo urządzeniu. Kompilacja testów Android nie oznacza ich uruchomienia.
+
 ## Pisanie
 
-Stosuj `WRITING.md` do dokumentacji i tekstów dla użytkownika, chyba że bezpośrednia instrukcja użytkownika albo zaakceptowana zasada produktu stanowi inaczej.
+Stosuj `docs/WRITING.md` do dokumentacji i tekstów dla użytkownika, chyba że bezpośrednia instrukcja użytkownika albo zaakceptowana zasada produktu stanowi inaczej.
 
 Nie używaj w nowych dokumentach, tekstach interfejsu ani odpowiedziach znaku `·`, em dash `—`, emotek ani ozdobników i schematycznych zwrotów kojarzonych z AI-slop. Wybieraj zwykłą interpunkcję i konkretne sformułowania.
 
-Zasady interfejsu z `ARCHITECTURE.md` są kryteriami akceptacji dla każdego widoku. Sprawdzaj je razem z zachowaniem funkcjonalnym.
+Zasady interfejsu z `docs/ARCHITECTURE.md` są kryteriami akceptacji dla każdego widoku. Sprawdzaj je razem z zachowaniem funkcjonalnym.
 
 ## Interfejs
 
-- Przed zmianą interfejsu przeczytaj zasady UI w `ARCHITECTURE.md` i prześledź aktualne komponenty Compose.
+- Przed zmianą interfejsu przeczytaj zasady UI w `docs/ARCHITECTURE.md` i prześledź aktualne komponenty Compose.
 - Dokumenty są źródłem prawdy dla zakresu i zachowania, a działająca aplikacja jest źródłem bieżącego wyglądu.
 - Jeśli zaakceptowana zmiana istotnie wpływa na nawigację, układ, formularze albo widget, zaktualizuj odpowiedni opis i testy.
 - Odtwarzaj zaakceptowane zachowanie przy użyciu komponentów i wzorców Compose.
 
 ## Decyzje
 
-Przeczytaj odpowiednie sekcje `ARCHITECTURE.md` i `STACK.md` przed zmianą struktury, modułów, narzędzi lub metodologii.
+Przeczytaj odpowiednie sekcje `docs/ARCHITECTURE.md` i `docs/STACK.md` przed zmianą struktury, modułów, narzędzi lub metodologii.
 
 Nie traktuj propozycji z rozmowy jako decyzji, dopóki użytkownik jej nie zaakceptuje i nie zostanie zapisana w odpowiednim pliku.
 
 Nie implementuj elementów oznaczonych jako pytania otwarte lub poza zakresem bez decyzji użytkownika.
 
-Po zaakceptowanej zmianie architektury, stosu lub zasad pracy zaktualizuj właściwy dokument i dodaj wpis do `JOURNAL.md`. `CHANGELOG.md` aktualizuj dopiero po wydaniu zmiany użytkownikom.
+Po zaakceptowanej zmianie architektury, stosu lub zasad pracy zaktualizuj właściwy dokument i dodaj wpis do `docs/JOURNAL.md`. `docs/CHANGELOG.md` aktualizuj dopiero po wydaniu zmiany użytkownikom.
 
 ## Preferencje projektowe użytkownika
 
-Traktuj te zasady jako wskazówki przy proponowaniu rozwiązań. Szczegóły produktu i zaakceptowane wyjątki z `ARCHITECTURE.md`, `STACK.md`, `JOURNAL.md` i `plan.md` mają pierwszeństwo.
+Traktuj te zasady jako wskazówki przy proponowaniu rozwiązań. Szczegóły produktu i zaakceptowane wyjątki z `docs/ARCHITECTURE.md`, `docs/STACK.md`, `docs/JOURNAL.md` i `docs/plan.md` mają pierwszeństwo.
 
 ### Architektura
 
@@ -87,9 +91,9 @@ Traktuj te zasady jako wskazówki przy proponowaniu rozwiązań. Szczegóły pro
 
 ## Widget
 
-- Przed zmianą widgetu przeczytaj sekcję Widget w `ARCHITECTURE.md` oraz etapowy plan w sekcji 13.1 `plan.md`.
+- Przed zmianą widgetu przeczytaj sekcję Widget w `docs/ARCHITECTURE.md` oraz pozostałe prace w sekcjach 13.1 i 13.2 `docs/plan.md`.
 - Realizuj etapy po kolei. Każdy etap pozostaw w stanie kompilującym się i sprawdzalnym bez zależności od kolejnego etapu.
-- Widget czyta dane przez `MakRepository`, mapuje je przez wspólną granicę danych i oblicza plan przez `ActivePlanProvider`. Nie woła DAO ani `ScheduleResolver` bezpośrednio i nie kopiuje reguł z ViewModelu.
+- Do czasu etapu 11 widget czyta dane przez `MakRepository`, mapuje je przez wspólną granicę danych i oblicza plan przez `ActivePlanProvider`. Po podziale repozytoriów użyj nowej granicy bez zmiany reguł planu. Widget nie woła DAO ani `ScheduleResolver` bezpośrednio i nie kopiuje reguł z ViewModelu.
 - Wstrzykuj `Clock`. Nie używaj `LocalDate.now()` bezpośrednio w loaderze, prezenterze ani testach widgetu.
 - Room jest źródłem planu. Nie przechowuj kopii planu w preferencjach Glance ani wyłącznie w pamięci procesu.
 - Odświeżaj wszystkie instancje po udanej zmianie danych na jednej wspólnej granicy. Nie wywołuj aktualizacji z każdego ekranu osobno i nie aktualizuj przed zakończeniem transakcji.
@@ -98,13 +102,19 @@ Traktuj te zasady jako wskazówki przy proponowaniu rozwiązań. Szczegóły pro
 - Kliknięcie widgetu otwiera jawnie ekran „Dzisiaj”. Szczegóły wystąpienia wymagają osobnej decyzji o kontrakcie deep linków.
 - Stan błędu ma być krótki, bez surowych wyjątków, i pozwalać otworzyć aplikację.
 
+## Powiadomienia
+
+- Przed zmianą przeczytaj sekcję Powiadomienia w `docs/ARCHITECTURE.md` oraz odpowiednie decyzje w `docs/JOURNAL.md`. Planista używa `ActivePlanProvider` i wstrzykniętego `Clock`. Nie licz kolizji ponownie w odbiorniku własną regułą.
+- Zachowaj dwa rodzaje powiadomień, grupowanie kolizji, domyślnie wyłączoną funkcję i rozdział preferencji użytkownika od zgody systemowej. Używaj alarmów przybliżonych bez ciągłego serwisu i dostępu do dokładnych alarmów.
+- Po zmianach danych i ustawień odnawiaj przyszłe alarmy na wspólnej granicy. Przy dostarczeniu sprawdź bieżący plan, zgodę, przełączniki i czas. Test planisty na JVM nie zastępuje odbioru `AlarmManager`, zgody i kliknięcia na urządzeniu.
+
 ## Testy
 
-Agenci sprawdzają działanie aplikacji testami, które da się uruchomić lokalnie. Priorytet ma logika domenowa na JVM. Zakres wymagań testowych pozostaje w `STACK.md`; ta sekcja mówi, jak je realizować.
+Agenci sprawdzają działanie aplikacji testami, które da się uruchomić lokalnie. Priorytet ma logika domenowa na JVM. Zakres wymagań testowych pozostaje w `docs/STACK.md`; ta sekcja mówi, jak je realizować.
 
 Po zmianie `WeekCalculator`, `ScheduleResolver`, `CollisionDetector`, eksportu JSON albo walidacji formularza uruchom `gradlew.bat test`. Nie czekaj na emulator.
 
-Pisz testy razem z logiką, nie jako osobny etap. Jeden test na jedną regułę z `ARCHITECTURE.md`, `STACK.md` albo `JOURNAL.md`. Przykładowe testy szablonu usuń, gdy pojawią się prawdziwe.
+Pisz testy razem z logiką, nie jako osobny etap. Jeden test na jedną regułę z `docs/ARCHITECTURE.md`, `docs/STACK.md` albo `docs/JOURNAL.md`. Przykładowe testy szablonu usuń, gdy pojawią się prawdziwe.
 
 ### JVM
 
@@ -116,18 +126,15 @@ Pokryj czystym Kotlinem i `java.time`, bez Compose i Room:
 - eksport JSON: `schemaVersion` i round-trip modelu.
 - walidacja: nazwa, kierunek, godziny; koniec później niż start; zajęcia przechodzące przez północ są odrzucane.
 
-Ten sam `ActivePlanProvider` jest źródłem planu dla listy, kalendarza, ekranu „Dzisiaj” i widgetu. Nie powielaj reguł w testach widoków.
+Ten sam `ActivePlanProvider` jest źródłem planu dla listy, kalendarza, ekranu „Dzisiaj”, widgetu i powiadomień. Nie powielaj reguł w testach widoków.
 
-Nie pisz testów rozstrzygających pytania, które nadal pozostają otwarte w `ARCHITECTURE.md`.
+Nie pisz testów rozstrzygających pytania, które nadal pozostają otwarte w `docs/ARCHITECTURE.md`.
 
 ### Room
 
 Warstwa bazy jest cienka. Nie pisz testów CRUD dla każdego DAO.
 
-Wystarczy:
-
-- jeden test, że zapisany semestr, korekta, `OccurrenceChange` i `OccurrenceNote` wracają po nowej instancji bazy;
-- test migracji dopiero przy rzeczywistej zmianie schematu, na zachowanych danych.
+Utrzymuj test trwałości semestru, korekty, `OccurrenceChange` i `OccurrenceNote`. Przy zmianie schematu dodaj test migracji na zachowanych danych. Operacje wieloetapowe, w tym import i konfigurację, sprawdzaj testem rollbacku. Nie powielaj testów domeny w testach DAO.
 
 Nie powielaj testów domeny w warstwie Glance. Przetestuj prezenter widgetu na JVM i sprawdź, że loader woła ten sam `ActivePlanProvider`.
 
@@ -153,7 +160,7 @@ Używaj krótkiego, konkretnego tematu w trybie rozkazującym i po angielsku. Do
 
 ## Zakres
 
-Nie przywracaj alternatyw odrzuconych w `STACK.md` lub `JOURNAL.md`. Nie rozszerzaj zakresu poza `ARCHITECTURE.md`, aby pozornie domknąć pracę.
+Nie przywracaj alternatyw odrzuconych w `docs/STACK.md` lub `docs/JOURNAL.md`. Nie rozszerzaj zakresu poza `docs/ARCHITECTURE.md`, aby pozornie domknąć pracę.
 
 ## Pliki narzędziowe
 

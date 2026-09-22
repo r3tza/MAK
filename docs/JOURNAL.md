@@ -1,5 +1,22 @@
 # MAK — dziennik decyzji
 
+## 2026-09-22: Dokumentacja w katalogu docs
+
+- Decyzja: `README.md`, `AGENTS.md` i `CLAUDE.md` pozostają w katalogu głównym. Dokumenty produktu, architektury, stosu, zasad pisania, historii zmian i wcześniejszy audyt interfejsu są w `docs/`.
+- Powód: Katalog główny zachowuje krótki punkt wejścia i instrukcje agentów, a pozostałe dokumenty mają jedno miejsce.
+
+## 2026-09-22: Uporządkowanie planu i liczenie okienek
+
+- Decyzja: `plan.md` przechowuje pozostałe prace, wymagania produktu i odbiór. Historię wykonanych etapów pozostawiono w tym dzienniku, a obowiązujące granice systemu w `ARCHITECTURE.md`.
+- Reguła: Okienka liczyć ze wspólnego planu wszystkich kierunków aktywnego semestru, także przy różnych kalendarzach akademickich. Najpierw połączyć nakładające się zajęcia w bloki czasu. Przerwa musi być dłuższa od globalnego progu, domyślnie 30 minut.
+- Powód: Użytkownik potrzebuje rzeczywistych wolnych przerw w całym dniu, a historia zakończonych etapów utrudniała odczyt bieżącej pracy.
+
+## 2026-09-22: Aktualizacja instrukcji agentów po etapach 12-14
+
+- Fakty: `AGENTS.md` opisywał widget przez bieżący `MakRepository`, ale nie wskazywał zaległego etapu 11 ani wdrożonych powiadomień. Sekcja Room mówiła, że wystarczy jeden test trwałości, mimo że migracja i operacje atomowe mają już osobne testy.
+- Decyzja: Dopisano aktualny punkt pracy, granicę powiadomień i wymagany odbiór na urządzeniu. Wskazano, że widget przejdzie na nowe repozytorium w etapie 11, a testy Room obejmują również migrację i rollback. `CLAUDE.md` pozostaje wyłącznie importem `AGENTS.md`.
+- Powód: Kolejny agent ma odróżnić zrealizowany kod od odbioru, który nadal czeka na urządzenie, oraz nie powtarzać zakończonych etapów.
+
 ## 2026-09-22: Kontrakt powiadomień o kolizjach
 
 - Decyzja: Powiadomienia są domyślnie wyłączone. Po jawnym włączeniu aplikacja prosi o zgodę systemową, jeśli jest wymagana. Odmowa nie usuwa preferencji użytkownika. Ustawienia pokazują blokadę systemową i pozwalają przejść do ustawień aplikacji.
