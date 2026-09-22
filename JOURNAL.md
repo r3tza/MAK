@@ -7,6 +7,14 @@
 - Planowanie: Używać stabilnych identyfikatorów alarmów, 14-dniowego horyzontu i jednego alarmu odnawiającego. Przy odbiorze sprawdzać aktualne dane, ustawienia i zgodę. Po zmianach danych, imporcie, ustawień, czasu, strefy lub restarcie urządzenia wymieniać przyszłe alarmy.
 - Powód: Jedno ostrzeżenie na grupę ogranicza duplikaty, a alert względem początku zajęć daje czas na reakcję przed pierwszym kolidującym terminem. Jawna zgoda i ponowna kontrola danych ograniczają niechciane oraz nieaktualne powiadomienia.
 
+## 2026-09-21: Etap 14.4, ustawienia i zgoda na powiadomienia
+
+- Fakty: Preferencje powiadomień istniały w DataStore, ale nie było interfejsu, zgody `POST_NOTIFICATIONS` ani stanu blokady systemowej.
+- Decyzja: Sekcja „Powiadomienia" w ustawieniach pokazuje główny przełącznik, osobne przełączniki powiadomienia wieczornego i przed zajęciami, wybór godziny wieczornej i wyprzedzenia oraz stan „Zablokowane przez system" z akcją otwarcia ustawień aplikacji. Zgoda jest proszona dopiero przy włączaniu funkcji, a jej odmowa nie zmienia preferencji użytkownika. Otwarcie ustawień aplikacji i prośba o zgodę są uruchamiane z `MainActivity`, a ekran dostaje tylko wynik `notificationsBlocked`, więc ViewModel nie zna Android API.
+- Powód: Użytkownik ma jawnie włączyć funkcję i widzieć, gdy system blokuje dostarczenie, bez utraty własnego wyboru.
+- Odrzucone: Pytanie o zgodę przy każdym uruchomieniu; traktowanie zgody systemowej jako preferencji; obsługa zgody w ViewModelu.
+- Weryfikacja: `SettingsViewModelTest` pokrywa zapis głównego przełącznika, godziny i wyprzedzenia oraz błąd zapisu. `SettingsScreenTest` (kompilowany) obejmuje akcję importu i podgląd. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór na urządzeniu pozostaje otwarty.
+
 ## 2026-09-21: Etap 14.1-14.3, planowanie i dostarczanie powiadomień
 
 - Fakty: Aplikacja nie miała żadnego kodu powiadomień ani alarmów, a kolizje były liczone jako pary wystąpień bez grupowania przechodniego.

@@ -41,6 +41,14 @@ class SettingsScreenTest {
                         onExport = {},
                         onImport = { imported += 1 },
                         onDismissImportError = {},
+                        onNotificationsEnabled = {},
+                        onEveningNotificationsEnabled = {},
+                        onBeforeClassNotificationsEnabled = {},
+                        onEveningHourSelected = {},
+                        onBeforeClassLeadSelected = {},
+                        notificationsBlocked = false,
+                        onRequestNotificationPermission = {},
+                        onOpenAppSettings = {},
                         onRetry = {}
                     )
                 }

@@ -49,7 +49,8 @@ private data class SettingsLocalState(
     val importPreview: ImportPreviewUi? = null,
     val importErrorMessage: String? = null,
     val isPreparingImport: Boolean = false,
-    val isReplacingData: Boolean = false
+    val isReplacingData: Boolean = false,
+    val isSavingNotifications: Boolean = false
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -78,9 +79,10 @@ class SettingsViewModel(
         repository.observeSemesters(),
         activeSemesterData,
         preferences.theme,
+        preferences.collisionNotifications,
         local
-    ) { semesters, activeData, theme, state ->
-        buildSettingsState(semesters, activeData, theme, state)
+    ) { semesters, activeData, theme, notifications, state ->
+        buildSettingsState(semesters, activeData, theme, notifications, state)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -188,6 +190,43 @@ class SettingsViewModel(
         )
     }
 
+    fun setNotificationsEnabled(enabled: Boolean) =
+        saveNotifications { preferences.setCollisionNotificationsEnabled(enabled) }
+
+    fun setEveningNotificationsEnabled(enabled: Boolean) =
+        saveNotifications { preferences.setEveningNotificationsEnabled(enabled) }
+
+    fun setBeforeClassNotificationsEnabled(enabled: Boolean) =
+        saveNotifications { preferences.setBeforeClassNotificationsEnabled(enabled) }
+
+    fun setEveningHour(id: String) {
+        val time = runCatching { java.time.LocalTime.parse(id) }.getOrNull() ?: return
+        saveNotifications { preferences.setEveningHour(time) }
+    }
+
+    fun setBeforeClassLeadMinutes(id: String) {
+        val minutes = id.toLongOrNull() ?: return
+        saveNotifications { preferences.setBeforeClassLeadMinutes(minutes) }
+    }
+
+    private fun saveNotifications(block: suspend () -> Unit) {
+        if (local.value.isSavingNotifications) return
+        local.update { it.copy(isSavingNotifications = true) }
+        viewModelScope.launch {
+            try {
+                block()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                feedbackSink.publish(
+                    UiFeedback("Nie udało się zapisać ustawień powiadomień.", UiFeedbackKind.Error)
+                )
+            } finally {
+                local.update { it.copy(isSavingNotifications = false) }
+            }
+        }
+    }
+
     fun prepareImport(bytes: ByteArray) {
         if (local.value.isPreparingImport) return
         local.update { it.copy(isPreparingImport = true, importErrorMessage = null) }
@@ -270,6 +309,7 @@ private fun buildSettingsState(
     semesterList: List<SemesterEntity>,
     activeData: SemesterWithData?,
     theme: ThemeMode,
+    notifications: CollisionNotificationPreferences,
     local: SettingsLocalState
 ): SettingsUiState = SettingsUiState(
     semesters = semesterList.map { semester ->
@@ -313,8 +353,27 @@ private fun buildSettingsState(
     importPreview = local.importPreview,
     importErrorMessage = local.importErrorMessage,
     isPreparingImport = local.isPreparingImport,
-    isReplacingData = local.isReplacingData
+    isReplacingData = local.isReplacingData,
+    notifications = NotificationSettingsUi(
+        enabled = notifications.enabled,
+        eveningEnabled = notifications.eveningEnabled,
+        beforeClassEnabled = notifications.beforeClassEnabled,
+        eveningHourOptions = notificationHourOptions.map { hour ->
+            val id = "%02d:00".format(hour)
+            NotificationOptionUi(id, id, notifications.eveningHour.hour == hour)
+        },
+        leadOptions = notificationLeadOptions.map { minutes ->
+            NotificationOptionUi(
+                id = minutes.toString(),
+                label = "$minutes min",
+                isSelected = notifications.leadMinutes == minutes
+            )
+        }
+    )
 )
+
+private val notificationHourOptions = listOf(18, 19, 20, 21, 22)
+private val notificationLeadOptions = listOf(15L, 30L, 45L, 60L)
 
 private val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.forLanguageTag("pl-PL"))
 

@@ -57,7 +57,10 @@ fun MakApp(
     openTodayRequests: Flow<Unit>,
     openPlanRequests: Flow<String>,
     onCreateExportDocument: () -> Unit,
-    onImportPlan: () -> Unit
+    onImportPlan: () -> Unit,
+    notificationsBlocked: Boolean,
+    onRequestNotificationPermission: () -> Unit,
+    onOpenAppSettings: () -> Unit
 ) {
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val navController = rememberNavController()
@@ -194,7 +197,10 @@ fun MakApp(
                     openSetup(navController)
                 },
                 onExport = onCreateExportDocument,
-                onImport = onImportPlan
+                onImport = onImportPlan,
+                notificationsBlocked = notificationsBlocked,
+                onRequestNotificationPermission = onRequestNotificationPermission,
+                onOpenAppSettings = onOpenAppSettings
             )
             setupRoute(setupViewModel = setupViewModel, settingsViewModel = settingsViewModel)
         }

@@ -11,7 +11,9 @@ import dev.retza.mak.ui.FakeMakRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
+import java.time.LocalTime
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -340,6 +342,63 @@ class SettingsViewModelTest {
             listOf("Nie udało się wyeksportować planu."),
             sink.published.map { it.message }
         )
+    }
+
+    @Test
+    fun notificationsTogglePersistsAndMapsToState() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val preferences = InMemorySettingsPreferences()
+        val viewModel = viewModel(repository, preferences)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        viewModel.setNotificationsEnabled(true)
+        advanceUntilIdle()
+
+        assertTrue(viewModel.settings.value.notifications.enabled)
+        assertEquals(true, preferences.collisionNotifications.first().enabled)
+    }
+
+    @Test
+    fun notificationHourAndLeadPersist() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val preferences = InMemorySettingsPreferences()
+        val viewModel = viewModel(repository, preferences)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        viewModel.setEveningHour("21:00")
+        viewModel.setBeforeClassLeadMinutes("45")
+        advanceUntilIdle()
+
+        val stored = preferences.collisionNotifications.first()
+        assertEquals(LocalTime.of(21, 0), stored.eveningHour)
+        assertEquals(45L, stored.leadMinutes)
+        assertTrue(
+            viewModel.settings.value.notifications.eveningHourOptions
+                .first { it.id == "21:00" }
+                .isSelected
+        )
+    }
+
+    @Test
+    fun notificationWriteFailurePublishesError() = runTest(mainDispatcher) {
+        val repository = FakeMakRepository()
+        val preferences = InMemorySettingsPreferences()
+        preferences.failNextWrite = true
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, preferences, sink)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        viewModel.setNotificationsEnabled(true)
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf("Nie udało się zapisać ustawień powiadomień."),
+            sink.published.map { it.message }
+        )
+        assertFalse(viewModel.settings.value.notifications.enabled)
     }
 
     @Test

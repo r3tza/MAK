@@ -23,7 +23,10 @@ internal fun NavGraphBuilder.settingsRoute(
     navController: NavController,
     onAddSemester: () -> Unit,
     onExport: () -> Unit,
-    onImport: () -> Unit
+    onImport: () -> Unit,
+    notificationsBlocked: Boolean,
+    onRequestNotificationPermission: () -> Unit,
+    onOpenAppSettings: () -> Unit
 ) {
     composable(MakRoutes.Settings) {
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
@@ -39,6 +42,14 @@ internal fun NavGraphBuilder.settingsRoute(
             onExport = onExport,
             onImport = onImport,
             onDismissImportError = settingsViewModel::dismissImportError,
+            onNotificationsEnabled = settingsViewModel::setNotificationsEnabled,
+            onEveningNotificationsEnabled = settingsViewModel::setEveningNotificationsEnabled,
+            onBeforeClassNotificationsEnabled = settingsViewModel::setBeforeClassNotificationsEnabled,
+            onEveningHourSelected = settingsViewModel::setEveningHour,
+            onBeforeClassLeadSelected = settingsViewModel::setBeforeClassLeadMinutes,
+            notificationsBlocked = notificationsBlocked,
+            onRequestNotificationPermission = onRequestNotificationPermission,
+            onOpenAppSettings = onOpenAppSettings,
             onRetry = {},
             modifier = Modifier.fillMaxSize()
         )

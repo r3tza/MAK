@@ -1,13 +1,22 @@
 package dev.retza.mak
 
+import android.Manifest
+import android.content.Intent
+import android.net.Uri
 import android.os.Bundle
+import android.provider.Settings
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
+import androidx.compose.runtime.setValue
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
+import androidx.core.app.NotificationManagerCompat
 import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
@@ -68,13 +77,26 @@ class MainActivity : ComponentActivity() {
                     ThemeMode.System -> systemDark
                 }
             ) {
+                var notificationsBlocked by remember {
+                    mutableStateOf(!NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled())
+                }
                 val lifecycleOwner = LocalLifecycleOwner.current
                 DisposableEffect(lifecycleOwner) {
                     val observer = LifecycleEventObserver { _, event ->
-                        if (event == Lifecycle.Event.ON_RESUME) todayViewModel.refreshToday()
+                        if (event == Lifecycle.Event.ON_RESUME) {
+                            todayViewModel.refreshToday()
+                            notificationsBlocked =
+                                !NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled()
+                        }
                     }
                     lifecycleOwner.lifecycle.addObserver(observer)
                     onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+                }
+                val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                    ActivityResultContracts.RequestPermission()
+                ) { granted ->
+                    notificationsBlocked = !granted ||
+                        !NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled()
                 }
                 val scope = rememberCoroutineScope()
                 val exportLauncher = rememberLauncherForActivityResult(
@@ -125,7 +147,19 @@ class MainActivity : ComponentActivity() {
                     openTodayRequests = openTodayRequests.receiveAsFlow(),
                     openPlanRequests = openPlanRequests.receiveAsFlow(),
                     onCreateExportDocument = { exportLauncher.launch("mak-plan.json") },
-                    onImportPlan = { importLauncher.launch(arrayOf("application/json")) }
+                    onImportPlan = { importLauncher.launch(arrayOf("application/json")) },
+                    notificationsBlocked = notificationsBlocked,
+                    onRequestNotificationPermission = {
+                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                    },
+                    onOpenAppSettings = {
+                        startActivity(
+                            Intent(
+                                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                Uri.fromParts("package", packageName, null)
+                            )
+                        )
+                    }
                 )
             }
         }

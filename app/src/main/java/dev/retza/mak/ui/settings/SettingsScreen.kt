@@ -17,6 +17,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakExpandableSection
@@ -35,6 +36,20 @@ data class ThemeOptionUi(
     val id: String,
     val label: String,
     val isSelected: Boolean = false
+)
+
+data class NotificationOptionUi(
+    val id: String,
+    val label: String,
+    val isSelected: Boolean = false
+)
+
+data class NotificationSettingsUi(
+    val enabled: Boolean = false,
+    val eveningEnabled: Boolean = true,
+    val beforeClassEnabled: Boolean = true,
+    val eveningHourOptions: List<NotificationOptionUi> = emptyList(),
+    val leadOptions: List<NotificationOptionUi> = emptyList()
 )
 
 data class ImportPreviewUi(
@@ -59,6 +74,7 @@ data class SettingsUiState(
     val importErrorMessage: String? = null,
     val isPreparingImport: Boolean = false,
     val isReplacingData: Boolean = false,
+    val notifications: NotificationSettingsUi = NotificationSettingsUi(),
     val status: ScreenStatus = ScreenStatus.Ready
 )
 
@@ -75,6 +91,14 @@ fun SettingsScreen(
     onExport: () -> Unit,
     onImport: () -> Unit,
     onDismissImportError: () -> Unit,
+    onNotificationsEnabled: (Boolean) -> Unit,
+    onEveningNotificationsEnabled: (Boolean) -> Unit,
+    onBeforeClassNotificationsEnabled: (Boolean) -> Unit,
+    onEveningHourSelected: (String) -> Unit,
+    onBeforeClassLeadSelected: (String) -> Unit,
+    notificationsBlocked: Boolean,
+    onRequestNotificationPermission: () -> Unit,
+    onOpenAppSettings: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -147,10 +171,58 @@ fun SettingsScreen(
                     expanded = showNotifications,
                     onExpandedChange = { showNotifications = it }
                 ) {
+                    val notifications = state.notifications
                     MakNoteBanner(
-                        title = "Powiadomienia",
-                        subtitle = state.notificationsLabel
+                        title = "Powiadomienia o kolizjach",
+                        subtitle = if (notifications.enabled) "Włączone" else "Wyłączone"
                     )
+                    if (notifications.enabled && notificationsBlocked) {
+                        Text("Zablokowane przez system", color = MaterialTheme.colorScheme.error)
+                        MakSecondaryAction(
+                            text = "Otwórz ustawienia aplikacji",
+                            onClick = onOpenAppSettings
+                        )
+                    }
+                    NotificationToggle(
+                        title = "Powiadomienia",
+                        enabled = notifications.enabled,
+                        onEnabledChange = { enabled ->
+                            onNotificationsEnabled(enabled)
+                            if (enabled && notificationsBlocked) onRequestNotificationPermission()
+                        }
+                    )
+                    if (notifications.enabled) {
+                        NotificationToggle(
+                            title = "Powiadomienie wieczorne",
+                            enabled = notifications.eveningEnabled,
+                            onEnabledChange = onEveningNotificationsEnabled
+                        )
+                        MakSelectField(
+                            label = "Godzina wieczorna",
+                            value = notifications.eveningHourOptions
+                                .firstOrNull { it.isSelected }
+                                ?.label
+                                .orEmpty(),
+                            options = notifications.eveningHourOptions,
+                            onSelected = { onEveningHourSelected(it.id) },
+                            optionLabel = { it.label }
+                        )
+                        NotificationToggle(
+                            title = "Powiadomienie przed zajęciami",
+                            enabled = notifications.beforeClassEnabled,
+                            onEnabledChange = onBeforeClassNotificationsEnabled
+                        )
+                        MakSelectField(
+                            label = "Wyprzedzenie przed zajęciami",
+                            value = notifications.leadOptions
+                                .firstOrNull { it.isSelected }
+                                ?.label
+                                .orEmpty(),
+                            options = notifications.leadOptions,
+                            onSelected = { onBeforeClassLeadSelected(it.id) },
+                            optionLabel = { it.label }
+                        )
+                    }
                 }
             }
 
@@ -187,6 +259,36 @@ fun SettingsScreen(
             onDismiss = onDismissImportError
         ) {
             MakSecondaryAction(text = "Zamknij", onClick = onDismissImportError)
+        }
+    }
+}
+
+@Composable
+private fun NotificationToggle(
+    title: String,
+    enabled: Boolean,
+    onEnabledChange: (Boolean) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+        Text(title, style = MaterialTheme.typography.bodyMedium)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm),
+            modifier = Modifier.fillMaxWidth()
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                MakChoiceRow(
+                    label = "Włączone",
+                    selected = enabled,
+                    onClick = { onEnabledChange(true) }
+                )
+            }
+            Column(modifier = Modifier.weight(1f)) {
+                MakChoiceRow(
+                    label = "Wyłączone",
+                    selected = !enabled,
+                    onClick = { onEnabledChange(false) }
+                )
+            }
         }
     }
 }
