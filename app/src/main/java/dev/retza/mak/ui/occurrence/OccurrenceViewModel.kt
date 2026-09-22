@@ -3,15 +3,18 @@ package dev.retza.mak.ui.occurrence
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
-import dev.retza.mak.data.database.SemesterWithData
-import dev.retza.mak.data.entity.OccurrenceChangeEntity
-import dev.retza.mak.data.entity.OccurrenceNoteEntity
-import dev.retza.mak.data.repository.MakRepository
-import dev.retza.mak.data.repository.toActivePlanData
+import dev.retza.mak.data.repository.OccurrenceChangeRecord
+import dev.retza.mak.data.repository.OccurrenceNoteRecord
+import dev.retza.mak.data.repository.ScheduleRepository
+import dev.retza.mak.data.repository.SemesterRepository
+import dev.retza.mak.data.repository.toRecord
+import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
+import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.OccurrenceEditDecision
 import dev.retza.mak.domain.OccurrenceEditResult
 import dev.retza.mak.domain.OccurrenceSlot
+import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.decideOccurrenceEdit
 import dev.retza.mak.domain.noteContentChanged
 import dev.retza.mak.domain.occurrenceRoomOverride
@@ -46,7 +49,8 @@ sealed interface OccurrenceEffect {
 @OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class OccurrenceViewModel(
-    private val repository: MakRepository,
+    private val semesterRepository: SemesterRepository,
+    private val scheduleRepository: ScheduleRepository,
     private val activePlanProvider: ActivePlanProvider,
     private val feedbackSink: FeedbackSink
 ) : ViewModel() {
@@ -59,9 +63,13 @@ class OccurrenceViewModel(
     private val effectsChannel = Channel<OccurrenceEffect>(Channel.BUFFERED)
     val effects = effectsChannel.receiveAsFlow()
 
-    private val activeSemesterData = repository.observeActiveSemester()
+    private val activePlanData = semesterRepository.observeActiveSemester()
         .flatMapLatest { semester ->
-            if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
+            if (semester == null) {
+                flowOf(null)
+            } else {
+                scheduleRepository.observeActivePlanData(semester.id)
+            }
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
@@ -82,7 +90,7 @@ class OccurrenceViewModel(
         noteDate = null
         state.value = derive(emptyOccurrenceDetails())
         openJob = viewModelScope.launch {
-            val data = activeSemesterData.first { it != null } ?: return@launch
+            val data = activePlanData.first { it != null } ?: return@launch
             val built = buildDetails(data, args) ?: return@launch
             originalDate = built.baseDate.toLocalDateOrNull()
             noteDate = built.currentDate.toLocalDateOrNull()
@@ -125,39 +133,39 @@ class OccurrenceViewModel(
     fun deleteSelectedClass() {
         val classId = selectedClassIdState.value ?: return
         viewModelScope.launch {
-            repository.deleteClass(classId)
+            scheduleRepository.deleteClass(classId)
             effectsChannel.trySend(OccurrenceEffect.CloseDetails)
         }
     }
 
     fun cancelOccurrence() {
         if (occurrenceStateOperationRunning) return
-        val data = activeSemesterData.value ?: return
+        val data = activePlanData.value ?: return
         val classId = selectedClassIdState.value ?: return
         val original = originalDate ?: return
         occurrenceStateOperationRunning = true
         viewModelScope.launch {
             try {
-                val existing = data.occurrenceChanges.firstOrNull {
-                    it.classId == classId && it.originalDate == original
+                val existing = freshPlanData()?.occurrenceChanges?.firstOrNull {
+                    it.classId == classId.toString() && it.originalDate == original
                 }
-                repository.saveOccurrenceChange(
-                    OccurrenceChangeEntity(
-                        id = existing?.id ?: 0,
-                        semesterId = data.semester.id,
+                scheduleRepository.saveOccurrenceChange(
+                    OccurrenceChangeRecord(
+                        id = existing?.id?.toLongOrNull() ?: 0,
+                        semesterId = data.semester.id.toLong(),
                         classId = classId,
                         originalDate = original,
-                        kind = dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED,
+                        kind = OccurrenceChangeKind.CANCELLED,
                         targetDate = null,
-                        newStartTime = null,
-                        newEndTime = null,
-                        newRoom = null,
-                        newBuilding = null,
-                        newTeacherName = null,
-                        newNote = null
+                        startTime = null,
+                        endTime = null,
+                        room = null,
+                        building = null,
+                        teacherName = null,
+                        note = null
                     )
                 )
-                reload(data.semester.id, classId, original)
+                reload(data.semester.id.toLong(), classId, original)
                 feedbackSink.publish(UiFeedback("Odwołano termin", UiFeedbackKind.Success))
             } catch (error: CancellationException) {
                 throw error
@@ -172,17 +180,17 @@ class OccurrenceViewModel(
 
     fun restoreOccurrence() {
         if (occurrenceStateOperationRunning) return
-        val data = activeSemesterData.value ?: return
+        val data = activePlanData.value ?: return
         val classId = selectedClassIdState.value ?: return
         val original = originalDate ?: return
         occurrenceStateOperationRunning = true
         viewModelScope.launch {
             try {
-                val change = data.occurrenceChanges.firstOrNull {
-                    it.classId == classId && it.originalDate == original
+                val change = freshPlanData()?.occurrenceChanges?.firstOrNull {
+                    it.classId == classId.toString() && it.originalDate == original
                 } ?: return@launch
-                repository.deleteOccurrenceChange(change.id)
-                reload(data.semester.id, classId, original)
+                scheduleRepository.deleteOccurrenceChange(change.id.toLong())
+                reload(data.semester.id.toLong(), classId, original)
                 feedbackSink.publish(UiFeedback("Przywrócono termin", UiFeedbackKind.Success))
             } catch (error: CancellationException) {
                 throw error
@@ -204,16 +212,16 @@ class OccurrenceViewModel(
 
     fun saveSharedNote() {
         if (state.value.isSavingSharedNote) return
-        val data = activeSemesterData.value ?: return
+        val data = activePlanData.value ?: return
         val classId = selectedClassIdState.value ?: return
-        val base = data.classes.firstOrNull { it.id == classId } ?: return
+        val base = data.classes.firstOrNull { it.id == classId.toString() } ?: return
         val draft = state.value
         val note = draft.sharedNoteDraft.trim().ifEmpty { null }
         if (!noteContentChanged(draft.sharedNoteDraft, draft.sharedNote)) return
         update { it.copy(isSavingSharedNote = true, sharedNoteError = null) }
         viewModelScope.launch {
             try {
-                repository.saveClass(base.copy(classNote = note))
+                scheduleRepository.saveClass(base.copy(classNote = note).toRecord())
                 update { current ->
                     val draftUnchanged = !noteContentChanged(current.sharedNoteDraft, note)
                     current.copy(
@@ -243,21 +251,29 @@ class OccurrenceViewModel(
 
     fun saveOccurrenceNote() {
         if (state.value.isSavingOccurrenceNote) return
-        val data = activeSemesterData.value ?: return
+        val data = activePlanData.value ?: return
         val classId = selectedClassIdState.value ?: return
         val date = noteDate ?: return
         val draft = state.value
         val note = draft.occurrenceNoteDraft.trim().ifEmpty { null }
         if (!noteContentChanged(draft.occurrenceNoteDraft, draft.occurrenceNote)) return
-        val existing = data.occurrenceNotes.firstOrNull { it.classId == classId && it.occurrenceDate == date }
         update { it.copy(isSavingOccurrenceNote = true, occurrenceNoteError = null) }
         viewModelScope.launch {
             try {
+                val existing = freshPlanData()?.occurrenceNotes?.firstOrNull {
+                    it.classId == classId.toString() && it.occurrenceDate == date
+                }
                 if (note == null) {
-                    existing?.let { repository.deleteOccurrenceNote(it.id) }
+                    existing?.let { scheduleRepository.deleteOccurrenceNote(it.id.toLong()) }
                 } else {
-                    repository.saveOccurrenceNote(
-                        OccurrenceNoteEntity(existing?.id ?: 0, data.semester.id, classId, date, note)
+                    scheduleRepository.saveOccurrenceNote(
+                        OccurrenceNoteRecord(
+                            id = existing?.id?.toLongOrNull() ?: 0,
+                            semesterId = data.semester.id.toLong(),
+                            classId = classId,
+                            occurrenceDate = date,
+                            body = note
+                        )
                     )
                 }
                 update { current ->
@@ -289,7 +305,7 @@ class OccurrenceViewModel(
 
     fun saveOccurrenceChange() {
         if (state.value.isSaving) return
-        val data = activeSemesterData.value ?: return
+        val data = activePlanData.value ?: return
         val classId = selectedClassIdState.value ?: return
         val original = originalDate ?: return
         val draft = state.value
@@ -323,33 +339,33 @@ class OccurrenceViewModel(
                 update { it.copy(isSaving = true, draftErrors = emptyMap(), draftError = null) }
                 viewModelScope.launch {
                     try {
-                        val existing = data.occurrenceChanges.firstOrNull {
-                            it.classId == classId && it.originalDate == original
+                        val existing = freshPlanData()?.occurrenceChanges?.firstOrNull {
+                            it.classId == classId.toString() && it.originalDate == original
                         }
                         when (decision.result) {
                             OccurrenceEditResult.NoChange -> Unit
                             OccurrenceEditResult.Restored ->
-                                existing?.let { repository.deleteOccurrenceChange(it.id) }
+                                existing?.let { scheduleRepository.deleteOccurrenceChange(it.id.toLong()) }
 
                             OccurrenceEditResult.Modified,
-                            OccurrenceEditResult.Moved -> repository.saveOccurrenceChange(
-                                OccurrenceChangeEntity(
-                                    id = existing?.id ?: 0,
-                                    semesterId = data.semester.id,
+                            OccurrenceEditResult.Moved -> scheduleRepository.saveOccurrenceChange(
+                                OccurrenceChangeRecord(
+                                    id = existing?.id?.toLongOrNull() ?: 0,
+                                    semesterId = data.semester.id.toLong(),
                                     classId = classId,
                                     originalDate = original,
-                                    kind = dev.retza.mak.data.entity.OccurrenceChangeKind.MODIFIED,
+                                    kind = OccurrenceChangeKind.MODIFIED,
                                     targetDate = decision.slot.date,
-                                    newStartTime = decision.slot.startTime,
-                                    newEndTime = decision.slot.endTime,
-                                    newRoom = occurrenceRoomOverride(base.room, decision.slot.room),
-                                    newBuilding = null,
-                                    newTeacherName = null,
-                                    newNote = null
+                                    startTime = decision.slot.startTime,
+                                    endTime = decision.slot.endTime,
+                                    room = occurrenceRoomOverride(base.room, decision.slot.room),
+                                    building = null,
+                                    teacherName = null,
+                                    note = null
                                 )
                             )
                         }
-                        reload(data.semester.id, classId, decision.slot.date)
+                        reload(data.semester.id.toLong(), classId, decision.slot.date)
                         val message = when (decision.result) {
                             OccurrenceEditResult.Restored -> "Przywrócono termin"
                             OccurrenceEditResult.Moved -> "Przeniesiono termin"
@@ -369,8 +385,13 @@ class OccurrenceViewModel(
         }
     }
 
+    private suspend fun freshPlanData(): ActivePlanData? =
+        activePlanData.value?.semester?.id?.toLong()?.let { semesterId ->
+            scheduleRepository.observeActivePlanData(semesterId).first()
+        }
+
     private suspend fun reload(semesterId: Long, classId: Long, displayDate: LocalDate) {
-        val fresh = repository.observeSemesterData(semesterId).first() ?: return
+        val fresh = scheduleRepository.observeActivePlanData(semesterId).first() ?: return
         val built = buildDetails(fresh, OccurrenceArgs(classId, displayDate)) ?: return
         originalDate = built.baseDate.toLocalDateOrNull()
         noteDate = built.currentDate.toLocalDateOrNull()
@@ -379,31 +400,32 @@ class OccurrenceViewModel(
     }
 
     private fun buildDetails(
-        data: SemesterWithData,
+        data: ActivePlanData,
         args: OccurrenceArgs
     ): OccurrenceDetailsUiState? {
         val classId = args.classId
         val displayDate = args.date
-        val base = data.classes.firstOrNull { it.id == classId } ?: return null
+        val base = data.classes.firstOrNull { it.id == classId.toString() } ?: return null
         val change = data.occurrenceChanges.firstOrNull {
-            it.classId == classId && (it.originalDate == displayDate || it.targetDate == displayDate)
+            it.classId == classId.toString() &&
+                (it.originalDate == displayDate || it.targetDate == displayDate)
         }
         val originalDate = change?.originalDate ?: displayDate
         val effectiveDate = change?.targetDate ?: originalDate
-        val effectiveStart = change?.newStartTime ?: base.startTime
-        val effectiveEnd = change?.newEndTime ?: base.endTime
-        val effectiveRoom = (change?.newRoom ?: base.room)?.trim()?.ifEmpty { null }
+        val effectiveStart = change?.startTime ?: base.startTime
+        val effectiveEnd = change?.endTime ?: base.endTime
+        val effectiveRoom = (change?.room ?: base.room)?.trim()?.ifEmpty { null }
         val existingNote = data.occurrenceNotes.firstOrNull {
-            it.classId == classId && it.occurrenceDate == effectiveDate
+            it.classId == classId.toString() && it.occurrenceDate == effectiveDate
         }
         val status = when {
-            change?.kind == dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED -> OccurrenceStatusUi.Cancelled
-            base.recurrence == dev.retza.mak.data.entity.Recurrence.ONCE -> OccurrenceStatusUi.OneOff
+            change?.kind == OccurrenceChangeKind.CANCELLED -> OccurrenceStatusUi.Cancelled
+            base.recurrence == Recurrence.ONCE -> OccurrenceStatusUi.OneOff
             change?.targetDate != null && change.targetDate != change.originalDate -> OccurrenceStatusUi.Moved
             change != null -> OccurrenceStatusUi.Changed
             else -> OccurrenceStatusUi.Scheduled
         }
-        val canEdit = base.recurrence != dev.retza.mak.data.entity.Recurrence.ONCE &&
+        val canEdit = base.recurrence != Recurrence.ONCE &&
             status != OccurrenceStatusUi.Cancelled
         return OccurrenceDetailsUiState(
             subjectName = base.name,
@@ -414,8 +436,8 @@ class OccurrenceViewModel(
             startTime = effectiveStart.toString(),
             endTime = effectiveEnd.toString(),
             room = effectiveRoom,
-            building = change?.newBuilding ?: base.building,
-            teacherName = change?.newTeacherName ?: base.teacherName,
+            building = change?.building ?: base.building,
+            teacherName = change?.teacherName ?: base.teacherName,
             groupName = base.group,
             weekLabel = activePlan(data, effectiveDate).schedule.weekType?.let { "Tydzień ${it.name}" },
             originalDateLabel = change?.originalDate?.toString(),
@@ -443,12 +465,12 @@ class OccurrenceViewModel(
         )
     }
 
-    private fun activePlan(data: SemesterWithData, date: LocalDate) =
-        activePlanProvider.resolve(data.toActivePlanData(), date)
+    private fun activePlan(data: ActivePlanData, date: LocalDate) =
+        activePlanProvider.resolve(data, date)
 
-    private fun SemesterWithData.studyProgramName(assignmentId: Long): String {
+    private fun ActivePlanData.studyProgramName(assignmentId: String): String {
         val assignment = semesterPrograms.firstOrNull { it.id == assignmentId } ?: return ""
-        return studyPrograms.firstOrNull { it.id == assignment.studyProgramId }?.name.orEmpty()
+        return courses.firstOrNull { it.id == assignment.studyProgramId }?.name.orEmpty()
     }
 
     private fun derive(value: OccurrenceDetailsUiState): OccurrenceDetailsUiState = value.copy(

@@ -1,6 +1,7 @@
 package dev.retza.mak.ui.edit
 
 import dev.retza.mak.ui.FakeMakRepository
+import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.FeedbackSink
@@ -27,10 +28,10 @@ class ClassEditViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
     private fun viewModel(repository: FakeMakRepository) =
-        ClassEditViewModel(repository, FeedbackController())
+        ClassEditViewModel(FakeSemesterRepository(repository), repository, FeedbackController())
 
     private fun recordingViewModel(repository: FakeMakRepository, sink: RecordingFeedbackSink) =
-        ClassEditViewModel(repository, sink)
+        ClassEditViewModel(FakeSemesterRepository(repository), repository, sink)
 
     @Test
     fun openNewUsesWeeklyRecurrence() = runTest(mainDispatcher) {

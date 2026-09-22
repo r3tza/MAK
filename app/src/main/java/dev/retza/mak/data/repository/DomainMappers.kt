@@ -178,6 +178,24 @@ internal fun WeekOverrideRecord.toEntity() = WeekOverrideEntity(
     scope = dev.retza.mak.data.entity.WeekOverrideScope.valueOf(scope.name)
 )
 
+internal fun ClassItem.toRecord() = ClassRecord(
+    id = id.toLong(),
+    semesterId = semesterId.toLong(),
+    semesterProgramId = semesterProgramId.toLong(),
+    name = name,
+    type = type,
+    teacherName = teacherName,
+    dayOfWeek = dayOfWeek,
+    startTime = startTime,
+    endTime = endTime,
+    room = room,
+    building = building,
+    group = group,
+    recurrence = Recurrence.valueOf(recurrence.name),
+    date = date,
+    classNote = classNote
+)
+
 internal fun ClassEntity.toRecord() = ClassRecord(
     id = id,
     semesterId = semesterId,

@@ -3,10 +3,10 @@ package dev.retza.mak.ui.edit
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
-import dev.retza.mak.data.database.SemesterWithData
-import dev.retza.mak.data.entity.ClassEntity
-import dev.retza.mak.data.entity.Recurrence
-import dev.retza.mak.data.repository.MakRepository
+import dev.retza.mak.data.repository.ClassRecord
+import dev.retza.mak.data.repository.ScheduleRepository
+import dev.retza.mak.data.repository.SemesterRepository
+import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ClassForm
 import dev.retza.mak.domain.ClassValidationError
 import dev.retza.mak.domain.ClassValidator
@@ -41,7 +41,8 @@ sealed interface ClassEditEffect {
 @OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class ClassEditViewModel(
-    private val repository: MakRepository,
+    private val semesterRepository: SemesterRepository,
+    private val scheduleRepository: ScheduleRepository,
     private val feedbackSink: FeedbackSink
 ) : ViewModel() {
     private val state = MutableStateFlow(defaultClassEditState())
@@ -53,17 +54,21 @@ class ClassEditViewModel(
     private var editingClassId: Long? = null
     private var openJob: Job? = null
 
-    private val activeSemesterData = repository.observeActiveSemester()
+    private val activePlanData = semesterRepository.observeActiveSemester()
         .flatMapLatest { semester ->
-            if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
+            if (semester == null) {
+                flowOf(null)
+            } else {
+                scheduleRepository.observeActivePlanData(semester.id)
+            }
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     init {
         viewModelScope.launch {
-            activeSemesterData.collect { data ->
+            activePlanData.collect { data ->
                 state.update { current ->
-                    val calendar = data?.calendarForAssignment(current.semesterProgramId?.toLongOrNull())
+                    val calendar = data?.calendarForAssignment(current.semesterProgramId)
                     current.copy(
                         courseOptions = data?.courseOptions().orEmpty(),
                         semesterStartDate = calendar?.startDate?.toString(),
@@ -93,17 +98,17 @@ class ClassEditViewModel(
         editingClassId = null
         state.value = withActiveOptions(defaultClassEditState())
         openJob = viewModelScope.launch {
-            val data = activeSemesterData.first { it != null } ?: return@launch
-            val item = data.classes.firstOrNull { it.id == classId } ?: return@launch
+            val data = activePlanData.first { it != null } ?: return@launch
+            val item = data.classes.firstOrNull { it.id == classId.toString() } ?: return@launch
             val assignment = data.semesterPrograms.firstOrNull { it.id == item.semesterProgramId }
             val program = assignment?.let { link ->
-                data.studyPrograms.firstOrNull { it.id == link.studyProgramId }
+                data.courses.firstOrNull { it.id == link.studyProgramId }
             }
             val recurrenceId = when (item.recurrence) {
-                Recurrence.EVERY_WEEK -> "every_week"
-                Recurrence.A_WEEK -> "a_week"
-                Recurrence.B_WEEK -> "b_week"
-                Recurrence.ONCE -> "once"
+                DomainRecurrence.EVERY_WEEK -> "every_week"
+                DomainRecurrence.A_WEEK -> "a_week"
+                DomainRecurrence.B_WEEK -> "b_week"
+                DomainRecurrence.ONCE -> "once"
             }
             editingClassId = classId
             state.value = withActiveOptions(
@@ -111,7 +116,7 @@ class ClassEditViewModel(
                     title = "Edytuj zajęcia",
                     name = item.name,
                     courseName = program?.name.orEmpty(),
-                    semesterProgramId = item.semesterProgramId.toString(),
+                    semesterProgramId = item.semesterProgramId,
                     type = item.type,
                     dayLabel = classEditDayNames[item.dayOfWeek].orEmpty(),
                     startTime = item.startTime.toString(),
@@ -134,7 +139,7 @@ class ClassEditViewModel(
     }
 
     fun selectCourse(optionId: String) {
-        val calendar = activeSemesterData.value?.calendarForAssignment(optionId.toLongOrNull())
+        val calendar = activePlanData.value?.calendarForAssignment(optionId)
         update {
             it.copy(
                 semesterProgramId = optionId,
@@ -149,14 +154,14 @@ class ClassEditViewModel(
 
     fun save() {
         if (state.value.isSaving) return
-        val data = activeSemesterData.value ?: return
+        val data = activePlanData.value ?: return
         val editor = state.value
         val start = editor.startTime.toLocalTimeOrNull()
         val end = editor.endTime.toLocalTimeOrNull()
         val recurrence = classEditRecurrenceFromId(editor.recurrenceId)
         val date = editor.occurrenceDate.toLocalDateOrNull()
         val assignmentId = editor.semesterProgramId
-        val assignment = assignmentId?.toLongOrNull()?.let { id ->
+        val assignment = assignmentId?.let { id ->
             data.semesterPrograms.firstOrNull { it.id == id }
         }
         val validation = ClassValidator.validate(
@@ -214,11 +219,11 @@ class ClassEditViewModel(
         state.update { it.copy(isSaving = true) }
         viewModelScope.launch {
             try {
-                repository.saveClass(
-                    ClassEntity(
+                scheduleRepository.saveClass(
+                    ClassRecord(
                         id = classId ?: 0,
-                        semesterId = data.semester.id,
-                        semesterProgramId = assignment.id,
+                        semesterId = data.semester.id.toLong(),
+                        semesterProgramId = assignment.id.toLong(),
                         name = editor.name.trim(),
                         type = editor.type,
                         teacherName = editor.teacher.trim().ifEmpty { null },
@@ -228,7 +233,7 @@ class ClassEditViewModel(
                         room = editor.room.trim().ifEmpty { null },
                         building = editor.building.trim().ifEmpty { null },
                         group = editor.group.trim().ifEmpty { null },
-                        recurrence = Recurrence.valueOf(recurrence.name),
+                        recurrence = DomainRecurrence.valueOf(recurrence.name),
                         date = if (recurrence == DomainRecurrence.ONCE) date else null,
                         classNote = editor.note.trim().ifEmpty { null }
                     )
@@ -248,8 +253,8 @@ class ClassEditViewModel(
     }
 
     private fun withActiveOptions(value: ClassEditUiState): ClassEditUiState {
-        val data = activeSemesterData.value
-        val calendar = data?.calendarForAssignment(value.semesterProgramId?.toLongOrNull())
+        val data = activePlanData.value
+        val calendar = data?.calendarForAssignment(value.semesterProgramId)
         return value.copy(
             courseOptions = data?.courseOptions().orEmpty(),
             semesterStartDate = calendar?.startDate?.toString(),
@@ -258,11 +263,11 @@ class ClassEditViewModel(
     }
 }
 
-private fun SemesterWithData.courseOptions(): List<ClassCourseOptionUi> =
+private fun ActivePlanData.courseOptions(): List<ClassCourseOptionUi> =
     semesterPrograms.mapNotNull { assignment ->
-        val program = studyPrograms.firstOrNull { it.id == assignment.studyProgramId }
+        val program = courses.firstOrNull { it.id == assignment.studyProgramId }
             ?: return@mapNotNull null
-        ClassCourseOptionUi(assignment.id.toString(), program.name)
+        ClassCourseOptionUi(assignment.id, program.name)
     }
 
 private fun defaultClassEditState() = ClassEditUiState(
