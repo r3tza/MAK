@@ -39,8 +39,9 @@ fun registerMakWidgetRefresh(
 
 private val MAK_WIDGET_TABLES = arrayOf(
     "semesters",
-    "courses",
-    "teachers",
+    "study_programs",
+    "academic_calendars",
+    "semester_programs",
     "classes",
     "week_overrides",
     "occurrence_notes",
