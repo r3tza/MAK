@@ -139,4 +139,47 @@ class TodayScreenTest {
         composeTestRule.onNodeWithText("Twój plan na dziś").assertDoesNotExist()
         composeTestRule.onNodeWithText("Skonfiguruj plan").assertIsDisplayed()
     }
+
+    @Test
+    fun classCardShowsBothNoteLabelsAt320Dp() {
+        val item = ClassItemUi(
+            id = "class-notes",
+            name = "Analiza danych",
+            type = "Wykład",
+            courseName = "Informatyka",
+            startTime = "09:00",
+            endTime = "10:30",
+            classNote = "Przynieś projekt",
+            occurrenceNote = "Kolokwium"
+        )
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(
+                    modifier = Modifier
+                        .width(320.dp)
+                        .height(700.dp)
+                ) {
+                    TodayScreen(
+                        state = TodayUiState(
+                            dateLabel = "Poniedziałek, 12 października",
+                            semesterLabel = "Semestr zimowy",
+                            weekLabel = "Tydzień A",
+                            hasActiveSemester = true,
+                            classCount = 1,
+                            items = listOf(item)
+                        ),
+                        onOpenPlan = {},
+                        onOpenClass = {},
+                        onStartSetup = {},
+                        onRetry = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Informatyka").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Notatka do zajęć").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Notatka na dziś").assertIsDisplayed()
+    }
 }

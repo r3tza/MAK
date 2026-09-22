@@ -304,6 +304,10 @@ class ScheduleViewModel(
                 building = item.building,
                 teacherName = item.teacherName,
                 classNote = item.classNote?.takeIf { it.isNotBlank() },
+                occurrenceNote = data.occurrenceNotes
+                    .firstOrNull { it.classId == item.id && it.occurrenceDate == date }
+                    ?.body
+                    ?.takeIf { it.isNotBlank() },
                 statusBadge = "Odwołane",
                 isCancelled = true
             )

@@ -1,5 +1,7 @@
 package dev.retza.mak.ui.schedule
 
+import dev.retza.mak.data.entity.OccurrenceChangeEntity
+import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
@@ -85,6 +87,40 @@ class ScheduleViewModelTest {
 
         assertTrue(viewModel.schedule.value.weekRangeLabel != initialRange)
         assertTrue(viewModel.schedule.value.calendarMonthLabel != initialMonth)
+    }
+
+    @Test
+    fun cancelledItemKeepsOccurrenceNote() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.occurrenceChanges += OccurrenceChangeEntity(
+            id = 1L,
+            semesterId = 1L,
+            classId = 1L,
+            originalDate = LocalDate.of(2026, 9, 21),
+            kind = dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED,
+            targetDate = null,
+            newStartTime = null,
+            newEndTime = null,
+            newRoom = null,
+            newBuilding = null,
+            newTeacherName = null,
+            newNote = null
+        )
+        repository.occurrenceNotes += OccurrenceNoteEntity(
+            id = 1L,
+            semesterId = 1L,
+            classId = 1L,
+            occurrenceDate = LocalDate.of(2026, 9, 21),
+            body = "Na dziś"
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        viewModel.setShowCancelled(true)
+        advanceUntilIdle()
+
+        assertEquals("Na dziś", viewModel.schedule.value.items.single().occurrenceNote)
     }
 
     @Test

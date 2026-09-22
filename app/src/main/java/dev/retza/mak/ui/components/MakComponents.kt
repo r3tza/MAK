@@ -62,6 +62,8 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.PathEffect
@@ -94,6 +96,7 @@ import dev.retza.mak.ui.theme.MakPillNeutral
 import dev.retza.mak.ui.theme.MakPillNeutralBg
 import dev.retza.mak.ui.theme.MakAccent
 import dev.retza.mak.ui.theme.MakAccentSoft
+import dev.retza.mak.ui.theme.MakInk
 import dev.retza.mak.ui.theme.MakSummaryEnd
 import dev.retza.mak.ui.theme.MakSummaryStart
 import dev.retza.mak.ui.theme.MakTeal
@@ -500,7 +503,8 @@ fun ClassCard(
                 )
                 val classNote = item.classNote?.takeIf { it.isNotBlank() }
                 val occurrenceNote = item.occurrenceNote?.takeIf { it.isNotBlank() }
-                if (item.conflictLabel != null || classNote != null || occurrenceNote != null) {
+                val hasNotes = classNote != null || occurrenceNote != null
+                if (item.conflictLabel != null || hasNotes) {
                     HorizontalDivider(
                         modifier = Modifier.fillMaxWidth(),
                         thickness = 1.dp,
@@ -530,6 +534,13 @@ fun ClassCard(
                         )
                     }
                 }
+                if (item.conflictLabel != null && hasNotes) {
+                    HorizontalDivider(
+                        modifier = Modifier.fillMaxWidth(),
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
                 if (classNote != null) {
                     ClassNoteRow(
                         label = "Notatka do zajęć",
@@ -557,13 +568,15 @@ private fun CoursePill(
     accent: Color,
     modifier: Modifier = Modifier
 ) {
+    val fill = lerp(accent, Color.White, 0.72f)
+    val content = if (fill.luminance() > 0.5f) MakInk else Color.White
     Text(
         text = name,
         modifier = modifier
             .clip(RoundedCornerShape(50))
-            .background(accent.copy(alpha = 0.18f))
+            .background(fill)
             .padding(horizontal = 7.dp, vertical = 3.dp),
-        color = accent,
+        color = content,
         fontSize = 10.sp,
         fontWeight = FontWeight.Bold,
         maxLines = 1,
