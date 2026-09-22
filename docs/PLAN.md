@@ -1,62 +1,10 @@
 # Plan najbliższych prac
 
-Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie są cztery. Pełna lista zadań i oddzielny status odbioru są w `QUEUE.md`. Cel i zakres produktu opisuje `PRODUCT.md`, reguły planu `DOMAIN.md`, a zachowanie ekranów `FEATURES.md`. Po ukończeniu kroku uaktualnij kolejkę i wybierz następny; nie dopisuj tu historii wykonania.
+Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie są trzy. Pełna lista zadań i oddzielny status odbioru są w `QUEUE.md`. Cel i zakres produktu opisuje `PRODUCT.md`, reguły planu `DOMAIN.md`, a zachowanie ekranów `FEATURES.md`. Po ukończeniu kroku uaktualnij kolejkę i wybierz następny; nie dopisuj tu historii wykonania.
 
 Każdy krok ma być wykonalny także przez słabszego agenta bez odgadywania intencji. Podaj kolejność małych zmian, docelowe pliki lub obszary kodu, zależności, przypadki brzegowe, sposób sprawdzenia i jednoznaczne kryterium zakończenia. Jeśli do wykonania brakuje decyzji, zapisz ją jako bloker zamiast pozostawiać ukryte założenie.
 
-## 1. Podzielić repozytorium danych (I-01)
-
-Granice: `ARCHITECTURE.md`, sekcja 5 i 7. Nie zmieniaj `ScheduleResolver`, `CollisionDetector`, `ActivePlanProvider` ani schematu Room. Nie twórz nowego modułu Gradle. Nie rób I-02, I-03 ani I-06 przy okazji.
-
-Obecny stan: jeden interfejs `MakRepository` w `app/src/main/java/dev/retza/mak/data/repository/MakRepository.kt` z implementacją `RoomMakRepository`. Publiczne metody zwracają encje i relacje Room (`SemesterEntity`, `SemesterWithData`). Mapowanie na domenę jest w `DomainMappers.kt` (`toActivePlanData()`).
-
-Docelowe granice:
-
-- `SemesterRepository`: semestry, aktywny semestr, globalne kierunki, przypisania, kalendarze, korekty tygodni i atomowa konfiguracja.
-- `ScheduleRepository`: zajęcia, notatki wystąpień, zmiany wystąpień oraz odczyt danych planu.
-- `PlanBackupService` albo równoważny serwis w `data` albo `export`: pełny snapshot i atomowe `replaceAllData`. Kodek JSON zostaje w `export`.
-- `SettingsPreferences` bez zmian odpowiedzialności.
-
-Przypisanie metod z `MakRepository`:
-
-- `SemesterRepository`: `observeSemesters`, `observeActiveSemester`, `observeSemester`, `observeStudyPrograms`, `observeSemesterPrograms`, `observeCalendars`, `observeWeekOverrides`, `saveSemester`, `updateSemester`, `setActiveSemester`, `clearActiveSemester`, `deleteSemester`, `deleteSemesterAndSelectFallback`, `saveStudyProgram`, `deleteStudyProgram`, `saveStudyProgramAssignment`, `addSeparatedSemesterProgram`, `saveCalendar`, `updateSemesterWithCalendar`, `deleteCalendarIfUnused`, `deleteCalendar`, `separateSemesterProgramCalendar`, `reconnectSemesterProgram`, `saveSemesterProgram`, `deleteSemesterProgram`, `saveSetupConfiguration`, `saveWeekOverride`, `deleteWeekOverride`.
-- `ScheduleRepository`: `observeClasses`, `observeOccurrenceNotes`, `observeOccurrenceChanges`, `observeOccurrenceNotesForClass`, `observeOccurrenceChangesForClass`, `saveClass`, `deleteClass`, `saveOccurrenceNote`, `deleteOccurrenceNote`, `saveOccurrenceChange`, `deleteOccurrenceChange`. Dodaj `observeActivePlanData(semesterId)` albo równoważny odczyt zwracający `ActivePlanData`. Kontrakt używa zwykłych typów danych (`ClassRecord`, `OccurrenceNoteRecord`, `OccurrenceChangeRecord`), a nie encji Room. Nieużywany `observeClassesWithDetails` (relacja Room) nie wraca.
-- kopia zapasowa: `getAllSemesterData`, `getAllStudyPrograms`, `replaceAllData`.
-
-Nowe publiczne kontrakty nie importują `data.entity` ani `SemesterWithData` / `ClassWithDetails`. Encje Room zostają prywatne dla implementacji Room. Na granicy użyj modeli z `domain` oraz zwykłych typów w `data.repository`. Rozszerz `DomainMappers.kt` zamiast pisać drugie mapowanie. Identyfikatory domenowe pozostają `String`; zapis w Room parsuje je na `Long`, tak jak robi to dziś `toActivePlanData()`.
-
-Kolejność. Po każdym etapie kod ma się kompilować.
-
-1. Utwórz interfejsy i typy snapshotu w `data.repository`. Zostaw `MakRepository` jako tymczasową fasadę, która deleguje do nowych implementacji, żeby obecni konsumenci się kompilowali.
-2. Przenieś ciało `RoomMakRepository` do `RoomSemesterRepository` i `RoomScheduleRepository`. Transakcje `database.withTransaction` przenieś bez zmiany kolejności zapisów. `replaceAllData` zostaw w serwisie kopii; serwis może wołać DAO albo oba repozytoria wewnątrz jednej transakcji bazy.
-3. Zaktualizuj `FakeMakRepository` albo dodaj `FakeSemesterRepository` i `FakeScheduleRepository` w `app/src/test/java/dev/retza/mak/ui/`. Testy ViewModeli, które potrzebują obu granic, mogą dostać jeden obiekt implementujący oba interfejsy.
-4. Przepnij konsumentów w tej kolejności i kompiluj po każdej grupie:
-   1. odczyt planu: `TodayViewModel`, `WidgetPlanLoader`, `CollisionAlarmScheduler`, `CollisionAlarmReceiver`, `MakApplication`;
-   2. `ScheduleViewModel`;
-   3. `OccurrenceViewModel` i `ClassEditViewModel`;
-   4. `SemesterViewModel` i `SetupViewModel`;
-   5. `SettingsViewModel`, `AppViewModel`, `DemoDataSeeder`.
-5. Usuń fasadę `MakRepository` i `RoomMakRepository`, gdy nie ma już odwołań. Zaktualizuj adnotacje Koin (`@Single(binds = ...)`) oraz `KoinGraphTest`.
-6. Zaktualizuj zdanie o bieżącym `MakRepository` w `ARCHITECTURE.md` i wzmiankę o wstrzykiwaniu `MakRepository` do widgetu w `STACK.md` oraz `AGENTS.md`.
-
-Konsumenci do przepięcia: `AppViewModel`, `TodayViewModel`, `ScheduleViewModel`, `SettingsViewModel`, `SemesterViewModel`, `SetupViewModel`, `ClassEditViewModel`, `OccurrenceViewModel`, `WidgetPlanLoader`, `CollisionAlarmScheduler`, `CollisionAlarmReceiver`, `MakApplication`, `DemoDataSeeder`, testy JVM z `FakeMakRepository`, `RoomPersistenceTest`, `DemoDataSeederTest`, `KoinGraphTest`.
-
-Przypadki brzegowe:
-
-- `saveSetupConfiguration`, `deleteSemesterAndSelectFallback`, `addSeparatedSemesterProgram`, `separateSemesterProgramCalendar`, `reconnectSemesterProgram` i `replaceAllData` zostają jedną transakcją. Błąd nie zostawia częściowych danych.
-- Widget i powiadomienia nadal liczą plan wyłącznie przez `ActivePlanProvider` i wstrzyknięty `Clock`.
-- `BackupData` może zostać wewnętrznym modelem warstwy danych. ViewModel ustawień nie składa encji Room; woła serwis kopii.
-- Nie wystawiaj `SemesterWithData` w stanie UI.
-
-Weryfikacja:
-
-- Uruchom `gradlew.bat test`.
-- Uruchom `gradlew.bat compileDebugAndroidTestKotlin`. Testy `RoomPersistenceTest` mają nadal pokrywać rollback importu, rozdzielenie kalendarza i zastępczy semestr.
-- Nie oznaczaj zadania jako odebranego na urządzeniu. O-01 do O-06 zostają otwarte.
-
-Kryterium zakończenia: nie ma `MakRepository`. Każdy konsument zależy od `SemesterRepository`, `ScheduleRepository` albo serwisu kopii. Publiczne kontrakty nie eksportują encji Room. Reguły planu nadal przechodzą przez `ActivePlanProvider`. Testy JVM i kompilacja testów Android przechodzą.
-
-## 2. Dokończyć podsumowanie „Dzisiaj” (I-02)
+## 1. Dokończyć podsumowanie „Dzisiaj” (I-02)
 
 Granice: `DOMAIN.md` sekcja „Okienka”; `FEATURES.md` sekcja „Ekran Dzisiaj”; `ARCHITECTURE.md` sekcja „Kolizja nie jest winą użytkownika”. Nie przebudowuj całego ekranu ustawień (to I-05). Nie zmieniaj karty zajęć (to I-03). Nie licz okienek w Compose.
 
@@ -95,7 +43,7 @@ Weryfikacja:
 
 Kryterium zakończenia: domena daje ten sam wynik okienek dla kolizji, przeniesień i odwołań. Ekran „Dzisiaj” pokazuje trzy wartości zgodnie z `FEATURES.md`. Próg jest trwały i domyślnie wynosi 30 minut. Widget używa tej samej funkcji unikalnych kolizji.
 
-## 3. Uporządkować karty zajęć (I-03)
+## 2. Uporządkować karty zajęć (I-03)
 
 Granice: `FEATURES.md` sekcja „Struktura karty zajęć”; `ARCHITECTURE.md` ten sam temat. Nie zmieniaj widgetu (I-06). Nie scalaj notatek. Nie koloruj całej karty.
 
@@ -133,7 +81,7 @@ Weryfikacja:
 
 Kryterium zakończenia: oba rodzaje notatek są rozróżnialne etykietą i kolorem. Karta ma sekcje z `FEATURES.md` i mieści się w 320 dp bez poziomego przewijania. Semantyka nie spłaszcza dwóch notatek do jednego tekstu.
 
-## 4. Dodać kontrolę dokumentacji `scripts/check_map.py` (I-07)
+## 3. Dodać kontrolę dokumentacji `scripts/check_map.py` (I-07)
 
 Zadanie nie zależy od zmian w aplikacji. Skrypt ma wyłącznie czytać repozytorium, używać standardowej biblioteki Pythona i nie uruchamiać Gradle ani sieci. Nie implementuj `scripts/check_text.py` ani CI.
 

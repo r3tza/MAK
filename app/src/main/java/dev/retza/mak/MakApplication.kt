@@ -3,7 +3,6 @@ package dev.retza.mak
 import android.app.Application
 import android.content.pm.ApplicationInfo
 import dev.retza.mak.data.database.AppDatabase
-import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.seedDemoDataIfEmpty
@@ -31,8 +30,6 @@ private const val NOTIFICATION_REFRESH_DEBOUNCE_MILLIS = 1_000L
 @OptIn(ExperimentalCoroutinesApi::class)
 @KoinApplication
 class MakApplication : Application() {
-    private val repository: MakRepository by inject()
-
     private val scheduleRepository: ScheduleRepository by inject()
 
     private val semesterRepository: SemesterRepository by inject()
@@ -58,7 +55,7 @@ class MakApplication : Application() {
         val isDebuggable = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
         if (isDebuggable) {
             initializationScope.launch {
-                repository.seedDemoDataIfEmpty()
+                seedDemoDataIfEmpty(semesterRepository, scheduleRepository)
             }
         }
         initializationScope.launch {

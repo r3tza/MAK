@@ -106,7 +106,7 @@ Traktuj te zasady jako wskazówki przy proponowaniu rozwiązań. Szczegóły pro
 
 - Przed zmianą widgetu przeczytaj sekcję Widget w `docs/ARCHITECTURE.md` oraz wymagania w sekcji Widget `docs/FEATURES.md`.
 - Realizuj etapy po kolei. Każdy etap pozostaw w stanie kompilującym się i sprawdzalnym bez zależności od kolejnego etapu.
-- Do czasu etapu 11 widget czyta dane przez `MakRepository`, mapuje je przez wspólną granicę danych i oblicza plan przez `ActivePlanProvider`. Po podziale repozytoriów użyj nowej granicy bez zmiany reguł planu. Widget nie woła DAO ani `ScheduleResolver` bezpośrednio i nie kopiuje reguł z ViewModelu.
+- Widget czyta dane przez `SemesterRepository` i `ScheduleRepository`, mapuje je przez wspólną granicę danych i oblicza plan przez `ActivePlanProvider`. Widget nie woła DAO ani `ScheduleResolver` bezpośrednio i nie kopiuje reguł z ViewModelu.
 - Wstrzykuj `Clock`. Nie używaj `LocalDate.now()` bezpośrednio w loaderze, prezenterze ani testach widgetu.
 - Room jest źródłem planu. Nie przechowuj kopii planu w preferencjach Glance ani wyłącznie w pamięci procesu.
 - Odświeżaj wszystkie instancje po udanej zmianie danych na jednej wspólnej granicy. Nie wywołuj aktualizacji z każdego ekranu osobno i nie aktualizuj przed zakończeniem transakcji.

@@ -1,14 +1,5 @@
 package dev.retza.mak.data.repository
 
-import dev.retza.mak.data.database.SemesterWithData
-import dev.retza.mak.data.entity.AcademicCalendarEntity
-import dev.retza.mak.data.entity.ClassEntity
-import dev.retza.mak.data.entity.OccurrenceChangeEntity
-import dev.retza.mak.data.entity.OccurrenceNoteEntity
-import dev.retza.mak.data.entity.SemesterEntity
-import dev.retza.mak.data.entity.SemesterProgramEntity
-import dev.retza.mak.data.entity.StudyProgramEntity
-import dev.retza.mak.data.entity.WeekOverrideEntity
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneId
@@ -21,14 +12,14 @@ import org.junit.Test
 class DemoDataSeederTest {
     @Test
     fun seedsPreviewDataOnlyIntoAnEmptyRepository() = runTest {
-        val repository = FakeMakRepository()
+        val repository = RecordingRepository()
         val clock = Clock.fixed(
             Instant.parse("2026-09-19T10:00:00Z"),
             ZoneId.of("Europe/Warsaw")
         )
 
-        repository.seedDemoDataIfEmpty(clock)
-        repository.seedDemoDataIfEmpty(clock)
+        seedDemoDataIfEmpty(repository, repository, clock)
+        seedDemoDataIfEmpty(repository, repository, clock)
 
         assertEquals(1, repository.semesters.size)
         assertEquals("Semestr demonstracyjny 2026/27", repository.semesters.single().name)
@@ -43,70 +34,81 @@ class DemoDataSeederTest {
     }
 }
 
-private class FakeMakRepository : MakRepository {
-    val semesters = mutableListOf<SemesterEntity>()
-    val studyPrograms = mutableListOf<StudyProgramEntity>()
-    val calendars = mutableListOf<AcademicCalendarEntity>()
-    val semesterPrograms = mutableListOf<SemesterProgramEntity>()
-    val classes = mutableListOf<ClassEntity>()
-    val weekOverrides = mutableListOf<WeekOverrideEntity>()
-    val occurrenceNotes = mutableListOf<OccurrenceNoteEntity>()
-    val occurrenceChanges = mutableListOf<OccurrenceChangeEntity>()
+private class RecordingRepository : SemesterRepository, ScheduleRepository {
+    val semesters = mutableListOf<SemesterRecord>()
+    val studyPrograms = mutableListOf<StudyProgramRecord>()
+    val calendars = mutableListOf<AcademicCalendarRecord>()
+    val semesterPrograms = mutableListOf<SemesterProgramRecord>()
+    val classes = mutableListOf<ClassRecord>()
+    val weekOverrides = mutableListOf<WeekOverrideRecord>()
+    val occurrenceNotes = mutableListOf<OccurrenceNoteRecord>()
+    val occurrenceChanges = mutableListOf<OccurrenceChangeRecord>()
 
-    override fun observeSemesters(): Flow<List<SemesterEntity>> = flowOf(semesters)
-    override fun observeActiveSemester(): Flow<SemesterEntity?> = flowOf(semesters.firstOrNull { it.isActive })
-    override fun observeSemester(id: Long): Flow<SemesterEntity?> = flowOf(semesters.find { it.id == id })
-    override fun observeSemesterData(id: Long): Flow<SemesterWithData?> = flowOf(null)
-    override fun observeStudyPrograms(): Flow<List<StudyProgramEntity>> = flowOf(studyPrograms)
-    override fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramEntity>> = flowOf(semesterPrograms)
-    override fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarEntity>> = flowOf(calendars)
-    override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>> = flowOf(weekOverrides)
+    private var nextId = 1L
 
-    override suspend fun saveSemester(entity: SemesterEntity): Long {
-        val saved = entity.copy(id = 1L)
-        semesters += saved
-        return saved.id
+    override fun observeSemesters(): Flow<List<SemesterRecord>> = flowOf(semesters)
+
+    override fun observeActiveSemester(): Flow<SemesterRecord?> = flowOf(semesters.firstOrNull { it.isActive })
+
+    override fun observeSemester(id: Long): Flow<SemesterRecord?> = flowOf(semesters.find { it.id == id })
+
+    override fun observeStudyPrograms(): Flow<List<StudyProgramRecord>> = flowOf(studyPrograms)
+
+    override fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramRecord>> =
+        flowOf(semesterPrograms.filter { it.semesterId == semesterId })
+
+    override fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarRecord>> =
+        flowOf(calendars.filter { it.semesterId == semesterId })
+
+    override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>> =
+        flowOf(weekOverrides.filter { it.semesterId == semesterId })
+
+    override suspend fun saveSemester(record: SemesterRecord): Long {
+        val id = record.id.takeIf { it != 0L } ?: nextId++
+        semesters += record.copy(id = id)
+        return id
     }
 
-    override suspend fun updateSemester(entity: SemesterEntity): Long = entity.id
+    override suspend fun updateSemester(record: SemesterRecord): Long = record.id
 
     override suspend fun setActiveSemester(id: Long) = Unit
+
     override suspend fun clearActiveSemester() = Unit
+
     override suspend fun deleteSemester(id: Long) = Unit
 
     override suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult =
         SemesterDeletionResult(null)
 
-    override suspend fun saveStudyProgram(entity: StudyProgramEntity): Long {
-        val id = studyPrograms.size + 1L
-        studyPrograms += entity.copy(id = id)
+    override suspend fun saveStudyProgram(record: StudyProgramRecord): Long {
+        val id = record.id.takeIf { it != 0L } ?: nextId++
+        studyPrograms += record.copy(id = id)
         return id
     }
 
     override suspend fun deleteStudyProgram(id: Long) = Unit
 
-    override suspend fun addSeparatedSemesterProgram(
-        semesterId: Long,
-        studyProgram: StudyProgramEntity,
-        sourceCalendarId: Long
-    ): SetupConfigurationIds = SetupConfigurationIds(1L, 1L, 1L, 1L)
-
-
     override suspend fun saveStudyProgramAssignment(
         semesterId: Long,
-        studyProgram: StudyProgramEntity,
+        studyProgram: StudyProgramRecord,
         academicCalendarId: Long
-    ): SetupConfigurationIds = SetupConfigurationIds(1L, 1L, 1L, 1L)
+    ): SetupConfigurationIds = SetupConfigurationIds(semesterId, 0L, academicCalendarId, 0L)
 
-    override suspend fun saveCalendar(entity: AcademicCalendarEntity): Long {
-        val id = calendars.size + 1L
-        calendars += entity.copy(id = id)
+    override suspend fun addSeparatedSemesterProgram(
+        semesterId: Long,
+        studyProgram: StudyProgramRecord,
+        sourceCalendarId: Long
+    ): SetupConfigurationIds = SetupConfigurationIds(semesterId, 0L, sourceCalendarId, 0L)
+
+    override suspend fun saveCalendar(record: AcademicCalendarRecord): Long {
+        val id = record.id.takeIf { it != 0L } ?: nextId++
+        calendars += record.copy(id = id)
         return id
     }
 
     override suspend fun updateSemesterWithCalendar(
-        semester: SemesterEntity,
-        calendar: AcademicCalendarEntity
+        semester: SemesterRecord,
+        calendar: AcademicCalendarRecord
     ) = Unit
 
     override suspend fun deleteCalendarIfUnused(id: Long) = Unit
@@ -114,51 +116,71 @@ private class FakeMakRepository : MakRepository {
     override suspend fun deleteCalendar(id: Long) = Unit
 
     override suspend fun separateSemesterProgramCalendar(assignmentId: Long): SetupConfigurationIds =
-        SetupConfigurationIds(1L, 1L, 1L, 1L)
+        SetupConfigurationIds(0L, 0L, 0L, 0L)
 
     override suspend fun reconnectSemesterProgram(
         assignmentId: Long,
         calendarId: Long
-    ): SetupConfigurationIds = SetupConfigurationIds(1L, 1L, 1L, 1L)
+    ): SetupConfigurationIds = SetupConfigurationIds(0L, 0L, 0L, 0L)
 
-    override suspend fun saveSemesterProgram(entity: SemesterProgramEntity): Long {
-        val id = semesterPrograms.size + 1L
-        semesterPrograms += entity.copy(id = id)
+    override suspend fun saveSemesterProgram(record: SemesterProgramRecord): Long {
+        val id = record.id.takeIf { it != 0L } ?: nextId++
+        semesterPrograms += record.copy(id = id)
         return id
     }
 
     override suspend fun deleteSemesterProgram(id: Long) = Unit
 
     override suspend fun saveSetupConfiguration(
-        semester: SemesterEntity,
-        studyProgram: StudyProgramEntity,
-        calendar: AcademicCalendarEntity
-    ): SetupConfigurationIds = SetupConfigurationIds(1L, 1L, 1L, 1L)
+        semester: SemesterRecord,
+        studyProgram: StudyProgramRecord,
+        calendar: AcademicCalendarRecord
+    ): SetupConfigurationIds = SetupConfigurationIds(0L, 0L, 0L, 0L)
 
-    override suspend fun saveClass(entity: ClassEntity): Long {
-        val id = classes.size + 1L
-        classes += entity.copy(id = id)
+    override suspend fun saveWeekOverride(record: WeekOverrideRecord): Long {
+        weekOverrides += record
+        return nextId++
+    }
+
+    override suspend fun deleteWeekOverride(id: Long) = Unit
+
+    override fun observeActivePlanData(semesterId: Long): Flow<dev.retza.mak.domain.ActivePlanData?> =
+        flowOf(null)
+
+    override fun observeClasses(semesterId: Long): Flow<List<ClassRecord>> =
+        flowOf(classes.filter { it.semesterId == semesterId })
+
+    override fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteRecord>> =
+        flowOf(occurrenceNotes.filter { it.semesterId == semesterId })
+
+    override fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeRecord>> =
+        flowOf(occurrenceChanges.filter { it.semesterId == semesterId })
+
+    override fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteRecord>> =
+        flowOf(occurrenceNotes.filter { it.classId == classId })
+
+    override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeRecord>> =
+        flowOf(occurrenceChanges.filter { it.classId == classId })
+
+    override suspend fun saveClass(record: ClassRecord): Long {
+        val id = record.id.takeIf { it != 0L } ?: nextId++
+        classes += record.copy(id = id)
         return id
     }
 
     override suspend fun deleteClass(id: Long) = Unit
-    override suspend fun saveWeekOverride(entity: WeekOverrideEntity): Long {
-        weekOverrides += entity.copy(id = 1L)
-        return 1L
-    }
 
-    override suspend fun deleteWeekOverride(id: Long) = Unit
-    override suspend fun saveOccurrenceNote(entity: OccurrenceNoteEntity): Long {
-        occurrenceNotes += entity.copy(id = 1L)
-        return 1L
+    override suspend fun saveOccurrenceNote(record: OccurrenceNoteRecord): Long {
+        occurrenceNotes += record
+        return nextId++
     }
 
     override suspend fun deleteOccurrenceNote(id: Long) = Unit
-    override suspend fun saveOccurrenceChange(entity: OccurrenceChangeEntity): Long {
-        occurrenceChanges += entity.copy(id = 1L)
-        return 1L
+
+    override suspend fun saveOccurrenceChange(record: OccurrenceChangeRecord): Long {
+        occurrenceChanges += record
+        return nextId++
     }
 
     override suspend fun deleteOccurrenceChange(id: Long) = Unit
-
 }

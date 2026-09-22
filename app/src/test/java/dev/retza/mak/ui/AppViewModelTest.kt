@@ -23,7 +23,7 @@ class AppViewModelTest {
     fun selectsFirstSemesterWhenNoneActive() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         repository.clearActiveSemester()
-        AppViewModel(repository)
+        AppViewModel(FakeSemesterRepository(repository), repository)
         advanceUntilIdle()
 
         assertEquals(1L, repository.activeSemesterId)
@@ -33,7 +33,7 @@ class AppViewModelTest {
     fun emptyDatabaseRequiresSetup() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         repository.clearSemesters()
-        val viewModel = AppViewModel(repository)
+        val viewModel = AppViewModel(FakeSemesterRepository(repository), repository)
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -47,7 +47,7 @@ class AppViewModelTest {
     fun doesNotRequireSetupBeforeDataLoads() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         repository.occurrenceDataGate = CompletableDeferred()
-        val viewModel = AppViewModel(repository)
+        val viewModel = AppViewModel(FakeSemesterRepository(repository), repository)
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 
@@ -66,7 +66,7 @@ class AppViewModelTest {
     fun resumesSemesterWithoutCourses() = runTest(mainDispatcher) {
         val repository = FakeMakRepository()
         repository.setActiveSemester(2)
-        val viewModel = AppViewModel(repository)
+        val viewModel = AppViewModel(FakeSemesterRepository(repository), repository)
         backgroundScope.launch { viewModel.uiState.collect {} }
         advanceUntilIdle()
 

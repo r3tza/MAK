@@ -1,9 +1,10 @@
 package dev.retza.mak.ui
 
 import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
-import dev.retza.mak.data.repository.MakRepository
+import dev.retza.mak.data.repository.ScheduleRepository
+import dev.retza.mak.data.repository.SemesterRepository
+import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.ui.setup.SetupSemesterResume
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.koin.core.annotation.KoinViewModel
@@ -21,28 +22,40 @@ data class AppUiState(
     val setupResume: SetupSemesterResume? = null
 )
 
+private data class SetupCheck(
+    val semesterId: Long,
+    val plan: ActivePlanData
+)
+
 @OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class AppViewModel(
-    private val repository: MakRepository
+    private val semesterRepository: SemesterRepository,
+    private val scheduleRepository: ScheduleRepository
 ) : ViewModel() {
-    private val activeSemesterData = repository.observeActiveSemester().flatMapLatest { semester ->
-        if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
-    }
+    private val setupCheck = semesterRepository.observeActiveSemester()
+        .flatMapLatest { semester ->
+            if (semester == null) {
+                flowOf(null)
+            } else {
+                scheduleRepository.observeActivePlanData(semester.id)
+                    .map { plan -> plan?.let { SetupCheck(semester.id, it) } }
+            }
+        }
 
-    val uiState = activeSemesterData
-        .map { activeData ->
-            val calendar = activeData?.academicCalendars?.minByOrNull { it.id }
+    val uiState = setupCheck
+        .map { check ->
             AppUiState(
                 hasLoadedData = true,
-                requiresSetup = activeData == null || activeData.semesterPrograms.isEmpty(),
-                setupResume = activeData
-                    ?.takeIf { it.semesterPrograms.isEmpty() }
-                    ?.let { data ->
+                requiresSetup = check == null || check.plan.semesterPrograms.isEmpty(),
+                setupResume = check
+                    ?.takeIf { it.plan.semesterPrograms.isEmpty() }
+                    ?.let { ready ->
+                        val calendar = ready.plan.calendars.firstOrNull()
                         SetupSemesterResume(
-                            semesterId = data.semester.id,
-                            calendarId = calendar?.id ?: 0L,
-                            name = data.semester.name,
+                            semesterId = ready.semesterId,
+                            calendarId = calendar?.id?.toLongOrNull() ?: 0L,
+                            name = ready.plan.semester.name,
                             startDate = calendar?.startDate?.toString().orEmpty(),
                             endDate = calendar?.endDate?.toString().orEmpty(),
                             firstWeekLabel = calendar?.firstWeekType?.name ?: "A"
@@ -58,23 +71,15 @@ class AppViewModel(
 
     init {
         viewModelScope.launch {
-            combine(repository.observeSemesters(), repository.observeActiveSemester()) { list, active ->
-                list to active
-            }.collect { (list, active) ->
-                if (active == null && list.isNotEmpty()) {
-                    repository.setActiveSemester(list.first().id)
+            combine(
+                semesterRepository.observeSemesters(),
+                semesterRepository.observeActiveSemester()
+            ) { list, active -> list to active }
+                .collect { (list, active) ->
+                    if (active == null && list.isNotEmpty()) {
+                        semesterRepository.setActiveSemester(list.first().id)
+                    }
                 }
-            }
-        }
-    }
-
-    class Factory(
-        private val repository: MakRepository
-    ) : ViewModelProvider.Factory {
-        @Suppress("UNCHECKED_CAST")
-        override fun <T : ViewModel> create(modelClass: Class<T>): T {
-            require(modelClass.isAssignableFrom(AppViewModel::class.java))
-            return AppViewModel(repository) as T
         }
     }
 }

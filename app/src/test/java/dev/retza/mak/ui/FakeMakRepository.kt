@@ -15,7 +15,6 @@ import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.PlanBackupGateway
 import dev.retza.mak.data.repository.SemesterBackup
 import dev.retza.mak.data.repository.ClassRecord
-import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.OccurrenceChangeRecord
 import dev.retza.mak.data.repository.OccurrenceNoteRecord
 import dev.retza.mak.data.repository.ScheduleRepository
@@ -38,7 +37,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackupGateway {
+internal class FakeMakRepository : ScheduleRepository, PlanBackupGateway {
     val semester = SemesterEntity(id = 1L, name = "Semestr", isActive = true)
     val secondSemester = SemesterEntity(id = 2L, name = "Semestr drugi", isActive = false)
     val calendar = AcademicCalendarEntity(
@@ -126,11 +125,11 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         occurrenceDataGate?.await()
     }
 
-    override fun observeSemesters(): Flow<List<SemesterEntity>> = semesterFlow
-    override fun observeActiveSemester(): Flow<SemesterEntity?> =
+    fun observeSemesters(): Flow<List<SemesterEntity>> = semesterFlow
+    fun observeActiveSemester(): Flow<SemesterEntity?> =
         combine(semesterFlow, activeSemesterFlow) { list, id -> list.firstOrNull { it.id == id } }
-    override fun observeSemester(id: Long): Flow<SemesterEntity?> = flowOf(semesterById(id))
-    override fun observeSemesterData(id: Long): Flow<SemesterWithData?> = flow {
+    fun observeSemester(id: Long): Flow<SemesterEntity?> = flowOf(semesterById(id))
+    fun observeSemesterData(id: Long): Flow<SemesterWithData?> = flow {
         occurrenceDataGate?.await()
         val target = semesterFlow.value.firstOrNull { it.id == id }
         if (target == null) {
@@ -157,12 +156,12 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
     override fun observeActivePlanData(semesterId: Long): Flow<ActivePlanData?> =
         observeSemesterData(semesterId).map { it?.toActivePlanData() }
 
-    override fun observeStudyPrograms(): Flow<List<StudyProgramEntity>> = studyProgramState
-    override fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramEntity>> =
+    fun observeStudyPrograms(): Flow<List<StudyProgramEntity>> = studyProgramState
+    fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramEntity>> =
         flowOf(semesterPrograms.filter { it.semesterId == semesterId })
-    override fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarEntity>> =
+    fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarEntity>> =
         flowOf(calendars.filter { it.semesterId == semesterId })
-    override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>> =
+    fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>> =
         flowOf(weekOverrides.filter { it.semesterId == semesterId })
     override fun observeClasses(semesterId: Long): Flow<List<ClassRecord>> =
         flowOf(classes.map { it.toRecord() })
@@ -192,37 +191,37 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         )
     }
 
-    override suspend fun saveSemester(entity: SemesterEntity): Long {
+    suspend fun saveSemester(entity: SemesterEntity): Long {
         awaitSave()
         events += "saveSemester"
         if (entity.isActive) activeSemesterFlow.value = entity.id
         return entity.id
     }
 
-    override suspend fun updateSemester(entity: SemesterEntity): Long {
+    suspend fun updateSemester(entity: SemesterEntity): Long {
         awaitSave()
         events += "updateSemester"
         return entity.id
     }
 
-    override suspend fun setActiveSemester(id: Long) {
+    suspend fun setActiveSemester(id: Long) {
         activeSemesterGate?.await()
         if (failSetActiveSemester) throw IllegalStateException("set active failed")
         setActiveCount += 1
         if (semesterById(id) != null) activeSemesterFlow.value = id
     }
 
-    override suspend fun clearActiveSemester() {
+    suspend fun clearActiveSemester() {
         activeSemesterFlow.value = 0L
     }
 
-    override suspend fun deleteSemester(id: Long) {
+    suspend fun deleteSemester(id: Long) {
         awaitSave()
         events += "deleteSemester"
         semesterFlow.value = semesterFlow.value.filterNot { it.id == id }
     }
 
-    override suspend fun deleteSemesterAndSelectFallback(
+    suspend fun deleteSemesterAndSelectFallback(
         id: Long
     ): dev.retza.mak.data.repository.SemesterDeletionResult {
         awaitSave()
@@ -244,7 +243,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         }
     }
 
-    override suspend fun saveStudyProgram(entity: StudyProgramEntity): Long {
+    suspend fun saveStudyProgram(entity: StudyProgramEntity): Long {
         awaitSave()
         events += "saveStudyProgram"
         val id = if (entity.id == 0L) generatedStudyProgramId++ else entity.id
@@ -258,7 +257,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         return id
     }
 
-    override suspend fun deleteStudyProgram(id: Long) {
+    suspend fun deleteStudyProgram(id: Long) {
         awaitSave()
         events += "deleteStudyProgram"
         require(semesterPrograms.none { it.studyProgramId == id }) {
@@ -267,7 +266,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         studyProgramState.value = studyPrograms.filterNot { it.id == id }
     }
 
-    override suspend fun saveStudyProgramAssignment(
+    suspend fun saveStudyProgramAssignment(
         semesterId: Long,
         studyProgram: StudyProgramEntity,
         academicCalendarId: Long
@@ -299,7 +298,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         return SetupConfigurationIds(semesterId, studyProgramId, academicCalendarId, semesterProgramId)
     }
 
-    override suspend fun addSeparatedSemesterProgram(
+    suspend fun addSeparatedSemesterProgram(
         semesterId: Long,
         studyProgram: StudyProgramEntity,
         sourceCalendarId: Long
@@ -336,7 +335,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
     }
 
 
-    override suspend fun saveCalendar(entity: AcademicCalendarEntity): Long {
+    suspend fun saveCalendar(entity: AcademicCalendarEntity): Long {
         awaitSave()
         events += "saveCalendar"
         val id = if (entity.id == 0L) generatedCalendarId++ else entity.id
@@ -350,7 +349,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         return id
     }
 
-    override suspend fun updateSemesterWithCalendar(
+    suspend fun updateSemesterWithCalendar(
         semester: SemesterEntity,
         calendar: AcademicCalendarEntity
     ) {
@@ -360,7 +359,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         calendarState.value = calendars.map { if (it.id == calendar.id) calendar else it }
     }
 
-    override suspend fun deleteCalendarIfUnused(id: Long) {
+    suspend fun deleteCalendarIfUnused(id: Long) {
         awaitSave()
         events += "deleteCalendarIfUnused"
         if (semesterPrograms.none { it.academicCalendarId == id }) {
@@ -368,7 +367,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         }
     }
 
-    override suspend fun saveSemesterProgram(entity: SemesterProgramEntity): Long {
+    suspend fun saveSemesterProgram(entity: SemesterProgramEntity): Long {
         awaitSave()
         events += "saveSemesterProgram"
         val id = if (entity.id == 0L) generatedProgramId++ else entity.id
@@ -382,7 +381,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         return id
     }
 
-    override suspend fun deleteSemesterProgram(id: Long) {
+    suspend fun deleteSemesterProgram(id: Long) {
         awaitSave()
         events += "deleteSemesterProgram"
         val existing = semesterPrograms.firstOrNull { it.id == id } ?: return
@@ -392,7 +391,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         }
     }
 
-    override suspend fun deleteCalendar(id: Long) {
+    suspend fun deleteCalendar(id: Long) {
         awaitSave()
         events += "deleteCalendar"
         require(semesterPrograms.none { it.academicCalendarId == id }) {
@@ -402,7 +401,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         weekOverrides.removeAll { it.academicCalendarId == id }
     }
 
-    override suspend fun separateSemesterProgramCalendar(assignmentId: Long): SetupConfigurationIds {
+    suspend fun separateSemesterProgramCalendar(assignmentId: Long): SetupConfigurationIds {
         awaitSave()
         events += "separateSemesterProgramCalendar"
         val assignment = semesterPrograms.firstOrNull { it.id == assignmentId }
@@ -430,7 +429,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         )
     }
 
-    override suspend fun reconnectSemesterProgram(
+    suspend fun reconnectSemesterProgram(
         assignmentId: Long,
         calendarId: Long
     ): SetupConfigurationIds {
@@ -456,7 +455,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         )
     }
 
-    override suspend fun saveSetupConfiguration(
+    suspend fun saveSetupConfiguration(
         semester: SemesterEntity,
         studyProgram: StudyProgramEntity,
         calendar: AcademicCalendarEntity
@@ -496,7 +495,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
 
     override suspend fun saveClass(record: ClassRecord): Long = saveClass(record.toEntity())
 
-    override suspend fun saveClass(entity: ClassEntity): Long {
+    suspend fun saveClass(entity: ClassEntity): Long {
         awaitSave()
         events += "saveClass"
         val index = classes.indexOfFirst { it.id == entity.id }
@@ -510,7 +509,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         classes.removeAll { it.id == id }
     }
 
-    override suspend fun saveWeekOverride(entity: WeekOverrideEntity): Long {
+    suspend fun saveWeekOverride(entity: WeekOverrideEntity): Long {
         awaitSave()
         events += "saveWeekOverride"
         if (entity.id == 0L) {
@@ -522,7 +521,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
         return entity.id
     }
 
-    override suspend fun deleteWeekOverride(id: Long) {
+    suspend fun deleteWeekOverride(id: Long) {
         awaitSave()
         events += "deleteWeekOverride"
         weekOverrides.removeAll { it.id == id }
@@ -531,7 +530,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
     override suspend fun saveOccurrenceNote(record: OccurrenceNoteRecord): Long =
         saveOccurrenceNote(record.toEntity())
 
-    override suspend fun saveOccurrenceNote(entity: OccurrenceNoteEntity): Long {
+    suspend fun saveOccurrenceNote(entity: OccurrenceNoteEntity): Long {
         awaitSave()
         events += "saveOccurrenceNote"
         val index = occurrenceNotes.indexOfFirst {
@@ -554,7 +553,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackup
     override suspend fun saveOccurrenceChange(record: OccurrenceChangeRecord): Long =
         saveOccurrenceChange(record.toEntity())
 
-    override suspend fun saveOccurrenceChange(entity: OccurrenceChangeEntity): Long {
+    suspend fun saveOccurrenceChange(entity: OccurrenceChangeEntity): Long {
         awaitSave()
         events += "saveOccurrenceChange"
         val index = occurrenceChanges.indexOfFirst {

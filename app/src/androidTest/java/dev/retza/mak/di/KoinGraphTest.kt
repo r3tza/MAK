@@ -2,7 +2,6 @@ package dev.retza.mak.di
 
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.data.database.AppDatabase
-import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.PlanBackupGateway
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
@@ -29,7 +28,6 @@ class KoinGraphTest {
     fun graphResolvesDependenciesAndViewModels() {
         val koin = GlobalContext.get()
 
-        assertNotNull(koin.get<MakRepository>())
         assertNotNull(koin.get<ScheduleRepository>())
         assertNotNull(koin.get<SemesterRepository>())
         assertNotNull(koin.get<PlanBackupGateway>())

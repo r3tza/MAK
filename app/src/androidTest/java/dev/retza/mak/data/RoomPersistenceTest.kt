@@ -17,10 +17,11 @@ import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
+import dev.retza.mak.data.repository.AcademicCalendarRecord
 import dev.retza.mak.data.repository.BackupData
-import dev.retza.mak.data.repository.RoomMakRepository
+import dev.retza.mak.data.repository.SemesterRecord
+import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.RoomPlanBackupGateway
-import dev.retza.mak.data.repository.RoomScheduleRepository
 import dev.retza.mak.data.repository.RoomSemesterRepository
 import dev.retza.mak.data.repository.SemesterBackup
 import java.time.DayOfWeek
@@ -145,14 +146,14 @@ class RoomPersistenceTest {
 
         try {
             repository.saveSetupConfiguration(
-                SemesterEntity(name = "Nowy semestr", isActive = true),
-                StudyProgramEntity(id = 999L, name = "Kierunek", color = "#445566"),
-                AcademicCalendarEntity(
+                SemesterRecord(name = "Nowy semestr", isActive = true),
+                StudyProgramRecord(id = 999L, name = "Kierunek", color = "#445566"),
+                AcademicCalendarRecord(
                     id = nextCalendarId,
                     semesterId = 0L,
                     startDate = LocalDate.of(2026, 10, 1),
                     endDate = LocalDate.of(2027, 2, 28),
-                    firstWeekType = WeekType.A
+                    firstWeekType = dev.retza.mak.domain.WeekType.A
                 )
             )
             fail("Expected the setup transaction to fail")
@@ -425,7 +426,7 @@ class RoomPersistenceTest {
 
         val result = repository.addSeparatedSemesterProgram(
             semesterId = semesterId,
-            studyProgram = StudyProgramEntity(name = "Informatyka", color = "#112233"),
+            studyProgram = StudyProgramRecord(name = "Informatyka", color = "#112233"),
             sourceCalendarId = sourceCalendarId
         )
 
@@ -450,7 +451,7 @@ class RoomPersistenceTest {
 
         repository.saveStudyProgramAssignment(
             semesterId = semesterId,
-            studyProgram = StudyProgramEntity(id = programId, name = "Zmieniona", color = "#FFFFFF"),
+            studyProgram = StudyProgramRecord(id = programId, name = "Zmieniona", color = "#FFFFFF"),
             academicCalendarId = calendarId
         )
 
@@ -469,7 +470,7 @@ class RoomPersistenceTest {
 
         repository.addSeparatedSemesterProgram(
             semesterId = semesterId,
-            studyProgram = StudyProgramEntity(id = programId, name = "Zmieniona", color = "#FFFFFF"),
+            studyProgram = StudyProgramRecord(id = programId, name = "Zmieniona", color = "#FFFFFF"),
             sourceCalendarId = calendarId
         )
 
@@ -573,12 +574,7 @@ class RoomPersistenceTest {
         )
     )
 
-    private fun repository(): RoomMakRepository =
-        RoomMakRepository(
-            database!!,
-            RoomScheduleRepository(database!!),
-            RoomSemesterRepository(database!!)
-        )
+    private fun repository(): RoomSemesterRepository = RoomSemesterRepository(database!!)
 
     private fun semester(name: String, active: Boolean) = SemesterEntity(
         name = name,
