@@ -303,7 +303,7 @@ class ScheduleViewModel(
                 room = item.room?.trim()?.ifEmpty { null },
                 building = item.building,
                 teacherName = item.teacherName,
-                note = item.classNote,
+                classNote = item.classNote?.takeIf { it.isNotBlank() },
                 statusBadge = "Odwołane",
                 isCancelled = true
             )

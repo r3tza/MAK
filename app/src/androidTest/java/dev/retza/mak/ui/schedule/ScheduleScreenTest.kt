@@ -84,7 +84,7 @@ class ScheduleScreenTest {
             room = "L204",
             building = "Budynek A",
             teacherName = "Bardzo długi tytuł i nazwisko prowadzącego",
-            note = "Przynieś projekt",
+            classNote = "Przynieś projekt",
             conflictLabel = "Kolizja 09:30-10:00"
         )
         setScheduleContent(
@@ -100,9 +100,30 @@ class ScheduleScreenTest {
         composeTestRule.onNodeWithText("Przynieś projekt").assertIsDisplayed()
         composeTestRule
             .onNodeWithContentDescription(
-                "09:00-10:30, Bardzo długa nazwa zajęć z analizą danych, Informatyka, Laboratorium, L204, Budynek A, Bardzo długi tytuł i nazwisko prowadzącego, Kolizja 09:30-10:00, Przynieś projekt"
+                "09:00-10:30, Bardzo długa nazwa zajęć z analizą danych, Informatyka, Laboratorium, L204, Budynek A, Bardzo długi tytuł i nazwisko prowadzącego, Kolizja 09:30-10:00, Notatka do zajęć: Przynieś projekt"
             )
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun cardShowsBothNoteLabelsAt320Dp() {
+        val item = ClassItemUi(
+            id = "class-notes",
+            name = "Analiza danych",
+            type = "Wykład",
+            courseName = "Informatyka",
+            startTime = "09:00",
+            endTime = "10:30",
+            classNote = "Przynieś projekt",
+            occurrenceNote = "Kolokwium"
+        )
+        setScheduleContent(state = scheduleState(items = listOf(item)))
+
+        composeTestRule.onNodeWithText("Informatyka").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Notatka do zajęć").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Notatka na dziś").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Przynieś projekt").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Kolokwium").assertIsDisplayed()
     }
 
     @Test

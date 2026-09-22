@@ -50,7 +50,8 @@ internal fun PlannedOccurrence.toUi(conflictLabel: String?): ClassItemUi {
             Recurrence.ONCE -> "Jednorazowe"
             Recurrence.EVERY_WEEK -> null
         },
-        note = occurrenceNoteBody ?: classNote,
+        classNote = classNote?.takeIf { it.isNotBlank() },
+        occurrenceNote = occurrenceNoteBody?.takeIf { it.isNotBlank() },
         statusBadge = when {
             cancelled -> "Odwołane"
             oneOff -> "Jednorazowe"

@@ -30,6 +30,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -91,6 +92,8 @@ import dev.retza.mak.ui.theme.MakOnceSoft
 import dev.retza.mak.ui.theme.MakOrangeMark
 import dev.retza.mak.ui.theme.MakPillNeutral
 import dev.retza.mak.ui.theme.MakPillNeutralBg
+import dev.retza.mak.ui.theme.MakAccent
+import dev.retza.mak.ui.theme.MakAccentSoft
 import dev.retza.mak.ui.theme.MakSummaryEnd
 import dev.retza.mak.ui.theme.MakSummaryStart
 import dev.retza.mak.ui.theme.MakTeal
@@ -495,6 +498,15 @@ fun ClassCard(
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
+                val classNote = item.classNote?.takeIf { it.isNotBlank() }
+                val occurrenceNote = item.occurrenceNote?.takeIf { it.isNotBlank() }
+                if (item.conflictLabel != null || classNote != null || occurrenceNote != null) {
+                    HorizontalDivider(
+                        modifier = Modifier.fillMaxWidth(),
+                        thickness = 1.dp,
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
+                }
                 if (item.conflictLabel != null) {
                     Row(
                         modifier = Modifier
@@ -518,8 +530,21 @@ fun ClassCard(
                         )
                     }
                 }
-                if (!item.note.isNullOrBlank()) {
-                    Text(item.note, style = MaterialTheme.typography.bodySmall, maxLines = 3, overflow = TextOverflow.Ellipsis)
+                if (classNote != null) {
+                    ClassNoteRow(
+                        label = "Notatka do zajęć",
+                        text = classNote,
+                        background = MakAccentSoft,
+                        foreground = MakAccent
+                    )
+                }
+                if (occurrenceNote != null) {
+                    ClassNoteRow(
+                        label = "Notatka na dziś",
+                        text = occurrenceNote,
+                        background = MakModifiedSoft,
+                        foreground = MakModified
+                    )
                 }
             }
         }
@@ -532,26 +557,49 @@ private fun CoursePill(
     accent: Color,
     modifier: Modifier = Modifier
 ) {
-    val warm = isWarm(accent)
     Text(
         text = name,
         modifier = modifier
             .clip(RoundedCornerShape(50))
-            .background(
-                if (warm) MaterialTheme.colorScheme.tertiaryContainer
-                else MaterialTheme.colorScheme.secondaryContainer
-            )
+            .background(accent.copy(alpha = 0.18f))
             .padding(horizontal = 7.dp, vertical = 3.dp),
-        color = if (warm) {
-            MaterialTheme.colorScheme.onTertiaryContainer
-        } else {
-            MaterialTheme.colorScheme.onSecondaryContainer
-        },
+        color = accent,
         fontSize = 10.sp,
         fontWeight = FontWeight.Bold,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
     )
+}
+
+@Composable
+private fun ClassNoteRow(
+    label: String,
+    text: String,
+    background: Color,
+    foreground: Color,
+    modifier: Modifier = Modifier
+) {
+    Column(
+        modifier = modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+    ) {
+        Text(
+            text = label,
+            modifier = Modifier
+                .clip(RoundedCornerShape(50))
+                .background(background)
+                .padding(horizontal = 7.dp, vertical = 3.dp),
+            color = foreground,
+            fontSize = 10.sp,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodySmall,
+            maxLines = 3,
+            overflow = TextOverflow.Ellipsis
+        )
+    }
 }
 
 @Composable
@@ -1280,7 +1328,8 @@ private fun classCardDescription(item: ClassItemUi): String = buildList {
     add("${item.courseName}, ${item.type}")
     add(classMeta(item))
     item.conflictLabel?.let(::add)
-    item.note?.takeIf(String::isNotBlank)?.let(::add)
+    item.classNote?.takeIf(String::isNotBlank)?.let { add("Notatka do zajęć: $it") }
+    item.occurrenceNote?.takeIf(String::isNotBlank)?.let { add("Notatka na dziś: $it") }
 }.joinToString(", ")
 
 @Composable
@@ -1290,7 +1339,6 @@ private fun classAccentColor(item: ClassItemUi): Color {
     return if (item.courseName.hashCode() % 2 == 0) MakTeal else MakOrangeMark
 }
 
-private fun isWarm(color: Color): Boolean = color.red > color.blue && color.red >= color.green * 0.55f
 
 fun parseHexColor(hex: String): Color? = runCatching {
     val value = hex.trim().removePrefix("#")

@@ -4,6 +4,14 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-22: Karty zajęć z dwoma notatkami (I-03)
+
+- Fakty: `ClassItemUi` miało jedno pole `note` (`occurrenceNoteBody ?: classNote`), a `ClassCard` pokazywał jedną notatkę bez etykiety; pill kierunku używał kontenera motywu, nie koloru kierunku.
+- Decyzja: `ClassItemUi` ma osobne `classNote` i `occurrenceNote`, a `PlannedOccurrence.toUi` przepisuje obie bez `?:`. `ClassCard` zachowuje siatkę 48 dp i prawą kolumnę w kolejności: nazwa, pill kierunku i typ, metadane, cienki separator, kolizja, notatki. Notatka wspólna ma pill „Notatka do zajęć” (indygo) z treścią pod etykietą, notatka wystąpienia pill „Notatka na dziś” (fiolet) w osobnym wierszu. `CoursePill` używa tego samego koloru kierunku jako tła o niskiej alpha i tekstu w kolorze kierunku, a pasek przy krawędzi nadal używa pełnego koloru. `classCardDescription` odczytuje obie notatki z etykietami i nie spłaszcza ich.
+- Powód: Oba rodzaje notatek są różne i muszą być rozróżnialne etykietą i kolorem, a karta ma mieć jawne sekcje i czytelną semantykę.
+- Odrzucone: Scalanie notatek w jeden tekst; wybór jednej notatki operatorem `?:`; kolorowanie całej karty; zmiana widgetu (I-06).
+- Weryfikacja: `PlanMappingTest` (obie notatki osobno, jedna, brak, blank, kolizja nie nadpisuje notatek), `ScheduleScreenTest` (etykiety obu notatek i nazwa kierunku przy 320 dp) i `TodayScreenTest`. `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór wyglądu na urządzeniu należy do O-05.
+
 ## 2026-09-22: Podsumowanie „Dzisiaj” (I-02)
 
 - Fakty: Ekran „Dzisiaj” pokazywał jedną wartość (liczba zajęć), karta miała ozdobną ikonę, a próg okienka nie istniał.
@@ -154,13 +162,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Eksport musi odtwarzać wszystkie dane użytkownika, a identyfikacja po nazwie jest niejednoznaczna i zależna od kolejności. Rozdzielone zapisy mogły zostawić kierunek bez przypisania po błędzie.
 - Odrzucone: Dorzucanie kierunków do eksportu z zastępczego przypisania; mapowanie etykiety na pierwszą pasującą opcję w ekranie i rozróżnianie duplikatów nazw innym sposobem niż identyfikator; łapanie błędu drugiego zapisu i ręczne wycofywanie pierwszego.
 - Weryfikacja: `JsonExportCodecTest` sprawdza kierunek bez przypisania w eksporcie, `ClassEditViewModelTest` wybór i zapis drugiego kierunku o tej samej nazwie przez `selectCourse` na pełnej opcji, `SemesterViewModelTest` jedno zdarzenie `saveStudyProgramAssignment`, a `RoomMigrationTest` kopiowanie `new_teacher_name` i dane dwóch semestrów. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
-
-## 2026-09-21: Resolver wielu kalendarzy
-
-- Fakty: `WeekCalculator` liczył tydzień z dat semestru, więc wszystkie kierunki w semestrze dzieliły jeden rytm A/B. Po dodaniu `AcademicCalendar` i `SemesterProgram` każdy kierunek może mieć własne daty i rytm.
-- Decyzja: `WeekCalculator` przyjmuje `AcademicCalendar`, a `WeekOverride` wskazuje `academicCalendarId`. `ActivePlanData` niesie `semesterPrograms` i `calendars`. `ScheduleResolver` dla każdego wystąpienia wybiera kalendarz na podstawie `SemesterProgram` kierunku zajęć, liczy tydzień względem tego kalendarza, a dopiero potem `CollisionDetector` działa na połączonej liście wszystkich kierunków. `ActivePlanProvider` pozostał wspólnym wejściem. `toActivePlanData` przed migracją Room syntezuje jeden kalendarz z semestru i po jednym przypisaniu na kierunek, więc zachowanie aplikacji się nie zmienia.
-- Powód: Dwa kierunki z różnych uczelni muszą mieć własne daty i rytm, ale wspólne kolizje liczone na jednej osi czasu.
-- Odrzucone: Wspólny rytm A/B wymuszony przez semestr; liczenie kolizji osobno dla każdego kalendarza; zmiana schematu Room razem z resolverem.
-- Zakres i etykieta: zajęcia jednorazowe sprawdzają zakres kalendarza kierunku, więc data poza kalendarzem nie pokazuje wystąpienia. `ResolvedSchedule` nie wybiera już arbitralnego tygodnia: gdy aktywne kalendarze mają w danym dniu różne oznaczenia A/B, `hasMixedWeekTypes` jest prawdziwe, a `week` puste, więc ekran pokazuje neutralne „Różne tygodnie", a nie jedno A/B.
-- Widget: `WidgetPresenter` traktował każde `weekType == null` jako „Poza semestrem" i ukrywał plan. Teraz sprawdza `hasMixedWeekTypes`; przy mieszanych tygodniach i niepustych zajęciach zwraca `WidgetUiState.Ready` z etykietą „Różne tygodnie", a `OutsideSemester` tylko wtedy, gdy naprawdę nie ma aktywnego kalendarza.
-- Weryfikacja: `MultiCalendarResolverTest` pokazuje, że przy przeciwnych rytmach A/B tylko kierunek z właściwego kalendarza ma wystąpienie, że dwa kierunki z różnymi kalendarzami dają wspólną kolizję z poprawnym zakresem nakładania, że zajęcia jednorazowe poza kalendarzem nie są pokazywane oraz że mieszane oznaczenia nie są zwijane do jednego. `WidgetPresenterTest` sprawdza, że dzień z różnymi tygodniami i zajęciami daje `Ready` z dwoma pozycjami, a nie `OutsideSemester`. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
