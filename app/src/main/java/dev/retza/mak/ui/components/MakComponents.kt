@@ -999,17 +999,18 @@ fun MakExpandableSection(
             .clip(shape)
             .border(
                 width = 1.dp,
-                color = if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                color = if (focused) {
+                    MaterialTheme.colorScheme.primary
+                } else {
+                    MaterialTheme.colorScheme.outlineVariant
+                },
                 shape = shape
             )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .background(
-                    if (expanded) MaterialTheme.colorScheme.secondaryContainer
-                    else MaterialTheme.colorScheme.surfaceContainerHigh
-                )
+                .background(MaterialTheme.colorScheme.surfaceContainer)
                 .clickable(role = Role.Button, onClick = { onExpandedChange(!expanded) })
                 .focusable()
                 .onFocusChanged { focused = it.isFocused }
@@ -1026,28 +1027,20 @@ fun MakExpandableSection(
                 modifier = Modifier.weight(1f),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = if (expanded) {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Icon(
                 imageVector = if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
                 contentDescription = null,
-                tint = if (expanded) {
-                    MaterialTheme.colorScheme.onSecondaryContainer
-                } else {
-                    MaterialTheme.colorScheme.onSurfaceVariant
-                }
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         if (expanded) {
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(MaterialTheme.colorScheme.surfaceVariant)
-                    .padding(horizontal = MakSpacing.md, vertical = MakSpacing.md),
+                    .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                    .padding(horizontal = MakSpacing.lg, vertical = MakSpacing.lg),
                 verticalArrangement = Arrangement.spacedBy(MakSpacing.md),
                 content = content
             )

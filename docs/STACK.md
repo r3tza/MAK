@@ -46,6 +46,7 @@
 - Sprawdzenie braku poziomego przewijania oraz obciętych akcji.
 - Weryfikacja, że ekran i widget pokazują ten sam aktywny plan.
 - Walidacja pełnej konfiguracji Koin podczas kompilacji. Jeśli typy Androida nie są objęte compiler pluginem, dodać uzupełniający test uruchomienia modułów.
+- Kontrola spójności dokumentów: `python3 scripts/test_check_map.py` po zmianie skryptu oraz `python3 scripts/check_map.py` na repozytorium; zakres i ograniczenia są w sekcji Narzędzia.
 
 ## 6. Narzędzia
 

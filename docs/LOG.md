@@ -4,13 +4,21 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-22: Neutralna sekcja rozwijana i odstępy (I-04)
+
+- Fakty: `MakExpandableSection` zmieniał tło nagłówka na `secondaryContainer` po rozwinięciu i używał `surfaceVariant` w treści, a przycisk „Wróć do ustawień” miał tylko 8 dp odstępu nad sobą.
+- Decyzja: Nagłówek używa `surfaceContainer` w obu stanach, a treść `surfaceContainerLow` z paddingiem 16 dp; rozwinięcie pokazują tekst „Ukryj”/„Pokaż”, kierunek ikony i semantyka, bez zmiany na kolor akcentowy. Tekst i ikona mają kolor `onSurfaceVariant`, a obramowanie `outlineVariant` (`primary` tylko przy focusie). Przycisk „Wróć do ustawień” w semestrze dostał 12 dp odstępu.
+- Powód: Neutralne tło w obu stanach i przewidywalne odstępy wynikają z `ARCHITECTURE.md`, sekcja „Stały język wizualny”.
+- Odrzucone: Tło kontenera akcentowego po rozwinięciu; zmiany odstępów poza realne naruszenia; ruszanie kart zajęć i podsumowania „Dzisiaj”.
+- Weryfikacja: `SettingsScreenTest.expandableSectionTogglesAt320Dp` sprawdza rozwinięcie i zwinięcie przy 320 dp. `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Koloru tła nie da się sprawdzić bez urządzenia, więc odbiór wizualny należy do O-05.
+
 ## 2026-09-22: Kontrola dokumentacji `scripts/check_map.py` (I-07)
 
 - Fakty: Dokumenty rosły bez automatycznej kontroli linków, limitów `PLAN.md` i `LOG.md` oraz spójności tabeli `QUEUE.md`, więc łatwo było zostawić martwy odnośnik albo wpis po limicie.
 - Decyzja: Dodano `scripts/check_map.py` używający wyłącznie standardowej biblioteki Pythona. Skrypt sprawdza lokalne odnośniki Markdown w `README.md`, `AGENTS.md`, `CLAUDE.md` i `docs/*.md` z uwzględnieniem wielkości liter, wymaga formatu `## N. tytuł (ID)` w `PLAN.md`, limitu pięciu kroków i istnienia kroków w `QUEUE.md`, wykrywa w `QUEUE.md` powtórzone identyfikatory, nieznane statusy i zależności do nieistniejących zadań, a w `LOG.md` przekroczenie 20 wpisów. Wypisuje plik i numer wiersza, zwraca 0 albo 1 i nic nie zapisuje. `scripts/test_check_map.py` pokrywa dziewięć przypadków na katalogach tymczasowych.
 - Powód: Kontrola ma być tania, lokalna i bez dodatkowych pakietów, żeby wychwycić regresję dokumentacji przed commitem.
 - Odrzucone: `scripts/check_text.py` i CI na tym etapie; uruchamianie Gradle albo sieci ze skryptu; zapisywanie plików przez skrypt.
-- Narzędzia i mapa: `docs/STACK.md` opisuje Python 3 ze standardową biblioteką i oba skrypty bez sieci oraz Gradle, a `docs/MAP.md` wskazuje `scripts/check_map.py` i jego testy przy pytaniu o spójność dokumentów.
+- Narzędzia i mapa: `docs/STACK.md` opisuje Python 3 ze standardową biblioteką i oba skrypty bez sieci oraz Gradle, a `docs/MAP.md` wskazuje `scripts/check_map.py` i jego testy przy pytaniu o spójność dokumentów. `AGENTS.md` i `docs/WORKFLOW.md` wymagają uruchomienia skryptu po zmianie dokumentów.
 - Weryfikacja: `python3 scripts/test_check_map.py` przechodzi (9 testów), a `python3 scripts/check_map.py` na bieżącym repozytorium zwraca kod 0. Nadmiar kroku planu i wpisu logu raportowany jest z numerem wiersza. Status I-07 to `gotowe`, a `PLAN.md` startuje teraz od I-04.
 
 ## 2026-09-22: Karty zajęć z dwoma notatkami (I-03)
@@ -155,11 +163,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Etap 12 wymaga łączenia i rozdzielania kalendarzy bez zmiany zajęć i bez utraty ustawień innych kierunków. Operacje muszą być atomowe, a osierocony kalendarz nie może udawać ustawień innego kierunku.
 - Odrzucone: Kopiowanie korekt przy ponownym połączeniu; zachowanie osieroconego kalendarza jako nieużywanego (wybrano usunięcie razem z korektami); zmiana kalendarza poza transakcją.
 - Weryfikacja: `RoomPersistenceTest` sprawdza kopiowanie kalendarza i korekt przy rozdzieleniu, brak scalania i usunięcie osieroconego kalendarza z korektami przy ponownym połączeniu, zachowanie kalendarza wciąż używanego oraz blokadę usunięcia używanego kalendarza. `FakeMakRepository` i `DemoDataSeederTest` odwzorowują nowe operacje. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
-
-## 2026-09-21: Migracja Room do v2
-
-- Fakty: Schemat v1 trzymał kierunki i prowadzących w osobnych tabelach przypisanych do semestru, daty i rytm A/B w semestrze, a zajęcia wskazywały `course_id` i `teacher_id`. Nowy model wymaga globalnych kierunków, kalendarzy akademickich i przypisań.
-- Decyzja: Podniesiono schemat do wersji 2 z tabelami `study_programs`, `academic_calendars` (z `semester_id`), `semester_programs` (studium z `RESTRICT`) oraz zmienionymi `semesters` (id, name, is_active), `classes` (`semester_id`, `semester_program_id`, `teacher_name`), `week_overrides` (`semester_id`, `academic_calendar_id`), `occurrence_changes` (`new_teacher_name`). Złożone klucze obce `(semester_program_id, semester_id)`, `(class_id, semester_id)` i `(academic_calendar_id, semester_id)` uniemożliwiają wskazanie danych z innego semestru. Ręczna `MIGRATION_1_2` kopiuje kierunki, kalendarze, przypisania, zajęcia z nazwą prowadzącego, korekty, notatki i zmiany przez tabele tymczasowe, usuwa stare tabele od podrzędnych i sprawdza `PRAGMA foreign_key_check`, bez polegania na wyłączeniu kluczy obcych. Eksport ma własny `schemaVersion` 2. Ekran semestru czyta wspólny kalendarz; po rozdzieleniu kalendarzy (etap 12) daty pokażą się przy kierunkach, a nagłówek pokaże „Różne kalendarze", a semestr bez przypisań pozostaje stanem pustym.
-- Powód: Model globalnych kierunków i współdzielonych kalendarzy wymaga nowego schematu, a migracja musi zachować dane użytkownika bez częściowych zapisów.
-- Odrzucone: Poleganie na wyłączeniu kluczy obcych w migracji; kaskadowe usuwanie używanego kierunku; automatyczne scalanie kierunków o tej samej nazwie; jeden wspólny tydzień A/B dla różnych kalendarzy; przejściowy podwójny schemat v1 i v2.
-- Weryfikacja: `RoomMigrationTest` tworzy bazę v1 z dwoma kierunkami o tej samej nazwie, zajęciami, korektą, notatką i zmianą, uruchamia migrację i waliduje schemat oraz dane. `RoomPersistenceTest` sprawdza rollback konfiguracji, blokadę usunięcia używanego kierunku i deterministyczny zastępczy semestr. Zaktualizowane testy domenowe i ViewModeli. `clean test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.

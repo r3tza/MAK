@@ -23,6 +23,45 @@ class SettingsScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
+    fun expandableSectionTogglesAt320Dp() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(900.dp)) {
+                    SettingsScreen(
+                        state = SettingsUiState(),
+                        onSemesterSelected = {},
+                        onAddSemester = {},
+                        onConfigureSemester = {},
+                        onDeleteSemester = {},
+                        onConfirmDelete = {},
+                        onCancelDelete = {},
+                        onThemeSelected = {},
+                        onGapThresholdSelected = {},
+                        onExport = {},
+                        onImport = {},
+                        onDismissImportError = {},
+                        onNotificationsEnabled = {},
+                        onEveningNotificationsEnabled = {},
+                        onBeforeClassNotificationsEnabled = {},
+                        onEveningHourSelected = {},
+                        onBeforeClassLeadSelected = {},
+                        notificationsBlocked = false,
+                        onRequestNotificationPermission = {},
+                        onOpenAppSettings = {},
+                        onRetry = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Importuj plan z JSON").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("dane").performClick()
+        composeTestRule.onNodeWithText("Importuj plan z JSON").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("dane").performClick()
+        composeTestRule.onNodeWithText("Importuj plan z JSON").assertDoesNotExist()
+    }
+
+    @Test
     fun settingsScreenOffersImportAt320Dp() {
         var imported = 0
 

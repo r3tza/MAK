@@ -223,7 +223,7 @@ fun SemesterScreen(
                 MakSecondaryAction(
                     text = "Wróć do ustawień",
                     onClick = onBack,
-                    modifier = Modifier.padding(top = 8.dp)
+                    modifier = Modifier.padding(top = MakSpacing.md)
                 )
             }
 
