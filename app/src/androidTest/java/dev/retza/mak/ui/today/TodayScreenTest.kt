@@ -53,6 +53,7 @@ class TodayScreenTest {
                             dateLabel = "Poniedziałek, 12 października",
                             semesterLabel = "Semestr zimowy",
                             weekLabel = "Tydzień A",
+                            hasActiveSemester = true,
                             classCount = 1,
                             items = listOf(item)
                         ),
@@ -92,7 +93,8 @@ class TodayScreenTest {
                         state = TodayUiState(
                             dateLabel = "Poniedziałek, 12 października",
                             semesterLabel = "Semestr zimowy",
-                            weekLabel = "Tydzień A"
+                            weekLabel = "Tydzień A",
+                            hasActiveSemester = true
                         ),
                         onOpenPlan = {},
                         onOpenClass = {},
@@ -105,5 +107,36 @@ class TodayScreenTest {
 
         composeTestRule.onNodeWithText("Dziś bez zajęć").assertIsDisplayed()
         composeTestRule.onAllNodesWithText("0").assertCountEquals(3)
+    }
+
+    @Test
+    fun withoutActiveSemesterHidesSummaryCard() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(
+                    modifier = Modifier
+                        .width(320.dp)
+                        .height(500.dp)
+                ) {
+                    TodayScreen(
+                        state = TodayUiState(
+                            dateLabel = "Brak aktywnego semestru",
+                            semesterLabel = "",
+                            weekLabel = "",
+                            emptyMessage = "Nie masz jeszcze aktywnego semestru."
+                        ),
+                        onOpenPlan = {},
+                        onOpenClass = {},
+                        onStartSetup = {},
+                        onRetry = {},
+                        requiresSetup = true
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Dziś bez zajęć").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Twój plan na dziś").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Skonfiguruj plan").assertIsDisplayed()
     }
 }

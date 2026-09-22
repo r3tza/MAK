@@ -17,6 +17,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -108,6 +109,7 @@ class TodayViewModelTest {
 
         assertEquals("Brak aktywnego semestru", viewModel.today.value.dateLabel)
         assertTrue(viewModel.today.value.items.isEmpty())
+        assertFalse(viewModel.today.value.hasActiveSemester)
     }
 }
 

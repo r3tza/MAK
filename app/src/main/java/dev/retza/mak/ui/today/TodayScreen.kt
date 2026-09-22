@@ -22,6 +22,7 @@ data class TodayUiState(
     val dateLabel: String,
     val semesterLabel: String,
     val weekLabel: String,
+    val hasActiveSemester: Boolean = false,
     val classCount: Int = 0,
     val collisionCount: Int = 0,
     val gapCount: Int = 0,
@@ -51,13 +52,15 @@ fun TodayScreen(
                 state.semesterLabel.takeIf { it.isNotBlank() }
             ).joinToString(", ").ifBlank { null }
         )
-        MakSummaryCard(
-            caption = "Twój plan na dziś",
-            classCount = state.classCount,
-            collisionCount = state.collisionCount,
-            gapCount = state.gapCount,
-            modifier = Modifier.padding(bottom = MakSpacing.xl)
-        )
+        if (state.hasActiveSemester) {
+            MakSummaryCard(
+                caption = "Twój plan na dziś",
+                classCount = state.classCount,
+                collisionCount = state.collisionCount,
+                gapCount = state.gapCount,
+                modifier = Modifier.padding(bottom = MakSpacing.xl)
+            )
+        }
         MakRowTitle(title = "Zajęcia", meta = "Od najwcześniejszego")
         when (state.status) {
             ScreenStatus.Ready -> if (state.items.isEmpty()) {

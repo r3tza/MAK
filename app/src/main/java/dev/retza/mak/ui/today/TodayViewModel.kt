@@ -75,6 +75,7 @@ class TodayViewModel(
             } else {
                 schedule.weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem"
             },
+            hasActiveSemester = true,
             classCount = schedule.occurrences.size,
             collisionCount = uniqueCollisionCount(plan.collisions),
             gapCount = countGaps(schedule.occurrences, thresholdMinutes.toLong()),
