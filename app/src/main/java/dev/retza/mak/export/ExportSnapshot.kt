@@ -2,6 +2,8 @@ package dev.retza.mak.export
 
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.AcademicCalendarEntity
+import dev.retza.mak.data.repository.BackupData
+import dev.retza.mak.data.repository.SemesterBackup
 import dev.retza.mak.data.entity.ClassEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
@@ -32,6 +34,15 @@ data class ExportSnapshot(
                     .sortedBy { it.id }
                     .map(StudyProgramSnapshot::from),
                 semesters = semesters.sortedBy { it.semester.id }.map(SemesterSnapshot::from)
+            )
+
+        fun from(data: BackupData): ExportSnapshot =
+            ExportSnapshot(
+                studyPrograms = data.studyPrograms
+                    .distinctBy { it.id }
+                    .sortedBy { it.id }
+                    .map(StudyProgramSnapshot::from),
+                semesters = data.semesters.sortedBy { it.semester.id }.map(SemesterSnapshot::from)
             )
     }
 }
@@ -76,6 +87,19 @@ data class SemesterSnapshot(
                 weekOverrides = data.weekOverrides.sortedBy { it.id }.map(WeekOverrideSnapshot::from),
                 occurrenceNotes = data.occurrenceNotes.sortedBy { it.id }.map(OccurrenceNoteSnapshot::from),
                 occurrenceChanges = data.occurrenceChanges.sortedBy { it.id }.map(OccurrenceChangeSnapshot::from)
+            )
+
+        fun from(backup: SemesterBackup): SemesterSnapshot =
+            SemesterSnapshot(
+                id = backup.semester.id,
+                name = backup.semester.name,
+                isActive = backup.semester.isActive,
+                calendars = backup.calendars.sortedBy { it.id }.map(AcademicCalendarSnapshot::from),
+                programs = backup.programs.sortedBy { it.id }.map(SemesterProgramSnapshot::from),
+                classes = backup.classes.sortedBy { it.id }.map(ClassSnapshot::from),
+                weekOverrides = backup.weekOverrides.sortedBy { it.id }.map(WeekOverrideSnapshot::from),
+                occurrenceNotes = backup.occurrenceNotes.sortedBy { it.id }.map(OccurrenceNoteSnapshot::from),
+                occurrenceChanges = backup.occurrenceChanges.sortedBy { it.id }.map(OccurrenceChangeSnapshot::from)
             )
     }
 }

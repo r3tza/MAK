@@ -4,10 +4,12 @@ import dev.retza.mak.export.AcademicCalendarSnapshot
 import dev.retza.mak.export.ClassSnapshot
 import dev.retza.mak.export.ExportSnapshot
 import dev.retza.mak.export.JsonExportCodec
+import dev.retza.mak.export.PlanBackupService
 import dev.retza.mak.export.SemesterProgramSnapshot
 import dev.retza.mak.export.SemesterSnapshot
 import dev.retza.mak.export.StudyProgramSnapshot
 import dev.retza.mak.ui.FakeMakRepository
+import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
@@ -35,7 +37,14 @@ class SettingsViewModelTest {
         repository: FakeMakRepository,
         preferences: SettingsPreferences = InMemorySettingsPreferences(),
         sink: FeedbackSink = RecordingFeedbackSink()
-    ) = SettingsViewModel(repository, preferences, sink, mainDispatcher)
+    ) = SettingsViewModel(
+        FakeSemesterRepository(repository),
+        repository,
+        PlanBackupService(repository),
+        preferences,
+        sink,
+        mainDispatcher
+    )
 
     @Test
     fun settingsStateMapsSemestersActiveAndTheme() = runTest(mainDispatcher) {

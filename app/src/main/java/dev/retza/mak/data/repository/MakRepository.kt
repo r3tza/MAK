@@ -1,6 +1,5 @@
 package dev.retza.mak.data.repository
 
-import androidx.room.withTransaction
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.AcademicCalendarEntity
@@ -39,10 +38,6 @@ interface MakRepository {
     fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarEntity>>
 
     fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>>
-
-    suspend fun getAllSemesterData(): List<SemesterWithData>
-
-    suspend fun getAllStudyPrograms(): List<StudyProgramEntity>
 
     suspend fun saveSemester(entity: SemesterEntity): Long
 
@@ -109,8 +104,6 @@ interface MakRepository {
     suspend fun saveOccurrenceChange(entity: OccurrenceChangeEntity): Long
 
     suspend fun deleteOccurrenceChange(id: Long)
-
-    suspend fun replaceAllData(data: BackupData): Long?
 }
 
 @org.koin.core.annotation.Single(binds = [MakRepository::class])
@@ -120,13 +113,6 @@ class RoomMakRepository(
     private val semesterRepository: SemesterRepository
 ) : MakRepository {
     private val semesters = database.semesterDao()
-    private val studyPrograms = database.studyProgramDao()
-    private val calendars = database.academicCalendarDao()
-    private val semesterPrograms = database.semesterProgramDao()
-    private val weekOverrides = database.weekOverrideDao()
-    private val classes = database.classDao()
-    private val occurrenceNotes = database.occurrenceNoteDao()
-    private val occurrenceChanges = database.occurrenceChangeDao()
 
     override fun observeSemesters(): Flow<List<SemesterEntity>> =
         semesterRepository.observeSemesters().map { list -> list.map { it.toEntity() } }
@@ -150,10 +136,6 @@ class RoomMakRepository(
 
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>> =
         semesterRepository.observeWeekOverrides(semesterId).map { list -> list.map { it.toEntity() } }
-
-    override suspend fun getAllSemesterData(): List<SemesterWithData> = semesters.getAllWithData()
-
-    override suspend fun getAllStudyPrograms(): List<StudyProgramEntity> = studyPrograms.getAll()
 
     override suspend fun saveSemester(entity: SemesterEntity): Long =
         semesterRepository.saveSemester(entity.toRecord())
@@ -249,27 +231,4 @@ class RoomMakRepository(
         scheduleRepository.saveOccurrenceChange(entity.toRecord())
 
     override suspend fun deleteOccurrenceChange(id: Long) = scheduleRepository.deleteOccurrenceChange(id)
-
-    override suspend fun replaceAllData(data: BackupData): Long? = database.withTransaction {
-        occurrenceChanges.deleteAll()
-        occurrenceNotes.deleteAll()
-        weekOverrides.deleteAll()
-        classes.deleteAll()
-        semesterPrograms.deleteAll()
-        calendars.deleteAll()
-        studyPrograms.deleteAll()
-        semesters.deleteAll()
-
-        data.studyPrograms.forEach { studyPrograms.insert(it) }
-        data.semesters.forEach { backup ->
-            semesters.insert(backup.semester)
-            backup.calendars.forEach { calendars.insert(it) }
-            backup.programs.forEach { semesterPrograms.insert(it) }
-            backup.classes.forEach { classes.insert(it) }
-            backup.weekOverrides.forEach { weekOverrides.insert(it) }
-            backup.occurrenceNotes.forEach { occurrenceNotes.insert(it) }
-            backup.occurrenceChanges.forEach { occurrenceChanges.insert(it) }
-        }
-        data.activeSemesterId
-    }
 }

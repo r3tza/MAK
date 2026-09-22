@@ -3,8 +3,10 @@ package dev.retza.mak.di
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.repository.MakRepository
+import dev.retza.mak.data.repository.PlanBackupGateway
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
+import dev.retza.mak.export.PlanBackupService
 import dev.retza.mak.ui.AppViewModel
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.FeedbackSink
@@ -30,6 +32,8 @@ class KoinGraphTest {
         assertNotNull(koin.get<MakRepository>())
         assertNotNull(koin.get<ScheduleRepository>())
         assertNotNull(koin.get<SemesterRepository>())
+        assertNotNull(koin.get<PlanBackupGateway>())
+        assertNotNull(koin.get<PlanBackupService>())
         assertNotNull(koin.get<AppDatabase>())
         assertNotNull(koin.get<FeedbackSink>())
         assertNotNull(koin.get<SettingsPreferences>())

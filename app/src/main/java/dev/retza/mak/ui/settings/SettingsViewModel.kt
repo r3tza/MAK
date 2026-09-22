@@ -3,14 +3,14 @@ package dev.retza.mak.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
-import dev.retza.mak.data.database.SemesterWithData
-import dev.retza.mak.data.entity.SemesterEntity
-import dev.retza.mak.data.repository.BackupData
-import dev.retza.mak.data.repository.MakRepository
-import dev.retza.mak.export.ExportImporter
-import dev.retza.mak.export.ExportSnapshot
-import dev.retza.mak.export.ImportSnapshotResult
-import dev.retza.mak.export.JsonExportCodec
+import dev.retza.mak.data.repository.ScheduleRepository
+import dev.retza.mak.data.repository.SemesterRecord
+import dev.retza.mak.data.repository.SemesterRepository
+import dev.retza.mak.domain.ActivePlanData
+import dev.retza.mak.export.ImportHandle
+import dev.retza.mak.export.ImportPreparation
+import dev.retza.mak.export.ImportSummary
+import dev.retza.mak.export.PlanBackupService
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
@@ -56,7 +56,9 @@ private data class SettingsLocalState(
 @OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class SettingsViewModel(
-    private val repository: MakRepository,
+    private val semesterRepository: SemesterRepository,
+    private val scheduleRepository: ScheduleRepository,
+    private val planBackupService: PlanBackupService,
     private val preferences: SettingsPreferences,
     private val feedbackSink: FeedbackSink,
     private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.Default
@@ -66,18 +68,18 @@ class SettingsViewModel(
     private val effectsChannel = Channel<SettingsEffect>(Channel.BUFFERED)
     val effects = effectsChannel.receiveAsFlow()
 
-    private var pendingImport: BackupData? = null
+    private var pendingImport: ImportHandle? = null
 
-    private val activeSemesterData = repository.observeActiveSemester().flatMapLatest { semester ->
-        if (semester == null) flowOf(null) else repository.observeSemesterData(semester.id)
+    private val activePlanData = semesterRepository.observeActiveSemester().flatMapLatest { semester ->
+        if (semester == null) flowOf(null) else scheduleRepository.observeActivePlanData(semester.id)
     }
 
     val themeMode: StateFlow<ThemeMode> = preferences.theme
         .stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.System)
 
     val settings: StateFlow<SettingsUiState> = combine(
-        repository.observeSemesters(),
-        activeSemesterData,
+        semesterRepository.observeSemesters(),
+        activePlanData,
         preferences.theme,
         preferences.collisionNotifications,
         local
@@ -95,7 +97,7 @@ class SettingsViewModel(
         local.update { it.copy(isSelectingSemester = true) }
         viewModelScope.launch {
             try {
-                repository.setActiveSemester(semesterId)
+                semesterRepository.setActiveSemester(semesterId)
                 feedbackSink.publish(UiFeedback("Zmieniono aktywny semestr", UiFeedbackKind.Success))
             } catch (error: CancellationException) {
                 throw error
@@ -124,7 +126,7 @@ class SettingsViewModel(
         local.update { it.copy(isDeletingSemester = true) }
         viewModelScope.launch {
             try {
-                repository.deleteSemesterAndSelectFallback(id)
+                semesterRepository.deleteSemesterAndSelectFallback(id)
                 local.update { it.copy(semesterToDeleteId = null) }
                 feedbackSink.publish(UiFeedback("Usunięto semestr", UiFeedbackKind.Success))
             } catch (error: CancellationException) {
@@ -160,12 +162,7 @@ class SettingsViewModel(
         viewModelScope.launch {
             try {
                 val bytes = withContext(backgroundDispatcher) {
-                    JsonExportCodec.encode(
-                        ExportSnapshot.from(
-                            repository.getAllSemesterData(),
-                            repository.getAllStudyPrograms()
-                        )
-                    )
+                    planBackupService.exportJson()
                 }
                 onReady(bytes)
             } catch (error: CancellationException) {
@@ -232,20 +229,20 @@ class SettingsViewModel(
         local.update { it.copy(isPreparingImport = true, importErrorMessage = null) }
         viewModelScope.launch {
             try {
-                val result = withContext(backgroundDispatcher) {
-                    ExportImporter.prepare(JsonExportCodec.decode(bytes))
+                val preparation = withContext(backgroundDispatcher) {
+                    planBackupService.prepareImport(bytes)
                 }
-                when (result) {
-                    is ImportSnapshotResult.Invalid -> local.update {
+                when (preparation) {
+                    is ImportPreparation.Invalid -> local.update {
                         it.copy(
-                            importErrorMessage = result.errors.firstOrNull()
+                            importErrorMessage = preparation.errors.firstOrNull()
                                 ?: "Nieprawidłowy plik kopii."
                         )
                     }
 
-                    is ImportSnapshotResult.Ready -> {
-                        pendingImport = result.data
-                        local.update { it.copy(importPreview = result.data.toImportPreviewUi()) }
+                    is ImportPreparation.Ready -> {
+                        pendingImport = preparation.handle
+                        local.update { it.copy(importPreview = preparation.summary.toImportPreviewUi()) }
                         effectsChannel.trySend(SettingsEffect.OpenImportPreview)
                     }
                 }
@@ -273,12 +270,12 @@ class SettingsViewModel(
     }
 
     fun confirmImport() {
-        val data = pendingImport ?: return
+        val handle = pendingImport ?: return
         if (local.value.isReplacingData) return
         local.update { it.copy(isReplacingData = true, importErrorMessage = null) }
         viewModelScope.launch {
             try {
-                repository.replaceAllData(data)
+                planBackupService.confirmImport(handle)
                 pendingImport = null
                 local.update { it.copy(importPreview = null) }
                 feedbackSink.publish(UiFeedback("Zaimportowano plan", UiFeedbackKind.Success))
@@ -295,26 +292,26 @@ class SettingsViewModel(
     }
 }
 
-private fun BackupData.toImportPreviewUi(): ImportPreviewUi = ImportPreviewUi(
-    semesterCount = semesters.size,
-    programCount = studyPrograms.size,
-    classCount = semesters.sumOf { it.classes.size },
-    overrideCount = semesters.sumOf { it.weekOverrides.size },
-    noteCount = semesters.sumOf { it.occurrenceNotes.size },
-    changeCount = semesters.sumOf { it.occurrenceChanges.size },
-    activeSemesterName = semesters.firstOrNull { it.semester.isActive }?.semester?.name
+private fun ImportSummary.toImportPreviewUi(): ImportPreviewUi = ImportPreviewUi(
+    semesterCount = semesterCount,
+    programCount = programCount,
+    classCount = classCount,
+    overrideCount = overrideCount,
+    noteCount = noteCount,
+    changeCount = changeCount,
+    activeSemesterName = activeSemesterName
 )
 
 private fun buildSettingsState(
-    semesterList: List<SemesterEntity>,
-    activeData: SemesterWithData?,
+    semesterList: List<SemesterRecord>,
+    activeData: ActivePlanData?,
     theme: ThemeMode,
     notifications: CollisionNotificationPreferences,
     local: SettingsLocalState
 ): SettingsUiState = SettingsUiState(
     semesters = semesterList.map { semester ->
-        val isActive = semester.id == activeData?.semester?.id
-        val calendar = activeData?.academicCalendars?.minByOrNull { it.id }
+        val isActive = semester.id.toString() == activeData?.semester?.id
+        val calendar = activeData?.calendars?.firstOrNull()
         SemesterUi(
             id = semester.id.toString(),
             name = semester.name,

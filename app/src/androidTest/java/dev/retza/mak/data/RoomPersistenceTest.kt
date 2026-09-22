@@ -19,6 +19,7 @@ import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.RoomMakRepository
+import dev.retza.mak.data.repository.RoomPlanBackupGateway
 import dev.retza.mak.data.repository.RoomScheduleRepository
 import dev.retza.mak.data.repository.RoomSemesterRepository
 import dev.retza.mak.data.repository.SemesterBackup
@@ -317,7 +318,7 @@ class RoomPersistenceTest {
             )
         )
 
-        val activeId = repository.replaceAllData(data)
+        val activeId = RoomPlanBackupGateway(database!!).replaceAll(data)
 
         assertEquals(500L, activeId)
         assertNull(database!!.semesterDao().findById(oldSemesterId))
@@ -352,7 +353,7 @@ class RoomPersistenceTest {
         )
 
         try {
-            repository.replaceAllData(data)
+            RoomPlanBackupGateway(database!!).replaceAll(data)
             fail("Expected replaceAllData to fail")
         } catch (_: Exception) {
         }

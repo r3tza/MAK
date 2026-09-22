@@ -12,6 +12,8 @@ import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
+import dev.retza.mak.data.repository.PlanBackupGateway
+import dev.retza.mak.data.repository.SemesterBackup
 import dev.retza.mak.data.repository.ClassRecord
 import dev.retza.mak.data.repository.MakRepository
 import dev.retza.mak.data.repository.OccurrenceChangeRecord
@@ -36,7 +38,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class FakeMakRepository : MakRepository, ScheduleRepository {
+internal class FakeMakRepository : MakRepository, ScheduleRepository, PlanBackupGateway {
     val semester = SemesterEntity(id = 1L, name = "Semestr", isActive = true)
     val secondSemester = SemesterEntity(id = 2L, name = "Semestr drugi", isActive = false)
     val calendar = AcademicCalendarEntity(
@@ -172,9 +174,22 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository {
         flowOf(occurrenceNotes.filter { it.classId == classId }.map { it.toRecord() })
     override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeRecord>> =
         flowOf(occurrenceChanges.filter { it.classId == classId }.map { it.toRecord() })
-    override suspend fun getAllSemesterData(): List<SemesterWithData> {
+    override suspend fun snapshot(): BackupData {
         if (failGetAllSemesterData) throw IllegalStateException("export failed")
-        return emptyList()
+        return BackupData(
+            studyPrograms = studyPrograms,
+            semesters = semesterFlow.value.map { semester ->
+                SemesterBackup(
+                    semester = semester,
+                    calendars = calendars.filter { it.semesterId == semester.id },
+                    programs = semesterPrograms.filter { it.semesterId == semester.id },
+                    classes = classes.filter { it.semesterId == semester.id },
+                    weekOverrides = weekOverrides.filter { it.semesterId == semester.id },
+                    occurrenceNotes = occurrenceNotes,
+                    occurrenceChanges = occurrenceChanges
+                )
+            }
+        )
     }
 
     override suspend fun saveSemester(entity: SemesterEntity): Long {
@@ -320,7 +335,6 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository {
         return SetupConfigurationIds(semesterId, studyProgramId, calendarId, semesterProgramId)
     }
 
-    override suspend fun getAllStudyPrograms(): List<StudyProgramEntity> = studyPrograms
 
     override suspend fun saveCalendar(entity: AcademicCalendarEntity): Long {
         awaitSave()
@@ -560,7 +574,7 @@ internal class FakeMakRepository : MakRepository, ScheduleRepository {
         occurrenceChanges.removeAll { it.id == id }
     }
 
-    override suspend fun replaceAllData(data: BackupData): Long? {
+    override suspend fun replaceAll(data: BackupData): Long? {
         awaitSave()
         events += "replaceAllData"
         semesterFlow.value = data.semesters.map { it.semester }
