@@ -8,7 +8,7 @@ import dev.retza.mak.export.PlanBackupService
 import dev.retza.mak.export.SemesterProgramSnapshot
 import dev.retza.mak.export.SemesterSnapshot
 import dev.retza.mak.export.StudyProgramSnapshot
-import dev.retza.mak.ui.FakeMakRepository
+import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackSink
@@ -34,7 +34,7 @@ class SettingsViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
     private fun viewModel(
-        repository: FakeMakRepository,
+        repository: FakeRepository,
         preferences: SettingsPreferences = InMemorySettingsPreferences(),
         sink: FeedbackSink = RecordingFeedbackSink()
     ) = SettingsViewModel(
@@ -48,7 +48,7 @@ class SettingsViewModelTest {
 
     @Test
     fun settingsStateMapsSemestersActiveAndTheme() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.settings.collect {} }
         advanceUntilIdle()
@@ -62,7 +62,7 @@ class SettingsViewModelTest {
 
     @Test
     fun selectThemePersistsAndSelectsOption() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val preferences = InMemorySettingsPreferences()
         val viewModel = viewModel(repository, preferences)
         backgroundScope.launch { viewModel.settings.collect {} }
@@ -76,7 +76,7 @@ class SettingsViewModelTest {
 
     @Test
     fun selectingUnknownThemeIdKeepsSystem() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
 
         viewModel.selectTheme("neon")
@@ -94,7 +94,7 @@ class SettingsViewModelTest {
 
     @Test
     fun themeWriteFailurePublishesSingleErrorAndClearsFlag() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val preferences = InMemorySettingsPreferences()
         preferences.failNextWrite = true
         val sink = RecordingFeedbackSink()
@@ -114,7 +114,7 @@ class SettingsViewModelTest {
 
     @Test
     fun doubleThemeSelectionRunsOneWrite() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val preferences = InMemorySettingsPreferences()
         preferences.writeGate = CompletableDeferred()
         val viewModel = viewModel(repository, preferences)
@@ -133,7 +133,7 @@ class SettingsViewModelTest {
 
     @Test
     fun selectSemesterPublishesSuccessAndSetsActive() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink = sink)
         backgroundScope.launch { viewModel.settings.collect {} }
@@ -148,7 +148,7 @@ class SettingsViewModelTest {
 
     @Test
     fun selectSemesterFailureKeepsActiveAndPublishesError() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.failSetActiveSemester = true
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink = sink)
@@ -166,7 +166,7 @@ class SettingsViewModelTest {
 
     @Test
     fun doubleSemesterSelectionRunsOneOperation() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.activeSemesterGate = CompletableDeferred()
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink = sink)
@@ -186,7 +186,7 @@ class SettingsViewModelTest {
 
     @Test
     fun deletingInactiveSemesterKeepsActive() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink = sink)
         backgroundScope.launch { viewModel.settings.collect {} }
@@ -203,7 +203,7 @@ class SettingsViewModelTest {
 
     @Test
     fun deletingActiveSemesterSelectsFallback() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.settings.collect {} }
         advanceUntilIdle()
@@ -218,7 +218,7 @@ class SettingsViewModelTest {
 
     @Test
     fun deletingLastSemesterClearsActive() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.settings.collect {} }
         advanceUntilIdle()
@@ -236,7 +236,7 @@ class SettingsViewModelTest {
 
     @Test
     fun deleteFailureKeepsDialogAndPublishesError() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.failSaves = true
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink = sink)
@@ -258,7 +258,7 @@ class SettingsViewModelTest {
 
     @Test
     fun doubleConfirmRunsOneDeletion() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.saveGate = CompletableDeferred()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.settings.collect {} }
@@ -277,7 +277,7 @@ class SettingsViewModelTest {
 
     @Test
     fun cancelledDeletionPublishesNoErrorAndClearsFlag() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.cancelSaves = true
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink = sink)
@@ -295,7 +295,7 @@ class SettingsViewModelTest {
 
     @Test
     fun exportKeepsSchemaVersion() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         var bytes: ByteArray? = null
 
@@ -308,7 +308,7 @@ class SettingsViewModelTest {
 
     @Test
     fun exportSuccessPublishesSingleMessage() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink = sink)
 
@@ -322,7 +322,7 @@ class SettingsViewModelTest {
 
     @Test
     fun exportReadFailurePublishesSingleError() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.failGetAllSemesterData = true
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink = sink)
@@ -338,7 +338,7 @@ class SettingsViewModelTest {
 
     @Test
     fun exportWriteFailurePublishesSingleError() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink = sink)
 
@@ -355,7 +355,7 @@ class SettingsViewModelTest {
 
     @Test
     fun notificationsTogglePersistsAndMapsToState() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val preferences = InMemorySettingsPreferences()
         val viewModel = viewModel(repository, preferences)
         backgroundScope.launch { viewModel.settings.collect {} }
@@ -370,7 +370,7 @@ class SettingsViewModelTest {
 
     @Test
     fun notificationHourAndLeadPersist() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val preferences = InMemorySettingsPreferences()
         val viewModel = viewModel(repository, preferences)
         backgroundScope.launch { viewModel.settings.collect {} }
@@ -392,7 +392,7 @@ class SettingsViewModelTest {
 
     @Test
     fun notificationWriteFailurePublishesError() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val preferences = InMemorySettingsPreferences()
         preferences.failNextWrite = true
         val sink = RecordingFeedbackSink()
@@ -412,7 +412,7 @@ class SettingsViewModelTest {
 
     @Test
     fun prepareImportAcceptsValidSnapshotAndEmitsOpenEffect() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.settings.collect {} }
         val effects = mutableListOf<SettingsEffect>()
@@ -432,7 +432,7 @@ class SettingsViewModelTest {
 
     @Test
     fun prepareImportRejectsUnsupportedVersion() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.settings.collect {} }
         advanceUntilIdle()
@@ -449,7 +449,7 @@ class SettingsViewModelTest {
 
     @Test
     fun prepareImportRejectsMalformedBytes() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.settings.collect {} }
         advanceUntilIdle()
@@ -462,7 +462,7 @@ class SettingsViewModelTest {
 
     @Test
     fun confirmImportReplacesDataAndEmitsCloseEffect() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink = sink)
         backgroundScope.launch { viewModel.settings.collect {} }
@@ -487,7 +487,7 @@ class SettingsViewModelTest {
 
     @Test
     fun cancelImportClosesPreviewWithoutReplacing() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.settings.collect {} }
         val effects = mutableListOf<SettingsEffect>()
@@ -509,7 +509,7 @@ class SettingsViewModelTest {
 
     @Test
     fun importReadErrorSetsMessage() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.settings.collect {} }
         advanceUntilIdle()
@@ -522,7 +522,7 @@ class SettingsViewModelTest {
 
     @Test
     fun preferencesRestoreThemeForNewInstance() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val preferences = InMemorySettingsPreferences()
         val first = viewModel(repository, preferences)
         first.selectTheme("light")

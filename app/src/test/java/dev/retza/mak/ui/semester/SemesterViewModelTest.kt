@@ -3,7 +3,7 @@ package dev.retza.mak.ui.semester
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
-import dev.retza.mak.ui.FakeMakRepository
+import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
@@ -30,15 +30,15 @@ class SemesterViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
-    private fun viewModel(repository: FakeMakRepository) =
+    private fun viewModel(repository: FakeRepository) =
         SemesterViewModel(FakeSemesterRepository(repository), FeedbackController())
 
-    private fun recordingViewModel(repository: FakeMakRepository, sink: RecordingFeedbackSink) =
+    private fun recordingViewModel(repository: FakeRepository, sink: RecordingFeedbackSink) =
         SemesterViewModel(FakeSemesterRepository(repository), sink)
 
     @Test
     fun openMapsFormCoursesAndOverrides() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.weekOverrides += WeekOverrideEntity(
             id = 5L,
             semesterId = 1L,
@@ -68,7 +68,7 @@ class SemesterViewModelTest {
 
     @Test
     fun openWaitsForFirstDataEmission() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.occurrenceDataGate = CompletableDeferred()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
@@ -87,7 +87,7 @@ class SemesterViewModelTest {
 
     @Test
     fun lastOpenWinsWhenDataArrivesLate() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.occurrenceDataGate = CompletableDeferred()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
@@ -106,7 +106,7 @@ class SemesterViewModelTest {
 
     @Test
     fun invalidIdDoesNotKeepPreviousSemester() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
         viewModel.open("1")
@@ -122,7 +122,7 @@ class SemesterViewModelTest {
 
     @Test
     fun saveRejectsBlankNameAndReversedDates() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -153,7 +153,7 @@ class SemesterViewModelTest {
 
     @Test
     fun saveRunsOnceAndPublishesSuccessWithOneEffect() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -179,7 +179,7 @@ class SemesterViewModelTest {
 
     @Test
     fun saveErrorKeepsFormAndPublishesError() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -204,7 +204,7 @@ class SemesterViewModelTest {
 
     @Test
     fun cancellationDoesNotPublishOrKeepSaving() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -221,7 +221,7 @@ class SemesterViewModelTest {
 
     @Test
     fun addCourseRejectsBlankName() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -239,7 +239,7 @@ class SemesterViewModelTest {
 
     @Test
     fun addCourseUsesDefaultColorAndPublishesSuccess() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -261,7 +261,7 @@ class SemesterViewModelTest {
 
     @Test
     fun addCourseRunsOnce() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -283,7 +283,7 @@ class SemesterViewModelTest {
 
     @Test
     fun addCourseErrorKeepsDraftAndPublishesError() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -304,7 +304,7 @@ class SemesterViewModelTest {
 
     @Test
     fun deleteCourseRunsOnceAndPublishesSuccess() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -329,7 +329,7 @@ class SemesterViewModelTest {
 
     @Test
     fun deleteCourseErrorKeepsItemAndPublishesError() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -349,7 +349,7 @@ class SemesterViewModelTest {
 
     @Test
     fun addCourseCancellationDoesNotPublish() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -367,7 +367,7 @@ class SemesterViewModelTest {
 
     @Test
     fun saveOverrideRejectsNonMonday() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -386,7 +386,7 @@ class SemesterViewModelTest {
 
     @Test
     fun saveNewOverridePublishesAddedMessage() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -417,7 +417,7 @@ class SemesterViewModelTest {
 
     @Test
     fun saveEditedOverridePublishesSavedMessage() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.weekOverrides += WeekOverrideEntity(
             id = 5L,
             semesterId = 1L,
@@ -449,7 +449,7 @@ class SemesterViewModelTest {
 
     @Test
     fun saveOverrideRunsOnce() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -471,7 +471,7 @@ class SemesterViewModelTest {
 
     @Test
     fun saveOverrideErrorKeepsFormOpen() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -493,7 +493,7 @@ class SemesterViewModelTest {
 
     @Test
     fun deleteOverrideRunsOnceAndPublishesSuccess() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.weekOverrides += WeekOverrideEntity(
             id = 5L,
             semesterId = 1L,
@@ -526,7 +526,7 @@ class SemesterViewModelTest {
 
     @Test
     fun deleteOverrideCancellationDoesNotPublish() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.weekOverrides += WeekOverrideEntity(
             id = 5L,
             semesterId = 1L,
@@ -551,7 +551,7 @@ class SemesterViewModelTest {
 
     @Test
     fun addCourseWithSeparateCalendarCreatesCopy() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -577,7 +577,7 @@ class SemesterViewModelTest {
 
     @Test
     fun addCourseSharedModeUsesSelectedCalendar() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -595,7 +595,7 @@ class SemesterViewModelTest {
 
     @Test
     fun selectCourseProgramPrefillsNameAndColor() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
         viewModel.open("1")
@@ -610,7 +610,7 @@ class SemesterViewModelTest {
 
     @Test
     fun addCourseRejectsProgramAlreadyAssigned() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -628,7 +628,7 @@ class SemesterViewModelTest {
 
     @Test
     fun refreshDropsCourseCalendarThatWasRemoved() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
         viewModel.open("1")
@@ -643,7 +643,7 @@ class SemesterViewModelTest {
 
     @Test
     fun selectingOverrideCalendarShowsOnlyItsOverrides() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -688,7 +688,7 @@ class SemesterViewModelTest {
 
     @Test
     fun reconnectMarksUnusedSourceAndMovesAssignment() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -722,7 +722,7 @@ class SemesterViewModelTest {
 
     @Test
     fun separateCourseCalendarPublishesSuccess() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -743,7 +743,7 @@ class SemesterViewModelTest {
 
     @Test
     fun unparsableIdClearsPreviousSemester() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
         viewModel.open("1")
@@ -759,7 +759,7 @@ class SemesterViewModelTest {
 
     @Test
     fun lateSaveFromPreviousSessionDoesNotCloseOrModifyCurrentSemester() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()

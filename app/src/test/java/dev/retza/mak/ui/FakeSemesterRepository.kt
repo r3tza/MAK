@@ -16,7 +16,7 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.map
 
 internal class FakeSemesterRepository(
-    private val delegate: FakeMakRepository
+    private val delegate: FakeRepository
 ) : SemesterRepository {
     override fun observeSemesters(): Flow<List<SemesterRecord>> =
         delegate.observeSemesters().map { list -> list.map { it.toRecord() } }

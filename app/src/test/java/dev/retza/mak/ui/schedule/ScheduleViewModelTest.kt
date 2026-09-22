@@ -4,7 +4,7 @@ import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.domain.ActivePlanProvider
-import dev.retza.mak.ui.FakeMakRepository
+import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
@@ -33,11 +33,11 @@ class ScheduleViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
-    private fun viewModel(repository: FakeMakRepository) = ScheduleViewModel(FakeSemesterRepository(repository), repository, clock, ActivePlanProvider())
+    private fun viewModel(repository: FakeRepository) = ScheduleViewModel(FakeSemesterRepository(repository), repository, clock, ActivePlanProvider())
 
     @Test
     fun initialStateMapsActiveSemesterPlan() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
@@ -53,7 +53,7 @@ class ScheduleViewModelTest {
 
     @Test
     fun changingSemesterDropsFilterThatNoLongerExists() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
@@ -72,7 +72,7 @@ class ScheduleViewModelTest {
 
     @Test
     fun weekAndMonthNavigationUpdateTheState() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
@@ -89,7 +89,7 @@ class ScheduleViewModelTest {
 
     @Test
     fun savingVisibleOverrideTargetsSelectedCourseCalendar() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val result = repository.addSeparatedSemesterProgram(
             semesterId = 1L,
             studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(
@@ -112,7 +112,7 @@ class ScheduleViewModelTest {
 
     @Test
     fun savingVisibleOverrideWithAllAndMultipleCalendarsIsIgnored() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.addSeparatedSemesterProgram(
             semesterId = 1L,
             studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(
@@ -133,7 +133,7 @@ class ScheduleViewModelTest {
 
     @Test
     fun selectCalendarDayUpdatesSelection() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
@@ -146,7 +146,7 @@ class ScheduleViewModelTest {
 
     @Test
     fun openNewClassForSelectedCalendarDayEmitsEffectWithSelectedDate() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         val effects = mutableListOf<ScheduleEffect>()
         backgroundScope.launch { viewModel.effects.collect { effects += it } }
@@ -161,7 +161,7 @@ class ScheduleViewModelTest {
 
     @Test
     fun saveVisibleWeekOverrideWritesSelectedWeek() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
@@ -177,7 +177,7 @@ class ScheduleViewModelTest {
 
     @Test
     fun clearVisibleWeekOverrideDeletesExistingCorrection() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.weekOverrides += WeekOverrideEntity(
             id = 1L,
             semesterId = 1L,

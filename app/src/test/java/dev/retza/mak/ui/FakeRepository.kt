@@ -37,7 +37,7 @@ import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 
 @OptIn(ExperimentalCoroutinesApi::class)
-internal class FakeMakRepository : ScheduleRepository, PlanBackupGateway {
+internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
     val semester = SemesterEntity(id = 1L, name = "Semestr", isActive = true)
     val secondSemester = SemesterEntity(id = 2L, name = "Semestr drugi", isActive = false)
     val calendar = AcademicCalendarEntity(

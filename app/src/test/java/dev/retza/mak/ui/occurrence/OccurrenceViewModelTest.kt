@@ -1,7 +1,7 @@
 package dev.retza.mak.ui.occurrence
 
 import dev.retza.mak.domain.ActivePlanProvider
-import dev.retza.mak.ui.FakeMakRepository
+import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
@@ -28,17 +28,17 @@ class OccurrenceViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
-    private fun occurrenceViewModel(repository: FakeMakRepository) =
+    private fun occurrenceViewModel(repository: FakeRepository) =
         OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = FeedbackController())
 
     private fun recordingViewModel(
-        repository: FakeMakRepository,
+        repository: FakeRepository,
         sink: RecordingFeedbackSink
     ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = sink)
 
     @Test
     fun openValidOccurrenceBuildsDetails() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = occurrenceViewModel(repository)
         advanceUntilIdle()
 
@@ -55,7 +55,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun detailsUseAssignmentCalendarRange() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val result = repository.addSeparatedSemesterProgram(
             semesterId = 1L,
             studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(
@@ -85,7 +85,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun openInvalidArgsLeavesDetailsEmpty() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = occurrenceViewModel(repository)
         advanceUntilIdle()
 
@@ -105,7 +105,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun openWaitsForFirstSemesterDataEmission() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.occurrenceDataGate = CompletableDeferred()
         val viewModel = occurrenceViewModel(repository)
         advanceUntilIdle()
@@ -126,7 +126,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun lastOpenWinsWhenDataArrivesLate() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.classes += repository.classes.single().copy(id = 2L, name = "Matematyka")
         repository.occurrenceDataGate = CompletableDeferred()
         val viewModel = occurrenceViewModel(repository)
@@ -144,7 +144,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun sharedNoteSaveKeepsEditTypedDuringSave() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = occurrenceViewModel(repository)
         advanceUntilIdle()
         viewModel.open("1:2026-09-21")
@@ -171,7 +171,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun sharedNoteSaveErrorKeepsDraftAndClearsSaving() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = occurrenceViewModel(repository)
         advanceUntilIdle()
         viewModel.open("1:2026-09-21")
@@ -192,7 +192,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun occurrenceNoteSaveDeletesOnEmpty() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = occurrenceViewModel(repository)
         advanceUntilIdle()
         viewModel.open("1:2026-09-21")
@@ -221,7 +221,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun occurrenceNoteSaveKeepsEditTypedDuringSave() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = occurrenceViewModel(repository)
         advanceUntilIdle()
         viewModel.open("1:2026-09-21")
@@ -247,7 +247,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun occurrenceChangeSaveRefreshesStatusAfterEditedDraft() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = occurrenceViewModel(repository)
         advanceUntilIdle()
         viewModel.open("1:2026-09-21")
@@ -268,7 +268,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun deleteSelectedClassEmitsCloseExactlyOnce() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = occurrenceViewModel(repository)
         advanceUntilIdle()
         viewModel.open("1:2026-09-21")
@@ -287,7 +287,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun noChangeDoesNotSaveOrPublish() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -304,7 +304,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun modifiedChangePublishesSuccessAfterSave() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -325,7 +325,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun movedChangePublishesMovedMessage() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -343,7 +343,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun cancelAndRestorePublishMessages() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -368,7 +368,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun invalidTimeRangeIsRejectedWithoutSaveOrFeedback() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -387,7 +387,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun outOfSemesterDateIsRejectedWithoutSaveOrFeedback() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -406,7 +406,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun occurrenceChangeErrorKeepsDraftAndPublishesOneError() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -429,7 +429,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun sharedNotePublishesSaveAndDeleteMessages() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -451,7 +451,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun occurrenceNotePublishesSaveAndDeleteMessages() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -473,7 +473,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun repositoryErrorPublishesSingleErrorAndKeepsDraft() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -500,7 +500,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun repeatedSharedNoteSaveRunsOnce() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -522,7 +522,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun repeatedOccurrenceNoteSaveRunsOnce() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -544,7 +544,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun repeatedOccurrenceChangeSaveRunsOnce() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -566,7 +566,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun repeatedCancelRunsOnce() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -587,7 +587,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun repeatedRestoreRunsOnce() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -612,7 +612,7 @@ class OccurrenceViewModelTest {
 
     @Test
     fun cancellationDoesNotPublishErrorAndClearsSavingFlags() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()

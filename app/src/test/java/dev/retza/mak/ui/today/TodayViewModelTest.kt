@@ -1,7 +1,7 @@
 package dev.retza.mak.ui.today
 
 import dev.retza.mak.domain.ActivePlanProvider
-import dev.retza.mak.ui.FakeMakRepository
+import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import java.time.Clock
@@ -26,7 +26,7 @@ class TodayViewModelTest {
 
     @Test
     fun todayStateMapsActiveSemesterPlan() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = TodayViewModel(FakeSemesterRepository(repository), repository, Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
@@ -41,7 +41,7 @@ class TodayViewModelTest {
 
     @Test
     fun refreshTodayUpdatesTheDate() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val clock = MutableClock(Instant.parse("2026-09-21T08:00:00Z"), zone)
         val viewModel = TodayViewModel(FakeSemesterRepository(repository), repository, clock, ActivePlanProvider())
         backgroundScope.launch { viewModel.today.collect {} }
@@ -57,7 +57,7 @@ class TodayViewModelTest {
 
     @Test
     fun withoutActiveSemesterShowsEmptyState() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.clearActiveSemester()
         val viewModel = TodayViewModel(FakeSemesterRepository(repository), repository, Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
         backgroundScope.launch { viewModel.today.collect {} }

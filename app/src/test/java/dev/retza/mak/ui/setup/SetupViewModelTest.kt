@@ -1,6 +1,6 @@
 package dev.retza.mak.ui.setup
 
-import dev.retza.mak.ui.FakeMakRepository
+import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
@@ -26,7 +26,7 @@ class SetupViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
     private fun viewModel(
-        repository: FakeMakRepository,
+        repository: FakeRepository,
         sink: FeedbackSink = FeedbackController()
     ) = SetupViewModel(FakeSemesterRepository(repository), sink)
 
@@ -36,7 +36,7 @@ class SetupViewModelTest {
 
     @Test
     fun invalidSemesterFormShowsErrorsWithoutAdvancing() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         viewModel.update {
             it.copy(semesterName = "  ", startDate = "2026-09-01", endDate = "2026-08-01")
@@ -52,7 +52,7 @@ class SetupViewModelTest {
 
     @Test
     fun semesterStepOnlyValidatesAndAdvances() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         viewModel.fillValidSemester()
 
@@ -65,7 +65,7 @@ class SetupViewModelTest {
 
     @Test
     fun blankCourseNameShowsErrorWithoutWriting() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         viewModel.fillValidSemester()
         viewModel.next()
@@ -81,7 +81,7 @@ class SetupViewModelTest {
 
     @Test
     fun saveConfigurationWritesSemesterAndCourseTogether() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         viewModel.fillValidSemester()
         viewModel.next()
@@ -103,7 +103,7 @@ class SetupViewModelTest {
 
     @Test
     fun failedSaveKeepsDraftsAndStep() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.failSetupConfiguration = true
         val viewModel = viewModel(repository)
         viewModel.fillValidSemester()
@@ -123,7 +123,7 @@ class SetupViewModelTest {
 
     @Test
     fun doubleClickRunsOneTransactionAndOneFeedback() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.saveGate = CompletableDeferred()
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink)
@@ -147,7 +147,7 @@ class SetupViewModelTest {
 
     @Test
     fun backAndResaveUpdatesExistingRecordsWithoutDuplicates() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         viewModel.fillValidSemester()
         viewModel.next()
@@ -170,7 +170,7 @@ class SetupViewModelTest {
 
     @Test
     fun startDuringSaveResetsTheWizardWithoutFeedback() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.saveGate = CompletableDeferred()
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink)
@@ -192,7 +192,7 @@ class SetupViewModelTest {
 
     @Test
     fun validationDoesNotPublishFeedback() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink)
 
@@ -209,7 +209,7 @@ class SetupViewModelTest {
 
     @Test
     fun successfulSavePublishesSingleMessage() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink)
         viewModel.fillValidSemester()
@@ -225,7 +225,7 @@ class SetupViewModelTest {
 
     @Test
     fun failedSavePublishesSingleError() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.failSetupConfiguration = true
         val sink = RecordingFeedbackSink()
         val viewModel = viewModel(repository, sink)
@@ -242,7 +242,7 @@ class SetupViewModelTest {
 
     @Test
     fun finishAndReturnToSettingsEmitOneEffect() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         val effects = mutableListOf<SetupEffect>()
         backgroundScope.launch { viewModel.effects.collect { effects += it } }
@@ -268,7 +268,7 @@ class SetupViewModelTest {
 
     @Test
     fun startResumesExistingSemesterAtCourseStep() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
 
         viewModel.start(
@@ -300,7 +300,7 @@ class SetupViewModelTest {
 
     @Test
     fun backMovesThroughStepsInOrder() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         viewModel.fillValidSemester()
         viewModel.next()

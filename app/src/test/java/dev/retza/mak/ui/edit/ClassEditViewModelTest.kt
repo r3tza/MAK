@@ -1,6 +1,6 @@
 package dev.retza.mak.ui.edit
 
-import dev.retza.mak.ui.FakeMakRepository
+import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
@@ -27,15 +27,15 @@ class ClassEditViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
-    private fun viewModel(repository: FakeMakRepository) =
+    private fun viewModel(repository: FakeRepository) =
         ClassEditViewModel(FakeSemesterRepository(repository), repository, FeedbackController())
 
-    private fun recordingViewModel(repository: FakeMakRepository, sink: RecordingFeedbackSink) =
+    private fun recordingViewModel(repository: FakeRepository, sink: RecordingFeedbackSink) =
         ClassEditViewModel(FakeSemesterRepository(repository), repository, sink)
 
     @Test
     fun openNewUsesWeeklyRecurrence() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
 
@@ -52,7 +52,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun openNewOneOffSetsDateAndRecurrence() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
 
@@ -65,7 +65,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun openEditLoadsBaseClass() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
 
@@ -84,7 +84,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun openEditWaitsForFirstSemesterDataEmission() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.occurrenceDataGate = kotlinx.coroutines.CompletableDeferred()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
@@ -102,7 +102,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun lastOpenEditWinsWhenDataArrivesLate() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         repository.classes += repository.classes.single().copy(id = 2L, name = "Matematyka")
         repository.occurrenceDataGate = kotlinx.coroutines.CompletableDeferred()
         val viewModel = viewModel(repository)
@@ -121,7 +121,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun saveRejectsInvalidTime() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
         viewModel.openNew()
@@ -151,7 +151,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun saveRejectsOneOffDateOutsideSemester() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
         viewModel.openNew(LocalDate.of(2026, 12, 1))
@@ -176,7 +176,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun savePersistsNewClassAndResetsEditor() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
         viewModel.openNew()
@@ -208,7 +208,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun saveRunsOnceAndEmitsCloseEffectOnce() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
         viewModel.openNew()
@@ -242,7 +242,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun saveNewClassPublishesAddedMessage() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -270,7 +270,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun saveEditPublishesUpdatedMessage() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -291,7 +291,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun selectCourseUsesAssignmentCalendarDates() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val result = repository.addSeparatedSemesterProgram(
             semesterId = 1L,
             studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(
@@ -317,7 +317,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun openEditUsesAssignmentCalendarDates() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val result = repository.addSeparatedSemesterProgram(
             semesterId = 1L,
             studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(
@@ -346,7 +346,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun saveKeepsSelectedAssignmentWhenProgramNamesMatch() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val secondProgramId = repository.saveStudyProgram(
             dev.retza.mak.data.entity.StudyProgramEntity(name = "Informatyka", color = "#222222")
         )
@@ -384,7 +384,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun saveErrorPublishesOneErrorAndKeepsForm() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
@@ -415,7 +415,7 @@ class ClassEditViewModelTest {
 
     @Test
     fun validationDoesNotPublishFeedback() = runTest(mainDispatcher) {
-        val repository = FakeMakRepository()
+        val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()

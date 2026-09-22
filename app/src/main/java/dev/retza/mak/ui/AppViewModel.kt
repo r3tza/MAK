@@ -51,7 +51,8 @@ class AppViewModel(
                 setupResume = check
                     ?.takeIf { it.plan.semesterPrograms.isEmpty() }
                     ?.let { ready ->
-                        val calendar = ready.plan.calendars.firstOrNull()
+                        val calendar = ready.plan.calendars
+                            .minByOrNull { it.id.toLongOrNull() ?: Long.MAX_VALUE }
                         SetupSemesterResume(
                             semesterId = ready.semesterId,
                             calendarId = calendar?.id?.toLongOrNull() ?: 0L,
