@@ -4,6 +4,14 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-23: Odstępy ekranów ustawień i sekcje powiadomień
+
+- Fakty: `MakScreenContent` nie ustawiał odstępów między elementami, a ekrany `Semestry`, `Dane`, `Powiadomienia` i podgląd importu ich nie dodawały, więc komunikaty, pola i przyciski stykały się ze sobą. Nagłówek tygodnia na ekranie „Plan” stykał się z oznaczeniem A/B. Komunikat informacyjny miał 10 sp tekstu i ciasny padding. Ekran powiadomień mieszał przełączniki obu rodzajów, a komunikat „Uwaga” zawierał zastępczy tekst „Treść i moment wysyłki zostaną ustalone.”.
+- Decyzja: `MakScreenContent` przyjmuje `verticalArrangement`. Ekrany podrzędne ustawień używają odstępu 12 dp i 12 dp od górnego paska, ekran powiadomień 16 dp między sekcjami. Nagłówek tygodnia ma 12 dp odstępu od oznaczenia A/B. `MakNoteBanner` ma padding 16 i 12 dp oraz tekst 13 i 12 sp. Powiadomienia są podzielone na sekcje „Kolizje w planie”, „Dzień wcześniej” i „Przed zajęciami”; godzina i wyprzedzenie są widoczne tylko przy włączonym danym rodzaju. Zastępczy tekst zastąpiono komunikatem „Czas dostarczenia” o możliwym opóźnieniu przez Androida.
+- Powód: Prośba użytkownika o większe odstępy i rozdzielenie kategorii powiadomień; zasady odstępów z `ARCHITECTURE.md`, sekcja „Stały język wizualny”.
+- Odrzucone: Globalny odstęp w `MakScreenContent` dla wszystkich ekranów, bo część ekranów ma już własne odstępy i zostałyby podwojone.
+- Weryfikacja: `SettingsScreenTest` sprawdza sekcje powiadomień i ukrycie ustawień wyłączonego rodzaju przy 320 dp. `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Ekrany „Plan”, „Semestry”, „Dane” i „Powiadomienia” obejrzano na emulatorze w motywie ciemnym. Szerokość 320 dp i TalkBack na urządzeniu należą do O-05.
+
 ## 2026-09-23: Nagłówek i separatory podsumowania „Dzisiaj”
 
 - Fakty: Podpis „Twój plan na dziś” miał 11 sp i 78% krycia, czyli był mniejszy od etykiet kolumn. Separatory liczb miały 25% krycia i ginęły na gradiencie, a „Dziś bez zajęć” było osobnym tekstem pod liczbami.
@@ -151,12 +159,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Import zastępuje całość danych, więc musi być atomowy. Zapis w jednej transakcji gwarantuje, że nieprawidłowy lub przerwany import nie zostawi częściowych danych.
 - Odrzucone: Czyszczenie poza transakcją; pozostawienie starych wierszy i nadpisywanie tylko pasujących identyfikatorów; kaskadowe usuwanie przez usunięcie samych semestrów, bo globalne kierunki nie zależą od semestru.
 - Weryfikacja: `RoomPersistenceTest` sprawdza pełną podmianę danych oraz rollback po wymuszonym błędzie wstawiania (dane i aktywny semestr pozostają). `FakeMakRepository` i `DemoDataSeederTest` odwzorowują operację. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
-
-## 2026-09-21: Etap 13.1, walidacja snapshotu importu
-
-- Fakty: Eksport JSON ma `schemaVersion` 2, ale nie było walidacji przed zapisem ani modelu kopii niezależnego od JSON.
-- Decyzja: Dodano `BackupData` i `SemesterBackup` w `data.repository` jako model pełnej kopii z encji Room oraz `ExportImporter.prepare(snapshot)` w `export`, który sprawdza wersję, powtórzone identyfikatory, co najwyżej jeden aktywny semestr, przynależność encji do semestru, istnienie kalendarza, przypisania i zajęć, poprawność dat, godzin i cyklu oraz wymóg daty dla zajęć jednorazowych. Wynik to `Ready(BackupData)` albo `Invalid(errors)`. Mapowanie na encje jest oddzielone od kodeka JSON, więc repozytorium nie zna JSON.
-- Powód: Import zastępuje całość danych, więc musi najpierw odrzucić nieprawidłowy plik bez zmiany bazy, a walidacja ma być testowalna na JVM.
-- Odrzucone: Walidacja przez próbę zapisu i rollback jako główna ścieżka; wrzucanie mapowania i walidacji do repozytorium razem z JSON.
-- Poprawki po przeglądzie: Pola zmiany wystąpienia (`targetDate`, nowe godziny) są odrzucane, gdy są podane, ale niepoprawne, zamiast cicho zamieniane na `null`. Sprawdzana jest globalna unikalność identyfikatorów wszystkich tabel oraz pary wymagane przez indeksy: `(semester_id, study_program_id)`, `(academic_calendar_id, week_start_date, scope)`, `(semester_id, class_id, occurrence_date)` i `(semester_id, class_id, original_date)`. Walidacja stosuje też reguły zwykłego zapisu: koniec zajęć późniejszy od początku, obie nowe godziny zmiany razem i koniec po początku, korekta tygodnia w poniedziałek, niepusta notatka.
-- Weryfikacja: `ExportImporterTest` pokrywa poprawny snapshot, złą wersję, osierocone zajęcia, kalendarz z innego semestru, dwa aktywne semestry, zajęcia jednorazowe bez daty, powtórzone identyfikatory kierunków i kalendarzy oraz nowe reguły: niepoprawna godzina zmiany zamiast pominięcia, koniec zmiany przed początkiem, powtórzone przypisanie kierunku, koniec zajęć przed początkiem i korekta poza poniedziałkiem. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.

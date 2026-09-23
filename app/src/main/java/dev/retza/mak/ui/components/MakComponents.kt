@@ -105,12 +105,14 @@ import dev.retza.mak.ui.theme.MakTeal
 @Composable
 fun MakScreenContent(
     modifier: Modifier = Modifier,
+    verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(
         modifier = modifier
             .fillMaxWidth()
             .padding(start = MakSpacing.lg, end = MakSpacing.lg, top = MakSpacing.xs, bottom = MakSpacing.xl),
+        verticalArrangement = verticalArrangement,
         content = content
     )
 }
@@ -798,17 +800,20 @@ fun MakNoteBanner(
             .fillMaxWidth()
             .clip(RoundedCornerShape(13.dp))
             .background(MaterialTheme.colorScheme.primaryContainer)
-            .padding(horizontal = 11.dp, vertical = 10.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
+            .padding(horizontal = MakSpacing.lg, vertical = MakSpacing.md),
+        horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+        ) {
+            Text(title, fontSize = 13.sp, fontWeight = FontWeight.Bold)
             Text(
                 subtitle,
-                fontSize = 10.sp,
-                color = MaterialTheme.colorScheme.onPrimaryContainer,
-                modifier = Modifier.padding(top = 1.dp)
+                fontSize = 12.sp,
+                lineHeight = 16.sp,
+                color = MaterialTheme.colorScheme.onPrimaryContainer
             )
         }
         if (actionLabel != null && onAction != null) {

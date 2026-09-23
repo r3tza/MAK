@@ -165,7 +165,44 @@ class SettingsScreenTest {
             }
         }
 
+        composeTestRule.onNodeWithText("Kolizje w planie").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dzień wcześniej").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Przed zajęciami").assertIsDisplayed()
         composeTestRule.onNodeWithText("Godzina wieczorna").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Wyprzedzenie przed zajęciami").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Czas dostarczenia").assertIsDisplayed()
+    }
+
+    @Test
+    fun notificationsScreenHidesSettingsOfDisabledKind() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
+                    SettingsNotificationsScreen(
+                        state = SettingsUiState(
+                            notifications = NotificationSettingsUi(
+                                enabled = true,
+                                eveningEnabled = false,
+                                beforeClassEnabled = true,
+                                eveningHourOptions = listOf(NotificationOptionUi("20:00", "20:00", true)),
+                                leadOptions = listOf(NotificationOptionUi("30", "30 min", true))
+                            )
+                        ),
+                        notificationsBlocked = false,
+                        onNotificationsEnabled = {},
+                        onEveningNotificationsEnabled = {},
+                        onBeforeClassNotificationsEnabled = {},
+                        onEveningHourSelected = {},
+                        onBeforeClassLeadSelected = {},
+                        onRequestNotificationPermission = {},
+                        onOpenAppSettings = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Powiadomienie wieczorne").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Godzina wieczorna").assertDoesNotExist()
         composeTestRule.onNodeWithText("Wyprzedzenie przed zajęciami").assertIsDisplayed()
     }
 

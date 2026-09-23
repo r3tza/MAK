@@ -243,7 +243,8 @@ private fun WeekNavigationHeader(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(top = MakSpacing.xs, bottom = MakSpacing.sm)
+            .padding(top = MakSpacing.xs, bottom = MakSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

@@ -243,7 +243,9 @@ Sekcje umieścić w neutralnych kontenerach i rozdzielić odstępem 16 dp. Wiers
 
 Ekran „Semestry” zawiera listę semestrów, wybór aktywnego, konfigurację, usuwanie i akcję „Dodaj semestr”. Konfiguracja przypisań kierunków, wspólnych lub osobnych kalendarzy i korekt A/B pozostaje częścią przepływu wybranego semestru. Lista globalnych kierunków i kolorów jest dostępna z tego przepływu. „Dodaj semestr” nie jest główną akcją całych ustawień.
 
-Ekran „Powiadomienia” zawiera główny przełącznik, osobne przełączniki obu rodzajów powiadomień, godzinę wieczorną oraz wyprzedzenie przed zajęciami.
+Ekran „Powiadomienia” dzieli ustawienia na sekcje w neutralnych kontenerach, rozdzielone odstępem 16 dp: „Kolizje w planie” z głównym przełącznikiem, „Dzień wcześniej” z przełącznikiem powiadomienia wieczornego i godziną oraz „Przed zajęciami” z przełącznikiem i wyprzedzeniem. Sekcje obu rodzajów są widoczne tylko przy włączonej funkcji, a godzina albo wyprzedzenie tylko przy włączonym danym rodzaju. Pod sekcjami komunikat „Czas dostarczenia” informuje, że Android może opóźnić powiadomienie o kilkanaście minut.
+
+Ekrany podrzędne ustawień rozdzielają komunikaty, pola, wiersze i przyciski odstępem co najmniej 12 dp. Komunikat informacyjny ma 16 dp paddingu poziomego, 12 dp pionowego i tekst co najmniej 12 sp.
 
 Ekran „Dane” zawiera eksport, import oraz opis skutków pełnego zastąpienia danych. Globalny próg długości okienka, domyślnie 30 minut, umieścić w ustawieniach planu. Jeśli przybędzie więcej ustawień planu niezwiązanych z semestrem, wydzielić dla nich osobny ekran zamiast rozbudowywać ekran główny.
 

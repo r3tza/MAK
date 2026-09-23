@@ -82,7 +82,8 @@ data class SettingsUiState(
     val activeSemesterId: String? = null,
     val themeOptions: List<ThemeOptionUi> = emptyList(),
     val gapThresholdOptions: List<GapThresholdOptionUi> = emptyList(),
-    val notificationsDetails: String = "Treść i moment wysyłki zostaną ustalone.",
+    val notificationsDetails: String =
+        "Android może opóźnić powiadomienie o kilkanaście minut, aby oszczędzać baterię.",
     val semesterToDeleteId: String? = null,
     val isDeletingSemester: Boolean = false,
     val importPreview: ImportPreviewUi? = null,
@@ -276,7 +277,12 @@ fun SettingsSemestersScreen(
     modifier: Modifier = Modifier
 ) {
     val active = state.semesters.firstOrNull { it.id == state.activeSemesterId }
-    MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
+    MakScreenContent(
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .padding(top = MakSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
+    ) {
         if (state.semesters.isEmpty()) {
             MakEmptyState("Dodaj semestr, aby rozpocząć pracę z planem.")
         } else {
@@ -392,49 +398,66 @@ fun SettingsNotificationsScreen(
     modifier: Modifier = Modifier
 ) {
     val notifications = state.notifications
-    MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
+    MakScreenContent(
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .padding(top = MakSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.lg)
+    ) {
         if (notifications.enabled && notificationsBlocked) {
-            MakNoteBanner(
-                title = "Zablokowane przez system",
-                subtitle = "Aplikacja nie może wyświetlać powiadomień, dopóki nie włączysz ich w ustawieniach systemowych."
-            )
-            MakSecondaryAction(text = "Otwórz ustawienia aplikacji", onClick = onOpenAppSettings)
-        }
-        NotificationToggle(
-            title = "Powiadomienia",
-            enabled = notifications.enabled,
-            onEnabledChange = { enabled ->
-                onNotificationsEnabled(enabled)
-                if (enabled && notificationsBlocked) onRequestNotificationPermission()
+            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
+                MakNoteBanner(
+                    title = "Zablokowane przez system",
+                    subtitle = "Aplikacja nie może wyświetlać powiadomień, dopóki nie włączysz ich w ustawieniach systemowych."
+                )
+                MakSecondaryAction(text = "Otwórz ustawienia aplikacji", onClick = onOpenAppSettings)
             }
-        )
-        if (notifications.enabled) {
+        }
+        SettingsSection("Kolizje w planie") {
             NotificationToggle(
-                title = "Powiadomienie wieczorne",
-                enabled = notifications.eveningEnabled,
-                onEnabledChange = onEveningNotificationsEnabled
-            )
-            MakSelectField(
-                label = "Godzina wieczorna",
-                value = notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                options = notifications.eveningHourOptions,
-                onSelected = { onEveningHourSelected(it.id) },
-                optionLabel = { it.label }
-            )
-            NotificationToggle(
-                title = "Powiadomienie przed zajęciami",
-                enabled = notifications.beforeClassEnabled,
-                onEnabledChange = onBeforeClassNotificationsEnabled
-            )
-            MakSelectField(
-                label = "Wyprzedzenie przed zajęciami",
-                value = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                options = notifications.leadOptions,
-                onSelected = { onBeforeClassLeadSelected(it.id) },
-                optionLabel = { it.label }
+                title = "Powiadomienia",
+                enabled = notifications.enabled,
+                onEnabledChange = { enabled ->
+                    onNotificationsEnabled(enabled)
+                    if (enabled && notificationsBlocked) onRequestNotificationPermission()
+                }
             )
         }
-        MakNoteBanner(title = "Uwaga", subtitle = state.notificationsDetails)
+        if (notifications.enabled) {
+            SettingsSection("Dzień wcześniej") {
+                NotificationToggle(
+                    title = "Powiadomienie wieczorne",
+                    enabled = notifications.eveningEnabled,
+                    onEnabledChange = onEveningNotificationsEnabled
+                )
+                if (notifications.eveningEnabled) {
+                    MakSelectField(
+                        label = "Godzina wieczorna",
+                        value = notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
+                        options = notifications.eveningHourOptions,
+                        onSelected = { onEveningHourSelected(it.id) },
+                        optionLabel = { it.label }
+                    )
+                }
+            }
+            SettingsSection("Przed zajęciami") {
+                NotificationToggle(
+                    title = "Powiadomienie przed zajęciami",
+                    enabled = notifications.beforeClassEnabled,
+                    onEnabledChange = onBeforeClassNotificationsEnabled
+                )
+                if (notifications.beforeClassEnabled) {
+                    MakSelectField(
+                        label = "Wyprzedzenie przed zajęciami",
+                        value = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
+                        options = notifications.leadOptions,
+                        onSelected = { onBeforeClassLeadSelected(it.id) },
+                        optionLabel = { it.label }
+                    )
+                }
+            }
+        }
+        MakNoteBanner(title = "Czas dostarczenia", subtitle = state.notificationsDetails)
     }
 }
 
@@ -444,7 +467,7 @@ private fun NotificationToggle(
     enabled: Boolean,
     onEnabledChange: (Boolean) -> Unit
 ) {
-    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
         Text(title, style = MaterialTheme.typography.bodyMedium)
         Row(
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm),
@@ -468,7 +491,12 @@ fun SettingsDataScreen(
     onDismissImportError: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
+    MakScreenContent(
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .padding(top = MakSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
+    ) {
         MakNoteBanner(
             title = "Kopia zapasowa i import",
             subtitle = "Import zastępuje wszystkie lokalne dane. Tej operacji nie można cofnąć."
@@ -499,7 +527,12 @@ fun ImportPreviewScreen(
     modifier: Modifier = Modifier
 ) {
     val preview = state.importPreview
-    MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
+    MakScreenContent(
+        modifier = modifier
+            .verticalScroll(rememberScrollState())
+            .padding(top = MakSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
+    ) {
         if (preview == null) {
             MakEmptyState("Nie wybrano poprawnej kopii do importu.")
         } else {
@@ -507,12 +540,14 @@ fun ImportPreviewScreen(
                 title = "Zastąpisz wszystkie lokalne dane",
                 subtitle = "Import zastępuje cały plan. Tej operacji nie można cofnąć."
             )
-            ImportStatRow("Semestry", preview.semesterCount)
-            ImportStatRow("Kierunki", preview.programCount)
-            ImportStatRow("Zajęcia", preview.classCount)
-            ImportStatRow("Korekty tygodni", preview.overrideCount)
-            ImportStatRow("Notatki", preview.noteCount)
-            ImportStatRow("Zmiany wystąpień", preview.changeCount)
+            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
+                ImportStatRow("Semestry", preview.semesterCount)
+                ImportStatRow("Kierunki", preview.programCount)
+                ImportStatRow("Zajęcia", preview.classCount)
+                ImportStatRow("Korekty tygodni", preview.overrideCount)
+                ImportStatRow("Notatki", preview.noteCount)
+                ImportStatRow("Zmiany wystąpień", preview.changeCount)
+            }
             Text(
                 text = "Aktywny semestr: ${preview.activeSemesterName ?: "brak"}",
                 style = MaterialTheme.typography.bodyMedium
