@@ -50,7 +50,16 @@ data class CalendarDayUi(
 data class CalendarMarkerUi(
     val id: String,
     val contentDescription: String,
-    val colorToken: CalendarMarkerColor = CalendarMarkerColor.Primary
+    val colorToken: CalendarMarkerColor = CalendarMarkerColor.Primary,
+    val colorHex: String? = null
+)
+
+/** One entry of the calendar legend: a course colour or the changed-occurrence marker. */
+@Immutable
+data class CalendarLegendUi(
+    val label: String,
+    val colorHex: String? = null,
+    val isChange: Boolean = false
 )
 
 enum class CalendarMarkerColor {

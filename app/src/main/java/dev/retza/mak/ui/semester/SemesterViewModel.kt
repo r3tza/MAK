@@ -663,4 +663,9 @@ private fun SemesterSnapshot.toSemesterScreenState(selectedCalendarId: Long?): S
 }
 
 private fun calendarLabel(calendar: AcademicCalendarRecord?): String =
-    calendar?.let { "${it.startDate} - ${it.endDate}" }.orEmpty()
+    calendar?.let {
+        "${it.startDate.format(calendarDateFormatter)} - ${it.endDate.format(calendarDateFormatter)}"
+    }.orEmpty()
+
+private val calendarDateFormatter =
+    java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.forLanguageTag("pl-PL"))

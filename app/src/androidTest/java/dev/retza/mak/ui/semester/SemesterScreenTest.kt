@@ -11,6 +11,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -60,7 +61,8 @@ class SemesterScreenTest {
                             courseItems = listOf(course("1", "Informatyka")),
                             overrides = listOf(
                                 WeekOverrideUi("override", "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
-                            )
+                            ),
+                            overrideCount = 1
                         ),
                         onSemesterNameChanged = {},
                         onSemesterStartDateChanged = {},
@@ -78,11 +80,11 @@ class SemesterScreenTest {
 
         composeTestRule.onAllNodesWithText("Pokaż kierunki").assertCountEquals(0)
         composeTestRule.onAllNodesWithText("Pokaż korekty tygodni").assertCountEquals(0)
-        composeTestRule.onNodeWithText("Zajęcia należące do tego semestru. Liczba: 1.").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Ręczne oznaczenia tygodni A/B. Liczba: 1.").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Kierunki").assertIsDisplayed().performClick()
+        composeTestRule.onNodeWithText("Kierunki i ich kalendarze. Liczba: 1.").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Ręczne oznaczenia tygodni A/B. Liczba: 1.").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Kierunki").performScrollTo().assertIsDisplayed().performClick()
         assertEquals("courses", opened)
-        composeTestRule.onNodeWithText("Korekty tygodni").assertIsDisplayed().performClick()
+        composeTestRule.onNodeWithText("Korekty tygodni").performScrollTo().assertIsDisplayed().performClick()
         assertEquals("overrides", opened)
     }
 
@@ -338,10 +340,8 @@ class SemesterScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithContentDescription(
-            "Kalendarz: 2026-10-01 - 2027-02-28, tydzień A, brak kierunków"
-        ).performClick()
-        composeTestRule.onNodeWithText("2026-11-01 - 2027-03-15, tydzień A, brak kierunków").performClick()
+        composeTestRule.onNodeWithText("1 paź 2026 - 28 lut 2027, tydzień A, brak kierunków").performClick()
+        composeTestRule.onNodeWithText("1 lis 2026 - 15 mar 2027, tydzień A, brak kierunków").performClick()
         assertEquals("2", selected)
     }
 
@@ -406,6 +406,9 @@ class SemesterScreenTest {
                 Box(modifier = Modifier.width(390.dp).height(900.dp)) {
                     SemesterWeekOverridesScreen(
                         state = SemesterScreenUiState(
+                            overrides = listOf(
+                                WeekOverrideUi("7", "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
+                            ),
                             overrideForm = WeekOverrideFormUiState(
                                 id = "7",
                                 weekStartDate = "2026-10-05",
@@ -426,9 +429,9 @@ class SemesterScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Poniedziałek tygodnia").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Zapisz zmiany").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Anuluj").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Poniedziałek tygodnia").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zapisz zmiany").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Anuluj").performScrollTo().assertIsDisplayed()
     }
 
     private fun calendar(

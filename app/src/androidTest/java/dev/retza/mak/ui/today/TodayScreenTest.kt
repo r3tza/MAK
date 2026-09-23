@@ -12,6 +12,7 @@ import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -67,10 +68,11 @@ class TodayScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Dzisiaj").assertIsDisplayed()
+        composeTestRule.onNodeWithText("DZISIAJ").assertIsDisplayed()
         composeTestRule.onNode(hasText("Twój plan na dziś") and isHeading()).assertIsDisplayed()
         composeTestRule.onNodeWithText("Dziś bez zajęć").assertDoesNotExist()
-        composeTestRule.onNodeWithText("Zajęcia").assertIsDisplayed()
+        // "Zajęcia" is both a summary label and the list title; check the summary column.
+        composeTestRule.onNodeWithContentDescription("Zajęcia: 1").assertIsDisplayed()
         composeTestRule.onNodeWithText("Kolizje").assertIsDisplayed()
         composeTestRule.onNodeWithText("Okienka").assertIsDisplayed()
         composeTestRule.onAllNodesWithText("✦").assertCountEquals(0)

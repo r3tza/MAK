@@ -350,7 +350,7 @@ private fun SemesterRow(
         )
         Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
             MakTextAction(text = "Konfiguruj", onClick = onConfigure)
-            MakTextAction(text = "Usuń", onClick = onDelete)
+            MakTextAction(text = "Usuń", onClick = onDelete, destructive = true)
         }
     }
 }

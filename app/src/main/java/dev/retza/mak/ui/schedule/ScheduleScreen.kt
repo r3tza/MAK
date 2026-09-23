@@ -2,30 +2,33 @@ package dev.retza.mak.ui.schedule
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Icon
-import androidx.compose.material3.Text
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -34,8 +37,8 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.focus.onFocusChanged
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -46,7 +49,9 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.retza.mak.ui.components.CalendarDayUi
+import dev.retza.mak.ui.components.CalendarLegendUi
 import dev.retza.mak.ui.components.CalendarMarkerColor
+import dev.retza.mak.ui.components.CalendarMarkerUi
 import dev.retza.mak.ui.components.ClassCard
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.MakCheckbox
@@ -65,6 +70,7 @@ import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakViewSwitch
 import dev.retza.mak.ui.components.ScreenStatus
+import dev.retza.mak.ui.components.parseHexColor
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.theme.MakOrangeMark
@@ -104,6 +110,7 @@ data class ScheduleUiState(
     val items: List<ClassItemUi> = emptyList(),
     val calendarMonthLabel: String = "",
     val calendarDays: List<CalendarDayUi> = emptyList(),
+    val calendarLegend: List<CalendarLegendUi> = emptyList(),
     val calendarSelectedDayLabel: String = "",
     val calendarSelectedDayCountLabel: String = "",
     val calendarItems: List<ClassItemUi> = emptyList(),
@@ -292,6 +299,7 @@ private fun WeekTypeBadge(
                 shape = shape
             )
             .background(MaterialTheme.colorScheme.surfaceVariant)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
             .clickable(role = Role.Button, onClick = onClick)
             .onFocusChanged { focused = it.isFocused }
             .focusable()
@@ -305,7 +313,7 @@ private fun WeekTypeBadge(
     ) {
         Text(
             text = weekTypeLabel,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            color = MaterialTheme.colorScheme.onSurface,
             fontWeight = FontWeight.Bold,
             fontSize = 14.sp
         )
@@ -316,6 +324,18 @@ private fun WeekTypeBadge(
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
+        )
+        Icon(
+            imageVector = Icons.Outlined.Edit,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(18.dp)
+        )
+        Text(
+            text = "Zmień",
+            color = MaterialTheme.colorScheme.primary,
+            fontWeight = FontWeight.Bold,
+            fontSize = 13.sp
         )
     }
 }
@@ -493,6 +513,7 @@ private fun CalendarView(
                 }
             }
         }
+        CalendarLegend(state.calendarLegend)
         MakExpandableSection(
             label = "opcje kalendarza",
             expanded = showCalendarOptions,
@@ -551,10 +572,11 @@ private fun RowScope.CalendarDay(day: CalendarDayUi, onSelected: (String) -> Uni
                 else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
             }
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.height(5.dp)) {
+        Row(horizontalArrangement = Arrangement.spacedBy(2.dp), modifier = Modifier.height(6.dp)) {
             day.markers.take(3).forEach { marker ->
                 MakDot(
-                    color = if (day.isSelected) MaterialTheme.colorScheme.onPrimary else markerColor(marker.colorToken)
+                    color = if (day.isSelected) MaterialTheme.colorScheme.onPrimary else markerColor(marker),
+                    size = 6.dp
                 )
             }
         }
@@ -562,11 +584,44 @@ private fun RowScope.CalendarDay(day: CalendarDayUi, onSelected: (String) -> Uni
 }
 
 @Composable
-private fun markerColor(color: CalendarMarkerColor) = when (color) {
-    CalendarMarkerColor.Primary -> MakTeal
-    CalendarMarkerColor.Secondary -> MakOrangeMark
-    CalendarMarkerColor.Warning -> MaterialTheme.colorScheme.tertiary
+private fun markerColor(marker: CalendarMarkerUi): Color = when (marker.colorToken) {
     CalendarMarkerColor.Error -> MaterialTheme.colorScheme.error
+    CalendarMarkerColor.Warning -> MaterialTheme.colorScheme.tertiary
+    CalendarMarkerColor.Secondary -> MakOrangeMark
+    CalendarMarkerColor.Primary -> marker.colorHex?.let(::parseHexColor) ?: MakTeal
+}
+
+@Composable
+private fun CalendarLegend(items: List<CalendarLegendUi>) {
+    if (items.isEmpty()) return
+    FlowRow(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(top = MakSpacing.md, bottom = MakSpacing.md),
+        horizontalArrangement = Arrangement.spacedBy(MakSpacing.lg),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+    ) {
+        items.forEach { item ->
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp)
+            ) {
+                MakDot(
+                    color = if (item.isChange) {
+                        MaterialTheme.colorScheme.error
+                    } else {
+                        item.colorHex?.let(::parseHexColor) ?: MakTeal
+                    },
+                    size = 8.dp
+                )
+                Text(
+                    text = item.label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    }
 }
 
 @Composable

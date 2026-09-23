@@ -7,6 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -51,11 +53,12 @@ class SetupWizardTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Konfiguracja początkowa").assertIsDisplayed()
+        composeTestRule.onNodeWithText("KONFIGURACJA POCZĄTKOWA").assertIsDisplayed()
         composeTestRule.onNodeWithText("Nazwa semestru").assertIsDisplayed()
         composeTestRule.onNodeWithText("A", substring = false).performClick()
         composeTestRule.onNodeWithText("B").performClick()
-        composeTestRule.onNodeWithText("Utwórz semestr").performClick()
+        // The step title repeats the button label, so target the clickable node.
+        composeTestRule.onNode(hasText("Utwórz semestr") and hasClickAction()).performClick()
 
         assertEquals("B", selectedWeek)
         assertEquals(1, nextClicks)

@@ -7,6 +7,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -133,7 +135,8 @@ class SettingsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Semestr zimowy").assertIsDisplayed()
+        // The name is shown both in the active semester field and in the semester card.
+        composeTestRule.onAllNodesWithText("Semestr zimowy").assertCountEquals(2)
         composeTestRule.onNodeWithText("Aktywny").assertIsDisplayed()
         composeTestRule.onNodeWithText("Konfiguruj").assertIsDisplayed()
         composeTestRule.onNodeWithText("Usuń").assertIsDisplayed()

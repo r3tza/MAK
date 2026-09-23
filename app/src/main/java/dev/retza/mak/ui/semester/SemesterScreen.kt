@@ -1,44 +1,45 @@
 package dev.retza.mak.ui.semester
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.unit.dp
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
-import androidx.compose.material3.Icon
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
+import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakColorPalette
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakEmptyState
-import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakField
+import dev.retza.mak.ui.components.MakFieldPair
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakNoteBanner
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakRowTitle
-import dev.retza.mak.ui.components.MakFieldPair
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakScreenIntro
 import dev.retza.mak.ui.components.MakSecondaryAction
@@ -48,6 +49,10 @@ import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakTag
 import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.ScreenStatus
+import dev.retza.mak.ui.components.parseHexColor
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 enum class WeekTypeUi {
     A,
@@ -668,6 +673,12 @@ private fun CourseRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
         ) {
+            Box(
+                modifier = Modifier
+                    .size(width = 4.dp, height = 36.dp)
+                    .clip(RoundedCornerShape(2.dp))
+                    .background(parseHexColor(course.color) ?: MaterialTheme.colorScheme.outline)
+            )
             Column(modifier = Modifier.weight(1f)) {
                 Text(course.name, fontWeight = FontWeight.SemiBold)
                 Text(
@@ -683,7 +694,8 @@ private fun CourseRow(
             MakTextAction(
                 text = "Usuń",
                 onClick = onDelete,
-                enabled = !isDeletingCourse
+                enabled = !isDeletingCourse,
+                destructive = true
             )
         }
         if (canReconnect) {
@@ -743,8 +755,15 @@ private fun ReconnectCalendarDialog(
 private fun calendarLabel(calendar: SemesterCalendarUi): String {
     val courses = uniqueCourseNames(calendar.courseNames)
     val coursePart = if (courses.isEmpty()) "brak kierunków" else courses.joinToString(", ")
-    return "${calendar.startDate} - ${calendar.endDate}, tydzień ${calendar.firstWeek.name}, $coursePart"
+    val range = "${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()}"
+    return "$range, tydzień ${calendar.firstWeek.name}, $coursePart"
 }
+
+private fun String.asCalendarDate(): String =
+    toLocalDateOrNull()?.format(calendarDateFormatter) ?: this
+
+private val calendarDateFormatter =
+    java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.forLanguageTag("pl-PL"))
 
 private fun uniqueCourseNames(names: List<String>): List<String> {
     val totals = names.groupingBy { it }.eachCount()
@@ -852,13 +871,13 @@ private fun WeekOverrideCard(
                 )
             }
             MakTag(text = "Tydzień ${item.weekType.name}")
-        }
-        MakActionMenu(
-            actions = listOf(
-                "Edytuj" to onEdit,
-                "Usuń" to onDelete
+            MakActionMenu(
+                actions = listOf(
+                    "Edytuj" to onEdit,
+                    "Usuń" to onDelete
+                )
             )
-        )
+        }
     }
 }
 

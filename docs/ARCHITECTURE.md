@@ -53,7 +53,7 @@ Interfejs ma szybko odpowiadać na pytania: jakie zajęcia są dziś, co wymaga 
 
 Wspólne prymitywy, przewidywalne odstępy, jawny grid, powtarzalne akcje i udokumentowane wyjątki mają pierwszeństwo przed ręcznym dopieszczaniem każdej funkcji osobno.
 
-Duże sekcje ekranu rozdziela odstęp 16 dp, powiązane elementy wewnątrz sekcji 12 dp, a krótką etykietę od jej wartości 8 dp. Przycisk pełnej szerokości ma co najmniej 12 dp wolnego miejsca nad i pod nim. Elementy sterujące nie mogą wizualnie stykać się z sąsiednimi kontenerami. Tekst w interfejsie ma co najmniej 12 sp; 11 sp dopuszczamy wyłącznie dla wersalikowych nadtytułów. Pola wyboru używają rozwijanego pola Material 3 z tą samą etykietą przesuwaną nad ramkę co pola tekstowe. Dwa powiązane pola stoją obok siebie tylko wtedy, gdy każde ma co najmniej połowę z 340 dp; na węższym ekranie stoją jedno pod drugim. Ekran podrzędny nie powtarza tytułu z górnego paska ani nie ma osobnego przycisku powrotu; wraca strzałka w pasku i systemowy gest wstecz.
+Duże sekcje ekranu rozdziela odstęp 16 dp, powiązane elementy wewnątrz sekcji 12 dp, a krótką etykietę od jej wartości 8 dp. Przycisk pełnej szerokości ma co najmniej 12 dp wolnego miejsca nad i pod nim. Elementy sterujące nie mogą wizualnie stykać się z sąsiednimi kontenerami. Tekst w interfejsie ma co najmniej 12 sp; 11 sp dopuszczamy wyłącznie dla wersalikowych nadtytułów. W motywie ciemnym pille i etykiety statusu używają przyciemnionego wariantu swojego koloru z jasnym tekstem, a nie jasnego tła z motywu jasnego. Akcja usuwająca w wierszu używa koloru błędu. Pola wyboru używają rozwijanego pola Material 3 z tą samą etykietą przesuwaną nad ramkę co pola tekstowe. Dwa powiązane pola stoją obok siebie tylko wtedy, gdy każde ma co najmniej połowę z 340 dp; na węższym ekranie stoją jedno pod drugim. Ekran podrzędny nie powtarza tytułu z górnego paska ani nie ma osobnego przycisku powrotu; wraca strzałka w pasku i systemowy gest wstecz.
 
 Sekcja rozwijana zachowuje neutralne tło `surfaceContainer` albo `surfaceContainerLow` w obu stanach. Rozwinięcie wskazują tekst, kierunek ikony i semantyka, nie stała zmiana na kolor akcentowy. Nagłówek i treść pozostają jednym kontenerem ze wspólnym kształtem oraz subtelnym obramowaniem. Treść ma 16 dp wewnętrznego paddingu.
 
@@ -87,7 +87,7 @@ Karta zajęć używa dwukolumnowej siatki z osobną kolumną godzin oraz sekcjam
 
 ### Gęstość ekranu planu
 
-Ekran „Plan” grupuje zakres dat, nawigację tygodnia, oznaczenie A/B i źródło korekty w jednej sekcji. Akcja zmiany tygodnia A/B znajduje się przy tej informacji, a nie w odłączonym menu. Zwinięte filtry pokazują aktywny kierunek. Karty zajęć rozdzielają nazwę, kierunek i typ, metadane, kolizję oraz notatkę na czytelne wiersze. Układ nie może ukrywać pierwszych zajęć przez nadmiernie wysokie elementy sterujące.
+Ekran „Plan” grupuje zakres dat, nawigację tygodnia, oznaczenie A/B i źródło korekty w jednej sekcji. Akcja zmiany tygodnia A/B znajduje się przy tej informacji, a nie w odłączonym menu, i jest widoczna jako przycisk z ikoną edycji i słowem „Zmień”. Zwinięte filtry pokazują aktywny kierunek. Karty zajęć rozdzielają nazwę, kierunek i typ, metadane, kolizję oraz notatkę na czytelne wiersze. Układ nie może ukrywać pierwszych zajęć przez nadmiernie wysokie elementy sterujące.
 
 ### Hierarchia ustawień
 

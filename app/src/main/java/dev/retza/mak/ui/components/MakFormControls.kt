@@ -33,6 +33,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.foundation.interaction.PressInteraction
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.AccessTime
@@ -78,6 +82,10 @@ fun MakDatePickerField(
     val focusRequester = remember { FocusRequester() }
     val selectedDate = value.toLocalDateOrNull()
     val initialDate = selectedDate?.coerceToRange(minDate, maxDate)
+    val interactionSource = rememberOpenOnTap(enabled) {
+        hasOpened = true
+        open = true
+    }
     val selectableDates = remember(minDate, maxDate) {
         object : SelectableDates {
             override fun isSelectableDate(utcTimeMillis: Long): Boolean {
@@ -117,6 +125,7 @@ fun MakDatePickerField(
         enabled = enabled,
         readOnly = true,
         isError = isError,
+        interactionSource = interactionSource,
         label = { Text(label) },
         trailingIcon = {
             IconButton(
@@ -181,6 +190,10 @@ fun MakTimePickerField(
     var hasOpened by remember { mutableStateOf(false) }
     val focusRequester = remember { FocusRequester() }
     val selectedTime = value.toLocalTimeOrNull()
+    val interactionSource = rememberOpenOnTap(enabled) {
+        hasOpened = true
+        open = true
+    }
 
     OutlinedTextField(
         value = selectedTime?.toString()?.take(5).orEmpty(),
@@ -211,6 +224,7 @@ fun MakTimePickerField(
         enabled = enabled,
         readOnly = true,
         isError = isError,
+        interactionSource = interactionSource,
         label = { Text(label) },
         trailingIcon = {
             IconButton(
@@ -385,6 +399,22 @@ fun MakActionMenu(
             }
         }
     }
+}
+
+/**
+ * A read-only text field consumes taps itself, so `clickable` on it never fires.
+ * Opening the picker on the field's own press release makes the whole field tappable.
+ */
+@Composable
+private fun rememberOpenOnTap(enabled: Boolean, onTap: () -> Unit): MutableInteractionSource {
+    val interactionSource = remember { MutableInteractionSource() }
+    val currentOnTap by rememberUpdatedState(onTap)
+    LaunchedEffect(interactionSource, enabled) {
+        interactionSource.interactions.collect { interaction ->
+            if (enabled && interaction is PressInteraction.Release) currentOnTap()
+        }
+    }
+    return interactionSource
 }
 
 private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()

@@ -88,6 +88,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
@@ -619,8 +620,13 @@ private fun CoursePill(
     accent: Color,
     modifier: Modifier = Modifier
 ) {
-    val fill = lerp(accent, Color.White, 0.72f)
-    val content = if (fill.luminance() > 0.5f) MakInk else Color.White
+    val dark = isDarkSurface()
+    val fill = if (dark) lerp(accent, MaterialTheme.colorScheme.surface, 0.55f) else lerp(accent, Color.White, 0.72f)
+    val content = when {
+        dark -> lerp(accent, Color.White, 0.85f)
+        fill.luminance() > 0.5f -> MakInk
+        else -> Color.White
+    }
     Text(
         text = name,
         modifier = modifier
@@ -643,6 +649,7 @@ private fun ClassNoteRow(
     foreground: Color,
     modifier: Modifier = Modifier
 ) {
+    val dark = isDarkSurface()
     Column(
         modifier = modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
@@ -651,9 +658,9 @@ private fun ClassNoteRow(
             text = label,
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
-                .background(background)
+                .background(if (dark) lerp(foreground, MaterialTheme.colorScheme.surface, 0.7f) else background)
                 .padding(horizontal = 8.dp, vertical = 3.dp),
-            color = foreground,
+            color = if (dark) lerp(foreground, Color.White, 0.7f) else foreground,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold
         )
@@ -668,18 +675,21 @@ private fun ClassNoteRow(
 
 @Composable
 private fun StatusBadge(text: String, cancelled: Boolean, modified: Boolean, oneOff: Boolean) {
-    val bg = when {
-        cancelled -> MaterialTheme.colorScheme.errorContainer
-        modified -> MakModifiedSoft
-        oneOff -> MakOnceSoft
-        else -> MakPillNeutralBg
-    }
-    val fg = when {
+    val dark = isDarkSurface()
+    val base = when {
         cancelled -> MaterialTheme.colorScheme.error
         modified -> MakModified
         oneOff -> MakOnce
         else -> MakPillNeutral
     }
+    val bg = when {
+        dark -> lerp(base, MaterialTheme.colorScheme.surface, 0.7f)
+        cancelled -> MaterialTheme.colorScheme.errorContainer
+        modified -> MakModifiedSoft
+        oneOff -> MakOnceSoft
+        else -> MakPillNeutralBg
+    }
+    val fg = if (dark) lerp(base, Color.White, 0.7f) else base
     Text(
         text = text,
         modifier = Modifier
@@ -812,7 +822,8 @@ fun MakTextAction(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    destructive: Boolean = false
 ) {
     TextButton(
         onClick = onClick,
@@ -822,7 +833,7 @@ fun MakTextAction(
     ) {
         Text(
             text = text,
-            color = MaterialTheme.colorScheme.primary,
+            color = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.ExtraBold,
             fontSize = 13.sp
         )
@@ -898,7 +909,20 @@ private fun ViewSwitchButton(
             .heightIn(min = 48.dp)
             .shadow(if (selected) 2.dp else 0.dp, RoundedCornerShape(10.dp), spotColor = Color(0x141F325B))
             .clip(RoundedCornerShape(10.dp))
-            .background(if (selected) MaterialTheme.colorScheme.surface else Color.Transparent)
+            .background(
+                when {
+                    !selected -> Color.Transparent
+                    isDarkSurface() -> MaterialTheme.colorScheme.surfaceContainerHigh
+                    else -> MaterialTheme.colorScheme.surface
+                }
+            )
+            .then(
+                if (selected) {
+                    Modifier.border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(10.dp))
+                } else {
+                    Modifier
+                }
+            )
             .selectable(selected = selected, role = Role.Tab, onClick = onClick)
             .semantics { this.selected = selected },
         contentAlignment = Alignment.Center
@@ -907,11 +931,17 @@ private fun ViewSwitchButton(
             text = text,
             fontSize = 13.sp,
             fontWeight = FontWeight.ExtraBold,
-            color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
+            color = when {
+                !selected -> MaterialTheme.colorScheme.onSurfaceVariant
+                isDarkSurface() -> MaterialTheme.colorScheme.onSurface
+                else -> MaterialTheme.colorScheme.primary
+            }
         )
     }
 }
 
+@Composable
+private fun isDarkSurface(): Boolean = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
 @Composable
 fun MakNavBar(
@@ -1308,22 +1338,23 @@ fun MakTag(
     text: String,
     modifier: Modifier = Modifier
 ) {
+    val dark = isDarkSurface()
     Text(
         text = text,
         modifier = modifier
             .clip(RoundedCornerShape(50))
-            .background(MakPillNeutralBg)
+            .background(if (dark) MaterialTheme.colorScheme.surfaceContainerHigh else MakPillNeutralBg)
             .padding(horizontal = 10.dp, vertical = 5.dp),
         style = MaterialTheme.typography.labelMedium,
-        color = MakPillNeutral
+        color = if (dark) MaterialTheme.colorScheme.onSurface else MakPillNeutral
     )
 }
 
 @Composable
-fun MakDot(color: Color, modifier: Modifier = Modifier) {
+fun MakDot(color: Color, modifier: Modifier = Modifier, size: Dp = 4.dp) {
     Box(
         modifier = modifier
-            .size(4.dp)
+            .size(size)
             .clip(CircleShape)
             .background(color)
     )

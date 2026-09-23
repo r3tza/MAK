@@ -15,6 +15,7 @@ import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.components.CalendarDayUi
+import dev.retza.mak.ui.components.CalendarLegendUi
 import dev.retza.mak.ui.components.CalendarMarkerColor
 import dev.retza.mak.ui.components.CalendarMarkerUi
 import dev.retza.mak.ui.components.ClassItemUi
@@ -203,7 +204,8 @@ class ScheduleViewModel(
                     CalendarMarkerUi(
                         id = it.id,
                         contentDescription = calendarOccurrenceLabel(it),
-                        colorToken = markerColor(data, it)
+                        colorToken = markerColor(it),
+                        colorHex = it.studyProgram?.color
                     )
                 }
             )
@@ -267,6 +269,7 @@ class ScheduleViewModel(
             items = filtered.map { it.toUi(labels[it.id]) } + cancelled,
             calendarMonthLabel = control.calendarMonth.format(monthFormatter),
             calendarDays = calendarDays,
+            calendarLegend = calendarLegend(data, activeFilter),
             calendarSelectedDayLabel = control.calendarDate.format(fullDateFormatter),
             calendarSelectedDayCountLabel = classCountLabel(calendarFiltered.size),
             calendarItems = calendarFiltered.map { it.toUi(calendarLabels[it.id]) } +
@@ -327,13 +330,16 @@ private fun emptyScheduleState() = ScheduleUiState(
     status = ScreenStatus.Ready
 )
 
-private fun markerColor(
-    data: ActivePlanData,
-    occurrence: PlannedOccurrence
-): CalendarMarkerColor {
-    if (occurrence.occurrenceChange != null) return CalendarMarkerColor.Error
-    val index = data.courses.indexOfFirst { it.id == occurrence.studyProgram?.id }
-    return if (index > 0) CalendarMarkerColor.Secondary else CalendarMarkerColor.Primary
+private fun markerColor(occurrence: PlannedOccurrence): CalendarMarkerColor =
+    if (occurrence.occurrenceChange != null) CalendarMarkerColor.Error else CalendarMarkerColor.Primary
+
+private fun calendarLegend(data: ActivePlanData, activeFilter: String): List<CalendarLegendUi> {
+    val courses = data.semesterPrograms
+        .filter { activeFilter == "all" || it.id == activeFilter }
+        .mapNotNull { assignment -> data.courses.firstOrNull { it.id == assignment.studyProgramId } }
+        .distinctBy { it.id }
+        .map { CalendarLegendUi(label = it.name, colorHex = it.color) }
+    return courses + CalendarLegendUi(label = "Zmieniony termin", isChange = true)
 }
 
 private fun calendarAccessibilityLabel(

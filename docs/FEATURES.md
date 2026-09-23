@@ -86,7 +86,7 @@ Widok kalendarza pokazuje jeden miesiąc i zawiera:
 
 - przejście do poprzedniego i następnego miesiąca;
 - powrót do bieżącej daty;
-- oznaczenie liczby lub kolorów zajęć w każdym dniu;
+- oznaczenie zajęć w każdym dniu kropkami w kolorze kierunku, a zmienionych terminów kropką w kolorze błędu; pod siatką legenda z nazwami kierunków i pozycją „Zmieniony termin”, bo kolor nie może być jedynym nośnikiem informacji;
 - czytelne oznaczenie dni z odwołanymi, zmienionymi lub jednorazowymi zajęciami;
 - wybór dnia i listę jego aktywnych zajęć pod kalendarzem;
 - akcję dodania nowych zajęć jednorazowych dla wybranej daty.

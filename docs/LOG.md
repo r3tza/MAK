@@ -4,6 +4,15 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-23: Przegląd czytelności interfejsu
+
+- Fakty: Przegląd na emulatorze w motywie jasnym i ciemnym oraz przy 320 dp wykazał tekst 9 do 11 sp w wielu miejscach, niewidoczną strzałkę pól wyboru (znak „▾”), małe liczby na karcie podsumowania, kolorowe kropki kalendarza bez legendy, wiersz zmiany tygodnia wyglądający jak nieaktywne pole, powtórzone tytuły i przyciski powrotu na ekranach semestru, odwróconą hierarchię w ustawieniach, dwa style pól formularza, daty ISO na ekranie „Kierunki” oraz jasne pille w motywie ciemnym.
+- Decyzja: Użytkownik zaakceptował trzy pakiety poprawek. Typografia ma minimum 12 sp (11 sp tylko dla wersalikowych nadtytułów), liczby na karcie podsumowania 28 sp. Pola wyboru to rozwijane pole Material 3 z etykietą przesuwaną nad ramkę, jak pola tekstowe; dwa pola obok siebie przechodzą jedno pod drugie poniżej 340 dp. Ekrany semestru mają tylko tytuł w górnym pasku i krótki opis, bez przycisków „Wróć”. Szczegóły terminu nie mają zbędnego podtytułu ani przycisku „Zamknij”, a przyciski zapisu notatek pojawiają się dopiero po zmianie treści. Kropki kalendarza mają kolor kierunku i legendę. Wiersz tygodnia ma ikonę i słowo „Zmień”. Karta kierunku pokazuje kolor, a „Usuń” ma kolor błędu. Pille w motywie ciemnym są przyciemnione. Nazwa zajęć na karcie ma pełną szerokość, a kierunek, status i typ zawijają się w wierszu pod nią.
+- Powód: Czytelność, zasada, że kolor nie jest jedynym nośnikiem informacji, jeden nagłówek na ekran i spójne formularze.
+- Odrzucone: Globalny odstęp w `MakScreenContent`; własny komponent listy wyboru zamiast Material 3; ukrycie typu zajęć na karcie.
+- Poprawki przy okazji: Pierwsze uruchomienie testów Compose na emulatorze wykazało, że dotknięcie pola daty albo godziny poza ikoną nie otwierało wyboru, bo pole tekstowe przechwytywało dotknięcie. Pola otwierają teraz wybór po dotknięciu w dowolnym miejscu. Część testów Compose zawierała błędy, których nie wykryto, bo testy były tylko kompilowane: szukały nadtytułu małymi literami, nie rozróżniały powtórzonych tekstów, pomijały przewinięcie i miały niespójny stan. Poprawiono je bez zmiany sprawdzanych reguł.
+- Weryfikacja: `gradlew.bat test lintDebug connectedDebugAndroidTest` przechodzi na emulatorze Android 16: 261 testów JVM i 66 testów urządzenia. Ekrany obejrzano na emulatorze w obu motywach przy 320 dp i domyślnej szerokości. TalkBack należy do O-05.
+
 ## 2026-09-23: Odstępy ekranów ustawień i sekcje powiadomień
 
 - Fakty: `MakScreenContent` nie ustawiał odstępów między elementami, a ekrany `Semestry`, `Dane`, `Powiadomienia` i podgląd importu ich nie dodawały, więc komunikaty, pola i przyciski stykały się ze sobą. Nagłówek tygodnia na ekranie „Plan” stykał się z oznaczeniem A/B. Komunikat informacyjny miał 10 sp tekstu i ciasny padding. Ekran powiadomień mieszał przełączniki obu rodzajów, a komunikat „Uwaga” zawierał zastępczy tekst „Treść i moment wysyłki zostaną ustalone.”.
@@ -151,11 +160,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Odrzucone: Import bez podglądu; podgląd jako dialog; czytanie pliku w ViewModelu przez `ContentResolver`; import plików v1.
 - Poprawki po przeglądzie: Odczyt i zapis pliku w `MainActivity` działają na `Dispatchers.IO`, a kodowanie, dekodowanie i walidacja w `SettingsViewModel` na wstrzykniętym dispatcherze tła (`Dispatchers.Default` w aplikacji). `backgroundDispatcher` jest w konstruktorze z wartością domyślną, ma binding w Koin, a testy przekazują własny dispatcher, więc duże kopie nie blokują wątku głównego i testy pozostają deterministyczne.
 - Weryfikacja: `SettingsViewModelTest` pokrywa poprawny plik z efektem otwarcia, złą wersję, uszkodzone bajty, potwierdzenie z `replaceAllData` i komunikatem, anulowanie bez zmiany danych oraz błąd odczytu. `SettingsScreenTest` (kompilowany) sprawdza akcję importu i ekran podglądu przy 320 dp. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór na urządzeniu pozostaje otwarty.
-
-## 2026-09-21: Etap 13.2, atomowe zastąpienie danych
-
-- Fakty: Walidacja snapshotu istniała, ale nie było operacji podmiany całej bazy i nie było pewności, że błąd zostawi dane bez zmian.
-- Decyzja: Dodano `MakRepository.replaceAllData(data: BackupData): Long?`, które w jednej transakcji czyści tabele od podrzędnych (`occurrence_changes`, `occurrence_notes`, `week_overrides`, `classes`, `semester_programs`, `academic_calendars`, `study_programs`, `semesters`) i wstawia dane kopii razem z identyfikatorami, a na końcu zwraca identyfikator aktywnego semestru albo null. Dodano `deleteAll` do każdego DAO.
-- Powód: Import zastępuje całość danych, więc musi być atomowy. Zapis w jednej transakcji gwarantuje, że nieprawidłowy lub przerwany import nie zostawi częściowych danych.
-- Odrzucone: Czyszczenie poza transakcją; pozostawienie starych wierszy i nadpisywanie tylko pasujących identyfikatorów; kaskadowe usuwanie przez usunięcie samych semestrów, bo globalne kierunki nie zależą od semestru.
-- Weryfikacja: `RoomPersistenceTest` sprawdza pełną podmianę danych oraz rollback po wymuszonym błędzie wstawiania (dane i aktywny semestr pozostają). `FakeMakRepository` i `DemoDataSeederTest` odwzorowują operację. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
