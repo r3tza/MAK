@@ -92,8 +92,7 @@ internal fun NavGraphBuilder.classEditRoute(
 }
 
 internal fun NavGraphBuilder.occurrenceDetailsRoute(
-    occurrenceViewModel: OccurrenceViewModel,
-    onBack: () -> Unit
+    occurrenceViewModel: OccurrenceViewModel
 ) {
     composable(
         route = MakRoutes.Occurrence,
@@ -133,7 +132,6 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
             },
             onSaveSharedNote = occurrenceViewModel::saveSharedNote,
             onSaveOccurrenceNote = occurrenceViewModel::saveOccurrenceNote,
-            onBack = onBack,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -189,7 +187,7 @@ internal fun occurrenceTopBarActions(
             "Odwołaj termin" to occurrenceViewModel::cancelOccurrence
         } else null,
         if (details.canEditBaseClass) {
-            "Edytuj bazowe zajęcia" to {
+            "Edytuj wszystkie terminy" to {
                 occurrenceViewModel.selectedClassId.value?.let { id ->
                     classEditViewModel.openEdit("$id:${details.targetDateDraft}")
                     navController.navigate(editRoute(id, details.targetDateDraft))

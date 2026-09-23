@@ -185,8 +185,8 @@ private fun SettingsSection(
     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
         Text(
             text = title,
-            style = MaterialTheme.typography.titleSmall,
-            fontWeight = FontWeight.SemiBold
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
         )
         Column(
             modifier = Modifier
@@ -218,7 +218,7 @@ private fun SettingsNavigationRow(
         horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.SemiBold)
+            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
             if (value.isNotBlank()) {
                 Text(
                     text = value,
@@ -249,7 +249,7 @@ private fun SettingsInfoRow(title: String, value: String) {
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
-        Text(title, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
+        Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
         Text(value, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

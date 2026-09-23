@@ -81,7 +81,6 @@ class OccurrenceDetailsScreenTest {
                         onRoomDraftChanged = {},
                         onSaveSharedNote = {},
                         onSaveOccurrenceNote = {},
-                        onBack = {}
                     )
                 }
             }
@@ -92,7 +91,7 @@ class OccurrenceDetailsScreenTest {
         composeTestRule.onNodeWithText("Notatka wspólna").assertIsDisplayed()
         composeTestRule.onNodeWithText("Notatka tylko dla tego terminu").assertIsDisplayed()
         composeTestRule.onNodeWithText("Zmień termin").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Zamknij").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zamknij").assertDoesNotExist()
         composeTestRule.onAllNodesWithText("TERMIN").assertCountEquals(0)
         composeTestRule.onAllNodesWithText("Pokaż notatkę").assertCountEquals(0)
         composeTestRule.onAllNodesWithText("Pokaż zmiana terminu").assertCountEquals(0)
@@ -149,7 +148,6 @@ class OccurrenceDetailsScreenTest {
                         onRoomDraftChanged = {},
                         onSaveSharedNote = { sharedSaves += 1 },
                         onSaveOccurrenceNote = { occurrenceSaves += 1 },
-                        onBack = {}
                     )
                 }
             }
@@ -205,7 +203,6 @@ class OccurrenceDetailsScreenTest {
                         onRoomDraftChanged = {},
                         onSaveSharedNote = {},
                         onSaveOccurrenceNote = {},
-                        onBack = {}
                     )
                 }
             }
@@ -213,7 +210,7 @@ class OccurrenceDetailsScreenTest {
 
         composeTestRule.onNodeWithText("Przywróć termin").assertIsDisplayed().performClick()
         assertEquals(1, restoreClicks)
-        composeTestRule.onNodeWithText("Zamknij").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zamknij").assertDoesNotExist()
         composeTestRule.onAllNodesWithText("Zmień termin").assertCountEquals(0)
     }
 
@@ -261,7 +258,6 @@ class OccurrenceDetailsScreenTest {
                         onRoomDraftChanged = {},
                         onSaveSharedNote = {},
                         onSaveOccurrenceNote = {},
-                        onBack = {}
                     )
                 }
             }
@@ -316,7 +312,6 @@ class OccurrenceDetailsScreenTest {
                         onRoomDraftChanged = {},
                         onSaveSharedNote = {},
                         onSaveOccurrenceNote = {},
-                        onBack = {}
                     )
                 }
             }

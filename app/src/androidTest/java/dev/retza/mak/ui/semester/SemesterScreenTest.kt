@@ -70,7 +70,6 @@ class SemesterScreenTest {
                         onOpenCourses = { opened = "courses" },
                         onOpenOverrides = { opened = "overrides" },
                         onOpenCalendars = { opened = "calendars" },
-                        onBack = {},
                         onRetry = {}
                     )
                 }
@@ -107,7 +106,6 @@ class SemesterScreenTest {
                         onOpenCourses = {},
                         onOpenOverrides = {},
                         onOpenCalendars = { opened = "calendars" },
-                        onBack = {},
                         onRetry = {}
                     )
                 }
@@ -148,7 +146,6 @@ class SemesterScreenTest {
                         onRequestReconnect = { _, _ -> },
                         onConfirmReconnect = {},
                         onCancelReconnect = {},
-                        onBack = {}
                     )
                 }
             }
@@ -190,7 +187,6 @@ class SemesterScreenTest {
                         onRequestReconnect = { _, _ -> },
                         onConfirmReconnect = {},
                         onCancelReconnect = {},
-                        onBack = {}
                     )
                 }
             }
@@ -227,7 +223,6 @@ class SemesterScreenTest {
                         onRequestReconnect = { _, _ -> },
                         onConfirmReconnect = {},
                         onCancelReconnect = {},
-                        onBack = {}
                     )
                 }
             }
@@ -265,7 +260,6 @@ class SemesterScreenTest {
                         onRequestReconnect = { _, _ -> },
                         onConfirmReconnect = { confirmed += 1 },
                         onCancelReconnect = {},
-                        onBack = {}
                     )
                 }
             }
@@ -305,7 +299,6 @@ class SemesterScreenTest {
                         onFirstWeekChanged = {},
                         onSaveCalendar = {},
                         onDeleteCalendar = { deleted = it },
-                        onBack = {}
                     )
                 }
             }
@@ -340,7 +333,6 @@ class SemesterScreenTest {
                         onSaveOverride = {},
                         onDeleteOverride = {},
                         onCancelOverrideEdit = {},
-                        onBack = {}
                     )
                 }
             }
@@ -391,7 +383,6 @@ class SemesterScreenTest {
                         onCancelOverrideEdit = {
                             state = state.copy(overrideForm = WeekOverrideFormUiState())
                         },
-                        onBack = {}
                     )
                 }
             }
@@ -430,7 +421,6 @@ class SemesterScreenTest {
                         onSaveOverride = {},
                         onDeleteOverride = {},
                         onCancelOverrideEdit = {},
-                        onBack = {}
                     )
                 }
             }

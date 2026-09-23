@@ -183,11 +183,10 @@ fun MakApp(
                 startSetup = startSetup
             )
             classEditRoute(classEditViewModel = classEditViewModel, onBack = ::navigateBack)
-            occurrenceDetailsRoute(occurrenceViewModel = occurrenceViewModel, onBack = ::navigateBack)
+            occurrenceDetailsRoute(occurrenceViewModel = occurrenceViewModel)
             semesterRoutes(
                 semesterViewModel = semesterViewModel,
-                navController = navController,
-                onBack = ::navigateBack
+                navController = navController
             )
             settingsRoute(
                 settingsViewModel = settingsViewModel,

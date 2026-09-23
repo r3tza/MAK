@@ -6,6 +6,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ColumnScope
@@ -31,6 +32,10 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
+import androidx.compose.material3.ExperimentalMaterial3Api
+import androidx.compose.material3.ExposedDropdownMenuAnchorType
+import androidx.compose.material3.ExposedDropdownMenuBox
+import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
@@ -86,7 +91,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import dev.retza.mak.ui.theme.MakFieldLabel
 import dev.retza.mak.ui.theme.MakMarkBlue
 import dev.retza.mak.ui.theme.MakMarkGold
 import dev.retza.mak.ui.theme.MakMarkLilac
@@ -122,18 +126,22 @@ fun MakScreenContent(
 
 @Composable
 fun MakSectionHeader(
-    eyebrow: String,
+    eyebrow: String?,
     title: String,
     subtitle: String? = null,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        Text(
-            text = eyebrow.uppercase(),
-            style = MaterialTheme.typography.labelSmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(start = MakSpacing.xs, top = MakSpacing.xs, bottom = MakSpacing.sm)
-        )
+        if (eyebrow != null) {
+            Text(
+                text = eyebrow.uppercase(),
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(start = MakSpacing.xs, top = MakSpacing.xs, bottom = MakSpacing.sm)
+            )
+        } else {
+            Spacer(modifier = Modifier.height(MakSpacing.sm))
+        }
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
@@ -151,6 +159,45 @@ fun MakSectionHeader(
             Spacer(modifier = Modifier.height(MakSpacing.lg))
         }
     }
+}
+
+/**
+ * Places two related fields side by side, or one under the other on narrow screens
+ * where half of the width cannot fit a label or a date.
+ */
+@Composable
+fun MakFieldPair(
+    first: @Composable () -> Unit,
+    second: @Composable () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    BoxWithConstraints(modifier = modifier.fillMaxWidth()) {
+        if (maxWidth < MakFieldPairMinRowWidth) {
+            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
+                first()
+                second()
+            }
+        } else {
+            Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
+                Box(modifier = Modifier.weight(1f)) { first() }
+                Box(modifier = Modifier.weight(1f)) { second() }
+            }
+        }
+    }
+}
+
+private val MakFieldPairMinRowWidth = 340.dp
+
+@Composable
+fun MakScreenIntro(text: String, modifier: Modifier = Modifier) {
+    Text(
+        text = text,
+        style = MaterialTheme.typography.bodyMedium,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(start = MakSpacing.xs, end = MakSpacing.xs, top = MakSpacing.md, bottom = MakSpacing.lg)
+    )
 }
 
 @Composable
@@ -1061,6 +1108,7 @@ fun MakExpandableSection(
     }
 }
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun <T> MakSelectField(
     label: String,
@@ -1072,79 +1120,36 @@ fun <T> MakSelectField(
     optionLabel: (T) -> String = { it.toString() }
 ) {
     var expanded by remember { mutableStateOf(false) }
-    var focused by remember { mutableStateOf(false) }
-    Column(modifier = modifier.fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(5.dp)) {
-        FieldLabel(label)
-        val border = when {
-            isError -> MaterialTheme.colorScheme.error
-            focused -> MaterialTheme.colorScheme.primary
-            else -> MaterialTheme.colorScheme.outlineVariant
-        }
-        val shape = RoundedCornerShape(11.dp)
-        Box {
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .heightIn(min = 48.dp)
-                    .clip(shape)
-                    .border(1.dp, border, shape)
-                    .background(MaterialTheme.colorScheme.surface)
-                    .clickable(role = Role.Button, onClick = { expanded = true })
-                    .focusable()
-                    .onFocusChanged { focused = it.isFocused }
-                    .padding(horizontal = 11.dp, vertical = 9.dp)
-                    .semantics {
-                        contentDescription = "$label: ${value.ifBlank { "brak wyboru" }}"
-                        stateDescription = if (expanded) "Rozwinięte" else "Zwinięte"
+    ExposedDropdownMenuBox(
+        expanded = expanded,
+        onExpandedChange = { expanded = it },
+        modifier = modifier.fillMaxWidth()
+    ) {
+        OutlinedTextField(
+            value = value,
+            onValueChange = {},
+            modifier = Modifier
+                .fillMaxWidth()
+                .menuAnchor(ExposedDropdownMenuAnchorType.PrimaryNotEditable),
+            readOnly = true,
+            singleLine = true,
+            isError = isError,
+            label = { Text(label) },
+            trailingIcon = { ExposedDropdownMenuDefaults.TrailingIcon(expanded = expanded) }
+        )
+        ExposedDropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
+            options.forEach { option ->
+                DropdownMenuItem(
+                    text = { Text(optionLabel(option), style = MaterialTheme.typography.bodyLarge) },
+                    onClick = {
+                        onSelected(option)
+                        expanded = false
                     },
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Text(
-                    text = value.ifBlank { "Wybierz" },
-                    fontSize = 14.sp,
-                    color = if (value.isBlank()) {
-                        MaterialTheme.colorScheme.onSurfaceVariant
-                    } else {
-                        MaterialTheme.colorScheme.onSurface
-                    },
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                    modifier = Modifier.weight(1f)
+                    contentPadding = ExposedDropdownMenuDefaults.ItemContentPadding
                 )
-                Icon(
-                    imageVector = Icons.Filled.ArrowDropDown,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
-                options.forEach { option ->
-                    DropdownMenuItem(
-                        text = { Text(optionLabel(option), fontSize = 14.sp) },
-                        onClick = {
-                            onSelected(option)
-                            expanded = false
-                        }
-                    )
-                }
             }
         }
     }
-}
-
-@Composable
-private fun FieldLabel(label: String) {
-    Text(
-        text = label,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        color = if (MaterialTheme.colorScheme.background.luminanceOrInk()) {
-            MakFieldLabel
-        } else {
-            MaterialTheme.colorScheme.onSurfaceVariant
-        }
-    )
 }
 
 @Composable
@@ -1382,9 +1387,3 @@ fun parseHexColor(hex: String): Color? = runCatching {
     Color(color.toInt())
 }.getOrNull()
 
-private fun Color.luminanceOrInk(): Boolean {
-    val r = red
-    val g = green
-    val b = blue
-    return (0.299f * r + 0.587f * g + 0.114f * b) > 0.5f
-}

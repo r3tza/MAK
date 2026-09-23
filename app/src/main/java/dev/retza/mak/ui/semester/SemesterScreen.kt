@@ -38,9 +38,10 @@ import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakNoteBanner
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakRowTitle
+import dev.retza.mak.ui.components.MakFieldPair
 import dev.retza.mak.ui.components.MakScreenContent
+import dev.retza.mak.ui.components.MakScreenIntro
 import dev.retza.mak.ui.components.MakSecondaryAction
-import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
@@ -169,18 +170,13 @@ fun SemesterScreen(
     onOpenCourses: () -> Unit,
     onOpenOverrides: () -> Unit,
     onOpenCalendars: () -> Unit,
-    onBack: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     MakScreenContent(
         modifier = modifier.verticalScroll(rememberScrollState())
     ) {
-        MakSectionHeader(
-            eyebrow = "Semestr",
-            title = "Zakres i tygodnie A/B",
-            subtitle = "Zakres dat, kierunki i ręczne korekty tygodni."
-        )
+        MakScreenIntro("Zakres dat, pierwszy tydzień A/B, kierunki i ręczne korekty tygodni.")
 
         when (state.status) {
             ScreenStatus.Ready -> {
@@ -202,7 +198,7 @@ fun SemesterScreen(
                 }
                 SemesterNavigationRow(
                     title = "Kierunki",
-                    description = "Zajęcia należące do tego semestru.",
+                    description = "Kierunki i ich kalendarze.",
                     count = state.courseItems.size,
                     onClick = onOpenCourses
                 )
@@ -220,11 +216,6 @@ fun SemesterScreen(
                         onClick = onOpenCalendars
                     )
                 }
-                MakSecondaryAction(
-                    text = "Wróć do ustawień",
-                    onClick = onBack,
-                    modifier = Modifier.padding(top = MakSpacing.md)
-                )
             }
 
             else -> MakStateMessage(status = state.status, onRetry = onRetry)
@@ -279,15 +270,10 @@ fun SemesterCoursesScreen(
     onRequestReconnect: (String, String) -> Unit,
     onConfirmReconnect: () -> Unit,
     onCancelReconnect: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
-        MakSectionHeader(
-            eyebrow = "Semestr",
-            title = "Kierunki",
-            subtitle = "Kierunki mogą współdzielić kalendarz albo używać własnego."
-        )
+        MakScreenIntro("Kierunki mogą współdzielić kalendarz albo używać własnego.")
         CoursesBlock(
             state = state,
             onCourseNameChanged = onCourseNameChanged,
@@ -310,7 +296,6 @@ fun SemesterCoursesScreen(
                 onCancel = onCancelReconnect
             )
         }
-        MakSecondaryAction(text = "Wróć do semestru", onClick = onBack)
     }
 }
 
@@ -326,15 +311,10 @@ fun SemesterWeekOverridesScreen(
     onSaveOverride: () -> Unit,
     onDeleteOverride: (String) -> Unit,
     onCancelOverrideEdit: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
-        MakSectionHeader(
-            eyebrow = "Semestr",
-            title = "Korekty tygodni",
-            subtitle = "Ustaw oznaczenie tylko dla jednego tygodnia albo od wybranego tygodnia w przyszłość."
-        )
+        MakScreenIntro("Ustaw oznaczenie tylko dla jednego tygodnia albo od wybranego tygodnia w przyszłość.")
         if (state.calendars.size > 1) {
             MakSelectField(
                 label = "Kalendarz",
@@ -359,7 +339,6 @@ fun SemesterWeekOverridesScreen(
             onDeleteOverride = onDeleteOverride,
             onCancelEdit = onCancelOverrideEdit
         )
-        MakSecondaryAction(text = "Wróć do semestru", onClick = onBack)
     }
 }
 
@@ -372,15 +351,10 @@ fun SemesterCalendarsScreen(
     onFirstWeekChanged: (WeekTypeUi) -> Unit,
     onSaveCalendar: () -> Unit,
     onDeleteCalendar: (String) -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
-        MakSectionHeader(
-            eyebrow = "Semestr",
-            title = "Kalendarze",
-            subtitle = "Zakres dat i rytm A/B każdego kalendarza."
-        )
+        MakScreenIntro("Zakres dat i rytm A/B każdego kalendarza.")
         if (state.calendars.size > 1) {
             MakSelectField(
                 label = "Edytowany kalendarz",
@@ -412,7 +386,6 @@ fun SemesterCalendarsScreen(
                 onDelete = { onDeleteCalendar(calendar.id) }
             )
         }
-        MakSecondaryAction(text = "Wróć do semestru", onClick = onBack)
     }
 }
 
@@ -468,28 +441,32 @@ private fun CalendarDateFields(
     onFirstWeekChanged: (WeekTypeUi) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
-        Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-                MakDatePickerField(
-                    label = "Od",
-                    value = state.startDate,
-                    onValueChange = onStartDateChanged,
-                    maxDate = state.endDate.toLocalDateOrNull(),
-                    isError = state.startDateError != null
-                )
-                FieldError(state.startDateError?.let(::FieldErrorUi))
+        MakFieldPair(
+            first = {
+                Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                    MakDatePickerField(
+                        label = "Od",
+                        value = state.startDate,
+                        onValueChange = onStartDateChanged,
+                        maxDate = state.endDate.toLocalDateOrNull(),
+                        isError = state.startDateError != null
+                    )
+                    FieldError(state.startDateError?.let(::FieldErrorUi))
+                }
+            },
+            second = {
+                Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                    MakDatePickerField(
+                        label = "Do",
+                        value = state.endDate,
+                        onValueChange = onEndDateChanged,
+                        minDate = state.startDate.toLocalDateOrNull(),
+                        isError = state.endDateError != null
+                    )
+                    FieldError(state.endDateError?.let(::FieldErrorUi))
+                }
             }
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-                MakDatePickerField(
-                    label = "Do",
-                    value = state.endDate,
-                    onValueChange = onEndDateChanged,
-                    minDate = state.startDate.toLocalDateOrNull(),
-                    isError = state.endDateError != null
-                )
-                FieldError(state.endDateError?.let(::FieldErrorUi))
-            }
-        }
+        )
         MakSelectField(
             label = "Pierwszy tydzień",
             value = "Tydzień ${state.firstWeek.name}",
@@ -556,7 +533,7 @@ private fun CoursesBlock(
         verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
         MakRowTitle(
-            title = "Kierunki",
+            title = "Przypisane kierunki",
             meta = if (state.courseItems.isEmpty()) "Brak" else "${state.courseItems.size}"
         )
         if (state.courseItems.isEmpty()) {
@@ -802,7 +779,7 @@ private fun WeekOverridesSection(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Text("Korekty tygodni A/B", fontWeight = FontWeight.SemiBold, fontSize = MaterialTheme.typography.titleMedium.fontSize)
+            Text("Zapisane korekty", fontWeight = FontWeight.SemiBold, fontSize = MaterialTheme.typography.titleMedium.fontSize)
             MakTextAction(text = "Dodaj", onClick = onNewOverride)
         }
         MakHelperText("Każda korekta dotyczy poniedziałku wybranego tygodnia.")

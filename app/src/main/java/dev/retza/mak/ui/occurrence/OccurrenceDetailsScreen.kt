@@ -47,7 +47,6 @@ fun OccurrenceDetailsScreen(
     onRoomDraftChanged: (String) -> Unit,
     onSaveSharedNote: () -> Unit,
     onSaveOccurrenceNote: () -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Column(modifier = modifier.fillMaxSize()) {
@@ -56,10 +55,7 @@ fun OccurrenceDetailsScreen(
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
         ) {
-            OccurrenceHeader(
-                title = state.subjectName.ifBlank { state.title },
-                subtitle = "Zmiana dotyczy tylko wybranego wystąpienia zajęć."
-            )
+            OccurrenceHeader(title = state.subjectName.ifBlank { state.title })
             StatusTag(state)
             Facts(state)
             NotesBlock(
@@ -73,8 +69,7 @@ fun OccurrenceDetailsScreen(
         OccurrenceBottomActions(
             state = state,
             onOpenOccurrenceEdit = onOpenOccurrenceEdit,
-            onRestoreOccurrence = onRestoreOccurrence,
-            onBack = onBack
+            onRestoreOccurrence = onRestoreOccurrence
         )
     }
 
@@ -113,9 +108,10 @@ fun OccurrenceDetailsScreen(
 private fun OccurrenceBottomActions(
     state: OccurrenceDetailsUiState,
     onOpenOccurrenceEdit: () -> Unit,
-    onRestoreOccurrence: () -> Unit,
-    onBack: () -> Unit
+    onRestoreOccurrence: () -> Unit
 ) {
+    val canChange = state.canChangeOccurrence || state.canMoveOccurrence
+    if (!state.canRestoreOccurrence && !canChange) return
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -128,18 +124,13 @@ private fun OccurrenceBottomActions(
                 onClick = onRestoreOccurrence,
                 modifier = Modifier.fillMaxWidth()
             )
-        } else if (state.canChangeOccurrence || state.canMoveOccurrence) {
+        } else {
             MakPrimaryAction(
                 text = "Zmień termin",
                 onClick = onOpenOccurrenceEdit,
                 modifier = Modifier.fillMaxWidth()
             )
         }
-        MakSecondaryAction(
-            text = "Zamknij",
-            onClick = onBack,
-            modifier = Modifier.fillMaxWidth()
-        )
     }
 }
 
@@ -215,10 +206,7 @@ private fun OccurrenceEditDialog(
 }
 
 @Composable
-private fun OccurrenceHeader(
-    title: String,
-    subtitle: String
-) {
+private fun OccurrenceHeader(title: String) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -228,12 +216,6 @@ private fun OccurrenceHeader(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
             color = MaterialTheme.colorScheme.onBackground
-        )
-        Text(
-            text = subtitle,
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.padding(top = MakSpacing.sm)
         )
     }
 }
@@ -301,11 +283,13 @@ private fun NotesBlock(
         )
         MakHelperText("Wspólna dla każdego wystąpienia tych zajęć.")
         FieldError(state.sharedNoteError?.let(::FieldErrorUi))
-        MakPrimaryAction(
-            text = "Zapisz notatkę dla wszystkich terminów",
-            onClick = onSaveSharedNote,
-            enabled = state.canSaveSharedNote && !state.isSavingSharedNote
-        )
+        if (state.canSaveSharedNote || state.isSavingSharedNote) {
+            MakPrimaryAction(
+                text = "Zapisz notatkę dla wszystkich terminów",
+                onClick = onSaveSharedNote,
+                enabled = !state.isSavingSharedNote
+            )
+        }
         MakField(
             label = "Notatka tylko dla tej daty",
             value = state.occurrenceNoteDraft,
@@ -316,11 +300,13 @@ private fun NotesBlock(
         )
         MakHelperText("Dotyczy tylko daty ${state.dateLabel}.")
         FieldError(state.occurrenceNoteError?.let(::FieldErrorUi))
-        MakPrimaryAction(
-            text = "Zapisz notatkę dla tej daty",
-            onClick = onSaveOccurrenceNote,
-            enabled = state.canSaveOccurrenceNote && !state.isSavingOccurrenceNote
-        )
+        if (state.canSaveOccurrenceNote || state.isSavingOccurrenceNote) {
+            MakPrimaryAction(
+                text = "Zapisz notatkę dla tej daty",
+                onClick = onSaveOccurrenceNote,
+                enabled = !state.isSavingOccurrenceNote
+            )
+        }
     }
 }
 

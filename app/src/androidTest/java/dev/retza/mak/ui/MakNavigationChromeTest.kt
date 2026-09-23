@@ -89,7 +89,7 @@ class MakNavigationChromeTest {
                             MakActionMenu(
                                 actions = listOf(
                                     "Odwołaj termin" to { cancelClicks += 1 },
-                                    "Edytuj bazowe zajęcia" to { editClicks += 1 },
+                                    "Edytuj wszystkie terminy" to { editClicks += 1 },
                                     "Usuń zajęcia" to { deleteClicks += 1 }
                                 ),
                                 modifier = Modifier.padding(end = 4.dp)
@@ -107,7 +107,7 @@ class MakNavigationChromeTest {
         assertEquals(1, cancelClicks)
 
         composeTestRule.onNodeWithContentDescription("Więcej opcji").performClick()
-        composeTestRule.onNodeWithText("Edytuj bazowe zajęcia").assertIsDisplayed().performClick()
+        composeTestRule.onNodeWithText("Edytuj wszystkie terminy").assertIsDisplayed().performClick()
         assertEquals(1, editClicks)
 
         composeTestRule.onNodeWithContentDescription("Więcej opcji").performClick()

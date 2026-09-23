@@ -15,6 +15,7 @@ import dev.retza.mak.ui.components.MakColorPalette
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakPrimaryAction
+import dev.retza.mak.ui.components.MakFieldPair
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSectionHeader
@@ -104,28 +105,32 @@ private fun SemesterStep(
             isError = state.errors.containsKey(SetupField.SemesterName)
         )
         FieldError(state.errors[SetupField.SemesterName])
-        Row(horizontalArrangement = Arrangement.spacedBy(9.dp), modifier = Modifier.fillMaxWidth()) {
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                MakDatePickerField(
-                    label = "Od",
-                    value = state.startDate,
-                    onValueChange = onStartDateChanged,
-                    maxDate = state.endDate.toLocalDateOrNull(),
-                    isError = state.errors.containsKey(SetupField.StartDate)
-                )
-                FieldError(state.errors[SetupField.StartDate])
+        MakFieldPair(
+            first = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    MakDatePickerField(
+                        label = "Od",
+                        value = state.startDate,
+                        onValueChange = onStartDateChanged,
+                        maxDate = state.endDate.toLocalDateOrNull(),
+                        isError = state.errors.containsKey(SetupField.StartDate)
+                    )
+                    FieldError(state.errors[SetupField.StartDate])
+                }
+            },
+            second = {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    MakDatePickerField(
+                        label = "Do",
+                        value = state.endDate,
+                        onValueChange = onEndDateChanged,
+                        minDate = state.startDate.toLocalDateOrNull(),
+                        isError = state.errors.containsKey(SetupField.EndDate)
+                    )
+                    FieldError(state.errors[SetupField.EndDate])
+                }
             }
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                MakDatePickerField(
-                    label = "Do",
-                    value = state.endDate,
-                    onValueChange = onEndDateChanged,
-                    minDate = state.startDate.toLocalDateOrNull(),
-                    isError = state.errors.containsKey(SetupField.EndDate)
-                )
-                FieldError(state.errors[SetupField.EndDate])
-            }
-        }
+        )
         MakSelectField(
             label = "Pierwszy tydzień",
             value = state.firstWeekLabel,

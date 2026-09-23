@@ -19,6 +19,7 @@ import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakExpandableSection
 import dev.retza.mak.ui.components.MakField
+import dev.retza.mak.ui.components.MakFieldPair
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
@@ -102,7 +103,7 @@ fun ClassEditScreen(
     var showMoreOptions by remember { mutableStateOf(false) }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
         MakSectionHeader(
-            eyebrow = "Nowy wpis",
+            eyebrow = null,
             title = state.title,
             subtitle = "Najpierw termin i przedmiot. Resztę możesz uzupełnić później."
         )
@@ -116,29 +117,33 @@ fun ClassEditScreen(
                     isError = state.errors.containsKey(ClassEditField.Name)
                 )
                 FieldError(state.errors[ClassEditField.Name])
-                Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-                        MakSelectField(
-                            label = "Kierunek",
-                            value = state.courseName,
-                            options = state.courseOptions,
-                            onSelected = { option -> onCourseChanged(option.id) },
-                            optionLabel = { it.label },
-                            isError = state.errors.containsKey(ClassEditField.Course)
-                        )
-                        FieldError(state.errors[ClassEditField.Course])
+                MakFieldPair(
+                    first = {
+                        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                            MakSelectField(
+                                label = "Kierunek",
+                                value = state.courseName,
+                                options = state.courseOptions,
+                                onSelected = { option -> onCourseChanged(option.id) },
+                                optionLabel = { it.label },
+                                isError = state.errors.containsKey(ClassEditField.Course)
+                            )
+                            FieldError(state.errors[ClassEditField.Course])
+                        }
+                    },
+                    second = {
+                        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                            MakSelectField(
+                                label = "Typ",
+                                value = state.type,
+                                options = state.typeOptions,
+                                onSelected = onTypeChanged,
+                                isError = state.errors.containsKey(ClassEditField.Type)
+                            )
+                            FieldError(state.errors[ClassEditField.Type])
+                        }
                     }
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-                        MakSelectField(
-                            label = "Typ",
-                            value = state.type,
-                            options = state.typeOptions,
-                            onSelected = onTypeChanged,
-                            isError = state.errors.containsKey(ClassEditField.Type)
-                        )
-                        FieldError(state.errors[ClassEditField.Type])
-                    }
-                }
+                )
                 MakSelectField(
                     label = "Dzień tygodnia",
                     value = state.dayLabel,

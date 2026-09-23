@@ -23,8 +23,7 @@ internal fun openSemesterConfiguration(navController: NavController, id: String)
 
 internal fun NavGraphBuilder.semesterRoutes(
     semesterViewModel: SemesterViewModel,
-    navController: NavController,
-    onBack: () -> Unit
+    navController: NavController
 ) {
     composable(
         route = MakRoutes.Semester,
@@ -52,7 +51,6 @@ internal fun NavGraphBuilder.semesterRoutes(
             onOpenCourses = { semesterId?.let { navController.navigate(semesterCoursesRoute(it)) } },
             onOpenOverrides = { semesterId?.let { navController.navigate(semesterOverridesRoute(it)) } },
             onOpenCalendars = { semesterId?.let { navController.navigate(semesterCalendarsRoute(it)) } },
-            onBack = onBack,
             onRetry = {},
             modifier = Modifier.fillMaxSize()
         )
@@ -80,7 +78,6 @@ internal fun NavGraphBuilder.semesterRoutes(
             onRequestReconnect = semesterViewModel::requestReconnect,
             onConfirmReconnect = semesterViewModel::confirmReconnect,
             onCancelReconnect = semesterViewModel::cancelReconnect,
-            onBack = onBack,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -110,7 +107,6 @@ internal fun NavGraphBuilder.semesterRoutes(
             onSaveOverride = semesterViewModel::saveWeekOverride,
             onDeleteOverride = semesterViewModel::deleteWeekOverride,
             onCancelOverrideEdit = semesterViewModel::cancelWeekOverrideEdit,
-            onBack = onBack,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -137,7 +133,6 @@ internal fun NavGraphBuilder.semesterRoutes(
             },
             onSaveCalendar = semesterViewModel::saveCalendar,
             onDeleteCalendar = semesterViewModel::deleteUnusedCalendar,
-            onBack = onBack,
             modifier = Modifier.fillMaxSize()
         )
     }
