@@ -128,7 +128,7 @@ fun SettingsScreen(
                         SettingsNavigationRow(
                             title = "Zarządzaj semestrami",
                             value = active
-                                ?.let { "${it.dateRangeLabel}, ${it.firstWeekLabel.lowercase()}" }
+                                ?.let { "${it.dateRangeLabel}, ${it.firstWeekLabel.replaceFirstChar { char -> char.lowercase() }}" }
                                 .orEmpty(),
                             onClick = onOpenSemesters
                         )

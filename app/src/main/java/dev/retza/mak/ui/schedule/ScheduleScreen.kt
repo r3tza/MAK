@@ -256,11 +256,11 @@ private fun WeekNavigationHeader(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.weight(1f)
             ) {
-                Text(state.weekRangeLabel, fontWeight = FontWeight.Bold, fontSize = 13.sp)
+                Text(state.weekRangeLabel, fontWeight = FontWeight.Bold, fontSize = 15.sp)
                 Text(
                     state.weekSubtitle,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 11.sp
+                    fontSize = 12.sp
                 )
             }
             MakRoundButton("Następny tydzień", Icons.AutoMirrored.Outlined.ArrowForward, onNextWeek)
@@ -307,12 +307,12 @@ private fun WeekTypeBadge(
             text = weekTypeLabel,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = FontWeight.Bold,
-            fontSize = 12.sp
+            fontSize = 14.sp
         )
         Text(
             text = weekSourceLabel,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 11.sp,
+            fontSize = 13.sp,
             maxLines = 1,
             overflow = TextOverflow.Ellipsis,
             modifier = Modifier.weight(1f)
@@ -373,7 +373,7 @@ private fun ScheduleFilterSection(
                 text = headerLabel,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Bold,
-                fontSize = 12.sp,
+                fontSize = 14.sp,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
                 modifier = Modifier.weight(1f)
@@ -436,12 +436,12 @@ private fun DaySelector(
             ) {
                 Text(
                     day.shortLabel,
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     day.dateLabel,
-                    fontSize = 14.sp,
+                    fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
                     color = if (selected) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface
                 )
@@ -470,7 +470,7 @@ private fun CalendarView(
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
             MakRoundButton("Poprzedni miesiąc", Icons.AutoMirrored.Outlined.ArrowBack, onPreviousMonth)
-            Text(state.calendarMonthLabel, fontWeight = FontWeight.Bold, fontSize = 14.sp)
+            Text(state.calendarMonthLabel, fontWeight = FontWeight.Bold, fontSize = 16.sp)
             MakRoundButton("Następny miesiąc", Icons.AutoMirrored.Outlined.ArrowForward, onNextMonth)
         }
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
@@ -478,7 +478,7 @@ private fun CalendarView(
                 Text(
                     text = label,
                     modifier = Modifier.weight(1f),
-                    fontSize = 9.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
@@ -544,7 +544,7 @@ private fun RowScope.CalendarDay(day: CalendarDayUi, onSelected: (String) -> Uni
     ) {
         Text(
             day.dayLabel,
-            fontSize = 10.sp,
+            fontSize = 13.sp,
             color = when {
                 day.isSelected -> MaterialTheme.colorScheme.onPrimary
                 day.isInCurrentMonth -> MaterialTheme.colorScheme.onSurface

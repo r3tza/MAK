@@ -7,6 +7,7 @@ import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
@@ -37,6 +38,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material.icons.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.ArrowForward
@@ -364,8 +367,8 @@ private fun SummaryColumn(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
     ) {
-        Text(label, color = Color.White.copy(alpha = 0.78f), fontSize = 11.sp)
-        Text(value.toString(), color = valueColor, fontSize = 20.sp, fontWeight = FontWeight.Bold)
+        Text(label, color = Color.White.copy(alpha = 0.78f), fontSize = 13.sp)
+        Text(value.toString(), color = valueColor, fontSize = 28.sp, fontWeight = FontWeight.Bold)
     }
 }
 
@@ -448,32 +451,34 @@ fun ClassCard(
             Column(modifier = Modifier.width(48.dp)) {
                 Text(
                     text = item.startTime,
-                    fontSize = 13.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.ExtraBold,
                     color = MaterialTheme.colorScheme.onSurface,
                     maxLines = 1
                 )
                 Text(
                     text = item.endTime,
-                    fontSize = 11.sp,
+                    fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm),
-                    verticalAlignment = Alignment.CenterVertically
+                Text(
+                    text = item.name,
+                    style = MaterialTheme.typography.titleSmall,
+                    textDecoration = if (item.isCancelled) TextDecoration.LineThrough else null,
+                    maxLines = 3,
+                    overflow = TextOverflow.Ellipsis
+                )
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs),
+                    verticalArrangement = Arrangement.spacedBy(MakSpacing.xs),
+                    itemVerticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.fillMaxWidth()
                 ) {
-                    Text(
-                        text = item.name,
-                        style = MaterialTheme.typography.titleSmall,
-                        textDecoration = if (item.isCancelled) TextDecoration.LineThrough else null,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
+                    CoursePill(name = item.courseName, accent = accent)
                     val badge = item.statusBadge
                     if (badge != null) {
                         StatusBadge(
@@ -483,25 +488,15 @@ fun ClassCard(
                             oneOff = item.isOneOff
                         )
                     }
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs),
-                    verticalAlignment = Alignment.CenterVertically,
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    CoursePill(
-                        name = item.courseName,
-                        accent = accent,
-                        modifier = Modifier.weight(1f, fill = false)
-                    )
-                    Text(
-                        text = item.type,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        modifier = Modifier.weight(1f)
-                    )
+                    if (item.type.isNotBlank()) {
+                        Text(
+                            text = item.type,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                    }
                 }
                 Text(
                     text = classMeta(item),
@@ -539,7 +534,7 @@ fun ClassCard(
                             text = item.conflictLabel,
                             color = MaterialTheme.colorScheme.onTertiaryContainer,
                             fontWeight = FontWeight.SemiBold,
-                            fontSize = 11.sp
+                            fontSize = 12.sp
                         )
                     }
                 }
@@ -584,9 +579,9 @@ private fun CoursePill(
         modifier = modifier
             .clip(RoundedCornerShape(50))
             .background(fill)
-            .padding(horizontal = 7.dp, vertical = 3.dp),
+            .padding(horizontal = 8.dp, vertical = 3.dp),
         color = content,
-        fontSize = 10.sp,
+        fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
@@ -610,9 +605,9 @@ private fun ClassNoteRow(
             modifier = Modifier
                 .clip(RoundedCornerShape(50))
                 .background(background)
-                .padding(horizontal = 7.dp, vertical = 3.dp),
+                .padding(horizontal = 8.dp, vertical = 3.dp),
             color = foreground,
-            fontSize = 10.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold
         )
         Text(
@@ -643,9 +638,9 @@ private fun StatusBadge(text: String, cancelled: Boolean, modified: Boolean, one
         modifier = Modifier
             .clip(RoundedCornerShape(50))
             .background(bg)
-            .padding(horizontal = 6.dp, vertical = 2.dp),
+            .padding(horizontal = 8.dp, vertical = 3.dp),
         color = fg,
-        fontSize = 9.sp,
+        fontSize = 12.sp,
         fontWeight = FontWeight.Bold
     )
 }
@@ -761,7 +756,7 @@ fun MakSecondaryAction(
         ),
         contentPadding = PaddingValues(horizontal = 12.dp)
     ) {
-        Text(text, fontWeight = FontWeight.Bold, fontSize = 12.sp, textAlign = TextAlign.Center)
+        Text(text, fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center)
     }
 }
 
@@ -782,7 +777,7 @@ fun MakTextAction(
             text = text,
             color = MaterialTheme.colorScheme.primary,
             fontWeight = FontWeight.ExtraBold,
-            fontSize = 11.sp
+            fontSize = 13.sp
         )
     }
 }
@@ -863,7 +858,7 @@ private fun ViewSwitchButton(
     ) {
         Text(
             text = text,
-            fontSize = 11.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.ExtraBold,
             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -937,7 +932,7 @@ private fun RowScope.MakNavButton(
         )
         Text(
             label,
-            fontSize = 10.sp,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
             color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant
         )
@@ -991,7 +986,13 @@ fun MakReadOnlyField(
         readOnly = true,
         isError = isError,
         label = { Text(label) },
-        trailingIcon = { Text("▾", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+        trailingIcon = {
+            Icon(
+                imageVector = Icons.Filled.ArrowDropDown,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     )
 }
 
@@ -1037,7 +1038,7 @@ fun MakExpandableSection(
             Text(
                 text = if (expanded) "Ukryj $label" else "Pokaż $label",
                 modifier = Modifier.weight(1f),
-                fontSize = 12.sp,
+                fontSize = 13.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -1100,19 +1101,27 @@ fun <T> MakSelectField(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = value.ifBlank { " " },
-                    fontSize = 13.sp,
-                    color = MaterialTheme.colorScheme.onSurface,
+                    text = value.ifBlank { "Wybierz" },
+                    fontSize = 14.sp,
+                    color = if (value.isBlank()) {
+                        MaterialTheme.colorScheme.onSurfaceVariant
+                    } else {
+                        MaterialTheme.colorScheme.onSurface
+                    },
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f)
                 )
-                Text("▾", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                Icon(
+                    imageVector = Icons.Filled.ArrowDropDown,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             DropdownMenu(expanded = expanded, onDismissRequest = { expanded = false }) {
                 options.forEach { option ->
                     DropdownMenuItem(
-                        text = { Text(optionLabel(option), fontSize = 13.sp) },
+                        text = { Text(optionLabel(option), fontSize = 14.sp) },
                         onClick = {
                             onSelected(option)
                             expanded = false
@@ -1128,7 +1137,7 @@ fun <T> MakSelectField(
 private fun FieldLabel(label: String) {
     Text(
         text = label,
-        fontSize = 11.sp,
+        fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
         color = if (MaterialTheme.colorScheme.background.luminanceOrInk()) {
             MakFieldLabel
@@ -1183,7 +1192,7 @@ fun MakChoiceRow(
                 )
             }
         }
-        Text(label, fontSize = 12.sp, modifier = Modifier.padding(start = 8.dp))
+        Text(label, fontSize = 14.sp, modifier = Modifier.padding(start = 8.dp))
     }
 }
 
@@ -1205,12 +1214,12 @@ fun MakCheckbox(
                 stateDescription = if (checked) "Zaznaczone" else "Niezaznaczone"
             },
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(6.dp)
+        horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
         val shape = RoundedCornerShape(4.dp)
         Box(
             modifier = Modifier
-                .size(16.dp)
+                .size(20.dp)
                 .clip(shape)
                 .border(
                     1.dp,
@@ -1221,10 +1230,15 @@ fun MakCheckbox(
             contentAlignment = Alignment.Center
         ) {
             if (checked) {
-                Text("✓", fontSize = 10.sp, color = MaterialTheme.colorScheme.onPrimary, fontWeight = FontWeight.Bold)
+                Icon(
+                    imageVector = Icons.Filled.Check,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.onPrimary,
+                    modifier = Modifier.size(16.dp)
+                )
             }
         }
-        Text(label, fontSize = 10.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
     }
 }
 
@@ -1263,7 +1277,7 @@ fun MakHelperText(text: String, modifier: Modifier = Modifier) {
     Text(
         text = text,
         modifier = modifier.fillMaxWidth(),
-        fontSize = 11.sp,
+        fontSize = 12.sp,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         lineHeight = 16.sp
     )
@@ -1323,13 +1337,13 @@ fun MakFactRow(
         Text(
             text = label,
             modifier = Modifier.width(88.dp),
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = value,
             modifier = Modifier.weight(1f),
-            fontSize = 12.sp,
+            fontSize = 13.sp,
             fontWeight = FontWeight.SemiBold
         )
     }

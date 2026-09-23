@@ -134,7 +134,7 @@ suspend fun seedDemoDataIfEmpty(
             semesterId = semesterId,
             semesterProgramId = managementProgramId,
             name = "Konsultacje przed kolokwium",
-            type = "Jednorazowe",
+            type = "Inne",
             teacherName = "dr Anna Nowak",
             dayOfWeek = today.dayOfWeek,
             startTime = LocalTime.of(16, 0),
