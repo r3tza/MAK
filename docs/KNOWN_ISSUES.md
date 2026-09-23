@@ -1,6 +1,18 @@
 # Znane problemy interfejsu
 
-Stan na 2026-09-22. Ten rejestr obejmuje braki potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`. Nie traktować poniższych punktów jako wyniku testu na urządzeniu.
+Stan na 2026-09-23. Ten rejestr obejmuje braki potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`. Nie traktować poniższych punktów jako wyniku testu na urządzeniu.
+
+## Błędy potwierdzone audytem kodu z 2026-09-23
+
+Zadania i kryteria są w `QUEUE.md`, a kroki wykonawcze w `PLAN.md`.
+
+1. **Powtórzony identyfikator wystąpienia (I-08).** Termin przeniesiony na dzień, w którym te same zajęcia mają zwykły termin, ma ten sam identyfikator co zwykły termin. Kolizja między nimi nie jest wykrywana, a szczegóły mogą otworzyć niewłaściwą zmianę.
+2. **Notatka do wystąpienia po przeniesieniu (I-09).** Notatka zostaje pod datą sprzed przeniesienia i nie jest widoczna przy przeniesionym terminie. Czeka na decyzję.
+3. **Strefa czasowa (I-10).** Zegar zapamiętuje strefę z chwili startu procesu, więc po zmianie strefy alarmy są liczone w starej strefie.
+4. **Nieobsłużone wyjątki (I-11).** Usunięcie zajęć, zapis i usunięcie korekty tygodnia na ekranie „Plan” oraz praca w tle mogą zamknąć aplikację zamiast pokazać błąd.
+5. **Stan formularzy po zakończeniu procesu (I-12).** Wpisane wartości giną, gdy system zakończy proces w tle; ViewModele żyją przez cały czas działania aktywności.
+6. **Drobne poprawki (I-13).** Odbiornik bez sprawdzenia akcji, import bez limitu rozmiaru, nieaktualna data na ekranie „Plan” po północy, ostrzeżenia kompilatora i lint, dokumentacja środowiska.
+7. **Systemowa kopia zapasowa (I-14).** Baza i ustawienia mogą trafiać do kopii Google. Czeka na decyzję.
 
 ## Wymagają odbioru na urządzeniu
 
