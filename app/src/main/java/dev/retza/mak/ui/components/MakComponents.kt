@@ -70,6 +70,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.paneTitle
 import androidx.compose.ui.semantics.role
 import androidx.compose.ui.semantics.selected
@@ -294,7 +295,7 @@ fun MakRoundButton(
 
 @Composable
 fun MakSummaryCard(
-    caption: String,
+    title: String,
     classCount: Int,
     collisionCount: Int,
     gapCount: Int,
@@ -309,7 +310,16 @@ fun MakSummaryCard(
             .padding(horizontal = MakSpacing.lg, vertical = MakSpacing.lg),
         verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
-        Text(caption, color = Color.White.copy(alpha = 0.78f), fontSize = 11.sp)
+        Text(
+            text = title,
+            color = Color.White,
+            style = MaterialTheme.typography.titleMedium.copy(
+                fontSize = 17.sp,
+                lineHeight = 22.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            modifier = Modifier.semantics { heading() }
+        )
         Row(
             modifier = Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically
@@ -334,9 +344,6 @@ fun MakSummaryCard(
                 valueColor = Color.White,
                 modifier = Modifier.weight(1f)
             )
-        }
-        if (classCount == 0) {
-            Text("Dziś bez zajęć", color = Color.White.copy(alpha = 0.78f), fontSize = 12.sp)
         }
     }
 }
@@ -365,8 +372,8 @@ private fun SummaryDivider() {
     Box(
         modifier = Modifier
             .width(1.dp)
-            .height(32.dp)
-            .background(Color.White.copy(alpha = 0.25f))
+            .height(40.dp)
+            .background(Color.White.copy(alpha = 0.5f))
     )
 }
 

@@ -8,6 +8,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isHeading
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
@@ -67,7 +68,8 @@ class TodayScreenTest {
         }
 
         composeTestRule.onNodeWithText("Dzisiaj").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Twój plan na dziś").assertIsDisplayed()
+        composeTestRule.onNode(hasText("Twój plan na dziś") and isHeading()).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dziś bez zajęć").assertDoesNotExist()
         composeTestRule.onNodeWithText("Zajęcia").assertIsDisplayed()
         composeTestRule.onNodeWithText("Kolizje").assertIsDisplayed()
         composeTestRule.onNodeWithText("Okienka").assertIsDisplayed()
@@ -105,7 +107,8 @@ class TodayScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Dziś bez zajęć").assertIsDisplayed()
+        composeTestRule.onNode(hasText("Dziś bez zajęć") and isHeading()).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Twój plan na dziś").assertDoesNotExist()
         composeTestRule.onAllNodesWithText("0").assertCountEquals(3)
     }
 

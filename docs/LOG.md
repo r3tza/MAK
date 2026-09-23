@@ -4,6 +4,14 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-23: Nagłówek i separatory podsumowania „Dzisiaj”
+
+- Fakty: Podpis „Twój plan na dziś” miał 11 sp i 78% krycia, czyli był mniejszy od etykiet kolumn. Separatory liczb miały 25% krycia i ginęły na gradiencie, a „Dziś bez zajęć” było osobnym tekstem pod liczbami.
+- Decyzja: Na prośbę użytkownika nagłówek karty ma 17 sp, pogrubienie, pełną biel i semantykę nagłówka. W dniu bez zajęć nagłówek brzmi „Dziś bez zajęć” zamiast „Twój plan na dziś”, a tekst pod liczbami usunięto. Separatory mają 50% krycia i 40 dp wysokości. `MakSummaryCard` przyjmuje `title`, a treść nagłówka wybiera `TodayScreen`.
+- Powód: Nagłówek ma otwierać hierarchię karty, a stan pustego dnia jest najważniejszą informacją i nie powinien stać na końcu.
+- Odrzucone: Zmiana gradientu, rozmiaru liczb i układu kolumn.
+- Weryfikacja: `TodayScreenTest` sprawdza nagłówek z semantyką w obu stanach i brak drugiego tekstu. Odbiór wyglądu na urządzeniu należy do O-05.
+
 ## 2026-09-23: Notatka do wystąpienia podąża za terminem
 
 - Fakty: Audyt z 2026-09-23 wykazał, że notatka do wystąpienia jest przypięta do daty faktycznej. Po przeniesieniu terminu zostaje pod starą datą i nie jest widoczna nigdzie. Identyfikator wystąpienia także opierał się na dacie faktycznej, więc termin przeniesiony na dzień zwykłego terminu tych samych zajęć miał ten sam identyfikator (I-08).
@@ -152,12 +160,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Odrzucone: Walidacja przez próbę zapisu i rollback jako główna ścieżka; wrzucanie mapowania i walidacji do repozytorium razem z JSON.
 - Poprawki po przeglądzie: Pola zmiany wystąpienia (`targetDate`, nowe godziny) są odrzucane, gdy są podane, ale niepoprawne, zamiast cicho zamieniane na `null`. Sprawdzana jest globalna unikalność identyfikatorów wszystkich tabel oraz pary wymagane przez indeksy: `(semester_id, study_program_id)`, `(academic_calendar_id, week_start_date, scope)`, `(semester_id, class_id, occurrence_date)` i `(semester_id, class_id, original_date)`. Walidacja stosuje też reguły zwykłego zapisu: koniec zajęć późniejszy od początku, obie nowe godziny zmiany razem i koniec po początku, korekta tygodnia w poniedziałek, niepusta notatka.
 - Weryfikacja: `ExportImporterTest` pokrywa poprawny snapshot, złą wersję, osierocone zajęcia, kalendarz z innego semestru, dwa aktywne semestry, zajęcia jednorazowe bez daty, powtórzone identyfikatory kierunków i kalendarzy oraz nowe reguły: niepoprawna godzina zmiany zamiast pominięcia, koniec zmiany przed początkiem, powtórzone przypisanie kierunku, koniec zajęć przed początkiem i korekta poza poniedziałkiem. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi.
-
-## 2026-09-21: Zakres wersji importu
-
-- Fakty: Eksport ma `schemaVersion` 2 z globalnymi kierunkami, semestrami, powiązaniami i kalendarzami. Użytkownicy mają też pliki z wcześniejszego eksportu, który nie zawierał globalnych kierunków ani wielokalendarzowego modelu.
-- Decyzja: Import przyjmuje wyłącznie `schemaVersion` 2. Plik w innej wersji jest odrzucany z jasnym komunikatem, bez próby mapowania.
-- Powód: Eksport v1 nie niesie danych potrzebnych do odtworzenia obecnego modelu, a zgadywanie mapowania groziłoby cichym zniekształceniem planu.
-- Odrzucone: Import plików v1 przez syntezę kierunków i kalendarza; migracja pliku v1 do v2 po stronie klienta.
-- Wznowić decyzję tylko gdy: pojawi się realna potrzeba odtworzenia danych z plików v1 albo powstanie osobne narzędzie migracji plików.
-- Kolejność etapu 13: walidacja snapshotu, potem atomowe zastąpienie w repozytorium, na końcu podgląd i potwierdzenie w UI.

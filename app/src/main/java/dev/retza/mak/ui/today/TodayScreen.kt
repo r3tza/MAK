@@ -54,7 +54,7 @@ fun TodayScreen(
         )
         if (state.hasActiveSemester) {
             MakSummaryCard(
-                caption = "Twój plan na dziś",
+                title = if (state.classCount == 0) "Dziś bez zajęć" else "Twój plan na dziś",
                 classCount = state.classCount,
                 collisionCount = state.collisionCount,
                 gapCount = state.gapCount,

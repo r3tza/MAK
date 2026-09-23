@@ -21,7 +21,7 @@ To domyślny ekran otwierany po uruchomieniu aplikacji.
 Powinien pokazywać:
 
 - dzień tygodnia i pełną datę;
-- gradientową kartę „Twój plan na dziś” z trzema równymi kolumnami „Zajęcia”, „Kolizje” i „Okienka”; każda kolumna ma etykietę u góry i liczbę poniżej;
+- gradientową kartę podsumowania z nagłówkiem „Twój plan na dziś”, a w dniu bez zajęć „Dziś bez zajęć”, oraz trzema równymi kolumnami „Zajęcia”, „Kolizje” i „Okienka”; każda kolumna ma etykietę u góry i liczbę poniżej;
 - czerwony kolor liczby kolizji, gdy jest większa od zera, oraz zielony, gdy wynosi zero; pozostałe liczby zachowują neutralny kolor;
 - wszystkie aktywne zajęcia w kolejności od najwcześniejszego;
 - kolor kierunku;
@@ -30,7 +30,7 @@ Powinien pokazywać:
 
 Definicja okienka i reguła jego liczenia są w `DOMAIN.md`, sekcja „Okienka”. Użytkownik może zmienić próg globalnie w ustawieniach.
 
-`TodayViewModel` umieszcza liczbę zajęć, unikalnych kolizji i okienek w stanie widoku. Karta zachowuje obecny gradient, ma subtelne pionowe separatory i nie pokazuje ozdobnej ikony. Przy braku zajęć pokazuje tekst „Dziś bez zajęć” oraz trzy wartości równe zero. Układ musi zachować czytelność i semantykę przy szerokości 320 dp oraz w motywie jasnym i ciemnym.
+`TodayViewModel` umieszcza liczbę zajęć, unikalnych kolizji i okienek w stanie widoku. Karta zachowuje obecny gradient i nie pokazuje ozdobnej ikony. Nagłówek karty jest pogrubiony, większy od etykiet kolumn (17 sp), w pełni biały i oznaczony semantycznie jako nagłówek. Przy braku zajęć nagłówek brzmi „Dziś bez zajęć” zamiast „Twój plan na dziś”, a karta pokazuje trzy wartości równe zero, bez dodatkowego tekstu pod liczbami. Pionowe separatory między kolumnami są wyraźnie widoczne na gradiencie (biel 50% krycia, 40 dp wysokości). Układ musi zachować czytelność i semantykę przy szerokości 320 dp oraz w motywie jasnym i ciemnym.
 
 ### Struktura karty zajęć
 
