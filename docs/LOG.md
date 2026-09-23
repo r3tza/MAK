@@ -4,6 +4,14 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-23: Notatka do wystąpienia podąża za terminem
+
+- Fakty: Audyt z 2026-09-23 wykazał, że notatka do wystąpienia jest przypięta do daty faktycznej. Po przeniesieniu terminu zostaje pod starą datą i nie jest widoczna nigdzie. Identyfikator wystąpienia także opierał się na dacie faktycznej, więc termin przeniesiony na dzień zwykłego terminu tych samych zajęć miał ten sam identyfikator (I-08).
+- Decyzja: Użytkownik zdecydował, że notatka podąża za przeniesionym terminem. `OccurrenceNote.occurrenceDate` oznacza datę oryginalną terminu, a wystąpienie identyfikują zajęcia i data oryginalna. Istniejące notatki przepina migracja Room v2 do v3 i import pliku w wersji 2, obie przez jedną funkcję. Przy niejednoznacznym przypadku notatka zostaje, a przy konflikcie treści są łączone, nie usuwane.
+- Powód: Notatka opisuje konkretny termin zajęć, nie dzień w kalendarzu. Tożsamość przez datę oryginalną jest unikalna i odpowiada praktyce iCalendar (`RECURRENCE-ID`).
+- Odrzucone: Pozostawienie notatki przy dacie zapisu; przenoszenie notatki w repozytorium przy każdej zmianie terminu; zmiana nazwy kolumny `occurrence_date`.
+- Weryfikacja: Do wykonania w I-08 i I-09 według `PLAN.md`, kroki 1 i 5.
+
 ## 2026-09-22: Dokończenie układu widgetu (I-06)
 
 - Fakty: Widget miał nagłówek, pasek kierunku, metadane, alert kolizji, etykietę notatki, separatory i warianty rozmiaru, ale nie pokazywał faz zajęć ani nie sygnalizował, co trwa i co jest następne, choć `ARCHITECTURE.md` dopuszcza różną prezentację zakończonych, trwających i następnych zajęć.
@@ -153,12 +161,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Odrzucone: Import plików v1 przez syntezę kierunków i kalendarza; migracja pliku v1 do v2 po stronie klienta.
 - Wznowić decyzję tylko gdy: pojawi się realna potrzeba odtworzenia danych z plików v1 albo powstanie osobne narzędzie migracji plików.
 - Kolejność etapu 13: walidacja snapshotu, potem atomowe zastąpienie w repozytorium, na końcu podgląd i potwierdzenie w UI.
-
-## 2026-09-21: Etap 12.3, kalendarze w interfejsie
-
-- Fakty: Warstwa danych i ViewModele obsługiwały wiele kalendarzy, ale ekrany nadal pokazywały jeden wspólny kalendarz i nie było sposobu rozdzielić ani połączyć kalendarzy.
-- Decyzja: Ekran semestru pokazuje pola dat tylko przy jednym kalendarzu, a przy wielu etykietę „Różne kalendarze" i wiersz „Kalendarze". Ekran „Kierunki" ma dwie jawne akcje „Nowy kierunek" i „Wybierz istniejący", wybór „Wspólne daty i tygodnie" (z listą kalendarzy) albo „Osobne daty i tygodnie", rozdzielenie kalendarza kierunku, wybór kalendarza przy połączeniu i dialog ostrzegający, że osierocony kalendarz zostanie usunięty razem z korektami. Przy wybranym istniejącym kierunku pola nazwy i koloru są ukryte, a ekran pokazuje, że kierunek jest współdzielony między semestrami. Ekran „Kalendarze" listuje kalendarze z datami, rytmem i kierunkami, pozwala edytować daty wybranego kalendarza i usuwać nieużywane. Korekty tygodni mają wybór kalendarza, gdy jest ich wiele.
-- Powód: Model wielokalendarzowy musi być widoczny i obsługiwalny w interfejsie, a etykiety i role informacji mają prowadzić użytkownika bez zgadywania.
-- Odrzucone: Pokazywanie listy kalendarzy na ekranie semestru; scalanie korekt przy połączeniu; edycja nazwy i koloru globalnego kierunku z poziomu przypięcia.
-- Poprawki po przeglądzie: Etykieta kalendarza zawiera zakres dat, rytm A/B i przypisane kierunki, a kierunki o tej samej nazwie dostają numer, więc kalendarze o identycznych datach są rozróżnialne. Ekran semestru pokazuje łączną liczbę korekt wszystkich kalendarzy (`overrideCount`), a lista korekt nadal dotyczy wybranego kalendarza.
-- Weryfikacja: Testy Compose kompilowalne (`SemesterScreenTest`) dla ekranu z wieloma kalendarzami, dwóch akcji wyboru kierunku, trybu wspólnego i osobnego, ostrzeżenia przy połączeniu, listy kalendarzy i wyboru kalendarza w korektach, wszystkie przy 320 dp. `SemesterViewModelTest` pokrywa akcje stanu i łączną liczbę korekt przy kilku kalendarzach. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór na urządzeniu pozostaje otwarty.

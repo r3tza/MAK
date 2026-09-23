@@ -78,10 +78,10 @@ Model notatki do konkretnego wystąpienia `OccurrenceNote` zawiera:
 
 - `id`;
 - `classId`;
-- `occurrenceDate` - konkretna data zajęć;
+- `occurrenceDate` - data oryginalna terminu, czyli data wynikająca z planu cyklicznego, a dla zajęć jednorazowych ich data;
 - `body`.
 
-W bazie obowiązuje najwyżej jedna notatka do danego wystąpienia zajęć. Notatka do zajęć jest przechowywana przy `ClassEntity`, a `OccurrenceNote` pozostaje osobną tabelą, aby zmiana jednej daty nie modyfikowała pozostałych wystąpień.
+Notatka należy do terminu, nie do dnia w kalendarzu. Przeniesienie, zmiana, odwołanie i przywrócenie terminu nie zmieniają notatki: po przeniesieniu jest widoczna przy terminie w nowej dacie, po odwołaniu pozostaje zapisana i wraca po przywróceniu. W bazie obowiązuje najwyżej jedna notatka do danego wystąpienia zajęć. Notatka do zajęć jest przechowywana przy `ClassEntity`, a `OccurrenceNote` pozostaje osobną tabelą, aby zmiana jednej daty nie modyfikowała pozostałych wystąpień.
 
 ## Zmiany pojedynczych wystąpień
 
@@ -104,6 +104,8 @@ Z ekranu szczegółów konkretnego terminu użytkownik może wybrać:
 Odrabianie albo inne dodatkowe spotkanie jest zapisywane jako `ClassEntity` z `recurrence = ONCE` i konkretną datą. Formularz może skopiować nazwę, kierunek, prowadzącego i typ z istniejących zajęć, ale zapis pozostaje niezależny od cyklu.
 
 Zmiany wystąpień są stosowane po rozwinięciu planu cyklicznego i przed wykrywaniem kolizji. Usunięcie albo edycja zmiany nie modyfikuje bazowego wpisu zajęć.
+
+Wystąpienie identyfikują zajęcia i data oryginalna terminu, a nie data, w której termin faktycznie się odbywa. Para jest unikalna, bo zajęcia mają najwyżej jeden termin z danej daty planu. Dzięki temu termin przeniesiony na dzień, w którym te same zajęcia mają zwykły termin, pozostaje osobnym wystąpieniem z własną kolizją, zmianą i notatką.
 
 ## Okienka
 

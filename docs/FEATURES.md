@@ -120,7 +120,7 @@ Formularz ogranicza zajęcia do jednego dnia kalendarzowego. Godzina zakończeni
 - budynek;
 - grupa - pole opcjonalne;
 - notatka do zajęć - opcjonalna, wspólna dla każdego wystąpienia tego wpisu;
-- notatka do wybranego wystąpienia - opcjonalna, przypięta do jednej konkretnej daty zajęć.
+- notatka do wybranego wystąpienia - opcjonalna, przypięta do jednego terminu zajęć; po przeniesieniu terminu jest widoczna razem z nim w nowej dacie.
 
 Podczas dodawania notatki użytkownik wybiera zakres: „Do tych zajęć” albo „Tylko do tego terminu”. Notatkę do konkretnego wystąpienia można dodać z ekranu szczegółów zajęć na ekranie „Dzisiaj” lub „Plan”. Jeśli istnieją oba typy, aplikacja pokazuje je osobno i nie nadpisuje notatki wspólnej.
 

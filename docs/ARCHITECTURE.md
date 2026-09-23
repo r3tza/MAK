@@ -189,7 +189,6 @@ Pierwszy zakres nie obejmuje:
 ## 10. Otwarte pytania
 
 - Systemowa kopia zapasowa Androida (I-14). Manifest ma `allowBackup="true"` z szablonowymi regułami, więc baza i ustawienia mogą trafiać do kopii Google. Do decyzji: wyłączyć kopię, dopuścić ją jawnie albo dodać przełącznik w ustawieniach. Do czasu decyzji nie zmieniamy manifestu ani reguł kopii.
-- Notatka do wystąpienia po przeniesieniu terminu (I-09). Do decyzji: czy notatka podąża za przeniesionym terminem, czy zostaje przy dacie, do której ją zapisano.
 
 ## 11. Problemy do rozwiązania
 

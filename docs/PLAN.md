@@ -1,6 +1,6 @@
 # Plan najbliższych prac
 
-Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie są cztery poprawki z audytu z 2026-09-23. Pełna lista zadań i oddzielny status odbioru są w `QUEUE.md`. Cel i zakres produktu opisuje `PRODUCT.md`, reguły planu `DOMAIN.md`, a zachowanie ekranów `FEATURES.md`. Po ukończeniu kroku uaktualnij kolejkę i wybierz następny; nie dopisuj tu historii wykonania.
+Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie jest pięć poprawek z audytu z 2026-09-23. Pełna lista zadań i oddzielny status odbioru są w `QUEUE.md`. Cel i zakres produktu opisuje `PRODUCT.md`, reguły planu `DOMAIN.md`, a zachowanie ekranów `FEATURES.md`. Po ukończeniu kroku uaktualnij kolejkę i wybierz następny; nie dopisuj tu historii wykonania.
 
 Każdy krok ma być wykonalny także przez słabszego agenta bez odgadywania intencji. Podaj kolejność małych zmian, docelowe pliki lub obszary kodu, zależności, przypadki brzegowe, sposób sprawdzenia i jednoznaczne kryterium zakończenia. Jeśli do wykonania brakuje decyzji, zapisz ją jako bloker zamiast pozostawiać ukryte założenie.
 
@@ -84,6 +84,47 @@ Weryfikacja: `gradlew.bat test lintDebug` oraz `python scripts/check_map.py`. Po
 
 Kryterium zakończenia: wszystkie punkty wykonane albo odrzucone z uzasadnieniem, bez nowych ostrzeżeń.
 
+## 5. Notatka do wystąpienia podąża za terminem (I-09)
+
+Zależność: krok 1 (I-08) musi być skończony, bo notatka korzysta z tej samej tożsamości wystąpienia.
+
+Decyzja: `OccurrenceNote.occurrenceDate` oznacza datę oryginalną terminu (`DOMAIN.md`, sekcja o `OccurrenceNote`). Nazwy kolumny `occurrence_date` i pola JSON `occurrenceDate` zostają; zmienia się ich znaczenie.
+
+Wspólna reguła przepinania istniejących notatek jest jedną czystą funkcją w `data/repository/OccurrenceNoteRemap.kt`. Przyjmuje proste modele notatek (id, zajęcia, data, treść), zmian (zajęcia, data oryginalna, rodzaj, data docelowa) i zajęć (id, dzień tygodnia, cykl) i zwraca notatki do aktualizacji oraz do usunięcia. Używają jej migracja i import; nie kopiuj reguły.
+
+Reguła dla notatki N zajęć C z datą T:
+
+1. Znajdź zmiany `MODIFIED` zajęć C z `targetDate == T` i `originalDate != T`.
+2. Brak takich zmian albo więcej niż jedna: notatka zostaje bez zmian.
+3. Dokładnie jedna zmiana z datą oryginalną D: jeśli C nie jest `ONCE`, dzień tygodnia C jest równy dniowi tygodnia T i C nie ma zmiany z `originalDate == T`, to w dniu T może istnieć zwykły termin C. Przypadek jest niejednoznaczny, więc notatka zostaje przy T. W pozostałych przypadkach notatka dostaje datę D.
+4. Jeśli po przepięciu kilka notatek ma te same zajęcia i datę, połącz je w jedną: zostaje wiersz o najmniejszym `id`, treści są łączone pustą linią w kolejności rosnącej daty sprzed przepięcia, a pozostałe wiersze są usuwane. Treść nie może zginąć.
+
+Kolejność:
+
+1. Funkcja przepinania z testami JVM dla wszystkich punktów reguły.
+2. `domain/ScheduleResolver.kt`, `render`: szukaj notatki po `classItem.id to originalDate` zamiast `actualDate`.
+3. `ui/occurrence/OccurrenceViewModel.kt`: `buildDetails` szuka notatki po dacie oryginalnej, a `noteDate` przyjmuje `built.baseDate`. Zapis i usunięcie notatki używają daty oryginalnej.
+4. Room v3: w `AppDatabase` podnieś `version` do 3, dodaj `MIGRATION_2_3` w `Migrations.kt`, zarejestruj ją obok `MIGRATION_1_2` i zapisz wyeksportowany `3.json`. Schemat tabel się nie zmienia; migracja czyta wiersze `occurrence_notes`, `occurrence_changes` i `classes`, woła funkcję przepinania i wykonuje `UPDATE` oraz `DELETE` w transakcji migracji. `day_of_week` jest liczbą ISO (poniedziałek to 1).
+5. Eksport i import: `ExportSchema.VERSION` = 3. `ExportImporter.prepare` przyjmuje wersje 2 i 3; dla wersji 2 po walidacji przepina notatki tą samą funkcją, a potem sprawdza unikalność `(semester_id, class_id, occurrence_date)`. Inne wersje są odrzucane jak dotąd. Komunikat o nieobsługiwanej wersji ma wymieniać obie obsługiwane wersje.
+6. Sprawdź `DemoDataSeeder`: notatka do przeniesionego terminu ma mieć datę oryginalną.
+7. Dokumentacja: w `ARCHITECTURE.md`, sekcja 7, zmień opis schematu Room na wersję 3 i dopisz migrację z v2; w `LOG.md` dodaj wpis o wykonaniu razem z decyzją o imporcie wersji 2 i 3.
+
+Przypadki brzegowe:
+
+- notatka dodana do terminu, potem termin przeniesiony: po zmianie kodu widoczna w nowej dacie bez migracji;
+- termin odwołany i przywrócony: notatka wraca;
+- notatka niewidoczna po przeniesieniu (pod datą oryginalną) i notatka dopisana po przeniesieniu (pod datą docelową): po migracji jedna notatka z obiema treściami;
+- przeniesienie na ten sam dzień tygodnia innego tygodnia: notatka zostaje przy T, zgodnie z punktem 3 reguły;
+- zajęcia jednorazowe: bez zmian.
+
+Weryfikacja:
+
+- testy JVM funkcji przepinania, `ScheduleResolverTest` (notatka po przeniesieniu i po przywróceniu), `OccurrenceViewModelTest` (zapis notatki przeniesionego terminu trafia pod datę oryginalną), `ExportImporterTest` (plik w wersji 2 z przeniesioną notatką, plik w wersji 3, odrzucenie wersji 1), `JsonExportCodecTest` dla `schemaVersion` 3;
+- `RoomMigrationTest`: migracja v2 do v3 na zachowanych danych dla przepięcia, przypadku niejednoznacznego i scalenia; łańcuch v1 do v3;
+- `gradlew.bat test` i `gradlew.bat compileDebugAndroidTestKotlin`. Uruchomienie migracji na urządzeniu dopisz do odbioru O-01.
+
+Kryterium zakończenia: notatka do wystąpienia jest widoczna przy przeniesionym terminie, istniejące dane i pliki w wersji 2 są przepinane tą samą regułą, żadna treść notatki nie ginie, a testy przechodzą.
+
 ## Po tych krokach
 
-Wybierz następne zadanie z `QUEUE.md`: I-12 wymaga najpierw osobnego planu, a I-09 i I-14 czekają na decyzję użytkownika. Odbiór na urządzeniu można wykonywać niezależnie od powyższej kolejności; otwarte scenariusze są w `FEATURES.md`, sekcja „Odbiór na urządzeniu”.
+Wybierz następne zadanie z `QUEUE.md`: I-12 wymaga najpierw osobnego planu, a I-14 czeka na decyzję użytkownika. Odbiór na urządzeniu można wykonywać niezależnie od powyższej kolejności; otwarte scenariusze są w `FEATURES.md`, sekcja „Odbiór na urządzeniu”.

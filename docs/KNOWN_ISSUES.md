@@ -7,7 +7,7 @@ Stan na 2026-09-23. Ten rejestr obejmuje braki potwierdzone przeglądem kodu ora
 Zadania i kryteria są w `QUEUE.md`, a kroki wykonawcze w `PLAN.md`.
 
 1. **Powtórzony identyfikator wystąpienia (I-08).** Termin przeniesiony na dzień, w którym te same zajęcia mają zwykły termin, ma ten sam identyfikator co zwykły termin. Kolizja między nimi nie jest wykrywana, a szczegóły mogą otworzyć niewłaściwą zmianę.
-2. **Notatka do wystąpienia po przeniesieniu (I-09).** Notatka zostaje pod datą sprzed przeniesienia i nie jest widoczna przy przeniesionym terminie. Czeka na decyzję.
+2. **Notatka do wystąpienia po przeniesieniu (I-09).** Notatka zostaje pod datą sprzed przeniesienia i nie jest widoczna przy przeniesionym terminie. Decyzja z 2026-09-23: notatka podąża za terminem.
 3. **Strefa czasowa (I-10).** Zegar zapamiętuje strefę z chwili startu procesu, więc po zmianie strefy alarmy są liczone w starej strefie.
 4. **Nieobsłużone wyjątki (I-11).** Usunięcie zajęć, zapis i usunięcie korekty tygodnia na ekranie „Plan” oraz praca w tle mogą zamknąć aplikację zamiast pokazać błąd.
 5. **Stan formularzy po zakończeniu procesu (I-12).** Wpisane wartości giną, gdy system zakończy proces w tle; ViewModele żyją przez cały czas działania aktywności.
