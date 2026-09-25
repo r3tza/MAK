@@ -6,23 +6,25 @@ import android.net.Uri
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
-import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.setContent
+import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.LaunchedEffect
 import androidx.core.app.NotificationManagerCompat
-import androidx.compose.foundation.isSystemInDarkTheme
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import androidx.activity.enableEdgeToEdge
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import dev.retza.mak.export.BackupFileRead
+import dev.retza.mak.export.readBackupFile
 import dev.retza.mak.ui.AppViewModel
 import dev.retza.mak.ui.MakApp
 import dev.retza.mak.ui.edit.ClassEditViewModel
@@ -85,6 +87,7 @@ class MainActivity : ComponentActivity() {
                     val observer = LifecycleEventObserver { _, event ->
                         if (event == Lifecycle.Event.ON_RESUME) {
                             todayViewModel.refreshToday()
+                            scheduleViewModel.refreshToday()
                             notificationsBlocked =
                                 !NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled()
                         }
@@ -121,15 +124,15 @@ class MainActivity : ComponentActivity() {
                 ) { uri ->
                     if (uri != null) {
                         scope.launch {
-                            val bytes = withContext(Dispatchers.IO) {
+                            val read = withContext(Dispatchers.IO) {
                                 runCatching {
-                                    contentResolver.openInputStream(uri)?.use { it.readBytes() }
+                                    contentResolver.openInputStream(uri)?.use { readBackupFile(it) }
                                 }.getOrNull()
                             }
-                            if (bytes == null) {
-                                settingsViewModel.reportImportReadError()
-                            } else {
-                                settingsViewModel.prepareImport(bytes)
+                            when (read) {
+                                null -> settingsViewModel.reportImportReadError()
+                                BackupFileRead.TooLarge -> settingsViewModel.reportImportTooLarge()
+                                is BackupFileRead.Loaded -> settingsViewModel.prepareImport(read.bytes)
                             }
                         }
                     }

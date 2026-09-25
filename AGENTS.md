@@ -7,17 +7,17 @@ Te zasady obowiązują w całym repozytorium. Szczegóły produktu znajdują si�
 - `docs/PRODUCT.md` - cel, zakres i kryteria MVP.
 - `docs/DOMAIN.md` - reguły planu, kalendarzy, wystąpień i kolizji.
 - `docs/FEATURES.md` - zachowanie ekranów, widgetu i scenariusze odbioru.
-- `docs/ARCHITECTURE.md` — granice systemu, terminologia i zasady interfejsu.
-- `docs/STACK.md` — języki, narzędzia, środowisko, testy i odrzucone alternatywy.
-- `docs/CHANGELOG.md` — zmiany wydane użytkownikom.
-- `docs/LOG.md` — 20 ostatnich wpisów o decyzjach i zmianach; starsze wpisy są w `docs/log_archive/`.
+- `docs/ARCHITECTURE.md` - granice systemu, terminologia i zasady interfejsu.
+- `docs/STACK.md` - języki, narzędzia, środowisko, testy i odrzucone alternatywy.
+- `docs/CHANGELOG.md` - zmiany wydane użytkownikom.
+- `docs/LOG.md` - 20 ostatnich wpisów o decyzjach i zmianach; starsze wpisy są w `docs/log_archive/`.
 - `docs/PLAN.md` - najwyżej pięć najbliższych kroków wykonawczych.
-- `docs/QUEUE.md` — bieżące zadania, zależności i oddzielne statusy implementacji oraz odbioru.
+- `docs/QUEUE.md` - bieżące zadania, zależności i oddzielne statusy implementacji oraz odbioru.
 - `docs/MAP.md` - mapa dokumentów według rodzaju zadania.
-- `docs/WORKFLOW.md` — kolejność pracy i warunki zakończenia zadania.
-- `docs/KNOWN_ISSUES.md` — potwierdzone braki i otwarte scenariusze odbioru.
-- `docs/WRITING.md` — zasady pisania dokumentacji i tekstów dla użytkownika.
-- `README.md` — punkt wejścia do dokumentacji; nie zastępuje źródeł prawdy.
+- `docs/WORKFLOW.md` - kolejność pracy i warunki zakończenia zadania.
+- `docs/KNOWN_ISSUES.md` - potwierdzone braki i otwarte scenariusze odbioru.
+- `docs/WRITING.md` - zasady pisania dokumentacji i tekstów dla użytkownika.
+- `README.md` - punkt wejścia do dokumentacji; nie zastępuje źródeł prawdy.
 - Język dokumentacji: polski.
 - Język odpowiedzi dla użytkownika: polski.
 - Identyfikatory i komentarze w kodzie: angielski.
@@ -26,7 +26,7 @@ Te zasady obowiązują w całym repozytorium. Szczegóły produktu znajdują si�
 
 Zacznij od `docs/MAP.md`, potem otwórz tylko dokumenty i kod dotyczące zadania. Jeśli mapa nie wystarcza, znajdź właściwą sekcję przez `rg` i popraw mapę.
 
-Po zmianie `README.md`, `AGENTS.md`, `CLAUDE.md` albo plików `docs/*.md` uruchom `python3 scripts/check_map.py`. Po zmianie samego skryptu uruchom też `python3 scripts/test_check_map.py`. Szczegóły narzędzi są w `docs/STACK.md`.
+Po zmianie `README.md`, `AGENTS.md`, `CLAUDE.md` albo plików `docs/*.md` uruchom `python3 scripts/check_map.py` (na Windowsie `python`). Po zmianie samego skryptu uruchom też `python3 scripts/test_check_map.py`. Szczegóły narzędzi są w `docs/STACK.md`.
 
 ## Aktualny punkt pracy
 
@@ -129,7 +129,7 @@ Agenci sprawdzają działanie aplikacji testami, które da się uruchomić lokal
 
 Po zmianie `WeekCalculator`, `ScheduleResolver`, `CollisionDetector`, eksportu JSON albo walidacji formularza uruchom `gradlew.bat test`. Nie czekaj na emulator.
 
-Po zmianie `README.md`, `AGENTS.md`, `CLAUDE.md` albo `docs/*.md` uruchom `python3 scripts/check_map.py`. Po zmianie `scripts/check_map.py` uruchom też `python3 scripts/test_check_map.py`. Kod 0 jest wymagany. Nie dodawaj pakietów Pythona, sieci, Gradle ani zapisu plików w tej kontroli.
+Po zmianie `README.md`, `AGENTS.md`, `CLAUDE.md` albo `docs/*.md` uruchom `python3 scripts/check_map.py` (na Windowsie `python`). Po zmianie `scripts/check_map.py` uruchom też `python3 scripts/test_check_map.py`. Kod 0 jest wymagany. Nie dodawaj pakietów Pythona, sieci, Gradle ani zapisu plików w tej kontroli.
 
 Pisz testy razem z logiką, nie jako osobny etap. Jeden test na jedną regułę z `docs/DOMAIN.md`, `docs/FEATURES.md` albo `docs/ARCHITECTURE.md`. Przykładowe testy szablonu usuń, gdy pojawią się prawdziwe.
 

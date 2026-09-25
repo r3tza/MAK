@@ -278,6 +278,10 @@ class SettingsViewModel(
         local.update { it.copy(importErrorMessage = "Nie udało się odczytać pliku.") }
     }
 
+    fun reportImportTooLarge() {
+        local.update { it.copy(importErrorMessage = "Plik jest za duży, aby był kopią MAK.") }
+    }
+
     fun dismissImportError() = local.update { it.copy(importErrorMessage = null) }
 
     fun cancelImport() {
@@ -344,19 +348,19 @@ private fun buildSettingsState(
                 "Osobny kalendarz"
             },
             courseCountLabel = if (isActive) {
-                "${activeData?.semesterPrograms?.size ?: 0} kierunków"
+                "${activeData.semesterPrograms.size} kierunków"
             } else {
                 "Dane odizolowane"
             },
             classCountLabel = if (isActive) {
-                classCountLabel(activeData?.classes?.size ?: 0)
+                classCountLabel(activeData.classes.size)
             } else {
                 "Osobny plan"
             },
             isActive = isActive
         )
     },
-    activeSemesterId = activeData?.semester?.id?.toString(),
+    activeSemesterId = activeData?.semester?.id,
     themeOptions = listOf(
         ThemeOptionUi("system", "Systemowy", preferences.theme == ThemeMode.System),
         ThemeOptionUi("light", "Jasny", preferences.theme == ThemeMode.Light),

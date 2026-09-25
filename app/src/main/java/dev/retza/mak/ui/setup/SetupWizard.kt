@@ -36,10 +36,10 @@ fun SetupWizard(
     onBack: () -> Unit,
     onAddClass: () -> Unit,
     onFinish: () -> Unit,
+    modifier: Modifier = Modifier,
     onReturnToSettings: () -> Unit = {},
     showReturnToSettings: Boolean = false,
-    onRetry: () -> Unit,
-    modifier: Modifier = Modifier
+    onRetry: () -> Unit
 ) {
     val (title, subtitle) = when (state.step) {
         SetupStep.Semester -> "Utwórz semestr" to "Krok 1 z 3, najpierw ustaw semestr, potem dodaj kierunek i zajęcia."

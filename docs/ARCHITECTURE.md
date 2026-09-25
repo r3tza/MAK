@@ -1,4 +1,4 @@
-# MAK — architektura
+# MAK: architektura
 
 ## 1. Status dokumentu
 
@@ -24,20 +24,20 @@ Aplikacja działa offline. Użytkownik nie tworzy konta i nie korzysta z backend
 
 Główne pojęcia:
 
-- **kierunek** — trwały kierunek studiów oznaczony nazwą i kolorem, który może występować w wielu semestrach;
-- **przypisanie kierunku** — połączenie kierunku z semestrem i kalendarzem akademickim;
-- **kalendarz akademicki** — wspólny zestaw dat semestru, rytmu A/B i korekt tygodni używany przez jeden lub kilka kierunków;
-- **zajęcia** — pojedynczy wpis planu z nazwą, terminem, kierunkiem i opcjonalnymi danymi;
-- **semestr** — nazwany kontener aktywnego planu, kierunków i ich kalendarzy akademickich;
-- **aktywny semestr** — semestr wybrany w ustawieniach, którego plan pokazują ekrany, widget i powiadomienia;
-- **tydzień A/B** — oznaczenie całego tygodnia kalendarzowego, od poniedziałku do niedzieli, według którego wybierane są zajęcia;
-- **korekta tygodnia** — ręczne oznaczenie jednego tygodnia albo ustawienie oznaczenia, od którego tygodnie znów naprzemiennie się zmieniają;
-- **notatka do zajęć** — notatka wspólna dla wszystkich wystąpień danego wpisu zajęć;
-- **notatka do wystąpienia** — notatka przypięta do jednego konkretnego terminu zajęć w wybranej dacie;
-- **zmiana wystąpienia** — odwołanie, przeniesienie lub zmiana danych jednego konkretnego terminu zajęć cyklicznych;
-- **zajęcia jednorazowe** — dodatkowy wpis obowiązujący tylko w jednej dacie, używany między innymi do odrabiania zajęć;
-- **plan aktywny** — zestaw zajęć obowiązujących dla wskazanej daty po zastosowaniu semestru, tygodnia A/B, zmian wystąpień i zajęć jednorazowych;
-- **kolizja** — nakładanie się godzin dwóch aktywnych zajęć tego samego dnia, także zajęć należących do różnych kierunków.
+- **kierunek**: trwały kierunek studiów oznaczony nazwą i kolorem, który może występować w wielu semestrach;
+- **przypisanie kierunku**: połączenie kierunku z semestrem i kalendarzem akademickim;
+- **kalendarz akademicki**: wspólny zestaw dat semestru, rytmu A/B i korekt tygodni używany przez jeden lub kilka kierunków;
+- **zajęcia**: pojedynczy wpis planu z nazwą, terminem, kierunkiem i opcjonalnymi danymi;
+- **semestr**: nazwany kontener aktywnego planu, kierunków i ich kalendarzy akademickich;
+- **aktywny semestr**: semestr wybrany w ustawieniach, którego plan pokazują ekrany, widget i powiadomienia;
+- **tydzień A/B**: oznaczenie całego tygodnia kalendarzowego, od poniedziałku do niedzieli, według którego wybierane są zajęcia;
+- **korekta tygodnia**: ręczne oznaczenie jednego tygodnia albo ustawienie oznaczenia, od którego tygodnie znów naprzemiennie się zmieniają;
+- **notatka do zajęć**: notatka wspólna dla wszystkich wystąpień danego wpisu zajęć;
+- **notatka do wystąpienia**: notatka przypięta do jednego konkretnego terminu zajęć w wybranej dacie;
+- **zmiana wystąpienia**: odwołanie, przeniesienie lub zmiana danych jednego konkretnego terminu zajęć cyklicznych;
+- **zajęcia jednorazowe**: dodatkowy wpis obowiązujący tylko w jednej dacie, używany między innymi do odrabiania zajęć;
+- **plan aktywny**: zestaw zajęć obowiązujących dla wskazanej daty po zastosowaniu semestru, tygodnia A/B, zmian wystąpień i zajęć jednorazowych;
+- **kolizja**: nakładanie się godzin dwóch aktywnych zajęć tego samego dnia, także zajęć należących do różnych kierunków.
 
 Nazwy „kierunek”, „przypisanie kierunku”, „kalendarz akademicki”, „zajęcia”, „semestr”, „aktywny semestr”, „tydzień A/B”, „korekta tygodnia”, „notatka do zajęć”, „notatka do wystąpienia”, „zmiana wystąpienia”, „zajęcia jednorazowe”, „plan aktywny” i „kolizja” mają stałe znaczenie w dokumentacji oraz interfejsie.
 

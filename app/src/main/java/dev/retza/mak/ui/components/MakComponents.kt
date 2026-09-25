@@ -129,8 +129,8 @@ fun MakScreenContent(
 fun MakSectionHeader(
     eyebrow: String?,
     title: String,
-    subtitle: String? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    subtitle: String? = null
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         if (eyebrow != null) {
@@ -454,8 +454,8 @@ fun MakRowTitle(
 @Composable
 fun ClassCard(
     item: ClassItemUi,
-    onClick: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    onClick: (() -> Unit)? = null
 ) {
     val accent = classAccentColor(item)
     val shape = RoundedCornerShape(16.dp)
@@ -734,10 +734,10 @@ fun MakEmptyState(message: String, modifier: Modifier = Modifier) {
 @Composable
 fun MakStateMessage(
     status: ScreenStatus,
+    modifier: Modifier = Modifier,
     emptyTitle: String? = null,
     emptyMessage: String? = null,
-    onRetry: (() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    onRetry: (() -> Unit)? = null
 ) {
     when (status) {
         ScreenStatus.Loading -> Column(

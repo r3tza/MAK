@@ -40,7 +40,7 @@ class ScheduleViewModelTest {
 
     private val feedback = mutableListOf<UiFeedback>()
 
-    private fun viewModel(repository: FakeRepository) = ScheduleViewModel(
+    private fun viewModel(repository: FakeRepository, clock: Clock = this.clock) = ScheduleViewModel(
         FakeSemesterRepository(repository),
         repository,
         clock,
@@ -51,6 +51,39 @@ class ScheduleViewModelTest {
             }
         }
     )
+
+    @Test
+    fun refreshTodayMovesUnchangedSelectionToNewDay() = runTest(mainDispatcher) {
+        val clock = MutableClock(Instant.parse("2026-09-27T20:00:00Z"))
+        val viewModel = viewModel(FakeRepository(), clock)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+        val sundayWeek = viewModel.schedule.value.weekRangeLabel
+
+        clock.now = Instant.parse("2026-09-28T06:00:00Z")
+        viewModel.refreshToday()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.schedule.value.weekRangeLabel != sundayWeek)
+        assertEquals("Bieżący tydzień", viewModel.schedule.value.weekSubtitle)
+    }
+
+    @Test
+    fun refreshTodayKeepsWeekChosenByUser() = runTest(mainDispatcher) {
+        val clock = MutableClock(Instant.parse("2026-09-27T20:00:00Z"))
+        val viewModel = viewModel(FakeRepository(), clock)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+        viewModel.changeWeek(2)
+        advanceUntilIdle()
+        val chosenWeek = viewModel.schedule.value.weekRangeLabel
+
+        clock.now = Instant.parse("2026-09-28T06:00:00Z")
+        viewModel.refreshToday()
+        advanceUntilIdle()
+
+        assertEquals(chosenWeek, viewModel.schedule.value.weekRangeLabel)
+    }
 
     @Test
     fun initialStateMapsActiveSemesterPlan() = runTest(mainDispatcher) {
@@ -273,4 +306,12 @@ class ScheduleViewModelTest {
 
         assertTrue(repository.weekOverrides.isEmpty())
     }
+}
+
+private class MutableClock(var now: Instant) : Clock() {
+    override fun getZone(): ZoneId = ZoneId.of("Europe/Warsaw")
+
+    override fun withZone(zone: ZoneId): Clock = this
+
+    override fun instant(): Instant = now
 }

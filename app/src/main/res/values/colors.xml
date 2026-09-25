@@ -1,7 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="mak_ink">#FF17243A</color>
     <color name="mak_paper">#FFFFFFFF</color>
     <color name="mak_accent">#FF334FCE</color>
-    <color name="mak_background">#FFF6F8FB</color>
 </resources>

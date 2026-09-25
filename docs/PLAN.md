@@ -4,22 +4,6 @@ Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie je
 
 Każdy krok ma być wykonalny także przez słabszego agenta bez odgadywania intencji. Podaj kolejność małych zmian, docelowe pliki lub obszary kodu, zależności, przypadki brzegowe, sposób sprawdzenia i jednoznaczne kryterium zakończenia. Jeśli do wykonania brakuje decyzji, zapisz ją jako bloker zamiast pozostawiać ukryte założenie.
 
-## 4. Drobne poprawki z audytu (I-13)
-
-Każdy punkt to osobna mała zmiana. Punkt, którego nie wykonujesz, odrzuć z uzasadnieniem w `LOG.md`.
-
-1. `NotificationRescheduleReceiver`: obsługuj tylko akcje z manifestu (`BOOT_COMPLETED`, `TIME_SET`, `TIMEZONE_CHANGED`, `MY_PACKAGE_REPLACED`), inne ignoruj. Usuwa to ostrzeżenie lint `UnsafeProtectedBroadcastReceiver`.
-2. Import w `MainActivity`: przed `readBytes()` sprawdź rozmiar pliku. Limit 5 MB. Większy plik kończy się komunikatem „Plik jest za duży, aby był kopią MAK.” bez wczytywania do pamięci.
-3. `ScheduleViewModel` ustala dzisiejszą datę raz w konstruktorze. Po powrocie do aplikacji następnego dnia „Plan” pokazuje wczorajszy tydzień. Odśwież datę przy `ON_RESUME` tak jak `TodayViewModel.refreshToday`, ale tylko wtedy, gdy użytkownik nie wybrał innej daty.
-4. Ostrzeżenia kompilatora: `@OptIn(FlowPreview::class)` dla `debounce` w `MakApplication`, warunki zawsze prawdziwe w `ExportImporter.kt:211` i zbędne wywołania w `SettingsViewModel.kt:347-359`. Ostrzeżenia lint `ModifierParameter`, `UnusedResources` i `UseKtx` popraw, jeśli zmiana nie wpływa na zachowanie.
-5. Dokumentacja środowiska w `STACK.md`, sekcja 6: na Windowsie interpreter nazywa się `python`, a Gradle wymaga `local.properties` z `sdk.dir` albo zmiennej `ANDROID_HOME`. Uzupełnij polecenia w `AGENTS.md` i `WORKFLOW.md`, żeby działały na obu nazwach interpretera.
-6. Znak em dash w `AGENTS.md` i `ARCHITECTURE.md` zastąp zwykłą interpunkcją zgodnie z `WRITING.md`. Nie zmieniaj znaczenia zdań.
-7. Wersja release: przed włączeniem `isMinifyEnabled` dodaj reguły R8 dla `kotlinx.serialization` i klas eksportu. Obecnie tylko zapisz to jako warunek w `STACK.md`; nie włączaj minifikacji w tym kroku.
-
-Weryfikacja: `gradlew.bat test lintDebug` oraz `python scripts/check_map.py`. Porównaj liczbę ostrzeżeń lint z raportem sprzed zmiany (16).
-
-Kryterium zakończenia: wszystkie punkty wykonane albo odrzucone z uzasadnieniem, bez nowych ostrzeżeń.
-
 ## 5. Notatka do wystąpienia podąża za terminem (I-09)
 
 Zależność: krok 1 (I-08) musi być skończony, bo notatka korzysta z tej samej tożsamości wystąpienia.

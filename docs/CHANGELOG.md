@@ -1,4 +1,4 @@
-# MAK — historia wydań
+# MAK: historia wydań
 
 ## 0.1.0, 2026-09-19
 

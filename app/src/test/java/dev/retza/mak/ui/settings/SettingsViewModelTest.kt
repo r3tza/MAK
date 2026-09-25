@@ -538,6 +538,18 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun importTooLargeShowsSizeMessage() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        viewModel.reportImportTooLarge()
+        advanceUntilIdle()
+
+        assertEquals("Plik jest za duży, aby był kopią MAK.", viewModel.settings.value.importErrorMessage)
+    }
+
+    @Test
     fun preferencesRestoreThemeForNewInstance() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val preferences = InMemorySettingsPreferences()

@@ -139,8 +139,8 @@ fun ScheduleScreen(
     onClearWeekCorrection: (WeekOverrideScopeUi) -> Unit,
     onStartSetup: () -> Unit,
     onRetry: () -> Unit,
-    requiresSetup: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    requiresSetup: Boolean = false
 ) {
     var showWeekDialog by remember { mutableStateOf(false) }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {

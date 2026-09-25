@@ -40,8 +40,8 @@ fun TodayScreen(
     onOpenClass: (String) -> Unit,
     onStartSetup: () -> Unit,
     onRetry: () -> Unit,
-    requiresSetup: Boolean = false,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    requiresSetup: Boolean = false
 ) {
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
         MakSectionHeader(

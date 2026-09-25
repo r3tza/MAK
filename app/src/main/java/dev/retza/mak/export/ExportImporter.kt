@@ -208,7 +208,7 @@ object ExportImporter {
                 errors += "Zajęcia jednorazowe ${item.id} nie mają daty."
             }
             if (day == null || start == null || end == null || recurrence == null ||
-                (start != null && end != null && !end.isAfter(start)) ||
+                !end.isAfter(start) ||
                 (recurrence == Recurrence.ONCE && date == null)
             ) {
                 return@forEach

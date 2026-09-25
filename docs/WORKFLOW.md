@@ -16,7 +16,7 @@ Ten dokument opisuje kolejność pracy. Cel i kryteria produktu są w `PRODUCT.m
 3. Przy zmianie interfejsu sprawdź kryteria UI z `ARCHITECTURE.md`: szerokość 320 dp, dostępność, motyw ciemny, focus i stany błędu. Kompilacja testów Android nie oznacza odbioru na urządzeniu.
 4. Przy zmianie danych sprawdź migrację, zachowanie istniejących danych i rollback. Przy imporcie lub powiadomieniach sprawdź odpowiednie scenariusze z `FEATURES.md` i reguły z `DOMAIN.md`.
 5. Zrób przegląd diffu. Zaktualizuj odpowiednią dokumentację, jeśli zmieniło się zachowanie, architektura albo zakres. Ważną decyzję zapisz w `LOG.md`, a starszy dwudziesty wpis przenieś do archiwum.
-6. Przy zmianie `README.md`, `AGENTS.md`, `CLAUDE.md` albo `docs/*.md` uruchom `python3 scripts/check_map.py`. Przy zmianie `scripts/check_map.py` uruchom też `python3 scripts/test_check_map.py`. Nie dodawaj hooka ani bramki CI.
+6. Przy zmianie `README.md`, `AGENTS.md`, `CLAUDE.md` albo `docs/*.md` uruchom `python3 scripts/check_map.py` (na Windowsie `python`). Przy zmianie `scripts/check_map.py` uruchom też `python3 scripts/test_check_map.py`. Nie dodawaj hooka ani bramki CI.
 
 ## Zakończenie i status
 

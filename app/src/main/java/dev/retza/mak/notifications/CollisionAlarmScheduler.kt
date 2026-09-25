@@ -4,6 +4,7 @@ import android.app.AlarmManager
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import androidx.core.content.edit
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.CollisionNotificationPlanner
@@ -135,7 +136,7 @@ class CollisionAlarmScheduler(
             .toSet()
 
     private fun store(ids: Set<Int>) {
-        stored.edit().putStringSet(SCHEDULED_IDS_KEY, ids.map { it.toString() }.toSet()).apply()
+        stored.edit { putStringSet(SCHEDULED_IDS_KEY, ids.map { it.toString() }.toSet()) }
     }
 
     private companion object {

@@ -214,8 +214,8 @@ fun MakTopBar(
     showSettings: Boolean,
     onBack: () -> Unit,
     onSettings: () -> Unit,
-    actions: (@Composable RowScope.() -> Unit)? = null,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    actions: (@Composable RowScope.() -> Unit)? = null
 ) {
     CenterAlignedTopAppBar(
         modifier = modifier,

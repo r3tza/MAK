@@ -15,6 +15,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
@@ -28,7 +29,7 @@ import org.koin.plugin.module.dsl.startKoin
 
 private const val NOTIFICATION_REFRESH_DEBOUNCE_MILLIS = 1_000L
 
-@OptIn(ExperimentalCoroutinesApi::class)
+@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @KoinApplication
 class MakApplication : Application() {
     private val scheduleRepository: ScheduleRepository by inject()

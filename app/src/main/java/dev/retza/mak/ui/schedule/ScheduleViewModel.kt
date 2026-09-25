@@ -56,6 +56,7 @@ sealed interface ScheduleEffect {
 }
 
 private data class ScheduleControls(
+    val today: LocalDate,
     val scheduleDate: LocalDate,
     val calendarMonth: YearMonth,
     val calendarDate: LocalDate,
@@ -73,14 +74,16 @@ class ScheduleViewModel(
     private val activePlanProvider: ActivePlanProvider,
     private val feedbackSink: FeedbackSink
 ) : ViewModel() {
-    private val today = LocalDate.now(clock)
-    private val controls = MutableStateFlow(
-        ScheduleControls(
-            scheduleDate = today,
-            calendarMonth = YearMonth.from(today),
-            calendarDate = today
+    private val controls = LocalDate.now(clock).let { today ->
+        MutableStateFlow(
+            ScheduleControls(
+                today = today,
+                scheduleDate = today,
+                calendarMonth = YearMonth.from(today),
+                calendarDate = today
+            )
         )
-    )
+    }
 
     private val activePlanData = semesterRepository.observeActiveSemester()
         .flatMapLatest { semester ->
@@ -104,6 +107,23 @@ class ScheduleViewModel(
     val effects = effectsChannel.receiveAsFlow()
 
     fun selectView(view: ScheduleView) = controls.update { it.copy(scheduleView = view) }
+
+    /**
+     * Called when the app returns to the foreground. After midnight the plan follows the new day,
+     * but a week or day the user picked on purpose stays selected.
+     */
+    fun refreshToday() = controls.update { control ->
+        val newToday = LocalDate.now(clock)
+        if (newToday == control.today) return@update control
+        val followList = control.scheduleDate == control.today
+        val followCalendar = control.calendarDate == control.today
+        control.copy(
+            today = newToday,
+            scheduleDate = if (followList) newToday else control.scheduleDate,
+            calendarDate = if (followCalendar) newToday else control.calendarDate,
+            calendarMonth = if (followCalendar) YearMonth.from(newToday) else control.calendarMonth
+        )
+    }
 
     fun changeWeek(amount: Long) = controls.update { it.copy(scheduleDate = it.scheduleDate.plusWeeks(amount)) }
 
@@ -209,7 +229,7 @@ class ScheduleViewModel(
         val cancelled = if (control.showCancelled) cancelledItems(data, control.scheduleDate) else emptyList()
         val labels = conflictLabels(selectedPlan.collisions)
         val monday = control.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val currentWeekMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val currentWeekMonday = control.today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val calendarDays = calendarDates(control.calendarMonth).map { date ->
             val occurrences = activePlan(data, date).schedule.occurrences.filter {
                 activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
@@ -219,7 +239,7 @@ class ScheduleViewModel(
                 dayLabel = date.dayOfMonth.toString(),
                 accessibilityLabel = calendarAccessibilityLabel(date, occurrences),
                 isInCurrentMonth = YearMonth.from(date) == control.calendarMonth,
-                isToday = date == today,
+                isToday = date == control.today,
                 isSelected = date == control.calendarDate,
                 markers = occurrences.take(3).map {
                     CalendarMarkerUi(
