@@ -1,8 +1,8 @@
 package dev.retza.mak.ui.edit
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import org.koin.core.annotation.KoinViewModel
 import dev.retza.mak.data.repository.ClassRecord
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.koin.core.annotation.KoinViewModel
 
 sealed interface ClassEditEffect {
     data object CloseEditor : ClassEditEffect
@@ -43,15 +44,22 @@ sealed interface ClassEditEffect {
 class ClassEditViewModel(
     private val semesterRepository: SemesterRepository,
     private val scheduleRepository: ScheduleRepository,
-    private val feedbackSink: FeedbackSink
+    private val feedbackSink: FeedbackSink,
+    private val savedState: SavedStateHandle
 ) : ViewModel() {
-    private val state = MutableStateFlow(defaultClassEditState())
+    // The draft survives process death: Android may stop the app while the user copies
+    // the timetable from another app, and returning must not clear the form.
+    private val state = MutableStateFlow(savedState.restoreClassEditDraft() ?: defaultClassEditState())
     val editor: StateFlow<ClassEditUiState> = state.asStateFlow()
 
     private val effectsChannel = Channel<ClassEditEffect>(Channel.BUFFERED)
     val effects = effectsChannel.receiveAsFlow()
 
-    private var editingClassId: Long? = null
+    private var editingClassId: Long? = savedState[KEY_EDITING_CLASS_ID]
+        set(value) {
+            field = value
+            savedState[KEY_EDITING_CLASS_ID] = value
+        }
     private var openJob: Job? = null
 
     private val activePlanData = semesterRepository.observeActiveSemester()
@@ -65,6 +73,9 @@ class ClassEditViewModel(
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     init {
+        viewModelScope.launch {
+            state.collect { savedState.storeClassEditDraft(it) }
+        }
         viewModelScope.launch {
             activePlanData.collect { data ->
                 state.update { current ->
@@ -90,6 +101,16 @@ class ClassEditViewModel(
                 occurrenceDate = oneOffDate?.toString().orEmpty()
             )
         )
+    }
+
+    /**
+     * Opens the editor from its route. Keeps the current draft when it already belongs to this
+     * class, so recreating the screen (rotation, process death) does not reload stored data.
+     */
+    fun openEditIfNeeded(occurrenceId: String) {
+        val classId = occurrenceId.substringBefore(':').toLongOrNull() ?: return
+        if (editingClassId == classId) return
+        openEdit(occurrenceId)
     }
 
     fun openEdit(occurrenceId: String) {
@@ -309,3 +330,54 @@ private val classEditDayNames = linkedMapOf(
     DayOfWeek.SATURDAY to "Sobota",
     DayOfWeek.SUNDAY to "Niedziela"
 )
+
+private const val KEY_EDITING_CLASS_ID = "class_edit_editing_class_id"
+private const val KEY_DRAFT = "class_edit_draft"
+
+// Only the values typed by the user are stored; options and calendar ranges come from Room.
+private val draftFields: List<Pair<String, (ClassEditUiState) -> String?>> = listOf(
+    "title" to { it.title },
+    "name" to { it.name },
+    "courseName" to { it.courseName },
+    "semesterProgramId" to { it.semesterProgramId },
+    "type" to { it.type },
+    "dayLabel" to { it.dayLabel },
+    "startTime" to { it.startTime },
+    "endTime" to { it.endTime },
+    "recurrenceId" to { it.recurrenceId },
+    "occurrenceDate" to { it.occurrenceDate },
+    "room" to { it.room },
+    "building" to { it.building },
+    "group" to { it.group },
+    "teacher" to { it.teacher },
+    "note" to { it.note }
+)
+
+private fun SavedStateHandle.storeClassEditDraft(value: ClassEditUiState) {
+    set(KEY_DRAFT, true)
+    draftFields.forEach { (key, read) -> set("$KEY_DRAFT.$key", read(value)) }
+}
+
+private fun SavedStateHandle.restoreClassEditDraft(): ClassEditUiState? {
+    if (get<Boolean>(KEY_DRAFT) != true) return null
+    fun field(key: String): String? = get<String>("$KEY_DRAFT.$key")
+    val recurrenceId = field("recurrenceId") ?: "every_week"
+    return defaultClassEditState().copy(
+        title = field("title") ?: "Dodaj zajęcia",
+        name = field("name").orEmpty(),
+        courseName = field("courseName").orEmpty(),
+        semesterProgramId = field("semesterProgramId"),
+        type = field("type").orEmpty(),
+        dayLabel = field("dayLabel").orEmpty(),
+        startTime = field("startTime").orEmpty(),
+        endTime = field("endTime").orEmpty(),
+        recurrenceId = recurrenceId,
+        recurrenceLabel = classEditRecurrenceLabel(recurrenceId),
+        occurrenceDate = field("occurrenceDate").orEmpty(),
+        room = field("room").orEmpty(),
+        building = field("building").orEmpty(),
+        group = field("group").orEmpty(),
+        teacher = field("teacher").orEmpty(),
+        note = field("note").orEmpty()
+    )
+}

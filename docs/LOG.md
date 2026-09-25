@@ -4,6 +4,14 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-25: Odtwarzanie formularza zajęć (I-12)
+
+- Fakty: Żaden ViewModel nie używał `SavedStateHandle`, więc po zakończeniu procesu przez system wpisane dane formularzy znikały. Trasa edycji zajęć wołała `openEdit` przy każdym odtworzeniu ekranu, także po obrocie, i nadpisywała wpisane zmiany danymi z bazy.
+- Decyzja: Użytkownik zawęził I-12 do formularza zajęć. `ClassEditViewModel` zapisuje wartości wpisane przez użytkownika i identyfikator edytowanych zajęć w `SavedStateHandle` i odtwarza je przy tworzeniu. Trasa woła `openEditIfNeeded`, które nie wczytuje zajęć ponownie, jeśli szkic dotyczy tych samych zajęć. Otwarcie z listy albo szczegółów nadal zaczyna od danych z bazy.
+- Powód: Najbardziej prawdopodobny scenariusz utraty danych to przepisywanie planu z innej aplikacji podczas dodawania zajęć. Pozostałe formularze są krótkie, a pełne odtwarzanie wszystkich ekranów nie jest powszechną praktyką i zwiększyłoby koszt zmian.
+- Odrzucone: Odtwarzanie wszystkich formularzy i przeniesienie ViewModeli na zakres tras w tym zadaniu; `Bundle` w `SavedStateHandle`, bo testy JVM nie sprawdzałyby zapisu.
+- Weryfikacja: Testy JVM odtwarzają ViewModel z tego samego `SavedStateHandle` dla nowych zajęć i edycji oraz sprawdzają, że ponowne otwarcie trasy nie nadpisuje szkicu. Na emulatorze wpisane dane przetrwały `am kill` procesu w tle. `connectedDebugAndroidTest` obejmuje `KoinGraphTest` z nowym parametrem.
+
 ## 2026-09-25: Poprawki z audytu I-08 do I-13
 
 - Fakty: Audyt z 2026-09-23 wykazał powtórzony identyfikator wystąpienia, notatkę znikającą po przeniesieniu terminu, zegar trzymający strefę z chwili startu, nieobsłużone wyjątki zapisu i pracy w tle oraz drobne braki.
@@ -150,12 +158,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Użytkownik ma jawnie włączyć funkcję i widzieć, gdy system blokuje dostarczenie, bez utraty własnego wyboru.
 - Odrzucone: Pytanie o zgodę przy każdym uruchomieniu; traktowanie zgody systemowej jako preferencji; obsługa zgody w ViewModelu.
 - Weryfikacja: `SettingsViewModelTest` pokrywa zapis głównego przełącznika, godziny i wyprzedzenia oraz błąd zapisu. `SettingsScreenTest` (kompilowany) obejmuje akcję importu i podgląd. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór na urządzeniu pozostaje otwarty.
-
-## 2026-09-21: Etap 14.1-14.3, planowanie i dostarczanie powiadomień
-
-- Fakty: Aplikacja nie miała żadnego kodu powiadomień ani alarmów, a kolizje były liczone jako pary wystąpień bez grupowania przechodniego.
-- Decyzja: Dodano czysty `CollisionNotificationPlanner` (JVM) na `ActivePlanProvider` i wstrzykniętym `Clock`. Grupą jest spójna składowa kolizji (A-B i B-C to jedna grupa). Planista tworzy jedno powiadomienie wieczorne na dzień z kolizjami (20:00 dnia poprzedniego, okno 15 min) i jedno powiadomienie przed zajęciami na grupę (wyprzedzenie 30 min, okno 15 min, liczone od najwcześniejszego startu w grupie). Identyfikatory alarmów są stabilne i wynikają z rodzaju, daty i identyfikatorów wystąpień. Dodano `CollisionNotificationPreferences` w `SettingsPreferences` i DataStore (domyślnie wyłączone, oba rodzaje włączone, 20:00, 30 min). Warstwa Androida: `CollisionAlarmScheduler` używa `AlarmManager.setWindow` (bez dokładnych alarmów, `WorkManager` i serwisu), planuje horyzont 14 dni i alarm konserwacyjny co 7 dni; `CollisionAlarmReceiver` przed pokazaniem ponownie sprawdza zgodę, przełączniki, aktywny semestr i bieżącą kolizję oraz pomija alert przed zajęciami po zakończeniu grupy; `NotificationRescheduleReceiver` odnawia plan po restarcie i zmianie czasu; `MakApplication` odświeża plan na jednej granicy po zmianie danych, aktywnego semestru lub ustawień. Kliknięcie powiadomienia otwiera ekran Planu na właściwym dniu (`EXTRA_OPEN_PLAN_DATE` i `ScheduleViewModel.showDate`).
-- Powód: Jedno ostrzeżenie na grupę ogranicza duplikaty, a alert względem początku najwcześniejszych zajęć daje czas na reakcję przed pierwszym kolidującym terminem.
-- Odrzucone: Dokładne alarmy i `SCHEDULE_EXACT_ALARM`; `WorkManager` do dostarczenia; ciągły serwis; odświeżanie z każdego ekranu osobno; grupowanie tylko par bez spójnych składowych.
-- Poprawki po przeglądzie: `CollisionAlarmScheduler` przekazuje w `PendingIntent` pełny `CollisionAlarmPayload` (identyfikator, rodzaj, datę i identyfikatory wystąpień), więc odbiornik ma dane do wyświetlenia. `shouldShowCollisionNotification` rozdziela walidację: wieczorem akceptuje zbiór wystąpień ze wszystkich grup dnia i pokazuje się tylko dnia poprzedniego, a przed zajęciami wymaga jednej grupy zawierającej wskazane wystąpienia i odrzuca alarm po zakończeniu grupy. Spóźniony wieczorny alarm nie pokaże się w dniu kolizji ani później. Kontrakt intencji i walidację pokrywa `CollisionNotificationGuardTest`.
-- Weryfikacja: `CollisionNotificationPlannerTest` pokrywa wyłączenie, brak kolizji, wieczór i przed zajęciami, grupy przechodnie, niezależne grupy, horyzont, stabilne identyfikatory i wyłączenie wieczoru. `CollisionNotificationGuardTest` pokrywa payload z wieloma grupami, wieczór tylko dnia poprzedniego, wieczór z wieloma grupami, odrzucenie po zakończeniu grupy i obce wystąpienia. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór na urządzeniu pozostaje otwarty.

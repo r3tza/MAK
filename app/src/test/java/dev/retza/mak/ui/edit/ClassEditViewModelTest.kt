@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.edit
 
+import androidx.lifecycle.SavedStateHandle
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
@@ -27,11 +28,69 @@ class ClassEditViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
-    private fun viewModel(repository: FakeRepository) =
-        ClassEditViewModel(FakeSemesterRepository(repository), repository, FeedbackController())
+    private fun viewModel(repository: FakeRepository, savedState: SavedStateHandle = SavedStateHandle()) =
+        ClassEditViewModel(FakeSemesterRepository(repository), repository, FeedbackController(), savedState)
 
     private fun recordingViewModel(repository: FakeRepository, sink: RecordingFeedbackSink) =
-        ClassEditViewModel(FakeSemesterRepository(repository), repository, sink)
+        ClassEditViewModel(FakeSemesterRepository(repository), repository, sink, SavedStateHandle())
+
+    @Test
+    fun newClassDraftSurvivesRecreationFromSavedState() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val savedState = SavedStateHandle()
+        val first = viewModel(repository, savedState)
+        advanceUntilIdle()
+        first.openNew()
+        first.update { it.copy(name = "Algebra", room = "C12", teacher = "dr Nowak", startTime = "08:15") }
+        first.update { it.copy(recurrenceId = "a_week") }
+        advanceUntilIdle()
+
+        val restored = viewModel(repository, savedState)
+        advanceUntilIdle()
+
+        val editor = restored.editor.value
+        assertEquals("Algebra", editor.name)
+        assertEquals("C12", editor.room)
+        assertEquals("dr Nowak", editor.teacher)
+        assertEquals("08:15", editor.startTime)
+        assertEquals("a_week", editor.recurrenceId)
+        assertEquals("Tydzień A", editor.recurrenceLabel)
+        assertEquals(listOf("Informatyka"), editor.courseOptions.map { it.label }.take(1))
+    }
+
+    @Test
+    fun editDraftSurvivesRecreationAndReopeningTheRoute() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val savedState = SavedStateHandle()
+        val first = viewModel(repository, savedState)
+        advanceUntilIdle()
+        first.openEdit("1:2026-09-21")
+        advanceUntilIdle()
+        first.update { it.copy(name = "Programowanie obiektowe") }
+        advanceUntilIdle()
+
+        val restored = viewModel(repository, savedState)
+        advanceUntilIdle()
+        restored.openEditIfNeeded("1:2026-09-21")
+        advanceUntilIdle()
+
+        assertEquals("Edytuj zajęcia", restored.editor.value.title)
+        assertEquals("Programowanie obiektowe", restored.editor.value.name)
+    }
+
+    @Test
+    fun openEditIfNeededLoadsAnotherClass() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openNew()
+        viewModel.update { it.copy(name = "Szkic") }
+
+        viewModel.openEditIfNeeded("1:2026-09-21")
+        advanceUntilIdle()
+
+        assertEquals("Programowanie", viewModel.editor.value.name)
+    }
 
     @Test
     fun openNewUsesWeeklyRecurrence() = runTest(mainDispatcher) {

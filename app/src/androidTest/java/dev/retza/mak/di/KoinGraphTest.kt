@@ -1,5 +1,6 @@
 package dev.retza.mak.di
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.repository.PlanBackupGateway
@@ -21,6 +22,7 @@ import org.junit.Assert.assertNotNull
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.koin.core.context.GlobalContext
+import org.koin.core.parameter.parametersOf
 
 @RunWith(AndroidJUnit4::class)
 class KoinGraphTest {
@@ -39,7 +41,8 @@ class KoinGraphTest {
 
         assertNotNull(koin.get<AppViewModel>())
         assertNotNull(koin.get<OccurrenceViewModel>())
-        assertNotNull(koin.get<ClassEditViewModel>())
+        // Hosts get SavedStateHandle from viewModel(); resolving directly must pass it in.
+        assertNotNull(koin.get<ClassEditViewModel> { parametersOf(SavedStateHandle()) })
         assertNotNull(koin.get<SemesterViewModel>())
         assertNotNull(koin.get<SetupViewModel>())
         assertNotNull(koin.get<SettingsViewModel>())

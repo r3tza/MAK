@@ -58,7 +58,7 @@ internal fun NavGraphBuilder.classEditRoute(
         val date = entry.arguments?.getString("date")
         LaunchedEffect(classId, date) {
             if (classId != null && date != null) {
-                classEditViewModel.openEdit("$classId:$date")
+                classEditViewModel.openEditIfNeeded("$classId:$date")
             }
         }
         ClassEditScreen(
