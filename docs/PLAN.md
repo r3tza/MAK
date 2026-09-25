@@ -4,40 +4,6 @@ Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie je
 
 Każdy krok ma być wykonalny także przez słabszego agenta bez odgadywania intencji. Podaj kolejność małych zmian, docelowe pliki lub obszary kodu, zależności, przypadki brzegowe, sposób sprawdzenia i jednoznaczne kryterium zakończenia. Jeśli do wykonania brakuje decyzji, zapisz ją jako bloker zamiast pozostawiać ukryte założenie.
 
-## 1. Unikalny identyfikator wystąpienia (I-08)
-
-Problem: `PlannedOccurrence.id` ma postać `classId:date`, gdzie `date` to data faktyczna. Termin przeniesiony na dzień, w którym te same zajęcia mają zwykły termin, dostaje ten sam identyfikator. `CollisionDetector` pomija wtedy parę (`first.id == second.id`), `collisionRanges` i powiadomienia łączą oba terminy, a `OccurrenceViewModel.buildDetails` może otworzyć niewłaściwą zmianę.
-
-Zasada: wystąpienie identyfikują zajęcia i data oryginalna, czyli data wynikająca z planu cyklicznego. Tak samo robi iCalendar (`RECURRENCE-ID`). Para jest unikalna, bo zajęcia mają najwyżej jeden zwykły termin w danej dacie, a `occurrence_changes` ma unikalny indeks `(semester_id, class_id, original_date)`. Dla zajęć `ONCE` data oryginalna jest równa dacie zajęć. Identyfikatory rekordów Room się nie zmieniają.
-
-Granice: nie zmieniaj schematu Room, klucza notatek do wystąpienia (to I-09) ani formatu trasy `classId:data`. Zmienia się tylko znaczenie daty w trasie: od teraz to data oryginalna.
-
-Kolejność:
-
-1. `domain/Models.kt`: `PlannedOccurrence.id` zwraca `"${classItem.id}:$originalDate"`. Dopisz krótki komentarz, że identyfikator opiera się na dacie oryginalnej.
-2. `ui/occurrence/OccurrenceArgs.kt`: zmień nazwę pola `date` na `originalDate`, format trasy zostaje bez zmian.
-3. `ui/occurrence/OccurrenceViewModel.kt`, `buildDetails`: szukaj zmiany wyłącznie po `it.originalDate == args.originalDate`. Usuń warunek `it.targetDate == displayDate`. Data faktyczna pozostaje `change?.targetDate ?: originalDate`.
-4. `OccurrenceViewModel.saveOccurrenceChange`: po zapisie wołaj `reload(..., original)` zamiast `reload(..., decision.slot.date)`, bo trasa wskazuje teraz datę oryginalną.
-5. Sprawdź pozostałych konsumentów `PlannedOccurrence.id`: `collisionKey`, `collisionRanges`, `collisionNotificationGroups`, `CollisionAlarmReceiver`, `WidgetPresenter`, `PlanMapping` i nawigację `openOccurrence`. Nie powinny wymagać zmian poza testami. Jeśli któryś odczytuje datę z identyfikatora, przełącz go na pole `date` albo `originalDate` wystąpienia.
-
-Przypadki brzegowe:
-
-- cotygodniowe zajęcia w poniedziałek, termin z 6.10 przeniesiony na 13.10 na inną godzinę: dwa wystąpienia 13.10 z różnymi identyfikatorami i kolizja, gdy godziny się nakładają;
-- zmiana godziny bez zmiany daty: identyfikator bez zmian;
-- zajęcia jednorazowe;
-- odwołany termin: brak wystąpienia, szczegóły po trasie z datą oryginalną pokazują stan „Odwołane”;
-- po aktualizacji aplikacji stare alarmy mają identyfikatory w starym formacie. `MY_PACKAGE_REPLACED` odświeża alarmy, a alarm, którego identyfikatory nie pasują do bieżącego planu, niczego nie pokazuje. Nie dodawaj osobnej migracji alarmów.
-
-Weryfikacja:
-
-- `ScheduleResolverTest`: przeniesienie na dzień ze zwykłym terminem daje dwa wystąpienia o różnych identyfikatorach.
-- `CollisionDetectorTest`: kolizja między tymi dwoma wystąpieniami jest wykrywana.
-- `OccurrenceViewModelTest`: dla daty 13.10 trasa zwykłego terminu i trasa przeniesionego terminu (data 6.10) otwierają różne szczegóły.
-- Popraw `OccurrenceArgsTest` i testy, które zakładały datę faktyczną w identyfikatorze.
-- Uruchom `gradlew.bat test` i `gradlew.bat compileDebugAndroidTestKotlin`.
-
-Kryterium zakończenia: w aktywnym planie żadnego dnia nie ma dwóch wystąpień o tym samym identyfikatorze, a opisany przypadek jest pokryty testami JVM.
-
 ## 2. Zegar zgodny z bieżącą strefą systemu (I-10)
 
 Problem: `AppModule.provideClock()` zwraca jeden obiekt `Clock.systemDefaultZone()` na cały proces. Taki zegar zapamiętuje strefę z chwili utworzenia, więc po zmianie strefy odbiornik `TIMEZONE_CHANGED` przelicza alarmy w starej strefie.

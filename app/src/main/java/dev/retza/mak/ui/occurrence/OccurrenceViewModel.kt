@@ -365,7 +365,7 @@ class OccurrenceViewModel(
                                 )
                             )
                         }
-                        reload(data.semester.id.toLong(), classId, decision.slot.date)
+                        reload(data.semester.id.toLong(), classId, original)
                         val message = when (decision.result) {
                             OccurrenceEditResult.Restored -> "Przywrócono termin"
                             OccurrenceEditResult.Moved -> "Przeniesiono termin"
@@ -390,9 +390,9 @@ class OccurrenceViewModel(
             scheduleRepository.observeActivePlanData(semesterId).first()
         }
 
-    private suspend fun reload(semesterId: Long, classId: Long, displayDate: LocalDate) {
+    private suspend fun reload(semesterId: Long, classId: Long, occurrenceDate: LocalDate) {
         val fresh = scheduleRepository.observeActivePlanData(semesterId).first() ?: return
-        val built = buildDetails(fresh, OccurrenceArgs(classId, displayDate)) ?: return
+        val built = buildDetails(fresh, OccurrenceArgs(classId, occurrenceDate)) ?: return
         originalDate = built.baseDate.toLocalDateOrNull()
         noteDate = built.currentDate.toLocalDateOrNull()
         selectedClassIdState.value = classId
@@ -404,13 +404,11 @@ class OccurrenceViewModel(
         args: OccurrenceArgs
     ): OccurrenceDetailsUiState? {
         val classId = args.classId
-        val displayDate = args.date
+        val originalDate = args.originalDate
         val base = data.classes.firstOrNull { it.id == classId.toString() } ?: return null
         val change = data.occurrenceChanges.firstOrNull {
-            it.classId == classId.toString() &&
-                (it.originalDate == displayDate || it.targetDate == displayDate)
+            it.classId == classId.toString() && it.originalDate == originalDate
         }
-        val originalDate = change?.originalDate ?: displayDate
         val effectiveDate = change?.targetDate ?: originalDate
         val effectiveStart = change?.startTime ?: base.startTime
         val effectiveEnd = change?.endTime ?: base.endTime

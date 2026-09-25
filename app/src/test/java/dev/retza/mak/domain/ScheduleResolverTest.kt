@@ -160,6 +160,47 @@ class ScheduleResolverTest {
     }
 
     @Test
+    fun occurrenceMovedOntoRegularDayOfSameClassKeepsDistinctIdentity() {
+        val source = LocalDate.of(2026, 1, 5)
+        val target = LocalDate.of(2026, 1, 12)
+        val change = OccurrenceChange(
+            id = "move",
+            classId = "class-1",
+            originalDate = source,
+            kind = OccurrenceChangeKind.MODIFIED,
+            targetDate = target,
+            startTime = LocalTime.of(10, 30),
+            endTime = LocalTime.of(11, 30)
+        )
+
+        val schedule = resolve(target, listOf(classItem(day = DayOfWeek.MONDAY)), changes = listOf(change))
+
+        assertEquals(2, schedule.occurrences.size)
+        assertEquals(setOf("class-1:$target", "class-1:$source"), schedule.occurrences.map { it.id }.toSet())
+    }
+
+    @Test
+    fun collisionBetweenMovedAndRegularOccurrenceOfSameClassIsDetected() {
+        val source = LocalDate.of(2026, 1, 5)
+        val target = LocalDate.of(2026, 1, 12)
+        val change = OccurrenceChange(
+            id = "move",
+            classId = "class-1",
+            originalDate = source,
+            kind = OccurrenceChangeKind.MODIFIED,
+            targetDate = target,
+            startTime = LocalTime.of(10, 30),
+            endTime = LocalTime.of(11, 30)
+        )
+        val schedule = resolve(target, listOf(classItem(day = DayOfWeek.MONDAY)), changes = listOf(change))
+
+        val collision = CollisionDetector().detect(schedule).single()
+
+        assertEquals(LocalTime.of(10, 30), collision.overlapStart)
+        assertEquals(LocalTime.of(11, 0), collision.overlapEnd)
+    }
+
+    @Test
     fun removingOccurrenceChangeRestoresBaseOccurrence() {
         val date = LocalDate.of(2026, 1, 5)
         val cancelled = OccurrenceChange("cancel", "class-1", date, OccurrenceChangeKind.CANCELLED)

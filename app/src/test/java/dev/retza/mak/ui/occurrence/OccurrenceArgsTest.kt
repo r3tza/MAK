@@ -10,7 +10,7 @@ class OccurrenceArgsTest {
     fun parseReadsClassIdAndDate() {
         val args = OccurrenceArgs.parse("42:2026-09-21")
         assertEquals(42L, args?.classId)
-        assertEquals(LocalDate.of(2026, 9, 21), args?.date)
+        assertEquals(LocalDate.of(2026, 9, 21), args?.originalDate)
     }
 
     @Test

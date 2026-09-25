@@ -54,6 +54,42 @@ class OccurrenceViewModelTest {
     }
 
     @Test
+    fun routesOfRegularAndMovedOccurrenceOnSameDayOpenDifferentDetails() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.saveOccurrenceChange(
+            dev.retza.mak.data.repository.OccurrenceChangeRecord(
+                id = 0,
+                semesterId = 1L,
+                classId = 1L,
+                originalDate = LocalDate.of(2026, 9, 21),
+                kind = dev.retza.mak.domain.OccurrenceChangeKind.MODIFIED,
+                targetDate = LocalDate.of(2026, 9, 28),
+                startTime = java.time.LocalTime.of(16, 0),
+                endTime = java.time.LocalTime.of(17, 0),
+                room = null,
+                building = null,
+                teacherName = null,
+                note = null
+            )
+        )
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.open("1:2026-09-28")
+        advanceUntilIdle()
+        val regular = viewModel.details.value
+        assertEquals(OccurrenceStatusUi.Scheduled, regular.status)
+        assertEquals("2026-09-28", regular.currentDate)
+
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+        val moved = viewModel.details.value
+        assertEquals(OccurrenceStatusUi.Moved, moved.status)
+        assertEquals("2026-09-28", moved.currentDate)
+        assertEquals("16:00", moved.startTime)
+    }
+
+    @Test
     fun detailsUseAssignmentCalendarRange() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val result = repository.addSeparatedSemesterProgram(

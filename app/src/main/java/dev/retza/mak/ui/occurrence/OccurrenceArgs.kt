@@ -4,9 +4,9 @@ import java.time.LocalDate
 
 data class OccurrenceArgs(
     val classId: Long,
-    val date: LocalDate
+    val originalDate: LocalDate
 ) {
-    fun toRouteId(): String = "$classId:$date"
+    fun toRouteId(): String = "$classId:$originalDate"
 
     companion object {
         fun parse(routeId: String): OccurrenceArgs? {
