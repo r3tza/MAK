@@ -3,6 +3,7 @@ package dev.retza.mak.notifications
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -18,6 +19,10 @@ class NotificationRescheduleReceiver : BroadcastReceiver(), KoinComponent {
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
                 scheduler.refresh()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                // The next app start or data change reschedules the alarms.
             } finally {
                 pendingResult.finish()
             }

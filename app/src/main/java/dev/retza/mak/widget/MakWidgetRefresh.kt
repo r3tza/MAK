@@ -1,9 +1,10 @@
 package dev.retza.mak.widget
 
 import android.content.Context
-import androidx.room.InvalidationTracker
 import androidx.glance.appwidget.updateAll
+import androidx.room.InvalidationTracker
 import dev.retza.mak.data.database.AppDatabase
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 
@@ -19,7 +20,13 @@ class GlanceWidgetRefreshRequester(
 
     override fun request() {
         scope.launch {
-            MakTodayWidget().updateAll(appContext)
+            try {
+                MakTodayWidget().updateAll(appContext)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                // The periodic widget update retries later.
+            }
         }
     }
 }

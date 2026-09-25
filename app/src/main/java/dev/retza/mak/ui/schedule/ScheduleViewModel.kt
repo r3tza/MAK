@@ -2,7 +2,6 @@ package dev.retza.mak.ui.schedule
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import org.koin.core.annotation.KoinViewModel
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.WeekOverrideRecord
@@ -21,6 +20,9 @@ import dev.retza.mak.ui.components.CalendarMarkerUi
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.dayNames
+import dev.retza.mak.ui.feedback.FeedbackSink
+import dev.retza.mak.ui.feedback.UiFeedback
+import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.fullDateFormatter
 import dev.retza.mak.ui.monthFormatter
 import dev.retza.mak.ui.polishLocale
@@ -34,6 +36,7 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -46,6 +49,7 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import org.koin.core.annotation.KoinViewModel
 
 sealed interface ScheduleEffect {
     data class OpenNewClassEditor(val date: LocalDate) : ScheduleEffect
@@ -66,7 +70,8 @@ class ScheduleViewModel(
     private val semesterRepository: SemesterRepository,
     private val scheduleRepository: ScheduleRepository,
     private val clock: Clock,
-    private val activePlanProvider: ActivePlanProvider
+    private val activePlanProvider: ActivePlanProvider,
+    private val feedbackSink: FeedbackSink
 ) : ViewModel() {
     private val today = LocalDate.now(clock)
     private val controls = MutableStateFlow(
@@ -143,16 +148,18 @@ class ScheduleViewModel(
                 it.weekStartDate == monday && it.scope == entityScope
         }
         viewModelScope.launch {
-            semesterRepository.saveWeekOverride(
-                WeekOverrideRecord(
-                    id = existing?.id?.toLongOrNull() ?: 0,
-                    semesterId = data.semester.id.toLong(),
-                    academicCalendarId = calendarId,
-                    weekStartDate = monday,
-                    weekType = WeekType.valueOf(weekType.name),
-                    scope = entityScope
+            runReportingFailure("Nie udało się zapisać korekty tygodnia.") {
+                semesterRepository.saveWeekOverride(
+                    WeekOverrideRecord(
+                        id = existing?.id?.toLongOrNull() ?: 0,
+                        semesterId = data.semester.id.toLong(),
+                        academicCalendarId = calendarId,
+                        weekStartDate = monday,
+                        weekType = WeekType.valueOf(weekType.name),
+                        scope = entityScope
+                    )
                 )
-            )
+            }
         }
     }
 
@@ -165,7 +172,21 @@ class ScheduleViewModel(
             it.academicCalendarId == calendarId.toString() &&
                 it.weekStartDate == monday && it.scope == entityScope
         } ?: return
-        viewModelScope.launch { semesterRepository.deleteWeekOverride(existing.id.toLong()) }
+        viewModelScope.launch {
+            runReportingFailure("Nie udało się usunąć korekty tygodnia.") {
+                semesterRepository.deleteWeekOverride(existing.id.toLong())
+            }
+        }
+    }
+
+    private suspend fun runReportingFailure(message: String, block: suspend () -> Unit) {
+        try {
+            block()
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
+            feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Error))
+        }
     }
 
     private fun visibleWeekCalendarId(data: ActivePlanData): Long? {

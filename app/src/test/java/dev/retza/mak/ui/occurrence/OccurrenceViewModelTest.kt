@@ -303,6 +303,32 @@ class OccurrenceViewModelTest {
     }
 
     @Test
+    fun deleteSelectedClassFailureKeepsDetailsAndReportsError() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val sink = RecordingFeedbackSink(mutableListOf())
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+        val effects = mutableListOf<OccurrenceEffect>()
+        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
+        viewModel.requestClassDeletion()
+        advanceUntilIdle()
+
+        repository.failSaves = true
+        viewModel.deleteSelectedClass()
+        advanceUntilIdle()
+
+        assertTrue(effects.isEmpty())
+        assertFalse(viewModel.details.value.showDeleteConfirmation)
+        assertEquals(1, repository.classes.size)
+        assertEquals(
+            UiFeedback("Nie udało się usunąć zajęć.", UiFeedbackKind.Error),
+            sink.published.single()
+        )
+    }
+
+    @Test
     fun deleteSelectedClassEmitsCloseExactlyOnce() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = occurrenceViewModel(repository)

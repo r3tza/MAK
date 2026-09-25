@@ -11,6 +11,7 @@ import dev.retza.mak.notifications.ensureCollisionChannel
 import dev.retza.mak.ui.settings.SettingsPreferences
 import dev.retza.mak.widget.GlanceWidgetRefreshRequester
 import dev.retza.mak.widget.registerMakWidgetRefresh
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -55,7 +56,13 @@ class MakApplication : Application() {
         val isDebuggable = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
         if (isDebuggable) {
             initializationScope.launch {
-                seedDemoDataIfEmpty(semesterRepository, scheduleRepository)
+                try {
+                    seedDemoDataIfEmpty(semesterRepository, scheduleRepository)
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    // Demo data is a debug convenience; the app works without it.
+                }
             }
         }
         initializationScope.launch {
@@ -65,7 +72,15 @@ class MakApplication : Application() {
                 }
                 .combine(preferences.collisionNotifications) { data, settings -> data to settings }
                 .debounce(NOTIFICATION_REFRESH_DEBOUNCE_MILLIS)
-                .collect { scheduler.refresh() }
+                .collect {
+                    try {
+                        scheduler.refresh()
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (error: Exception) {
+                        // Keep collecting; the next data or settings change retries the refresh.
+                    }
+                }
         }
     }
 }

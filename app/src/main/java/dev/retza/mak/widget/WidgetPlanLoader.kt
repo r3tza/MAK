@@ -6,6 +6,7 @@ import dev.retza.mak.domain.ActivePlanProvider
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalTime
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 
 class WidgetPlanLoader(
@@ -18,14 +19,16 @@ class WidgetPlanLoader(
     suspend fun load(): WidgetUiState {
         val date = LocalDate.now(clock)
         val dateLabel = widgetDateLabel(date)
-        return runCatching {
+        return try {
             val semester = semesterRepository.observeActiveSemester().first()
-                ?: return@runCatching WidgetUiState.NoActiveSemester(dateLabel)
+                ?: return WidgetUiState.NoActiveSemester(dateLabel)
             val planData = scheduleRepository.observeActivePlanData(semester.id).first()
-                ?: return@runCatching WidgetUiState.Error(dateLabel)
+                ?: return WidgetUiState.Error(dateLabel)
             val plan = activePlanProvider.resolve(planData, date)
             presenter.present(date, planData.semester.name, plan, LocalTime.now(clock))
-        }.getOrElse {
+        } catch (error: CancellationException) {
+            throw error
+        } catch (error: Exception) {
             WidgetUiState.Error(dateLabel)
         }
     }

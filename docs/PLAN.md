@@ -4,22 +4,6 @@ Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie je
 
 Każdy krok ma być wykonalny także przez słabszego agenta bez odgadywania intencji. Podaj kolejność małych zmian, docelowe pliki lub obszary kodu, zależności, przypadki brzegowe, sposób sprawdzenia i jednoznaczne kryterium zakończenia. Jeśli do wykonania brakuje decyzji, zapisz ją jako bloker zamiast pozostawiać ukryte założenie.
 
-## 3. Obsługa błędów zapisu i pracy w tle (I-11)
-
-Problem: wyjątek z repozytorium (np. `require` przy nieistniejącym kalendarzu) w poniższych miejscach nie ma obsługi i zamyka aplikację bez komunikatu. `ARCHITECTURE.md` wymaga jawnego stanu zapisu.
-
-Kolejność:
-
-1. `OccurrenceViewModel.deleteSelectedClass`: `try` z ponownym rzuceniem `CancellationException`. Przy błędzie nie wysyłaj `CloseDetails`, ukryj potwierdzenie i opublikuj `UiFeedback("Nie udało się usunąć zajęć.", UiFeedbackKind.Error)`.
-2. `ScheduleViewModel`: dodaj w konstruktorze `FeedbackSink`, tak jak w `OccurrenceViewModel`. W `saveVisibleWeekOverride` i `clearVisibleWeekOverride` obsłuż błąd komunikatami „Nie udało się zapisać korekty tygodnia.” i „Nie udało się usunąć korekty tygodnia.”. Zaktualizuj `KoinGraphTest`, jeśli wymaga zmian, i `ScheduleViewModelTest`.
-3. `MakApplication`: w kolektorze wywołaj `scheduler.refresh()` w `try`, łap `Exception`, a `CancellationException` rzucaj dalej, żeby kolejne zmiany danych nadal odświeżały alarmy.
-4. `CollisionAlarmReceiver.runAsync` i `NotificationRescheduleReceiver.onReceive`: łap `Exception` wokół bloku przed `finally { pendingResult.finish() }`.
-5. `WidgetPlanLoader.load`: zamień `runCatching` na `try/catch`, który rzuca dalej `CancellationException`, a inne wyjątki zamienia na `WidgetUiState.Error`.
-
-Weryfikacja: testy JVM z repozytorium testowym, które rzuca wyjątek, dla punktów 1 i 2 (komunikat błędu, brak efektu zamknięcia, zachowany stan) oraz test loadera widgetu dla `CancellationException`. Uruchom `gradlew.bat test` i `gradlew.bat compileDebugAndroidTestKotlin`.
-
-Kryterium zakończenia: żadne `viewModelScope.launch` z zapisem w `ui` ani zadanie w tle nie zostawia wyjątku bez obsługi. Sprawdź to wyszukaniem `viewModelScope.launch` i `CoroutineScope(` w kodzie.
-
 ## 4. Drobne poprawki z audytu (I-13)
 
 Każdy punkt to osobna mała zmiana. Punkt, którego nie wykonujesz, odrzuć z uzasadnieniem w `LOG.md`.

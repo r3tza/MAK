@@ -18,6 +18,8 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -103,6 +105,46 @@ class WidgetPlanLoaderTest {
         ).load()
 
         assertTrue(state is WidgetUiState.NoActiveSemester)
+    }
+
+    @Test
+    fun loaderMapsReadFailureToErrorState() = runTest {
+        val repository = repositoryFailingWith(IllegalStateException("database closed"))
+
+        val state = loader(repository).load()
+
+        assertTrue(state is WidgetUiState.Error)
+    }
+
+    @Test
+    fun loaderPropagatesCancellation() = runTest {
+        val repository = repositoryFailingWith(CancellationException("widget update cancelled"))
+
+        val cancelled = try {
+            loader(repository).load()
+            false
+        } catch (error: CancellationException) {
+            true
+        }
+
+        assertTrue(cancelled)
+    }
+
+    private fun loader(repository: Any) = WidgetPlanLoader(
+        semesterRepository = repository as SemesterRepository,
+        scheduleRepository = repository as ScheduleRepository,
+        activePlanProvider = ActivePlanProvider(),
+        clock = Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), ZoneId.of("UTC"))
+    )
+
+    private fun repositoryFailingWith(error: Throwable): Any = Proxy.newProxyInstance(
+        SemesterRepository::class.java.classLoader,
+        arrayOf(SemesterRepository::class.java, ScheduleRepository::class.java)
+    ) { _, method, _ ->
+        when (method.name) {
+            "observeActiveSemester" -> flow<Any?> { throw error }
+            else -> error("Unexpected repository call: ${method.name}")
+        }
     }
 
     @Suppress("UNCHECKED_CAST")

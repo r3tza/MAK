@@ -9,6 +9,9 @@ import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
+import dev.retza.mak.ui.feedback.FeedbackSink
+import dev.retza.mak.ui.feedback.UiFeedback
+import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
 import java.time.Clock
@@ -35,7 +38,19 @@ class ScheduleViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
-    private fun viewModel(repository: FakeRepository) = ScheduleViewModel(FakeSemesterRepository(repository), repository, clock, ActivePlanProvider())
+    private val feedback = mutableListOf<UiFeedback>()
+
+    private fun viewModel(repository: FakeRepository) = ScheduleViewModel(
+        FakeSemesterRepository(repository),
+        repository,
+        clock,
+        ActivePlanProvider(),
+        feedbackSink = object : FeedbackSink {
+            override fun publish(feedback: UiFeedback) {
+                this@ScheduleViewModelTest.feedback += feedback
+            }
+        }
+    )
 
     @Test
     fun initialStateMapsActiveSemesterPlan() = runTest(mainDispatcher) {
@@ -144,6 +159,33 @@ class ScheduleViewModelTest {
 
         assertEquals(1, repository.weekOverrides.size)
         assertEquals(result.academicCalendarId, repository.weekOverrides.single().academicCalendarId)
+    }
+
+    @Test
+    fun failedVisibleOverrideSaveReportsError() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val result = repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(
+                name = "Fizyka",
+                color = "#000000"
+            ),
+            sourceCalendarId = 1L
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+        viewModel.selectCourseFilter(result.semesterProgramId.toString())
+
+        repository.failSaves = true
+        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        advanceUntilIdle()
+
+        assertTrue(repository.weekOverrides.isEmpty())
+        assertEquals(
+            listOf(UiFeedback("Nie udało się zapisać korekty tygodnia.", UiFeedbackKind.Error)),
+            feedback
+        )
     }
 
     @Test

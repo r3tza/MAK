@@ -21,6 +21,7 @@ import dev.retza.mak.ui.settings.SettingsPreferences
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalDateTime
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
@@ -49,6 +50,10 @@ class CollisionAlarmReceiver : BroadcastReceiver(), KoinComponent {
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
                 block()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                // A failed alarm must not crash the process; the maintenance alarm reschedules.
             } finally {
                 pendingResult.finish()
             }

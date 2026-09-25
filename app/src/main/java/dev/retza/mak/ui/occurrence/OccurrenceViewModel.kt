@@ -133,8 +133,15 @@ class OccurrenceViewModel(
     fun deleteSelectedClass() {
         val classId = selectedClassIdState.value ?: return
         viewModelScope.launch {
-            scheduleRepository.deleteClass(classId)
-            effectsChannel.trySend(OccurrenceEffect.CloseDetails)
+            try {
+                scheduleRepository.deleteClass(classId)
+                effectsChannel.trySend(OccurrenceEffect.CloseDetails)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                update { it.copy(showDeleteConfirmation = false) }
+                feedbackSink.publish(UiFeedback("Nie udało się usunąć zajęć.", UiFeedbackKind.Error))
+            }
         }
     }
 
