@@ -7,11 +7,10 @@ Stan na 2026-09-23. Ten rejestr obejmuje braki potwierdzone przeglądem kodu ora
 Zadania i kryteria są w `QUEUE.md`, a kroki wykonawcze w `PLAN.md`.
 
 1. **Notatka do wystąpienia po przeniesieniu (I-09).** Notatka zostaje pod datą sprzed przeniesienia i nie jest widoczna przy przeniesionym terminie. Decyzja z 2026-09-23: notatka podąża za terminem.
-2. **Strefa czasowa (I-10).** Zegar zapamiętuje strefę z chwili startu procesu, więc po zmianie strefy alarmy są liczone w starej strefie.
-3. **Nieobsłużone wyjątki (I-11).** Usunięcie zajęć, zapis i usunięcie korekty tygodnia na ekranie „Plan” oraz praca w tle mogą zamknąć aplikację zamiast pokazać błąd.
-4. **Stan formularzy po zakończeniu procesu (I-12).** Wpisane wartości giną, gdy system zakończy proces w tle; ViewModele żyją przez cały czas działania aktywności.
-5. **Drobne poprawki (I-13).** Odbiornik bez sprawdzenia akcji, import bez limitu rozmiaru, nieaktualna data na ekranie „Plan” po północy, ostrzeżenia kompilatora i lint, dokumentacja środowiska.
-6. **Systemowa kopia zapasowa (I-14).** Baza i ustawienia mogą trafiać do kopii Google. Czeka na decyzję.
+2. **Nieobsłużone wyjątki (I-11).** Usunięcie zajęć, zapis i usunięcie korekty tygodnia na ekranie „Plan” oraz praca w tle mogą zamknąć aplikację zamiast pokazać błąd.
+3. **Stan formularzy po zakończeniu procesu (I-12).** Wpisane wartości giną, gdy system zakończy proces w tle; ViewModele żyją przez cały czas działania aktywności.
+4. **Drobne poprawki (I-13).** Odbiornik bez sprawdzenia akcji, import bez limitu rozmiaru, nieaktualna data na ekranie „Plan” po północy, ostrzeżenia kompilatora i lint, dokumentacja środowiska.
+5. **Systemowa kopia zapasowa (I-14).** Baza i ustawienia mogą trafiać do kopii Google. Czeka na decyzję.
 
 ## Wymagają odbioru na urządzeniu
 

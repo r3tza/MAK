@@ -26,7 +26,7 @@ class AppModule {
     fun provideSettingsDataStore(context: Context): DataStore<Preferences> = context.settingsDataStore
 
     @Single
-    fun provideClock(): Clock = Clock.systemDefaultZone()
+    fun provideClock(): Clock = SystemZoneClock()
 
     @Single
     fun provideBackgroundDispatcher(): CoroutineDispatcher = Dispatchers.Default

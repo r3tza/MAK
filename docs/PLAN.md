@@ -4,20 +4,6 @@ Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie je
 
 Każdy krok ma być wykonalny także przez słabszego agenta bez odgadywania intencji. Podaj kolejność małych zmian, docelowe pliki lub obszary kodu, zależności, przypadki brzegowe, sposób sprawdzenia i jednoznaczne kryterium zakończenia. Jeśli do wykonania brakuje decyzji, zapisz ją jako bloker zamiast pozostawiać ukryte założenie.
 
-## 2. Zegar zgodny z bieżącą strefą systemu (I-10)
-
-Problem: `AppModule.provideClock()` zwraca jeden obiekt `Clock.systemDefaultZone()` na cały proces. Taki zegar zapamiętuje strefę z chwili utworzenia, więc po zmianie strefy odbiornik `TIMEZONE_CHANGED` przelicza alarmy w starej strefie.
-
-Kolejność:
-
-1. Dodaj w `di` małą klasę `SystemZoneClock : Clock()`: `getZone()` zwraca `ZoneId.systemDefault()` przy każdym wywołaniu, `instant()` zwraca `Instant.now()`, a `withZone(zone)` zwraca `Clock.system(zone)`.
-2. `AppModule.provideClock()` zwraca `SystemZoneClock()`. Nie zmieniaj konstruktorów klas, które przyjmują `Clock`.
-3. `DemoDataSeeder` zostaw bez zmian: używa zegara jednorazowo przy starcie.
-
-Weryfikacja: test JVM zmienia `TimeZone.setDefault` i sprawdza, że `LocalDate.now(clock)` i `clock.zone` odpowiadają nowej strefie. W `finally` przywraca poprzednią strefę. Uruchom `gradlew.bat test`. Zmianę strefy na urządzeniu sprawdza O-04.
-
-Kryterium zakończenia: żaden komponent nie trzyma strefy z chwili startu procesu, a test przechodzi.
-
 ## 3. Obsługa błędów zapisu i pracy w tle (I-11)
 
 Problem: wyjątek z repozytorium (np. `require` przy nieistniejącym kalendarzu) w poniższych miejscach nie ma obsługi i zamyka aplikację bez komunikatu. `ARCHITECTURE.md` wymaga jawnego stanu zapisu.
