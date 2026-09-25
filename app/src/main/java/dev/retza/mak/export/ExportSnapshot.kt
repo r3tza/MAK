@@ -14,7 +14,10 @@ import dev.retza.mak.data.entity.WeekOverrideEntity
 import kotlinx.serialization.Serializable
 
 object ExportSchema {
-    const val VERSION = 2
+    const val VERSION = 3
+
+    /** Version 2 stored occurrence notes under the actual date of a moved occurrence. */
+    const val NOTES_ON_ACTUAL_DATE_VERSION = 2
 }
 
 @Serializable

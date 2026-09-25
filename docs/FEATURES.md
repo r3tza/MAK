@@ -251,7 +251,7 @@ Ekran „Dane” zawiera eksport, import oraz opis skutków pełnego zastąpieni
 
 Ekrany podrzędne mają własne trasy w jednym `NavHost`, przewidywalny systemowy powrót i tytuł w topbarze. Stan ekranu głównego po powrocie nie może się resetować ani automatycznie otwierać innej sekcji.
 
-Eksport i import używają lokalnego pliku JSON z polem `schemaVersion`. Import przyjmuje wersję 2 formatu; zgodność ze starszymi eksportami nie jest wymagana przed udostępnieniem aplikacji testerom.
+Eksport i import używają lokalnego pliku JSON z polem `schemaVersion`. Eksport zapisuje wersję 3 formatu. Import przyjmuje wersje 2 i 3; w pliku w wersji 2 notatki do przeniesionych terminów są przepinane na datę oryginalną tą samą regułą co migracja bazy. Zgodność z wersją 1 nie jest wymagana.
 
 Użytkownik wybiera plik przez systemowy wybór dokumentu. Format zawiera globalne kierunki, semestry, przypisania, kalendarze akademickie, zajęcia z tekstem prowadzącego, korekty, notatki i zmiany wystąpień.
 

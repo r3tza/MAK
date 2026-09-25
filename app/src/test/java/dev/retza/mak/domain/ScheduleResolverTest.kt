@@ -201,6 +201,28 @@ class ScheduleResolverTest {
     }
 
     @Test
+    fun occurrenceNoteFollowsMovedOccurrenceAndReturnsAfterRestore() {
+        val source = LocalDate.of(2026, 1, 5)
+        val target = LocalDate.of(2026, 1, 7)
+        val note = OccurrenceNote("note", "class-1", source, "Oddać projekt")
+        val change = OccurrenceChange(
+            id = "move",
+            classId = "class-1",
+            originalDate = source,
+            kind = OccurrenceChangeKind.MODIFIED,
+            targetDate = target
+        )
+        val recurring = classItem(day = DayOfWeek.MONDAY)
+
+        val moved = resolve(target, listOf(recurring), changes = listOf(change), notes = listOf(note))
+            .occurrences.single()
+        val restored = resolve(source, listOf(recurring), notes = listOf(note)).occurrences.single()
+
+        assertEquals("Oddać projekt", moved.occurrenceNoteBody)
+        assertEquals("Oddać projekt", restored.occurrenceNoteBody)
+    }
+
+    @Test
     fun removingOccurrenceChangeRestoresBaseOccurrence() {
         val date = LocalDate.of(2026, 1, 5)
         val cancelled = OccurrenceChange("cancel", "class-1", date, OccurrenceChangeKind.CANCELLED)

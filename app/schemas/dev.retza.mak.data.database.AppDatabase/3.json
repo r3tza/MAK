@@ -1,0 +1,811 @@
+{
+  "formatVersion": 1,
+  "database": {
+    "version": 3,
+    "identityHash": "8cb6cd49878d53df9c2909f5c19ec73d",
+    "entities": [
+      {
+        "tableName": "semesters",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `is_active` INTEGER NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "isActive",
+            "columnName": "is_active",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "study_programs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `name` TEXT NOT NULL, `color` TEXT NOT NULL)",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "color",
+            "columnName": "color",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        }
+      },
+      {
+        "tableName": "academic_calendars",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `semester_id` INTEGER NOT NULL, `start_date` TEXT NOT NULL, `end_date` TEXT NOT NULL, `first_week_type` TEXT NOT NULL, FOREIGN KEY(`semester_id`) REFERENCES `semesters`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "semesterId",
+            "columnName": "semester_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startDate",
+            "columnName": "start_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endDate",
+            "columnName": "end_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "firstWeekType",
+            "columnName": "first_week_type",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_academic_calendars_semester_id",
+            "unique": false,
+            "columnNames": [
+              "semester_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_academic_calendars_semester_id` ON `${TABLE_NAME}` (`semester_id`)"
+          },
+          {
+            "name": "index_academic_calendars_id_semester_id",
+            "unique": true,
+            "columnNames": [
+              "id",
+              "semester_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_academic_calendars_id_semester_id` ON `${TABLE_NAME}` (`id`, `semester_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "semesters",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "semester_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "semester_programs",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `semester_id` INTEGER NOT NULL, `study_program_id` INTEGER NOT NULL, `academic_calendar_id` INTEGER NOT NULL, FOREIGN KEY(`semester_id`) REFERENCES `semesters`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`study_program_id`) REFERENCES `study_programs`(`id`) ON UPDATE NO ACTION ON DELETE RESTRICT , FOREIGN KEY(`academic_calendar_id`, `semester_id`) REFERENCES `academic_calendars`(`id`, `semester_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "semesterId",
+            "columnName": "semester_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "studyProgramId",
+            "columnName": "study_program_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "academicCalendarId",
+            "columnName": "academic_calendar_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_semester_programs_semester_id",
+            "unique": false,
+            "columnNames": [
+              "semester_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_semester_programs_semester_id` ON `${TABLE_NAME}` (`semester_id`)"
+          },
+          {
+            "name": "index_semester_programs_study_program_id",
+            "unique": false,
+            "columnNames": [
+              "study_program_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_semester_programs_study_program_id` ON `${TABLE_NAME}` (`study_program_id`)"
+          },
+          {
+            "name": "index_semester_programs_academic_calendar_id",
+            "unique": false,
+            "columnNames": [
+              "academic_calendar_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_semester_programs_academic_calendar_id` ON `${TABLE_NAME}` (`academic_calendar_id`)"
+          },
+          {
+            "name": "index_semester_programs_semester_id_study_program_id",
+            "unique": true,
+            "columnNames": [
+              "semester_id",
+              "study_program_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_semester_programs_semester_id_study_program_id` ON `${TABLE_NAME}` (`semester_id`, `study_program_id`)"
+          },
+          {
+            "name": "index_semester_programs_id_semester_id",
+            "unique": true,
+            "columnNames": [
+              "id",
+              "semester_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_semester_programs_id_semester_id` ON `${TABLE_NAME}` (`id`, `semester_id`)"
+          },
+          {
+            "name": "index_semester_programs_academic_calendar_id_semester_id",
+            "unique": false,
+            "columnNames": [
+              "academic_calendar_id",
+              "semester_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_semester_programs_academic_calendar_id_semester_id` ON `${TABLE_NAME}` (`academic_calendar_id`, `semester_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "semesters",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "semester_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "study_programs",
+            "onDelete": "RESTRICT",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "study_program_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "academic_calendars",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "academic_calendar_id",
+              "semester_id"
+            ],
+            "referencedColumns": [
+              "id",
+              "semester_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "classes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `semester_id` INTEGER NOT NULL, `semester_program_id` INTEGER NOT NULL, `name` TEXT NOT NULL, `type` TEXT NOT NULL, `teacher_name` TEXT, `day_of_week` INTEGER NOT NULL, `start_time` TEXT NOT NULL, `end_time` TEXT NOT NULL, `room` TEXT, `building` TEXT, `group` TEXT, `recurrence` TEXT NOT NULL, `date` TEXT, `class_note` TEXT, FOREIGN KEY(`semester_id`) REFERENCES `semesters`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`semester_program_id`, `semester_id`) REFERENCES `semester_programs`(`id`, `semester_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "semesterId",
+            "columnName": "semester_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "semesterProgramId",
+            "columnName": "semester_program_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "name",
+            "columnName": "name",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "type",
+            "columnName": "type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "teacherName",
+            "columnName": "teacher_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "dayOfWeek",
+            "columnName": "day_of_week",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "startTime",
+            "columnName": "start_time",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "endTime",
+            "columnName": "end_time",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "room",
+            "columnName": "room",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "building",
+            "columnName": "building",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "group",
+            "columnName": "group",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "recurrence",
+            "columnName": "recurrence",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "date",
+            "columnName": "date",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "classNote",
+            "columnName": "class_note",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_classes_semester_id",
+            "unique": false,
+            "columnNames": [
+              "semester_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_classes_semester_id` ON `${TABLE_NAME}` (`semester_id`)"
+          },
+          {
+            "name": "index_classes_semester_program_id",
+            "unique": false,
+            "columnNames": [
+              "semester_program_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_classes_semester_program_id` ON `${TABLE_NAME}` (`semester_program_id`)"
+          },
+          {
+            "name": "index_classes_id_semester_id",
+            "unique": true,
+            "columnNames": [
+              "id",
+              "semester_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_classes_id_semester_id` ON `${TABLE_NAME}` (`id`, `semester_id`)"
+          },
+          {
+            "name": "index_classes_semester_program_id_semester_id",
+            "unique": false,
+            "columnNames": [
+              "semester_program_id",
+              "semester_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_classes_semester_program_id_semester_id` ON `${TABLE_NAME}` (`semester_program_id`, `semester_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "semesters",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "semester_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "semester_programs",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "semester_program_id",
+              "semester_id"
+            ],
+            "referencedColumns": [
+              "id",
+              "semester_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "week_overrides",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `semester_id` INTEGER NOT NULL, `academic_calendar_id` INTEGER NOT NULL, `week_start_date` TEXT NOT NULL, `week_type` TEXT NOT NULL, `scope` TEXT NOT NULL, FOREIGN KEY(`semester_id`) REFERENCES `semesters`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`academic_calendar_id`, `semester_id`) REFERENCES `academic_calendars`(`id`, `semester_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "semesterId",
+            "columnName": "semester_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "academicCalendarId",
+            "columnName": "academic_calendar_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weekStartDate",
+            "columnName": "week_start_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "weekType",
+            "columnName": "week_type",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "scope",
+            "columnName": "scope",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_week_overrides_semester_id",
+            "unique": false,
+            "columnNames": [
+              "semester_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_week_overrides_semester_id` ON `${TABLE_NAME}` (`semester_id`)"
+          },
+          {
+            "name": "index_week_overrides_academic_calendar_id",
+            "unique": false,
+            "columnNames": [
+              "academic_calendar_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_week_overrides_academic_calendar_id` ON `${TABLE_NAME}` (`academic_calendar_id`)"
+          },
+          {
+            "name": "index_week_overrides_academic_calendar_id_week_start_date_scope",
+            "unique": true,
+            "columnNames": [
+              "academic_calendar_id",
+              "week_start_date",
+              "scope"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_week_overrides_academic_calendar_id_week_start_date_scope` ON `${TABLE_NAME}` (`academic_calendar_id`, `week_start_date`, `scope`)"
+          },
+          {
+            "name": "index_week_overrides_academic_calendar_id_semester_id",
+            "unique": false,
+            "columnNames": [
+              "academic_calendar_id",
+              "semester_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_week_overrides_academic_calendar_id_semester_id` ON `${TABLE_NAME}` (`academic_calendar_id`, `semester_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "semesters",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "semester_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "academic_calendars",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "academic_calendar_id",
+              "semester_id"
+            ],
+            "referencedColumns": [
+              "id",
+              "semester_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "occurrence_notes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `semester_id` INTEGER NOT NULL, `class_id` INTEGER NOT NULL, `occurrence_date` TEXT NOT NULL, `body` TEXT NOT NULL, FOREIGN KEY(`semester_id`) REFERENCES `semesters`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`class_id`, `semester_id`) REFERENCES `classes`(`id`, `semester_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "semesterId",
+            "columnName": "semester_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "classId",
+            "columnName": "class_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "occurrenceDate",
+            "columnName": "occurrence_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "body",
+            "columnName": "body",
+            "affinity": "TEXT",
+            "notNull": true
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_occurrence_notes_semester_id",
+            "unique": false,
+            "columnNames": [
+              "semester_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_occurrence_notes_semester_id` ON `${TABLE_NAME}` (`semester_id`)"
+          },
+          {
+            "name": "index_occurrence_notes_class_id",
+            "unique": false,
+            "columnNames": [
+              "class_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_occurrence_notes_class_id` ON `${TABLE_NAME}` (`class_id`)"
+          },
+          {
+            "name": "index_occurrence_notes_semester_id_class_id_occurrence_date",
+            "unique": true,
+            "columnNames": [
+              "semester_id",
+              "class_id",
+              "occurrence_date"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_occurrence_notes_semester_id_class_id_occurrence_date` ON `${TABLE_NAME}` (`semester_id`, `class_id`, `occurrence_date`)"
+          },
+          {
+            "name": "index_occurrence_notes_class_id_semester_id",
+            "unique": false,
+            "columnNames": [
+              "class_id",
+              "semester_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_occurrence_notes_class_id_semester_id` ON `${TABLE_NAME}` (`class_id`, `semester_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "semesters",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "semester_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "classes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "class_id",
+              "semester_id"
+            ],
+            "referencedColumns": [
+              "id",
+              "semester_id"
+            ]
+          }
+        ]
+      },
+      {
+        "tableName": "occurrence_changes",
+        "createSql": "CREATE TABLE IF NOT EXISTS `${TABLE_NAME}` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `semester_id` INTEGER NOT NULL, `class_id` INTEGER NOT NULL, `original_date` TEXT NOT NULL, `kind` TEXT NOT NULL, `target_date` TEXT, `new_start_time` TEXT, `new_end_time` TEXT, `new_room` TEXT, `new_building` TEXT, `new_teacher_name` TEXT, `new_note` TEXT, FOREIGN KEY(`semester_id`) REFERENCES `semesters`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`class_id`, `semester_id`) REFERENCES `classes`(`id`, `semester_id`) ON UPDATE NO ACTION ON DELETE CASCADE )",
+        "fields": [
+          {
+            "fieldPath": "id",
+            "columnName": "id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "semesterId",
+            "columnName": "semester_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "classId",
+            "columnName": "class_id",
+            "affinity": "INTEGER",
+            "notNull": true
+          },
+          {
+            "fieldPath": "originalDate",
+            "columnName": "original_date",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "kind",
+            "columnName": "kind",
+            "affinity": "TEXT",
+            "notNull": true
+          },
+          {
+            "fieldPath": "targetDate",
+            "columnName": "target_date",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "newStartTime",
+            "columnName": "new_start_time",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "newEndTime",
+            "columnName": "new_end_time",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "newRoom",
+            "columnName": "new_room",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "newBuilding",
+            "columnName": "new_building",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "newTeacherName",
+            "columnName": "new_teacher_name",
+            "affinity": "TEXT"
+          },
+          {
+            "fieldPath": "newNote",
+            "columnName": "new_note",
+            "affinity": "TEXT"
+          }
+        ],
+        "primaryKey": {
+          "autoGenerate": true,
+          "columnNames": [
+            "id"
+          ]
+        },
+        "indices": [
+          {
+            "name": "index_occurrence_changes_semester_id",
+            "unique": false,
+            "columnNames": [
+              "semester_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_occurrence_changes_semester_id` ON `${TABLE_NAME}` (`semester_id`)"
+          },
+          {
+            "name": "index_occurrence_changes_class_id",
+            "unique": false,
+            "columnNames": [
+              "class_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_occurrence_changes_class_id` ON `${TABLE_NAME}` (`class_id`)"
+          },
+          {
+            "name": "index_occurrence_changes_semester_id_class_id_original_date",
+            "unique": true,
+            "columnNames": [
+              "semester_id",
+              "class_id",
+              "original_date"
+            ],
+            "orders": [],
+            "createSql": "CREATE UNIQUE INDEX IF NOT EXISTS `index_occurrence_changes_semester_id_class_id_original_date` ON `${TABLE_NAME}` (`semester_id`, `class_id`, `original_date`)"
+          },
+          {
+            "name": "index_occurrence_changes_class_id_semester_id",
+            "unique": false,
+            "columnNames": [
+              "class_id",
+              "semester_id"
+            ],
+            "orders": [],
+            "createSql": "CREATE INDEX IF NOT EXISTS `index_occurrence_changes_class_id_semester_id` ON `${TABLE_NAME}` (`class_id`, `semester_id`)"
+          }
+        ],
+        "foreignKeys": [
+          {
+            "table": "semesters",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "semester_id"
+            ],
+            "referencedColumns": [
+              "id"
+            ]
+          },
+          {
+            "table": "classes",
+            "onDelete": "CASCADE",
+            "onUpdate": "NO ACTION",
+            "columns": [
+              "class_id",
+              "semester_id"
+            ],
+            "referencedColumns": [
+              "id",
+              "semester_id"
+            ]
+          }
+        ]
+      }
+    ],
+    "setupQueries": [
+      "CREATE TABLE IF NOT EXISTS room_master_table (id INTEGER PRIMARY KEY,identity_hash TEXT)",
+      "INSERT OR REPLACE INTO room_master_table (id,identity_hash) VALUES(42, '8cb6cd49878d53df9c2909f5c19ec73d')"
+    ]
+  }
+}

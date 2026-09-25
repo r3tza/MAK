@@ -6,9 +6,8 @@ Stan na 2026-09-23. Ten rejestr obejmuje braki potwierdzone przeglądem kodu ora
 
 Zadania i kryteria są w `QUEUE.md`, a kroki wykonawcze w `PLAN.md`.
 
-1. **Notatka do wystąpienia po przeniesieniu (I-09).** Notatka zostaje pod datą sprzed przeniesienia i nie jest widoczna przy przeniesionym terminie. Decyzja z 2026-09-23: notatka podąża za terminem.
-2. **Stan formularzy po zakończeniu procesu (I-12).** Wpisane wartości giną, gdy system zakończy proces w tle; ViewModele żyją przez cały czas działania aktywności.
-3. **Systemowa kopia zapasowa (I-14).** Baza i ustawienia mogą trafiać do kopii Google. Czeka na decyzję.
+1. **Stan formularzy po zakończeniu procesu (I-12).** Wpisane wartości giną, gdy system zakończy proces w tle; ViewModele żyją przez cały czas działania aktywności.
+2. **Systemowa kopia zapasowa (I-14).** Baza i ustawienia mogą trafiać do kopii Google. Czeka na decyzję.
 
 ## Wymagają odbioru na urządzeniu
 

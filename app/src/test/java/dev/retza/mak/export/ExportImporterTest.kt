@@ -5,6 +5,7 @@ import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceChangeKind
+import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.data.entity.Recurrence
 import dev.retza.mak.data.entity.SemesterEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
@@ -39,6 +40,26 @@ class ExportImporterTest {
             (result as ImportSnapshotResult.Invalid).errors.single()
                 .contains("Nieobsługiwana wersja pliku")
         )
+    }
+
+    @Test
+    fun versionTwoFileMovesNoteToOriginalDateOfMovedOccurrence() {
+        val result = ExportImporter.prepare(snapshotWithMovedOccurrenceNote().copy(schemaVersion = 2))
+
+        val note = (result as ImportSnapshotResult.Ready).data.semesters.single().occurrenceNotes.single()
+        assertEquals(LocalDate.of(2026, 10, 6), note.occurrenceDate)
+        assertEquals("Oddać projekt", note.body)
+    }
+
+    @Test
+    fun currentVersionFileKeepsNoteDate() {
+        val snapshot = snapshotWithMovedOccurrenceNote()
+        assertEquals(3, snapshot.schemaVersion)
+
+        val result = ExportImporter.prepare(snapshot)
+
+        val note = (result as ImportSnapshotResult.Ready).data.semesters.single().occurrenceNotes.single()
+        assertEquals(LocalDate.of(2026, 10, 8), note.occurrenceDate)
     }
 
     @Test
@@ -320,6 +341,35 @@ class ExportImporterTest {
 
     private fun snapshotWithChange(change: OccurrenceChangeEntity): ExportSnapshot {
         val base = semesterData(1, active = true).copy(occurrenceChanges = listOf(change))
+        return ExportSnapshot.from(listOf(base), listOf(program()))
+    }
+
+    private fun snapshotWithMovedOccurrenceNote(): ExportSnapshot {
+        val moved = OccurrenceChangeEntity(
+            id = 20,
+            semesterId = 1,
+            classId = 1000,
+            originalDate = LocalDate.of(2026, 10, 6),
+            kind = OccurrenceChangeKind.MODIFIED,
+            targetDate = LocalDate.of(2026, 10, 8),
+            newStartTime = null,
+            newEndTime = null,
+            newRoom = null,
+            newBuilding = null,
+            newTeacherName = null,
+            newNote = null
+        )
+        val note = OccurrenceNoteEntity(
+            id = 30,
+            semesterId = 1,
+            classId = 1000,
+            occurrenceDate = LocalDate.of(2026, 10, 8),
+            body = "Oddać projekt"
+        )
+        val base = semesterData(1, active = true).copy(
+            occurrenceChanges = listOf(moved),
+            occurrenceNotes = listOf(note)
+        )
         return ExportSnapshot.from(listOf(base), listOf(program()))
     }
 

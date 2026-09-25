@@ -298,7 +298,7 @@ private fun NotesBlock(
             minLines = 3,
             isError = state.occurrenceNoteError != null
         )
-        MakHelperText("Dotyczy tylko daty ${state.dateLabel}.")
+        MakHelperText("Dotyczy tylko tego terminu i przechodzi z nim po przeniesieniu.")
         FieldError(state.occurrenceNoteError?.let(::FieldErrorUi))
         if (state.canSaveOccurrenceNote || state.isSavingOccurrenceNote) {
             MakPrimaryAction(

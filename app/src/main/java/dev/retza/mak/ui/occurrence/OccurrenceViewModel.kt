@@ -93,7 +93,7 @@ class OccurrenceViewModel(
             val data = activePlanData.first { it != null } ?: return@launch
             val built = buildDetails(data, args) ?: return@launch
             originalDate = built.baseDate.toLocalDateOrNull()
-            noteDate = built.currentDate.toLocalDateOrNull()
+            noteDate = built.baseDate.toLocalDateOrNull()
             selectedClassIdState.value = args.classId
             state.value = derive(built)
         }
@@ -401,7 +401,7 @@ class OccurrenceViewModel(
         val fresh = scheduleRepository.observeActivePlanData(semesterId).first() ?: return
         val built = buildDetails(fresh, OccurrenceArgs(classId, occurrenceDate)) ?: return
         originalDate = built.baseDate.toLocalDateOrNull()
-        noteDate = built.currentDate.toLocalDateOrNull()
+        noteDate = built.baseDate.toLocalDateOrNull()
         selectedClassIdState.value = classId
         state.value = derive(built)
     }
@@ -421,7 +421,7 @@ class OccurrenceViewModel(
         val effectiveEnd = change?.endTime ?: base.endTime
         val effectiveRoom = (change?.room ?: base.room)?.trim()?.ifEmpty { null }
         val existingNote = data.occurrenceNotes.firstOrNull {
-            it.classId == classId.toString() && it.occurrenceDate == effectiveDate
+            it.classId == classId.toString() && it.occurrenceDate == originalDate
         }
         val status = when {
             change?.kind == OccurrenceChangeKind.CANCELLED -> OccurrenceStatusUi.Cancelled

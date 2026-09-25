@@ -2,6 +2,12 @@ package dev.retza.mak.data.database
 
 import androidx.room.migration.Migration
 import androidx.sqlite.db.SupportSQLiteDatabase
+import dev.retza.mak.data.repository.ChangeRow
+import dev.retza.mak.data.repository.ClassRow
+import dev.retza.mak.data.repository.NoteRow
+import dev.retza.mak.data.repository.remapOccurrenceNotesToOriginalDates
+import java.time.DayOfWeek
+import java.time.LocalDate
 
 private val v1Tables = listOf(
     "occurrence_notes",
@@ -95,6 +101,56 @@ val MIGRATION_1_2 = object : Migration(1, 2) {
 
         db.query("PRAGMA foreign_key_check").use { cursor ->
             check(!cursor.moveToFirst()) { "Room migration 1 to 2 left broken foreign keys" }
+        }
+    }
+}
+
+/**
+ * Version 3 keeps the schema and moves occurrence notes from the actual date of a moved
+ * occurrence to its original date, so a note follows the occurrence it was written for.
+ */
+val MIGRATION_2_3 = object : Migration(2, 3) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        val notes = buildList {
+            db.query("SELECT id, semester_id, class_id, occurrence_date, body FROM occurrence_notes").use { c ->
+                while (c.moveToNext()) {
+                    add(NoteRow(c.getLong(0), c.getLong(1), c.getLong(2), LocalDate.parse(c.getString(3)), c.getString(4)))
+                }
+            }
+        }
+        if (notes.isEmpty()) return
+        val changes = buildList {
+            db.query("SELECT class_id, original_date, kind, target_date FROM occurrence_changes").use { c ->
+                while (c.moveToNext()) {
+                    add(
+                        ChangeRow(
+                            classId = c.getLong(0),
+                            originalDate = LocalDate.parse(c.getString(1)),
+                            isModified = c.getString(2) == "MODIFIED",
+                            targetDate = if (c.isNull(3)) null else LocalDate.parse(c.getString(3))
+                        )
+                    )
+                }
+            }
+        }
+        val classes = buildList {
+            db.query("SELECT id, day_of_week, recurrence FROM classes").use { c ->
+                while (c.moveToNext()) {
+                    add(ClassRow(c.getLong(0), DayOfWeek.of(c.getInt(1)), c.getString(2) == "ONCE"))
+                }
+            }
+        }
+
+        val remap = remapOccurrenceNotesToOriginalDates(notes, changes, classes)
+        // Delete every touched row first so re-inserted dates never clash with the unique index.
+        (remap.deletedIds + remap.updated.map { it.id }).forEach { id ->
+            db.execSQL("DELETE FROM occurrence_notes WHERE id = ?", arrayOf<Any>(id))
+        }
+        remap.updated.forEach { note ->
+            db.execSQL(
+                "INSERT INTO occurrence_notes (id, semester_id, class_id, occurrence_date, body) VALUES (?, ?, ?, ?, ?)",
+                arrayOf<Any>(note.id, note.semesterId, note.classId, note.date.toString(), note.body)
+            )
         }
     }
 }

@@ -26,7 +26,7 @@ import dev.retza.mak.data.entity.WeekOverrideEntity
         OccurrenceNoteEntity::class,
         OccurrenceChangeEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = true
 )
 @TypeConverters(MakConverters::class)
@@ -57,7 +57,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     "mak.db"
-                ).addMigrations(MIGRATION_1_2)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                     .also { instance = it }
             }

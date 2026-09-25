@@ -14,6 +14,7 @@ import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterBackup
+import dev.retza.mak.data.repository.withOccurrenceNotesOnOriginalDates
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -26,11 +27,14 @@ sealed interface ImportSnapshotResult {
 
 object ExportImporter {
     fun prepare(snapshot: ExportSnapshot): ImportSnapshotResult {
-        if (snapshot.schemaVersion != ExportSchema.VERSION) {
+        if (snapshot.schemaVersion != ExportSchema.VERSION &&
+            snapshot.schemaVersion != ExportSchema.NOTES_ON_ACTUAL_DATE_VERSION
+        ) {
             return ImportSnapshotResult.Invalid(
                 listOf(
                     "Nieobsługiwana wersja pliku: ${snapshot.schemaVersion}. " +
-                        "Obsługiwana wersja to ${ExportSchema.VERSION}."
+                        "Obsługiwane wersje to ${ExportSchema.NOTES_ON_ACTUAL_DATE_VERSION} " +
+                        "i ${ExportSchema.VERSION}."
                 )
             )
         }
@@ -111,6 +115,12 @@ object ExportImporter {
 
         val semesters = snapshot.semesters.map { semester ->
             mapSemester(semester, knownProgramIds, errors)
+        }.let { mapped ->
+            if (snapshot.schemaVersion == ExportSchema.NOTES_ON_ACTUAL_DATE_VERSION) {
+                mapped.map { it.withOccurrenceNotesOnOriginalDates() }
+            } else {
+                mapped
+            }
         }
 
         if (errors.isNotEmpty()) {

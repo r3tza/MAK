@@ -175,7 +175,8 @@ class ScheduleResolver(
         assignments: Map<String, SemesterProgram>,
         notesByOccurrence: Map<Pair<String, LocalDate>, OccurrenceNote>
     ): PlannedOccurrence {
-        val occurrenceNote = notesByOccurrence[classItem.id to actualDate]
+        // Occurrence notes belong to the occurrence, so they follow it when it is moved.
+        val occurrenceNote = notesByOccurrence[classItem.id to originalDate]
         val studyProgram = assignments[classItem.semesterProgramId]
             ?.studyProgramId
             ?.let(studyPrograms::get)

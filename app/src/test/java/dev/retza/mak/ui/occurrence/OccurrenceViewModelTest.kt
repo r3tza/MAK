@@ -227,6 +227,38 @@ class OccurrenceViewModelTest {
     }
 
     @Test
+    fun noteOfMovedOccurrenceIsSavedUnderOriginalDate() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.saveOccurrenceChange(
+            dev.retza.mak.data.repository.OccurrenceChangeRecord(
+                id = 0,
+                semesterId = 1L,
+                classId = 1L,
+                originalDate = LocalDate.of(2026, 9, 21),
+                kind = dev.retza.mak.domain.OccurrenceChangeKind.MODIFIED,
+                targetDate = LocalDate.of(2026, 9, 23),
+                startTime = null,
+                endTime = null,
+                room = null,
+                building = null,
+                teacherName = null,
+                note = null
+            )
+        )
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.updateOccurrenceNoteDraft("Oddać projekt")
+        viewModel.saveOccurrenceNote()
+        advanceUntilIdle()
+
+        assertEquals(LocalDate.of(2026, 9, 21), repository.occurrenceNotes.single().occurrenceDate)
+        assertEquals("Oddać projekt", viewModel.details.value.occurrenceNote)
+    }
+
+    @Test
     fun occurrenceNoteSaveDeletesOnEmpty() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = occurrenceViewModel(repository)

@@ -303,7 +303,7 @@ class SettingsViewModelTest {
         advanceUntilIdle()
 
         val snapshot = JsonExportCodec.decode(bytes!!)
-        assertEquals(2, snapshot.schemaVersion)
+        assertEquals(dev.retza.mak.export.ExportSchema.VERSION, snapshot.schemaVersion)
     }
 
     @Test
