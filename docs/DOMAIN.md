@@ -26,7 +26,7 @@ Przykład: pierwszy tydzień semestru to A, więc następny to B. Jeśli trzeci 
 
 Poza zakresem semestru aplikacja powinna jasno pokazać, że nie ma aktywnego semestru. Nie należy opierać działania wyłącznie na numerze tygodnia ISO, ponieważ uczelniana numeracja może zaczynać się w innym miejscu.
 
-Ustawienia semestrów umożliwiają dodanie, edycję, wybór i usunięcie semestru. Usunięcie wymaga potwierdzenia, usuwa plan, powiązania i nieużywane kalendarze, ale zachowuje globalne kierunki. Po usunięciu aktywnego semestru aplikacja wybiera inny istniejący semestr. Jeśli nie ma żadnego, pokazuje stan pusty z przyciskiem „Skonfiguruj plan” i nie otwiera kreatora automatycznie.
+Ustawienia semestrów umożliwiają dodanie, edycję, wybór i usunięcie semestru. Usunięcie wymaga potwierdzenia, usuwa plan, powiązania i nieużywane kalendarze, ale zachowuje globalne kierunki. Po usunięciu aktywnego semestru aplikacja wybiera inny istniejący semestr. Jeśli nie ma żadnego, pokazuje stan pusty z przyciskiem „Skonfiguruj plan” i nie otwiera kreatora automatycznie. Semestr utworzony w kreatorze staje się aktywny tylko wtedy, gdy dzisiejsza data mieści się w zakresie jego kalendarza albo gdy nie ma żadnego aktywnego semestru. W pozostałych przypadkach zostaje zapisany jako nieaktywny, a dotychczasowy aktywny semestr się nie zmienia.
 
 ## Kierunki
 
@@ -104,6 +104,8 @@ Z ekranu szczegółów konkretnego terminu użytkownik może wybrać:
 Odrabianie albo inne dodatkowe spotkanie jest zapisywane jako `ClassEntity` z `recurrence = ONCE` i konkretną datą. Formularz może skopiować nazwę, kierunek, prowadzącego i typ z istniejących zajęć, ale zapis pozostaje niezależny od cyklu.
 
 Zmiany wystąpień są stosowane po rozwinięciu planu cyklicznego i przed wykrywaniem kolizji. Usunięcie albo edycja zmiany nie modyfikuje bazowego wpisu zajęć.
+
+Edycja bazowego wpisu zajęć nie usuwa ani nie przenosi jego zmian wystąpień i notatek do wystąpień. Jeśli nowy dzień tygodnia, cykl, data zajęć jednorazowych albo kalendarz kierunku sprawia, że część tych danych dotyczy dat, w których zajęcia już się nie odbywają, formularz przed zapisem informuje, ile zmian i notatek przestanie być widocznych. Dane zostają zachowane, są obejmowane eksportem i wracają, gdy poprzedni termin zostanie przywrócony.
 
 Wystąpienie identyfikują zajęcia i data oryginalna terminu, a nie data, w której termin faktycznie się odbywa. Para jest unikalna, bo zajęcia mają najwyżej jeden termin z danej daty planu. Dzięki temu termin przeniesiony na dzień, w którym te same zajęcia mają zwykły termin, pozostaje osobnym wystąpieniem z własną kolizją, zmianą i notatką.
 

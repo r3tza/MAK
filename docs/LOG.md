@@ -4,6 +4,14 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-26: Aktywacja nowego semestru i dane po edycji zajęć (I-18, I-19)
+
+- Fakty: Audyt z 2026-09-25 wykazał, że semestr utworzony w kreatorze zawsze staje się aktywny, a zmiana dnia, cyklu albo daty zajęć ukrywa ich zmiany wystąpień i notatki przypięte do dotychczasowych dat.
+- Decyzja: Nowy semestr staje się aktywny tylko wtedy, gdy dzisiejsza data mieści się w jego kalendarzu albo gdy nie ma aktywnego semestru; drugi warunek dodano, bo bez aktywnego semestru utworzony plan byłby niedostępny. Edycja zajęć zachowuje zmiany wystąpień i notatki, a formularz przed zapisem informuje, ile z nich przestanie być widocznych. Reguły zapisano w `DOMAIN.md`, a kroki w `PLAN.md` (kroki 4 i 5).
+- Powód: Dodanie semestru z wyprzedzeniem nie może przełączać bieżącego planu. Utrata danych użytkownika bez jego wiedzy jest niedopuszczalna, a zachowane dane wracają po przywróceniu poprzedniego terminu.
+- Odrzucone: Aktywacja każdego nowego semestru; pytanie o aktywację przy każdym dodaniu; usuwanie osieroconych zmian i notatek po potwierdzeniu; automatyczne przenoszenie ich na nowe daty, bo odwzorowanie starych dat na nowe jest niejednoznaczne przy zmianie cyklu.
+- Poza zakresem: automatyczne przełączenie aktywnego semestru, gdy nadejdzie data nowego.
+
 ## 2026-09-25: Odtwarzanie formularza zajęć (I-12)
 
 - Fakty: Żaden ViewModel nie używał `SavedStateHandle`, więc po zakończeniu procesu przez system wpisane dane formularzy znikały. Trasa edycji zajęć wołała `openEdit` przy każdym odtworzeniu ekranu, także po obrocie, i nadpisywała wpisane zmiany danymi z bazy.
@@ -150,11 +158,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Grupowanie: Spójny łańcuch nakładających się wystąpień to jedna grupa kolizji. Wieczorem wysyłać jedno podsumowanie grup następnego dnia, przed zajęciami jeden alert dla każdej grupy. Wyprzedzenie liczyć od początku najwcześniejszych zajęć w grupie. Treść może pokazywać nazwy zajęć na ekranie blokady. Kliknięcie otwiera dzień planu.
 - Planowanie: Używać stabilnych identyfikatorów alarmów, 14-dniowego horyzontu i jednego alarmu odnawiającego. Przy odbiorze sprawdzać aktualne dane, ustawienia i zgodę. Po zmianach danych, imporcie, ustawień, czasu, strefy lub restarcie urządzenia wymieniać przyszłe alarmy.
 - Powód: Jedno ostrzeżenie na grupę ogranicza duplikaty, a alert względem początku zajęć daje czas na reakcję przed pierwszym kolidującym terminem. Jawna zgoda i ponowna kontrola danych ograniczają niechciane oraz nieaktualne powiadomienia.
-
-## 2026-09-21: Etap 14.4, ustawienia i zgoda na powiadomienia
-
-- Fakty: Preferencje powiadomień istniały w DataStore, ale nie było interfejsu, zgody `POST_NOTIFICATIONS` ani stanu blokady systemowej.
-- Decyzja: Sekcja „Powiadomienia" w ustawieniach pokazuje główny przełącznik, osobne przełączniki powiadomienia wieczornego i przed zajęciami, wybór godziny wieczornej i wyprzedzenia oraz stan „Zablokowane przez system" z akcją otwarcia ustawień aplikacji. Zgoda jest proszona dopiero przy włączaniu funkcji, a jej odmowa nie zmienia preferencji użytkownika. Otwarcie ustawień aplikacji i prośba o zgodę są uruchamiane z `MainActivity`, a ekran dostaje tylko wynik `notificationsBlocked`, więc ViewModel nie zna Android API.
-- Powód: Użytkownik ma jawnie włączyć funkcję i widzieć, gdy system blokuje dostarczenie, bez utraty własnego wyboru.
-- Odrzucone: Pytanie o zgodę przy każdym uruchomieniu; traktowanie zgody systemowej jako preferencji; obsługa zgody w ViewModelu.
-- Weryfikacja: `SettingsViewModelTest` pokrywa zapis głównego przełącznika, godziny i wyprzedzenia oraz błąd zapisu. `SettingsScreenTest` (kompilowany) obejmuje akcję importu i podgląd. `test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór na urządzeniu pozostaje otwarty.
