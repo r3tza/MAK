@@ -3,6 +3,7 @@ package dev.retza.mak
 import android.Manifest
 import android.content.Intent
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
 import android.provider.Settings
 import androidx.activity.ComponentActivity
@@ -157,7 +158,16 @@ class MainActivity : ComponentActivity() {
                     onImportPlan = { importLauncher.launch(arrayOf("application/json")) },
                     notificationsBlocked = notificationsBlocked,
                     onRequestNotificationPermission = {
-                        notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                            notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                        } else {
+                            // Android 12 has no runtime permission; notifications are switched on
+                            // in the app's system settings, and onResume refreshes the blocked state.
+                            startActivity(
+                                Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                    .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                            )
+                        }
                     },
                     onOpenAppSettings = {
                         startActivity(
