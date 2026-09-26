@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-26: Edycja kierunków i kolor z pełnej palety (I-21, I-22)
+
+- Fakty: Użytkownik poprosił o wybór koloru kierunku z palety barw zamiast sześciu stałych kolorów, o edycję nazwy i koloru utworzonych kierunków oraz o kolor widoczny obok nazwy kierunku w ustawieniach.
+- Decyzja: Ustawienia dostają ekran „Kierunki” z listą globalnych kierunków i edycją nazwy oraz koloru. Kolor wybiera się ciągłym paskiem odcienia i suwakiem jasności ograniczonym do luminancji względnej od 0,13 do 0,28, co daje kontrast paska kierunku co najmniej 3:1 na jasnym i ciemnym tle; pole kodu szesnastkowego obsługuje klawiaturę, a podgląd pokazuje pasek i pill. Wariant zaakceptował użytkownik 2026-09-26. Kroki są w `PLAN.md`.
+- Powód: Stałe kolory nie wystarczają przy wielu kierunkach, a bez ograniczenia jasności część kolorów byłaby niewidoczna na tle aplikacji.
+- Odrzucone: Dowolny kolor bez kontroli kontrastu; ostrzeżenie zamiast ograniczenia, bo zostawia nieczytelny kolor w planie i widgecie.
+
 ## 2026-09-26: Blokada wyboru kierunku po zapisie kroku kreatora (I-16)
 
 - Fakty: Kreator pamięta kierunek zapisany w kroku 2. Po powrocie do tego kroku zmiana trybu z „Wybierz istniejący” na „Nowy kierunek” zmieniłaby nazwę współdzielonego kierunku, a wybór innego istniejącego kierunku zostawiłby w semestrze drugie przypisanie. `PLAN.md` kazał nie zgadywać, co zrobić z pierwszym przypisaniem.
@@ -152,9 +159,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: `PLAN.md` przechowuje pozostałe prace, wymagania produktu i odbiór. Historię wykonanych etapów pozostawiono w tym dzienniku, a obowiązujące granice systemu w `ARCHITECTURE.md`.
 - Reguła: Okienka liczyć ze wspólnego planu wszystkich kierunków aktywnego semestru, także przy różnych kalendarzach akademickich. Najpierw połączyć nakładające się zajęcia w bloki czasu. Przerwa musi być dłuższa od globalnego progu, domyślnie 30 minut.
 - Powód: Użytkownik potrzebuje rzeczywistych wolnych przerw w całym dniu, a historia zakończonych etapów utrudniała odczyt bieżącej pracy.
-
-## 2026-09-22: Aktualizacja instrukcji agentów po etapach 12-14
-
-- Fakty: `AGENTS.md` opisywał widget przez bieżący `MakRepository`, ale nie wskazywał zaległego etapu 11 ani wdrożonych powiadomień. Sekcja Room mówiła, że wystarczy jeden test trwałości, mimo że migracja i operacje atomowe mają już osobne testy.
-- Decyzja: Dopisano aktualny punkt pracy, granicę powiadomień i wymagany odbiór na urządzeniu. Wskazano, że widget przejdzie na nowe repozytorium w etapie 11, a testy Room obejmują również migrację i rollback. `CLAUDE.md` pozostaje wyłącznie importem `AGENTS.md`.
-- Powód: Kolejny agent ma odróżnić zrealizowany kod od odbioru, który nadal czeka na urządzenie, oraz nie powtarzać zakończonych etapów.
