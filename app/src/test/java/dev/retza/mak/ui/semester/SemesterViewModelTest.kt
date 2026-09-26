@@ -644,11 +644,10 @@ class SemesterViewModelTest {
         val repository = FakeRepository()
         val viewModel = recordingViewModel(repository, RecordingFeedbackSink())
         advanceUntilIdle()
-        viewModel.open("1")
+        // The second semester owns the only calendar without an assigned program.
+        viewModel.open("2")
         advanceUntilIdle()
-        val unused = repository.calendars.first { calendar ->
-            repository.semesterPrograms.none { it.academicCalendarId == calendar.id }
-        }
+        val unused = repository.secondCalendar
 
         viewModel.requestCalendarDeletion(unused.id.toString())
         advanceUntilIdle()
