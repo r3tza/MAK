@@ -297,81 +297,6 @@ private fun LaunchedFocusRestore(
     }
 }
 
-data class MakColorOption(
-    val id: String,
-    val label: String,
-    val color: Color
-)
-
-val MakColorPaletteOptions = listOf(
-    MakColorOption("teal", "Morski", Color(0xFF137B71)),
-    MakColorOption("blue", "Niebieski", Color(0xFF334FCE)),
-    MakColorOption("violet", "Fioletowy", Color(0xFF7256AD)),
-    MakColorOption("orange", "Pomarańczowy", Color(0xFFA65724)),
-    MakColorOption("red", "Czerwony", Color(0xFFAD3E46)),
-    MakColorOption("indigo", "Indygo", Color(0xFF315F9F))
-)
-
-@Composable
-fun MakColorPalette(
-    selectedColor: String,
-    onColorSelected: (String) -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
-    ) {
-        Text("Kolor kierunku", style = MaterialTheme.typography.labelLarge)
-        MakColorPaletteOptions.chunked(3).forEach { row ->
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
-            ) {
-                row.forEach { option ->
-                    var focused by remember(option.id) { mutableStateOf(false) }
-                    val selected = selectedColor.equals(option.color.toHex(), ignoreCase = true)
-                    Box(
-                        modifier = Modifier
-                            .weight(1f)
-                            .heightIn(min = 48.dp)
-                        .background(option.color, RoundedCornerShape(MakSpacing.md))
-                            .border(
-                                BorderStroke(
-                                    width = if (selected) 3.dp else 1.dp,
-                                    color = if (selected || focused) MaterialTheme.colorScheme.onSurface else option.color
-                                ),
-                                RoundedCornerShape(MakSpacing.md)
-                            )
-                            .selectable(
-                                selected = selected,
-                                role = Role.RadioButton,
-                                onClick = { onColorSelected(option.color.toHex()) }
-                            )
-                            .focusable()
-                            .onFocusChanged { focused = it.isFocused }
-                            .semantics {
-                                contentDescription = option.label
-                                this.selected = selected
-                            },
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Text(
-                            text = option.label,
-                            color = Color.White,
-                            style = MaterialTheme.typography.labelSmall,
-                            textAlign = TextAlign.Center
-                        )
-                    }
-                }
-                repeat(3 - row.size) {
-                    Box(modifier = Modifier.weight(1f))
-                }
-            }
-        }
-    }
-}
-
 @Composable
 fun MakActionMenu(
     actions: List<Pair<String, () -> Unit>>,
@@ -433,9 +358,3 @@ private fun LocalDate.toUtcMillis(): Long = atStartOfDay().toInstant(ZoneOffset.
 private fun Long.toLocalDate(): LocalDate =
     Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
 
-private fun Color.toHex(): String =
-    "#%02X%02X%02X".format(
-        (red * 255).toInt(),
-        (green * 255).toInt(),
-        (blue * 255).toInt()
-    )

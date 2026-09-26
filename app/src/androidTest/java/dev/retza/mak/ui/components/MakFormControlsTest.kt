@@ -17,6 +17,7 @@ import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -32,23 +33,45 @@ class MakFormControlsTest {
     val composeTestRule = createComposeRule()
 
     @Test
-    fun paletteUsesNamedAccessibleChoicesAt320Dp() {
-        var selected by mutableStateOf("")
+    fun colorPickerAcceptsReadableCodeAndNamesSlidersAt320Dp() {
+        var selected by mutableStateOf(DefaultCourseColor)
 
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
-                Box(modifier = Modifier.width(320.dp).height(700.dp)) {
-                    MakColorPalette(
+                Box(modifier = Modifier.width(320.dp).height(900.dp)) {
+                    MakCourseColorPicker(
                         selectedColor = selected,
-                        onColorSelected = { selected = it }
+                        onColorSelected = { selected = it },
+                        previewName = "Informatyka"
                     )
                 }
             }
         }
 
-        composeTestRule.onNodeWithContentDescription("Morski").performClick()
-        composeTestRule.onNodeWithContentDescription("Morski").assertIsSelected()
-        assertEquals("#137B71", selected)
+        composeTestRule.onNodeWithContentDescription("Odcień").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Jasność").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Informatyka").assertIsDisplayed()
+        val readable = courseHex(courseColorFrom(210f, 0.5f))
+        composeTestRule.onNodeWithText("Kod koloru").performTextReplacement(readable)
+        assertEquals(readable, selected)
+    }
+
+    @Test
+    fun colorPickerRejectsTooLightCode() {
+        var selected by mutableStateOf(DefaultCourseColor)
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                MakCourseColorPicker(selectedColor = selected, onColorSelected = { selected = it })
+            }
+        }
+
+        composeTestRule.onNodeWithText("Kod koloru").performTextReplacement("#FFEB3B")
+
+        composeTestRule
+            .onNodeWithText("Ten kolor będzie słabo widoczny. Wybierz inny odcień albo jasność.")
+            .assertIsDisplayed()
+        assertEquals(DefaultCourseColor, selected)
     }
 
     @Test

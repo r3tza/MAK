@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.programs
 
+import dev.retza.mak.ui.components.DefaultCourseColor
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.retza.mak.data.repository.SemesterRepository
@@ -27,7 +28,7 @@ data class StudyProgramUi(
 data class StudyProgramEditorUi(
     val id: Long? = null,
     val name: String = "",
-    val color: String = "#137B71",
+    val color: String = DefaultCourseColor,
     val nameError: String? = null,
     val isSaving: Boolean = false
 )

@@ -615,7 +615,7 @@ fun ClassCard(
 }
 
 @Composable
-private fun CoursePill(
+internal fun CoursePill(
     name: String,
     accent: Color,
     modifier: Modifier = Modifier

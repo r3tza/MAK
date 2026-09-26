@@ -1,0 +1,57 @@
+package dev.retza.mak.ui.components
+
+import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
+import org.junit.Test
+
+class CourseColorsTest {
+    // Light surfaces and dark cards of the app theme.
+    private val surfaces = listOf(0xFFFFFFFF, 0xFFF5F7FB, 0xFF202B40, 0xFF19243A, 0xFF10192B).map { it.toInt() }
+
+    @Test
+    fun everyPickedColorKeepsBarContrastOnAllSurfaces() {
+        for (hue in 0..360 step 15) {
+            for (shade in listOf(0f, 0.5f, 1f)) {
+                val color = courseColorFrom(hue.toFloat(), shade)
+                surfaces.forEach { surface ->
+                    val ratio = contrastRatio(color, surface)
+                    assertTrue("hue $hue shade $shade on ${courseHex(surface)}: $ratio", ratio >= 3.0)
+                }
+                assertTrue(isReadableCourseColor(color))
+            }
+        }
+    }
+
+    @Test
+    fun hueAndShadeRoundTrip() {
+        val color = courseColorFrom(210f, 0.4f)
+
+        val parsed = hueAndShadeOf(color)
+
+        assertEquals(210f, parsed.hue, 2f)
+        assertEquals(0.4f, parsed.shade, 0.05f)
+    }
+
+    @Test
+    fun hueZeroAndFullCircleGiveSameColor() {
+        assertEquals(courseColorFrom(0f, 0.5f), courseColorFrom(360f, 0.5f))
+    }
+
+    @Test
+    fun hexRoundTripAndValidation() {
+        val color = parseCourseHex("#137b71")
+
+        assertEquals("#137B71", color?.let(::courseHex))
+        assertEquals(color, parseCourseHex("137B71"))
+        assertNull(parseCourseHex("#12345"))
+        assertNull(parseCourseHex("#GG0000"))
+    }
+
+    @Test
+    fun tooLightAndTooDarkColorsAreRejected() {
+        assertFalse(isReadableCourseColor(parseCourseHex("#FFEB3B")!!))
+        assertFalse(isReadableCourseColor(parseCourseHex("#000000")!!))
+    }
+}

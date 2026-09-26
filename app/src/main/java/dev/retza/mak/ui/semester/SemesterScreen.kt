@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.semester
 
+import dev.retza.mak.ui.components.DefaultCourseColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -29,11 +30,11 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.FieldError
+import dev.retza.mak.ui.components.MakCourseColorPicker
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakColorDot
-import dev.retza.mak.ui.components.MakColorPalette
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakField
@@ -155,7 +156,7 @@ data class SemesterScreenUiState(
     val calendars: List<SemesterCalendarUi> = emptyList(),
     val selectedCalendarId: String? = null,
     val courseNameDraft: String = "",
-    val courseColorDraft: String = "#137b71",
+    val courseColorDraft: String = DefaultCourseColor,
     val courseCalendarMode: CourseCalendarModeUi = CourseCalendarModeUi.SHARED,
     val courseCalendarId: String? = null,
     val courseProgramMode: CourseProgramModeUi = CourseProgramModeUi.NEW,
@@ -609,8 +610,9 @@ private fun CoursesBlock(
                 isError = state.courseNameError != null
             )
             FieldError(state.courseNameError?.let(::FieldErrorUi))
-            MakColorPalette(
+            MakCourseColorPicker(
                 selectedColor = state.courseColorDraft,
+                previewName = state.courseNameDraft,
                 onColorSelected = onCourseColorChanged
             )
         } else {

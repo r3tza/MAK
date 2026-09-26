@@ -11,11 +11,11 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import dev.retza.mak.ui.components.FieldError
+import dev.retza.mak.ui.components.MakCourseColorPicker
 import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakColorDot
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakNoteBanner
-import dev.retza.mak.ui.components.MakColorPalette
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakPrimaryAction
@@ -204,8 +204,9 @@ private fun CourseStep(
                     isError = state.errors.containsKey(SetupField.CourseName)
                 )
                 FieldError(state.errors[SetupField.CourseName])
-                MakColorPalette(
+                MakCourseColorPicker(
                     selectedColor = state.courseColor,
+                    previewName = state.courseName,
                     onColorSelected = onCourseColorChanged
                 )
             }

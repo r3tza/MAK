@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.semester
 
+import dev.retza.mak.ui.components.DefaultCourseColor
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
@@ -286,7 +287,7 @@ class SemesterViewModel(
         val program = StudyProgramRecord(
             id = existingProgramId ?: 0L,
             name = name,
-            color = draft.courseColorDraft.ifBlank { "#137b71" }
+            color = draft.courseColorDraft.ifBlank { DefaultCourseColor }
         )
         update { it.copy(isAddingCourse = true, courseNameError = null) }
         val token = sessionToken

@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.semester
 
+import dev.retza.mak.ui.components.DefaultCourseColor
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
@@ -252,7 +253,7 @@ class SemesterViewModelTest {
         viewModel.addCourse()
         advanceUntilIdle()
 
-        assertEquals("#137b71", repository.studyPrograms.first { it.name == "Fizyka" }.color)
+        assertEquals(DefaultCourseColor, repository.studyPrograms.first { it.name == "Fizyka" }.color)
         assertEquals("", viewModel.semester.value.courseNameDraft)
         assertEquals(
             listOf(UiFeedback("Dodano kierunek", UiFeedbackKind.Success)),

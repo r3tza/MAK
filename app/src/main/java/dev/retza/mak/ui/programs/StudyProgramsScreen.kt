@@ -25,9 +25,9 @@ import androidx.compose.ui.semantics.role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.FieldError
+import dev.retza.mak.ui.components.MakCourseColorPicker
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakColorDot
-import dev.retza.mak.ui.components.MakColorPalette
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakPrimaryAction
@@ -116,8 +116,9 @@ fun StudyProgramEditScreen(
                 isError = editor.nameError != null
             )
             FieldError(editor.nameError?.let(::FieldErrorUi))
-            MakColorPalette(
+            MakCourseColorPicker(
                 selectedColor = editor.color,
+                previewName = editor.name,
                 onColorSelected = onColorChanged
             )
             MakPrimaryAction(text = "Zapisz kierunek", onClick = onSave, enabled = !editor.isSaving)

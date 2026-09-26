@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.setup
 
+import dev.retza.mak.ui.components.DefaultCourseColor
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
@@ -59,7 +60,7 @@ data class SetupWizardUiState(
     val endDate: String = "",
     val firstWeekLabel: String = "A",
     val courseName: String = "",
-    val courseColor: String = "#137B71",
+    val courseColor: String = DefaultCourseColor,
     val programOptions: List<SetupProgramOptionUi> = emptyList(),
     val programMode: SetupProgramMode = SetupProgramMode.New,
     val selectedProgramId: Long? = null,
@@ -255,7 +256,7 @@ class SetupViewModel(
                 StudyProgramRecord(
                     id = courseId ?: 0L,
                     name = name,
-                    color = current.courseColor.ifBlank { "#137b71" }
+                    color = current.courseColor.ifBlank { DefaultCourseColor }
                 )
             }
 
