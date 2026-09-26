@@ -4,29 +4,6 @@ Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie s�
 
 Każdy krok ma być wykonalny także przez słabszego agenta bez odgadywania intencji. Podaj kolejność małych zmian, docelowe pliki lub obszary kodu, zależności, przypadki brzegowe, sposób sprawdzenia i jednoznaczne kryterium zakończenia. Jeśli do wykonania brakuje decyzji, zapisz ją jako bloker zamiast pozostawiać ukryte założenie.
 
-## 1. Edycja globalnych kierunków (I-21)
-
-Problem: nazwy i koloru kierunku nie da się zmienić po utworzeniu. Podpowiedź na ekranie semestru odsyła do edycji kierunku, której nie ma.
-
-Granice: bez usuwania globalnych kierunków i bez zmian w bazie. Zapis używa istniejącego `SemesterRepository.saveStudyProgram`, który dla rekordu z identyfikatorem różnym od zera aktualizuje kierunek. Widget odświeża się sam przez `InvalidationTracker` na tabeli `study_programs`, a alarmy przez `observeActivePlanData`, więc nie dodawaj osobnego odświeżania.
-
-Kolejność:
-
-1. `ui/programs/StudyProgramsViewModel` (`@KoinViewModel`, zależności: `SemesterRepository`, `FeedbackSink`): lista `StudyProgramUi(id, name, color)` z `observeStudyPrograms`, stan edycji (`editingId`, `nameDraft`, `colorDraft`, `nameError`, `isSaving`), `openEdit(id)`, `updateName`, `updateColor`, `save()` i efekt `CloseEditor` po sukcesie. Pusta nazwa po przycięciu daje błąd „Podaj nazwę kierunku.” bez zapisu. Błąd zapisu publikuje „Nie udało się zapisać kierunku.” i zostawia szkic. Sukces publikuje „Zapisano kierunek”. `CancellationException` przekazuj dalej.
-2. Trasy `settings/programs` i `settings/programs/{programId}` w `MakRoutes`, tytuły „Kierunki” i „Edytuj kierunek”. ViewModel twórz w `MainActivity` jak pozostałe i przekaż do `MakNavHostApp`.
-3. Ekran listy: `MakScreenIntro` „Nazwa i kolor kierunku są wspólne dla wszystkich semestrów.”, wiersze z kropką 12 dp w kolorze kierunku, nazwą i ikoną przejścia, minimalna wysokość 48 dp, semantyka „{nazwa}, edytuj”. Stan pusty „Kierunki pojawią się po skonfigurowaniu planu.”.
-4. Ekran edycji: pole „Nazwa kierunku”, obecna paleta kolorów (w kroku 2 zastąpi ją nowy komponent), „Zapisz kierunek” i „Anuluj”.
-5. Ustawienia, sekcja „Plan”: `SettingsNavigationRow` „Kierunki” z wartością „Nazwy i kolory kierunków”, widoczny zawsze.
-6. Kropka koloru obok nazwy: wydziel publiczny `MakColorDot(color: String)` w `ui/components`; użyj go w wierszu kierunku na ekranie „Kierunki” semestru (zamiast paska 4 dp) i jako `leadingIcon` opcji pola „Istniejący kierunek” na ekranie semestru i w kreatorze. W `MakSelectField` dodaj opcjonalny parametr `optionLeading: (@Composable (T) -> Unit)? = null` przekazywany do `DropdownMenuItem`.
-7. Podpowiedź na ekranie semestru zmień na „Kierunek jest współdzielony między semestrami. Nazwę i kolor zmienisz w ustawieniach, w pozycji Kierunki.” i popraw test, który ją sprawdza.
-8. Dokumentacja: `FEATURES.md`, sekcja ustawień.
-
-Przypadki brzegowe: nazwa z samych spacji; kierunek usunięty w trakcie edycji (zapis zgłasza błąd); powtórzone nazwy na liście (numer z `distinctLabels`); długa nazwa zawija się bez obcinania kropki.
-
-Weryfikacja: `StudyProgramsViewModelTest` (zapis, walidacja, błąd, jeden zapis przy dwukrotnym dotknięciu); test Compose listy i edycji przy 320 dp; `KoinGraphTest`. `gradlew.bat test connectedDebugAndroidTest`.
-
-Kryterium zakończenia: nazwę i kolor kierunku można zmienić z ustawień, zmiana jest widoczna we wszystkich semestrach, a kolor stoi obok nazwy kierunku w ustawieniach.
-
 ## 2. Wybór koloru z pełnej palety barw (I-22)
 
 Wariant zaakceptowany przez użytkownika 2026-09-26: ciągły pasek odcienia, suwak jasności ograniczony do zakresu z kontrastem co najmniej 3:1 dla paska kierunku na jasnym i ciemnym tle, pole kodu szesnastkowego i podgląd.

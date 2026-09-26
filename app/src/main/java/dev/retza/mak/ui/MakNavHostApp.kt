@@ -36,6 +36,7 @@ import dev.retza.mak.ui.feedback.MakSnackbarHost
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.schedule.ScheduleViewModel
+import dev.retza.mak.ui.programs.StudyProgramsViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.setup.SetupViewModel
@@ -51,6 +52,7 @@ fun MakApp(
     semesterViewModel: SemesterViewModel,
     setupViewModel: SetupViewModel,
     settingsViewModel: SettingsViewModel,
+    studyProgramsViewModel: StudyProgramsViewModel,
     scheduleViewModel: ScheduleViewModel,
     todayViewModel: TodayViewModel,
     feedback: Flow<UiFeedback>,
@@ -110,6 +112,7 @@ fun MakApp(
     ClassEditEffects(classEditViewModel, navController)
     SemesterEffects(semesterViewModel, navController)
     SettingsEffects(settingsViewModel, navController)
+    StudyProgramEffects(studyProgramsViewModel, navController)
     SetupEffects(setupViewModel, classEditViewModel, navController)
     ScheduleEffects(scheduleViewModel, classEditViewModel, navController)
 
@@ -200,6 +203,11 @@ fun MakApp(
                 notificationsBlocked = notificationsBlocked,
                 onRequestNotificationPermission = onRequestNotificationPermission,
                 onOpenAppSettings = onOpenAppSettings
+            )
+            studyProgramRoutes(
+                studyProgramsViewModel = studyProgramsViewModel,
+                navController = navController,
+                onBack = ::navigateBack
             )
             setupRoute(setupViewModel = setupViewModel, settingsViewModel = settingsViewModel)
         }

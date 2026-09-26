@@ -116,6 +116,7 @@ data class SettingsUiState(
 fun SettingsScreen(
     state: SettingsUiState,
     onOpenSemesters: () -> Unit,
+    onOpenPrograms: () -> Unit,
     onOpenNotifications: () -> Unit,
     onOpenData: () -> Unit,
     onSemesterSelected: (String) -> Unit,
@@ -148,6 +149,11 @@ fun SettingsScreen(
                             onClick = onOpenSemesters
                         )
                     }
+                    SettingsNavigationRow(
+                        title = "Kierunki",
+                        value = "Nazwy i kolory kierunków",
+                        onClick = onOpenPrograms
+                    )
                     MakSelectField(
                         label = "Próg okienka",
                         value = state.gapThresholdOptions.firstOrNull { it.isSelected }?.label.orEmpty(),

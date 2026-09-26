@@ -32,6 +32,7 @@ import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakChoiceRow
+import dev.retza.mak.ui.components.MakColorDot
 import dev.retza.mak.ui.components.MakColorPalette
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakEmptyState
@@ -622,11 +623,12 @@ private fun CoursesBlock(
                 options = state.courseProgramOptions,
                 onSelected = { onSelectProgram(it.id) },
                 optionLabel = { programLabels[it.id].orEmpty() },
+                optionLeading = { MakColorDot(it.color) },
                 isError = state.courseNameError != null
             )
             FieldError(state.courseNameError?.let(::FieldErrorUi))
             MakHelperText(
-                "Kierunek jest współdzielony między semestrami. Nazwę i kolor zmienia się w kierunku, nie tutaj."
+                "Kierunek jest współdzielony między semestrami. Nazwę i kolor zmienisz w ustawieniach, w pozycji Kierunki."
             )
         }
 
@@ -692,12 +694,7 @@ private fun CourseRow(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
         ) {
-            Box(
-                modifier = Modifier
-                    .size(width = 4.dp, height = 36.dp)
-                    .clip(RoundedCornerShape(2.dp))
-                    .background(parseHexColor(course.color) ?: MaterialTheme.colorScheme.outline)
-            )
+            MakColorDot(course.color)
             Column(modifier = Modifier.weight(1f)) {
                 Text(course.name, fontWeight = FontWeight.SemiBold)
                 Text(

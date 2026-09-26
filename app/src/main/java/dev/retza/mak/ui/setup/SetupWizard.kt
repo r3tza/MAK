@@ -12,6 +12,7 @@ import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.MakChoiceRow
+import dev.retza.mak.ui.components.MakColorDot
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakNoteBanner
 import dev.retza.mak.ui.components.MakColorPalette
@@ -226,6 +227,7 @@ private fun CourseStep(
                         options = state.programOptions,
                         onSelected = { onProgramSelected(it.id) },
                         optionLabel = { labels[it.id].orEmpty() },
+                        optionLeading = { MakColorDot(it.color) },
                         isError = state.errors.containsKey(SetupField.CourseProgram)
                     )
                     FieldError(state.errors[SetupField.CourseProgram])

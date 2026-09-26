@@ -12,6 +12,7 @@ import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.schedule.ScheduleViewModel
+import dev.retza.mak.ui.programs.StudyProgramsViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsPreferences
 import dev.retza.mak.ui.settings.SettingsViewModel
@@ -46,6 +47,7 @@ class KoinGraphTest {
         assertNotNull(koin.get<SemesterViewModel>())
         assertNotNull(koin.get<SetupViewModel>())
         assertNotNull(koin.get<SettingsViewModel>())
+        assertNotNull(koin.get<StudyProgramsViewModel>())
         assertNotNull(koin.get<ScheduleViewModel>())
         assertNotNull(koin.get<TodayViewModel>())
     }

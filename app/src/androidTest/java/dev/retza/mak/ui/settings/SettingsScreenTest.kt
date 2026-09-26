@@ -54,6 +54,7 @@ class SettingsScreenTest {
                             )
                         ),
                         onOpenSemesters = { opened = "semesters" },
+                        onOpenPrograms = { opened = "programs" },
                         onOpenNotifications = { opened = "notifications" },
                         onOpenData = { opened = "data" },
                         onSemesterSelected = {},
@@ -97,6 +98,7 @@ class SettingsScreenTest {
                             gapThresholdOptions = listOf(GapThresholdOptionUi("30", "30 min", true))
                         ),
                         onOpenSemesters = {},
+                        onOpenPrograms = {},
                         onOpenNotifications = {},
                         onOpenData = {},
                         onSemesterSelected = {},

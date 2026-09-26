@@ -36,6 +36,7 @@ internal fun NavGraphBuilder.settingsRoute(
         SettingsScreen(
             state = settingsState,
             onOpenSemesters = { navController.navigate(MakRoutes.SettingsSemesters) },
+            onOpenPrograms = { navController.navigate(MakRoutes.StudyPrograms) },
             onOpenNotifications = { navController.navigate(MakRoutes.SettingsNotifications) },
             onOpenData = { navController.navigate(MakRoutes.SettingsData) },
             onSemesterSelected = settingsViewModel::selectSemester,

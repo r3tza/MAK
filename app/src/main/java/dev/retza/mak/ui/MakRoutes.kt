@@ -13,6 +13,8 @@ object MakRoutes {
     const val SettingsSemesters = "settings/semesters"
     const val SettingsNotifications = "settings/notifications"
     const val SettingsData = "settings/data"
+    const val StudyPrograms = "settings/programs"
+    const val StudyProgramEdit = "settings/programs/{programId}"
     const val ImportPreview = "settings/import"
     const val Setup = "setup"
 }
@@ -26,6 +28,8 @@ fun editRoute(classId: Long, date: String): String =
     "edit?classId=$classId&date=$date"
 
 fun semesterRoute(id: String): String = "semester/$id"
+
+fun studyProgramEditRoute(id: Long): String = "settings/programs/$id"
 
 fun semesterCoursesRoute(id: String): String = "semester/$id/courses"
 
@@ -72,6 +76,8 @@ internal fun titleForRoute(route: String?): String = when (route) {
     MakRoutes.SettingsSemesters -> "Semestry"
     MakRoutes.SettingsNotifications -> "Powiadomienia"
     MakRoutes.SettingsData -> "Dane"
+    MakRoutes.StudyPrograms -> "Kierunki"
+    MakRoutes.StudyProgramEdit -> "Edytuj kierunek"
     MakRoutes.ImportPreview -> "Import"
     MakRoutes.Setup -> "Konfiguracja"
     else -> "Dzisiaj"

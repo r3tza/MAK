@@ -1147,7 +1147,8 @@ fun <T> MakSelectField(
     onSelected: (T) -> Unit,
     modifier: Modifier = Modifier,
     isError: Boolean = false,
-    optionLabel: (T) -> String = { it.toString() }
+    optionLabel: (T) -> String = { it.toString() },
+    optionLeading: (@Composable (T) -> Unit)? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(
@@ -1171,6 +1172,7 @@ fun <T> MakSelectField(
             options.forEach { option ->
                 DropdownMenuItem(
                     text = { Text(optionLabel(option), style = MaterialTheme.typography.bodyLarge) },
+                    leadingIcon = optionLeading?.let { leading -> { leading(option) } },
                     onClick = {
                         onSelected(option)
                         expanded = false

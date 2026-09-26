@@ -201,7 +201,7 @@ class SemesterScreenTest {
         composeTestRule.onNodeWithText("Wybierz istniejący").assertIsDisplayed()
         composeTestRule.onNodeWithText(
             "Kierunek jest współdzielony między semestrami. " +
-                "Nazwę i kolor zmienia się w kierunku, nie tutaj."
+                "Nazwę i kolor zmienisz w ustawieniach, w pozycji Kierunki."
         ).assertIsDisplayed()
         composeTestRule.onNodeWithText("Wspólne daty i tygodnie").assertIsDisplayed()
         composeTestRule.onNodeWithText("Osobne daty i tygodnie").assertIsDisplayed()

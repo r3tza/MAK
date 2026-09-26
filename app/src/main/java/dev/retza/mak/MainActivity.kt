@@ -31,6 +31,7 @@ import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.schedule.ScheduleViewModel
+import dev.retza.mak.ui.programs.StudyProgramsViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.settings.ThemeMode
@@ -52,6 +53,7 @@ class MainActivity : ComponentActivity() {
     private val semesterViewModel: SemesterViewModel by viewModel()
     private val setupViewModel: SetupViewModel by viewModel()
     private val settingsViewModel: SettingsViewModel by viewModel()
+    private val studyProgramsViewModel: StudyProgramsViewModel by viewModel()
     private val scheduleViewModel: ScheduleViewModel by viewModel()
     private val todayViewModel: TodayViewModel by viewModel()
     private val feedbackController: FeedbackController by inject()
@@ -144,6 +146,7 @@ class MainActivity : ComponentActivity() {
                     semesterViewModel = semesterViewModel,
                     setupViewModel = setupViewModel,
                     settingsViewModel = settingsViewModel,
+                    studyProgramsViewModel = studyProgramsViewModel,
                     scheduleViewModel = scheduleViewModel,
                     todayViewModel = todayViewModel,
                     feedback = feedbackController.feedback,
