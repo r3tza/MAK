@@ -16,6 +16,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.cancel
+import kotlinx.coroutines.job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -57,7 +58,8 @@ class SettingsPreferencesTest {
         first.setTheme(ThemeMode.Dark)
         assertEquals(ThemeMode.Dark, first.theme.first())
 
-        scope?.cancel()
+        // DataStore releases the file only after its scope completes, so wait for it.
+        scope?.coroutineContext?.job?.cancelAndJoin()
         val second = preferences(openDataStore())
         assertEquals(ThemeMode.Dark, second.theme.first())
     }
