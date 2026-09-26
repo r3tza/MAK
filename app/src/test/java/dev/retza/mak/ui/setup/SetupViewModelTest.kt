@@ -169,6 +169,79 @@ class SetupViewModelTest {
     }
 
     @Test
+    fun existingProgramIsAssignedWithoutCreatingNewRecord() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val existing = repository.studyPrograms.first()
+        val viewModel = viewModel(repository)
+        viewModel.fillValidSemester()
+        viewModel.next()
+        advanceUntilIdle()
+
+        viewModel.selectProgramMode(SetupProgramMode.Existing)
+        viewModel.selectProgram(existing.id)
+        viewModel.next()
+        advanceUntilIdle()
+
+        assertEquals(existing.id, repository.lastSetupStudyProgram?.id)
+        assertEquals(existing.name, repository.lastSetupStudyProgram?.name)
+        assertEquals(existing.color, repository.lastSetupStudyProgram?.color)
+        assertEquals(SetupStep.Classes, viewModel.setup.value.step)
+    }
+
+    @Test
+    fun existingModeWithoutSelectionShowsErrorWithoutWriting() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        viewModel.fillValidSemester()
+        viewModel.next()
+        advanceUntilIdle()
+
+        viewModel.selectProgramMode(SetupProgramMode.Existing)
+        viewModel.next()
+        advanceUntilIdle()
+
+        assertTrue(repository.events.isEmpty())
+        assertTrue(viewModel.setup.value.errors.containsKey(SetupField.CourseProgram))
+        assertEquals(SetupStep.Course, viewModel.setup.value.step)
+    }
+
+    @Test
+    fun programChoiceIsLockedAfterSaveSoBackDoesNotRenameSharedProgram() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val existing = repository.studyPrograms.first()
+        val viewModel = viewModel(repository)
+        viewModel.fillValidSemester()
+        viewModel.next()
+        advanceUntilIdle()
+        viewModel.selectProgramMode(SetupProgramMode.Existing)
+        viewModel.selectProgram(existing.id)
+        viewModel.next()
+        advanceUntilIdle()
+
+        viewModel.back()
+        viewModel.selectProgramMode(SetupProgramMode.New)
+        viewModel.update { it.copy(courseName = "Inna nazwa") }
+        viewModel.next()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.setup.value.isProgramChoiceLocked)
+        assertEquals(SetupProgramMode.Existing, viewModel.setup.value.programMode)
+        assertEquals(existing.id, repository.lastSetupStudyProgram?.id)
+        assertEquals(existing.name, repository.lastSetupStudyProgram?.name)
+    }
+
+    @Test
+    fun wizardListsExistingProgramsAndStartsInNewMode() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+
+        val state = viewModel.setup.value
+        assertEquals(repository.studyPrograms.map { it.id }, state.programOptions.map { it.id })
+        assertEquals(SetupProgramMode.New, state.programMode)
+    }
+
+    @Test
     fun startDuringSaveResetsTheWizardWithoutFeedback() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         repository.saveGate = CompletableDeferred()
@@ -185,7 +258,7 @@ class SetupViewModelTest {
         viewModel.start()
         advanceUntilIdle()
 
-        assertEquals(SetupWizardUiState(), viewModel.setup.value)
+        assertEquals(SetupWizardUiState(), viewModel.setup.value.copy(programOptions = emptyList()))
         assertFalse(viewModel.setup.value.isSaving)
         assertTrue(sink.published.isEmpty())
     }
@@ -263,7 +336,7 @@ class SetupViewModelTest {
             ),
             effects
         )
-        assertEquals(SetupWizardUiState(), viewModel.setup.value)
+        assertEquals(SetupWizardUiState(), viewModel.setup.value.copy(programOptions = emptyList()))
     }
 
     @Test

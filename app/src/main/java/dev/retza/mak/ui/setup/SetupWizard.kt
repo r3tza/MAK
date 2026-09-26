@@ -11,6 +11,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import dev.retza.mak.ui.components.FieldError
+import dev.retza.mak.ui.components.MakChoiceRow
+import dev.retza.mak.ui.components.MakHelperText
+import dev.retza.mak.ui.components.MakNoteBanner
 import dev.retza.mak.ui.components.MakColorPalette
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakField
@@ -32,6 +35,8 @@ fun SetupWizard(
     onFirstWeekChanged: (String) -> Unit,
     onCourseNameChanged: (String) -> Unit,
     onCourseColorChanged: (String) -> Unit,
+    onProgramModeChanged: (SetupProgramMode) -> Unit,
+    onProgramSelected: (Long) -> Unit,
     onNext: () -> Unit,
     onBack: () -> Unit,
     onAddClass: () -> Unit,
@@ -69,6 +74,8 @@ fun SetupWizard(
                     state = state,
                     onCourseNameChanged = onCourseNameChanged,
                     onCourseColorChanged = onCourseColorChanged,
+                    onProgramModeChanged = onProgramModeChanged,
+                    onProgramSelected = onProgramSelected,
                     onNext = onNext,
                     onBack = onBack
                 )
@@ -151,25 +158,79 @@ private fun CourseStep(
     state: SetupWizardUiState,
     onCourseNameChanged: (String) -> Unit,
     onCourseColorChanged: (String) -> Unit,
+    onProgramModeChanged: (SetupProgramMode) -> Unit,
+    onProgramSelected: (Long) -> Unit,
     onNext: () -> Unit,
     onBack: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        MakField(
-            label = "Nazwa kierunku",
-            value = state.courseName,
-            onValueChange = onCourseNameChanged,
-            isError = state.errors.containsKey(SetupField.CourseName)
-        )
-        FieldError(state.errors[SetupField.CourseName])
-        MakColorPalette(
-            selectedColor = state.courseColor,
-            onColorSelected = onCourseColorChanged
-        )
+        if (state.programOptions.isNotEmpty() && !state.isProgramChoiceLocked) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                MakChoiceRow(
+                    label = "Nowy kierunek",
+                    selected = state.programMode == SetupProgramMode.New,
+                    onClick = { onProgramModeChanged(SetupProgramMode.New) },
+                    modifier = Modifier.weight(1f)
+                )
+                MakChoiceRow(
+                    label = "Wybierz istniejący",
+                    selected = state.programMode == SetupProgramMode.Existing,
+                    onClick = { onProgramModeChanged(SetupProgramMode.Existing) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
+        when (state.programMode) {
+            SetupProgramMode.New -> {
+                MakField(
+                    label = "Nazwa kierunku",
+                    value = state.courseName,
+                    onValueChange = onCourseNameChanged,
+                    isError = state.errors.containsKey(SetupField.CourseName)
+                )
+                FieldError(state.errors[SetupField.CourseName])
+                MakColorPalette(
+                    selectedColor = state.courseColor,
+                    onColorSelected = onCourseColorChanged
+                )
+            }
+
+            SetupProgramMode.Existing -> {
+                val selected = state.programOptions.firstOrNull { it.id == state.selectedProgramId }
+                if (state.isProgramChoiceLocked) {
+                    MakNoteBanner(
+                        title = "Kierunek: ${selected?.name.orEmpty()}",
+                        subtitle = LOCKED_PROGRAM_NOTE
+                    )
+                } else {
+                    MakSelectField(
+                        label = "Istniejący kierunek",
+                        value = selected?.name.orEmpty(),
+                        options = state.programOptions,
+                        onSelected = { onProgramSelected(it.id) },
+                        optionLabel = { it.name },
+                        isError = state.errors.containsKey(SetupField.CourseProgram)
+                    )
+                    FieldError(state.errors[SetupField.CourseProgram])
+                    MakHelperText(
+                        "Kierunek jest współdzielony między semestrami, więc jego nazwa i kolor się nie zmienią."
+                    )
+                }
+            }
+        }
+        if (state.isProgramChoiceLocked && state.programMode == SetupProgramMode.New) {
+            MakHelperText(LOCKED_PROGRAM_NOTE)
+        }
         MakPrimaryAction(text = "Zapisz kierunek", onClick = onNext, enabled = !state.isSaving)
         MakSecondaryAction(text = "Wstecz", onClick = onBack, enabled = !state.isSaving)
     }
 }
+
+private const val LOCKED_PROGRAM_NOTE =
+    "Kierunek jest już zapisany w tym semestrze. Kolejne kierunki dodasz w ustawieniach semestru."
 
 @Composable
 private fun ClassesStep(

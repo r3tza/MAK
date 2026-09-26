@@ -39,6 +39,8 @@ internal fun NavGraphBuilder.setupRoute(
             onFirstWeekChanged = { value -> setupViewModel.update { it.copy(firstWeekLabel = value) } },
             onCourseNameChanged = { value -> setupViewModel.update { it.copy(courseName = value) } },
             onCourseColorChanged = { value -> setupViewModel.update { it.copy(courseColor = value) } },
+            onProgramModeChanged = setupViewModel::selectProgramMode,
+            onProgramSelected = setupViewModel::selectProgram,
             onNext = setupViewModel::next,
             onBack = setupViewModel::back,
             onAddClass = setupViewModel::addClass,

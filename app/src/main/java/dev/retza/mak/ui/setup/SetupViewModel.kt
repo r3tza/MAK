@@ -34,8 +34,20 @@ enum class SetupField {
     SemesterName,
     StartDate,
     EndDate,
-    CourseName
+    CourseName,
+    CourseProgram
 }
+
+enum class SetupProgramMode {
+    New,
+    Existing
+}
+
+data class SetupProgramOptionUi(
+    val id: Long,
+    val name: String,
+    val color: String
+)
 
 data class SetupWizardUiState(
     val step: SetupStep = SetupStep.Semester,
@@ -45,6 +57,12 @@ data class SetupWizardUiState(
     val firstWeekLabel: String = "A",
     val courseName: String = "",
     val courseColor: String = "#137B71",
+    val programOptions: List<SetupProgramOptionUi> = emptyList(),
+    val programMode: SetupProgramMode = SetupProgramMode.New,
+    val selectedProgramId: Long? = null,
+    // After the course step is saved, the program choice is fixed for this wizard session:
+    // switching it would either rename a shared program or leave a second assignment behind.
+    val isProgramChoiceLocked: Boolean = false,
     val errors: Map<SetupField, FieldErrorUi> = emptyMap(),
     val status: ScreenStatus = ScreenStatus.Ready,
     val canSkipClasses: Boolean = true,
@@ -83,6 +101,30 @@ class SetupViewModel(
     private var saveJob: Job? = null
     private var sessionToken = 0L
 
+    init {
+        viewModelScope.launch {
+            try {
+                semesterRepository.observeStudyPrograms().collect { programs ->
+                    val options = programs.map { SetupProgramOptionUi(it.id, it.name, it.color) }
+                    state.update { it.withProgramOptions(options) }
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                // Without the list the wizard still creates a new program.
+                state.update { it.withProgramOptions(emptyList()) }
+            }
+        }
+    }
+
+    fun selectProgramMode(mode: SetupProgramMode) = update {
+        if (it.isProgramChoiceLocked) it else it.copy(programMode = mode)
+    }
+
+    fun selectProgram(id: Long) = update {
+        if (it.isProgramChoiceLocked) it else it.copy(selectedProgramId = id)
+    }
+
     fun start(resume: SetupSemesterResume? = null) {
         sessionToken += 1
         saveJob?.cancel()
@@ -90,7 +132,7 @@ class SetupViewModel(
             semesterId = null
             courseId = null
             calendarId = null
-            state.value = SetupWizardUiState()
+            state.value = SetupWizardUiState().withProgramOptions(state.value.programOptions)
         } else {
             semesterId = resume.semesterId
             courseId = null
@@ -101,7 +143,7 @@ class SetupViewModel(
                 startDate = resume.startDate,
                 endDate = resume.endDate,
                 firstWeekLabel = resume.firstWeekLabel
-            )
+            ).withProgramOptions(state.value.programOptions)
         }
     }
 
@@ -166,15 +208,35 @@ class SetupViewModel(
         val current = state.value
         val start = current.startDate.toLocalDateOrNull() ?: return
         val end = current.endDate.toLocalDateOrNull() ?: return
-        val name = current.courseName.trim()
-        if (name.isBlank()) {
-            state.update {
-                it.copy(errors = mapOf(SetupField.CourseName to FieldErrorUi("Podaj nazwę kierunku.")))
+        val program = when (current.programMode) {
+            SetupProgramMode.New -> {
+                val name = current.courseName.trim()
+                if (name.isBlank()) {
+                    state.update {
+                        it.copy(errors = mapOf(SetupField.CourseName to FieldErrorUi("Podaj nazwę kierunku.")))
+                    }
+                    return
+                }
+                StudyProgramRecord(
+                    id = courseId ?: 0L,
+                    name = name,
+                    color = current.courseColor.ifBlank { "#137b71" }
+                )
             }
-            return
+
+            SetupProgramMode.Existing -> {
+                val selected = current.programOptions.firstOrNull { it.id == current.selectedProgramId }
+                if (selected == null) {
+                    state.update {
+                        it.copy(errors = mapOf(SetupField.CourseProgram to FieldErrorUi("Wybierz kierunek.")))
+                    }
+                    return
+                }
+                // A shared program keeps its current name and color.
+                StudyProgramRecord(id = selected.id, name = selected.name, color = selected.color)
+            }
         }
         val existingSemester = semesterId
-        val existingCourse = courseId
         val existingCalendar = calendarId
         val isUpdate = existingSemester != null
         state.update { it.copy(isSaving = true, errors = emptyMap()) }
@@ -187,11 +249,7 @@ class SetupViewModel(
                         name = current.semesterName.trim(),
                         isActive = true
                     ),
-                    StudyProgramRecord(
-                        id = existingCourse ?: 0L,
-                        name = name,
-                        color = current.courseColor.ifBlank { "#137b71" }
-                    ),
+                    program,
                     AcademicCalendarRecord(
                         id = existingCalendar ?: 0L,
                         semesterId = existingSemester ?: 0L,
@@ -204,7 +262,9 @@ class SetupViewModel(
                 semesterId = ids.semesterId
                 courseId = ids.studyProgramId
                 calendarId = ids.academicCalendarId
-                state.update { it.copy(step = SetupStep.Classes, errors = emptyMap()) }
+                state.update {
+                    it.copy(step = SetupStep.Classes, errors = emptyMap(), isProgramChoiceLocked = true)
+                }
                 val message = if (isUpdate) {
                     "Zaktualizowano konfigurację"
                 } else {
@@ -226,6 +286,16 @@ class SetupViewModel(
             }
         }
     }
+}
+
+private fun SetupWizardUiState.withProgramOptions(options: List<SetupProgramOptionUi>): SetupWizardUiState {
+    if (isProgramChoiceLocked) return copy(programOptions = options)
+    val selected = selectedProgramId?.takeIf { id -> options.any { it.id == id } }
+    return copy(
+        programOptions = options,
+        programMode = if (options.isEmpty()) SetupProgramMode.New else programMode,
+        selectedProgramId = selected
+    )
 }
 
 private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()

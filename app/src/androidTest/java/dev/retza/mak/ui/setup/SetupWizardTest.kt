@@ -3,6 +3,9 @@ package dev.retza.mak.ui.setup
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -43,6 +46,8 @@ class SetupWizardTest {
                         onFirstWeekChanged = { selectedWeek = it },
                         onCourseNameChanged = {},
                         onCourseColorChanged = {},
+                        onProgramModeChanged = {},
+                        onProgramSelected = {},
                         onNext = { nextClicks += 1 },
                         onBack = {},
                         onAddClass = {},
@@ -62,5 +67,51 @@ class SetupWizardTest {
 
         assertEquals("B", selectedWeek)
         assertEquals(1, nextClicks)
+    }
+
+    @Test
+    fun courseStepOffersExistingProgramAndHidesColorAt320Dp() {
+        var state by mutableStateOf(
+            SetupWizardUiState(
+                step = SetupStep.Course,
+                programOptions = listOf(SetupProgramOptionUi(1L, "Informatyka", "#137B71"))
+            )
+        )
+        var selectedProgram: Long? = null
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(
+                    modifier = Modifier
+                        .width(320.dp)
+                        .height(700.dp)
+                ) {
+                    SetupWizard(
+                        state = state,
+                        onSemesterNameChanged = {},
+                        onStartDateChanged = {},
+                        onEndDateChanged = {},
+                        onFirstWeekChanged = {},
+                        onCourseNameChanged = {},
+                        onCourseColorChanged = {},
+                        onProgramModeChanged = { mode -> state = state.copy(programMode = mode) },
+                        onProgramSelected = { selectedProgram = it },
+                        onNext = {},
+                        onBack = {},
+                        onAddClass = {},
+                        onFinish = {},
+                        onRetry = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Kolor kierunku").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Wybierz istniejący").performClick()
+        composeTestRule.onNodeWithText("Kolor kierunku").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Nazwa kierunku").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Istniejący kierunek").performClick()
+        composeTestRule.onNodeWithText("Informatyka").performClick()
+        assertEquals(1L, selectedProgram)
     }
 }

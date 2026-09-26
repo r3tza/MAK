@@ -12,11 +12,10 @@ Zadania i kryteria są w `QUEUE.md`, a kroki wykonawcze w `PLAN.md`.
 
 Audyt objął przegląd kodu warstwy danych semestrów, kreatora, ekranów semestru, ustawień i widgetu, raport lint oraz dodanie zajęć przez formularz na emulatorze. Zadania i kryteria są w `QUEUE.md`.
 
-1. **Duplikaty kierunków z kreatora (I-16).** „Dodaj semestr” zawsze tworzy nowy globalny kierunek.
-2. **Wybór po nazwie (I-17).** Przy powtórzonych nazwach semestrów albo kierunków nie da się wybrać drugiej pozycji w ustawieniach i w filtrze „Planu”.
-3. **Nowy semestr od razu aktywny (I-18).** Dodanie semestru z wyprzedzeniem przełącza „Dzisiaj” na pusty plan. Decyzja z 2026-09-26: aktywacja tylko, gdy dzisiejsza data mieści się w kalendarzu albo nie ma aktywnego semestru.
-4. **Osierocone zmiany i notatki po edycji zajęć (I-19).** Zmiana dnia, cyklu albo daty ukrywa wcześniejsze zmiany terminów i notatki. Decyzja z 2026-09-26: dane zostają zachowane, a formularz ostrzega przed zapisem.
-5. **Drobne problemy (I-20).** Usuwanie korekty i kalendarza bez cofnięcia, formularz korekty przyjmujący dowolny dzień, zgoda na powiadomienia na Androidzie 12, nieaktualne biblioteki, tryb zapisu eksportu.
+1. **Wybór po nazwie (I-17).** Przy powtórzonych nazwach semestrów albo kierunków nie da się wybrać drugiej pozycji w ustawieniach i w filtrze „Planu”.
+2. **Nowy semestr od razu aktywny (I-18).** Dodanie semestru z wyprzedzeniem przełącza „Dzisiaj” na pusty plan. Decyzja z 2026-09-26: aktywacja tylko, gdy dzisiejsza data mieści się w kalendarzu albo nie ma aktywnego semestru.
+3. **Osierocone zmiany i notatki po edycji zajęć (I-19).** Zmiana dnia, cyklu albo daty ukrywa wcześniejsze zmiany terminów i notatki. Decyzja z 2026-09-26: dane zostają zachowane, a formularz ostrzega przed zapisem.
+4. **Drobne problemy (I-20).** Usuwanie korekty i kalendarza bez cofnięcia, formularz korekty przyjmujący dowolny dzień, zgoda na powiadomienia na Androidzie 12, nieaktualne biblioteki, tryb zapisu eksportu.
 
 ## Wymagają odbioru na urządzeniu
 

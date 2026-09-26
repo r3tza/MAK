@@ -4,25 +4,6 @@ Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie je
 
 Każdy krok ma być wykonalny także przez słabszego agenta bez odgadywania intencji. Podaj kolejność małych zmian, docelowe pliki lub obszary kodu, zależności, przypadki brzegowe, sposób sprawdzenia i jednoznaczne kryterium zakończenia. Jeśli do wykonania brakuje decyzji, zapisz ją jako bloker zamiast pozostawiać ukryte założenie.
 
-## 2. Wybór istniejącego kierunku w kreatorze (I-16)
-
-Problem: krok „Dodaj kierunek” w `SetupWizard` ma tylko pole nazwy i kolor, a `SetupViewModel.saveConfiguration` wysyła `StudyProgramRecord(id = 0)`, więc każdy nowy semestr tworzy nowy globalny kierunek.
-
-Granice: wzoruj się na ekranie „Kierunki” (`CoursesBlock` w `SemesterScreen.kt`: wybór „Nowy kierunek” albo „Wybierz istniejący” i pole wyboru programu). Nie zmieniaj ekranu „Kierunki”. Wybrany istniejący kierunek nie może zmienić nazwy ani koloru, bo jest współdzielony (`ARCHITECTURE.md`, sekcja 7).
-
-Kolejność:
-
-1. `SetupViewModel`: obserwuj `semesterRepository.observeStudyPrograms()` i wystaw w `SetupWizardUiState` listę `programOptions` (identyfikator, nazwa, kolor). Dodaj `programMode` (nowy albo istniejący, domyślnie nowy; tryb istniejący dostępny tylko przy niepustej liście) i `selectedProgramId`.
-2. `CourseStep` w `SetupWizard.kt`: gdy są globalne kierunki, pokaż wybór trybu jak na ekranie „Kierunki”. W trybie istniejącym pokaż `MakSelectField` z kierunkami, ukryj nazwę i paletę kolorów i dodaj informację, że kierunek jest współdzielony między semestrami.
-3. `saveConfiguration`: w trybie istniejącym waliduj wybór („Wybierz kierunek.”) i wyślij rekord wybranego kierunku z jego bieżącą nazwą i kolorem z bazy. `saveSetupConfiguration` wywoła wtedy `update` z niezmienionymi wartościami; repozytorium zostaje bez zmian.
-4. Powrót z kroku 3 do kroku 2 zachowuje wybrany tryb i kierunek.
-
-Przypadki brzegowe: brak globalnych kierunków (wybór trybu ukryty); powrót do kroku 2 po zapisie i zmiana z kierunku istniejącego na nowy: sprawdź w `saveSetupConfiguration`, czy semestr nie zostaje z dwoma przypisaniami, i jeśli zostaje, zapisz to jako bloker zamiast zgadywać; wznowienie konfiguracji semestru bez przypisań (`SetupSemesterResume`).
-
-Weryfikacja: `SetupViewModelTest`: wybór istniejącego kierunku nie tworzy nowego rekordu kierunku; nowy kierunek działa jak dotąd; walidacja braku wyboru. `SetupWizardTest`: wybór trybu i ukrycie koloru przy 320 dp. `gradlew.bat test connectedDebugAndroidTest`.
-
-Kryterium zakończenia: dodanie semestru z kierunkiem, który już istnieje, nie tworzy duplikatu globalnego kierunku.
-
 ## 3. Wybór semestru i filtra kierunku po identyfikatorze (I-17)
 
 Problem: `SettingsScreen.kt` (aktywny semestr na ekranie głównym i na ekranie „Semestry”) oraz `ScheduleFilterSection` w `ScheduleScreen.kt` przekazują do `MakSelectField` listę nazw i szukają wybranej pozycji przez `firstOrNull { it.name == name }` albo `it.label == label`.
