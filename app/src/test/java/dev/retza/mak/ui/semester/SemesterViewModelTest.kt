@@ -569,9 +569,11 @@ class SemesterViewModelTest {
         viewModel.open("1")
         advanceUntilIdle()
 
+        viewModel.requestWeekOverrideDeletion("5")
+        assertTrue(repository.events.none { it == "deleteWeekOverride" })
         repository.saveGate = CompletableDeferred()
-        viewModel.deleteWeekOverride("5")
-        viewModel.deleteWeekOverride("5")
+        viewModel.confirmWeekOverrideDeletion()
+        viewModel.confirmWeekOverrideDeletion()
         advanceUntilIdle()
         repository.saveGate?.complete(Unit)
         advanceUntilIdle()
@@ -602,12 +604,60 @@ class SemesterViewModelTest {
         viewModel.open("1")
         advanceUntilIdle()
 
+        viewModel.requestWeekOverrideDeletion("5")
         repository.cancelSaves = true
-        viewModel.deleteWeekOverride("5")
+        viewModel.confirmWeekOverrideDeletion()
         advanceUntilIdle()
 
         assertTrue(sink.published.isEmpty())
         assertFalse(viewModel.semester.value.isDeletingOverride)
+    }
+
+    @Test
+    fun cancelWeekOverrideDeletionKeepsOverride() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.weekOverrides += WeekOverrideEntity(
+            id = 5L,
+            semesterId = 1L,
+            academicCalendarId = 1L,
+            weekStartDate = LocalDate.of(2026, 10, 5),
+            weekType = WeekType.A,
+            scope = WeekOverrideScope.ONE_WEEK
+        )
+        val viewModel = recordingViewModel(repository, RecordingFeedbackSink())
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.requestWeekOverrideDeletion("5")
+        assertEquals("5", viewModel.semester.value.pendingOverrideDeletion?.id)
+        viewModel.cancelWeekOverrideDeletion()
+        viewModel.confirmWeekOverrideDeletion()
+        advanceUntilIdle()
+
+        assertNull(viewModel.semester.value.pendingOverrideDeletion)
+        assertEquals(1, repository.weekOverrides.size)
+    }
+
+    @Test
+    fun calendarDeletionWaitsForConfirmation() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = recordingViewModel(repository, RecordingFeedbackSink())
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+        val unused = repository.calendars.first { calendar ->
+            repository.semesterPrograms.none { it.academicCalendarId == calendar.id }
+        }
+
+        viewModel.requestCalendarDeletion(unused.id.toString())
+        advanceUntilIdle()
+        assertTrue(repository.events.none { it == "deleteCalendar" })
+
+        viewModel.confirmCalendarDeletion()
+        advanceUntilIdle()
+        assertEquals(1, repository.events.count { it == "deleteCalendar" })
+        assertNull(viewModel.semester.value.pendingCalendarDeletion)
     }
 
     @Test

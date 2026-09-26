@@ -105,7 +105,9 @@ internal fun NavGraphBuilder.semesterRoutes(
             onNewOverride = semesterViewModel::newWeekOverride,
             onEditOverride = semesterViewModel::editWeekOverride,
             onSaveOverride = semesterViewModel::saveWeekOverride,
-            onDeleteOverride = semesterViewModel::deleteWeekOverride,
+            onDeleteOverride = semesterViewModel::requestWeekOverrideDeletion,
+            onConfirmOverrideDeletion = semesterViewModel::confirmWeekOverrideDeletion,
+            onCancelOverrideDeletion = semesterViewModel::cancelWeekOverrideDeletion,
             onCancelOverrideEdit = semesterViewModel::cancelWeekOverrideEdit,
             modifier = Modifier.fillMaxSize()
         )
@@ -132,7 +134,9 @@ internal fun NavGraphBuilder.semesterRoutes(
                 semesterViewModel.update { it.copy(semester = it.semester.copy(firstWeek = value)) }
             },
             onSaveCalendar = semesterViewModel::saveCalendar,
-            onDeleteCalendar = semesterViewModel::deleteUnusedCalendar,
+            onDeleteCalendar = semesterViewModel::requestCalendarDeletion,
+            onConfirmCalendarDeletion = semesterViewModel::confirmCalendarDeletion,
+            onCancelCalendarDeletion = semesterViewModel::cancelCalendarDeletion,
             modifier = Modifier.fillMaxSize()
         )
     }

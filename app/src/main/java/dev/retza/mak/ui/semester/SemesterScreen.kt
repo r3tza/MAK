@@ -171,6 +171,8 @@ data class SemesterScreenUiState(
     val isReconnectingCalendar: Boolean = false,
     val pendingReconnect: ReconnectCalendarUi? = null,
     val pendingCourseDeletion: CourseDeletionUi? = null,
+    val pendingOverrideDeletion: WeekOverrideUi? = null,
+    val pendingCalendarDeletion: SemesterCalendarUi? = null,
     val reconnectError: String? = null,
     val status: ScreenStatus = ScreenStatus.Ready
 )
@@ -337,8 +339,20 @@ fun SemesterWeekOverridesScreen(
     onSaveOverride: () -> Unit,
     onDeleteOverride: (String) -> Unit,
     onCancelOverrideEdit: () -> Unit,
+    onConfirmOverrideDeletion: () -> Unit,
+    onCancelOverrideDeletion: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    state.pendingOverrideDeletion?.let { override ->
+        ConfirmDeletionDialog(
+            title = "Usunąć korektę tygodnia?",
+            text = "Korekta tygodnia od ${override.weekStartDate.asLongDate()} zostanie usunięta. " +
+                "Rytm A/B wróci do automatycznego wyliczenia.",
+            isDeleting = state.isDeletingOverride,
+            onConfirm = onConfirmOverrideDeletion,
+            onCancel = onCancelOverrideDeletion
+        )
+    }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
         MakScreenIntro("Ustaw oznaczenie tylko dla jednego tygodnia albo od wybranego tygodnia w przyszłość.")
         if (state.calendars.size > 1) {
@@ -377,8 +391,20 @@ fun SemesterCalendarsScreen(
     onFirstWeekChanged: (WeekTypeUi) -> Unit,
     onSaveCalendar: () -> Unit,
     onDeleteCalendar: (String) -> Unit,
+    onConfirmCalendarDeletion: () -> Unit,
+    onCancelCalendarDeletion: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    state.pendingCalendarDeletion?.let { calendar ->
+        ConfirmDeletionDialog(
+            title = "Usunąć kalendarz?",
+            text = "Kalendarz ${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()} " +
+                "nie jest używany przez żaden kierunek i zostanie usunięty razem ze swoimi korektami.",
+            isDeleting = state.isDeletingCalendar,
+            onConfirm = onConfirmCalendarDeletion,
+            onCancel = onCancelCalendarDeletion
+        )
+    }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
         MakScreenIntro("Zakres dat i rytm A/B każdego kalendarza.")
         if (state.calendars.size > 1) {
@@ -777,10 +803,27 @@ private fun CourseDeletionDialog(
     onConfirm: () -> Unit,
     onCancel: () -> Unit
 ) {
+    ConfirmDeletionDialog(
+        title = "Usunąć kierunek z semestru?",
+        text = courseDeletionMessage(deletion),
+        isDeleting = isDeleting,
+        onConfirm = onConfirm,
+        onCancel = onCancel
+    )
+}
+
+@Composable
+private fun ConfirmDeletionDialog(
+    title: String,
+    text: String,
+    isDeleting: Boolean,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
+) {
     AlertDialog(
         onDismissRequest = { if (!isDeleting) onCancel() },
-        title = { Text("Usunąć kierunek z semestru?") },
-        text = { Text(courseDeletionMessage(deletion)) },
+        title = { Text(title) },
+        text = { Text(text) },
         confirmButton = {
             TextButton(
                 onClick = onConfirm,
@@ -808,6 +851,9 @@ private fun calendarLabel(calendar: SemesterCalendarUi): String {
     val range = "${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()}"
     return "$range, tydzień ${calendar.firstWeek.name}, $coursePart"
 }
+
+private fun String.asLongDate(): String =
+    toLocalDateOrNull()?.format(polishShortDateFormatter) ?: this
 
 private fun String.asCalendarDate(): String =
     toLocalDateOrNull()?.format(calendarDateFormatter) ?: this

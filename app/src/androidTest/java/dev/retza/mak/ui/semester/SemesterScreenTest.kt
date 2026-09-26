@@ -159,7 +159,7 @@ class SemesterScreenTest {
         composeTestRule.onAllNodesWithText("Usuń").assertCountEquals(2)
         composeTestRule.onAllNodesWithText("Usuń")[1].performClick()
         assertEquals("2", deleted)
-        composeTestRule.onNodeWithText("Dodaj kierunek").performClick()
+        composeTestRule.onNodeWithText("Dodaj kierunek").performScrollTo().performClick()
         assertEquals(1, added)
     }
 
@@ -236,7 +236,9 @@ class SemesterScreenTest {
             }
         }
 
+        // The color picker above is tall, so the note may start below the fold.
         composeTestRule.onNodeWithText("Powstanie kopia dat, rytmu i korekt wybranego kalendarza.")
+            .performScrollTo()
             .assertIsDisplayed()
     }
 
@@ -353,6 +355,8 @@ class SemesterScreenTest {
                         onFirstWeekChanged = {},
                         onSaveCalendar = {},
                         onDeleteCalendar = { deleted = it },
+                        onConfirmCalendarDeletion = {},
+                        onCancelCalendarDeletion = {},
                     )
                 }
             }
@@ -386,6 +390,8 @@ class SemesterScreenTest {
                         onEditOverride = {},
                         onSaveOverride = {},
                         onDeleteOverride = {},
+                        onConfirmOverrideDeletion = {},
+                        onCancelOverrideDeletion = {},
                         onCancelOverrideEdit = {},
                     )
                 }
@@ -432,6 +438,8 @@ class SemesterScreenTest {
                             state = state.copy(overrideForm = WeekOverrideFormUiState())
                         },
                         onDeleteOverride = {},
+                        onConfirmOverrideDeletion = {},
+                        onCancelOverrideDeletion = {},
                         onCancelOverrideEdit = {
                             state = state.copy(overrideForm = WeekOverrideFormUiState())
                         },
@@ -475,6 +483,8 @@ class SemesterScreenTest {
                         onEditOverride = {},
                         onSaveOverride = {},
                         onDeleteOverride = {},
+                        onConfirmOverrideDeletion = {},
+                        onCancelOverrideDeletion = {},
                         onCancelOverrideEdit = {},
                     )
                 }
@@ -484,6 +494,44 @@ class SemesterScreenTest {
         composeTestRule.onNodeWithText("Dzień w tygodniu korekty").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Zapisz zmiany").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Anuluj").performScrollTo().assertIsDisplayed()
+    }
+
+    @Test
+    fun weekOverrideDeletionAsksForConfirmationAt320Dp() {
+        var confirmed = 0
+        var cancelled = 0
+        val override = WeekOverrideUi("7", "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(900.dp)) {
+                    SemesterWeekOverridesScreen(
+                        state = SemesterScreenUiState(
+                            overrides = listOf(override),
+                            pendingOverrideDeletion = override
+                        ),
+                        onCalendarSelected = {},
+                        onWeekStartDateChanged = {},
+                        onWeekTypeChanged = {},
+                        onScopeChanged = {},
+                        onNewOverride = {},
+                        onEditOverride = {},
+                        onSaveOverride = {},
+                        onDeleteOverride = {},
+                        onConfirmOverrideDeletion = { confirmed += 1 },
+                        onCancelOverrideDeletion = { cancelled += 1 },
+                        onCancelOverrideEdit = {},
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Usunąć korektę tygodnia?").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Korekta tygodnia od 5 października 2026", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Anuluj").performClick()
+        composeTestRule.onNodeWithText("Usuń").performClick()
+
+        assertEquals(1, cancelled)
+        assertEquals(1, confirmed)
     }
 
     private fun calendar(

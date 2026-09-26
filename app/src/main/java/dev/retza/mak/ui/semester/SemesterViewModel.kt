@@ -414,15 +414,26 @@ class SemesterViewModel(
         }
     }
 
-    fun deleteUnusedCalendar(calendarId: String) {
+    fun requestCalendarDeletion(calendarId: String) {
+        val calendar = state.value.calendars.firstOrNull { it.id == calendarId } ?: return
+        update { it.copy(pendingCalendarDeletion = calendar) }
+    }
+
+    fun cancelCalendarDeletion() {
         if (state.value.isDeletingCalendar) return
-        val id = calendarId.toLongOrNull() ?: return
+        update { it.copy(pendingCalendarDeletion = null) }
+    }
+
+    fun confirmCalendarDeletion() {
+        if (state.value.isDeletingCalendar) return
+        val id = state.value.pendingCalendarDeletion?.id?.toLongOrNull() ?: return
         update { it.copy(isDeletingCalendar = true) }
         val token = sessionToken
         viewModelScope.launch {
             try {
                 semesterRepository.deleteCalendar(id)
                 if (!isCurrentSession(token)) return@launch
+                update { it.copy(pendingCalendarDeletion = null) }
                 if (selectedCalendarId == id) selectedCalendarId = null
                 refresh(token)
                 if (!isCurrentSession(token)) return@launch
@@ -610,15 +621,26 @@ class SemesterViewModel(
         }
     }
 
-    fun deleteWeekOverride(id: String) {
+    fun requestWeekOverrideDeletion(id: String) {
+        val item = state.value.overrides.firstOrNull { it.id == id } ?: return
+        update { it.copy(pendingOverrideDeletion = item) }
+    }
+
+    fun cancelWeekOverrideDeletion() {
         if (state.value.isDeletingOverride) return
-        val overrideId = id.toLongOrNull() ?: return
+        update { it.copy(pendingOverrideDeletion = null) }
+    }
+
+    fun confirmWeekOverrideDeletion() {
+        if (state.value.isDeletingOverride) return
+        val overrideId = state.value.pendingOverrideDeletion?.id?.toLongOrNull() ?: return
         update { it.copy(isDeletingOverride = true) }
         val token = sessionToken
         viewModelScope.launch {
             try {
                 semesterRepository.deleteWeekOverride(overrideId)
                 if (!isCurrentSession(token)) return@launch
+                update { it.copy(pendingOverrideDeletion = null) }
                 refresh(token)
                 if (!isCurrentSession(token)) return@launch
                 update { it.copy(overrideForm = WeekOverrideFormUiState()) }
