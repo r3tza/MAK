@@ -112,7 +112,8 @@ class MainActivity : ComponentActivity() {
                             scope.launch {
                                 val success = withContext(Dispatchers.IO) {
                                     runCatching {
-                                        contentResolver.openOutputStream(uri)?.use { it.write(bytes) }
+                                        // "wt" truncates an existing document; plain "w" may leave old bytes at the end.
+                                        contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
                                             ?: error("No output stream")
                                     }.isSuccess
                                 }
