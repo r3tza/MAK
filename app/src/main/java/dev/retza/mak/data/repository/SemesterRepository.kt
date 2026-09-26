@@ -66,6 +66,8 @@ interface SemesterRepository {
 
     suspend fun deleteSemesterProgram(id: Long)
 
+    suspend fun countClassesForAssignment(assignmentId: Long): Int
+
     suspend fun saveSetupConfiguration(
         semester: SemesterRecord,
         studyProgram: StudyProgramRecord,
@@ -86,6 +88,7 @@ class RoomSemesterRepository(
     private val calendars = database.academicCalendarDao()
     private val semesterPrograms = database.semesterProgramDao()
     private val weekOverrides = database.weekOverrideDao()
+    private val classes = database.classDao()
 
     override fun observeSemesters(): Flow<List<SemesterRecord>> =
         semesters.observeAll().map { list -> list.map { it.toRecord() } }
@@ -412,6 +415,9 @@ class RoomSemesterRepository(
             }
         }
     }
+
+    override suspend fun countClassesForAssignment(assignmentId: Long): Int =
+        classes.countForAssignment(assignmentId)
 
     override suspend fun saveSetupConfiguration(
         semester: SemesterRecord,

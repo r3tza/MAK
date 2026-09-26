@@ -73,11 +73,13 @@ internal fun NavGraphBuilder.semesterRoutes(
             onCourseModeChanged = semesterViewModel::setCourseCalendarMode,
             onCourseCalendarChanged = semesterViewModel::selectCourseCalendar,
             onAddCourse = semesterViewModel::addCourse,
-            onDeleteCourse = semesterViewModel::deleteCourse,
+            onDeleteCourse = semesterViewModel::requestCourseDeletion,
             onSeparateCourse = semesterViewModel::separateCourseCalendar,
             onRequestReconnect = semesterViewModel::requestReconnect,
             onConfirmReconnect = semesterViewModel::confirmReconnect,
             onCancelReconnect = semesterViewModel::cancelReconnect,
+            onConfirmCourseDeletion = semesterViewModel::confirmCourseDeletion,
+            onCancelCourseDeletion = semesterViewModel::cancelCourseDeletion,
             modifier = Modifier.fillMaxSize()
         )
     }

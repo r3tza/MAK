@@ -172,6 +172,9 @@ interface ClassDao {
     @Query("DELETE FROM classes WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query("SELECT COUNT(*) FROM classes WHERE semester_program_id = :assignmentId")
+    suspend fun countForAssignment(assignmentId: Long): Int
+
     @Query("DELETE FROM classes")
     suspend fun deleteAll()
 

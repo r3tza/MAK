@@ -438,15 +438,48 @@ class SemesterViewModel(
         }
     }
 
-    fun deleteCourse(id: String) {
-        if (state.value.isDeletingCourse) return
+    fun requestCourseDeletion(id: String) {
         val assignmentId = id.toLongOrNull() ?: return
+        val course = state.value.courseItems.firstOrNull { it.assignmentId == id } ?: return
+        val token = sessionToken
+        viewModelScope.launch {
+            try {
+                val classCount = semesterRepository.countClassesForAssignment(assignmentId)
+                if (!isCurrentSession(token)) return@launch
+                update {
+                    it.copy(
+                        pendingCourseDeletion = CourseDeletionUi(
+                            assignmentId = id,
+                            programName = course.name,
+                            classCount = classCount
+                        )
+                    )
+                }
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                if (!isCurrentSession(token)) return@launch
+                feedbackSink.publish(UiFeedback("Nie udało się usunąć kierunku.", UiFeedbackKind.Error))
+            }
+        }
+    }
+
+    fun cancelCourseDeletion() {
+        if (state.value.isDeletingCourse) return
+        update { it.copy(pendingCourseDeletion = null) }
+    }
+
+    fun confirmCourseDeletion() {
+        if (state.value.isDeletingCourse) return
+        val pending = state.value.pendingCourseDeletion ?: return
+        val assignmentId = pending.assignmentId.toLongOrNull() ?: return
         update { it.copy(isDeletingCourse = true) }
         val token = sessionToken
         viewModelScope.launch {
             try {
                 semesterRepository.deleteSemesterProgram(assignmentId)
                 if (!isCurrentSession(token)) return@launch
+                update { it.copy(pendingCourseDeletion = null) }
                 refresh(token)
                 if (!isCurrentSession(token)) return@launch
                 feedbackSink.publish(UiFeedback("Usunięto kierunek", UiFeedbackKind.Success))

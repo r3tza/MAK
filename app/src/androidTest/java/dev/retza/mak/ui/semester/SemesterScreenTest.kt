@@ -148,6 +148,8 @@ class SemesterScreenTest {
                         onRequestReconnect = { _, _ -> },
                         onConfirmReconnect = {},
                         onCancelReconnect = {},
+                        onConfirmCourseDeletion = {},
+                        onCancelCourseDeletion = {},
                     )
                 }
             }
@@ -189,6 +191,8 @@ class SemesterScreenTest {
                         onRequestReconnect = { _, _ -> },
                         onConfirmReconnect = {},
                         onCancelReconnect = {},
+                        onConfirmCourseDeletion = {},
+                        onCancelCourseDeletion = {},
                     )
                 }
             }
@@ -225,6 +229,8 @@ class SemesterScreenTest {
                         onRequestReconnect = { _, _ -> },
                         onConfirmReconnect = {},
                         onCancelReconnect = {},
+                        onConfirmCourseDeletion = {},
+                        onCancelCourseDeletion = {},
                     )
                 }
             }
@@ -262,6 +268,8 @@ class SemesterScreenTest {
                         onRequestReconnect = { _, _ -> },
                         onConfirmReconnect = { confirmed += 1 },
                         onCancelReconnect = {},
+                        onConfirmCourseDeletion = {},
+                        onCancelCourseDeletion = {},
                     )
                 }
             }
@@ -273,6 +281,50 @@ class SemesterScreenTest {
                 "razem ze swoimi korektami. Korekty nie zostaną przeniesione."
         ).assertIsDisplayed()
         composeTestRule.onNodeWithText("Połącz").performClick()
+        assertEquals(1, confirmed)
+    }
+
+    @Test
+    fun coursesScreenConfirmsCourseDeletionWithClassCountAt320Dp() {
+        var confirmed = 0
+        var cancelled = 0
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(900.dp)) {
+                    SemesterCoursesScreen(
+                        state = SemesterScreenUiState(
+                            pendingCourseDeletion = CourseDeletionUi(
+                                assignmentId = "1",
+                                programName = "Informatyka",
+                                classCount = 5
+                            )
+                        ),
+                        onCourseNameChanged = {},
+                        onCourseColorChanged = {},
+                        onProgramModeChanged = {},
+                        onSelectProgram = {},
+                        onCourseModeChanged = {},
+                        onCourseCalendarChanged = {},
+                        onAddCourse = {},
+                        onDeleteCourse = {},
+                        onSeparateCourse = {},
+                        onRequestReconnect = { _, _ -> },
+                        onConfirmReconnect = {},
+                        onCancelReconnect = {},
+                        onConfirmCourseDeletion = { confirmed += 1 },
+                        onCancelCourseDeletion = { cancelled += 1 },
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Usunąć kierunek z semestru?").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Liczba usuwanych zajęć: 5", substring = true).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Anuluj").performClick()
+        assertEquals(1, cancelled)
+        assertEquals(0, confirmed)
+        composeTestRule.onNodeWithText("Usuń").performClick()
         assertEquals(1, confirmed)
     }
 

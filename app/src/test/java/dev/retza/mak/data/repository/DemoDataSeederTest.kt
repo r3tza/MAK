@@ -131,6 +131,8 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
 
     override suspend fun deleteSemesterProgram(id: Long) = Unit
 
+    override suspend fun countClassesForAssignment(assignmentId: Long): Int = 0
+
     override suspend fun saveSetupConfiguration(
         semester: SemesterRecord,
         studyProgram: StudyProgramRecord,

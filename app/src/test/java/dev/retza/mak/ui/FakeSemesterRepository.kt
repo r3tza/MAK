@@ -106,6 +106,9 @@ internal class FakeSemesterRepository(
 
     override suspend fun deleteSemesterProgram(id: Long) = delegate.deleteSemesterProgram(id)
 
+    override suspend fun countClassesForAssignment(assignmentId: Long): Int =
+        delegate.classes.count { it.semesterProgramId == assignmentId }
+
     override suspend fun saveSetupConfiguration(
         semester: SemesterRecord,
         studyProgram: StudyProgramRecord,

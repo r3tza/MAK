@@ -17,6 +17,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -130,6 +131,12 @@ data class SemesterProgramOptionUi(
     val color: String
 )
 
+data class CourseDeletionUi(
+    val assignmentId: String,
+    val programName: String,
+    val classCount: Int
+)
+
 data class ReconnectCalendarUi(
     val assignmentId: String,
     val calendarId: String,
@@ -160,6 +167,7 @@ data class SemesterScreenUiState(
     val isSeparatingCalendar: Boolean = false,
     val isReconnectingCalendar: Boolean = false,
     val pendingReconnect: ReconnectCalendarUi? = null,
+    val pendingCourseDeletion: CourseDeletionUi? = null,
     val reconnectError: String? = null,
     val status: ScreenStatus = ScreenStatus.Ready
 )
@@ -275,6 +283,8 @@ fun SemesterCoursesScreen(
     onRequestReconnect: (String, String) -> Unit,
     onConfirmReconnect: () -> Unit,
     onCancelReconnect: () -> Unit,
+    onConfirmCourseDeletion: () -> Unit,
+    onCancelCourseDeletion: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
@@ -292,6 +302,14 @@ fun SemesterCoursesScreen(
             onSeparateCourse = onSeparateCourse,
             onRequestReconnect = onRequestReconnect
         )
+        state.pendingCourseDeletion?.let { deletion ->
+            CourseDeletionDialog(
+                deletion = deletion,
+                isDeleting = state.isDeletingCourse,
+                onConfirm = onConfirmCourseDeletion,
+                onCancel = onCancelCourseDeletion
+            )
+        }
         state.pendingReconnect?.let { reconnect ->
             ReconnectCalendarDialog(
                 reconnect = reconnect,
@@ -750,6 +768,38 @@ private fun ReconnectCalendarDialog(
             TextButton(onClick = onCancel, enabled = !isSaving) { Text("Anuluj") }
         }
     )
+}
+
+@Composable
+private fun CourseDeletionDialog(
+    deletion: CourseDeletionUi,
+    isDeleting: Boolean,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = { if (!isDeleting) onCancel() },
+        title = { Text("Usunąć kierunek z semestru?") },
+        text = { Text(courseDeletionMessage(deletion)) },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                enabled = !isDeleting,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) { Text("Usuń") }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel, enabled = !isDeleting) { Text("Anuluj") }
+        }
+    )
+}
+
+internal fun courseDeletionMessage(deletion: CourseDeletionUi): String = buildString {
+    append("Kierunek ${deletion.programName} zostanie usunięty z tego semestru.")
+    if (deletion.classCount > 0) {
+        append(" Liczba usuwanych zajęć: ${deletion.classCount}. Razem z nimi znikną ich notatki i zmiany terminów.")
+    }
+    append(" Kierunek pozostanie dostępny w innych semestrach. Tej operacji nie można cofnąć.")
 }
 
 private fun calendarLabel(calendar: SemesterCalendarUi): String {

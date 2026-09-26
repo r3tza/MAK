@@ -4,26 +4,6 @@ Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie je
 
 Każdy krok ma być wykonalny także przez słabszego agenta bez odgadywania intencji. Podaj kolejność małych zmian, docelowe pliki lub obszary kodu, zależności, przypadki brzegowe, sposób sprawdzenia i jednoznaczne kryterium zakończenia. Jeśli do wykonania brakuje decyzji, zapisz ją jako bloker zamiast pozostawiać ukryte założenie.
 
-## 1. Potwierdzenie usunięcia kierunku z semestru (I-15)
-
-Problem: `SemesterViewModel.deleteCourse` od razu woła `SemesterRepository.deleteSemesterProgram`. Klucze obce z `ON DELETE CASCADE` usuwają wtedy wszystkie zajęcia przypisania wraz z notatkami i zmianami wystąpień.
-
-Granice: nie zmieniaj kaskady w bazie ani reguły usuwania nieużywanego kalendarza w `deleteSemesterProgram`. Zmiana dotyczy tylko potwierdzenia.
-
-Kolejność:
-
-1. `ClassDao`: zapytanie `SELECT COUNT(*) FROM classes WHERE semester_program_id = :assignmentId`. `SemesterRepository`: `suspend fun countClassesForAssignment(assignmentId: Long): Int` w interfejsie i w `RoomSemesterRepository`; uzupełnij `FakeSemesterRepository` i `FakeRepository` w testach.
-2. `SemesterScreen.kt`: model `CourseDeletionUi(assignmentId: String, programName: String, classCount: Int)` i pole `pendingCourseDeletion: CourseDeletionUi?` w `SemesterScreenUiState`.
-3. `SemesterViewModel`: `requestCourseDeletion(id)` czyta liczbę zajęć i ustawia `pendingCourseDeletion`; `cancelCourseDeletion()` czyści stan; `confirmCourseDeletion()` wykonuje dotychczasową treść `deleteCourse` dla zapamiętanego przypisania i czyści stan po sukcesie. Publiczne `deleteCourse` usuń albo zmień w funkcję prywatną. Zachowaj `sessionToken` i obsługę błędów.
-4. Dialog w stylu `ReconnectCalendarDialog`: tytuł „Usunąć kierunek z semestru?”, treść „Kierunek {nazwa} zostanie usunięty z tego semestru razem z {liczba zajęć} oraz ich notatkami i zmianami terminów. Kierunek pozostanie dostępny w innych semestrach. Tej operacji nie można cofnąć.”, akcje „Anuluj” i „Usuń” w kolorze błędu (`MaterialTheme.colorScheme.error`). Przy zerze zajęć pomiń część o zajęciach. Liczbę odmień: 1 zajęcia, 2 do 4 zajęcia, 5 i więcej zajęć; użyj istniejącej funkcji `classCountLabel`, jeśli pasuje, albo dodaj małą funkcję odmiany.
-5. `SemesterRoutes.kt` i `SemesterScreen.kt`: „Usuń” przy kierunku woła `requestCourseDeletion`; podłącz potwierdzenie i anulowanie.
-
-Przypadki brzegowe: kierunek bez zajęć; dwukrotne dotknięcie „Usuń” w dialogu (blokada przez `isDeletingCourse`); błąd zapisu (dialog zostaje, komunikat błędu); opuszczenie ekranu w trakcie (token sesji).
-
-Weryfikacja: `SemesterViewModelTest`: `requestCourseDeletion` niczego nie usuwa, `cancelCourseDeletion` czyści stan, `confirmCourseDeletion` usuwa przypisanie; `SemesterScreenTest`: dialog z liczbą zajęć przy 320 dp i brak usunięcia po „Anuluj”. `gradlew.bat test connectedDebugAndroidTest`.
-
-Kryterium zakończenia: usunięcie kierunku z semestru wymaga potwierdzenia z liczbą usuwanych zajęć, a testy przechodzą.
-
 ## 2. Wybór istniejącego kierunku w kreatorze (I-16)
 
 Problem: krok „Dodaj kierunek” w `SetupWizard` ma tylko pole nazwy i kolor, a `SetupViewModel.saveConfiguration` wysyła `StudyProgramRecord(id = 0)`, więc każdy nowy semestr tworzy nowy globalny kierunek.

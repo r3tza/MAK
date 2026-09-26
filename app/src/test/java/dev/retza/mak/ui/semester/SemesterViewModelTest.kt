@@ -19,6 +19,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -311,9 +312,11 @@ class SemesterViewModelTest {
         viewModel.open("1")
         advanceUntilIdle()
 
+        viewModel.requestCourseDeletion("1")
+        advanceUntilIdle()
         repository.saveGate = CompletableDeferred()
-        viewModel.deleteCourse("1")
-        viewModel.deleteCourse("1")
+        viewModel.confirmCourseDeletion()
+        viewModel.confirmCourseDeletion()
         advanceUntilIdle()
         repository.saveGate?.complete(Unit)
         advanceUntilIdle()
@@ -325,6 +328,44 @@ class SemesterViewModelTest {
             sink.published
         )
         assertFalse(viewModel.semester.value.isDeletingCourse)
+        assertNull(viewModel.semester.value.pendingCourseDeletion)
+    }
+
+    @Test
+    fun requestCourseDeletionAsksForConfirmationWithClassCount() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = recordingViewModel(repository, RecordingFeedbackSink())
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.requestCourseDeletion("1")
+        advanceUntilIdle()
+
+        val pending = viewModel.semester.value.pendingCourseDeletion
+        assertEquals("1", pending?.assignmentId)
+        assertEquals(repository.classes.count { it.semesterProgramId == 1L }, pending?.classCount)
+        assertFalse("deleteSemesterProgram" in repository.events)
+        assertEquals(1, repository.semesterPrograms.size)
+    }
+
+    @Test
+    fun cancelCourseDeletionKeepsCourse() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = recordingViewModel(repository, RecordingFeedbackSink())
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.requestCourseDeletion("1")
+        advanceUntilIdle()
+        viewModel.cancelCourseDeletion()
+        viewModel.confirmCourseDeletion()
+        advanceUntilIdle()
+
+        assertNull(viewModel.semester.value.pendingCourseDeletion)
+        assertFalse("deleteSemesterProgram" in repository.events)
+        assertEquals(1, repository.semesterPrograms.size)
     }
 
     @Test
@@ -336,8 +377,10 @@ class SemesterViewModelTest {
         viewModel.open("1")
         advanceUntilIdle()
 
+        viewModel.requestCourseDeletion("1")
+        advanceUntilIdle()
         repository.failSaves = true
-        viewModel.deleteCourse("1")
+        viewModel.confirmCourseDeletion()
         advanceUntilIdle()
 
         assertEquals(1, repository.studyPrograms.size)
