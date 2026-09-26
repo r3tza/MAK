@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-26: Blokada wyboru kierunku po zapisie kroku kreatora (I-16)
+
+- Fakty: Kreator pamięta kierunek zapisany w kroku 2. Po powrocie do tego kroku zmiana trybu z „Wybierz istniejący” na „Nowy kierunek” zmieniłaby nazwę współdzielonego kierunku, a wybór innego istniejącego kierunku zostawiłby w semestrze drugie przypisanie. `PLAN.md` kazał nie zgadywać, co zrobić z pierwszym przypisaniem.
+- Decyzja: Po zapisie kroku 2 wybór trybu i kierunku jest zablokowany do końca kreatora. Nazwę i kolor kierunku utworzonego w tym kreatorze nadal można poprawić. Kolejne kierunki dodaje się w ustawieniach semestru. Opis jest w `FEATURES.md`.
+- Powód: Blokada nie zmienia danych innych semestrów i nie wymaga reguły zastępowania przypisania, które mogło już dostać zajęcia.
+- Odrzucone: Zastępowanie pierwszego przypisania nowym, bo kaskada usunęłaby jego zajęcia; dopisywanie drugiego przypisania bez wiedzy użytkownika.
+
 ## 2026-09-26: Aktywacja nowego semestru i dane po edycji zajęć (I-18, I-19)
 
 - Fakty: Audyt z 2026-09-25 wykazał, że semestr utworzony w kreatorze zawsze staje się aktywny, a zmiana dnia, cyklu albo daty zajęć ukrywa ich zmiany wystąpień i notatki przypięte do dotychczasowych dat.
@@ -151,10 +158,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Fakty: `AGENTS.md` opisywał widget przez bieżący `MakRepository`, ale nie wskazywał zaległego etapu 11 ani wdrożonych powiadomień. Sekcja Room mówiła, że wystarczy jeden test trwałości, mimo że migracja i operacje atomowe mają już osobne testy.
 - Decyzja: Dopisano aktualny punkt pracy, granicę powiadomień i wymagany odbiór na urządzeniu. Wskazano, że widget przejdzie na nowe repozytorium w etapie 11, a testy Room obejmują również migrację i rollback. `CLAUDE.md` pozostaje wyłącznie importem `AGENTS.md`.
 - Powód: Kolejny agent ma odróżnić zrealizowany kod od odbioru, który nadal czeka na urządzenie, oraz nie powtarzać zakończonych etapów.
-
-## 2026-09-22: Kontrakt powiadomień o kolizjach
-
-- Decyzja: Powiadomienia są domyślnie wyłączone. Po jawnym włączeniu aplikacja prosi o zgodę systemową, jeśli jest wymagana. Odmowa nie usuwa preferencji użytkownika. Ustawienia pokazują blokadę systemową i pozwalają przejść do ustawień aplikacji.
-- Grupowanie: Spójny łańcuch nakładających się wystąpień to jedna grupa kolizji. Wieczorem wysyłać jedno podsumowanie grup następnego dnia, przed zajęciami jeden alert dla każdej grupy. Wyprzedzenie liczyć od początku najwcześniejszych zajęć w grupie. Treść może pokazywać nazwy zajęć na ekranie blokady. Kliknięcie otwiera dzień planu.
-- Planowanie: Używać stabilnych identyfikatorów alarmów, 14-dniowego horyzontu i jednego alarmu odnawiającego. Przy odbiorze sprawdzać aktualne dane, ustawienia i zgodę. Po zmianach danych, imporcie, ustawień, czasu, strefy lub restarcie urządzenia wymieniać przyszłe alarmy.
-- Powód: Jedno ostrzeżenie na grupę ogranicza duplikaty, a alert względem początku zajęć daje czas na reakcję przed pierwszym kolidującym terminem. Jawna zgoda i ponowna kontrola danych ograniczają niechciane oraz nieaktualne powiadomienia.

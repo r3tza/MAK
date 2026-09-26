@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -51,6 +54,11 @@ data class ClassCourseOptionUi(
     val label: String
 )
 
+data class HiddenDataWarningUi(
+    val changeCount: Int,
+    val noteCount: Int
+)
+
 data class ClassEditUiState(
     val title: String = "Dodaj zajęcia",
     val name: String = "",
@@ -76,7 +84,8 @@ data class ClassEditUiState(
     val recurrenceOptions: List<RecurrenceOptionUi> = emptyList(),
     val errors: Map<ClassEditField, FieldErrorUi> = emptyMap(),
     val status: ScreenStatus = ScreenStatus.Ready,
-    val isSaving: Boolean = false
+    val isSaving: Boolean = false,
+    val pendingHiddenData: HiddenDataWarningUi? = null
 )
 
 @Composable
@@ -96,10 +105,25 @@ fun ClassEditScreen(
     onTeacherChanged: (String) -> Unit,
     onNoteChanged: (String) -> Unit,
     onSave: () -> Unit,
+    onConfirmHiddenData: () -> Unit,
+    onDismissHiddenData: () -> Unit,
     onCancel: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    state.pendingHiddenData?.let { warning ->
+        AlertDialog(
+            onDismissRequest = { if (!state.isSaving) onDismissHiddenData() },
+            title = { Text("Część danych przestanie być widoczna") },
+            text = { Text(hiddenDataMessage(warning)) },
+            confirmButton = {
+                TextButton(onClick = onConfirmHiddenData, enabled = !state.isSaving) { Text("Zapisz") }
+            },
+            dismissButton = {
+                TextButton(onClick = onDismissHiddenData, enabled = !state.isSaving) { Text("Anuluj") }
+            }
+        )
+    }
     var showMoreOptions by remember { mutableStateOf(false) }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
         MakSectionHeader(
@@ -240,3 +264,25 @@ fun ClassEditScreen(
 }
 
 private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
+
+internal fun hiddenDataMessage(warning: HiddenDataWarningUi): String {
+    val parts = buildList {
+        if (warning.changeCount > 0) {
+            add(
+                "${warning.changeCount} " +
+                    polishPlural(warning.changeCount, "zmiana terminu", "zmiany terminów", "zmian terminów")
+            )
+        }
+        if (warning.noteCount > 0) {
+            add("${warning.noteCount} " + polishPlural(warning.noteCount, "notatka", "notatki", "notatek"))
+        }
+    }
+    return "Po zapisie przestaną być widoczne dane przypięte do dotychczasowych terminów: " +
+        parts.joinToString(" i ") + ". Dane zostaną zachowane i wrócą, jeśli przywrócisz poprzedni termin."
+}
+
+private fun polishPlural(count: Int, one: String, few: String, many: String): String = when {
+    count == 1 -> one
+    count % 10 in 2..4 && count % 100 !in 12..14 -> few
+    else -> many
+}

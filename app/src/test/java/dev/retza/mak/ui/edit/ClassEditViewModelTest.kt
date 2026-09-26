@@ -1,6 +1,7 @@
 package dev.retza.mak.ui.edit
 
 import androidx.lifecycle.SavedStateHandle
+import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
@@ -76,6 +77,97 @@ class ClassEditViewModelTest {
 
         assertEquals("Edytuj zajęcia", restored.editor.value.title)
         assertEquals("Programowanie obiektowe", restored.editor.value.name)
+    }
+
+    private fun repositoryWithNoteOnMonday(): FakeRepository = FakeRepository().apply {
+        occurrenceNotes += OccurrenceNoteEntity(
+            id = 1L,
+            semesterId = 1L,
+            classId = 1L,
+            occurrenceDate = LocalDate.of(2026, 9, 21),
+            body = "Kolokwium"
+        )
+    }
+
+    @Test
+    fun editHidingNoteAsksForConfirmationBeforeSaving() = runTest(mainDispatcher) {
+        val repository = repositoryWithNoteOnMonday()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openEdit("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.update { it.copy(dayLabel = "Wtorek") }
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals(HiddenDataWarningUi(changeCount = 0, noteCount = 1), viewModel.editor.value.pendingHiddenData)
+        assertFalse("saveClass" in repository.events)
+    }
+
+    @Test
+    fun confirmingHiddenDataSavesAndKeepsNote() = runTest(mainDispatcher) {
+        val repository = repositoryWithNoteOnMonday()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openEdit("1:2026-09-21")
+        advanceUntilIdle()
+        viewModel.update { it.copy(dayLabel = "Wtorek") }
+        viewModel.save()
+        advanceUntilIdle()
+
+        viewModel.confirmSaveWithHiddenData()
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "saveClass" })
+        assertEquals(java.time.DayOfWeek.TUESDAY, repository.classes.first { it.id == 1L }.dayOfWeek)
+        assertEquals(1, repository.occurrenceNotes.size)
+    }
+
+    @Test
+    fun dismissingHiddenDataKeepsFormWithoutSaving() = runTest(mainDispatcher) {
+        val repository = repositoryWithNoteOnMonday()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openEdit("1:2026-09-21")
+        advanceUntilIdle()
+        viewModel.update { it.copy(dayLabel = "Wtorek") }
+        viewModel.save()
+        advanceUntilIdle()
+
+        viewModel.dismissHiddenData()
+        advanceUntilIdle()
+
+        assertEquals(null, viewModel.editor.value.pendingHiddenData)
+        assertEquals("Wtorek", viewModel.editor.value.dayLabel)
+        assertFalse("saveClass" in repository.events)
+    }
+
+    @Test
+    fun changingOnlyTimeSavesWithoutWarning() = runTest(mainDispatcher) {
+        val repository = repositoryWithNoteOnMonday()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openEdit("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.update { it.copy(startTime = "08:00") }
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals(null, viewModel.editor.value.pendingHiddenData)
+        assertEquals(1, repository.events.count { it == "saveClass" })
+    }
+
+    @Test
+    fun hiddenDataMessageInflectsCounts() {
+        assertEquals(
+            "Po zapisie przestaną być widoczne dane przypięte do dotychczasowych terminów: " +
+                "2 zmiany terminów i 5 notatek. Dane zostaną zachowane i wrócą, jeśli przywrócisz poprzedni termin.",
+            hiddenDataMessage(HiddenDataWarningUi(changeCount = 2, noteCount = 5))
+        )
+        assertTrue(hiddenDataMessage(HiddenDataWarningUi(changeCount = 0, noteCount = 1)).contains(": 1 notatka."))
+        assertTrue(hiddenDataMessage(HiddenDataWarningUi(changeCount = 12, noteCount = 0)).contains(": 12 zmian terminów."))
     }
 
     @Test

@@ -12,8 +12,7 @@ Zadania i kryteria są w `QUEUE.md`, a kroki wykonawcze w `PLAN.md`.
 
 Audyt objął przegląd kodu warstwy danych semestrów, kreatora, ekranów semestru, ustawień i widgetu, raport lint oraz dodanie zajęć przez formularz na emulatorze. Zadania i kryteria są w `QUEUE.md`.
 
-1. **Osierocone zmiany i notatki po edycji zajęć (I-19).** Zmiana dnia, cyklu albo daty ukrywa wcześniejsze zmiany terminów i notatki. Decyzja z 2026-09-26: dane zostają zachowane, a formularz ostrzega przed zapisem.
-2. **Drobne problemy (I-20).** Usuwanie korekty i kalendarza bez cofnięcia, formularz korekty przyjmujący dowolny dzień, zgoda na powiadomienia na Androidzie 12, nieaktualne biblioteki, tryb zapisu eksportu.
+1. **Drobne problemy (I-20).** Usuwanie korekty i kalendarza bez cofnięcia, formularz korekty przyjmujący dowolny dzień, zgoda na powiadomienia na Androidzie 12, nieaktualne biblioteki, tryb zapisu eksportu.
 
 ## Wymagają odbioru na urządzeniu
 

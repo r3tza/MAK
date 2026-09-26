@@ -105,8 +105,7 @@ class ScheduleResolver(
         notesByOccurrence: Map<Pair<String, LocalDate>, OccurrenceNote>
     ): List<PlannedOccurrence> {
         if (classItem.recurrence == Recurrence.ONCE) {
-            if (classItem.date != date) return emptyList()
-            if (date.isBefore(calendar.startDate) || date.isAfter(calendar.endDate)) return emptyList()
+            if (!classItem.hasBaseOccurrenceOn(date, calendar, weekOverrides, weekCalculator)) return emptyList()
             return listOf(
                 render(
                     classItem = classItem,
@@ -120,16 +119,12 @@ class ScheduleResolver(
             )
         }
 
-        val week = weekCalculator.calculate(calendar, date, weekOverrides)
         val sourceDates = buildSet {
-            if (week != null && isBaseOccurrence(classItem, date, week)) add(date)
+            if (classItem.hasBaseOccurrenceOn(date, calendar, weekOverrides, weekCalculator)) add(date)
             changesByDate.values
                 .filter { it.kind == OccurrenceChangeKind.MODIFIED && it.targetDate == date }
                 .map { it.originalDate }
-                .filter {
-                    val sourceWeek = weekCalculator.calculate(calendar, it, weekOverrides)
-                    sourceWeek != null && isBaseOccurrence(classItem, it, sourceWeek)
-                }
+                .filter { classItem.hasBaseOccurrenceOn(it, calendar, weekOverrides, weekCalculator) }
                 .forEach(::add)
         }
 
@@ -149,20 +144,6 @@ class ScheduleResolver(
                 assignments = assignments,
                 notesByOccurrence = notesByOccurrence
             )
-        }
-    }
-
-    private fun isBaseOccurrence(
-        classItem: ClassItem,
-        date: LocalDate,
-        week: WeekCalculation
-    ): Boolean {
-        if (classItem.dayOfWeek != date.dayOfWeek) return false
-        return when (classItem.recurrence) {
-            Recurrence.EVERY_WEEK -> true
-            Recurrence.A_WEEK -> week.weekType == WeekType.A
-            Recurrence.B_WEEK -> week.weekType == WeekType.B
-            Recurrence.ONCE -> false
         }
     }
 

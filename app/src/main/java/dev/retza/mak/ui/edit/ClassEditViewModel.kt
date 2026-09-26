@@ -7,6 +7,8 @@ import dev.retza.mak.data.repository.ClassRecord
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.ActivePlanData
+import dev.retza.mak.domain.ClassEditImpact
+import dev.retza.mak.domain.hiddenByClassEdit
 import dev.retza.mak.domain.ClassForm
 import dev.retza.mak.domain.ClassValidationError
 import dev.retza.mak.domain.ClassValidator
@@ -173,7 +175,20 @@ class ClassEditViewModel(
         }
     }
 
-    fun save() {
+    fun save() = save(confirmedHiddenData = false)
+
+    fun confirmSaveWithHiddenData() {
+        if (state.value.isSaving) return
+        state.update { it.copy(pendingHiddenData = null) }
+        save(confirmedHiddenData = true)
+    }
+
+    fun dismissHiddenData() {
+        if (state.value.isSaving) return
+        state.update { it.copy(pendingHiddenData = null) }
+    }
+
+    private fun save(confirmedHiddenData: Boolean) {
         if (state.value.isSaving) return
         val data = activePlanData.value ?: return
         val editor = state.value
@@ -236,29 +251,37 @@ class ClassEditViewModel(
         }
 
         val classId = editingClassId
+        val record = ClassRecord(
+            id = classId ?: 0,
+            semesterId = data.semester.id.toLong(),
+            semesterProgramId = assignment.id.toLong(),
+            name = editor.name.trim(),
+            type = editor.type,
+            teacherName = editor.teacher.trim().ifEmpty { null },
+            dayOfWeek = classEditDayNames.entries.first { it.value == editor.dayLabel }.key,
+            startTime = start,
+            endTime = end,
+            room = editor.room.trim().ifEmpty { null },
+            building = editor.building.trim().ifEmpty { null },
+            group = editor.group.trim().ifEmpty { null },
+            recurrence = DomainRecurrence.valueOf(recurrence.name),
+            date = if (recurrence == DomainRecurrence.ONCE) date else null,
+            classNote = editor.note.trim().ifEmpty { null }
+        )
+        if (classId != null && !confirmedHiddenData) {
+            val impact = data.classEditImpact(classId.toString(), record)
+            if (impact != null && !impact.isEmpty) {
+                state.update {
+                    it.copy(pendingHiddenData = HiddenDataWarningUi(impact.changeCount, impact.noteCount))
+                }
+                return
+            }
+        }
         val successMessage = if (classId == null) "Dodano zajęcia" else "Zapisano zmiany zajęć"
         state.update { it.copy(isSaving = true) }
         viewModelScope.launch {
             try {
-                scheduleRepository.saveClass(
-                    ClassRecord(
-                        id = classId ?: 0,
-                        semesterId = data.semester.id.toLong(),
-                        semesterProgramId = assignment.id.toLong(),
-                        name = editor.name.trim(),
-                        type = editor.type,
-                        teacherName = editor.teacher.trim().ifEmpty { null },
-                        dayOfWeek = classEditDayNames.entries.first { it.value == editor.dayLabel }.key,
-                        startTime = start,
-                        endTime = end,
-                        room = editor.room.trim().ifEmpty { null },
-                        building = editor.building.trim().ifEmpty { null },
-                        group = editor.group.trim().ifEmpty { null },
-                        recurrence = DomainRecurrence.valueOf(recurrence.name),
-                        date = if (recurrence == DomainRecurrence.ONCE) date else null,
-                        classNote = editor.note.trim().ifEmpty { null }
-                    )
-                )
+                scheduleRepository.saveClass(record)
                 editingClassId = null
                 state.value = withActiveOptions(defaultClassEditState())
                 feedbackSink.publish(UiFeedback(successMessage, UiFeedbackKind.Success))
@@ -282,6 +305,27 @@ class ClassEditViewModel(
             semesterEndDate = calendar?.endDate?.toString()
         )
     }
+}
+
+private fun ActivePlanData.classEditImpact(classId: String, record: ClassRecord): ClassEditImpact? {
+    val before = classes.firstOrNull { it.id == classId } ?: return null
+    val after = before.copy(
+        semesterProgramId = record.semesterProgramId.toString(),
+        dayOfWeek = record.dayOfWeek,
+        startTime = record.startTime,
+        endTime = record.endTime,
+        recurrence = record.recurrence,
+        date = record.date
+    )
+    return hiddenByClassEdit(
+        before = before,
+        after = after,
+        beforeCalendar = calendarForAssignment(before.semesterProgramId),
+        afterCalendar = calendarForAssignment(after.semesterProgramId),
+        overrides = weekOverrides,
+        changes = occurrenceChanges,
+        notes = occurrenceNotes
+    )
 }
 
 private fun ActivePlanData.courseOptions(): List<ClassCourseOptionUi> =

@@ -84,6 +84,8 @@ internal fun NavGraphBuilder.classEditRoute(
             onTeacherChanged = { value -> classEditViewModel.update { it.copy(teacher = value) } },
             onNoteChanged = { value -> classEditViewModel.update { it.copy(note = value) } },
             onSave = classEditViewModel::save,
+            onConfirmHiddenData = classEditViewModel::confirmSaveWithHiddenData,
+            onDismissHiddenData = classEditViewModel::dismissHiddenData,
             onCancel = onBack,
             onRetry = {},
             modifier = Modifier.fillMaxSize()
