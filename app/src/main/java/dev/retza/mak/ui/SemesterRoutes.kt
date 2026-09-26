@@ -95,9 +95,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         SemesterWeekOverridesScreen(
             state = semesterViewModel.semester.collectAsStateWithLifecycle().value,
             onCalendarSelected = semesterViewModel::selectCalendar,
-            onWeekStartDateChanged = { value ->
-                semesterViewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekStartDate = value)) }
-            },
+            onWeekStartDateChanged = semesterViewModel::updateWeekStartDate,
             onWeekTypeChanged = { value ->
                 semesterViewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekType = value)) }
             },

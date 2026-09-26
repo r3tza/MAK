@@ -440,15 +440,15 @@ class SemesterScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Poniedziałek tygodnia").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Dzień w tygodniu korekty").assertDoesNotExist()
         composeTestRule.onNodeWithText("Dodaj").performClick()
-        composeTestRule.onNodeWithText("Poniedziałek tygodnia").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dzień w tygodniu korekty").assertIsDisplayed()
         composeTestRule.onNodeWithText("Anuluj").performClick()
-        composeTestRule.onNodeWithText("Poniedziałek tygodnia").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Dzień w tygodniu korekty").assertDoesNotExist()
 
         composeTestRule.onNodeWithContentDescription("Więcej opcji").performClick()
         composeTestRule.onNodeWithText("Edytuj").performClick()
-        composeTestRule.onNodeWithText("Poniedziałek tygodnia").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dzień w tygodniu korekty").assertIsDisplayed()
     }
 
     @Test
@@ -481,7 +481,7 @@ class SemesterScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Poniedziałek tygodnia").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dzień w tygodniu korekty").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Zapisz zmiany").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Anuluj").performScrollTo().assertIsDisplayed()
     }

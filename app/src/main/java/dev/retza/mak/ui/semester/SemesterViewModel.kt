@@ -16,6 +16,7 @@ import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import java.time.DayOfWeek
+import java.time.temporal.TemporalAdjusters
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
@@ -550,6 +551,17 @@ class SemesterViewModel(
         }
     }
 
+    /** Any picked day stands for its whole week, so the form keeps the Monday of that week. */
+    fun updateWeekStartDate(value: String) = update {
+        val monday = value.toLocalDateOrNull()?.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        it.copy(
+            overrideForm = it.overrideForm.copy(
+                weekStartDate = monday?.toString() ?: value,
+                weekStartDateError = null
+            )
+        )
+    }
+
     fun cancelWeekOverrideEdit() = update {
         it.copy(overrideForm = WeekOverrideFormUiState())
     }
@@ -560,8 +572,9 @@ class SemesterViewModel(
         val currentCalendarId = selectedCalendarId ?: return
         val form = state.value.overrideForm
         val date = form.weekStartDate.toLocalDateOrNull()
-        if (date == null || date.dayOfWeek != DayOfWeek.MONDAY) {
-            update { it.copy(overrideForm = form.copy(weekStartDateError = "Wybierz poniedziałek.")) }
+            ?.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        if (date == null) {
+            update { it.copy(overrideForm = form.copy(weekStartDateError = "Wybierz tydzień.")) }
             return
         }
         update { it.copy(overrideForm = form.copy(isSaving = true, weekStartDateError = null)) }

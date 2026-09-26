@@ -410,7 +410,7 @@ class SemesterViewModelTest {
     }
 
     @Test
-    fun saveOverrideRejectsNonMonday() = runTest(mainDispatcher) {
+    fun overrideDateIsMovedToMondayOfItsWeekAndSaved() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
@@ -419,11 +419,28 @@ class SemesterViewModelTest {
         advanceUntilIdle()
 
         viewModel.newWeekOverride()
-        viewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekStartDate = "2026-10-06")) }
+        viewModel.updateWeekStartDate("2026-10-07")
+
+        assertEquals("2026-10-05", viewModel.semester.value.overrideForm.weekStartDate)
+        viewModel.saveWeekOverride()
+        advanceUntilIdle()
+        assertEquals(1, repository.events.count { it == "saveWeekOverride" })
+    }
+
+    @Test
+    fun saveOverrideWithoutDateShowsError() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.newWeekOverride()
         viewModel.saveWeekOverride()
         advanceUntilIdle()
 
-        assertNotNull(viewModel.semester.value.overrideForm.weekStartDateError)
+        assertEquals("Wybierz tydzień.", viewModel.semester.value.overrideForm.weekStartDateError)
         assertTrue(sink.published.isEmpty())
         assertTrue(repository.events.none { it == "saveWeekOverride" })
     }

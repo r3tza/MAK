@@ -929,15 +929,18 @@ private fun WeekOverrideForm(
     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
         MakNoteBanner(
             title = if (state.isEditing) "Edytuj korektę" else "Dodaj korektę",
-            subtitle = "Oznaczenie A albo B dla wybranego poniedziałku."
+            subtitle = "Oznaczenie A albo B dla wybranego tygodnia."
         )
         MakDatePickerField(
-            label = "Poniedziałek tygodnia",
+            label = "Dzień w tygodniu korekty",
             value = state.weekStartDate,
             onValueChange = onWeekStartDateChanged,
             isError = state.weekStartDateError != null
         )
         FieldError(state.weekStartDateError?.let(::FieldErrorUi))
+        state.weekStartDate.toLocalDateOrNull()?.let { monday ->
+            MakHelperText("Korekta obejmuje tydzień od poniedziałku ${monday.format(polishShortDateFormatter)}.")
+        }
         MakSelectField(
             label = "Oznaczenie tygodnia",
             value = "Tydzień ${state.weekType.name}",
