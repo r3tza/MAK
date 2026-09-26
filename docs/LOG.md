@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-26: Drobne poprawki z audytu i wersje bibliotek (I-20)
+
+- Fakty: Audyt z 2026-09-25 wskazał usuwanie korekty i kalendarza bez potwierdzenia, formularz korekty przyjmujący dowolny dzień, prośbę o nieistniejącą na Androidzie 12 zgodę `POST_NOTIFICATIONS`, nieaktualne Core KTX i Navigation oraz eksport w trybie `w`.
+- Decyzja: Usuwanie korekty i nieużywanego kalendarza wymaga potwierdzenia w dialogu, bo snackbar nie obsługuje akcji cofnięcia. Data korekty jest zapisywana jako poniedziałek wybranego tygodnia. Na API poniżej 33 aplikacja otwiera systemowe ustawienia powiadomień aplikacji. Core KTX podniesiono do 1.19.1, Navigation do 2.10.2, a eksport otwiera plik trybem `wt`.
+- Powód: Kotlin 2.4.20 nie został użyty, bo 2026-09-26 najnowsze wersje to Koin compiler plugin 1.2.1 i KSP 2.3.12, obie zweryfikowane dla Kotlin 2.3.20 (`STACK.md`). Aktualizację Kotlin trzeba wykonać razem z nowymi wersjami obu narzędzi.
+- Odrzucone: Cofanie usunięcia w komunikacie, bo wymagałoby rozbudowy wspólnego mechanizmu komunikatów dla dwóch rzadkich akcji.
+
 ## 2026-09-26: Edycja kierunków i kolor z pełnej palety (I-21, I-22)
 
 - Fakty: Użytkownik poprosił o wybór koloru kierunku z palety barw zamiast sześciu stałych kolorów, o edycję nazwy i koloru utworzonych kierunków oraz o kolor widoczny obok nazwy kierunku w ustawieniach.
@@ -153,9 +160,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 
 - Decyzja: `README.md`, `AGENTS.md` i `CLAUDE.md` pozostają w katalogu głównym. Dokumenty produktu, architektury, stosu, zasad pisania, historii zmian i wcześniejszy audyt interfejsu są w `docs/`.
 - Powód: Katalog główny zachowuje krótki punkt wejścia i instrukcje agentów, a pozostałe dokumenty mają jedno miejsce.
-
-## 2026-09-22: Uporządkowanie planu i liczenie okienek
-
-- Decyzja: `PLAN.md` przechowuje pozostałe prace, wymagania produktu i odbiór. Historię wykonanych etapów pozostawiono w tym dzienniku, a obowiązujące granice systemu w `ARCHITECTURE.md`.
-- Reguła: Okienka liczyć ze wspólnego planu wszystkich kierunków aktywnego semestru, także przy różnych kalendarzach akademickich. Najpierw połączyć nakładające się zajęcia w bloki czasu. Przerwa musi być dłuższa od globalnego progu, domyślnie 30 minut.
-- Powód: Użytkownik potrzebuje rzeczywistych wolnych przerw w całym dniu, a historia zakończonych etapów utrudniała odczyt bieżącej pracy.
