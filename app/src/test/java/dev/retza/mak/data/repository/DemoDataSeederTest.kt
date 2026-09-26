@@ -136,7 +136,8 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
     override suspend fun saveSetupConfiguration(
         semester: SemesterRecord,
         studyProgram: StudyProgramRecord,
-        calendar: AcademicCalendarRecord
+        calendar: AcademicCalendarRecord,
+        activate: Boolean
     ): SetupConfigurationIds = SetupConfigurationIds(0L, 0L, 0L, 0L)
 
     override suspend fun saveWeekOverride(record: WeekOverrideRecord): Long {

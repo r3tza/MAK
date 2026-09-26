@@ -8,11 +8,13 @@ import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.domain.WeekType
+import dev.retza.mak.domain.shouldActivateNewSemester
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
+import java.time.Clock
 import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
@@ -20,6 +22,7 @@ import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -63,6 +66,9 @@ data class SetupWizardUiState(
     // After the course step is saved, the program choice is fixed for this wizard session:
     // switching it would either rename a shared program or leave a second assignment behind.
     val isProgramChoiceLocked: Boolean = false,
+    // False when the saved semester was not activated, see shouldActivateNewSemester.
+    val isSemesterActive: Boolean = true,
+    val isActivating: Boolean = false,
     val errors: Map<SetupField, FieldErrorUi> = emptyMap(),
     val status: ScreenStatus = ScreenStatus.Ready,
     val canSkipClasses: Boolean = true,
@@ -87,7 +93,8 @@ data class SetupSemesterResume(
 @KoinViewModel
 class SetupViewModel(
     private val semesterRepository: SemesterRepository,
-    private val feedbackSink: FeedbackSink
+    private val feedbackSink: FeedbackSink,
+    private val clock: Clock
 ) : ViewModel() {
     private val state = MutableStateFlow(SetupWizardUiState())
     val setup: StateFlow<SetupWizardUiState> = state.asStateFlow()
@@ -173,6 +180,34 @@ class SetupViewModel(
         effectsChannel.trySend(SetupEffect.OpenNewClassEditor)
     }
 
+    // The class form always saves into the active semester, so an inactive one is activated first.
+    fun activateAndAddClass() {
+        val id = semesterId ?: return
+        if (state.value.isActivating) return
+        state.update { it.copy(isActivating = true) }
+        val token = sessionToken
+        viewModelScope.launch {
+            try {
+                semesterRepository.setActiveSemester(id)
+                if (token != sessionToken) return@launch
+                state.update { it.copy(isSemesterActive = true) }
+                effectsChannel.trySend(SetupEffect.OpenNewClassEditor)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                if (token == sessionToken) {
+                    feedbackSink.publish(
+                        UiFeedback("Nie udało się ustawić aktywnego semestru.", UiFeedbackKind.Error)
+                    )
+                }
+            } finally {
+                if (token == sessionToken) {
+                    state.update { it.copy(isActivating = false) }
+                }
+            }
+        }
+    }
+
     fun finish() {
         start()
         effectsChannel.trySend(SetupEffect.FinishToToday)
@@ -243,11 +278,17 @@ class SetupViewModel(
         val token = sessionToken
         saveJob = viewModelScope.launch {
             try {
+                val activate = existingSemester == null && shouldActivateNewSemester(
+                    today = LocalDate.now(clock),
+                    calendarStart = start,
+                    calendarEnd = end,
+                    hasActiveSemester = semesterRepository.observeActiveSemester().first() != null
+                )
                 val ids = semesterRepository.saveSetupConfiguration(
                     SemesterRecord(
                         id = existingSemester ?: 0L,
                         name = current.semesterName.trim(),
-                        isActive = true
+                        isActive = activate
                     ),
                     program,
                     AcademicCalendarRecord(
@@ -256,19 +297,25 @@ class SetupViewModel(
                         startDate = start,
                         endDate = end,
                         firstWeekType = WeekType.valueOf(current.firstWeekLabel)
-                    )
+                    ),
+                    activate = activate
                 )
                 if (token != sessionToken) return@launch
                 semesterId = ids.semesterId
                 courseId = ids.studyProgramId
                 calendarId = ids.academicCalendarId
                 state.update {
-                    it.copy(step = SetupStep.Classes, errors = emptyMap(), isProgramChoiceLocked = true)
+                    it.copy(
+                        step = SetupStep.Classes,
+                        errors = emptyMap(),
+                        isProgramChoiceLocked = true,
+                        isSemesterActive = ids.semesterIsActive
+                    )
                 }
-                val message = if (isUpdate) {
-                    "Zaktualizowano konfigurację"
-                } else {
-                    "Utworzono semestr i kierunek"
+                val message = when {
+                    isUpdate -> "Zaktualizowano konfigurację"
+                    ids.semesterIsActive -> "Utworzono semestr i kierunek"
+                    else -> "Utworzono semestr i kierunek. Aktywny semestr się nie zmienił."
                 }
                 feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
             } catch (error: CancellationException) {

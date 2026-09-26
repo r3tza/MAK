@@ -41,6 +41,7 @@ fun SetupWizard(
     onNext: () -> Unit,
     onBack: () -> Unit,
     onAddClass: () -> Unit,
+    onActivateAndAddClass: () -> Unit,
     onFinish: () -> Unit,
     modifier: Modifier = Modifier,
     onReturnToSettings: () -> Unit = {},
@@ -81,12 +82,21 @@ fun SetupWizard(
                     onBack = onBack
                 )
 
-                SetupStep.Classes -> ClassesStep(
-                    canSkip = state.canSkipClasses,
-                    onAddClass = onAddClass,
-                    onFinish = onFinish,
-                    onBack = onBack
-                )
+                SetupStep.Classes -> if (state.isSemesterActive) {
+                    ClassesStep(
+                        canSkip = state.canSkipClasses,
+                        onAddClass = onAddClass,
+                        onFinish = onFinish,
+                        onBack = onBack
+                    )
+                } else {
+                    InactiveSemesterClassesStep(
+                        isActivating = state.isActivating,
+                        onActivateAndAddClass = onActivateAndAddClass,
+                        onFinish = onReturnToSettings,
+                        onBack = onBack
+                    )
+                }
             }
 
             else -> MakStateMessage(status = state.status, onRetry = onRetry)
@@ -235,6 +245,28 @@ private fun CourseStep(
 
 private const val LOCKED_PROGRAM_NOTE =
     "Kierunek jest już zapisany w tym semestrze. Kolejne kierunki dodasz w ustawieniach semestru."
+
+@Composable
+private fun InactiveSemesterClassesStep(
+    isActivating: Boolean,
+    onActivateAndAddClass: () -> Unit,
+    onFinish: () -> Unit,
+    onBack: () -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        MakNoteBanner(
+            title = "Semestr zapisany",
+            subtitle = "Zacznie obowiązywać, gdy wybierzesz go jako aktywny w ustawieniach."
+        )
+        MakPrimaryAction(
+            text = "Ustaw jako aktywny i dodaj zajęcia",
+            onClick = onActivateAndAddClass,
+            enabled = !isActivating
+        )
+        MakSecondaryAction(text = "Zakończ", onClick = onFinish, enabled = !isActivating)
+        MakSecondaryAction(text = "Wstecz", onClick = onBack, enabled = !isActivating)
+    }
+}
 
 @Composable
 private fun ClassesStep(

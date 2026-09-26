@@ -112,11 +112,13 @@ internal class FakeSemesterRepository(
     override suspend fun saveSetupConfiguration(
         semester: SemesterRecord,
         studyProgram: StudyProgramRecord,
-        calendar: AcademicCalendarRecord
+        calendar: AcademicCalendarRecord,
+        activate: Boolean
     ): SetupConfigurationIds = delegate.saveSetupConfiguration(
         semester.toEntity(),
         studyProgram.toEntity(),
-        calendar.toEntity()
+        calendar.toEntity(),
+        activate
     )
 
     override suspend fun saveWeekOverride(record: WeekOverrideRecord): Long =

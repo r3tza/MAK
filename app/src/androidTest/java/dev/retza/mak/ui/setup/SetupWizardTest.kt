@@ -51,6 +51,7 @@ class SetupWizardTest {
                         onNext = { nextClicks += 1 },
                         onBack = {},
                         onAddClass = {},
+                        onActivateAndAddClass = {},
                         onFinish = {},
                         onRetry = {}
                     )
@@ -67,6 +68,49 @@ class SetupWizardTest {
 
         assertEquals("B", selectedWeek)
         assertEquals(1, nextClicks)
+    }
+
+    @Test
+    fun classesStepForInactiveSemesterOffersActivationAt320Dp() {
+        var activations = 0
+        var addClicks = 0
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(
+                    modifier = Modifier
+                        .width(320.dp)
+                        .height(700.dp)
+                ) {
+                    SetupWizard(
+                        state = SetupWizardUiState(step = SetupStep.Classes, isSemesterActive = false),
+                        onSemesterNameChanged = {},
+                        onStartDateChanged = {},
+                        onEndDateChanged = {},
+                        onFirstWeekChanged = {},
+                        onCourseNameChanged = {},
+                        onCourseColorChanged = {},
+                        onProgramModeChanged = {},
+                        onProgramSelected = {},
+                        onNext = {},
+                        onBack = {},
+                        onAddClass = { addClicks += 1 },
+                        onActivateAndAddClass = { activations += 1 },
+                        onFinish = {},
+                        onRetry = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule
+            .onNodeWithText("Zacznie obowiązywać, gdy wybierzesz go jako aktywny w ustawieniach.")
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zakończ").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Ustaw jako aktywny i dodaj zajęcia").performClick()
+
+        assertEquals(1, activations)
+        assertEquals(0, addClicks)
     }
 
     @Test
@@ -99,6 +143,7 @@ class SetupWizardTest {
                         onNext = {},
                         onBack = {},
                         onAddClass = {},
+                        onActivateAndAddClass = {},
                         onFinish = {},
                         onRetry = {}
                     )

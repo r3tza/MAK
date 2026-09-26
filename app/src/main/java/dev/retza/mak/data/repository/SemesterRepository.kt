@@ -68,10 +68,16 @@ interface SemesterRepository {
 
     suspend fun countClassesForAssignment(assignmentId: Long): Int
 
+    /**
+     * Saves the wizard's semester, program, calendar and assignment in one transaction.
+     * A new semester becomes active only when [activate] is true; an existing semester keeps
+     * its current activity.
+     */
     suspend fun saveSetupConfiguration(
         semester: SemesterRecord,
         studyProgram: StudyProgramRecord,
-        calendar: AcademicCalendarRecord
+        calendar: AcademicCalendarRecord,
+        activate: Boolean
     ): SetupConfigurationIds
 
     suspend fun saveWeekOverride(record: WeekOverrideRecord): Long
@@ -422,7 +428,8 @@ class RoomSemesterRepository(
     override suspend fun saveSetupConfiguration(
         semester: SemesterRecord,
         studyProgram: StudyProgramRecord,
-        calendar: AcademicCalendarRecord
+        calendar: AcademicCalendarRecord,
+        activate: Boolean
     ): SetupConfigurationIds {
         val semesterEntity = semester.toEntity()
         val programEntity = studyProgram.toEntity()
@@ -433,13 +440,15 @@ class RoomSemesterRepository(
             "Calendar end must not be before its start"
         }
         return database.withTransaction {
+            val semesterIsActive: Boolean
             val semesterId = if (semesterEntity.id == 0L) {
-                semesters.clearActive()
-                semesters.insert(semesterEntity.copy(isActive = true))
+                semesterIsActive = activate
+                if (activate) semesters.clearActive()
+                semesters.insert(semesterEntity.copy(isActive = activate))
             } else {
-                require(semesters.findById(semesterEntity.id) != null) { "Semester does not exist" }
-                semesters.clearActive()
-                semesters.update(semesterEntity.copy(isActive = true))
+                val existing = requireNotNull(semesters.findById(semesterEntity.id)) { "Semester does not exist" }
+                semesterIsActive = existing.isActive
+                semesters.update(semesterEntity.copy(isActive = existing.isActive))
                 semesterEntity.id
             }
             val studyProgramId = if (programEntity.id == 0L) {
@@ -480,7 +489,13 @@ class RoomSemesterRepository(
                 }
                 existingAssignment.id
             }
-            SetupConfigurationIds(semesterId, studyProgramId, calendarId, semesterProgramId)
+            SetupConfigurationIds(
+                semesterId,
+                studyProgramId,
+                calendarId,
+                semesterProgramId,
+                semesterIsActive
+            )
         }
     }
 

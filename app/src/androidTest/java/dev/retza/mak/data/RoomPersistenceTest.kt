@@ -154,7 +154,8 @@ class RoomPersistenceTest {
                     startDate = LocalDate.of(2026, 10, 1),
                     endDate = LocalDate.of(2027, 2, 28),
                     firstWeekType = dev.retza.mak.domain.WeekType.A
-                )
+                ),
+                activate = true
             )
             fail("Expected the setup transaction to fail")
         } catch (_: IllegalArgumentException) {
@@ -163,6 +164,31 @@ class RoomPersistenceTest {
         val after = database!!.semesterDao().observeAll().first()
         assertEquals(before, after)
         assertNull(after.firstOrNull { it.name == "Nowy semestr" })
+    }
+
+    @Test
+    fun setupConfigurationWithoutActivationKeepsActiveSemester() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val current = database!!.semesterDao().insert(semester("Bieżący", true))
+        database!!.semesterDao().markActive(current)
+
+        val ids = repository.saveSetupConfiguration(
+            SemesterRecord(name = "Letni", isActive = false),
+            StudyProgramRecord(name = "Kierunek", color = "#445566"),
+            AcademicCalendarRecord(
+                semesterId = 0L,
+                startDate = LocalDate.of(2027, 2, 22),
+                endDate = LocalDate.of(2027, 6, 30),
+                firstWeekType = dev.retza.mak.domain.WeekType.A
+            ),
+            activate = false
+        )
+
+        val semesters = database!!.semesterDao().observeAll().first()
+        assertEquals(false, ids.semesterIsActive)
+        assertEquals(listOf(current), semesters.filter { it.isActive }.map { it.id })
+        assertEquals(false, semesters.single { it.id == ids.semesterId }.isActive)
     }
 
     @Test

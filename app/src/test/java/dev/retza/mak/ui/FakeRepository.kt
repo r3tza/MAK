@@ -101,6 +101,7 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
     var setActiveCount = 0
     var failGetAllSemesterData = false
     var lastSetupSemester: SemesterEntity? = null
+    var lastSetupActivate: Boolean? = null
     var lastSetupStudyProgram: StudyProgramEntity? = null
     var lastSetupCalendar: AcademicCalendarEntity? = null
     var lastSetupConfiguration: SetupConfigurationIds? = null
@@ -458,18 +459,21 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
     suspend fun saveSetupConfiguration(
         semester: SemesterEntity,
         studyProgram: StudyProgramEntity,
-        calendar: AcademicCalendarEntity
+        calendar: AcademicCalendarEntity,
+        activate: Boolean = true
     ): SetupConfigurationIds {
         awaitSave()
         events += "saveSetupConfiguration"
+        lastSetupActivate = activate
         if (failSetupConfiguration) throw IllegalStateException("setup configuration failed")
         val semesterId = if (semester.id == 0L) generatedSemesterId++ else semester.id
         val studyProgramId = if (studyProgram.id == 0L) generatedStudyProgramId++ else studyProgram.id
         val calendarId = if (calendar.id == 0L) generatedCalendarId++ else calendar.id
-        lastSetupSemester = semester.copy(id = semesterId, isActive = true)
+        val semesterIsActive = if (semester.id == 0L) activate else activeSemesterFlow.value == semester.id
+        lastSetupSemester = semester.copy(id = semesterId, isActive = semesterIsActive)
         lastSetupStudyProgram = studyProgram.copy(id = studyProgramId)
         lastSetupCalendar = calendar.copy(id = calendarId, semesterId = semesterId)
-        activeSemesterFlow.value = semesterId
+        if (semesterIsActive) activeSemesterFlow.value = semesterId
         val existing = semesterPrograms.firstOrNull {
             it.semesterId == semesterId && it.studyProgramId == studyProgramId
         }
@@ -488,7 +492,7 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
             }
             existing.id
         }
-        val ids = SetupConfigurationIds(semesterId, studyProgramId, calendarId, programId)
+        val ids = SetupConfigurationIds(semesterId, studyProgramId, calendarId, programId, semesterIsActive)
         lastSetupConfiguration = ids
         return ids
     }

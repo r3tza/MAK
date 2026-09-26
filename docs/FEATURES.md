@@ -16,6 +16,8 @@ Jeśli aplikacja nie ma jeszcze semestru, ekran „Dzisiaj” pokazuje stan pust
 
 Gdy istnieją już globalne kierunki, krok „Dodaj kierunek” w kreatorze pozwala wybrać „Nowy kierunek” albo „Wybierz istniejący”. Wybrany istniejący kierunek zachowuje nazwę i kolor, a kreator nie tworzy jego kopii. Po zapisie kroku wybór kierunku jest zablokowany do końca kreatora, bo zmiana zmieniłaby nazwę współdzielonego kierunku albo zostawiła w semestrze drugie przypisanie; nazwę i kolor kierunku utworzonego w kreatorze nadal można poprawić. Kolejne kierunki dodaje się w ustawieniach semestru.
 
+Semestr utworzony w kreatorze staje się aktywny tylko wtedy, gdy dzisiejsza data mieści się w jego kalendarzu albo gdy nie ma aktywnego semestru (`DOMAIN.md`). W przeciwnym razie komunikat po zapisie brzmi „Utworzono semestr i kierunek. Aktywny semestr się nie zmienił.”, a krok „Dodaj zajęcia” pokazuje informację „Semestr zapisany” oraz akcje „Ustaw jako aktywny i dodaj zajęcia”, „Zakończ” (powrót do ustawień) i „Wstecz”. Formularz zajęć zapisuje do aktywnego semestru, więc kreator nie otwiera go dla semestru nieaktywnego.
+
 ## Ekran „Dzisiaj”
 
 To domyślny ekran otwierany po uruchomieniu aplikacji.

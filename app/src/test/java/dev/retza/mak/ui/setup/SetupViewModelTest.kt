@@ -6,6 +6,9 @@ import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
+import java.time.Clock
+import java.time.Instant
+import java.time.ZoneOffset
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -25,10 +28,14 @@ class SetupViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
+    // Inside the calendar used by fillValidSemester, so a new semester is activated by default.
+    private val insideSemester = Clock.fixed(Instant.parse("2026-09-15T10:00:00Z"), ZoneOffset.UTC)
+
     private fun viewModel(
         repository: FakeRepository,
-        sink: FeedbackSink = FeedbackController()
-    ) = SetupViewModel(FakeSemesterRepository(repository), sink)
+        sink: FeedbackSink = FeedbackController(),
+        clock: Clock = insideSemester
+    ) = SetupViewModel(FakeSemesterRepository(repository), sink, clock)
 
     private fun SetupViewModel.fillValidSemester() {
         update { it.copy(semesterName = "Nowy", startDate = "2026-09-01", endDate = "2026-10-01") }
@@ -311,6 +318,90 @@ class SetupViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf("Nie udało się zapisać konfiguracji."), sink.published.map { it.message })
+    }
+
+    @Test
+    fun semesterStartingLaterIsSavedInactiveWhenAnotherIsActive() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val previousActive = repository.activeSemesterId
+        val sink = RecordingFeedbackSink()
+        val before = Clock.fixed(Instant.parse("2026-08-20T10:00:00Z"), ZoneOffset.UTC)
+        val viewModel = viewModel(repository, sink, before)
+        viewModel.fillValidSemester()
+        viewModel.next()
+        advanceUntilIdle()
+        viewModel.update { it.copy(courseName = "Informatyka") }
+
+        viewModel.next()
+        advanceUntilIdle()
+
+        assertEquals(false, repository.lastSetupActivate)
+        assertEquals(previousActive, repository.activeSemesterId)
+        assertFalse(viewModel.setup.value.isSemesterActive)
+        assertEquals(SetupStep.Classes, viewModel.setup.value.step)
+        assertEquals(
+            listOf("Utworzono semestr i kierunek. Aktywny semestr się nie zmienił."),
+            sink.published.map { it.message }
+        )
+    }
+
+    @Test
+    fun semesterIsActivatedWhenNoSemesterIsActive() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.clearActiveSemester()
+        val later = Clock.fixed(Instant.parse("2026-08-20T10:00:00Z"), ZoneOffset.UTC)
+        val viewModel = viewModel(repository, clock = later)
+        viewModel.fillValidSemester()
+        viewModel.next()
+        advanceUntilIdle()
+        viewModel.update { it.copy(courseName = "Informatyka") }
+
+        viewModel.next()
+        advanceUntilIdle()
+
+        assertEquals(true, repository.lastSetupActivate)
+        assertEquals(repository.lastSetupSemester?.id, repository.activeSemesterId)
+        assertTrue(viewModel.setup.value.isSemesterActive)
+    }
+
+    @Test
+    fun semesterCoveringTodayIsActivated() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        viewModel.fillValidSemester()
+        viewModel.next()
+        advanceUntilIdle()
+        viewModel.update { it.copy(courseName = "Informatyka") }
+
+        viewModel.next()
+        advanceUntilIdle()
+
+        assertEquals(true, repository.lastSetupActivate)
+        assertEquals(repository.lastSetupSemester?.id, repository.activeSemesterId)
+        assertTrue(viewModel.setup.value.isSemesterActive)
+    }
+
+    @Test
+    fun activateAndAddClassActivatesSavedSemesterThenOpensEditor() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val before = Clock.fixed(Instant.parse("2026-08-20T10:00:00Z"), ZoneOffset.UTC)
+        val viewModel = viewModel(repository, clock = before)
+        val effects = mutableListOf<SetupEffect>()
+        backgroundScope.launch { viewModel.effects.collect { effects += it } }
+        viewModel.fillValidSemester()
+        viewModel.next()
+        advanceUntilIdle()
+        viewModel.update { it.copy(courseName = "Informatyka") }
+        viewModel.next()
+        advanceUntilIdle()
+        val activations = repository.setActiveCount
+
+        viewModel.activateAndAddClass()
+        advanceUntilIdle()
+
+        assertEquals(activations + 1, repository.setActiveCount)
+        assertTrue(viewModel.setup.value.isSemesterActive)
+        assertEquals(listOf(SetupEffect.OpenNewClassEditor), effects)
     }
 
     @Test

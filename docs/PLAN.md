@@ -4,27 +4,6 @@ Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie je
 
 Każdy krok ma być wykonalny także przez słabszego agenta bez odgadywania intencji. Podaj kolejność małych zmian, docelowe pliki lub obszary kodu, zależności, przypadki brzegowe, sposób sprawdzenia i jednoznaczne kryterium zakończenia. Jeśli do wykonania brakuje decyzji, zapisz ją jako bloker zamiast pozostawiać ukryte założenie.
 
-## 4. Aktywacja nowego semestru według daty (I-18)
-
-Decyzja z 2026-09-26: semestr utworzony w kreatorze staje się aktywny tylko wtedy, gdy dzisiejsza data mieści się w jego kalendarzu albo gdy nie ma aktywnego semestru (`DOMAIN.md`, sekcja „Semestr i tygodnie A/B”). Drugi warunek jest konieczny, bo bez aktywnego semestru utworzony plan byłby niedostępny.
-
-Kolejność:
-
-1. Domena: czysta funkcja `shouldActivateNewSemester(today: LocalDate, calendarStart: LocalDate, calendarEnd: LocalDate, hasActiveSemester: Boolean): Boolean` z testami JVM (data w zakresie, na granicach, przed, po, brak aktywnego semestru).
-2. `SemesterRepository.saveSetupConfiguration`: nowy parametr `activate: Boolean`. Przy `true` zachowaj dotychczasowe `clearActive` i aktywację; przy `false` zapisz nowy semestr jako nieaktywny i nie zmieniaj pozostałych. Przy wznowieniu istniejącego semestru (`semester.id != 0`) zachowaj jego obecny stan aktywności. Test w `RoomPersistenceTest`: zapis nieaktywnego semestru nie zmienia aktywnego.
-3. `SetupViewModel`: wstrzyknij `Clock` (jest w grafie Koin), przed zapisem sprawdź `observeActiveSemester().first()` i zapamiętaj w stanie `activatedSemester: Boolean`.
-4. Krok „Dodaj zajęcia” w kreatorze dla semestru nieaktywnego: zamiast „Dodaj zajęcia” pokaż komunikat „Semestr zapisany. Zacznie obowiązywać, gdy wybierzesz go jako aktywny w ustawieniach.” i przyciski „Ustaw jako aktywny i dodaj zajęcia” (woła `setActiveSemester`, potem dotychczasowe `addClass`) oraz „Zakończ”. Formularz zajęć zapisuje do aktywnego semestru, więc bez aktywacji nie wolno otwierać go z kreatora.
-5. Komunikat po zapisie: „Utworzono semestr i kierunek” przy aktywacji, a bez niej „Utworzono semestr i kierunek. Aktywny semestr się nie zmienił.”.
-6. Dokumentacja: `FEATURES.md`, opis kreatora i ekranu „Semestry”.
-
-Przypadki brzegowe: pierwszy semestr w aplikacji z datą w przyszłości (aktywny, bo nie ma innego); dzisiejsza data równa początkowi albo końcowi kalendarza (aktywny); „Dodaj semestr” w ustawieniach przy aktywnym bieżącym semestrze (nieaktywny); wznowienie konfiguracji semestru bez przypisań.
-
-Poza zakresem: automatyczne przełączenie aktywnego semestru, gdy nadejdzie data nowego. Wymaga osobnej decyzji.
-
-Weryfikacja: testy funkcji domenowej, `SetupViewModelTest` z `Clock.fixed` (z aktywacją i bez, przycisk aktywacji w kroku 3), test Room. `gradlew.bat test connectedDebugAndroidTest`.
-
-Kryterium zakończenia: dodanie semestru, którego kalendarz nie obejmuje dzisiejszej daty, nie zmienia aktywnego semestru, a pierwszy semestr zawsze jest aktywny.
-
 ## 5. Ostrzeżenie o ukrytych zmianach i notatkach przy edycji zajęć (I-19)
 
 Decyzja z 2026-09-26: edycja zajęć zachowuje ich zmiany wystąpień i notatki, a formularz przed zapisem informuje, ile z nich przestanie być widocznych (`DOMAIN.md`, sekcja „Zmiany pojedynczych wystąpień”).

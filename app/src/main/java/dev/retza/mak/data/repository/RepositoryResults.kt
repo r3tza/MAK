@@ -4,7 +4,8 @@ data class SetupConfigurationIds(
     val semesterId: Long,
     val studyProgramId: Long,
     val academicCalendarId: Long,
-    val semesterProgramId: Long
+    val semesterProgramId: Long,
+    val semesterIsActive: Boolean = true
 )
 
 data class SemesterDeletionResult(val activeSemesterId: Long?)

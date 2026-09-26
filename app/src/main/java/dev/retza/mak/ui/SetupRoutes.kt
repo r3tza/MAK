@@ -44,6 +44,7 @@ internal fun NavGraphBuilder.setupRoute(
             onNext = setupViewModel::next,
             onBack = setupViewModel::back,
             onAddClass = setupViewModel::addClass,
+            onActivateAndAddClass = setupViewModel::activateAndAddClass,
             onFinish = setupViewModel::finish,
             onReturnToSettings = setupViewModel::returnToSettings,
             showReturnToSettings = settingsState.semesters.isNotEmpty(),
