@@ -38,8 +38,26 @@ import dev.retza.mak.ui.components.MakTag
 import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.components.ScreenStatus
+import dev.retza.mak.ui.components.distinctLabels
 
 private const val aboutVersion = "0.1.0"
+
+@Composable
+private fun ActiveSemesterField(
+    semesters: List<SemesterUi>,
+    activeSemesterId: String?,
+    onSemesterSelected: (String) -> Unit
+) {
+    val labels = distinctLabels(semesters.map { it.name })
+    val labelById = semesters.map { it.id }.zip(labels).toMap()
+    MakSelectField(
+        label = "Aktywny semestr",
+        value = activeSemesterId?.let { labelById[it] }.orEmpty(),
+        options = semesters,
+        onSelected = { onSemesterSelected(it.id) },
+        optionLabel = { labelById[it.id].orEmpty() }
+    )
+}
 
 data class ThemeOptionUi(
     val id: String,
@@ -117,13 +135,10 @@ fun SettingsScreen(
                         MakEmptyState("Dodaj semestr, aby rozpocząć pracę z planem.")
                         MakPrimaryAction(text = "Dodaj semestr", onClick = onAddSemester)
                     } else {
-                        MakSelectField(
-                            label = "Aktywny semestr",
-                            value = active?.name.orEmpty(),
-                            options = state.semesters.map { it.name },
-                            onSelected = { name ->
-                                state.semesters.firstOrNull { it.name == name }?.id?.let(onSemesterSelected)
-                            }
+                        ActiveSemesterField(
+                            semesters = state.semesters,
+                            activeSemesterId = state.activeSemesterId,
+                            onSemesterSelected = onSemesterSelected
                         )
                         SettingsNavigationRow(
                             title = "Zarządzaj semestrami",
@@ -276,7 +291,6 @@ fun SettingsSemestersScreen(
     onCancelDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val active = state.semesters.firstOrNull { it.id == state.activeSemesterId }
     MakScreenContent(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -286,13 +300,10 @@ fun SettingsSemestersScreen(
         if (state.semesters.isEmpty()) {
             MakEmptyState("Dodaj semestr, aby rozpocząć pracę z planem.")
         } else {
-            MakSelectField(
-                label = "Aktywny semestr",
-                value = active?.name.orEmpty(),
-                options = state.semesters.map { it.name },
-                onSelected = { name ->
-                    state.semesters.firstOrNull { it.name == name }?.id?.let(onSemesterSelected)
-                }
+            ActiveSemesterField(
+                semesters = state.semesters,
+                activeSemesterId = state.activeSemesterId,
+                onSemesterSelected = onSemesterSelected
             )
         }
         MakNoteBanner(

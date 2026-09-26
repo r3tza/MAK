@@ -115,6 +115,34 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun activeSemesterFieldSelectsRepeatedNameByIdAt320Dp() {
+        var selected = ""
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(900.dp)) {
+                    SettingsSemestersScreen(
+                        state = SettingsUiState(
+                            semesters = listOf(semester, semester.copy(id = "2", isActive = false)),
+                            activeSemesterId = "1"
+                        ),
+                        onSemesterSelected = { selected = it },
+                        onAddSemester = {},
+                        onConfigureSemester = {},
+                        onDeleteSemester = {},
+                        onConfirmDelete = {},
+                        onCancelDelete = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Semestr zimowy (1)").performClick()
+        composeTestRule.onNodeWithText("Semestr zimowy (2)").performClick()
+
+        assertEquals("2", selected)
+    }
+
+    @Test
     fun semestersScreenShowsManageActionsAt320Dp() {
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {

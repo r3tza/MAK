@@ -25,6 +25,7 @@ import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.ScreenStatus
+import dev.retza.mak.ui.components.distinctLabels
 
 @Composable
 fun SetupWizard(
@@ -206,12 +207,15 @@ private fun CourseStep(
                         subtitle = LOCKED_PROGRAM_NOTE
                     )
                 } else {
+                    val labels = state.programOptions.map { it.id }
+                        .zip(distinctLabels(state.programOptions.map { it.name }))
+                        .toMap()
                     MakSelectField(
                         label = "Istniejący kierunek",
-                        value = selected?.name.orEmpty(),
+                        value = selected?.let { labels[it.id] }.orEmpty(),
                         options = state.programOptions,
                         onSelected = { onProgramSelected(it.id) },
-                        optionLabel = { it.name },
+                        optionLabel = { labels[it.id].orEmpty() },
                         isError = state.errors.containsKey(SetupField.CourseProgram)
                     )
                     FieldError(state.errors[SetupField.CourseProgram])

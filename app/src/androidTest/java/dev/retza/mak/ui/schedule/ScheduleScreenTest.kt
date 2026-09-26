@@ -16,6 +16,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.theme.MAKTheme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -146,10 +147,33 @@ class ScheduleScreenTest {
         composeTestRule.onNodeWithText("Laboratorium").assertIsDisplayed()
     }
 
+    @Test
+    fun filterWithRepeatedCourseNamesSelectsByIdAt320Dp() {
+        var selected = ""
+        setScheduleContent(
+            state = scheduleState(
+                filters = listOf(
+                    ScheduleFilterUi("all", "Wszystkie", true),
+                    ScheduleFilterUi("a", "Informatyka"),
+                    ScheduleFilterUi("b", "Informatyka")
+                )
+            ),
+            onFilterSelected = { selected = it }
+        )
+
+        composeTestRule.onNodeWithText("Filtry").performClick()
+        composeTestRule.onNodeWithText("Kierunek").performClick()
+        composeTestRule.onNodeWithText("Informatyka (1)").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Informatyka (2)").performClick()
+
+        assertEquals("b", selected)
+    }
+
     private fun setScheduleContent(
         width: androidx.compose.ui.unit.Dp = 320.dp,
         darkTheme: Boolean = false,
-        state: ScheduleUiState
+        state: ScheduleUiState,
+        onFilterSelected: (String) -> Unit = {}
     ) {
         composeTestRule.setContent {
             MAKTheme(darkTheme = darkTheme, dynamicColor = false) {
@@ -160,7 +184,7 @@ class ScheduleScreenTest {
                         onPreviousWeek = {},
                         onNextWeek = {},
                         onDaySelected = {},
-                        onFilterSelected = {},
+                        onFilterSelected = onFilterSelected,
                         onPreviousMonth = {},
                         onNextMonth = {},
                         onCalendarDaySelected = {},

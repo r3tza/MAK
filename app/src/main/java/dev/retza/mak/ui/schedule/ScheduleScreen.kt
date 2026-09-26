@@ -66,6 +66,7 @@ import dev.retza.mak.ui.components.MakRowTitle
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSelectField
+import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakViewSwitch
@@ -347,8 +348,10 @@ private fun ScheduleFilterSection(
 ) {
     var expanded by remember { mutableStateOf(false) }
     val selectedFilter = filters.firstOrNull { it.isSelected } ?: filters.first()
+    val labelById = filters.map { it.id }.zip(distinctLabels(filters.map { it.label })).toMap()
+    val selectedLabel = labelById[selectedFilter.id].orEmpty()
     val allSelected = selectedFilter.id == "all"
-    val headerLabel = if (allSelected) "Filtry" else "Filtry: ${selectedFilter.label}"
+    val headerLabel = if (allSelected) "Filtry" else "Filtry: $selectedLabel"
     val stateLabel = if (expanded) "Rozwinięte" else "Zwinięte"
     val shape = RoundedCornerShape(10.dp)
     var focused by remember { mutableStateOf(false) }
@@ -378,7 +381,7 @@ private fun ScheduleFilterSection(
                 .focusable()
                 .semantics {
                     contentDescription =
-                        "$headerLabel, wybór: ${selectedFilter.label}, $stateLabel"
+                        "$headerLabel, wybór: $selectedLabel, $stateLabel"
                 }
                 .padding(horizontal = MakSpacing.md, vertical = MakSpacing.xs),
             verticalAlignment = Alignment.CenterVertically,
@@ -407,14 +410,13 @@ private fun ScheduleFilterSection(
         if (expanded) {
             MakSelectField(
                 label = "Kierunek",
-                value = selectedFilter.label,
-                options = filters.map { it.label },
-                onSelected = { label ->
-                    filters.firstOrNull { it.label == label }?.let { filter ->
-                        onFilterSelected(filter.id)
-                        expanded = false
-                    }
+                value = selectedLabel,
+                options = filters,
+                onSelected = { filter ->
+                    onFilterSelected(filter.id)
+                    expanded = false
                 },
+                optionLabel = { labelById[it.id].orEmpty() },
                 modifier = Modifier.padding(top = MakSpacing.sm)
             )
         }

@@ -4,22 +4,6 @@ Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Obecnie je
 
 Każdy krok ma być wykonalny także przez słabszego agenta bez odgadywania intencji. Podaj kolejność małych zmian, docelowe pliki lub obszary kodu, zależności, przypadki brzegowe, sposób sprawdzenia i jednoznaczne kryterium zakończenia. Jeśli do wykonania brakuje decyzji, zapisz ją jako bloker zamiast pozostawiać ukryte założenie.
 
-## 3. Wybór semestru i filtra kierunku po identyfikatorze (I-17)
-
-Problem: `SettingsScreen.kt` (aktywny semestr na ekranie głównym i na ekranie „Semestry”) oraz `ScheduleFilterSection` w `ScheduleScreen.kt` przekazują do `MakSelectField` listę nazw i szukają wybranej pozycji przez `firstOrNull { it.name == name }` albo `it.label == label`.
-
-Kolejność:
-
-1. We wszystkich trzech miejscach przekaż do `MakSelectField` listę obiektów (`SemesterUi`, `ScheduleFilterUi`) z `optionLabel`, a w `onSelected` użyj identyfikatora wybranego obiektu.
-2. Etykiety rozróżnialne: gdy kilka pozycji ma tę samą nazwę, dodaj numer w kolejności listy, np. „Semestr zimowy (2)”, tak jak etykiety kalendarzy na ekranie semestru. Wydziel małą funkcję `distinctLabels(names: List<String>): List<String>` w `ui/components` i użyj jej w obu ekranach.
-3. Pozostałe wywołania z wyszukiwaniem po etykiecie (motyw, cykl w formularzu zajęć) mają unikalne etykiety, więc zostaw je. Nie dodawaj nowych miejsc wyszukujących po nazwie.
-
-Przypadki brzegowe: jedna pozycja; wszystkie nazwy różne (etykiety bez numerów); dwa kierunki o tej samej nazwie w filtrze „Planu”.
-
-Weryfikacja: test JVM `distinctLabels`; `SettingsScreenTest` i `ScheduleScreenTest`: dwie pozycje o tej samej nazwie, wybór drugiej przekazuje jej identyfikator. `gradlew.bat test connectedDebugAndroidTest`.
-
-Kryterium zakończenia: żadne pole wyboru semestru ani kierunku nie wyszukuje pozycji po nazwie, a powtórzone nazwy są rozróżnialne.
-
 ## 4. Aktywacja nowego semestru według daty (I-18)
 
 Decyzja z 2026-09-26: semestr utworzony w kreatorze staje się aktywny tylko wtedy, gdy dzisiejsza data mieści się w jego kalendarzu albo gdy nie ma aktywnego semestru (`DOMAIN.md`, sekcja „Semestr i tygodnie A/B”). Drugi warunek jest konieczny, bo bez aktywnego semestru utworzony plan byłby niedostępny.

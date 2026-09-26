@@ -45,6 +45,7 @@ import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakScreenIntro
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSelectField
+import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakTag
@@ -612,15 +613,15 @@ private fun CoursesBlock(
                 onColorSelected = onCourseColorChanged
             )
         } else {
+            val programLabels = state.courseProgramOptions.map { it.id }
+                .zip(distinctLabels(state.courseProgramOptions.map { it.name }))
+                .toMap()
             MakSelectField(
                 label = "Istniejący kierunek",
-                value = state.courseProgramOptions
-                    .firstOrNull { it.id == state.courseProgramId }
-                    ?.name
-                    .orEmpty(),
+                value = state.courseProgramId?.let { programLabels[it] }.orEmpty(),
                 options = state.courseProgramOptions,
                 onSelected = { onSelectProgram(it.id) },
-                optionLabel = { it.name },
+                optionLabel = { programLabels[it.id].orEmpty() },
                 isError = state.courseNameError != null
             )
             FieldError(state.courseNameError?.let(::FieldErrorUi))
@@ -803,7 +804,7 @@ internal fun courseDeletionMessage(deletion: CourseDeletionUi): String = buildSt
 }
 
 private fun calendarLabel(calendar: SemesterCalendarUi): String {
-    val courses = uniqueCourseNames(calendar.courseNames)
+    val courses = distinctLabels(calendar.courseNames)
     val coursePart = if (courses.isEmpty()) "brak kierunków" else courses.joinToString(", ")
     val range = "${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()}"
     return "$range, tydzień ${calendar.firstWeek.name}, $coursePart"
@@ -814,20 +815,6 @@ private fun String.asCalendarDate(): String =
 
 private val calendarDateFormatter =
     java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.forLanguageTag("pl-PL"))
-
-private fun uniqueCourseNames(names: List<String>): List<String> {
-    val totals = names.groupingBy { it }.eachCount()
-    val seen = mutableMapOf<String, Int>()
-    return names.map { name ->
-        if (totals.getValue(name) > 1) {
-            val index = (seen[name] ?: 0) + 1
-            seen[name] = index
-            "$name ($index)"
-        } else {
-            name
-        }
-    }
-}
 
 @Composable
 private fun WeekOverridesSection(
