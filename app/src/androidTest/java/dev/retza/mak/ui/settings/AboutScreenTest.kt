@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
@@ -37,7 +38,7 @@ class AboutScreenTest {
             onCheck = { checked = true }
         )
 
-        composeTestRule.onNodeWithText("0.2.0").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("0.2.0")[0].assertIsDisplayed()
         composeTestRule.onNodeWithText("Brak informacji").assertIsDisplayed()
         composeTestRule.onNodeWithText("Sprawdź teraz").performClick()
         assertTrue(checked)
