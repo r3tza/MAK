@@ -20,6 +20,11 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.size
+import androidx.compose.material.icons.outlined.Refresh
+import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -138,16 +143,20 @@ fun SettingsScreen(
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
         when (state.status) {
             ScreenStatus.Ready -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.lg)) {
-                SettingsSection("Plan") {
+                SettingsListSection("Plan") {
                     if (state.semesters.isEmpty()) {
-                        MakEmptyState("Dodaj semestr, aby rozpocząć pracę z planem.")
-                        MakPrimaryAction(text = "Dodaj semestr", onClick = onAddSemester)
+                        SettingsFieldItem {
+                            MakEmptyState("Dodaj semestr, aby rozpocząć pracę z planem.")
+                            MakPrimaryAction(text = "Dodaj semestr", onClick = onAddSemester)
+                        }
                     } else {
-                        ActiveSemesterField(
-                            semesters = state.semesters,
-                            activeSemesterId = state.activeSemesterId,
-                            onSemesterSelected = onSemesterSelected
-                        )
+                        SettingsFieldItem {
+                            ActiveSemesterField(
+                                semesters = state.semesters,
+                                activeSemesterId = state.activeSemesterId,
+                                onSemesterSelected = onSemesterSelected
+                            )
+                        }
                         SettingsNavigationRow(
                             title = "Zarządzaj semestrami",
                             value = active
@@ -155,31 +164,36 @@ fun SettingsScreen(
                                 .orEmpty(),
                             onClick = onOpenSemesters
                         )
+                        SettingsRowDivider()
                     }
                     SettingsNavigationRow(
                         title = "Kierunki",
                         value = "Nazwy i kolory kierunków",
                         onClick = onOpenPrograms
                     )
-                    MakSelectField(
-                        label = "Próg okienka",
-                        value = state.gapThresholdOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                        options = state.gapThresholdOptions,
-                        onSelected = { onGapThresholdSelected(it.id) },
-                        optionLabel = { it.label }
-                    )
+                    SettingsFieldItem {
+                        MakSelectField(
+                            label = "Próg okienka",
+                            value = state.gapThresholdOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
+                            options = state.gapThresholdOptions,
+                            onSelected = { onGapThresholdSelected(it.id) },
+                            optionLabel = { it.label }
+                        )
+                    }
                 }
-                SettingsSection("Wygląd") {
-                    MakSelectField(
-                        label = "Motyw",
-                        value = state.themeOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                        options = state.themeOptions.map { it.label },
-                        onSelected = { label ->
-                            state.themeOptions.firstOrNull { it.label == label }?.id?.let(onThemeSelected)
-                        }
-                    )
+                SettingsListSection("Wygląd") {
+                    SettingsFieldItem {
+                        MakSelectField(
+                            label = "Motyw",
+                            value = state.themeOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
+                            options = state.themeOptions.map { it.label },
+                            onSelected = { label ->
+                                state.themeOptions.firstOrNull { it.label == label }?.id?.let(onThemeSelected)
+                            }
+                        )
+                    }
                 }
-                SettingsSection("Powiadomienia") {
+                SettingsListSection("Powiadomienia") {
                     val notificationsStatus = notificationsStatus(state.notifications, notificationsBlocked)
                     SettingsNavigationRow(
                         title = "Powiadomienia o kolizjach",
@@ -188,14 +202,14 @@ fun SettingsScreen(
                         onClick = onOpenNotifications
                     )
                 }
-                SettingsSection("Dane") {
+                SettingsListSection("Dane") {
                     SettingsNavigationRow(
                         title = "Kopia zapasowa i import",
                         value = "Eksport i import pliku JSON",
                         onClick = onOpenData
                     )
                 }
-                SettingsSection("Aktualizacje") {
+                SettingsListSection("Aktualizacje") {
                     SettingsActionRow(
                         title = "Sprawdź aktualizacje",
                         value = updates.checkSummary,
@@ -203,12 +217,14 @@ fun SettingsScreen(
                         onClick = onCheckUpdates
                     )
                     updates.pendingVersion?.let { version ->
+                        SettingsRowDivider()
                         SettingsNavigationRow(
                             title = "Aktualizacja do $version",
                             value = "Pobieranie i instalacja",
                             onClick = onOpenUpdate
                         )
                     }
+                    SettingsRowDivider()
                     SettingsSwitchRow(
                         title = "Sprawdzaj przy uruchomieniu",
                         details = if (updates.automaticChecks) {
@@ -220,7 +236,7 @@ fun SettingsScreen(
                         onCheckedChange = onAutomaticChecksChanged
                     )
                 }
-                SettingsSection("O aplikacji") {
+                SettingsListSection("O aplikacji") {
                     SettingsNavigationRow(
                         title = "Wersja",
                         value = updates.installedVersion,
@@ -258,6 +274,66 @@ private fun SettingsSection(
     }
 }
 
+/** Section whose rows reach the card edges, so the pressed state covers the whole row. */
+@Composable
+private fun SettingsListSection(
+    title: String,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
+        Text(
+            text = title,
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .clip(SettingsCardShape)
+                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, SettingsCardShape)
+                .background(MaterialTheme.colorScheme.surfaceContainerLow)
+                .padding(vertical = MakSpacing.xs),
+            content = content
+        )
+    }
+}
+
+@Composable
+private fun SettingsFieldItem(content: @Composable ColumnScope.() -> Unit) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = MakSpacing.lg, vertical = MakSpacing.md),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.md),
+        content = content
+    )
+}
+
+@Composable
+private fun SettingsRowDivider() {
+    HorizontalDivider(
+        modifier = Modifier.padding(horizontal = MakSpacing.lg),
+        color = MaterialTheme.colorScheme.outlineVariant
+    )
+}
+
+private val SettingsCardShape = RoundedCornerShape(14.dp)
+private val SettingsRowPadding = PaddingValues(horizontal = MakSpacing.lg, vertical = MakSpacing.md)
+
+@Composable
+private fun SettingsRowText(title: String, lines: List<String>, modifier: Modifier = Modifier) {
+    Column(modifier = modifier, verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+        lines.filter { it.isNotBlank() }.forEach { line ->
+            Text(
+                text = line,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
 @Composable
 private fun SettingsNavigationRow(
     title: String,
@@ -268,29 +344,13 @@ private fun SettingsNavigationRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
+            .heightIn(min = 56.dp)
             .clickable(onClick = onClick)
-            .padding(vertical = MakSpacing.sm),
+            .padding(SettingsRowPadding),
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+        horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-            if (value.isNotBlank()) {
-                Text(
-                    text = value,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-            if (!details.isNullOrBlank()) {
-                Text(
-                    text = details,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
-        }
+        SettingsRowText(title, listOfNotNull(value, details), Modifier.weight(1f))
         Icon(
             imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
             contentDescription = "Otwórz $title",
@@ -306,21 +366,25 @@ private fun SettingsActionRow(
     enabled: Boolean,
     onClick: () -> Unit
 ) {
-    Column(
+    Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
+            .heightIn(min = 56.dp)
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .alpha(if (enabled) 1f else 0.6f)
-            .padding(vertical = MakSpacing.sm),
-        verticalArrangement = Arrangement.Center
+            .padding(SettingsRowPadding),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
-        Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-        Text(
-            text = value,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        SettingsRowText(title, listOf(value), Modifier.weight(1f).alpha(if (enabled) 1f else 0.6f))
+        if (enabled) {
+            Icon(
+                imageVector = Icons.Outlined.Refresh,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        } else {
+            CircularProgressIndicator(modifier = Modifier.size(20.dp), strokeWidth = 2.dp)
+        }
     }
 }
 
@@ -334,20 +398,13 @@ private fun SettingsSwitchRow(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .heightIn(min = 48.dp)
+            .heightIn(min = 56.dp)
             .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
-            .padding(vertical = MakSpacing.sm),
+            .padding(SettingsRowPadding),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
-        Column(modifier = Modifier.weight(1f)) {
-            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
-            Text(
-                text = details,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
+        SettingsRowText(title, listOf(details), Modifier.weight(1f))
         Switch(checked = checked, onCheckedChange = null)
     }
 }
