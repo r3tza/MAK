@@ -67,7 +67,7 @@ Repozytorium zawiera aplikację Android w wersji 0.1, konfigurację Gradle, loka
 ### Wydania i licencja (decyzja z 2026-09-27)
 
 - Repozytorium `r3tza/MAK` jest publiczne. Kod ma licencję Apache 2.0 (`LICENSE`), a właścicielem praw w `NOTICE` jest `r3tza`. Licencja nie obejmuje nazwy „MAK” ani ikony. Historia gita zostaje bez zmian, razem z adresem e-mail autora w commitach.
-- Wydanie budują GitHub Actions po wypchnięciu tagu `v<major>.<minor>.<patch>`. Wydaniem jest zawsze wersja release, bo wersja debug wczytuje dane demonstracyjne.
+- Wydanie budują GitHub Actions po wypchnięciu tagu `v<major>.<minor>.<patch>`. Workflow uruchamia testy i tworzy szkic GitHub Release; użytkownik publikuje go ręcznie po sprawdzeniu plików. Wydaniem jest zawsze wersja release, bo wersja debug wczytuje dane demonstracyjne.
 - Jeden klucz podpisu release na zawsze. Klucz generuje użytkownik lokalnie; jest przechowywany w sekretach GitHuba i w dwóch kopiach poza nim. Nie trafia do repozytorium ani do rozmowy z agentem. Utrata klucza uniemożliwia aktualizację bez odinstalowania aplikacji i utraty lokalnych danych.
 - `versionCode` rośnie z każdym wydaniem i jest wyliczany z tagu. Wydanie z niższym albo równym `versionCode` jest odrzucane.
 - GitHub Release zawiera APK i plik `update.json` z wersją, adresem APK i sumą SHA-256. Aplikacja czyta tylko ten plik, bez API GitHuba i bez tokenu.

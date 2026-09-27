@@ -130,7 +130,7 @@ jobs:
           )
           PY
 
-      - name: Publish GitHub release
+      - name: Create draft GitHub release
         env:
           GH_TOKEN: ${{ github.token }}
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
@@ -140,6 +140,7 @@ jobs:
           release-assets/update.json
           --verify-tag
           --generate-notes
+          --draft
           --title "MAK ${VERSION_NAME}"
 
       - name: Remove release key

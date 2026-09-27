@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Szkic przed publikacją wydania (I-35)
+
+- Fakty: Workflow wydań uruchamia testy, buduje i podpisuje APK oraz tworzy `update.json` po wypchnięciu taga. Bez dodatkowej bramki udany przebieg publikowałby wydanie od razu.
+- Decyzja: Workflow tworzy szkic GitHub Release. Użytkownik sprawdza APK, `update.json`, sumę SHA-256 i opis, a następnie ręcznie publikuje wydanie.
+- Powód: Test taga ma sprawdzić pełny proces i pliki bez publicznego udostępniania niedokończonej wersji. Ręczna publikacja pozostawia użytkownikowi ostatnią decyzję.
+- Odrzucone: Natychmiastowa publikacja po samym przejściu testów; publiczne wydanie testowe `v0.1.0` przed ukończeniem mechanizmu aktualizacji.
+
 ## 2026-09-27: Polskie zasoby aktywności i kolejność prac (I-44, I-26)
 
 - Fakty: Przy angielskim języku telefonu wybór daty pokazywał „Select date” i angielskie nazwy, a nagłówki dni tygodnia nakładały się na siebie. Teksty pochodziły z zasobów Material 3 w języku systemu.
@@ -145,11 +152,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Nagłówek ma otwierać hierarchię karty, a stan pustego dnia jest najważniejszą informacją i nie powinien stać na końcu.
 - Odrzucone: Zmiana gradientu, rozmiaru liczb i układu kolumn.
 - Weryfikacja: `TodayScreenTest` sprawdza nagłówek z semantyką w obu stanach i brak drugiego tekstu. Odbiór wyglądu na urządzeniu należy do O-05.
-
-## 2026-09-23: Notatka do wystąpienia podąża za terminem
-
-- Fakty: Audyt z 2026-09-23 wykazał, że notatka do wystąpienia jest przypięta do daty faktycznej. Po przeniesieniu terminu zostaje pod starą datą i nie jest widoczna nigdzie. Identyfikator wystąpienia także opierał się na dacie faktycznej, więc termin przeniesiony na dzień zwykłego terminu tych samych zajęć miał ten sam identyfikator (I-08).
-- Decyzja: Użytkownik zdecydował, że notatka podąża za przeniesionym terminem. `OccurrenceNote.occurrenceDate` oznacza datę oryginalną terminu, a wystąpienie identyfikują zajęcia i data oryginalna. Istniejące notatki przepina migracja Room v2 do v3 i import pliku w wersji 2, obie przez jedną funkcję. Przy niejednoznacznym przypadku notatka zostaje, a przy konflikcie treści są łączone, nie usuwane.
-- Powód: Notatka opisuje konkretny termin zajęć, nie dzień w kalendarzu. Tożsamość przez datę oryginalną jest unikalna i odpowiada praktyce iCalendar (`RECURRENCE-ID`).
-- Odrzucone: Pozostawienie notatki przy dacie zapisu; przenoszenie notatki w repozytorium przy każdej zmianie terminu; zmiana nazwy kolumny `occurrence_date`.
-- Weryfikacja: Do wykonania w I-08 i I-09 według `PLAN.md`, kroki 1 i 5.
