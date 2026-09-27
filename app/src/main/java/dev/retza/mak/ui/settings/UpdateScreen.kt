@@ -91,7 +91,8 @@ private fun AvailableUpdate(
     AboutSection("Dostępna wersja ${update.versionName}") {
         Text("Zainstalowana: ${state.installedVersionName}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text("Zmiany", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
-        Text(update.notes.ifBlank { "Brak informacji" })
+        val notes = releaseNoteLines(update.notes)
+        if (notes.isEmpty()) Text("Brak informacji") else BulletList(notes)
     }
     when (state.downloadStatus) {
         UpdateDownloadStatus.Idle -> MakPrimaryAction("Pobierz aktualizację", onDownload)
@@ -129,3 +130,7 @@ private fun DownloadError(message: String, onRetry: (() -> Unit)?) {
     MakNoteBanner("Aktualizacja", message)
     onRetry?.let { MakSecondaryAction("Pobierz ponownie", it) }
 }
+
+/** `update.json` notes hold one change per line; older releases may have none. */
+internal fun releaseNoteLines(notes: String): List<String> =
+    notes.lines().map { it.trim().removePrefix("- ").trim() }.filter { it.isNotEmpty() }

@@ -1,0 +1,26 @@
+{
+  "minorChanges": "Pomniejsze poprawki",
+  "releases": [
+    {
+      "version": "0.2.0",
+      "date": "2026-09-27",
+      "changes": [
+        "Dodano aktualizacje z poziomu aplikacji: ręczne lub automatyczne sprawdzanie, pobieranie i instalację.",
+        "Dodano widget z planem na dziś oraz powiadomienia o kolizjach dzień wcześniej i przed zajęciami.",
+        "Dodano osobne kalendarze tygodni dla kierunków, liczenie okienek i import kopii zapasowej z podglądem.",
+        "Dodano edycję nazw i kolorów kierunków.",
+        "Notatka do terminu zostaje przy terminie po jego przeniesieniu.",
+        "Nowe logo, ekran startowy i uporządkowane ustawienia; lepsza czytelność przy dużej czcionce i obsługa klawiatury."
+      ]
+    },
+    {
+      "version": "0.1.0",
+      "date": "2026-09-19",
+      "changes": [
+        "Dodano semestry, kierunki oraz widoki Dzisiaj, Plan i kalendarz.",
+        "Dodano tygodnie A/B, korekty oraz zmiany pojedynczych terminów.",
+        "Dodano notatki do zajęć i terminów oraz eksport planu do JSON."
+      ]
+    }
+  ]
+}

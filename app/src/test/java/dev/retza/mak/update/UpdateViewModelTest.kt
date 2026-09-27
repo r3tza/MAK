@@ -19,10 +19,18 @@ class UpdateViewModelTest {
 
     @Test
     fun exposesInstalledVersionAndKnownHistory() {
-        val viewModel = viewModel(UpdateCheckResult.NetworkError, versionName = "0.1.0")
+        val releases = listOf(
+            ReleaseHistoryEntry("0.2.0", "2026-09-27", listOf("Nowość")),
+            ReleaseHistoryEntry("0.1.0", "2026-09-19", listOf("Start", "Plan", "Notatki"))
+        )
+        val viewModel = testUpdateViewModel(
+            UpdateCheckService { UpdateCheckResult.NetworkError },
+            appInfo("0.1.0"),
+            releaseNotes = ReleaseNotesProvider { releases }
+        )
 
         assertEquals("0.1.0", viewModel.state.value.installedVersionName)
-        assertEquals(1, viewModel.state.value.releaseHistory.size)
+        assertEquals(listOf("0.1.0"), viewModel.state.value.releaseHistory.map { it.versionName })
         assertEquals(3, viewModel.state.value.releaseHistory.first().changes.size)
     }
 
@@ -48,7 +56,7 @@ class UpdateViewModelTest {
     fun ignoresSecondCheckWhileFirstIsRunning() = runTest {
         val gate = CompletableDeferred<Unit>()
         var calls = 0
-        val viewModel = UpdateViewModel(
+        val viewModel = testUpdateViewModel(
             checker = UpdateCheckService {
                 calls += 1
                 gate.await()
@@ -69,8 +77,28 @@ class UpdateViewModelTest {
     private fun viewModel(
         result: UpdateCheckResult,
         versionName: String = "0.1.0"
-    ) = UpdateViewModel(UpdateCheckService { result }, appInfo(versionName))
+    ) = testUpdateViewModel(UpdateCheckService { result }, appInfo(versionName))
 }
+
+private fun testUpdateViewModel(
+    checker: UpdateCheckService,
+    appInfoProvider: InstalledAppInfoProvider,
+    releaseNotes: ReleaseNotesProvider = ReleaseNotesProvider { emptyList() }
+) = UpdateViewModel(
+    checker = checker,
+    appInfoProvider = appInfoProvider,
+    downloader = ApkDownloader { _, _ -> ApkDownloadResult.NetworkError },
+    verifier = ApkVerifier { _, _ -> ApkVerificationResult.Corrupted },
+    installer = object : UpdateInstaller {
+        override fun canInstallPackages() = false
+        override fun permissionIntent() = android.content.Intent()
+        override fun install(file: java.io.File) = Unit
+    },
+    installEvents = InstallEventStore(),
+    preferences = null,
+    clock = java.time.Clock.systemUTC(),
+    releaseNotes = releaseNotes
+)
 
 private fun appInfo(versionName: String) = InstalledAppInfoProvider {
     InstalledAppInfo(versionName, 100, "dev.retza.mak", 36)

@@ -24,9 +24,12 @@ import dev.retza.mak.update.UpdateViewModel
 import dev.retza.mak.update.UpdatePreferences
 import dev.retza.mak.update.ApkDownloader
 import dev.retza.mak.update.ApkVerifier
+import dev.retza.mak.update.ReleaseNotesProvider
 import dev.retza.mak.update.UpdateInstaller
 import java.time.Clock
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
+import org.junit.Assert.assertSame
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.koin.core.context.GlobalContext
@@ -65,4 +68,22 @@ class KoinGraphTest {
         assertNotNull(koin.get<TodayViewModel>())
         assertNotNull(koin.get<UpdateViewModel>())
     }
+
+    @Test
+    fun updateViewModelGetsInjectedDependencies() {
+        val koin = GlobalContext.get()
+        val viewModel = koin.get<UpdateViewModel>()
+
+        // The Koin compiler plugin keeps constructor defaults, so a default would silently replace
+        // the real downloader, installer or event store.
+        assertSame(koin.get<ApkDownloader>(), viewModel.field("downloader"))
+        assertSame(koin.get<ApkVerifier>(), viewModel.field("verifier"))
+        assertSame(koin.get<UpdateInstaller>(), viewModel.field("installer"))
+        assertSame(koin.get<Clock>(), viewModel.field("clock"))
+        assertFalse(koin.get<ReleaseNotesProvider>().load().isEmpty())
+        assertFalse(viewModel.state.value.releaseHistory.isEmpty())
+    }
+
+    private fun Any.field(name: String): Any? =
+        javaClass.getDeclaredField(name).apply { isAccessible = true }.get(this)
 }

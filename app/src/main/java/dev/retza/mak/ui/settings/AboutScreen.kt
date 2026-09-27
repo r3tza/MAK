@@ -209,7 +209,7 @@ private fun ReleaseEntry(entry: ReleaseHistoryEntry, isInstalled: Boolean) {
 }
 
 @Composable
-private fun BulletList(items: List<String>) {
+internal fun BulletList(items: List<String>) {
     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
         items.forEach { item ->
             Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)) {

@@ -47,19 +47,21 @@ data class UpdateUiState(
 class UpdateViewModel(
     private val checker: UpdateCheckService,
     appInfoProvider: InstalledAppInfoProvider,
-    private val downloader: ApkDownloader = ApkDownloader { _, _ -> ApkDownloadResult.NetworkError },
-    private val verifier: ApkVerifier = ApkVerifier { _, _ -> ApkVerificationResult.Corrupted },
-    private val installer: UpdateInstaller = NoOpUpdateInstaller,
-    installEvents: InstallEventStore = InstallEventStore(),
-    private val preferences: UpdatePreferences? = null,
-    private val clock: Clock = Clock.systemUTC()
+    // No default values: the Koin compiler plugin keeps a parameter's default instead of injecting it.
+    private val downloader: ApkDownloader,
+    private val verifier: ApkVerifier,
+    private val installer: UpdateInstaller,
+    installEvents: InstallEventStore,
+    private val preferences: UpdatePreferences?,
+    private val clock: Clock,
+    releaseNotes: ReleaseNotesProvider
 ) : ViewModel() {
     private val appInfo = appInfoProvider.get()
     private val mutableState = MutableStateFlow(
         UpdateUiState(
             installedVersionName = appInfo.versionName,
             installedVersionCode = appInfo.versionCode,
-            releaseHistory = releaseHistoryFor(appInfo.versionName)
+            releaseHistory = releaseHistoryFor(appInfo.versionName, releaseNotes.load())
         )
     )
     val state: StateFlow<UpdateUiState> = mutableState.asStateFlow()
@@ -190,12 +192,6 @@ class UpdateViewModel(
         file.delete()
         mutableState.update { it.copy(downloadStatus = status) }
     }
-}
-
-private object NoOpUpdateInstaller : UpdateInstaller {
-    override fun canInstallPackages() = false
-    override fun permissionIntent() = android.content.Intent()
-    override fun install(file: File) = Unit
 }
 
 private fun UpdateUiState.withCheckResult(result: UpdateCheckResult, hideAutomaticError: Boolean = false): UpdateUiState = when (result) {

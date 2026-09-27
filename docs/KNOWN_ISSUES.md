@@ -4,8 +4,9 @@ Stan na 2026-09-27. Ten rejestr obejmuje otwarte problemy potwierdzone przegląd
 
 ## Otwarte problemy
 
-1. **Systemowa kopia zapasowa (I-14).** Aplikacja ma `allowBackup="true"`, a reguły kopii to szablony, więc baza i ustawienia mogą trafiać do kopii Google. Czeka na decyzję użytkownika.
-2. **Separator w karcie zajęć (O-05).** `FEATURES.md` („Struktura karty zajęć”) wymaga subtelnego pionowego separatora między kolumną godzin a danymi, a karta go nie ma. Do rozstrzygnięcia przy odbiorze: dodać separator albo zmienić opis.
+1. **Aktualizacja z poziomu aplikacji w 0.2.0.** W wydaniu 0.2.0 `UpdateViewModel` dostał z Koin atrapę pobierania i instalacji, więc „Pobierz aktualizację” zawsze kończy się komunikatem „Pobieranie zostało przerwane.”. Sprawdzanie wersji działa. Poprawka jest w kodzie po 0.2.0 i trafi do 0.2.1. Kto ma 0.2.0, instaluje 0.2.1 ręcznie z GitHub Releases na istniejącą aplikację; dane zostają, bo podpis jest ten sam.
+2. **Systemowa kopia zapasowa (I-14).** Aplikacja ma `allowBackup="true"`, a reguły kopii to szablony, więc baza i ustawienia mogą trafiać do kopii Google. Czeka na decyzję użytkownika.
+3. **Separator w karcie zajęć (O-05).** `FEATURES.md` („Struktura karty zajęć”) wymaga subtelnego pionowego separatora między kolumną godzin a danymi, a karta go nie ma. Do rozstrzygnięcia przy odbiorze: dodać separator albo zmienić opis.
 
 ## Wymagają odbioru na urządzeniu
 

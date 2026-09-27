@@ -123,7 +123,7 @@ Wspólny `ActivePlanProvider` składa aktywny plan dla daty z modeli domenowych,
 
 Pakiety w jednym module Gradle: `data`, `domain`, `ui`, `widget`, `export`. ViewModele żyją przy ekranach w `ui`. Nie tworzymy wielu osobnych modułów Gradle bez konkretnej potrzeby, ponieważ zwiększyłyby koszt przebudowy i konfiguracji. Nowy moduł Gradle powstaje dopiero wtedy, gdy ma niezależny cykl zmian, testów albo wyraźną granicę zależności.
 
-Koin 4.2 składa graf zależności na granicy aplikacji po aktualizacji projektu do zgodnego stabilnego zestawu narzędzi. Klasy otrzymują zależności przez konstruktor; nie pobierają ich z globalnego kontenera. `get()` i `koinInject()` mogą wystąpić wyłącznie w definicjach Koin albo na granicy hosta, który pobiera ViewModel. Compiler plugin sprawdza pełną konfigurację podczas kompilacji.
+Koin 4.2 składa graf zależności na granicy aplikacji po aktualizacji projektu do zgodnego stabilnego zestawu narzędzi. Klasy otrzymują zależności przez konstruktor bez wartości domyślnych dla zależności z grafu; nie pobierają ich z globalnego kontenera. `get()` i `koinInject()` mogą wystąpić wyłącznie w definicjach Koin albo na granicy hosta, który pobiera ViewModel. Compiler plugin sprawdza pełną konfigurację podczas kompilacji.
 
 `NavController` jest jedynym źródłem bieżącej trasy. ViewModel może zgłaszać jednorazowy zamiar nawigacji po zakończeniu operacji, ale nie przechowuje kopii aktualnej trasy. Publiczny stan UI zawiera modele prezentacyjne i potrzebne identyfikatory, a nie encje Room ani relacje bazy.
 

@@ -45,7 +45,7 @@ Dokumentacja produktu, architektury i procesu pracy zaczyna się w [docs/MAP.md]
 
 ## Stan projektu
 
-Projekt jest aktywnie rozwijany. Pierwsze publiczne wydanie to 0.2.0; wersje przed 1.0 mogą zawierać błędy, dlatego warto regularnie robić kopię zapasową planu. Lista bieżących prac znajduje się w [docs/QUEUE.md](docs/QUEUE.md), a zmiany wydane użytkownikom w [docs/CHANGELOG.md](docs/CHANGELOG.md).
+Projekt jest aktywnie rozwijany. Pierwsze publiczne wydanie to 0.2.0; wersje przed 1.0 mogą zawierać błędy, dlatego warto regularnie robić kopię zapasową planu. Lista bieżących prac znajduje się w [docs/QUEUE.md](docs/QUEUE.md), a opis zmian w kolejnych wersjach na stronie [wydań](https://github.com/r3tza/MAK/releases) i w aplikacji, w „O aplikacji”.
 
 ## Licencja
 

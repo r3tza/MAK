@@ -70,6 +70,34 @@ jobs:
           echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
           echo "version_name=${tag#v}" >> "$GITHUB_OUTPUT"
 
+      - name: Read release notes
+        shell: bash
+        env:
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          NOTES_DIR: ${{ runner.temp }}
+        run: |
+          python3 - <<'PY'
+          import json
+          import os
+          import sys
+          from pathlib import Path
+
+          # The app shows the same file under "Ostatnie zmiany"; a release must describe itself there.
+          notes = json.loads(Path("app/src/main/assets/release_notes.json").read_text(encoding="utf-8"))
+          version = os.environ["VERSION_NAME"]
+          entry = next((release for release in notes["releases"] if release["version"] == version), None)
+          if entry is None:
+              sys.exit(f"app/src/main/assets/release_notes.json has no entry for {version}.")
+          changes = [change.strip() for change in entry.get("changes", []) if change.strip()]
+          if not changes:
+              changes = [notes["minorChanges"]]
+          notes_dir = Path(os.environ["NOTES_DIR"])
+          (notes_dir / "update-notes.txt").write_text("\n".join(changes), encoding="utf-8")
+          body = "\n".join(f"- {change}" for change in changes)
+          body += "\n\nInstalacja: pobierz plik APK z sekcji Assets i postępuj według sekcji „Instalacja” w README.\n"
+          (notes_dir / "release-notes.md").write_text(body, encoding="utf-8")
+          PY
+
       - name: Restore release key
         shell: bash
         env:
@@ -104,6 +132,7 @@ jobs:
           VERSION_NAME: ${{ steps.version.outputs.version_name }}
           RELEASE_TAG: ${{ github.ref_name }}
           MIN_SDK: "31"
+          UPDATE_NOTES_FILE: ${{ runner.temp }}/update-notes.txt
         run: |
           mkdir -p release-assets
           apk_name="MAK-${VERSION_NAME}.apk"
@@ -122,7 +151,7 @@ jobs:
               "apkUrl": os.environ["APK_URL"],
               "sha256": os.environ["APK_SHA256"],
               "minSdk": int(os.environ["MIN_SDK"]),
-              "notes": "",
+              "notes": Path(os.environ["UPDATE_NOTES_FILE"]).read_text(encoding="utf-8"),
           }
           Path("release-assets/update.json").write_text(
               json.dumps(update_info, ensure_ascii=False, indent=2) + "\n",
@@ -139,7 +168,7 @@ jobs:
           "release-assets/MAK-${VERSION_NAME}.apk"
           release-assets/update.json
           --verify-tag
-          --generate-notes
+          --notes-file "${{ runner.temp }}/release-notes.md"
           --draft
           --title "MAK ${VERSION_NAME}"
 

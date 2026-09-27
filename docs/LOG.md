@@ -4,6 +4,17 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Błąd wstrzykiwania w aktualizatorze 0.2.0 (I-52)
+
+- Fakty: Przy przejściu historii wydań na plik okazało się, że Koin compiler plugin zostawia wartości domyślne parametrów konstruktora zamiast wstrzykiwać bindingi, bez błędu kompilacji. `UpdateViewModel` w wydaniu 0.2.0 ma atrapę pobierania, weryfikacji i instalacji, własny `InstallEventStore` i `Clock.systemUTC()`. Sprawdzanie wersji działa, ale pobranie zawsze kończy się błędem. Testy JVM tego nie wykryły, bo same korzystały z wartości domyślnych, a `KoinGraphTest` sprawdzał tylko, że ViewModel się tworzy.
+- Decyzja: Konstruktor `UpdateViewModel` nie ma wartości domyślnych, testy przekazują atrapy jawnie, a `KoinGraphTest` porównuje pola z instancjami z grafu. Zasada braku wartości domyślnych w klasach tworzonych przez Koin jest w `STACK.md` i `ARCHITECTURE.md`. Wydanie 0.2.1 z poprawką instaluje się ręcznie na 0.2.0, a pierwszy odbiór aktualizacji z aplikacji (O-07) obejmuje przejście z 0.2.1 na 0.2.2.
+
+## 2026-09-27: Notatki wydań dla użytkowników (I-51)
+
+- Fakty: Opis zmian jednej wersji był w historii w kodzie aplikacji, w `docs/CHANGELOG.md` i w opisie wydania na GitHubie, a `update.json` miał puste notatki. `CHANGELOG.md` zawiera zmiany techniczne, których użytkownik nie odczuwa.
+- Decyzja: Jedno źródło notatek dla użytkowników w `app/src/main/assets/release_notes.json`. Czyta je aplikacja („O aplikacji”) oraz workflow (`update.json` i opis wydania). Pusta lista zmian oznacza „Pomniejsze poprawki”; brak wpisu dla wersji z tagu przerywa workflow. `CHANGELOG.md` zostaje techniczną historią dla agentów (`STACK.md`, `AGENTS.md`). Użytkownik zaakceptował wariant 2026-09-27.
+- Odrzucone: `CHANGELOG.md` jako źródło (treść techniczna), opis wydania na GitHubie jako źródło (`update.json` powstaje przed jego edycją, historia w aplikacji wymagałaby sieci) oraz generowanie kodu Kotlina z pliku przy budowaniu.
+
 ## 2026-09-27: Kolejne kierunki w kreatorze (I-50)
 
 - Fakty: Kreator tworzył tylko jeden kierunek i przechodził do zajęć. Osoba studiująca dwa kierunki musiała sama znaleźć dodawanie kierunków w ustawieniach semestru, a formularz zajęć pozwala wybrać tylko kierunki przypisane do semestru.
@@ -130,17 +141,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: Użytkownik wybrał 2026-09-27 konfigurację bez aktywacji. Aktywny semestr zmienia tylko wybór w ustawieniach albo kreator (`DOMAIN.md`). Trasy semestru wołają `openIfNeeded`, a wejście z listy semestrów `open`.
 - Powód: Zgodność z decyzją I-18: dodanie lub edycja przyszłego semestru nie może przełączać bieżącego planu.
 - Odrzucone: pytanie o aktywację przy każdym otwarciu nieaktywnego semestru, bo dodaje dialog do rzadkiej czynności bez korzyści dla danych.
-
-## 2026-09-27: Granice kontrolek, nazwy notatek i wyjątki rozmiaru (I-31, I-32, I-33)
-
-- Fakty: Audyt interfejsu z 2026-09-27 wykazał kontrast granic kontrolek 1,22:1 w jasnym i 1,45:1 w ciemnym motywie, dwie pary nazw tych samych notatek oraz dni w siatce tygodnia i kalendarza poniżej 48 dp i tekst widgetu 10 sp.
-- Decyzja: `outline` rysuje granice kontrolek i ma kontrast co najmniej 3:1 (`#808A9E` w jasnym, `#707D99` w ciemnym motywie); karty, separatory i ramki dekoracyjne używają `outlineVariant` (`#E4E9F1`, `#38445B`). Ramka przycisku ikony i pola wyboru ma 1 dp, a focus 2 dp w kolorze `primary`. Notatki nazywają się wszędzie „Notatka do zajęć” i „Notatka do terminu”, bo notatka należy do terminu i przechodzi z nim po przeniesieniu (`DOMAIN.md`). Komórka siatki siedmiu dni ma co najmniej 40 dp szerokości i 48 dp wysokości; widget używa tekstu co najmniej 11 sp. Użytkownik zaakceptował wariant granic, ujednolicenie nazw i wyjątki 2026-09-27.
-- Powód: WCAG 1.4.11 wymaga 3:1 dla granic kontrolek. „Notatka na dziś” była błędna przy innych dniach w „Planie”. Siedem kolumn po 48 dp nie mieści się w 288 dp treści przy 320 dp; 40 dp odpowiada komórkom wyboru daty Material 3. Widget ma mało miejsca, a 10 sp było za małe.
-- Odrzucone: „Notatka do daty”, bo po przeniesieniu terminu notatka nie należy do daty; przewijana siatka dni; tekst widgetu 12 sp bez sprawdzenia układu na launcherze.
-
-## 2026-09-26: Drobne poprawki z audytu i wersje bibliotek (I-20)
-
-- Fakty: Audyt z 2026-09-25 wskazał usuwanie korekty i kalendarza bez potwierdzenia, formularz korekty przyjmujący dowolny dzień, prośbę o nieistniejącą na Androidzie 12 zgodę `POST_NOTIFICATIONS`, nieaktualne Core KTX i Navigation oraz eksport w trybie `w`.
-- Decyzja: Usuwanie korekty i nieużywanego kalendarza wymaga potwierdzenia w dialogu, bo snackbar nie obsługuje akcji cofnięcia. Data korekty jest zapisywana jako poniedziałek wybranego tygodnia. Na API poniżej 33 aplikacja otwiera systemowe ustawienia powiadomień aplikacji. Core KTX podniesiono do 1.19.1, Navigation do 2.10.2, a eksport otwiera plik trybem `wt`.
-- Powód: Kotlin 2.4.20 nie został użyty, bo 2026-09-26 najnowsze wersje to Koin compiler plugin 1.2.1 i KSP 2.3.12, obie zweryfikowane dla Kotlin 2.3.20 (`STACK.md`). Aktualizację Kotlin trzeba wykonać razem z nowymi wersjami obu narzędzi.
-- Odrzucone: Cofanie usunięcia w komunikacie, bo wymagałoby rozbudowy wspólnego mechanizmu komunikatów dla dwóch rzadkich akcji.

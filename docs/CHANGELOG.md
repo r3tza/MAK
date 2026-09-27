@@ -1,5 +1,7 @@
 # MAK: historia wydań
 
+Techniczna historia wydań dla agentów. Notatki dla użytkowników są w `app/src/main/assets/release_notes.json`.
+
 ## 0.2.0, 2026-09-27
 
 Pierwsze publiczne wydanie w GitHub Releases.

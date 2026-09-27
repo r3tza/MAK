@@ -9,7 +9,8 @@ Te zasady obowiązują w całym repozytorium. Szczegóły produktu znajdują si�
 - `docs/FEATURES.md` - zachowanie ekranów, widgetu i scenariusze odbioru.
 - `docs/ARCHITECTURE.md` - granice systemu, terminologia i zasady interfejsu.
 - `docs/STACK.md` - języki, narzędzia, środowisko, testy i odrzucone alternatywy.
-- `docs/CHANGELOG.md` - zmiany wydane użytkownikom.
+- `docs/CHANGELOG.md` - techniczna historia wydań dla agentów.
+- `app/src/main/assets/release_notes.json` - notatki wydań dla użytkowników: aplikacja, `update.json` i opis wydania na GitHubie.
 - `docs/LOG.md` - 20 ostatnich wpisów o decyzjach i zmianach; starsze wpisy są w `docs/log_archive/`.
 - `docs/PLAN.md` - najwyżej pięć najbliższych kroków wykonawczych.
 - `docs/QUEUE.md` - bieżące zadania, zależności i oddzielne statusy implementacji oraz odbioru.
@@ -57,7 +58,7 @@ Nie traktuj propozycji z rozmowy jako decyzji, dopóki użytkownik jej nie zaakc
 
 Nie implementuj elementów oznaczonych jako pytania otwarte lub poza zakresem bez decyzji użytkownika.
 
-Po zaakceptowanej zmianie architektury, stosu lub zasad pracy zaktualizuj właściwy dokument i dodaj wpis do `docs/LOG.md`. Utrzymuj tam najwyżej 20 wpisów; starsze przenoś do `docs/log_archive/`. `docs/CHANGELOG.md` aktualizuj dopiero po wydaniu zmiany użytkownikom.
+Po zaakceptowanej zmianie architektury, stosu lub zasad pracy zaktualizuj właściwy dokument i dodaj wpis do `docs/LOG.md`. Utrzymuj tam najwyżej 20 wpisów; starsze przenoś do `docs/log_archive/`. `docs/CHANGELOG.md` aktualizuj dopiero po wydaniu zmiany użytkownikom. Przed tagiem wydania dodaj wpis do `app/src/main/assets/release_notes.json`: tylko zmiany odczuwalne dla użytkownika, prostym językiem; bez takich zmian zostaw pustą listę, a aplikacja i workflow pokażą „Pomniejsze poprawki”. Tekst wpisu zatwierdza użytkownik.
 
 ## Preferencje projektowe użytkownika
 

@@ -13,7 +13,7 @@ Zacznij od pytania, które rozwiązuje zadanie. Otwórz wskazany dokument i potr
 | Co jest gotowe w kodzie, ale czeka na urządzenie? | [QUEUE.md](QUEUE.md): osobne pozycje odbioru; szczegółowe scenariusze w [FEATURES.md](FEATURES.md) |
 | Jak rozpocząć, sprawdzić i zakończyć zadanie? | [WORKFLOW.md](WORKFLOW.md): kolejność pracy i znaczenie statusów |
 | Co ostatnio zmieniono i dlaczego? | [LOG.md](LOG.md): najwyżej 20 ostatnich wpisów, czytaj kilka górnych. Starsze wpisy są w [archiwum](log_archive/2026.md); log nie zastępuje obowiązujących reguł |
-| Co zostało wydane użytkownikom? | [CHANGELOG.md](CHANGELOG.md): zmiany wydane, nie bieżąca kolejka prac |
+| Co zostało wydane użytkownikom? | [CHANGELOG.md](CHANGELOG.md): techniczna historia wydań, nie bieżąca kolejka prac. Notatki dla użytkowników są w `app/src/main/assets/release_notes.json` ([STACK.md](STACK.md), sekcja „Wydania i licencja”) |
 | Jakie braki potwierdzono w obecnym kodzie? | [KNOWN_ISSUES.md](KNOWN_ISSUES.md): otwarte problemy i brakujący odbiór, nie docelowa specyfikacja |
 | Jak pisać komunikaty i dokumentację? | [WRITING.md](WRITING.md): język, styl i zasady redakcyjne |
 | Jak recenzować commit albo etap planu? | [mak-code-review](../.cursor/skills/mak-code-review/SKILL.md): kryteria recenzji i podział pracy z Composerem |

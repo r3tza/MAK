@@ -23,4 +23,10 @@ class AboutInfoTest {
         assertFalse(isPreRelease("1.0.0"))
         assertFalse(isPreRelease("nieznana"))
     }
+
+    @Test
+    fun updateNotesSplitIntoLinesWithoutEmptyOnes() {
+        assertEquals(listOf("Nowość", "Poprawka"), releaseNoteLines("Nowość\n\n- Poprawka\n"))
+        assertEquals(emptyList<String>(), releaseNoteLines(""))
+    }
 }
