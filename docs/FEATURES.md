@@ -4,6 +4,12 @@ Ten dokument opisuje docelowe zachowanie ekranów i widgetu. Bieżące braki są
 
 ## Nawigacja
 
+### Start aplikacji
+
+Przy uruchomieniu Android 12+ pokazuje systemowy ekran startowy z ikoną aplikacji. Aplikacja przytrzymuje go, dopóki nie odczyta zapisanego motywu, najwyżej 1 s. Potem, do czasu wczytania aktywnego planu, widać ekran ładowania z pełną nazwą „Mój Akademicki Kalendarz” na tle motywu; znika on najpóźniej po 2 s i nie wraca po obrocie ekranu. Ekran „Dzisiaj” nie pokazuje stanu „Brak aktywnego semestru”, zanim baza odpowie. Wybrany w aplikacji motyw jest przekazywany systemowi (`UiModeManager.setApplicationNightMode`), więc ekran startowy i tło okna mają ten sam motyw co aplikacja. Tekst nazwy zostanie później zastąpiony logo albo animacją logo; ta zmiana wymaga osobnej decyzji o wyglądzie i o `reduced motion`.
+
+### Dolny pasek
+
 Dolny pasek zawiera trzy pozycje:
 
 - **Dzisiaj** - zajęcia z bieżącego dnia;

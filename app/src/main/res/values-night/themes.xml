@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dark window and splash screen background, so a dark theme does not start with a white frame. -->
+    <style name="Theme.MAK" parent="android:Theme.Material.NoActionBar">
+        <item name="android:statusBarColor">@android:color/transparent</item>
+        <item name="android:navigationBarColor">@android:color/transparent</item>
+        <item name="android:windowBackground">@color/mak_background_dark</item>
+        <item name="android:colorPrimary">@color/mak_accent_dark</item>
+        <item name="android:windowLightStatusBar">false</item>
+    </style>
+</resources>

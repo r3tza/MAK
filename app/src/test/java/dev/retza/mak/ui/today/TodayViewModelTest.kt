@@ -6,6 +6,7 @@ import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
+import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.settings.InMemorySettingsPreferences
 import java.time.Clock
 import java.time.DayOfWeek
@@ -97,6 +98,22 @@ class TodayViewModelTest {
         val state = viewModel.today.value
         assertEquals(2, state.classCount)
         assertEquals(1, state.gapCount)
+    }
+
+    @Test
+    fun startsInLoadingStateInsteadOfEmptyState() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.clearActiveSemester()
+        val viewModel = TodayViewModel(FakeSemesterRepository(repository), repository, InMemorySettingsPreferences(), Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone), ActivePlanProvider())
+
+        assertEquals(ScreenStatus.Loading, viewModel.today.value.status)
+        assertEquals("", viewModel.today.value.dateLabel)
+
+        backgroundScope.launch { viewModel.today.collect {} }
+        advanceUntilIdle()
+
+        assertEquals(ScreenStatus.Ready, viewModel.today.value.status)
+        assertEquals("Brak aktywnego semestru", viewModel.today.value.dateLabel)
     }
 
     @Test

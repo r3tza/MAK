@@ -24,7 +24,7 @@ Audyt objął przegląd wspólnych komponentów i ekranów, obliczenie kontrastu
 1. **Focus klawiatury (I-27).** Każda własna kontrolka ma dwa przystanki Tab, drugi niewidoczny; własna ramka focusu się nie włącza, widać tylko słabą nakładkę.
 2. **Powiększony tekst i 320 dp (I-28).** Godzina karty ucięta do „12:0” przy skali 1,3; etykiety łamane w środku słowa przy skali 2,0; źródło tygodnia ucięte przy 320 dp; pola „Od” i „Do” obok siebie mimo reguły 340 dp.
 3. **Semantyka i kontrast kart (I-29).** TalkBack nie słyszy statusu „Odwołane” ani tygodnia; odwołana karta ma kontrast tekstu pomocniczego 2,68:1; etykiety karty podsumowania 4,09:1; „Dodaj” ma rolę karty.
-4. **Fałszywy stan pusty przy starcie (I-30).** „Brak aktywnego semestru” i jasny ekran przed odczytem motywu ciemnego. Rozwiązanie: systemowy ekran startowy do czasu odczytu danych.
+4. **Fałszywy stan pusty przy starcie (I-30).** Naprawione 2026-09-27: ekran ładowania z pełną nazwą i ekran startowy w motywie aplikacji.
 5. **Granice kontrolek (I-31).** Naprawione 2026-09-27; motyw ciemny do obejrzenia na urządzeniu (O-05).
 6. **Nazwy notatek (I-32).** Naprawione 2026-09-27: „Notatka do zajęć” i „Notatka do terminu”.
 7. **Rozmiary dni i widgetu (I-33).** Wyjątki zapisane i wdrożone 2026-09-27; widget do sprawdzenia na launcherze (O-06).

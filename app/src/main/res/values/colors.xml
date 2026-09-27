@@ -2,4 +2,6 @@
 <resources>
     <color name="mak_paper">#FFFFFFFF</color>
     <color name="mak_accent">#FF334FCE</color>
+    <color name="mak_background_dark">#FF10192B</color>
+    <color name="mak_accent_dark">#FF9AAFFF</color>
 </resources>

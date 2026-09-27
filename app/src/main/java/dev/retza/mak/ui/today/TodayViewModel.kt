@@ -9,6 +9,7 @@ import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.countGaps
 import dev.retza.mak.domain.uniqueCollisionCount
+import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.polishLocale
 import dev.retza.mak.ui.schedule.conflictLabels
 import dev.retza.mak.ui.settings.SettingsPreferences
@@ -23,7 +24,11 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
+
+// Wraps the loaded value so "not loaded yet" (null state) differs from "no active semester".
+private data class LoadedPlan(val data: ActivePlanData?)
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
@@ -40,18 +45,19 @@ class TodayViewModel(
         .flatMapLatest { semester ->
             if (semester == null) flowOf(null) else scheduleRepository.observeActivePlanData(semester.id)
         }
+        .map { LoadedPlan(it) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val today: StateFlow<TodayUiState> = combine(
         activePlanData,
         date,
         preferences.gapThresholdMinutes
-    ) { data, day, thresholdMinutes ->
-        buildToday(data, day, thresholdMinutes)
+    ) { loaded, day, thresholdMinutes ->
+        if (loaded == null) loadingTodayState() else buildToday(loaded.data, day, thresholdMinutes)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
-        initialValue = emptyTodayState()
+        initialValue = loadingTodayState()
     )
 
     fun refreshToday() {
@@ -83,6 +89,14 @@ class TodayViewModel(
         )
     }
 }
+
+// Shown until Room answers, so the screen never claims that there is no active semester too early.
+private fun loadingTodayState() = TodayUiState(
+    dateLabel = "",
+    semesterLabel = "",
+    weekLabel = "",
+    status = ScreenStatus.Loading
+)
 
 private fun emptyTodayState() = TodayUiState(
     dateLabel = "Brak aktywnego semestru",

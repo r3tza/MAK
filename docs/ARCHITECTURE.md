@@ -14,9 +14,9 @@
 
 ## 2. Cel
 
-MAK (Mobilny Akademicki Kalendarz) to lekka aplikacja na Androida do lokalnego zarządzania planem zajęć. Obsługuje wiele kierunków, wiele odizolowanych semestrów, naprzemienne tygodnie A/B, zajęcia jednorazowe, kolizje, powiadomienia oraz widget z dzisiejszym planem.
+MAK (Mój Akademicki Kalendarz) to lekka aplikacja na Androida do lokalnego zarządzania planem zajęć. Obsługuje wiele kierunków, wiele odizolowanych semestrów, naprzemienne tygodnie A/B, zajęcia jednorazowe, kolizje, powiadomienia oraz widget z dzisiejszym planem.
 
-Nazwa produktu to **MAK**. Rozwinięcie „Mobilny Akademicki Kalendarz” jest wyjaśnieniem skrótu, nie drugą nazwą. W interfejsie, na launcherze i w dokumentacji używamy MAK.
+Nazwa produktu to **MAK**. Rozwinięcie „Mój Akademicki Kalendarz” jest wyjaśnieniem skrótu, nie drugą nazwą. W interfejsie, na launcherze i w dokumentacji używamy MAK; pełna nazwa pojawia się na ekranie ładowania.
 
 Plan działa w pełni offline. Jedynym połączeniem sieciowym jest sprawdzanie i pobieranie aktualizacji z GitHub Releases (sekcja 7). Użytkownik nie tworzy konta i nie korzysta z backendu.
 

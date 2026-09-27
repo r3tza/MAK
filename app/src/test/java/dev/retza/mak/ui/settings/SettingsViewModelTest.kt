@@ -61,6 +61,14 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun loadedThemeModeReportsStoredTheme() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository(), InMemorySettingsPreferences(initialTheme = ThemeMode.Dark))
+        advanceUntilIdle()
+
+        assertEquals(ThemeMode.Dark, viewModel.loadedThemeMode.value)
+    }
+
+    @Test
     fun selectThemePersistsAndSelectsOption() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val preferences = InMemorySettingsPreferences()

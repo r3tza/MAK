@@ -4,7 +4,7 @@ Ten dokument określa cel, zakres i kryteria MVP. Zachowanie poszczególnych ekr
 
 ## Cel i zakres
 
-MAK (Mobilny Akademicki Kalendarz) to lekka aplikacja mobilna na Androida do zarządzania planem zajęć, szczególnie przy studiowaniu na dwóch lub większej liczbie kierunków.
+MAK (Mój Akademicki Kalendarz) to lekka aplikacja mobilna na Androida do zarządzania planem zajęć, szczególnie przy studiowaniu na dwóch lub większej liczbie kierunków.
 
 Główne założenia:
 
