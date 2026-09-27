@@ -304,13 +304,29 @@ private fun WidgetOccurrenceRow(
                     ),
                     maxLines = 1
                 )
-                if (widgetShouldShowNote(item, layoutPolicy)) {
-                    Spacer(GlanceModifier.width(4.dp))
-                    WidgetNoteIcon()
-                }
             }
             if (widgetShouldShowConflict(item, layoutPolicy)) {
                 WidgetConflictAlert(item, layoutPolicy)
+            }
+            if (widgetShouldShowNotes(item, layoutPolicy)) {
+                item.classNote?.let {
+                    WidgetNoteLine(
+                        icon = R.drawable.ic_widget_note,
+                        contentDescription = "Notatka do zajęć",
+                        text = it,
+                        layoutPolicy = layoutPolicy,
+                        occurrenceNote = false
+                    )
+                }
+                item.occurrenceNote?.let {
+                    WidgetNoteLine(
+                        icon = R.drawable.ic_widget_calendar,
+                        contentDescription = "Notatka do terminu",
+                        text = it,
+                        layoutPolicy = layoutPolicy,
+                        occurrenceNote = true
+                    )
+                }
             }
         }
     }
@@ -386,13 +402,36 @@ private fun WidgetPhaseLabel(phase: WidgetOccurrencePhase) {
 }
 
 @Composable
-private fun WidgetNoteIcon() {
-    Image(
-        provider = ImageProvider(R.drawable.ic_widget_note),
-        contentDescription = "Notatka",
-        modifier = GlanceModifier.size(12.dp),
-        colorFilter = ColorFilter.tint(GlanceTheme.colors.primary)
-    )
+private fun WidgetNoteLine(
+    icon: Int,
+    contentDescription: String,
+    text: String,
+    layoutPolicy: WidgetLayoutPolicy,
+    occurrenceNote: Boolean
+) {
+    Row(
+        modifier = GlanceModifier.fillMaxWidth().padding(top = 2.dp),
+        verticalAlignment = Alignment.Top
+    ) {
+        Image(
+            provider = ImageProvider(icon),
+            contentDescription = contentDescription,
+            modifier = GlanceModifier.size(12.dp),
+            colorFilter = ColorFilter.tint(
+                if (occurrenceNote) GlanceTheme.colors.tertiary else GlanceTheme.colors.primary
+            )
+        )
+        Spacer(GlanceModifier.width(4.dp))
+        Text(
+            text = truncateWidgetText(text, layoutPolicy.noteCharacterLimit),
+            modifier = GlanceModifier.defaultWeight(),
+            style = TextStyle(
+                color = GlanceTheme.colors.onBackground,
+                fontSize = 11.sp
+            ),
+            maxLines = 1
+        )
+    }
 }
 
 internal fun widgetMetadataLabel(

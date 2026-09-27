@@ -181,7 +181,7 @@ Zmiany mają poprawić hierarchię informacji, czytelność i wykorzystanie dost
 3. Umieścić liczbę zajęć obok etykiety tygodnia albo wyrównać ją do prawej strony nagłówka.
 4. Dodać do wiersza zajęć wąski pasek w kolorze kierunku. Zachować tekstową nazwę kierunku, ponieważ kolor nie może być jedynym nośnikiem informacji.
 5. Użyć stałej kolumny czasu. Obok niej pokazać nazwę zajęć oraz osobny wiersz metadanych z salą i prowadzącym.
-6. Pokazać kolizję jako krótki wiersz ostrzegawczy o czytelnym kontraście, a notatkę jako małą ikonę notatki przy metadanych, z opisem „Notatka” dla czytnika ekranu.
+6. Pokazać kolizję jako krótki wiersz ostrzegawczy o czytelnym kontraście. Notatkę pokazać jak na karcie w aplikacji: osobny wiersz z ikoną i treścią, bez etykiety tekstowej i tła. Notatka do zajęć używa ikony notatki, a notatka do terminu ikony kalendarza.
 7. Oddzielić zajęcia subtelnymi separatorami. Nie umieszczać każdego zajęcia w osobnej karcie.
 8. Dopasować tło do systemowego promienia widgetów Androida.
 
@@ -190,7 +190,7 @@ Zmiany mają poprawić hierarchię informacji, czytelność i wykorzystanie dost
 1. Traktować widget jako kompaktowy, gdy ma mniej niż 240 dp szerokości albo mniej niż 160 dp wysokości.
 2. W wariancie kompaktowym pokazać przewijaną listę dzisiejszych zajęć. Pokazać nazwę, czas i salę, pominąć prowadzącego oraz ikonę notatki, ale zachować alert kolizji.
 3. Jeśli wariant kompaktowy nie mieści wszystkich zajęć, użyć przewijanej listy zamiast tekstu „Jeszcze {liczba}”.
-4. W wariancie rozszerzonym pokazać przewijaną listę dzisiejszych zajęć wraz z salą, prowadzącym i statusem kolizji albo notatki.
+4. W wariancie rozszerzonym pokazać przewijaną listę dzisiejszych zajęć wraz z salą, prowadzącym, kolizją oraz treścią notatek. Jeśli istnieją oba rodzaje notatek, pokazać dwa osobne wiersze.
 5. Wiersze powinny wykorzystać pełną szerokość widgetu. Wariant rozszerzony ma używać większych odstępów i pełniejszych metadanych, a nie tylko zwiększać wysokość listy.
 6. Ograniczać prowadzącego i lokalizację wielokropkiem. Nie ucinać czasu. Nazwa zajęć może zająć dwa wiersze, jeśli pozwala na to wysokość wariantu.
 7. Ograniczyć maksymalny rozmiar widgetu do 360 na 420 dp, aby launcher nie tworzył nadmiernie pustego układu.

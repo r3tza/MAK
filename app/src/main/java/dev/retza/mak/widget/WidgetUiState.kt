@@ -47,7 +47,8 @@ data class WidgetOccurrenceUi(
     val roomLabel: String,
     val teacherName: String?,
     val conflicts: List<WidgetConflictUi>,
-    val hasNote: Boolean,
+    val classNote: String? = null,
+    val occurrenceNote: String? = null,
     val phase: WidgetOccurrencePhase = WidgetOccurrencePhase.Scheduled
 )
 

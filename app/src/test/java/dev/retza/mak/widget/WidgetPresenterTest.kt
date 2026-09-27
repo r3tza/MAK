@@ -125,7 +125,8 @@ class WidgetPresenterTest {
         )
         assertEquals(listOf(WidgetConflictUi("09:30-10:00", "first")), state.items[1].conflicts)
         assertEquals(listOf(WidgetConflictUi("10:15-10:45", "first")), state.items[2].conflicts)
-        assertTrue(state.items[0].hasNote)
+        assertEquals("Stała notatka", state.items[0].classNote)
+        assertNull(state.items[0].occurrenceNote)
         assertEquals("Sala niepodana", state.items[0].roomLabel)
     }
 
@@ -245,7 +246,7 @@ class WidgetPresenterTest {
             roomLabel = "Sala 101",
             teacherName = "Jan Kowalski",
             conflicts = emptyList(),
-            hasNote = true
+            classNote = "Przeczytać rozdział"
         )
 
         assertEquals(
@@ -278,18 +279,18 @@ class WidgetPresenterTest {
             roomLabel = "Sala 101",
             teacherName = "Jan Kowalski",
             conflicts = listOf(WidgetConflictUi("09:30-10:00", "Inny przedmiot")),
-            hasNote = true
+            classNote = "Przeczytać rozdział"
         )
 
         val compactPolicy = widgetLayoutPolicy(widgetLayoutMode(180.dp, 110.dp))
         val mediumPolicy = widgetLayoutPolicy(widgetLayoutMode(180.dp, 175.dp))
         val largePolicy = widgetLayoutPolicy(widgetLayoutMode(180.dp, 240.dp))
         assertTrue(widgetShouldShowConflict(item, compactPolicy))
-        assertFalse(widgetShouldShowNote(item, compactPolicy))
+        assertFalse(widgetShouldShowNotes(item, compactPolicy))
         assertTrue(widgetShouldShowConflict(item, mediumPolicy))
-        assertFalse(widgetShouldShowNote(item, mediumPolicy))
+        assertFalse(widgetShouldShowNotes(item, mediumPolicy))
         assertTrue(widgetShouldShowConflict(item, largePolicy))
-        assertTrue(widgetShouldShowNote(item, largePolicy))
+        assertTrue(widgetShouldShowNotes(item, largePolicy))
     }
 
     @Test

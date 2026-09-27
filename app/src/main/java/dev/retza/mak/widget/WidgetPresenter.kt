@@ -51,8 +51,8 @@ class WidgetPresenter {
                     ).joinToString(", "),
                     teacherName = occurrence.teacherName,
                     conflicts = conflictsByOccurrence[occurrence.id].orEmpty(),
-                    hasNote = !occurrence.classNote.isNullOrBlank() ||
-                        !occurrence.occurrenceNoteBody.isNullOrBlank(),
+                    classNote = occurrence.classNote?.trim()?.ifEmpty { null },
+                    occurrenceNote = occurrence.occurrenceNoteBody?.trim()?.ifEmpty { null },
                     phase = when {
                         !now.isBefore(occurrence.endTime) -> WidgetOccurrencePhase.Past
                         !now.isBefore(occurrence.startTime) -> WidgetOccurrencePhase.Current

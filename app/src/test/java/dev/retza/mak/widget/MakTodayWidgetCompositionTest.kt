@@ -28,8 +28,7 @@ class MakTodayWidgetCompositionTest {
                     courseColor = "#137B71",
                     roomLabel = "Sala 101",
                     teacherName = "Jan Kowalski",
-                    conflicts = emptyList(),
-                    hasNote = false
+                    conflicts = emptyList()
                 )
             }
             val state = WidgetUiState.Ready(
@@ -84,7 +83,7 @@ class MakTodayWidgetCompositionTest {
         }
 
     @Test
-    fun noteIsAnIconAndPhaseAndWeekArePlainText() =
+    fun notesUseIconsAndContentWhilePhaseAndWeekArePlainText() =
         runGlanceAppWidgetUnitTest {
             setAppWidgetSize(DpSize(240.dp, 340.dp))
             val item = WidgetOccurrenceUi(
@@ -97,7 +96,8 @@ class MakTodayWidgetCompositionTest {
                 roomLabel = "Sala 101",
                 teacherName = null,
                 conflicts = emptyList(),
-                hasNote = true,
+                classNote = "Przeczytać rozdział 4",
+                occurrenceNote = "Przynieść materiały",
                 phase = WidgetOccurrencePhase.Current
             )
             val state = WidgetUiState.Ready(
@@ -120,8 +120,10 @@ class MakTodayWidgetCompositionTest {
                 }
             }
 
-            onNode(hasContentDescription("Notatka")).assertExists()
-            onAllNodes(hasText("Notatka")).assertCountEquals(0)
+            onNode(hasContentDescription("Notatka do zajęć")).assertExists()
+            onNode(hasText("Przeczytać rozdział 4")).assertExists()
+            onNode(hasContentDescription("Notatka do terminu")).assertExists()
+            onNode(hasText("Przynieść materiały")).assertExists()
             onNode(hasText("Teraz")).assertExists()
             onNode(hasText("Tydzień A,")).assertExists()
         }

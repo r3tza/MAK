@@ -17,7 +17,8 @@ internal data class WidgetLayoutPolicy(
     val rowSpacing: Dp,
     val statusMode: WidgetStatusMode,
     val includeTeacher: Boolean,
-    val metadataCharacterLimit: Int
+    val metadataCharacterLimit: Int,
+    val noteCharacterLimit: Int
 )
 
 internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
@@ -31,7 +32,8 @@ internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
             rowSpacing = 0.dp,
             statusMode = WidgetStatusMode.ConflictOnly,
             includeTeacher = wide,
-            metadataCharacterLimit = if (wide) 36 else 28
+            metadataCharacterLimit = if (wide) 36 else 28,
+            noteCharacterLimit = if (wide) 44 else 34
         )
         WidgetHeightMode.Medium -> WidgetLayoutPolicy(
             accentHeight = 42.dp,
@@ -41,7 +43,8 @@ internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
             rowSpacing = 4.dp,
             statusMode = WidgetStatusMode.Primary,
             includeTeacher = wide,
-            metadataCharacterLimit = if (wide) 42 else 34
+            metadataCharacterLimit = if (wide) 42 else 34,
+            noteCharacterLimit = if (wide) 52 else 40
         )
         WidgetHeightMode.Large -> WidgetLayoutPolicy(
             accentHeight = 52.dp,
@@ -51,7 +54,8 @@ internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
             rowSpacing = 6.dp,
             statusMode = WidgetStatusMode.All,
             includeTeacher = wide,
-            metadataCharacterLimit = if (wide) 52 else 42
+            metadataCharacterLimit = if (wide) 52 else 42,
+            noteCharacterLimit = if (wide) 64 else 48
         )
         WidgetHeightMode.ExtraLarge -> WidgetLayoutPolicy(
             accentHeight = 52.dp,
@@ -61,7 +65,8 @@ internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
             rowSpacing = 6.dp,
             statusMode = WidgetStatusMode.All,
             includeTeacher = wide,
-            metadataCharacterLimit = if (wide) 52 else 42
+            metadataCharacterLimit = if (wide) 52 else 42,
+            noteCharacterLimit = if (wide) 64 else 48
         )
     }
     return policy
@@ -92,10 +97,10 @@ internal fun widgetShouldShowConflict(
     WidgetStatusMode.All -> item.conflicts.isNotEmpty()
 }
 
-internal fun widgetShouldShowNote(
+internal fun widgetShouldShowNotes(
     item: WidgetOccurrenceUi,
     policy: WidgetLayoutPolicy
-): Boolean = item.hasNote && when (policy.statusMode) {
+): Boolean = (item.classNote != null || item.occurrenceNote != null) && when (policy.statusMode) {
     WidgetStatusMode.ConflictOnly -> false
     WidgetStatusMode.Primary -> item.conflicts.isEmpty()
     WidgetStatusMode.All -> true

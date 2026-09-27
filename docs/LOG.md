@@ -4,6 +4,12 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-28: Treść notatek w widgetcie (I-53)
+
+- Fakty: Rozszerzony widget pokazywał przy metadanych tylko ikonę, że zajęcia mają notatkę. Nie pokazywał treści ani nie rozróżniał notatki do zajęć od notatki do terminu, mimo wolnego miejsca w dużych rozmiarach.
+- Decyzja: W rozszerzonym widgetcie każda notatka ma osobny wiersz z ikoną i treścią, jak na karcie w aplikacji. Notatka do zajęć używa ikony notatki, a notatka do terminu ikony kalendarza. Wariant kompaktowy pomija notatki, aby zachować czas i nazwę zajęć. Użytkownik zlecił wariant 2026-09-28.
+- Weryfikacja: Test prezentera sprawdza treść notatki, a test kompozycji Glance oba rodzaje, ikony i treść. Odbiór rozmiarów i motywów na launcherze należy do O-06.
+
 ## 2026-09-28: Bez strzałek i pilli (I-53)
 
 - Fakty: Opis zmian w szczegółach terminu używał strzałek („Sala: L205 → C12”), a `WRITING.md` sam opisywał wzór ostrzeżeń strzałkami. Poza kartą zajęć pille zostały przy aktywnym semestrze, w kalendarzach i korektach tygodni oraz w „O aplikacji”.
@@ -131,10 +137,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: Po trzech rundach wariantów w artefakcie „Logo MAK: warianty maku” użytkownik wybrał 2026-09-27 wariant M (pięć czerwonych płatków z pofalowanym brzegiem, ciemna makówka, białe tło) i animację „Rozkwit”. Ikona adaptacyjna ma białe tło, kwiat na pierwszym planie i osobną warstwę monochromatyczną, w której przerwy między płatkami i wokół makówki daje zmniejszenie płatków i wycięcie. Ekran startowy używa `windowSplashScreenAnimatedIcon` z białym kołem ikony w obu motywach. `MakPoppyLogo` rysuje ten sam kwiat w Compose na ekranie ładowania, w miejscu i rozmiarze ikony ekranu startowego, z pętlą przezroczystości płatków, którą wyłącza skala animacji 0. Szablonowe ikony bitmapowe usunięto, bo przy `minSdk` 31 launcher używa ikony adaptacyjnej.
 - Powód: Wzorem były ikony popularnych aplikacji: jeden duży znak bez drobnych detali. Na ciemnym tle makówka zlewała się z tłem, stąd białe koło. Animacja korzysta tylko z obrotu, skali i przezroczystości, więc ma jedno źródło kształtu w XML i w Compose.
 - Odrzucone: warianty z boku kwiatu i z łodygą, bo łodyga znika w małym rozmiarze; wydłużanie ekranu startowego do końca animacji, zgodnie z decyzją z I-30; Lottie jako nowa zależność.
-
-## 2026-09-27: Pełna nazwa i ekran ładowania (I-30)
-
-- Fakty: Przy starcie „Dzisiaj” przez chwilę pokazywało „Brak aktywnego semestru”, a przy motywie ciemnym systemowy ekran startowy i pierwsza klatka były jasne.
-- Decyzja: Rozwinięcie skrótu zmienia się na „Mój Akademicki Kalendarz”; MAK pozostaje nazwą w interfejsie i na launcherze (decyzja użytkownika z 2026-09-27). Do czasu wczytania planu aplikacja pokazuje ekran ładowania z pełną nazwą, który później zastąpi logo albo animacja logo. Systemowy ekran startowy czeka na odczyt motywu, a wybrany motyw trafia do `UiModeManager.setApplicationNightMode`, więc system rysuje ekran startowy w motywie aplikacji. Limity: 1 s na motyw, 2 s na ekran ładowania.
-- Powód: Stan pusty przed odpowiedzią bazy wprowadza w błąd (`ARCHITECTURE.md`, „Uczciwość wobec stanu systemu”), a jasna klatka w motywie ciemnym razi. Minimalny czas wyświetlania nie jest potrzebny.
-- Odrzucone: biblioteka `core-splashscreen`, bo minimalne API to 31 i wystarcza `OnPreDrawListener`; sztuczne wydłużanie ekranu ładowania; osobny ekran ładowania na każdej trasie.
