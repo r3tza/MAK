@@ -1,6 +1,6 @@
 # Znane problemy interfejsu
 
-Stan na 2026-09-25. Ten rejestr obejmuje braki potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`. Nie traktować poniższych punktów jako wyniku testu na urządzeniu.
+Stan na 2026-09-27. Ten rejestr obejmuje braki potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`. Nie traktować poniższych punktów jako wyniku testu na urządzeniu.
 
 ## Błędy potwierdzone audytem kodu z 2026-09-23
 
@@ -8,9 +8,28 @@ Zadania i kryteria są w `QUEUE.md`, a kroki wykonawcze w `PLAN.md`.
 
 1. **Systemowa kopia zapasowa (I-14).** Baza i ustawienia mogą trafiać do kopii Google. Czeka na decyzję.
 
-## Problemy potwierdzone audytem z 2026-09-25
+## Problemy potwierdzone audytem kodu z 2026-09-27
 
-Audyt objął przegląd kodu warstwy danych semestrów, kreatora, ekranów semestru, ustawień i widgetu, raport lint oraz dodanie zajęć przez formularz na emulatorze. Zadania i kryteria są w `QUEUE.md`.
+Audyt objął przegląd domeny, repozytoriów, importu, powiadomień, widgetu i ViewModeli, `gradlew.bat test` (333 testy, 0 błędów) oraz lint (0 błędów, 4 ostrzeżenia o wersjach, `targetSdk` i grafice podglądu widgetu). Zadania i kryteria są w `QUEUE.md`, a kroki w `PLAN.md`.
+
+1. **Konfiguracja semestru aktywuje go (I-23).** Otwarcie ekranu „Semestr” ustawia ten semestr jako aktywny i kasuje niezapisane zmiany po powrocie z podekranów. Czeka na decyzję.
+2. **Zmiana tygodnia bez zapisu (I-24).** Przy filtrze „Wszystkie” i kilku kalendarzach „Zapisz” w dialogu tygodnia nic nie zapisuje i nie pokazuje komunikatu.
+3. **Odwołane terminy w „Planie” (I-25).** „Pokaż odwołane” ignoruje filtr kierunku i pokazuje odwołania z dni, w które zajęcia już się nie odbywają; licznik dnia wlicza odwołane.
+4. **Drobne błędy (I-26).** Ponowne przejście z powiadomienia albo widgetu po przywróceniu procesu, pusty ekran szczegółów usuniętych zajęć, błędny komunikat przy zapisie progu okienka, równoległe odświeżanie alarmów i nieusuwany kalendarz po przepięciu przypisania.
+
+## Problemy potwierdzone audytem interfejsu z 2026-09-27
+
+Audyt objął przegląd wspólnych komponentów i ekranów, obliczenie kontrastu kolorów motywu oraz zrzuty z emulatora (Android 16) przy 320 dp, skalach czcionki 1,0, 1,3 i 2,0, w motywie jasnym i ciemnym, i przejście klawiszem Tab. TalkBack nie był uruchamiany; semantykę sprawdzono w kodzie.
+
+1. **Focus klawiatury (I-27).** Każda własna kontrolka ma dwa przystanki Tab, drugi niewidoczny; własna ramka focusu się nie włącza, widać tylko słabą nakładkę.
+2. **Powiększony tekst i 320 dp (I-28).** Godzina karty ucięta do „12:0” przy skali 1,3; etykiety łamane w środku słowa przy skali 2,0; źródło tygodnia ucięte przy 320 dp; pola „Od” i „Do” obok siebie mimo reguły 340 dp.
+3. **Semantyka i kontrast kart (I-29).** TalkBack nie słyszy statusu „Odwołane” ani tygodnia; odwołana karta ma kontrast tekstu pomocniczego 2,68:1; etykiety karty podsumowania 4,09:1; „Dodaj” ma rolę karty.
+4. **Fałszywy stan pusty przy starcie (I-30).** „Brak aktywnego semestru” i jasny ekran przed odczytem motywu ciemnego.
+5. **Granice kontrolek (I-31).** Ramki pól, pierścienie opcji i pola wyboru mają kontrast 1,22:1 w jasnym motywie. Czeka na akceptację wariantu.
+6. **Nazwy notatek (I-32).** Karta i szczegóły terminu używają innych nazw tych samych notatek, a „Notatka na dziś” pojawia się przy innych dniach. Czeka na decyzję.
+7. **Rozmiary dni i widgetu (I-33).** Dni w pasku tygodnia i komórki kalendarza mają poniżej 48 dp, a widget tekst 10 i 11 sp. Czeka na decyzję o wyjątkach.
+
+Rozbieżność do rozstrzygnięcia przy odbiorze O-05: `FEATURES.md` („Struktura karty zajęć”) wymaga subtelnego pionowego separatora między kolumną godzin a danymi, a karta go nie ma.
 
 
 ## Wymagają odbioru na urządzeniu

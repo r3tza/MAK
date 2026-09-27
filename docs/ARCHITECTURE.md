@@ -190,6 +190,11 @@ Pierwszy zakres nie obejmuje:
 
 - Systemowa kopia zapasowa Androida (I-14). Manifest ma `allowBackup="true"` z szablonowymi regułami, więc baza i ustawienia mogą trafiać do kopii Google. Do decyzji: wyłączyć kopię, dopuścić ją jawnie albo dodać przełącznik w ustawieniach. Do czasu decyzji nie zmieniamy manifestu ani reguł kopii. Jeśli powstanie synchronizacja opisana niżej, kopia systemowa nadal może chronić użytkowników, którzy się nie zalogują.
 
+- Aktywacja przy konfiguracji semestru (I-23). Otwarcie ekranu „Semestr” ustawia go jako aktywny. Do decyzji: konfiguracja dowolnego semestru bez aktywacji albo jawna i potwierdzona aktywacja.
+- Kontrast granic kontrolek (I-31). Kolor `outline` ma 1,22:1 w jasnym i 1,45:1 w ciemnym motywie. Do akceptacji: wariant z `outline` o kontraście co najmniej 3:1 dla kontrolek i `MakLine` jako `outlineVariant` dla kart i separatorów.
+- Nazwy notatek (I-32). Do decyzji: jedna para nazw dla notatki do zajęć i notatki do daty, wspólna dla karty, szczegółów terminu i widgetu.
+- Wyjątki od reguł rozmiaru (I-33). Do decyzji: minimalny rozmiar komórki w siatce siedmiu dni przy 320 dp oraz minimalny rozmiar tekstu w widgecie.
+
 ### Wydania, aktualizacje i synchronizacja (propozycje z 2026-09-25)
 
 Poniższe punkty omówiono z użytkownikiem, ale nie są zaakceptowanymi decyzjami. Nie implementować ich przed akceptacją i zapisaniem w `PRODUCT.md`, `STACK.md` i tej sekcji. Kontekst: aplikacja trafia do kilku mało technicznych znajomych, bez Google Play i bez płatnego konta dewelopera.
@@ -203,4 +208,4 @@ Poniższe punkty omówiono z użytkownikiem, ale nie są zaakceptowanymi decyzja
 
 ## 11. Problemy do rozwiązania
 
-- Dokończyć audyt własnych komponentów Compose względem Material 3 i zasad dostępności. Audyt ma objąć obszary dotyku o rozmiarze co najmniej 48 dp, semantykę, focus, klawiaturę, kontrast, motyw ciemny oraz szerokość 320 dp.
+- Audyt własnych komponentów Compose wykonano 2026-09-27 (wyniki w `KNOWN_ISSUES.md`, zadania I-27 do I-33). Pozostaje sprawdzenie z TalkBackiem na urządzeniu w ramach O-05.
