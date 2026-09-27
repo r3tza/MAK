@@ -14,6 +14,9 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.CheckCircle
+import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,7 +33,6 @@ import dev.retza.mak.ui.components.MakNoteBanner
 import dev.retza.mak.ui.components.MakPoppyMark
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSpacing
-import dev.retza.mak.ui.components.MakTag
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
@@ -131,7 +133,11 @@ private fun AppHeader(installedVersionName: String) {
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
-            MakTag("Wersja $installedVersionName")
+            Text(
+                text = "Wersja $installedVersionName",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
     }
 }
@@ -202,7 +208,7 @@ private fun ReleaseEntry(entry: ReleaseHistoryEntry, isInstalled: Boolean) {
                     )
                 }
             }
-            if (isInstalled) MakTag("Zainstalowana")
+            if (isInstalled) StatusText(text = "Zainstalowana")
         }
         BulletList(entry.changes)
     }
@@ -235,3 +241,25 @@ internal fun formatReleaseDate(isoDate: String): String = try {
 /** Versions before 1.0.0 are not a full release yet. */
 internal fun isPreRelease(versionName: String): Boolean =
     versionName.substringBefore('.').toIntOrNull()?.let { it < 1 } ?: false
+
+/** A positive state next to a title: check icon and word in the accent color, without a container. */
+@Composable
+internal fun StatusText(text: String, modifier: Modifier = Modifier) {
+    Row(
+        modifier = modifier,
+        horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Icon(
+            imageVector = Icons.Outlined.CheckCircle,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.primary,
+            modifier = Modifier.size(16.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.labelLarge,
+            color = MaterialTheme.colorScheme.primary
+        )
+    }
+}

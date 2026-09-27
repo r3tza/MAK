@@ -23,7 +23,7 @@ class OccurrenceChangeLinesTest {
             room = "204"
         )
 
-        assertEquals(listOf("Godziny: 10:00–11:30 → 12:00–13:30", "Sala: A12 → 204"), state.changeLines())
+        assertEquals(listOf("Godziny zmienione z 10:00 - 11:30 na 12:00 - 13:30", "Sala zmieniona z A12 na 204"), state.changeLines())
     }
 
     @Test
@@ -47,6 +47,6 @@ class OccurrenceChangeLinesTest {
     fun removedRoomIsShownAsMissing() {
         val state = base.copy(status = OccurrenceStatusUi.Changed, room = null)
 
-        assertEquals(listOf("Sala: A12 → niepodana"), state.changeLines())
+        assertEquals(listOf("Usunięto salę A12"), state.changeLines())
     }
 }

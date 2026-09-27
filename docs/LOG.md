@@ -4,6 +4,11 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-28: Bez strzałek i pilli (I-53)
+
+- Fakty: Opis zmian w szczegółach terminu używał strzałek („Sala: L205 → C12”), a `WRITING.md` sam opisywał wzór ostrzeżeń strzałkami. Poza kartą zajęć pille zostały przy aktywnym semestrze, w kalendarzach i korektach tygodni oraz w „O aplikacji”.
+- Decyzja: `AGENTS.md` i `WRITING.md` zakazują strzałek obok `·` i em dash. `AGENTS.md` i `ARCHITECTURE.md` zakazują pilli i chipów jako statycznych etykiet; stan, kategorię i wersję pokazuje tekst, ikona z tekstem albo kropka koloru. Opis zmian terminu to zwykłe zdania („Sala zmieniona z L205 na C12”). „Aktywny” i „Zainstalowana” mają ikonę i tekst, korekta tygodnia ma tydzień w tytule, powtórzony tag tygodnia w kalendarzu zniknął, a wersja w „O aplikacji” jest tekstem. `MakTag` i nieużywane kolory pilli usunięto. Widget zostaje do osobnej decyzji. Użytkownik zlecił zmianę 2026-09-28.
+
 ## 2026-09-28: Karta zajęć bez pilli (I-53)
 
 - Fakty: Karta pokazywała kierunek, stan i etykiety notatek w wypełnionych pillach. Kolor kierunku powtarzał się w pasku i pillu, etykiety notatek wyglądały jak przyciski, a przy skali czcionki 2,0 pille zajmowały pół szerokości karty. Przegląd innych aplikacji: kalendarze oznaczają kategorię paskiem albo kropką przy zwykłym tekście, Todoist używa linii metadanych z ikonami, a Material 3 przeznacza chipy do interakcji.
@@ -133,10 +138,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: Rozwinięcie skrótu zmienia się na „Mój Akademicki Kalendarz”; MAK pozostaje nazwą w interfejsie i na launcherze (decyzja użytkownika z 2026-09-27). Do czasu wczytania planu aplikacja pokazuje ekran ładowania z pełną nazwą, który później zastąpi logo albo animacja logo. Systemowy ekran startowy czeka na odczyt motywu, a wybrany motyw trafia do `UiModeManager.setApplicationNightMode`, więc system rysuje ekran startowy w motywie aplikacji. Limity: 1 s na motyw, 2 s na ekran ładowania.
 - Powód: Stan pusty przed odpowiedzią bazy wprowadza w błąd (`ARCHITECTURE.md`, „Uczciwość wobec stanu systemu”), a jasna klatka w motywie ciemnym razi. Minimalny czas wyświetlania nie jest potrzebny.
 - Odrzucone: biblioteka `core-splashscreen`, bo minimalne API to 31 i wystarcza `OnPreDrawListener`; sztuczne wydłużanie ekranu ładowania; osobny ekran ładowania na każdej trasie.
-
-## 2026-09-27: Wydania na GitHubie, licencja i aktualizacje w aplikacji (I-34 do I-41)
-
-- Fakty: Aplikacja trafia do kilku mało technicznych znajomych poza Google Play. Bez mechanizmu aktualizacji każda nowa wersja wymaga ręcznego przesłania pliku APK. Przegląd historii gita (186 commitów) nie wykazał kluczy, haseł, plików podpisu ani prywatnych danych; dane demonstracyjne są fikcyjne.
-- Decyzja: Plan działa w pełni bez sieci, a aplikacja łączy się wyłącznie z GitHubem w celu sprawdzenia i pobrania aktualizacji, bez wysyłania danych planu (`PRODUCT.md`). Repozytorium `r3tza/MAK` będzie publiczne, na licencji Apache 2.0 z `r3tza` w `NOTICE`; historia i adres e-mail w commitach zostają bez zmian. Wydania budują GitHub Actions z tagu, z APK i `update.json` w GitHub Release (`STACK.md`). Aktualizator sprawdza wersję ręcznie w „O aplikacji” albo automatycznie przy uruchomieniu najwyżej raz na 24 godziny, pokazuje baner na „Dzisiaj”, weryfikuje plik i instaluje go przez `PackageInstaller` (`ARCHITECTURE.md`, punkt „Aktualizacje”). Użytkownik zaakceptował te decyzje 2026-09-27. Synchronizacja przez konto Google pozostaje możliwym przyszłym rozszerzeniem, a rejestracja w Android Developer Console jest odłożona.
-- Powód: Apache 2.0 jest licencją reszty stosu, wprost nie daje prawa do nazwy i znaku i nie utrudnia przyszłej integracji z Usługami Google Play. Sprawdzanie przy uruchomieniu nie wymaga pracy w tle, nowej zależności ani zgody na powiadomienia, a aplikacja z planem zajęć jest otwierana często.
-- Odrzucone: WorkManager z powiadomieniem, Play In-App Updates, Obtainium jako jedyny sposób aktualizacji, osobne repozytorium na wydania, licencje MIT i GPL 3.0 oraz przepisywanie historii gita.

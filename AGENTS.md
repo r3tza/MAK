@@ -39,7 +39,7 @@ Kroki w `docs/PLAN.md` muszą być wykonalne przez słabszego agenta bez zgadywa
 
 Stosuj `docs/WRITING.md` do dokumentacji i tekstów dla użytkownika, chyba że bezpośrednia instrukcja użytkownika albo zaakceptowana zasada produktu stanowi inaczej.
 
-Nie używaj w nowych dokumentach, tekstach interfejsu ani odpowiedziach znaku `·`, em dash `—`, emotek ani ozdobników i schematycznych zwrotów kojarzonych z AI-slop. Wybieraj zwykłą interpunkcję i konkretne sformułowania.
+Nie używaj w nowych dokumentach, tekstach interfejsu ani odpowiedziach znaku `·`, em dash `—`, strzałek (`→`, `->`, `⇒`), emotek ani ozdobników i schematycznych zwrotów kojarzonych z AI-slop. Wybieraj zwykłą interpunkcję i konkretne sformułowania.
 
 Zasady interfejsu z `docs/ARCHITECTURE.md` są kryteriami akceptacji dla każdego widoku. Sprawdzaj je razem z zachowaniem funkcjonalnym.
 
@@ -88,6 +88,7 @@ Traktuj te zasady jako wskazówki przy proponowaniu rozwiązań. Szczegóły pro
 - Nadawaj kolorom stałe znaczenie. Powierzchnie pozostawiaj głównie neutralne, a akcentów używaj dla informacji, kategorii, ostrzeżeń i działań o rzeczywistej wadze.
 - Nie używaj koloru jako jedynego nośnika informacji. Dodaj etykietę, ikonę, kształt albo treść semantyczną.
 - Nie używaj koloru akcentowego wyłącznie do pokazania zwykłego stanu komponentu, jeśli tekst, ikona i semantyka wystarczają.
+- Nie używaj wypełnionych pilli ani chipów jako statycznych etykiet stanu, kategorii lub wersji. Pokazuj je tekstem, ikoną z tekstem albo kropką koloru przy nazwie. Chipy zostaw elementom, które się wybiera lub klika.
 - Zachowuj jawne działania użytkownika. Nie otwieraj automatycznie kreatora, formularza ani innego przepływu, jeśli stan pusty z jasną akcją daje użytkownikowi większą kontrolę.
 - Projektuj od szerokości 320 dp. Brak obciętych akcji, poziomego przewijania, utraty kontrastu i nieczytelnego zawijania jest częścią kryterium akceptacji.
 - Traktuj dostępność, motyw ciemny, focus, klawiaturę, TalkBack i stan błędu jako część projektu, nie jako końcowy audyt.

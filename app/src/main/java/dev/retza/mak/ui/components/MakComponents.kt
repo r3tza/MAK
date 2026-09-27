@@ -101,8 +101,6 @@ import androidx.compose.ui.window.Dialog
 import dev.retza.mak.ui.theme.MakModified
 import dev.retza.mak.ui.theme.MakOnce
 import dev.retza.mak.ui.theme.MakOrangeMark
-import dev.retza.mak.ui.theme.MakPillNeutral
-import dev.retza.mak.ui.theme.MakPillNeutralBg
 import dev.retza.mak.ui.theme.MakInk
 import dev.retza.mak.ui.theme.MakSummaryEnd
 import dev.retza.mak.ui.theme.MakSummaryStart
@@ -1305,23 +1303,6 @@ fun FieldError(
             style = MaterialTheme.typography.bodySmall
         )
     }
-}
-
-@Composable
-fun MakTag(
-    text: String,
-    modifier: Modifier = Modifier
-) {
-    val dark = isDarkSurface()
-    Text(
-        text = text,
-        modifier = modifier
-            .clip(RoundedCornerShape(50))
-            .background(if (dark) MaterialTheme.colorScheme.surfaceContainerHigh else MakPillNeutralBg)
-            .padding(horizontal = 10.dp, vertical = 5.dp),
-        style = MaterialTheme.typography.labelMedium,
-        color = if (dark) MaterialTheme.colorScheme.onSurface else MakPillNeutral
-    )
 }
 
 @Composable

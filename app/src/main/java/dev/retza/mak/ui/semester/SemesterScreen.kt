@@ -50,7 +50,6 @@ import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
-import dev.retza.mak.ui.components.MakTag
 import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.parseHexColor
@@ -468,7 +467,6 @@ private fun CalendarCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            MakTag(text = "Tydzień ${calendar.firstWeek.name}")
         }
         Text(
             text = if (calendar.courseNames.isEmpty()) {
@@ -938,21 +936,18 @@ private fun WeekOverrideCard(
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    item.weekStartDate.toLocalDateOrNull()?.format(polishShortDateFormatter)
-                        ?: item.weekStartDate,
-                    fontWeight = FontWeight.SemiBold
-                )
+                Text("Tydzień ${item.weekType.name}", fontWeight = FontWeight.SemiBold)
+                val weekStart = item.weekStartDate.toLocalDateOrNull()?.format(polishShortDateFormatter)
+                    ?: item.weekStartDate
                 Text(
                     text = when (item.scope) {
-                        WeekOverrideScopeUi.ONE_WEEK -> "Tylko ten tydzień"
-                        WeekOverrideScopeUi.FROM_WEEK -> "Od tego tygodnia"
+                        WeekOverrideScopeUi.ONE_WEEK -> "$weekStart, tylko ten tydzień"
+                        WeekOverrideScopeUi.FROM_WEEK -> "Od $weekStart"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
-            MakTag(text = "Tydzień ${item.weekType.name}")
             MakActionMenu(
                 actions = listOf(
                     "Edytuj" to onEdit,

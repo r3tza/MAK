@@ -48,7 +48,6 @@ import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
-import dev.retza.mak.ui.components.MakTag
 import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.components.ScreenStatus
@@ -523,7 +522,7 @@ private fun SemesterRow(
         ) {
             Text(semester.name, modifier = Modifier.weight(1f), fontWeight = FontWeight.SemiBold)
             if (semester.isActive) {
-                MakTag(text = "Aktywny")
+                StatusText(text = "Aktywny")
             }
         }
         Text(

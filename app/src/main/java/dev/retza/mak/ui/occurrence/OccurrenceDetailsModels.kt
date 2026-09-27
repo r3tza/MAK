@@ -95,9 +95,17 @@ fun OccurrenceDetailsUiState.changeLines(): List<String> {
         val to = targetDateLabel?.let(::changeDate)
         if (from != null && to != null && from != to) add("Przeniesione z $from na $to")
         if (baseStartTime.isNotBlank() && (startTime != baseStartTime || endTime != baseEndTime)) {
-            add("Godziny: $baseStartTime–$baseEndTime → $startTime–$endTime")
+            add("Godziny zmienione z $baseStartTime - $baseEndTime na $startTime - $endTime")
         }
-        if (room != baseRoom) add("Sala: ${baseRoom ?: "niepodana"} → ${room ?: "niepodana"}")
+        if (room != baseRoom) {
+            add(
+                when {
+                    baseRoom == null -> "Dodano salę $room"
+                    room == null -> "Usunięto salę $baseRoom"
+                    else -> "Sala zmieniona z $baseRoom na $room"
+                }
+            )
+        }
     }
 }
 

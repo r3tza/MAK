@@ -12,14 +12,14 @@ If a sentence does not add a fact, a decision, a constraint, an example, or a co
 - Hedge only when the uncertainty is real. Then say what you do not know and what follows from that.
 - Prefer names, numbers, paths, conditions, and examples over categories.
 - Use format to help scanning: lists for items, bold for labels, headings when the topic changes. Do not decorate.
-- Do not use the middle dot `·`, em dash `—`, emojis, or ornamental patterns and stock phrases strongly associated with AI-slop. Use ordinary punctuation and concrete wording.
+- Do not use the middle dot `·`, em dash `—`, arrows (`→`, `->`, `⇒`), emojis, or ornamental patterns and stock phrases strongly associated with AI-slop. Use ordinary punctuation and concrete wording.
 
 ## Documentation
 
 - Write procedures in the imperative. One instruction per sentence. Put the condition before the command: `If the light is on, stop the engine.`
 - Use at most three nouns in a row. If a name is longer, write it in full once, then use a short form.
 - Keep the same canonical name for each element in the whole document.
-- Write warnings as: risk level → action or condition → consequence.
+- Write warnings as: risk level, then action or condition, then consequence.
 - Do not drop articles or verbs to look concise.
 - Cut background the reader does not need in order to do the task.
 
