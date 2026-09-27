@@ -9,6 +9,18 @@ data class ReleaseHistoryEntry(
 // Newest release first.
 private val knownReleaseHistory = listOf(
     ReleaseHistoryEntry(
+        versionName = "0.2.0",
+        date = "2026-09-27",
+        changes = listOf(
+            "Dodano aktualizacje z poziomu aplikacji: ręczne lub automatyczne sprawdzanie, pobieranie i instalację.",
+            "Dodano widget z planem na dziś oraz powiadomienia o kolizjach dzień wcześniej i przed zajęciami.",
+            "Dodano osobne kalendarze tygodni dla kierunków, liczenie okienek i import kopii zapasowej z podglądem.",
+            "Dodano edycję nazw i kolorów kierunków.",
+            "Notatka do terminu zostaje przy terminie po jego przeniesieniu.",
+            "Nowe logo, ekran startowy i uporządkowane ustawienia; lepsza czytelność przy dużej czcionce i obsługa klawiatury."
+        )
+    ),
+    ReleaseHistoryEntry(
         versionName = "0.1.0",
         date = "2026-09-19",
         changes = listOf(
