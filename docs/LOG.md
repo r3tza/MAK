@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Tryb tabletowy, wariant A (I-44 do I-47)
+
+- Fakty: Po blokadzie pionu użytkownik zapytał, jak robią to duże aplikacje, i poprosił o tryb tabletowy. Android 16 ignoruje blokadę orientacji na ekranach od 600 dp, a w poziomie wybór daty i godziny był ucięty.
+- Decyzja: Użytkownik wybrał wariant A: telefon w pionie, tablet w obu orientacjach, boczny pasek nawigacji od 600 dp, treść najwyżej 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp, dialogi wyboru daty i godziny dopasowane do niskiego okna. Klasy szerokości liczy własna funkcja z progami Material 3, bez biblioteki `material3-adaptive`. Zakres zapisano w `PRODUCT.md` i `ARCHITECTURE.md`, kroki w `PLAN.md`.
+- Powód: Poprawny układ na tabletach bez przebudowy nawigacji i danych.
+- Odrzucone: wariant B z dwoma panelami (lista i szczegóły obok siebie) jako zbyt duża zmiana nawigacji na obecnym etapie; może wrócić jako osobne zadanie; biblioteka `material3-adaptive`, bo potrzebna jest tylko szerokość okna.
+
 ## 2026-09-27: Dłuższa animacja startu i znak w pasku (I-42)
 
 - Fakty: Animacja „Rozkwit” trwała około 870 ms i przy szybkim starcie system mógł ją przerwać. Użytkownik uznał ją za zbyt krótką. W górnym pasku został stary znak z czterech kwadratów.
@@ -147,11 +154,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Prezentacja zależna od czasu ma być czytelna, ale opierać się wyłącznie na czasie odczytanym przy odświeżeniu i nie obiecywać aktualizacji co minutę.
 - Odrzucone: Odliczanie na żywo i dokładne alarmy; osobne akcje w wierszu; zmiana logiki odświeżania i rozmiarów; kopiowanie reguł planu.
 - Weryfikacja: `WidgetPresenterTest.presenterMarksCurrentNextAndPastPhases` sprawdza fazy, a istniejące testy prezentera i kompozycji Glance przechodzą. `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór na launcherze należy do O-06.
-
-## 2026-09-22: Uporządkowane ustawienia i osobne ekrany (I-05)
-
-- Fakty: Ekran główny ustawień miał lokalną etykietę „USTAWIENIA”, nagłówek „Semestry i wygląd”, wybór semestru, motyw, próg okienka, rozwijane bloki „dane” i „powiadomienia” oraz akcje zarządzania semestrem. Wszystkie ustawienia były w jednym miejscu.
-- Decyzja: Ekran główny pokazuje tylko sekcje „Plan”, „Wygląd”, „Powiadomienia”, „Dane” i „O aplikacji” w neutralnych kontenerach rozdzielonych 16 dp, bez lokalnego nagłówka i rozwijanych formularzy. Sekcja „Plan” ma wybór aktywnego semestru, wiersz „Zarządzaj semestrami” i próg okienka. Dodano osobne trasy `settings/semesters`, `settings/notifications` i `settings/data` oraz ekrany `SettingsSemestersScreen` (lista, wybór aktywny, konfiguracja, usuwanie, dodawanie), `SettingsNotificationsScreen` (przełączniki, godzina, wyprzedzenie, blokada systemowa) i `SettingsDataScreen` (eksport, import, opis zastąpienia). Wiersz powiadomień na ekranie głównym ma dwie linie: „Włączone”/„Wyłączone” oraz osobny wiersz z godziną i wyprzedzeniem, a przy blokadzie systemowej „Zablokowane przez system” bez godzin. Podgląd importu zostaje osobnym ekranem. Tytuły ekranów są w topbarze.
-- Powód: Ekran główny ma służyć szybkiemu odczytowi i przejściu do właściwego obszaru, a rozbudowane formularze mają osobne trasy w jednym `NavHost`.
-- Odrzucone: Rozwijane formularze na ekranie głównym; powtórzony nagłówek; zmiana logiki eksportu, importu i powiadomień; ruszanie widgetu (I-06).
-- Weryfikacja: `SettingsScreenTest` sprawdza sekcje i przejścia na ekranie głównym, brak lokalnego nagłówka („Semestry i wygląd” i „USTAWIENIA” nie istnieją), dwie linie podsumowania powiadomień, ekran „Semestry”, ekran „Powiadomienia”, ekran „Dane” i podgląd importu przy 320 dp. `docs/KNOWN_ISSUES.md` opisuje istniejący kod i zostawia odbiór (O-05). `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór wyglądu i nawigacji na urządzeniu należy do O-05.

@@ -71,7 +71,7 @@ Klawiatura, focus, semantyczne etykiety, kontrast, `reduced motion`, małe ekran
 
 Dokumentacja i testy interfejsu muszą obejmować szerokości 320–390 px, obsługę dotyku, długie nazwy, arkusze mobilne i brak poziomego przewijania.
 
-Aplikacja działa tylko w orientacji pionowej (`android:screenOrientation="portrait"` w `MainActivity`, decyzja z 2026-09-27). Na urządzeniach z najkrótszym bokiem od 600 dp Android 16 ignoruje tę blokadę przy `targetSdk` 36, więc tablety i składane telefony mogą nadal pokazać układ poziomy; nie projektujemy go osobno. Aktywność nadal jest odtwarzana przy zmianie motywu, czcionki, języka i po zakończeniu procesu, więc stan ekranów musi to przetrwać.
+Telefon działa tylko w pionie, a tablet w obu orientacjach (decyzje z 2026-09-27: blokada pionu I-43, tryb tabletowy w wariancie A I-44 do I-47). Manifest blokuje pion, a `MainActivity` zdejmuje blokadę, gdy najkrótszy bok ekranu ma co najmniej 600 dp; Android 16 i tak ignoruje blokadę na takich ekranach przy `targetSdk` 36. Układ zależy od szerokości okna, nie od typu urządzenia: poniżej 600 dp układ telefonu z dolnym paskiem, od 600 dp boczny pasek nawigacji, od 840 dp „Dzisiaj” w dwóch kolumnach. Treść ekranów ma najwyżej 640 dp szerokości (na „Dzisiaj” w dwóch kolumnach 1040 dp) i jest wyśrodkowana. Dwa panele (lista i szczegóły obok siebie) są poza zakresem wariantu A. Aktywność jest odtwarzana przy obrocie, zmianie motywu, czcionki, języka i rozmiaru okna oraz po zakończeniu procesu, więc stan ekranów musi to przetrwać. Do czasu ukończenia I-45 kod blokuje pion na wszystkich urządzeniach z Androidem 12 do 15.
 
 ### Uczciwość wobec stanu systemu
 

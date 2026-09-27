@@ -293,5 +293,6 @@ Odbiór na urządzeniu jest odrębnym kryterium od kompilacji testów Android.
 - Sprawdzić import poprawnego i błędnego pliku, anulowanie oraz rollback po błędzie zapisu.
 - Sprawdzić zgodę na powiadomienia, alarm wieczorny i przed zajęciami, restart, zmianę czasu, anulowanie kolizji i kliknięcie powiadomienia.
 - Sprawdzić zimny start w motywie jasnym, ciemnym i systemowym, także gdy motyw aplikacji różni się od systemowego: ekran startowy i ekran ładowania mają kolor motywu aplikacji, a „Dzisiaj” nie pokazuje stanu pustego przed danymi.
+- Sprawdzić tablet (O-08) w pionie, w poziomie i w podzielonym ekranie: boczny pasek nawigacji od 600 dp, dolny pasek poniżej, treść nie szersza niż 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp, wybór daty i godziny w całości i po polsku, zachowanie bieżącego ekranu i wpisanych danych po obrocie.
 - Sprawdzić nawigację i powrót systemowy, insety, TalkBack, klawiaturę, focus, motyw ciemny, długie treści i szerokość 320 dp. Potwierdzić, że po błędzie formularz zachowuje dane i pokazuje bezpieczny komunikat.
 - Sprawdzić widget na launcherze w małym, pośrednim i dużym rozmiarze, w obu motywach, po zmianie danych i po kliknięciu. Zweryfikować jego stany puste, kolizje i długie nazwy.

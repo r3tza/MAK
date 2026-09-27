@@ -4,7 +4,7 @@ Ten dokument określa cel, zakres i kryteria MVP. Zachowanie poszczególnych ekr
 
 ## Cel i zakres
 
-MAK (Mój Akademicki Kalendarz) to lekka aplikacja mobilna na Androida do zarządzania planem zajęć, szczególnie przy studiowaniu na dwóch lub większej liczbie kierunków.
+MAK (Mój Akademicki Kalendarz) to lekka aplikacja mobilna na Androida do zarządzania planem zajęć, szczególnie przy studiowaniu na dwóch lub większej liczbie kierunków. Głównym urządzeniem jest telefon w pionie; na tabletach i rozłożonych telefonach składanych aplikacja działa w obu orientacjach z bocznym paskiem nawigacji i ograniczoną szerokością treści (decyzja z 2026-09-27, wariant A).
 
 Główne założenia:
 
@@ -43,7 +43,8 @@ MVP można uznać za gotowe, gdy użytkownik potrafi:
 13. zamknąć i ponownie otworzyć aplikację bez utraty danych;
 14. wyeksportować plan wraz z korektami, zmianami wystąpień i notatkami do pliku JSON;
 15. korzystać z aplikacji bez połączenia z internetem;
-16. obsłużyć podstawowe czynności na ekranie o szerokości 320–390 px, bez obciętych akcji i poziomego przewijania, z etykietami semantycznymi, widocznym focusem oraz bez utraty wpisanych danych.
+16. obsłużyć podstawowe czynności na ekranie o szerokości 320–390 px, bez obciętych akcji i poziomego przewijania, z etykietami semantycznymi, widocznym focusem oraz bez utraty wpisanych danych;
+17. obsłużyć te same czynności na tablecie w pionie i w poziomie, bez rozciągniętych linii tekstu i uciętych dialogów.
 
 ## Funkcje poza pierwszym zakresem
 
