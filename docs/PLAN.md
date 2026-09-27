@@ -1,6 +1,6 @@
 # Plan najbliższych prac
 
-Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Pełna lista i oddzielny status odbioru są w `QUEUE.md`. Repozytorium pozostaje prywatne do jawnej zgody użytkownika na I-41.
+Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Pełna lista i oddzielny status odbioru są w `QUEUE.md`. Repozytorium jest publiczne od 2026-09-27; wydanie `v0.2.0` czeka na I-39.
 
 ## 1. Uruchom testy urządzenia aktualizatora (I-37)
 
@@ -29,16 +29,16 @@ Kryterium zakończenia: lokalna aktualizacja działa, dane zostają zachowane, a
 
 Kryterium zakończenia: automat nie wykonuje nadmiarowych zapytań, błąd pozostaje cichy, a pominięcie dotyczy tylko jednej wersji.
 
-## 4. Bramka publicznego repozytorium i wydania (I-41)
+## 4. Pierwsze publiczne wydanie (I-49)
 
-Bloker: jawna zgoda użytkownika po zakończeniu poprawek prezentacyjnych.
+Warunek: I-39 zakończone, czyli lokalna aktualizacja N do N+1 zachowuje dane.
 
-1. Sprawdź historię i bieżące pliki pod kątem sekretów oraz prywatnych danych.
-2. Potwierdź weryfikację dwuetapową konta i zmień widoczność repozytorium na publiczną.
-3. Utwórz tag `v0.2.0`, sprawdź szkic i ręcznie opublikuj wydanie.
-4. Zainstaluj `v0.2.0` na telefonie i utwórz dane odbiorowe.
+1. Potwierdź, że konto GitHub ma weryfikację dwuetapową.
+2. Utwórz tag `v0.2.0`, sprawdź w szkicu APK i `update.json` (zgodna suma SHA-256), a potem ręcznie opublikuj wydanie.
+3. Sprawdź, że `https://github.com/r3tza/MAK/releases/latest/download/update.json` zwraca plik bez logowania.
+4. Zainstaluj `v0.2.0` na telefonie według sekcji „Instalacja” w `README.md` i utwórz dane odbiorowe.
 
-Kryterium zakończenia: publiczne `v0.2.0` jest dostępne, a aplikacja wykrywa je przez produkcyjny adres.
+Kryterium zakończenia: publiczne `v0.2.0` jest dostępne, instrukcja instalacji działa, a aplikacja sprawdza wersję przez produkcyjny adres.
 
 ## 5. Pełny odbiór aktualizacji na telefonie (O-07)
 
@@ -47,4 +47,4 @@ Kryterium zakończenia: publiczne `v0.2.0` jest dostępne, a aplikacja wykrywa j
 3. Sprawdź brak sieci, odmowę zgody, anulowanie pobierania i „Nie teraz”.
 4. Potwierdź zachowanie planu, notatek i ustawień po aktualizacji.
 
-Kryterium zakończenia: O-07 jest potwierdzony na telefonie, a I-41 może otrzymać status „gotowe”.
+Kryterium zakończenia: O-07 jest potwierdzony na telefonie, a I-49 może otrzymać status „gotowe”.

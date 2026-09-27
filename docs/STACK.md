@@ -66,13 +66,13 @@ Repozytorium zawiera aplikację Android, konfigurację Gradle, lokalną bazę Ro
 
 ### Wydania i licencja (decyzja z 2026-09-27)
 
-- Repozytorium `r3tza/MAK` pozostaje prywatne podczas implementacji aktualizacji i poprawek prezentacyjnych. Przed I-41 użytkownik sprawdza historię pod kątem sekretów i prywatnych plików, a następnie jawnie zmienia widoczność na publiczną. Kod ma licencję Apache 2.0 (`LICENSE`), a właścicielem praw w `NOTICE` jest `r3tza`. Licencja nie obejmuje nazwy „MAK” ani ikony. Historia gita zostaje bez zmian, razem z adresem e-mail autora w commitach.
+- Repozytorium `r3tza/MAK` jest publiczne od 2026-09-27. Przed zmianą widoczności sprawdzono historię i bieżące pliki pod kątem sekretów i prywatnych danych. Pliki kluczy podpisu są wykluczone w `.gitignore`. Kod ma licencję Apache 2.0 (`LICENSE`), a właścicielem praw w `NOTICE` jest `r3tza`. Licencja nie obejmuje nazwy „MAK” ani ikony. Historia gita zostaje bez zmian, razem z adresem e-mail autora w commitach.
 - Wydanie budują GitHub Actions po wypchnięciu tagu `v<major>.<minor>.<patch>`. Workflow uruchamia testy i tworzy szkic GitHub Release; użytkownik publikuje go ręcznie po sprawdzeniu plików. Wydaniem jest zawsze wersja release, bo wersja debug wczytuje dane demonstracyjne.
 - Jeden klucz podpisu release na zawsze. Klucz generuje użytkownik lokalnie; jest przechowywany w sekretach GitHuba i w dwóch kopiach poza nim. Nie trafia do repozytorium ani do rozmowy z agentem. Utrata klucza uniemożliwia aktualizację bez odinstalowania aplikacji i utraty lokalnych danych.
 - `versionCode` rośnie z każdym wydaniem i jest wyliczany z tagu. Wydanie z niższym albo równym `versionCode` jest odrzucane.
 - Wariant debug ma `applicationIdSuffix = ".debug"` i może być zainstalowany obok podpisanego wydania. Dzięki temu testy urządzenia nie wymagają obniżania `versionCode`, zmiany klucza wydania ani usuwania danych użytkownika.
 - GitHub Release zawiera APK i plik `update.json` z wersją, adresem APK i sumą SHA-256. Aplikacja czyta tylko ten plik, bez API GitHuba i bez tokenu.
-- Prywatne wydania wymagają uwierzytelnienia, a szkice nie są widoczne pod `releases/latest`. Aplikacja nie dostaje tokenu GitHuba. I-36 do I-40 używają w testach wstrzykiwanych źródeł i lokalnych artefaktów; pełny test sieciowy zaczyna się dopiero po upublicznieniu repozytorium i ręcznym opublikowaniu wydania w I-41.
+- Szkice nie są widoczne pod `releases/latest`, więc aktualizator widzi wydanie dopiero po ręcznej publikacji. Aplikacja nie dostaje tokenu GitHuba. Do czasu pierwszego opublikowanego wydania (I-49) `update.json` zwraca 404, a ręczne sprawdzenie pokazuje „Nie udało się sprawdzić”.
 
 ## 8. Odrzucone alternatywy
 
