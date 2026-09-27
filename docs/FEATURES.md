@@ -251,8 +251,12 @@ Ekran główny dzieli ustawienia na sekcje:
    - pozycja prowadzi do osobnego ekranu ustawień powiadomień.
 4. „Dane”:
    - pozycja „Kopia zapasowa i import” prowadząca do osobnego ekranu danych.
-5. „O aplikacji”:
-   - zwarty wiersz pokazuje zainstalowaną wersję i prowadzi do osobnego ekranu aktualizacji.
+5. „Aktualizacje”:
+   - wiersz „Sprawdź aktualizacje” uruchamia ręczne sprawdzenie i w drugiej linii pokazuje wynik: „Sprawdź, czy jest nowsza wersja”, „Sprawdzanie...”, „Masz najnowszą wersję”, „Dostępna wersja {wersja}”, „Wymaga nowszego Androida” albo „Nie udało się sprawdzić”; w trakcie sprawdzania wiersz jest nieaktywny;
+   - gdy jest dostępna wersja albo trwa lub zakończyło się jej pobieranie, pod nim pojawia się wiersz „Aktualizacja do {wersja}” z ikoną przejścia, prowadzący do ekranu „Aktualizacja”; wynik sprawdzenia nie otwiera tego ekranu sam;
+   - wiersz z przełącznikiem „Sprawdzaj przy uruchomieniu” i jednym zdaniem opisu pod nazwą.
+6. „O aplikacji”:
+   - zwarty wiersz pokazuje zainstalowaną wersję i prowadzi do ekranu „O aplikacji”.
 
 Sekcje umieścić w neutralnych kontenerach i rozdzielić odstępem 16 dp. Wiersze tej samej sekcji mogą używać subtelnych separatorów. Każdy wiersz pokazuje nazwę, bieżącą wartość lub krótkie podsumowanie i ikonę przejścia, jeśli otwiera ekran podrzędny. Ikony Material są pomocnicze i nie zastępują tekstu. Nie nadawać wszystkim pozycjom wagi przycisku głównego.
 
@@ -270,9 +274,11 @@ Ekrany podrzędne ustawień rozdzielają komunikaty, pola, wiersze i przyciski o
 
 Ekran „Dane” zawiera eksport, import oraz opis skutków pełnego zastąpienia danych. Globalny próg długości okienka, domyślnie 30 minut, umieścić w ustawieniach planu. Jeśli przybędzie więcej ustawień planu niezwiązanych z semestrem, wydzielić dla nich osobny ekran zamiast rozbudowywać ekran główny.
 
-Ekran „O aplikacji” pokazuje zainstalowaną wersję i akcję „Sprawdź teraz”. Wynik ma postać: „Masz najnowszą wersję.”, „Dostępna wersja {wersja}” z notatkami, informacja o wymaganym nowszym Androidzie albo „Nie udało się sprawdzić. Sprawdź połączenie.”. Dostępne wydanie można pobrać, anulować pobieranie i po weryfikacji przekazać do instalacji systemowej. Postęp oraz błędy braku miejsca, uszkodzonego pliku, obcego pakietu, starszej wersji i innego podpisu są krótkie i nie pokazują wyjątków.
+Ekran „O aplikacji” ma dwie sekcje. Pierwsza pokazuje nazwę „Mój Akademicki Kalendarz”, zainstalowaną wersję, krótki opis „Plan zajęć z kilku kierunków, z tygodniami A/B, kolizjami i notatkami. Plan zostaje na telefonie i działa bez konta.” oraz wiersz „Autor: r3tza”. Druga, „Ostatnie zmiany”, pokazuje najwyżej trzy znane wydania od najnowszego, każde z datą i listą zmian. Wersja zainstalowana, której nie ma w historii, nie tworzy pustej pozycji. Przy dopasowaniu wersji aplikacja pomija przyrostek `-debug`. Ekran nie zawiera akcji aktualizacji.
 
-Na tym samym ekranie znajduje się domyślnie wyłączony przełącznik automatycznego sprawdzania. Opis wyjaśnia, że aplikacja łączy się tylko z GitHubem, nie wysyła planu, a GitHub widzi adres IP. Po wyłączeniu ekran informuje, że nowe wersje nie pojawią się same. Po włączeniu aplikacja sprawdza wersję przy uruchomieniu najwyżej raz na 24 godziny, bez pracy w tle i bez komunikatu o braku sieci. Dostępna wersja pokazuje na „Dzisiaj” baner z akcjami „Zobacz” i „Nie teraz”; pominięta wersja pozostaje ukryta, a wyższy `versionCode` pokazuje się ponownie.
+Ekran „Aktualizacja” otwierają wiersz „Aktualizacja do {wersja}” w ustawieniach i akcja „Zobacz” na banerze „Dzisiaj”. Pokazuje dostępną wersję i jej notatki („Brak informacji”, gdy są puste), akcję „Pobierz aktualizację”, postęp z akcją „Anuluj”, prośbę o zgodę systemową, akcję „Zainstaluj” i wynik instalacji. Błędy braku miejsca, przerwanego pobierania, uszkodzonego pliku, obcego pakietu, starszej wersji i innego podpisu są krótkie i nie pokazują wyjątków. Jeśli ekran otwarto bez dostępnej wersji, na przykład po ponownym uruchomieniu procesu, pokazuje „Brak informacji o nowej wersji.” i akcję „Sprawdź teraz”.
+
+Automatyczne sprawdzanie jest domyślnie wyłączone. Przy wyłączonym przełączniku opis brzmi „Nowe wersje nie pojawią się same.”, a przy włączonym „Najwyżej raz na 24 godziny. Aplikacja łączy się tylko z GitHubem i nie wysyła planu. GitHub widzi adres IP.”. Po włączeniu aplikacja sprawdza wersję przy uruchomieniu najwyżej raz na 24 godziny, bez pracy w tle i bez komunikatu o braku sieci. Dostępna wersja pokazuje na „Dzisiaj” baner z akcjami „Zobacz” i „Nie teraz”; pominięta wersja pozostaje ukryta, a wyższy `versionCode` pokazuje się ponownie.
 
 Ekrany podrzędne mają własne trasy w jednym `NavHost`, przewidywalny systemowy powrót i tytuł w topbarze. Stan ekranu głównego po powrocie nie może się resetować ani automatycznie otwierać innej sekcji.
 

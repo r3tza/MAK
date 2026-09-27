@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Aktualizacje w głównych ustawieniach (I-48)
+
+- Fakty: Ekran „O aplikacji” łączył wersję, ręczne sprawdzanie, pobieranie, historię zmian i przełącznik automatu. Na wariancie debug historia pokazywała pustą pozycję „0.1.0-debug” z „Brak informacji” nad wpisem 0.1.0.
+- Decyzja: Ustawienia główne dostają sekcję „Aktualizacje” z wierszem „Sprawdź aktualizacje”, warunkowym wierszem „Aktualizacja do {wersja}” i przełącznikiem „Sprawdzaj przy uruchomieniu”. Pobieranie i instalacja mają osobny ekran „Aktualizacja”, do którego prowadzi też „Zobacz” na banerze „Dzisiaj”. „O aplikacji” zawiera nazwę, wersję, krótki opis, autora `r3tza` i najwyżej trzy znane wydania, bez pustej pozycji nieznanej wersji (`FEATURES.md`, `ARCHITECTURE.md`). Użytkownik zaakceptował wariant 2026-09-27.
+- Powód: Częste akcje są dostępne bez wchodzenia na ekran opisu, a główne ustawienia nie rozwijają bloków pobierania i błędów.
+- Odrzucone: Dialog pobierania otwierany z ustawień, link do kodu źródłowego i sekcja licencji na ekranie „O aplikacji”.
+
 ## 2026-09-27: Implementacja aktualizacji w aplikacji (I-36 do I-40)
 
 - Fakty: Repozytorium i wydania pozostają prywatne, więc produkcyjny adres GitHub zwróci błąd do czasu I-41.
@@ -141,12 +148,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Poprawność kolizji, notatek i alarmów oraz odporność na błędy bez utraty danych.
 - Odrzucone: UUID dla rekordów Room, bo aplikacja nie synchronizuje danych; zmiana nazwy kolumny `occurrence_date`; migracja alarmów zapisanych w starym formacie identyfikatora.
 - Weryfikacja: `gradlew.bat test lintDebug connectedDebugAndroidTest` przechodzi na emulatorze Android 16: 286 testów JVM i 67 testów urządzenia, w tym migracja v2 do v3. Lint: 0 błędów, 7 ostrzeżeń (wersje bibliotek i SDK, grafika podglądu widgetu). Migracja na prawdziwych danych należy do O-01.
-
-## 2026-09-23: Przegląd czytelności interfejsu
-
-- Fakty: Przegląd na emulatorze w motywie jasnym i ciemnym oraz przy 320 dp wykazał tekst 9 do 11 sp w wielu miejscach, niewidoczną strzałkę pól wyboru (znak „▾”), małe liczby na karcie podsumowania, kolorowe kropki kalendarza bez legendy, wiersz zmiany tygodnia wyglądający jak nieaktywne pole, powtórzone tytuły i przyciski powrotu na ekranach semestru, odwróconą hierarchię w ustawieniach, dwa style pól formularza, daty ISO na ekranie „Kierunki” oraz jasne pille w motywie ciemnym.
-- Decyzja: Użytkownik zaakceptował trzy pakiety poprawek. Typografia ma minimum 12 sp (11 sp tylko dla wersalikowych nadtytułów), liczby na karcie podsumowania 28 sp. Pola wyboru to rozwijane pole Material 3 z etykietą przesuwaną nad ramkę, jak pola tekstowe; dwa pola obok siebie przechodzą jedno pod drugie poniżej 340 dp. Ekrany semestru mają tylko tytuł w górnym pasku i krótki opis, bez przycisków „Wróć”. Szczegóły terminu nie mają zbędnego podtytułu ani przycisku „Zamknij”, a przyciski zapisu notatek pojawiają się dopiero po zmianie treści. Kropki kalendarza mają kolor kierunku i legendę. Wiersz tygodnia ma ikonę i słowo „Zmień”. Karta kierunku pokazuje kolor, a „Usuń” ma kolor błędu. Pille w motywie ciemnym są przyciemnione. Nazwa zajęć na karcie ma pełną szerokość, a kierunek, status i typ zawijają się w wierszu pod nią.
-- Powód: Czytelność, zasada, że kolor nie jest jedynym nośnikiem informacji, jeden nagłówek na ekran i spójne formularze.
-- Odrzucone: Globalny odstęp w `MakScreenContent`; własny komponent listy wyboru zamiast Material 3; ukrycie typu zajęć na karcie.
-- Poprawki przy okazji: Pierwsze uruchomienie testów Compose na emulatorze wykazało, że dotknięcie pola daty albo godziny poza ikoną nie otwierało wyboru, bo pole tekstowe przechwytywało dotknięcie. Pola otwierają teraz wybór po dotknięciu w dowolnym miejscu. Część testów Compose zawierała błędy, których nie wykryto, bo testy były tylko kompilowane: szukały nadtytułu małymi literami, nie rozróżniały powtórzonych tekstów, pomijały przewinięcie i miały niespójny stan. Poprawiono je bez zmiany sprawdzanych reguł.
-- Weryfikacja: `gradlew.bat test lintDebug connectedDebugAndroidTest` przechodzi na emulatorze Android 16: 261 testów JVM i 66 testów urządzenia. Ekrany obejrzano na emulatorze w obu motywach przy 320 dp i domyślnej szerokości. TalkBack należy do O-05.
