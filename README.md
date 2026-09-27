@@ -16,9 +16,20 @@ MAK, czyli Mój Akademicki Kalendarz, to aplikacja na Androida do zarządzania p
 
 Plan i dane użytkownika są przechowywane lokalnie. Podstawowe funkcje działają bez konta i połączenia z siecią. Sieć jest używana wyłącznie do sprawdzania i pobierania aktualizacji, jeżeli użytkownik uruchomi sprawdzenie lub włączy automat.
 
-## Wymagania i uruchomienie
+## Instalacja
 
-- Android 12 lub nowszy, API 31;
+Aplikacja wymaga Androida 12 lub nowszego. Nie ma jej w Google Play, więc instaluje się ją z pliku APK.
+
+1. Na telefonie otwórz stronę [najnowszego wydania](https://github.com/r3tza/MAK/releases/latest) i w sekcji „Assets” pobierz plik `MAK-<wersja>.apk`.
+2. Otwórz pobrany plik z powiadomienia albo z aplikacji „Pliki”.
+3. Jeśli telefon zablokuje instalację, zezwól przeglądarce lub aplikacji „Pliki” na instalowanie nieznanych aplikacji. Android pokaże przejście do tego ustawienia.
+4. Jeśli Google Play Protect wyświetli ostrzeżenie o nieznanej aplikacji, wybierz „Więcej szczegółów”, a potem „Zainstaluj mimo to”. Ostrzeżenie pojawia się, bo aplikacji nie ma w sklepie.
+5. Po instalacji uruchom MAK i skonfiguruj plan przyciskiem „Skonfiguruj plan”.
+
+Kolejne wersje instaluje się z aplikacji: „Ustawienia”, sekcja „Aktualizacje”, „Sprawdź aktualizacje”. Przy pierwszej aktualizacji Android poprosi o zgodę na instalowanie aplikacji z MAK. Aktualizacja zachowuje plan i notatki. Nie odinstalowuj aplikacji przed aktualizacją, bo usunięcie aplikacji usuwa jej dane. Przed większymi zmianami warto zrobić kopię zapasową: „Ustawienia”, „Kopia zapasowa i import”.
+
+## Budowanie ze źródeł
+
 - JDK 17;
 - Android SDK zgodny z konfiguracją projektu.
 

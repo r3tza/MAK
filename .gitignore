@@ -15,6 +15,12 @@ local.properties
 *.aab
 *.hprof
 
+# Signing keys
+*.jks
+*.keystore
+*.p12
+*.pfx
+
 # Python
 __pycache__/
 *.pyc
