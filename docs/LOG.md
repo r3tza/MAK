@@ -13,10 +13,10 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 
 ## 2026-09-27: Dłuższa animacja startu i znak w pasku (I-42)
 
-- Fakty: Animacja „Rozkwit” trwała około 870 ms i przy szybkim starcie system mógł ją przerwać. Użytkownik uznał ją za zbyt krótką. W górnym pasku został stary znak z czterech kwadratów.
-- Decyzja: Animacja trwa 1,6 s (makówka 350 ms, płatki po 800 ms co 130 ms). Przy zimnym starcie `MainActivity` przytrzymuje systemowy ekran startowy do końca animacji, licząc od startu procesu (`splashBloomEndsAt`); start w działającym procesie i wyłączone animacje systemu nie czekają. Użytkownik wybrał 2026-09-27 czas 1,6 s i odtwarzanie przy każdym zimnym starcie, co zmienia odrzucenie sztucznego wydłużania startu z I-30. Górny pasek pokazuje `MakPoppyMark` zamiast czterech kwadratów.
-- Powód: Przytrzymanie systemowego ekranu startowego pokazuje całą animację bez przeskoku do Compose, a plan wczytuje się w tym czasie w tle.
-- Odrzucone: animacja w Compose po statycznym ekranie startowym, bo wymaga drugiego źródła ruchu i przejścia między ekranami; 2 s, bo przy codziennym otwieraniu planu może męczyć; pełna animacja tylko raz dziennie, bo wymaga zapisu daty w ustawieniach.
+- Fakty: Animacja „Rozkwit” trwała około 870 ms i przy szybkim starcie system mógł ją przerwać; użytkownik uznał ją za zbyt krótką. Pierwsza poprawka wydłużyła animację ekranu startowego do 1,6 s, ale po niej na moment pojawiał się ekran ładowania z pełną nazwą, czyli drugi, osobny ekran. W górnym pasku został stary znak z czterech kwadratów.
+- Decyzja: Cała animacja (1,6 s) gra w jednym ekranie Compose. Systemowy ekran startowy pokazuje tylko makówkę na białym kole (`splash_logo_seed.xml`), a ekran ładowania w tym samym miejscu dorysowuje płatki (po 900 ms co 150 ms) i od początku rozwija pełną nazwę od środka. Animacja zaczyna się, gdy ekran startowy znika (bez systemowego wygaszania), gra raz na proces i zawsze do końca; potem ekran ładowania czeka na dane i znika przez przenikanie. Użytkownik wybrał 2026-09-27 czas 1,6 s, odtwarzanie przy każdym zimnym starcie i nazwę rozwijaną od początku animacji, co zmienia odrzucenie sztucznego wydłużania startu z I-30. Górny pasek pokazuje `MakPoppyMark`.
+- Powód: Jeden ekran daje ciągły ruch bez mignięcia i pozwala animować nazwę, której ikona ekranu startowego nie może pokazać. Plan wczytuje się w tym czasie w tle.
+- Odrzucone: przytrzymanie systemowego ekranu startowego z animowaną ikoną, bo po nim musiał pojawić się drugi ekran z nazwą; 2 s, bo przy codziennym otwieraniu planu może męczyć; pełna animacja tylko raz dziennie, bo wymaga zapisu daty w ustawieniach.
 
 ## 2026-09-27: Tylko orientacja pionowa (I-43)
 

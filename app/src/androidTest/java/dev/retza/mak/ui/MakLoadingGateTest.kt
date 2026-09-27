@@ -58,7 +58,24 @@ class MakLoadingGateTest {
         }
         composeTestRule.onNodeWithTag(LOADING_SCREEN_TAG).assertExists()
 
-        composeTestRule.mainClock.advanceTimeBy(LOADING_SCREEN_TIMEOUT_MILLIS + 100)
+        composeTestRule.mainClock.advanceTimeBy(LOADING_SCREEN_TIMEOUT_MILLIS + LOADING_SCREEN_FADE_MILLIS + 100)
+
+        composeTestRule.onNodeWithTag(LOADING_SCREEN_TAG).assertDoesNotExist()
+        composeTestRule.onNodeWithText("Treść aplikacji").assertExists()
+    }
+
+    @Test
+    fun playsTheWholeIntroEvenWhenDataIsReady() {
+        composeTestRule.mainClock.autoAdvance = false
+        composeTestRule.setContent {
+            MAKTheme {
+                MakLoadingGate(isReady = true, playIntro = true) { Text("Treść aplikacji") }
+            }
+        }
+        composeTestRule.mainClock.advanceTimeBy(INTRO_BLOOM_MILLIS / 2)
+        composeTestRule.onNodeWithTag(LOADING_SCREEN_TAG).assertExists()
+
+        composeTestRule.mainClock.advanceTimeBy(INTRO_BLOOM_MILLIS / 2 + LOADING_SCREEN_FADE_MILLIS + 100)
 
         composeTestRule.onNodeWithTag(LOADING_SCREEN_TAG).assertDoesNotExist()
         composeTestRule.onNodeWithText("Treść aplikacji").assertExists()

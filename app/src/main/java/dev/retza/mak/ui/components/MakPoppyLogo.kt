@@ -21,6 +21,8 @@ import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
 import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.PathParser
+import dev.retza.mak.ui.PetalPose
+import dev.retza.mak.ui.SettledPetal
 import kotlin.math.PI
 import kotlin.math.cos
 
@@ -55,12 +57,14 @@ internal fun waitingPetalAlpha(phase: Float, index: Int): Float {
 
 /**
  * Poppy logo on the white icon circle, drawn like the splash screen icon: the square is the 240 dp
- * icon and the circle takes the middle two thirds. With [animateWaiting] a dimmer wave runs around
- * the petals; pass false when system animations are off.
+ * icon and the circle takes the middle two thirds. [petalPose] gives each petal's scale and turn
+ * during the start animation; with [animateWaiting] a dimmer wave runs around the petals. Pass
+ * false when system animations are off.
  */
 @Composable
 fun MakPoppyLogo(
     modifier: Modifier = Modifier,
+    petalPose: ((Int) -> PetalPose)? = null,
     animateWaiting: Boolean = false
 ) {
     val petal = remember { PathParser().parsePathString(PETAL_PATH).toPath() }
@@ -80,13 +84,16 @@ fun MakPoppyLogo(
     Canvas(modifier = modifier) {
         val side = size.minDimension
         drawCircle(color = PoppyIconCircle, radius = side / 3f)
-        // Read the phase here, so the wave redraws the canvas without recomposing.
+        // Read the animated values here, so both animations redraw the canvas without recomposing.
         val wavePhase = phase?.value
         translate(left = (size.width - side) / 2f, top = (size.height - side) / 2f) {
             scale(scale = side / LOGO_VIEWPORT, pivot = Offset.Zero) {
-                drawPoppy(petal = petal, gapColor = PoppyIconCircle) { index ->
-                    wavePhase?.let { waitingPetalAlpha(it, index) } ?: 1f
-                }
+                drawPoppy(
+                    petal = petal,
+                    gapColor = PoppyIconCircle,
+                    petalPose = { index -> petalPose?.invoke(index) ?: SettledPetal },
+                    petalAlpha = { index -> wavePhase?.let { waitingPetalAlpha(it, index) } ?: 1f }
+                )
             }
         }
     }
@@ -107,7 +114,7 @@ fun MakPoppyMark(
         translate(left = size.width / 2f, top = size.height / 2f) {
             scale(scale = side / (2f * MARK_RADIUS), pivot = Offset.Zero) {
                 translate(left = -LOGO_CENTER, top = -LOGO_CENTER) {
-                    drawPoppy(petal = petal, gapColor = gapColor) { 1f }
+                    drawPoppy(petal = petal, gapColor = gapColor, petalPose = { SettledPetal }, petalAlpha = { 1f })
                 }
             }
         }
@@ -117,27 +124,28 @@ fun MakPoppyMark(
 /** Radius, in grid units, that holds the whole flower with its outer gap line. */
 private const val MARK_RADIUS = 34.5f
 
-/** Draws the flower in the 108-unit grid of the launcher icon. */
+/** Draws the flower in the 108-unit grid of the launcher icon; the seed head covers the petal bases. */
 private fun DrawScope.drawPoppy(
     petal: Path,
     gapColor: Color,
+    petalPose: (Int) -> PetalPose,
     petalAlpha: (Int) -> Float
 ) {
-    scale(scale = FLOWER_SCALE, pivot = Offset(LOGO_CENTER, LOGO_CENTER)) {
+    val center = Offset(LOGO_CENTER, LOGO_CENTER)
+    scale(scale = FLOWER_SCALE, pivot = center) {
         repeat(POPPY_PETAL_COUNT) { index ->
-            rotate(degrees = 360f / POPPY_PETAL_COUNT * index, pivot = Offset(LOGO_CENTER, LOGO_CENTER)) {
-                drawPath(path = petal, color = PoppyRed.copy(alpha = petalAlpha(index)))
-                drawPath(
-                    path = petal,
-                    color = gapColor,
-                    style = Stroke(width = PETAL_GAP_WIDTH, join = StrokeJoin.Round)
-                )
+            val pose = petalPose(index)
+            rotate(degrees = 360f / POPPY_PETAL_COUNT * index + pose.rotation, pivot = center) {
+                scale(scale = pose.scale, pivot = center) {
+                    drawPath(path = petal, color = PoppyRed.copy(alpha = petalAlpha(index)))
+                    drawPath(
+                        path = petal,
+                        color = gapColor,
+                        style = Stroke(width = PETAL_GAP_WIDTH, join = StrokeJoin.Round)
+                    )
+                }
             }
         }
-        drawCircle(
-            color = PoppySeedHead,
-            radius = SEED_HEAD_RADIUS,
-            center = Offset(LOGO_CENTER, LOGO_CENTER)
-        )
+        drawCircle(color = PoppySeedHead, radius = SEED_HEAD_RADIUS, center = center)
     }
 }
