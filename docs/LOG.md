@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Logo maku i animacja startu (I-42)
+
+- Fakty: Aplikacja miała szablonową ikonę Androida, a ekran ładowania z I-30 pokazywał tylko pełną nazwę. Użytkownik chciał logo w kształcie maku, od skrótu nazwy.
+- Decyzja: Po trzech rundach wariantów w artefakcie „Logo MAK: warianty maku” użytkownik wybrał 2026-09-27 wariant M (pięć czerwonych płatków z pofalowanym brzegiem, ciemna makówka, białe tło) i animację „Rozkwit”. Ikona adaptacyjna ma białe tło, kwiat na pierwszym planie i osobną warstwę monochromatyczną, w której przerwy między płatkami i wokół makówki daje zmniejszenie płatków i wycięcie. Ekran startowy używa `windowSplashScreenAnimatedIcon` z białym kołem ikony w obu motywach. `MakPoppyLogo` rysuje ten sam kwiat w Compose na ekranie ładowania, w miejscu i rozmiarze ikony ekranu startowego, z pętlą przezroczystości płatków, którą wyłącza skala animacji 0. Szablonowe ikony bitmapowe usunięto, bo przy `minSdk` 31 launcher używa ikony adaptacyjnej.
+- Powód: Wzorem były ikony popularnych aplikacji: jeden duży znak bez drobnych detali. Na ciemnym tle makówka zlewała się z tłem, stąd białe koło. Animacja korzysta tylko z obrotu, skali i przezroczystości, więc ma jedno źródło kształtu w XML i w Compose.
+- Odrzucone: warianty z boku kwiatu i z łodygą, bo łodyga znika w małym rozmiarze; wydłużanie ekranu startowego do końca animacji, zgodnie z decyzją z I-30; Lottie jako nowa zależność.
+
 ## 2026-09-27: Pełna nazwa i ekran ładowania (I-30)
 
 - Fakty: Przy starcie „Dzisiaj” przez chwilę pokazywało „Brak aktywnego semestru”, a przy motywie ciemnym systemowy ekran startowy i pierwsza klatka były jasne.
@@ -150,11 +157,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Oba rodzaje notatek są różne i muszą być rozróżnialne etykietą i kolorem, a karta ma mieć jawne sekcje i czytelną semantykę.
 - Odrzucone: Scalanie notatek w jeden tekst; wybór jednej notatki operatorem `?:`; kolorowanie całej karty; zmiana widgetu (I-06).
 - Weryfikacja: `PlanMappingTest` (obie notatki osobno, jedna, brak, blank, kolizja nie nadpisuje notatek), `ScheduleScreenTest` (etykiety obu notatek i nazwa kierunku przy 320 dp), `ScheduleViewModelTest` (odwołany termin zachowuje notatkę do daty) i `TodayScreenTest` (obie etykiety przy 320 dp). `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór wyglądu na urządzeniu należy do O-05.
-
-## 2026-09-22: Podsumowanie „Dzisiaj” (I-02)
-
-- Fakty: Ekran „Dzisiaj” pokazywał jedną wartość (liczba zajęć), karta miała ozdobną ikonę, a próg okienka nie istniał.
-- Decyzja: Dodano domenowe `countGaps(occurrences, thresholdMinutes)` (łączenie nakładających się zajęć w bloki, okienko tylko gdy przerwa jest ściśle większa od progu, bez czasu przed pierwszym i po ostatnim) oraz `uniqueCollisionCount(collisions)` z kluczem pary wystąpień i zakresu nakładania. `WidgetPresenter` używa teraz `uniqueCollisionCount`, więc widget i ekran liczą kolizje tak samo. Próg zapisano w `SettingsPreferences` (`gap_threshold_minutes`, domyślnie 30, zakres 5..180). `TodayViewModel` wstrzykuje `SettingsPreferences` i wystawia `classCount`, `collisionCount` i `gapCount`; `MakSummaryCard` ma trzy równe kolumny „Zajęcia”, „Kolizje”, „Okienka” z etykietą nad liczbą, subtelnymi separatorami i bez ikony; liczba kolizji jest czerwona powyżej zera i zielona przy zerze, a przy braku zajęć w istniejącym semestrze karta pokazuje „Dziś bez zajęć” i trzy zera. Bez aktywnego semestru karta się nie pokazuje, a ekran zostaje w stanie pustym z „Skonfiguruj plan”. Każda kolumna ma semantykę scalającą etykietę i liczbę dla TalkBacka. Na obecnym `SettingsScreen` doszedł wybór progu 15, 20, 30, 45, 60 minut obok aktywnego semestru.
-- Powód: Reguła okienka i kolizji ma jedno źródło w domenie, a próg jest globalny i trwały.
-- Odrzucone: Liczenie okienek w Compose; drugi wzór klucza kolizji w widgecie; przebudowa całego ekranu ustawień (I-05) albo kart zajęć (I-03); nowa trasa ustawień.
-- Weryfikacja: `GapCounterTest` i `CollisionCountTest` na JVM, `TodayViewModelTest` (liczby, próg, brak semestru) i `SettingsViewModelTest` (domyślne 30 i zapis 45). `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi; `TodayScreenTest` (kompilowany) sprawdza trzy etykiety, zera i brak ikony przy 320 dp oraz brak karty i „Dziś bez zajęć” bez aktywnego semestru. Odbiór wyglądu na urządzeniu należy do O-05.

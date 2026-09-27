@@ -1,25 +1,32 @@
 package dev.retza.mak.ui
 
+import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
 import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import dev.retza.mak.ui.components.MakPoppyLogo
 import dev.retza.mak.ui.components.MakSpacing
 import kotlinx.coroutines.delay
 
@@ -61,9 +68,20 @@ fun MakLoadingGate(
     }
 }
 
-/** Temporary loading screen with the full name; a logo or its animation will replace the text. */
+/** Size of the splash screen icon, so the logo stays in place when the splash screen hands over. */
+private val SPLASH_ICON_SIZE = 240.dp
+
+/**
+ * Loading screen that continues the splash screen: the poppy logo at the size and position of the
+ * splash icon, with the full name below. While it waits, a dimmer wave runs around the petals,
+ * unless system animations are turned off.
+ */
 @Composable
 fun MakLoadingScreen(modifier: Modifier = Modifier) {
+    val context = LocalContext.current
+    val animationsOn = remember(context) {
+        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) != 0f
+    }
     Box(
         modifier = modifier
             .fillMaxSize()
@@ -72,13 +90,20 @@ fun MakLoadingScreen(modifier: Modifier = Modifier) {
             .semantics { contentDescription = "$MAK_FULL_NAME, ładowanie" },
         contentAlignment = Alignment.Center
     ) {
+        MakPoppyLogo(
+            modifier = Modifier.size(SPLASH_ICON_SIZE),
+            animateWaiting = animationsOn
+        )
         Text(
             text = MAK_FULL_NAME,
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center,
-            modifier = Modifier.padding(horizontal = MakSpacing.xl)
+            // The logo circle ends 80 dp below the centre, so the name starts clearly under it.
+            modifier = Modifier
+                .offset(y = SPLASH_ICON_SIZE / 2 + MakSpacing.xl)
+                .padding(horizontal = MakSpacing.xl)
         )
     }
 }
