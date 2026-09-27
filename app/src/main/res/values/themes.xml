@@ -4,10 +4,9 @@
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="android:windowBackground">@color/mak_paper</item>
-        <!-- Splash screen: the poppy seed head on a white icon circle; the loading screen continues the animation. -->
+        <!-- Splash screen: only the theme background; the start animation plays on the loading screen. -->
         <item name="android:windowSplashScreenBackground">@color/mak_paper</item>
-        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo_seed</item>
-        <item name="android:windowSplashScreenIconBackgroundColor">@color/mak_paper</item>
+        <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_empty</item>
         <item name="android:colorPrimary">@color/mak_accent</item>
         <item name="android:windowLightStatusBar">true</item>
     </style>

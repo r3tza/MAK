@@ -106,9 +106,9 @@ fun MakLoadingGate(
 private val SPLASH_ICON_SIZE = 240.dp
 
 /**
- * Loading screen that continues the splash screen: the poppy logo at the size and position of the
- * splash icon, with the full name below. [introElapsed] drives the start animation: the petals
- * grow around the seed head from the splash screen while the name unfolds from the middle. When
+ * Loading screen that follows the empty splash screen: the poppy logo at the size and position of
+ * a splash icon, with the full name below. [introElapsed] drives the start animation: the seed
+ * head pops in and the petals grow around it while the name unfolds from the middle. When
  * [waiting] after it, a dimmer wave runs around the petals, unless system animations are off.
  */
 @Composable
@@ -129,7 +129,7 @@ fun MakLoadingScreen(
     ) {
         MakPoppyLogo(
             modifier = Modifier.size(SPLASH_ICON_SIZE),
-            petalPose = introElapsed?.let { elapsed -> { index -> bloomPetalPose(elapsed.value, index) } },
+            bloomElapsed = introElapsed,
             animateWaiting = animationsOn && waiting
         )
         Text(

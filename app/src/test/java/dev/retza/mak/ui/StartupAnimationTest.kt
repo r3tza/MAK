@@ -7,8 +7,19 @@ import org.junit.Test
 
 class StartupAnimationTest {
     @Test
-    fun petalsStartSmallAndTurnedAndSettleByTheEnd() {
-        assertEquals(PetalPose(scale = 0.2f, rotation = -25f), bloomPetalPose(elapsedMillis = 0f, index = 0))
+    fun seedHeadAndIconCirclePopInFirst() {
+        assertEquals(0f, bloomSeedHeadScale(0f), 0.001f)
+        assertEquals(0f, bloomIconCircleScale(0f), 0.001f)
+        // The seed head peaks at 70% of its 350 ms, before the first petal starts at 250 ms.
+        assertEquals(1.12f, bloomSeedHeadScale(0.7f * 350f), 0.001f)
+        assertEquals(1f, bloomSeedHeadScale(350f), 0.001f)
+        assertEquals(1f, bloomIconCircleScale(450f), 0.001f)
+    }
+
+    @Test
+    fun petalsAreHiddenUntilTheyStartAndSettleByTheEnd() {
+        assertEquals(0f, bloomPetalPose(elapsedMillis = 0f, index = 0).scale, 0.001f)
+        assertEquals(PetalPose(scale = 0.2f, rotation = -25f), bloomPetalPose(elapsedMillis = 250f, index = 0))
         for (index in 0 until 5) {
             assertEquals(SettledPetal, bloomPetalPose(elapsedMillis = INTRO_BLOOM_MILLIS.toFloat(), index = index))
         }
@@ -16,16 +27,16 @@ class StartupAnimationTest {
 
     @Test
     fun laterPetalsStartLater() {
-        val first = bloomPetalPose(elapsedMillis = 400f, index = 0)
-        val last = bloomPetalPose(elapsedMillis = 400f, index = 4)
-        assertTrue(first.scale > last.scale)
-        assertEquals(PetalPose(scale = 0.2f, rotation = -25f), last)
+        val first = bloomPetalPose(elapsedMillis = 600f, index = 0)
+        val last = bloomPetalPose(elapsedMillis = 600f, index = 4)
+        assertTrue(first.scale > 0.2f)
+        assertEquals(0f, last.scale, 0.001f)
     }
 
     @Test
     fun petalOvershootsBeforeSettling() {
-        // Petal 0 reaches its peak at 70% of its 900 ms growth, which starts at 100 ms.
-        val peak = bloomPetalPose(elapsedMillis = 100f + 0.7f * 900f, index = 0)
+        // Petal 0 reaches its peak at 70% of its 800 ms growth, which starts at 250 ms.
+        val peak = bloomPetalPose(elapsedMillis = 250f + 0.7f * 800f, index = 0)
         assertEquals(1.04f, peak.scale, 0.001f)
         assertEquals(2f, peak.rotation, 0.001f)
     }

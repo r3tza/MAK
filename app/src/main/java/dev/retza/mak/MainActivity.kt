@@ -220,7 +220,7 @@ class MainActivity : ComponentActivity() {
     /**
      * Holds the system splash screen until the stored theme is read, so a dark theme never starts
      * with a light frame. A stalled read releases it after [THEME_WAIT_MILLIS]. The first drawn
-     * frame is the loading screen with the same seed head, so the splash screen goes away at once,
+     * frame is the loading screen on the same background, so the splash screen goes away at once,
      * without the system fade, and the start animation begins from there.
      */
     private fun keepSplashUntilThemeIsRead() {

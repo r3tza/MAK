@@ -5,15 +5,19 @@ import android.provider.Settings
 import androidx.compose.animation.core.FastOutSlowInEasing
 
 /**
- * Timeline of the start animation ("bloom", chosen 2026-09-27). The system splash screen shows
- * only the seed head (splash_logo_seed.xml); the loading screen then grows five petals from the
- * centre with a slight turn and unfolds the full name from the middle, all in one screen.
+ * Timeline of the start animation ("bloom", chosen 2026-09-27). The system splash screen is empty
+ * (splash_empty.xml); the loading screen then pops in the seed head on the icon circle, grows five
+ * petals from the centre with a slight turn and unfolds the full name from the middle, all in one
+ * screen.
  */
 const val INTRO_BLOOM_MILLIS = 1_600L
-private const val PETAL_FIRST_START_MILLIS = 100f
-private const val PETAL_STAGGER_MILLIS = 150f
-private const val PETAL_GROW_MILLIS = 900f
+private const val SEED_HEAD_POP_MILLIS = 350f
+private const val ICON_CIRCLE_GROW_MILLIS = 450f
+private const val PETAL_FIRST_START_MILLIS = 250f
+private const val PETAL_STAGGER_MILLIS = 130f
+private const val PETAL_GROW_MILLIS = 800f
 private const val NAME_REVEAL_MILLIS = 1_300f
+private const val SEED_HEAD_PEAK_SCALE = 1.12f
 
 // Each petal grows past its size and settles back, like the keyframes of the design.
 private const val PETAL_OVERSHOOT_AT = 0.7f
@@ -30,6 +34,8 @@ val SettledPetal = PetalPose(scale = 1f, rotation = 0f)
 /** Pose of petal [index] (0 to 4, clockwise from the top) [elapsedMillis] after the bloom starts. */
 fun bloomPetalPose(elapsedMillis: Float, index: Int): PetalPose {
     val start = PETAL_FIRST_START_MILLIS + PETAL_STAGGER_MILLIS * index
+    // Hidden until it starts; from then on the grown seed head covers it while it is small.
+    if (elapsedMillis < start) return PetalPose(scale = 0f, rotation = PETAL_START_ROTATION)
     val progress = ((elapsedMillis - start) / PETAL_GROW_MILLIS).coerceIn(0f, 1f)
     return if (progress < PETAL_OVERSHOOT_AT) {
         val eased = FastOutSlowInEasing.transform(progress / PETAL_OVERSHOOT_AT)
@@ -45,6 +51,21 @@ fun bloomPetalPose(elapsedMillis: Float, index: Int): PetalPose {
         )
     }
 }
+
+/** Scale of the seed head: it pops in first, grows past its size and settles back. */
+fun bloomSeedHeadScale(elapsedMillis: Float): Float {
+    val progress = (elapsedMillis / SEED_HEAD_POP_MILLIS).coerceIn(0f, 1f)
+    return if (progress < PETAL_OVERSHOOT_AT) {
+        lerp(0f, SEED_HEAD_PEAK_SCALE, FastOutSlowInEasing.transform(progress / PETAL_OVERSHOOT_AT))
+    } else {
+        val eased = FastOutSlowInEasing.transform((progress - PETAL_OVERSHOOT_AT) / (1f - PETAL_OVERSHOOT_AT))
+        lerp(SEED_HEAD_PEAK_SCALE, 1f, eased)
+    }
+}
+
+/** Scale of the white icon circle, which grows with the seed head (visible in the dark theme). */
+fun bloomIconCircleScale(elapsedMillis: Float): Float =
+    FastOutSlowInEasing.transform((elapsedMillis / ICON_CIRCLE_GROW_MILLIS).coerceIn(0f, 1f))
 
 /** Visible part of the full name, from 0 (hidden) to 1, unfolding from the middle. */
 fun nameRevealFraction(elapsedMillis: Float): Float =

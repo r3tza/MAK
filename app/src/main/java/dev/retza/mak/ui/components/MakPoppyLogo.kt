@@ -23,11 +23,14 @@ import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.graphics.vector.PathParser
 import dev.retza.mak.ui.PetalPose
 import dev.retza.mak.ui.SettledPetal
+import dev.retza.mak.ui.bloomIconCircleScale
+import dev.retza.mak.ui.bloomPetalPose
+import dev.retza.mak.ui.bloomSeedHeadScale
 import kotlin.math.PI
 import kotlin.math.cos
 
 // Geometry of the poppy logo (variant M) in the 108-unit grid of the launcher icon. The same path
-// is used in ic_launcher_foreground.xml and splash_logo_animated.xml.
+// is used in ic_launcher_foreground.xml and ic_launcher_monochrome.xml.
 private const val LOGO_VIEWPORT = 108f
 private const val LOGO_CENTER = 54f
 private const val FLOWER_SCALE = 1.12f
@@ -57,14 +60,14 @@ internal fun waitingPetalAlpha(phase: Float, index: Int): Float {
 
 /**
  * Poppy logo on the white icon circle, drawn like the splash screen icon: the square is the 240 dp
- * icon and the circle takes the middle two thirds. [petalPose] gives each petal's scale and turn
- * during the start animation; with [animateWaiting] a dimmer wave runs around the petals. Pass
- * false when system animations are off.
+ * icon and the circle takes the middle two thirds. [bloomElapsed] drives the start animation: the
+ * circle and seed head pop in, then the petals grow and turn. With [animateWaiting] a dimmer wave
+ * runs around the petals; pass false when system animations are off.
  */
 @Composable
 fun MakPoppyLogo(
     modifier: Modifier = Modifier,
-    petalPose: ((Int) -> PetalPose)? = null,
+    bloomElapsed: State<Float>? = null,
     animateWaiting: Boolean = false
 ) {
     val petal = remember { PathParser().parsePathString(PETAL_PATH).toPath() }
@@ -83,15 +86,18 @@ fun MakPoppyLogo(
     }
     Canvas(modifier = modifier) {
         val side = size.minDimension
-        drawCircle(color = PoppyIconCircle, radius = side / 3f)
         // Read the animated values here, so both animations redraw the canvas without recomposing.
+        val elapsed = bloomElapsed?.value
+        val circleScale = elapsed?.let(::bloomIconCircleScale) ?: 1f
+        drawCircle(color = PoppyIconCircle, radius = side / 3f * circleScale)
         val wavePhase = phase?.value
         translate(left = (size.width - side) / 2f, top = (size.height - side) / 2f) {
             scale(scale = side / LOGO_VIEWPORT, pivot = Offset.Zero) {
                 drawPoppy(
                     petal = petal,
                     gapColor = PoppyIconCircle,
-                    petalPose = { index -> petalPose?.invoke(index) ?: SettledPetal },
+                    petalPose = { index -> elapsed?.let { bloomPetalPose(it, index) } ?: SettledPetal },
+                    seedHeadScale = elapsed?.let(::bloomSeedHeadScale) ?: 1f,
                     petalAlpha = { index -> wavePhase?.let { waitingPetalAlpha(it, index) } ?: 1f }
                 )
             }
@@ -114,7 +120,13 @@ fun MakPoppyMark(
         translate(left = size.width / 2f, top = size.height / 2f) {
             scale(scale = side / (2f * MARK_RADIUS), pivot = Offset.Zero) {
                 translate(left = -LOGO_CENTER, top = -LOGO_CENTER) {
-                    drawPoppy(petal = petal, gapColor = gapColor, petalPose = { SettledPetal }, petalAlpha = { 1f })
+                    drawPoppy(
+                        petal = petal,
+                        gapColor = gapColor,
+                        petalPose = { SettledPetal },
+                        seedHeadScale = 1f,
+                        petalAlpha = { 1f }
+                    )
                 }
             }
         }
@@ -129,6 +141,7 @@ private fun DrawScope.drawPoppy(
     petal: Path,
     gapColor: Color,
     petalPose: (Int) -> PetalPose,
+    seedHeadScale: Float,
     petalAlpha: (Int) -> Float
 ) {
     val center = Offset(LOGO_CENTER, LOGO_CENTER)
@@ -146,6 +159,6 @@ private fun DrawScope.drawPoppy(
                 }
             }
         }
-        drawCircle(color = PoppySeedHead, radius = SEED_HEAD_RADIUS, center = center)
+        drawCircle(color = PoppySeedHead, radius = SEED_HEAD_RADIUS * seedHeadScale, center = center)
     }
 }
