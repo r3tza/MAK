@@ -5,7 +5,7 @@
 - Źródło prawdy dla narzędzi i wersji: ten plik.
 - Język dokumentacji: polski.
 - Język odpowiedzi dla użytkownika: polski.
-- Ostatnia zaakceptowana aktualizacja: 2026-09-22.
+- Ostatnia zaakceptowana aktualizacja: 2026-09-27.
 
 ## 2. Język i środowisko uruchomieniowe
 
@@ -30,7 +30,7 @@
 - SQLite jako lokalna baza danych.
 - Preferences DataStore 1.2.1 do trwałych ustawień, w tym motywu.
 - `kotlinx.serialization` do importu i eksportu JSON.
-- Brak backendu, kont i synchronizacji sieciowej.
+- Brak backendu, kont i synchronizacji sieciowej. Jedynym połączeniem sieciowym jest sprawdzanie i pobieranie aktualizacji z GitHub Releases (sekcja 7).
 
 ## 5. Testy i jakość
 
@@ -63,9 +63,22 @@
 
 Repozytorium zawiera aplikację Android w wersji 0.1, konfigurację Gradle, lokalną bazę Room i testy. Aplikacja działa lokalnie na urządzeniu. Planowane testy zewnętrzne nie wymagają infrastruktury serwerowej.
 
+### Wydania i licencja (decyzja z 2026-09-27)
+
+- Repozytorium `r3tza/MAK` jest publiczne. Kod ma licencję Apache 2.0 (`LICENSE`), a właścicielem praw w `NOTICE` jest `r3tza`. Licencja nie obejmuje nazwy „MAK” ani ikony. Historia gita zostaje bez zmian, razem z adresem e-mail autora w commitach.
+- Wydanie budują GitHub Actions po wypchnięciu tagu `v<major>.<minor>.<patch>`. Wydaniem jest zawsze wersja release, bo wersja debug wczytuje dane demonstracyjne.
+- Jeden klucz podpisu release na zawsze. Klucz generuje użytkownik lokalnie; jest przechowywany w sekretach GitHuba i w dwóch kopiach poza nim. Nie trafia do repozytorium ani do rozmowy z agentem. Utrata klucza uniemożliwia aktualizację bez odinstalowania aplikacji i utraty lokalnych danych.
+- `versionCode` rośnie z każdym wydaniem i jest wyliczany z tagu. Wydanie z niższym albo równym `versionCode` jest odrzucane.
+- GitHub Release zawiera APK i plik `update.json` z wersją, adresem APK i sumą SHA-256. Aplikacja czyta tylko ten plik, bez API GitHuba i bez tokenu.
+
 ## 8. Odrzucone alternatywy
 
-- Backend i Firebase: odrzucone, ponieważ aplikacja ma działać całkowicie offline.
+- Backend i Firebase: odrzucone, ponieważ plan ma działać w pełni bez sieci.
 - Konta użytkowników i synchronizacja w chmurze: odrzucone, ponieważ zwiększyłyby zakres oraz wymagania dotyczące danych.
 - Ciągły serwis w tle i odświeżanie widgetu co minutę: odrzucone z powodu zużycia baterii.
 - Zewnętrzne CDN-y: odrzucone; aplikacja używa lokalnych zasobów.
+- Aktualizacje przez Google Play (Play In-App Updates): odrzucone, bo aplikacja nie jest dystrybuowana w Google Play.
+- WorkManager do okresowego sprawdzania aktualizacji w tle: odrzucony na rzecz sprawdzenia przy uruchomieniu aplikacji, które nie wymaga pracy w tle, nowej zależności ani zgody na powiadomienia.
+- Obtainium jako jedyny sposób aktualizacji: odrzucone, bo wymaga od mało technicznych użytkowników instalacji i konfiguracji drugiej aplikacji.
+- Osobne publiczne repozytorium tylko na wydania: odrzucone, bo repozytorium `MAK` jest publiczne, a osobne wymagałoby dodatkowego tokenu w workflow.
+- Licencje MIT i GPL 3.0: odrzucone. MIT nie wyklucza wprost prawa do nazwy i znaku; GPL 3.0 utrudnia forkom połączenie z zamkniętymi Usługami Google Play przy ewentualnej synchronizacji.

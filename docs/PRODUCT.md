@@ -15,9 +15,12 @@ Główne założenia:
 - wykrywanie kolizji;
 - widget na ekranie głównym;
 - powiadomienia systemowe;
-- działanie całkowicie offline;
+- plan działa w pełni bez połączenia z internetem;
+- sieć służy wyłącznie do sprawdzenia i pobrania aktualizacji aplikacji z GitHuba, bez wysyłania danych planu (decyzja z 2026-09-27);
 - małe zużycie baterii;
-- brak kont, logowania, backendu i synchronizacji w chmurze.
+- brak kont, logowania, backendu i synchronizacji w chmurze. Opcjonalna synchronizacja przez konto Google jest możliwym przyszłym rozszerzeniem, ale nie jest zaakceptowana (`ARCHITECTURE.md`, sekcja „Otwarte pytania”).
+
+Aplikacja trafia do kilku znajomych poza Google Play. Wydania są publikowane w GitHub Releases, a aplikacja może je sprawdzić, pobrać i przekazać do instalacji systemowi. Zakres opisuje `ARCHITECTURE.md`, sekcja „Kształt systemu”, punkt „Aktualizacje”.
 
 Po jednorazowym skonfigurowaniu planu użytkownik powinien korzystać głównie z ekranu „Dzisiaj” i widgetu.
 

@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Wydania na GitHubie, licencja i aktualizacje w aplikacji (I-34 do I-41)
+
+- Fakty: Aplikacja trafia do kilku mało technicznych znajomych poza Google Play. Bez mechanizmu aktualizacji każda nowa wersja wymaga ręcznego przesłania pliku APK. Przegląd historii gita (186 commitów) nie wykazał kluczy, haseł, plików podpisu ani prywatnych danych; dane demonstracyjne są fikcyjne.
+- Decyzja: Plan działa w pełni bez sieci, a aplikacja łączy się wyłącznie z GitHubem w celu sprawdzenia i pobrania aktualizacji, bez wysyłania danych planu (`PRODUCT.md`). Repozytorium `r3tza/MAK` będzie publiczne, na licencji Apache 2.0 z `r3tza` w `NOTICE`; historia i adres e-mail w commitach zostają bez zmian. Wydania budują GitHub Actions z tagu, z APK i `update.json` w GitHub Release (`STACK.md`). Aktualizator sprawdza wersję ręcznie w „O aplikacji” albo automatycznie przy uruchomieniu najwyżej raz na 24 godziny, pokazuje baner na „Dzisiaj”, weryfikuje plik i instaluje go przez `PackageInstaller` (`ARCHITECTURE.md`, punkt „Aktualizacje”). Użytkownik zaakceptował te decyzje 2026-09-27. Synchronizacja przez konto Google pozostaje możliwym przyszłym rozszerzeniem, a rejestracja w Android Developer Console jest odłożona.
+- Powód: Apache 2.0 jest licencją reszty stosu, wprost nie daje prawa do nazwy i znaku i nie utrudnia przyszłej integracji z Usługami Google Play. Sprawdzanie przy uruchomieniu nie wymaga pracy w tle, nowej zależności ani zgody na powiadomienia, a aplikacja z planem zajęć jest otwierana często.
+- Odrzucone: WorkManager z powiadomieniem, Play In-App Updates, Obtainium jako jedyny sposób aktualizacji, osobne repozytorium na wydania, licencje MIT i GPL 3.0 oraz przepisywanie historii gita.
+
 ## 2026-09-27: Konfiguracja semestru bez aktywacji (I-23)
 
 - Fakty: Otwarcie ekranu „Semestr” ustawiało ten semestr jako aktywny, więc konfiguracja semestru dodanego z wyprzedzeniem przełączała „Dzisiaj”, widget i powiadomienia. Powrót z podekranów kasował niezapisany formularz.
@@ -152,9 +159,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Małe, kompilowalne etapy pozwalają przepinać konsumentów po jednej grupie i nie mieszać podziału z I-02, I-03 ani I-06. Jedno źródło aktywnego semestru zapobiega dwóm odczytom `observeActive` na tym samym DAO.
 - Odrzucone: Jednorazowa zamiana wszystkich konsumentów; wystawianie encji Room w nowych kontraktach; drugi odczyt aktywnego semestru w `RoomScheduleRepository`; równoległe drugie mapowanie poza `DomainMappers`; domyślna wartość `ScheduleRepository` w konstruktorze fasady, która pozwala pominąć wstrzyknięcie i zbudować drugą instancję na tym samym DAO.
 - Weryfikacja: `gradlew.bat test` (245 testów), `compileDebugAndroidTestKotlin`, `lintDebug` i `assembleDebug` przechodzą. `KoinGraphTest` sprawdza bindingi `SemesterRepository`, `ScheduleRepository`, `PlanBackupGateway` i `PlanBackupService`, a `RoomPersistenceTest` używa `RoomSemesterRepository` i `RoomPlanBackupGateway`. Wybór kalendarza wznowienia w `AppViewModel` używa najmniejszego `id` po `toLongOrNull()`, tak jak `sharedCalendar()`, więc nie zależy od kolejności kolekcji. Testowy magazyn zmieniono z `FakeMakRepository` na `FakeRepository`. Status I-01 to `gotowe`; odbiór na urządzeniu należy do pozycji O-01 do O-06.
-
-## 2026-09-22: Doprecyzowanie planu dla słabszych agentów
-
-- Fakty: `PLAN.md` miał cztery kroki zgodne z kolejką, ale I-01, I-02 i I-03 nie podawały plików, podziału metod, kolejności kompilowalnych etapów, przypadków brzegowych ani poleceń weryfikacji. Słabszy agent musiałby odgadywać zakres.
-- Decyzja: Uzupełniono te kroki o kolejność małych zmian, konkretne pliki, przypisanie metod repozytorium, definicję unikalnej kolizji i okienka, format kontroli `check_map.py` oraz jawne wyłączenia zakresu. I-07 doprecyzowano bez zmiany celu. Nie zmieniono kolejki ani wymagań produktu.
-- Powód: Kroki w `PLAN.md` mają być wykonalne bez zgadywania intencji.
