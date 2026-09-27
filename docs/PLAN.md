@@ -1,6 +1,6 @@
 # Plan najbliższych prac
 
-Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Pełna lista i oddzielny status odbioru są w `QUEUE.md`. Repozytorium jest publiczne od 2026-09-27; wydanie `v0.2.0` jest następnym krokiem po I-40.
+Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Pełna lista i oddzielny status odbioru są w `QUEUE.md`. Repozytorium jest publiczne, a `v0.2.0` opublikowano 2026-09-27.
 
 ## 1. Odbierz automatyczne sprawdzanie i baner (I-40)
 
@@ -11,15 +11,15 @@ Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Pełna lis
 
 Kryterium zakończenia: automat nie wykonuje nadmiarowych zapytań, błąd pozostaje cichy, a pominięcie dotyczy tylko jednej wersji.
 
-## 2. Pierwsze publiczne wydanie (I-49)
+## 2. Dokończ pierwsze wydanie i przygotuj `v0.2.1` (I-49)
 
-Warunek spełniony 2026-09-27: I-39 potwierdziło, że aktualizacja podpisana tym samym kluczem zachowuje dane.
+`v0.2.0` jest opublikowane i sprawdzone (tag, `update.json`, suma SHA-256, certyfikat, instalacja na emulatorze).
 
-1. Utwórz tag `v0.2.0`, sprawdź w szkicu APK i `update.json` (zgodna suma SHA-256), a potem ręcznie opublikuj wydanie.
-2. Sprawdź, że `https://github.com/r3tza/MAK/releases/latest/download/update.json` zwraca plik bez logowania.
-3. Zainstaluj `v0.2.0` na telefonie według sekcji „Instalacja” w `README.md` i utwórz dane odbiorowe.
+1. Poproś znajomego o instalację `v0.2.0` według sekcji „Instalacja” w `README.md` i zanotuj niejasne kroki.
+2. Uzupełnij pole `notes` w `update.json` w `.github/workflows/release.yml`, tak aby ekran „Aktualizacja” pokazywał zmiany zamiast „Brak informacji”. Źródło tekstu ustal przed zmianą (np. plik z notatkami wydania w repozytorium).
+3. Dodaj wpis 0.2.1 do historii w `ReleaseHistory.kt`.
 
-Kryterium zakończenia: publiczne `v0.2.0` jest dostępne, instrukcja instalacji działa, a aplikacja sprawdza wersję przez produkcyjny adres.
+Kryterium zakończenia: instrukcja instalacji działa u znajomego, a workflow zapisuje notatki w `update.json`.
 
 ## 3. Pełny odbiór aktualizacji na telefonie (O-07)
 
