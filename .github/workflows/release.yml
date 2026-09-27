@@ -93,7 +93,7 @@ jobs:
           MAK_RELEASE_KEY_ALIAS: ${{ secrets.MAK_RELEASE_KEY_ALIAS }}
           MAK_RELEASE_KEY_PASSWORD: ${{ secrets.MAK_RELEASE_KEY_PASSWORD }}
         run: >-
-          ./gradlew test assembleRelease
+          bash ./gradlew test assembleRelease
           "-PmakVersionCode=${{ steps.version.outputs.version_code }}"
           "-PmakVersionName=${{ steps.version.outputs.version_name }}"
 
