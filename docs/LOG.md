@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Polskie zasoby aktywności i kolejność prac (I-44, I-26)
+
+- Fakty: Przy angielskim języku telefonu wybór daty pokazywał „Select date” i angielskie nazwy, a nagłówki dni tygodnia nakładały się na siebie. Teksty pochodziły z zasobów Material 3 w języku systemu.
+- Decyzja: `MainActivity.attachBaseContext` nakłada polskie zasoby (`withAppLocale`), zamiast tłumaczyć tytuły pojedynczych komponentów; aplikacja jest tylko po polsku (`ARCHITECTURE.md`). Wybór godziny w oknie niższym niż 560 dp używa układu poziomego. Kolejność prac ustalona przez użytkownika: I-44 i I-26, potem aktualizacje w aplikacji (I-36 do I-41), potem tryb tabletowy (I-45 do I-47).
+- Powód: Własne tytuły naprawiłyby tylko widoczne teksty; opisy przycisków dla czytnika ekranu i tryb wpisywania daty nadal byłyby w języku telefonu. Mechanizm aktualizacji musi być w pierwszej wersji dla znajomych.
+- Odrzucone: własny tytuł i nagłówek `DatePicker` z polskim `Locale` tylko w stanie wyboru; ustawianie języka aplikacji przez `LocaleManager`, bo działa od Androida 13, a `minSdk` to 31.
+
 ## 2026-09-27: Tryb tabletowy, wariant A (I-44 do I-47)
 
 - Fakty: Po blokadzie pionu użytkownik zapytał, jak robią to duże aplikacje, i poprosił o tryb tabletowy. Android 16 ignoruje blokadę orientacji na ekranach od 600 dp, a w poziomie wybór daty i godziny był ucięty.
@@ -146,11 +153,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Notatka opisuje konkretny termin zajęć, nie dzień w kalendarzu. Tożsamość przez datę oryginalną jest unikalna i odpowiada praktyce iCalendar (`RECURRENCE-ID`).
 - Odrzucone: Pozostawienie notatki przy dacie zapisu; przenoszenie notatki w repozytorium przy każdej zmianie terminu; zmiana nazwy kolumny `occurrence_date`.
 - Weryfikacja: Do wykonania w I-08 i I-09 według `PLAN.md`, kroki 1 i 5.
-
-## 2026-09-22: Dokończenie układu widgetu (I-06)
-
-- Fakty: Widget miał nagłówek, pasek kierunku, metadane, alert kolizji, etykietę notatki, separatory i warianty rozmiaru, ale nie pokazywał faz zajęć ani nie sygnalizował, co trwa i co jest następne, choć `ARCHITECTURE.md` dopuszcza różną prezentację zakończonych, trwających i następnych zajęć.
-- Decyzja: `WidgetPresenter.present` przyjmuje teraz `now` z `Clock` i oznacza każde wystąpienie jako `Past`, `Current`, `Next` albo `Scheduled`. `WidgetPlanLoader` przekazuje `LocalTime.now(clock)`. Wiersz pokazuje etykietę „Teraz” dla trwających i „Następne” dla najbliższych, a zakończone mają neutralny kolor tekstu. Kolumna czasu ma jedną linię, żeby nie ucinać godziny. Nie zmieniano odświeżania, kliknięcia, rozmiarów ani źródła planu.
-- Powód: Prezentacja zależna od czasu ma być czytelna, ale opierać się wyłącznie na czasie odczytanym przy odświeżeniu i nie obiecywać aktualizacji co minutę.
-- Odrzucone: Odliczanie na żywo i dokładne alarmy; osobne akcje w wierszu; zmiana logiki odświeżania i rozmiarów; kopiowanie reguł planu.
-- Weryfikacja: `WidgetPresenterTest.presenterMarksCurrentNextAndPastPhases` sprawdza fazy, a istniejące testy prezentera i kompozycji Glance przechodzą. `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór na launcherze należy do O-06.

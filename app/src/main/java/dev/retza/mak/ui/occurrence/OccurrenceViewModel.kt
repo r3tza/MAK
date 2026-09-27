@@ -91,7 +91,11 @@ class OccurrenceViewModel(
         state.value = derive(emptyOccurrenceDetails())
         openJob = viewModelScope.launch {
             val data = activePlanData.first { it != null } ?: return@launch
-            val built = buildDetails(data, args) ?: return@launch
+            val built = buildDetails(data, args)
+            if (built == null) {
+                state.value = derive(emptyOccurrenceDetails().copy(notFound = true))
+                return@launch
+            }
             originalDate = built.baseDate.toLocalDateOrNull()
             noteDate = built.baseDate.toLocalDateOrNull()
             selectedClassIdState.value = args.classId

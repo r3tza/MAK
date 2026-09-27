@@ -78,14 +78,9 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
-        if (intent.getBooleanExtra(EXTRA_OPEN_TODAY, false)) {
-            openTodayRequests.trySend(Unit)
-            intent.removeExtra(EXTRA_OPEN_TODAY)
-        }
-        intent.getStringExtra(EXTRA_OPEN_PLAN_DATE)?.let { date ->
-            openPlanRequests.trySend(date)
-            intent.removeExtra(EXTRA_OPEN_PLAN_DATE)
-        }
+        // A recreated activity (theme change, process death) keeps its restored screens; the system
+        // may hand back the original intent, so its open request applies to the first start only.
+        if (savedInstanceState == null) handleOpenRequests(intent)
         // The start animation plays on a cold start only, and not when system animations are off.
         val playIntro = savedInstanceState == null && StartupBloom.claim() && areSystemAnimationsOn()
         setContent {
@@ -252,6 +247,10 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: android.content.Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
+        handleOpenRequests(intent)
+    }
+
+    private fun handleOpenRequests(intent: Intent) {
         if (intent.getBooleanExtra(EXTRA_OPEN_TODAY, false)) {
             openTodayRequests.trySend(Unit)
             intent.removeExtra(EXTRA_OPEN_TODAY)

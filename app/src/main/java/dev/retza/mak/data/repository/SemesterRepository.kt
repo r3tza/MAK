@@ -231,6 +231,13 @@ class RoomSemesterRepository(
                 )
             } else {
                 semesterPrograms.update(existing.copy(academicCalendarId = academicCalendarId))
+                // Like the other reassignments, a calendar left without programs is removed.
+                val previousCalendarId = existing.academicCalendarId
+                if (previousCalendarId != academicCalendarId &&
+                    calendars.countAssignments(previousCalendarId) == 0
+                ) {
+                    calendars.deleteById(previousCalendarId)
+                }
                 existing.id
             }
             SetupConfigurationIds(semesterId, studyProgramId, academicCalendarId, semesterProgramId)

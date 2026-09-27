@@ -15,7 +15,7 @@ Audyt objął przegląd domeny, repozytoriów, importu, powiadomień, widgetu i 
 1. **Konfiguracja semestru aktywuje go (I-23).** Naprawione 2026-09-27: konfiguracja nie zmienia aktywnego semestru i zachowuje niezapisane zmiany po powrocie z podekranów.
 2. **Zmiana tygodnia bez zapisu (I-24).** Naprawione 2026-09-27: wiersz tygodnia nie jest akcją, gdy nie ma jednego kalendarza do korekty.
 3. **Odwołane terminy w „Planie” (I-25).** Naprawione 2026-09-27: reguła w domenie, filtr kierunku, licznik bez odwołanych.
-4. **Drobne błędy (I-26).** Ponowne przejście z powiadomienia albo widgetu po przywróceniu procesu, pusty ekran szczegółów usuniętych zajęć, błędny komunikat przy zapisie progu okienka, równoległe odświeżanie alarmów i nieusuwany kalendarz po przepięciu przypisania.
+4. **Drobne błędy (I-26).** Naprawione 2026-09-27.
 
 ## Problemy potwierdzone audytem interfejsu z 2026-09-27
 

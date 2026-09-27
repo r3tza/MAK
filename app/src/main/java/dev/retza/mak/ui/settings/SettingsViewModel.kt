@@ -56,7 +56,8 @@ private data class SettingsLocalState(
     val importErrorMessage: String? = null,
     val isPreparingImport: Boolean = false,
     val isReplacingData: Boolean = false,
-    val isSavingNotifications: Boolean = false
+    val isSavingNotifications: Boolean = false,
+    val isSavingGapThreshold: Boolean = false
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -225,7 +226,19 @@ class SettingsViewModel(
 
     fun setGapThresholdMinutes(id: String) {
         val minutes = id.toIntOrNull() ?: return
-        saveNotifications { preferences.setGapThresholdMinutes(minutes) }
+        if (local.value.isSavingGapThreshold) return
+        local.update { it.copy(isSavingGapThreshold = true) }
+        viewModelScope.launch {
+            try {
+                preferences.setGapThresholdMinutes(minutes)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                feedbackSink.publish(UiFeedback("Nie udało się zapisać progu okienka.", UiFeedbackKind.Error))
+            } finally {
+                local.update { it.copy(isSavingGapThreshold = false) }
+            }
+        }
     }
 
     private fun saveNotifications(block: suspend () -> Unit) {

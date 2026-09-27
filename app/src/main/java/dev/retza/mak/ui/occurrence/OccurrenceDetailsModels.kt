@@ -64,6 +64,8 @@ data class OccurrenceDetailsUiState(
     val showDeleteConfirmation: Boolean = false,
     val canEditBaseClass: Boolean = true,
     val canDeleteBaseClass: Boolean = true,
+    // The route points to a class that no longer exists in the active semester.
+    val notFound: Boolean = false,
     val canCancelOccurrence: Boolean = true,
     val canChangeOccurrence: Boolean = true,
     val canMoveOccurrence: Boolean = true,

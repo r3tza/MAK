@@ -40,6 +40,12 @@ android {
     buildFeatures {
         compose = true
     }
+    // MainActivity always uses Polish resources, so a bundle must not drop them by phone language.
+    bundle {
+        language {
+            enableSplit = false
+        }
+    }
     testOptions {
         unitTests {
             isReturnDefaultValues = true

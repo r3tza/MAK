@@ -14,6 +14,8 @@ import dev.retza.mak.ui.settings.SettingsPreferences
 import java.time.Clock
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 
 private const val ALARM_PREFERENCES = "collision_alarms"
 private const val SCHEDULED_IDS_KEY = "scheduled_ids"
@@ -31,17 +33,21 @@ class CollisionAlarmScheduler(
     private val alarmManager = context.getSystemService(AlarmManager::class.java)
     private val stored = context.getSharedPreferences(ALARM_PREFERENCES, Context.MODE_PRIVATE)
 
-    suspend fun refresh() {
+    // Refreshes from the app, the boot receiver and the maintenance alarm may overlap; the lock keeps
+    // the stored alarm ids equal to the alarms that are actually scheduled.
+    private val mutex = Mutex()
+
+    suspend fun refresh() = mutex.withLock {
         val settings = preferences.collisionNotifications.first()
         if (!settings.enabled) {
-            cancelAll()
-            return
+            cancelAllLocked()
+            return@withLock
         }
         val semester = semesterRepository.observeActiveSemester().first()
         val planData = semester?.let { scheduleRepository.observeActivePlanData(it.id).first() }
         if (planData == null) {
-            cancelAll()
-            return
+            cancelAllLocked()
+            return@withLock
         }
         val planned = planner.plan(planData, settings.toPlannerSettings())
         val plannedIds = planned.map { it.id }.toSet()
@@ -51,7 +57,9 @@ class CollisionAlarmScheduler(
         store(plannedIds)
     }
 
-    fun cancelAll() {
+    suspend fun cancelAll() = mutex.withLock { cancelAllLocked() }
+
+    private fun cancelAllLocked() {
         storedIds().forEach { cancelAlarm(it) }
         cancelMaintenance()
         store(emptySet())

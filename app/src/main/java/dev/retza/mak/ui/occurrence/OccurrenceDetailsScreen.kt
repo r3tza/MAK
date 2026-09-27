@@ -25,6 +25,7 @@ import dev.retza.mak.ui.components.MakFactRow
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakPrimaryAction
+import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSpacing
@@ -50,6 +51,12 @@ fun OccurrenceDetailsScreen(
     onSaveOccurrenceNote: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    if (state.notFound) {
+        MakScreenContent(modifier = modifier.fillMaxSize()) {
+            MakEmptyState("Nie znaleziono tych zajęć.")
+        }
+        return
+    }
     Column(modifier = modifier.fillMaxSize()) {
         MakScreenContent(
             modifier = Modifier

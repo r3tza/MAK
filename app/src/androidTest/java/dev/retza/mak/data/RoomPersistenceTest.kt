@@ -537,6 +537,57 @@ class RoomPersistenceTest {
     }
 
     @Test
+    fun reassigningProgramDeletesOrphanCalendarWithOverrides() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val sourceCalendarId = insertCalendar(semesterId)
+        val targetCalendarId = insertCalendar(semesterId)
+        val programId = insertProgram("Informatyka")
+        val assignmentId = insertAssignment(semesterId, programId, sourceCalendarId)
+        database!!.weekOverrideDao().insert(
+            WeekOverrideEntity(
+                semesterId = semesterId,
+                academicCalendarId = sourceCalendarId,
+                weekStartDate = LocalDate.of(2026, 10, 5),
+                weekType = WeekType.B,
+                scope = WeekOverrideScope.ONE_WEEK
+            )
+        )
+
+        repository.saveStudyProgramAssignment(
+            semesterId,
+            StudyProgramRecord(id = programId, name = "Informatyka", color = "#112233"),
+            targetCalendarId
+        )
+
+        assertNull(database!!.academicCalendarDao().findById(sourceCalendarId))
+        assertTrue(database!!.weekOverrideDao().getForCalendar(sourceCalendarId).isEmpty())
+        assertEquals(targetCalendarId, database!!.semesterProgramDao().findById(assignmentId)?.academicCalendarId)
+    }
+
+    @Test
+    fun reassigningProgramKeepsCalendarStillUsedByAnotherProgram() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val sourceCalendarId = insertCalendar(semesterId)
+        val targetCalendarId = insertCalendar(semesterId)
+        val firstProgramId = insertProgram("Informatyka")
+        val secondProgramId = insertProgram("Matematyka")
+        insertAssignment(semesterId, firstProgramId, sourceCalendarId)
+        insertAssignment(semesterId, secondProgramId, sourceCalendarId)
+
+        repository.saveStudyProgramAssignment(
+            semesterId,
+            StudyProgramRecord(id = firstProgramId, name = "Informatyka", color = "#112233"),
+            targetCalendarId
+        )
+
+        assertEquals(sourceCalendarId, database!!.academicCalendarDao().findById(sourceCalendarId)?.id)
+    }
+
+    @Test
     fun reconnectingKeepsSourceCalendarWhenStillUsed() = runBlocking {
         database = openDatabase()
         val repository = repository()

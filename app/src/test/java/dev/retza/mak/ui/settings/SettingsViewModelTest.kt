@@ -121,6 +121,23 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun gapThresholdWriteFailurePublishesItsOwnError() = runTest(mainDispatcher) {
+        val preferences = InMemorySettingsPreferences()
+        preferences.failNextWrite = true
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(FakeRepository(), preferences, sink)
+
+        viewModel.setGapThresholdMinutes("45")
+        advanceUntilIdle()
+
+        assertEquals(listOf("Nie udało się zapisać progu okienka."), sink.published.map { it.message })
+
+        viewModel.setGapThresholdMinutes("45")
+        advanceUntilIdle()
+        assertEquals(1, sink.published.size)
+    }
+
+    @Test
     fun doubleThemeSelectionRunsOneWrite() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val preferences = InMemorySettingsPreferences()

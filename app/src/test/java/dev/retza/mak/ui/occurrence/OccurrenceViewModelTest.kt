@@ -54,6 +54,23 @@ class OccurrenceViewModelTest {
     }
 
     @Test
+    fun openingDeletedClassShowsNotFound() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.open("99:2026-09-21")
+        advanceUntilIdle()
+
+        val state = viewModel.details.value
+        assertTrue(state.notFound)
+        assertFalse(state.canCancelOccurrence)
+        assertFalse(state.canEditBaseClass)
+        assertFalse(state.canDeleteBaseClass)
+        assertEquals(null, viewModel.selectedClassId.value)
+    }
+
+    @Test
     fun routesOfRegularAndMovedOccurrenceOnSameDayOpenDifferentDetails() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         repository.saveOccurrenceChange(
