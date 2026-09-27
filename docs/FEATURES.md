@@ -6,7 +6,7 @@ Ten dokument opisuje docelowe zachowanie ekranów i widgetu. Bieżące braki są
 
 ### Start aplikacji
 
-Przy uruchomieniu Android 12+ pokazuje systemowy ekran startowy z ikoną aplikacji. Aplikacja przytrzymuje go, dopóki nie odczyta zapisanego motywu, najwyżej 1 s. Potem, do czasu wczytania aktywnego planu, widać ekran ładowania z pełną nazwą „Mój Akademicki Kalendarz” na tle motywu; znika on najpóźniej po 2 s i nie wraca po obrocie ekranu. Ekran „Dzisiaj” nie pokazuje stanu „Brak aktywnego semestru”, zanim baza odpowie. Wybrany w aplikacji motyw jest przekazywany systemowi (`UiModeManager.setApplicationNightMode`), więc ekran startowy i tło okna mają ten sam motyw co aplikacja. Tekst nazwy zostanie później zastąpiony logo albo animacją logo; ta zmiana wymaga osobnej decyzji o wyglądzie i o `reduced motion`.
+Przy uruchomieniu Android 12+ pokazuje systemowy ekran startowy z ikoną aplikacji. Aplikacja przytrzymuje go, dopóki nie odczyta zapisanego motywu, najwyżej 1 s. Potem, do czasu wczytania aktywnego planu, widać ekran ładowania z pełną nazwą „Mój Akademicki Kalendarz” na tle motywu; znika on najpóźniej po 2 s i nie wraca po obrocie ekranu. Ekran „Dzisiaj” nie pokazuje stanu „Brak aktywnego semestru”, zanim baza odpowie. Wybrany w aplikacji motyw jest przekazywany systemowi (`UiModeManager.setApplicationNightMode`), więc ekran startowy i tło okna mają ten sam motyw co aplikacja. Tekst nazwy zostanie zastąpiony logo i animacją startu z I-42 (`QUEUE.md`); przy ograniczeniu animacji w systemie ekran pokaże wariant statyczny.
 
 ### Dolny pasek
 
@@ -290,5 +290,6 @@ Odbiór na urządzeniu jest odrębnym kryterium od kompilacji testów Android.
 - Sprawdzić rozdzielanie i ponowne łączenie kalendarzy, wybór kalendarza korekty oraz plan dwóch kierunków z różnych uczelni.
 - Sprawdzić import poprawnego i błędnego pliku, anulowanie oraz rollback po błędzie zapisu.
 - Sprawdzić zgodę na powiadomienia, alarm wieczorny i przed zajęciami, restart, zmianę czasu, anulowanie kolizji i kliknięcie powiadomienia.
+- Sprawdzić zimny start w motywie jasnym, ciemnym i systemowym, także gdy motyw aplikacji różni się od systemowego: ekran startowy i ekran ładowania mają kolor motywu aplikacji, a „Dzisiaj” nie pokazuje stanu pustego przed danymi.
 - Sprawdzić nawigację i powrót systemowy, insety, TalkBack, klawiaturę, focus, motyw ciemny, długie treści i szerokość 320 dp. Potwierdzić, że po błędzie formularz zachowuje dane i pokazuje bezpieczny komunikat.
 - Sprawdzić widget na launcherze w małym, pośrednim i dużym rozmiarze, w obu motywach, po zmianie danych i po kliknięciu. Zweryfikować jego stany puste, kolizje i długie nazwy.

@@ -26,7 +26,7 @@ Te zasady obowiązują w całym repozytorium. Szczegóły produktu znajdują si�
 
 Zacznij od `docs/MAP.md`, potem otwórz tylko dokumenty i kod dotyczące zadania. Jeśli mapa nie wystarcza, znajdź właściwą sekcję przez `rg` i popraw mapę.
 
-Po zmianie `README.md`, `AGENTS.md`, `CLAUDE.md` albo plików `docs/*.md` uruchom `python3 scripts/check_map.py` (na Windowsie `python`). Po zmianie samego skryptu uruchom też `python3 scripts/test_check_map.py`. Szczegóły narzędzi są w `docs/STACK.md`.
+Po zmianie `README.md`, `AGENTS.md`, `CLAUDE.md` albo plików `docs/*.md` uruchom `python3 scripts/check_map.py` (na Windowsie `python` albo `py`). Po zmianie samego skryptu uruchom też `python3 scripts/test_check_map.py`. Szczegóły narzędzi są w `docs/STACK.md`.
 
 ## Aktualny punkt pracy
 
@@ -129,7 +129,7 @@ Agenci sprawdzają działanie aplikacji testami, które da się uruchomić lokal
 
 Po zmianie `WeekCalculator`, `ScheduleResolver`, `CollisionDetector`, eksportu JSON albo walidacji formularza uruchom `gradlew.bat test`. Nie czekaj na emulator.
 
-Po zmianie `README.md`, `AGENTS.md`, `CLAUDE.md` albo `docs/*.md` uruchom `python3 scripts/check_map.py` (na Windowsie `python`). Po zmianie `scripts/check_map.py` uruchom też `python3 scripts/test_check_map.py`. Kod 0 jest wymagany. Nie dodawaj pakietów Pythona, sieci, Gradle ani zapisu plików w tej kontroli.
+Po zmianie `README.md`, `AGENTS.md`, `CLAUDE.md` albo `docs/*.md` uruchom `python3 scripts/check_map.py` (na Windowsie `python` albo `py`). Po zmianie `scripts/check_map.py` uruchom też `python3 scripts/test_check_map.py`. Kod 0 jest wymagany. Nie dodawaj pakietów Pythona, sieci, Gradle ani zapisu plików w tej kontroli.
 
 Pisz testy razem z logiką, nie jako osobny etap. Jeden test na jedną regułę z `docs/DOMAIN.md`, `docs/FEATURES.md` albo `docs/ARCHITECTURE.md`. Przykładowe testy szablonu usuń, gdy pojawią się prawdziwe.
 

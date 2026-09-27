@@ -5,7 +5,7 @@ Zacznij od pytania, które rozwiązuje zadanie. Otwórz wskazany dokument i potr
 | Pytanie | Gdzie szukać |
 |---|---|
 | Po co powstaje MAK i co wchodzi do MVP? | [PRODUCT.md](PRODUCT.md): użytkownicy, cel, zakres pierwszej wersji, kryteria MVP i funkcje wyłączone |
-| Jak ma działać ekran lub widget? | [FEATURES.md](FEATURES.md): nawigacja, „Dzisiaj”, „Plan”, formularz zajęć, widget, ustawienia i scenariusze odbioru na urządzeniu |
+| Jak ma działać ekran lub widget? | [FEATURES.md](FEATURES.md): start aplikacji i ekran ładowania, nawigacja, „Dzisiaj”, „Plan”, formularz zajęć, widget, ustawienia i scenariusze odbioru na urządzeniu |
 | Jak obliczać plan? | [DOMAIN.md](DOMAIN.md): semestry i kalendarze, rytm A/B, zajęcia, zmiany wystąpień, okienka i kolizje |
 | Jakie są granice kodu i zasady UI? | [ARCHITECTURE.md](ARCHITECTURE.md): repozytoria, wspólna logika planu, nawigacja, integracje i zasady interfejsu |
 | Jakich narzędzi i testów używać? | [STACK.md](STACK.md): wersje bibliotek, środowisko, rodzaje kontroli i odrzucone alternatywy |

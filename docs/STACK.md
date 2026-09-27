@@ -54,7 +54,7 @@
 - Git do historii zmian.
 - Python 3 ze standardową biblioteką do kontroli dokumentacji: `scripts/check_map.py` sprawdza lokalne odnośniki, format `PLAN.md`, spójność `QUEUE.md` i limit `LOG.md`, a `scripts/test_check_map.py` (`unittest`) pokrywa jego przypadki. Skrypt nie używa sieci, nie uruchamia Gradle i nic nie zapisuje.
 - Lokalna baza danych i pliki JSON bez usług zewnętrznych.
-- Na Windowsie interpreter Pythona nazywa się zwykle `python`; polecenia zapisane z `python3` uruchamiaj wtedy przez `python`.
+- Na Windowsie interpreter Pythona nazywa się zwykle `python`; polecenia zapisane z `python3` uruchamiaj wtedy przez `python`. Jeśli `python` otwiera Microsoft Store albo zwraca „nie znaleziono Python”, użyj programu uruchamiającego `py`.
 - Gradle wymaga Android SDK: pliku `local.properties` z `sdk.dir` poza repozytorium albo zmiennej `ANDROID_HOME`. Domyślna lokalizacja na Windowsie to `%LOCALAPPDATA%\Android\Sdk`.
 - Testy Compose i Room uruchamia `gradlew.bat connectedDebugAndroidTest` na emulatorze albo urządzeniu. Sama kompilacja (`compileDebugAndroidTestKotlin`) nie zastępuje uruchomienia.
 - Wersja release ma wyłączoną minifikację. Przed włączeniem `isMinifyEnabled` trzeba dodać reguły R8 dla `kotlinx.serialization` i klas eksportu JSON, inaczej import i eksport przestaną działać.
