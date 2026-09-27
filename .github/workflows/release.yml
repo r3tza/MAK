@@ -1,0 +1,147 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Validate tag and calculate version
+        id: version
+        shell: bash
+        run: |
+          tag="$GITHUB_REF_NAME"
+          if [[ ! "$tag" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+            echo "Tag must have the format v<major>.<minor>.<patch>." >&2
+            exit 1
+          fi
+
+          major=$((10#${BASH_REMATCH[1]}))
+          minor=$((10#${BASH_REMATCH[2]}))
+          patch=$((10#${BASH_REMATCH[3]}))
+          if (( minor > 99 || patch > 99 )); then
+            echo "Minor and patch versions must be between 0 and 99." >&2
+            exit 1
+          fi
+
+          version_code=$((major * 10000 + minor * 100 + patch))
+          if (( version_code < 1 || version_code > 2100000000 )); then
+            echo "Calculated versionCode is outside the Android range." >&2
+            exit 1
+          fi
+
+          while IFS= read -r previous_tag; do
+            [[ "$previous_tag" == "$tag" ]] && continue
+            if [[ "$previous_tag" =~ ^v([0-9]+)\.([0-9]+)\.([0-9]+)$ ]]; then
+              previous_major=$((10#${BASH_REMATCH[1]}))
+              previous_minor=$((10#${BASH_REMATCH[2]}))
+              previous_patch=$((10#${BASH_REMATCH[3]}))
+              if (( previous_minor <= 99 && previous_patch <= 99 )); then
+                previous_code=$((previous_major * 10000 + previous_minor * 100 + previous_patch))
+                if (( version_code <= previous_code )); then
+                  echo "versionCode $version_code is not newer than $previous_code from $previous_tag." >&2
+                  exit 1
+                fi
+              fi
+            fi
+          done < <(git tag --list "v*")
+
+          echo "version_code=$version_code" >> "$GITHUB_OUTPUT"
+          echo "version_name=${tag#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Restore release key
+        shell: bash
+        env:
+          MAK_RELEASE_KEYSTORE_BASE64: ${{ secrets.MAK_RELEASE_KEYSTORE_BASE64 }}
+          MAK_RELEASE_STORE_FILE: ${{ runner.temp }}/mak-release.jks
+          MAK_RELEASE_STORE_PASSWORD: ${{ secrets.MAK_RELEASE_STORE_PASSWORD }}
+          MAK_RELEASE_KEY_ALIAS: ${{ secrets.MAK_RELEASE_KEY_ALIAS }}
+          MAK_RELEASE_KEY_PASSWORD: ${{ secrets.MAK_RELEASE_KEY_PASSWORD }}
+        run: |
+          : "${MAK_RELEASE_KEYSTORE_BASE64:?Missing MAK_RELEASE_KEYSTORE_BASE64 repository secret}"
+          : "${MAK_RELEASE_STORE_PASSWORD:?Missing MAK_RELEASE_STORE_PASSWORD repository secret}"
+          : "${MAK_RELEASE_KEY_ALIAS:?Missing MAK_RELEASE_KEY_ALIAS repository secret}"
+          : "${MAK_RELEASE_KEY_PASSWORD:?Missing MAK_RELEASE_KEY_PASSWORD repository secret}"
+          printf '%s' "$MAK_RELEASE_KEYSTORE_BASE64" | base64 --decode > "$MAK_RELEASE_STORE_FILE"
+          chmod 600 "$MAK_RELEASE_STORE_FILE"
+
+      - name: Test and build release
+        env:
+          MAK_RELEASE_STORE_FILE: ${{ runner.temp }}/mak-release.jks
+          MAK_RELEASE_STORE_PASSWORD: ${{ secrets.MAK_RELEASE_STORE_PASSWORD }}
+          MAK_RELEASE_KEY_ALIAS: ${{ secrets.MAK_RELEASE_KEY_ALIAS }}
+          MAK_RELEASE_KEY_PASSWORD: ${{ secrets.MAK_RELEASE_KEY_PASSWORD }}
+        run: >-
+          ./gradlew test assembleRelease
+          "-PmakVersionCode=${{ steps.version.outputs.version_code }}"
+          "-PmakVersionName=${{ steps.version.outputs.version_name }}"
+
+      - name: Prepare release files
+        shell: bash
+        env:
+          VERSION_CODE: ${{ steps.version.outputs.version_code }}
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+          RELEASE_TAG: ${{ github.ref_name }}
+          MIN_SDK: "31"
+        run: |
+          mkdir -p release-assets
+          apk_name="MAK-${VERSION_NAME}.apk"
+          cp app/build/outputs/apk/release/app-release.apk "release-assets/$apk_name"
+          sha256="$(sha256sum "release-assets/$apk_name" | cut -d ' ' -f 1)"
+          export APK_URL="https://github.com/${GITHUB_REPOSITORY}/releases/download/${RELEASE_TAG}/${apk_name}"
+          export APK_SHA256="$sha256"
+          python3 - <<'PY'
+          import json
+          import os
+          from pathlib import Path
+
+          update_info = {
+              "versionCode": int(os.environ["VERSION_CODE"]),
+              "versionName": os.environ["VERSION_NAME"],
+              "apkUrl": os.environ["APK_URL"],
+              "sha256": os.environ["APK_SHA256"],
+              "minSdk": int(os.environ["MIN_SDK"]),
+              "notes": "",
+          }
+          Path("release-assets/update.json").write_text(
+              json.dumps(update_info, ensure_ascii=False, indent=2) + "\n",
+              encoding="utf-8",
+          )
+          PY
+
+      - name: Publish GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          VERSION_NAME: ${{ steps.version.outputs.version_name }}
+        run: >-
+          gh release create "$GITHUB_REF_NAME"
+          "release-assets/MAK-${VERSION_NAME}.apk"
+          release-assets/update.json
+          --verify-tag
+          --generate-notes
+          --title "MAK ${VERSION_NAME}"
+
+      - name: Remove release key
+        if: always()
+        run: rm -f "${{ runner.temp }}/mak-release.jks"

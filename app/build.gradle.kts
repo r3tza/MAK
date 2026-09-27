@@ -6,6 +6,25 @@ plugins {
     alias(libs.plugins.koin.compiler)
 }
 
+val releaseStoreFile = providers.environmentVariable("MAK_RELEASE_STORE_FILE").orNull
+val releaseStorePassword = providers.environmentVariable("MAK_RELEASE_STORE_PASSWORD").orNull
+val releaseKeyAlias = providers.environmentVariable("MAK_RELEASE_KEY_ALIAS").orNull
+val releaseKeyPassword = providers.environmentVariable("MAK_RELEASE_KEY_PASSWORD").orNull
+val releaseSigningValues = listOf(
+    releaseStoreFile,
+    releaseStorePassword,
+    releaseKeyAlias,
+    releaseKeyPassword
+)
+val hasReleaseSigning = releaseSigningValues.all { !it.isNullOrBlank() }
+
+if (releaseSigningValues.any { !it.isNullOrBlank() } && !hasReleaseSigning) {
+    throw GradleException(
+        "Release signing requires MAK_RELEASE_STORE_FILE, MAK_RELEASE_STORE_PASSWORD, " +
+            "MAK_RELEASE_KEY_ALIAS and MAK_RELEASE_KEY_PASSWORD."
+    )
+}
+
 android {
     namespace = "dev.retza.mak"
     compileSdk {
@@ -18,14 +37,28 @@ android {
         applicationId = "dev.retza.mak"
         minSdk = 31
         targetSdk = 36
-        versionCode = 1
-        versionName = "0.1.0"
+        versionCode = providers.gradleProperty("makVersionCode").orNull?.toIntOrNull() ?: 1
+        versionName = providers.gradleProperty("makVersionName").orNull ?: "0.1.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
+    signingConfigs {
+        if (hasReleaseSigning) {
+            create("release") {
+                storeFile = file(requireNotNull(releaseStoreFile))
+                storePassword = requireNotNull(releaseStorePassword)
+                keyAlias = requireNotNull(releaseKeyAlias)
+                keyPassword = requireNotNull(releaseKeyPassword)
+            }
+        }
+    }
+
     buildTypes {
         release {
+            if (hasReleaseSigning) {
+                signingConfig = signingConfigs.getByName("release")
+            }
             isMinifyEnabled = false
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
