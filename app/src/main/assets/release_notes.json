@@ -2,6 +2,15 @@
   "minorChanges": "Pomniejsze poprawki",
   "releases": [
     {
+      "version": "0.2.2",
+      "date": "2026-09-28",
+      "changes": [
+        "Uproszczono karty zajęć: kierunek, stan i notatki są teraz czytelniejsze i nie używają zbędnych etykiet.",
+        "Widget pokazuje treść notatek razem z ikoną i lepiej wykorzystuje dostępne miejsce.",
+        "Podczas pierwszej konfiguracji planu można dodać więcej niż jeden kierunek."
+      ]
+    },
+    {
       "version": "0.2.1",
       "date": "2026-09-28",
       "changes": [
