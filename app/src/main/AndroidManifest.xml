@@ -19,6 +19,8 @@
             android:name=".MainActivity"
             android:exported="true"
             android:launchMode="singleTop"
+            android:screenOrientation="portrait"
+            tools:ignore="LockedOrientationActivity,DiscouragedApi"
             android:theme="@style/Theme.MAK">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />

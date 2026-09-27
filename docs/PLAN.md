@@ -15,9 +15,9 @@ Punkty (1) do (3) z `QUEUE.md`. Każdy punkt to osobna, mała zmiana.
 
 Przypadek brzegowy: trasa szczegółów otwarta ponownie po usunięciu zajęć pokazuje komunikat, a nie pusty ekran.
 
-Sprawdzenie: `gradlew.bat test`. Na emulatorze otwórz aplikację z widgetu albo powiadomienia, przejdź na inny ekran i obróć urządzenie; aplikacja zostaje na bieżącym ekranie.
+Sprawdzenie: `gradlew.bat test`. Na emulatorze otwórz aplikację z widgetu albo powiadomienia, przejdź na inny ekran i zmień motyw w ustawieniach, co odtwarza aktywność; aplikacja zostaje na bieżącym ekranie.
 
-Kryterium zakończenia: nowe testy przechodzą, a obrót ekranu po wejściu z powiadomienia albo widgetu nie przenosi ponownie na „Plan” ani „Dzisiaj”.
+Kryterium zakończenia: nowe testy przechodzą, a odtworzenie aktywności po wejściu z powiadomienia albo widgetu nie przenosi ponownie na „Plan” ani „Dzisiaj”.
 
 ## 2. Równoległe odświeżanie alarmów i osierocony kalendarz (I-26)
 

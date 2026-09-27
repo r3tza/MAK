@@ -4,6 +4,14 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Tylko orientacja pionowa (I-43)
+
+- Fakty: W poziomie na telefonie górny i dolny pasek zajmują około 40% wysokości, „Plan” pokazuje zajęcia dopiero po przewinięciu kontrolek, a wybór godziny i daty jest ucięty.
+- Decyzja: Użytkownik zdecydował 2026-09-27, że `MainActivity` działa tylko w pionie, bo z układu poziomego korzystałoby niewiele osób. Ostrzeżenia lint o blokadzie orientacji są wyciszone w manifeście.
+- Powód: Poprawienie układu poziomego i dialogów kosztowałoby więcej niż daje.
+- Ograniczenia: Na urządzeniach od 600 dp Android 16 ignoruje blokadę przy `targetSdk` 36. Odtwarzanie aktywności przy zmianie motywu, czcionki i języka nadal występuje, więc poprawka z I-26 pozostaje potrzebna.
+- Odrzucone: osobny układ poziomy; blokada tylko na części ekranów.
+
 ## 2026-09-27: Focus, duża czcionka i odwołane terminy (I-24, I-25, I-27 do I-29)
 
 - Fakty: Audyt interfejsu wykazał dwa przystanki Tab na każdej własnej kontrolce, ucinanie godziny przy skali czcionki 1,3, słowa łamane w środku przy skali 2,0, brak statusu w opisie karty dla TalkBack i odwołane terminy liczone w ViewModelu bez filtra kierunku.
@@ -148,12 +156,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Neutralne tło w obu stanach i przewidywalne odstępy wynikają z `ARCHITECTURE.md`, sekcja „Stały język wizualny”.
 - Odrzucone: Tło kontenera akcentowego po rozwinięciu; zmiany odstępów poza realne naruszenia; ruszanie kart zajęć i podsumowania „Dzisiaj”.
 - Weryfikacja: `SettingsScreenTest.expandableSectionTogglesAt320Dp` sprawdza rozwinięcie i zwinięcie przy 320 dp. `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Koloru tła nie da się sprawdzić bez urządzenia, więc odbiór wizualny należy do O-05.
-
-## 2026-09-22: Kontrola dokumentacji `scripts/check_map.py` (I-07)
-
-- Fakty: Dokumenty rosły bez automatycznej kontroli linków, limitów `PLAN.md` i `LOG.md` oraz spójności tabeli `QUEUE.md`, więc łatwo było zostawić martwy odnośnik albo wpis po limicie.
-- Decyzja: Dodano `scripts/check_map.py` używający wyłącznie standardowej biblioteki Pythona. Skrypt sprawdza lokalne odnośniki Markdown w `README.md`, `AGENTS.md`, `CLAUDE.md` i `docs/*.md` z uwzględnieniem wielkości liter, wymaga formatu `## N. tytuł (ID)` w `PLAN.md`, limitu pięciu kroków i istnienia kroków w `QUEUE.md`, wykrywa w `QUEUE.md` powtórzone identyfikatory, nieznane statusy i zależności do nieistniejących zadań, a w `LOG.md` przekroczenie 20 wpisów. Wypisuje plik i numer wiersza, zwraca 0 albo 1 i nic nie zapisuje. `scripts/test_check_map.py` pokrywa dziewięć przypadków na katalogach tymczasowych.
-- Powód: Kontrola ma być tania, lokalna i bez dodatkowych pakietów, żeby wychwycić regresję dokumentacji przed commitem.
-- Odrzucone: `scripts/check_text.py` i CI na tym etapie; uruchamianie Gradle albo sieci ze skryptu; zapisywanie plików przez skrypt.
-- Narzędzia i mapa: `docs/STACK.md` opisuje Python 3 ze standardową biblioteką i oba skrypty bez sieci oraz Gradle, a `docs/MAP.md` wskazuje `scripts/check_map.py` i jego testy przy pytaniu o spójność dokumentów. `AGENTS.md` i `docs/WORKFLOW.md` wymagają uruchomienia skryptu po zmianie dokumentów.
-- Weryfikacja: `python3 scripts/test_check_map.py` przechodzi (9 testów), a `python3 scripts/check_map.py` na bieżącym repozytorium zwraca kod 0. Nadmiar kroku planu i wpisu logu raportowany jest z numerem wiersza. Status I-07 to `gotowe`, a `PLAN.md` startuje teraz od I-04.

@@ -71,6 +71,8 @@ Klawiatura, focus, semantyczne etykiety, kontrast, `reduced motion`, małe ekran
 
 Dokumentacja i testy interfejsu muszą obejmować szerokości 320–390 px, obsługę dotyku, długie nazwy, arkusze mobilne i brak poziomego przewijania.
 
+Aplikacja działa tylko w orientacji pionowej (`android:screenOrientation="portrait"` w `MainActivity`, decyzja z 2026-09-27). Na urządzeniach z najkrótszym bokiem od 600 dp Android 16 ignoruje tę blokadę przy `targetSdk` 36, więc tablety i składane telefony mogą nadal pokazać układ poziomy; nie projektujemy go osobno. Aktywność nadal jest odtwarzana przy zmianie motywu, czcionki, języka i po zakończeniu procesu, więc stan ekranów musi to przetrwać.
+
 ### Uczciwość wobec stanu systemu
 
 Interfejs nie pokazuje akcji, która zakończy się przewidywalnym błędem. Data, oznaczenie tygodnia A/B, źródło ręcznej korekty i kolizje mają być jawne i jednoznaczne.
