@@ -26,6 +26,11 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -318,6 +323,19 @@ private fun SettingsRowDivider() {
 }
 
 private val SettingsCardShape = RoundedCornerShape(14.dp)
+private val SettingsRowFocusShape = RoundedCornerShape(12.dp)
+
+/** Keyboard focus ring for full-width rows; the chain must place it before the click modifier. */
+@Composable
+private fun Modifier.settingsRowFocus(): Modifier {
+    var focused by remember { mutableStateOf(false) }
+    val ring = if (focused) {
+        Modifier.border(2.dp, MaterialTheme.colorScheme.primary, SettingsRowFocusShape)
+    } else {
+        Modifier
+    }
+    return this.then(ring).onFocusChanged { focused = it.isFocused }
+}
 private val SettingsRowPadding = PaddingValues(horizontal = MakSpacing.lg, vertical = MakSpacing.md)
 
 @Composable
@@ -345,6 +363,7 @@ private fun SettingsNavigationRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
+            .settingsRowFocus()
             .clickable(onClick = onClick)
             .padding(SettingsRowPadding),
         verticalAlignment = Alignment.CenterVertically,
@@ -370,6 +389,7 @@ private fun SettingsActionRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
+            .settingsRowFocus()
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(SettingsRowPadding),
         verticalAlignment = Alignment.CenterVertically,
@@ -399,6 +419,7 @@ private fun SettingsSwitchRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
+            .settingsRowFocus()
             .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
             .padding(SettingsRowPadding),
         verticalAlignment = Alignment.CenterVertically,

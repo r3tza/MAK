@@ -9,7 +9,7 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Fakty: Użytkownik zmienił widoczność `r3tza/MAK` na publiczną. Strona repozytorium odpowiada bez logowania, a `releases/latest/download/update.json` zwraca 404, bo nie ma opublikowanego wydania. Przegląd historii przed zmianą nie wykazał sekretów ani plików podpisu.
 - Decyzja: I-41 obejmuje tylko upublicznienie i ma status `gotowe`. Wydanie `v0.2.0` i `v0.2.1` przeniesiono do nowego zadania I-49, od którego zależy O-07 (`QUEUE.md`, `PLAN.md`). `STACK.md` i `ARCHITECTURE.md` opisują repozytorium jako publiczne.
 - Powód: Upublicznienie nie wymaga odbioru aktualizacji na urządzeniu, a wydanie znajomym wymaga zakończonego I-39.
-- Otwarte: Weryfikację dwuetapową konta potwierdza użytkownik w pierwszym kroku I-49.
+- Uzupełnienie: Użytkownik potwierdził weryfikację dwuetapową konta GitHub 2026-09-27.
 
 ## 2026-09-27: Porządki w dokumentacji przed upublicznieniem
 

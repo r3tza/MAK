@@ -38,6 +38,43 @@ class TodayScreenTest {
     val composeTestRule = createComposeRule()
 
     @Test
+    fun updateBannerOffersViewAndDismissAtLargeFontAt320Dp() {
+        var viewed = false
+        var dismissed = false
+        composeTestRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) {
+                MAKTheme(dynamicColor = false) {
+                    Box(modifier = Modifier.width(320.dp).height(1400.dp)) {
+                        TodayScreen(
+                            state = TodayUiState(
+                                dateLabel = "Poniedziałek, 12 października",
+                                semesterLabel = "Semestr zimowy",
+                                weekLabel = "Tydzień A",
+                                hasActiveSemester = true
+                            ),
+                            onOpenPlan = {},
+                            onOpenClass = {},
+                            onStartSetup = {},
+                            onRetry = {},
+                            availableUpdateVersion = "0.2.1",
+                            onViewUpdate = { viewed = true },
+                            onDismissUpdate = { dismissed = true }
+                        )
+                    }
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Dostępna aktualizacja").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Wersja 0.2.1 jest gotowa do pobrania.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zobacz").assertIsDisplayed().performClick()
+        composeTestRule.onNodeWithText("Nie teraz").assertIsDisplayed().performClick()
+        assertTrue(viewed)
+        assertTrue(dismissed)
+    }
+
+    @Test
     fun startTimeIsNotCutAtFontScaleTwoAt320Dp() {
         val item = ClassItemUi(
             id = "class-1",
