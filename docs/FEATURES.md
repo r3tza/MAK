@@ -40,7 +40,7 @@ Powinien pokazywać:
 
 Definicja okienka i reguła jego liczenia są w `DOMAIN.md`, sekcja „Okienka”. Użytkownik może zmienić próg globalnie w ustawieniach.
 
-`TodayViewModel` umieszcza liczbę zajęć, unikalnych kolizji i okienek w stanie widoku. Karta zachowuje obecny gradient i nie pokazuje ozdobnej ikony. Nagłówek karty jest pogrubiony, większy od etykiet kolumn (17 sp), w pełni biały i oznaczony semantycznie jako nagłówek. Przy braku zajęć nagłówek brzmi „Dziś bez zajęć” zamiast „Twój plan na dziś”, a karta pokazuje trzy wartości równe zero, bez dodatkowego tekstu pod liczbami. Pionowe separatory między kolumnami są wyraźnie widoczne na gradiencie (biel 50% krycia, 40 dp wysokości). Układ musi zachować czytelność i semantykę przy szerokości 320 dp oraz w motywie jasnym i ciemnym.
+`TodayViewModel` umieszcza liczbę zajęć, unikalnych kolizji i okienek w stanie widoku. Karta zachowuje obecny gradient i nie pokazuje ozdobnej ikony. Nagłówek karty jest pogrubiony, większy od etykiet kolumn (17 sp), w pełni biały i oznaczony semantycznie jako nagłówek. Przy braku zajęć nagłówek brzmi „Dziś bez zajęć” zamiast „Twój plan na dziś”, a karta pokazuje trzy wartości równe zero, bez dodatkowego tekstu pod liczbami. Pionowe separatory między kolumnami są wyraźnie widoczne na gradiencie (biel 50% krycia, 40 dp wysokości). Układ musi zachować czytelność i semantykę przy szerokości 320 dp oraz w motywie jasnym i ciemnym. Etykiety kolumn są w pełni białe, mieszczą się w jednej linii i przy dużej czcionce zmniejszają się do 12 sp; przy skali 2,0 dopuszczalny jest wielokropek, a pełną etykietę czyta czytnik ekranu. Podpis „Od najwcześniejszego” przechodzi pod tytuł listy, gdy nie mieści się obok.
 
 ### Struktura karty zajęć
 
@@ -58,7 +58,7 @@ Pionowy pasek przy krawędzi karty używa pełnego koloru kierunku. Pill z nazw�
 
 Notatkę wspólną oznaczyć niebieskim lub indygo pillem „Notatka do zajęć”. Notatkę pojedynczego terminu oznaczyć fioletowym pillem „Notatka do terminu”; ta sama etykieta obowiązuje w „Planie” dla każdego dnia. Treść wyświetlić obok etykiety albo pod nią, bez zamykania całej długiej treści w pillu. Jeśli istnieją oba rodzaje notatek, pokazać dwa osobne wiersze. Kolizja zachowuje pomarańczowy styl ostrzegawczy. Kierunek, kolizja i oba rodzaje notatek mają osobne role kolorystyczne oraz jawne etykiety tekstowe.
 
-Karta musi zachować wspólne wyrównanie wierszy, poprawne zawijanie długich nazw i notatek, kontrast oraz czytelność przy szerokości 320 dp. Semantyka czytnika ekranu ma przekazywać godziny, nazwę, kierunek, typ, metadane, kolizję i zakres każdej notatki w logicznej kolejności.
+Karta musi zachować wspólne wyrównanie wierszy, poprawne zawijanie długich nazw i notatek, kontrast oraz czytelność przy szerokości 320 dp. Semantyka czytnika ekranu ma przekazywać godziny, nazwę, status („Odwołane”, „Zmienione”, „Jednorazowe”), kierunek, typ, tydzień A/B, metadane, kolizję i zakres każdej notatki w logicznej kolejności i pomijać puste części. Odwołanej karty nie przyciemnia się w całości: stan pokazują przekreślenie nazwy, pill „Odwołane” i pasek w kolorze błędu. Kolumna godzin ma co najmniej 48 dp i rośnie z rozmiarem czcionki, aby godzina nigdy nie była ucięta.
 
 Przykładowy element:
 
@@ -79,11 +79,11 @@ Ekran oferuje dwa równorzędne sposoby przeglądania planu: **Lista** i **Kalen
 
 Widok listy na telefonie składa się z:
 
-- wyboru dnia: poniedziałek–niedziela;
+- wyboru dnia: poniedziałek–niedziela, z dwuliterowymi skrótami („Pn” do „Nd”) jak w nagłówku kalendarza;
 - przesuwania między dniami gestem;
 - przechodzenia między tygodniami oraz powrotu do bieżącego tygodnia;
 - daty i oznaczenia A/B widocznego przy przeglądanym tygodniu;
-- akcji „Zmień tydzień A/B”, z wyborem zakresu „Tylko ten tydzień” lub „Od tego tygodnia”;
+- akcji „Zmień tydzień A/B”, z wyborem zakresu „Tylko ten tydzień” lub „Od tego tygodnia”; gdy filtr „Wszystkie” obejmuje kilka kalendarzy, wiersz tygodnia nie jest akcją i pokazuje „Wybierz kierunek w filtrach, aby zmienić tydzień.”; nazwa tygodnia stoi nad źródłem korekty, a przy dużej czcionce „Zmień” przechodzi do osobnej linii;
 - filtrów: „Wszystkie” oraz poszczególne kierunki;
 - listy zajęć posortowanej według godziny;
 - oznaczeń wykrytych kolizji.
@@ -101,7 +101,7 @@ Widok kalendarza pokazuje jeden miesiąc i zawiera:
 - wybór dnia i listę jego aktywnych zajęć pod kalendarzem;
 - akcję dodania nowych zajęć jednorazowych dla wybranej daty.
 
-Kalendarz pokazuje wynik `ScheduleResolver`, dlatego musi być zgodny z ekranem „Dzisiaj”, listą planu i widgetem. Odwołane zajęcia mogą pozostać widoczne jako przekreślone tylko wtedy, gdy użytkownik włączy opcję „Pokaż odwołane”. Domyślnie kalendarz pokazuje plan aktywny.
+Kalendarz pokazuje wynik `ScheduleResolver`, dlatego musi być zgodny z ekranem „Dzisiaj”, listą planu i widgetem. Odwołane zajęcia mogą pozostać widoczne jako przekreślone tylko wtedy, gdy użytkownik włączy opcję „Pokaż odwołane”. Lista odwołanych terminów pochodzi z domeny (`cancelledOccurrences`), stosuje ten sam filtr kierunku co plan i pomija odwołania z dni, w które zajęcia po edycji już się nie odbywają. Licznik zajęć dnia liczy tylko zajęcia, które się odbywają. Domyślnie kalendarz pokazuje plan aktywny.
 
 ## Dodawanie i edycja zajęć
 

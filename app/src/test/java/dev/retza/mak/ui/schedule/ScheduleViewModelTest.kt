@@ -17,12 +17,14 @@ import dev.retza.mak.ui.semester.WeekTypeUi
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -172,6 +174,51 @@ class ScheduleViewModelTest {
     }
 
     @Test
+    fun cancelledItemsFollowCourseFilterAndAreNotCounted() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val second = repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(name = "Fizyka", color = "#000000"),
+            sourceCalendarId = 1L
+        )
+        repository.classes += repository.classes.single().copy(
+            id = 2L,
+            semesterProgramId = second.semesterProgramId,
+            name = "Mechanika",
+            startTime = LocalTime.of(11, 0),
+            endTime = LocalTime.of(12, 0)
+        )
+        listOf(1L, 2L).forEach { classId ->
+            repository.occurrenceChanges += OccurrenceChangeEntity(
+                id = classId,
+                semesterId = 1L,
+                classId = classId,
+                originalDate = LocalDate.of(2026, 9, 21),
+                kind = dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED,
+                targetDate = null,
+                newStartTime = null,
+                newEndTime = null,
+                newRoom = null,
+                newBuilding = null,
+                newTeacherName = null,
+                newNote = null
+            )
+        }
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        viewModel.setShowCancelled(true)
+        viewModel.selectCourseFilter(second.semesterProgramId.toString())
+        advanceUntilIdle()
+
+        val state = viewModel.schedule.value
+        assertEquals(listOf("Mechanika"), state.items.map { it.name })
+        assertEquals(listOf("Mechanika"), state.calendarItems.map { it.name })
+        assertEquals("0 zajęć", state.selectedDayCountLabel)
+    }
+
+    @Test
     fun savingVisibleOverrideTargetsSelectedCourseCalendar() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val result = repository.addSeparatedSemesterProgram(
@@ -219,6 +266,29 @@ class ScheduleViewModelTest {
             listOf(UiFeedback("Nie udało się zapisać korekty tygodnia.", UiFeedbackKind.Error)),
             feedback
         )
+    }
+
+    @Test
+    fun weekCanBeCorrectedOnlyWithOneVisibleCalendar() = runTest(mainDispatcher) {
+        val single = viewModel(FakeRepository())
+        backgroundScope.launch { single.schedule.collect {} }
+        advanceUntilIdle()
+        assertTrue("one calendar, all courses", single.schedule.value.canCorrectWeek)
+
+        val repository = FakeRepository()
+        val second = repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(name = "Fizyka", color = "#000000"),
+            sourceCalendarId = 1L
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+        assertFalse("two calendars, all courses", viewModel.schedule.value.canCorrectWeek)
+
+        viewModel.selectCourseFilter(second.semesterProgramId.toString())
+        advanceUntilIdle()
+        assertTrue("two calendars, one course", viewModel.schedule.value.canCorrectWeek)
     }
 
     @Test

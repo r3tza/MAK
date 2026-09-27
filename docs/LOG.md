@@ -4,6 +4,14 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Focus, duża czcionka i odwołane terminy (I-24, I-25, I-27 do I-29)
+
+- Fakty: Audyt interfejsu wykazał dwa przystanki Tab na każdej własnej kontrolce, ucinanie godziny przy skali czcionki 1,3, słowa łamane w środku przy skali 2,0, brak statusu w opisie karty dla TalkBack i odwołane terminy liczone w ViewModelu bez filtra kierunku.
+- Decyzja: Własna kontrolka ma jeden cel focusu (`clickable` albo `selectable`), a `onFocusChanged` stoi przed nim; zasada jest w `ARCHITECTURE.md`. Kolumna godzin karty rośnie z czcionką. Etykiety karty podsumowania zmniejszają się do 12 sp, a przy skali 2,0 mogą mieć wielokropek, bo pełną etykietę czyta czytnik ekranu. Wiersz tygodnia przy szerokości poniżej 180 sp przenosi „Zmień” do osobnej linii. Odwołane terminy liczy domena (`cancelledOccurrences`) tą samą regułą terminu co resolver. Wiersz tygodnia nie jest akcją, gdy nie ma jednego kalendarza do korekty.
+- Powód: `ARCHITECTURE.md` wymaga klawiatury, 320 dp, braku obciętych informacji i jednego źródła reguł planu.
+- Odrzucone: zmniejszanie etykiet poniżej 12 sp; osobny komponent paska dla „Dodaj”; ukrywanie „Zmień” przy dużej czcionce.
+- Weryfikacja: 347 testów JVM, 83 testy urządzenia, lint bez nowych ostrzeżeń; zrzuty na emulatorze przy 320 dp i skalach 1,0, 1,3 i 2,0 oraz przejście klawiszem Tab.
+
 ## 2026-09-27: Logo maku i animacja startu (I-42)
 
 - Fakty: Aplikacja miała szablonową ikonę Androida, a ekran ładowania z I-30 pokazywał tylko pełną nazwę. Użytkownik chciał logo w kształcie maku, od skrótu nazwy.
@@ -149,11 +157,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Odrzucone: `scripts/check_text.py` i CI na tym etapie; uruchamianie Gradle albo sieci ze skryptu; zapisywanie plików przez skrypt.
 - Narzędzia i mapa: `docs/STACK.md` opisuje Python 3 ze standardową biblioteką i oba skrypty bez sieci oraz Gradle, a `docs/MAP.md` wskazuje `scripts/check_map.py` i jego testy przy pytaniu o spójność dokumentów. `AGENTS.md` i `docs/WORKFLOW.md` wymagają uruchomienia skryptu po zmianie dokumentów.
 - Weryfikacja: `python3 scripts/test_check_map.py` przechodzi (9 testów), a `python3 scripts/check_map.py` na bieżącym repozytorium zwraca kod 0. Nadmiar kroku planu i wpisu logu raportowany jest z numerem wiersza. Status I-07 to `gotowe`, a `PLAN.md` startuje teraz od I-04.
-
-## 2026-09-22: Karty zajęć z dwoma notatkami (I-03)
-
-- Fakty: `ClassItemUi` miało jedno pole `note` (`occurrenceNoteBody ?: classNote`), a `ClassCard` pokazywał jedną notatkę bez etykiety; pill kierunku używał kontenera motywu, nie koloru kierunku.
-- Decyzja: `ClassItemUi` ma osobne `classNote` i `occurrenceNote`, a `PlannedOccurrence.toUi` przepisuje obie bez `?:`. `ClassCard` zachowuje siatkę 48 dp i prawą kolumnę w kolejności: nazwa, pill kierunku i typ, metadane, cienki separator, kolizja, notatki. Notatka wspólna ma pill „Notatka do zajęć” (indygo) z treścią pod etykietą, notatka wystąpienia pill „Notatka na dziś” (fiolet) w osobnym wierszu. `CoursePill` używa jaśniejszego wariantu koloru kierunku jako tła i dobiera kolor tekstu po jasności tego tła, a pasek przy krawędzi nadal używa pełnego koloru. Między kolizją a notatkami jest drugi cienki separator, gdy występują oba rodzaje treści. `classCardDescription` odczytuje obie notatki z etykietami i nie spłaszcza ich.
-- Powód: Oba rodzaje notatek są różne i muszą być rozróżnialne etykietą i kolorem, a karta ma mieć jawne sekcje i czytelną semantykę.
-- Odrzucone: Scalanie notatek w jeden tekst; wybór jednej notatki operatorem `?:`; kolorowanie całej karty; zmiana widgetu (I-06).
-- Weryfikacja: `PlanMappingTest` (obie notatki osobno, jedna, brak, blank, kolizja nie nadpisuje notatek), `ScheduleScreenTest` (etykiety obu notatek i nazwa kierunku przy 320 dp), `ScheduleViewModelTest` (odwołany termin zachowuje notatkę do daty) i `TodayScreenTest` (obie etykiety przy 320 dp). `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór wyglądu na urządzeniu należy do O-05.

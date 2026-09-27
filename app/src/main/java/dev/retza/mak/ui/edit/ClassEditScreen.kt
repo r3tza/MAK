@@ -2,7 +2,6 @@ package dev.retza.mak.ui.edit
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -176,26 +175,30 @@ fun ClassEditScreen(
                     isError = state.errors.containsKey(ClassEditField.Day)
                 )
                 FieldError(state.errors[ClassEditField.Day])
-                Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-                        MakTimePickerField(
-                            label = "Od",
-                            value = state.startTime,
-                            onValueChange = onStartTimeChanged,
-                            isError = state.errors.containsKey(ClassEditField.StartTime)
-                        )
-                        FieldError(state.errors[ClassEditField.StartTime])
+                MakFieldPair(
+                    first = {
+                        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                            MakTimePickerField(
+                                label = "Od",
+                                value = state.startTime,
+                                onValueChange = onStartTimeChanged,
+                                isError = state.errors.containsKey(ClassEditField.StartTime)
+                            )
+                            FieldError(state.errors[ClassEditField.StartTime])
+                        }
+                    },
+                    second = {
+                        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                            MakTimePickerField(
+                                label = "Do",
+                                value = state.endTime,
+                                onValueChange = onEndTimeChanged,
+                                isError = state.errors.containsKey(ClassEditField.EndTime)
+                            )
+                            FieldError(state.errors[ClassEditField.EndTime])
+                        }
                     }
-                    Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-                        MakTimePickerField(
-                            label = "Do",
-                            value = state.endTime,
-                            onValueChange = onEndTimeChanged,
-                            isError = state.errors.containsKey(ClassEditField.EndTime)
-                        )
-                        FieldError(state.errors[ClassEditField.EndTime])
-                    }
-                }
+                )
                 MakSelectField(
                     label = "Powtarzanie",
                     value = state.recurrenceLabel,

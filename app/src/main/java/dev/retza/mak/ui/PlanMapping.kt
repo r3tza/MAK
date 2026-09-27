@@ -23,6 +23,17 @@ internal val dayNames = linkedMapOf(
     DayOfWeek.SUNDAY to "Niedziela"
 )
 
+// Two-letter names fit seven day cells at 320 dp and a large font scale.
+internal val shortDayNames = linkedMapOf(
+    DayOfWeek.MONDAY to "Pn",
+    DayOfWeek.TUESDAY to "Wt",
+    DayOfWeek.WEDNESDAY to "Śr",
+    DayOfWeek.THURSDAY to "Cz",
+    DayOfWeek.FRIDAY to "Pt",
+    DayOfWeek.SATURDAY to "So",
+    DayOfWeek.SUNDAY to "Nd"
+)
+
 internal fun classCountLabel(count: Int): String = when {
     count == 1 -> "1 zajęcie"
     count in 2..4 -> "$count zajęcia"

@@ -3,10 +3,10 @@ package dev.retza.mak.ui.schedule
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
@@ -36,6 +36,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
@@ -48,6 +49,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.retza.mak.ui.shortDayNames
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
 import dev.retza.mak.ui.components.CalendarMarkerColor
@@ -118,6 +120,8 @@ data class ScheduleUiState(
     val showCancelled: Boolean = false,
     val hasOneWeekCorrection: Boolean = false,
     val hasFromWeekCorrection: Boolean = false,
+    // False when the filter shows several calendars, so a week correction would have no target.
+    val canCorrectWeek: Boolean = true,
     val status: ScreenStatus = ScreenStatus.Ready,
     val emptyMessage: String = "Brak zajęć w tym dniu dla wybranego kierunku."
 )
@@ -276,20 +280,37 @@ private fun WeekNavigationHeader(
         WeekTypeBadge(
             weekTypeLabel = state.weekTypeLabel,
             weekSourceLabel = state.weekSourceLabel,
+            canCorrect = state.canCorrectWeek,
             onClick = onEditWeek
         )
     }
 }
 
+// Width in sp units below which the week row puts the action under the labels.
+private const val WEEK_BADGE_ROW_MIN_WIDTH = 180f
+
 @Composable
 private fun WeekTypeBadge(
     weekTypeLabel: String,
     weekSourceLabel: String,
+    canCorrect: Boolean,
     onClick: () -> Unit
 ) {
     var focused by remember { mutableStateOf(false) }
     val shape = RoundedCornerShape(10.dp)
-    Row(
+    // Without one calendar to correct the row is plain information, not an action that saves nothing.
+    val action = if (canCorrect) {
+        Modifier
+            .onFocusChanged { focused = it.isFocused }
+            .clickable(role = Role.Button, onClick = onClick)
+            .semantics {
+                contentDescription =
+                    "Zmień oznaczenie tygodnia, obecnie: $weekTypeLabel, źródło: $weekSourceLabel"
+            }
+    } else {
+        Modifier.semantics(mergeDescendants = true) {}
+    }
+    Column(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 48.dp)
@@ -301,43 +322,69 @@ private fun WeekTypeBadge(
             )
             .background(MaterialTheme.colorScheme.surfaceVariant)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
-            .clickable(role = Role.Button, onClick = onClick)
-            .onFocusChanged { focused = it.isFocused }
-            .focusable()
-            .semantics {
-                contentDescription =
-                    "Zmień oznaczenie tygodnia, obecnie: $weekTypeLabel, źródło: $weekSourceLabel"
-            }
+            .then(action)
             .padding(horizontal = MakSpacing.md, vertical = MakSpacing.xs),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+        verticalArrangement = Arrangement.Center
     ) {
-        Text(
-            text = weekTypeLabel,
-            color = MaterialTheme.colorScheme.onSurface,
-            fontWeight = FontWeight.Bold,
-            fontSize = 14.sp
-        )
-        Text(
-            text = weekSourceLabel,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            fontSize = 13.sp,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
-            modifier = Modifier.weight(1f)
-        )
-        Icon(
-            imageVector = Icons.Outlined.Edit,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.primary,
-            modifier = Modifier.size(18.dp)
-        )
-        Text(
-            text = "Zmień",
-            color = MaterialTheme.colorScheme.primary,
-            fontWeight = FontWeight.Bold,
-            fontSize = 13.sp
-        )
+        // Type above source; with a large font scale the action moves to its own line, so no word
+        // is broken inside.
+        BoxWithConstraints(modifier = Modifier.fillMaxWidth().heightIn(min = 40.dp)) {
+            val stacked = maxWidth.value / LocalDensity.current.fontScale < WEEK_BADGE_ROW_MIN_WIDTH
+            val labels: @Composable () -> Unit = {
+                Text(
+                    text = weekTypeLabel,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    fontWeight = FontWeight.Bold,
+                    fontSize = 14.sp
+                )
+                Text(
+                    text = weekSourceLabel,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontSize = 13.sp
+                )
+            }
+            val correctAction: @Composable () -> Unit = {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+                ) {
+                    Icon(
+                        imageVector = Icons.Outlined.Edit,
+                        contentDescription = null,
+                        tint = MaterialTheme.colorScheme.primary,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = "Zmień",
+                        color = MaterialTheme.colorScheme.primary,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 13.sp
+                    )
+                }
+            }
+            if (stacked) {
+                Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                    labels()
+                    if (canCorrect) correctAction()
+                }
+            } else {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+                ) {
+                    Column(modifier = Modifier.weight(1f)) { labels() }
+                    if (canCorrect) correctAction()
+                }
+            }
+        }
+        if (!canCorrect) {
+            Text(
+                text = "Wybierz kierunek w filtrach, aby zmienić tydzień.",
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                fontSize = 12.sp,
+                modifier = Modifier.padding(bottom = MakSpacing.xs)
+            )
+        }
     }
 }
 
@@ -373,12 +420,11 @@ private fun ScheduleFilterSection(
                     shape = shape
                 )
                 .background(MaterialTheme.colorScheme.surfaceVariant)
+                .onFocusChanged { focused = it.isFocused }
                 .clickable(
                     role = Role.Button,
                     onClick = { expanded = !expanded }
                 )
-                .onFocusChanged { focused = it.isFocused }
-                .focusable()
                 .semantics {
                     contentDescription =
                         "$headerLabel, wybór: $selectedLabel, $stateLabel"
@@ -497,7 +543,7 @@ private fun CalendarView(
             MakRoundButton("Następny miesiąc", Icons.AutoMirrored.Outlined.ArrowForward, onNextMonth)
         }
         Row(modifier = Modifier.fillMaxWidth().padding(bottom = 4.dp)) {
-            listOf("Pn", "Wt", "Śr", "Cz", "Pt", "So", "Nd").forEach { label ->
+            shortDayNames.values.forEach { label ->
                 Text(
                     text = label,
                     modifier = Modifier.weight(1f),

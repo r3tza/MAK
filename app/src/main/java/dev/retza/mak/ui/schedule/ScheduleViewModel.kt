@@ -12,6 +12,7 @@ import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
+import dev.retza.mak.domain.cancelledOccurrences
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
@@ -25,16 +26,15 @@ import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.fullDateFormatter
 import dev.retza.mak.ui.monthFormatter
-import dev.retza.mak.ui.polishLocale
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.shortDateFormatter
+import dev.retza.mak.ui.shortDayNames
 import dev.retza.mak.ui.toUi
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.format.TextStyle
 import java.time.temporal.TemporalAdjusters
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -209,8 +209,10 @@ class ScheduleViewModel(
         }
     }
 
-    private fun visibleWeekCalendarId(data: ActivePlanData): Long? {
-        val filterId = controls.value.courseFilterId
+    private fun visibleWeekCalendarId(
+        data: ActivePlanData,
+        filterId: String = controls.value.courseFilterId
+    ): Long? {
         if (filterId == "all") return data.calendars.singleOrNull()?.id?.toLongOrNull()
         val assignment = data.semesterPrograms.firstOrNull { it.id == filterId } ?: return null
         return data.calendars.firstOrNull { it.id == assignment.academicCalendarId }?.id?.toLongOrNull()
@@ -226,7 +228,7 @@ class ScheduleViewModel(
         val filtered = selected.occurrences.filter {
             activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
         }
-        val cancelled = if (control.showCancelled) cancelledItems(data, control.scheduleDate) else emptyList()
+        val cancelled = if (control.showCancelled) cancelledItems(data, control.scheduleDate, activeFilter) else emptyList()
         val labels = conflictLabels(selectedPlan.collisions)
         val monday = control.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val currentWeekMonday = control.today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -287,7 +289,7 @@ class ScheduleViewModel(
                 val date = monday.plusDays(offset)
                 ScheduleDayUi(
                     id = date.toString(),
-                    shortLabel = date.dayOfWeek.getDisplayName(TextStyle.SHORT, polishLocale),
+                    shortLabel = shortDayNames.getValue(date.dayOfWeek),
                     dateLabel = date.dayOfMonth.toString(),
                     accessibilityLabel = date.format(fullDateFormatter),
                     isSelected = date == control.scheduleDate,
@@ -306,7 +308,8 @@ class ScheduleViewModel(
                     )
                 },
             selectedDayLabel = dayNames[control.scheduleDate.dayOfWeek].orEmpty(),
-            selectedDayCountLabel = classCountLabel(filtered.size + cancelled.size),
+            // Counts only classes that take place, like "Dzisiaj" and the widget.
+            selectedDayCountLabel = classCountLabel(filtered.size),
             items = filtered.map { it.toUi(labels[it.id]) } + cancelled,
             calendarMonthLabel = control.calendarMonth.format(monthFormatter),
             calendarDays = calendarDays,
@@ -314,12 +317,13 @@ class ScheduleViewModel(
             calendarSelectedDayLabel = control.calendarDate.format(fullDateFormatter),
             calendarSelectedDayCountLabel = classCountLabel(calendarFiltered.size),
             calendarItems = calendarFiltered.map { it.toUi(calendarLabels[it.id]) } +
-                if (control.showCancelled) cancelledItems(data, control.calendarDate) else emptyList(),
+                if (control.showCancelled) cancelledItems(data, control.calendarDate, activeFilter) else emptyList(),
             showCancelled = control.showCancelled,
             hasOneWeekCorrection = data.weekOverrides.any {
                 it.academicCalendarId in relevantCalendarIds &&
                     it.weekStartDate == monday && it.scope == WeekOverrideScope.ONE_WEEK
             },
+            canCorrectWeek = visibleWeekCalendarId(data, activeFilter) != null,
             hasFromWeekCorrection = data.weekOverrides.any {
                 it.academicCalendarId in relevantCalendarIds &&
                     it.weekStartDate == monday && it.scope == WeekOverrideScope.FROM_WEEK
@@ -327,35 +331,28 @@ class ScheduleViewModel(
         )
     }
 
-    private fun cancelledItems(data: ActivePlanData, date: LocalDate): List<ClassItemUi> =
-        data.occurrenceChanges.filter {
-            it.originalDate == date && it.kind == OccurrenceChangeKind.CANCELLED
-        }.mapNotNull { change ->
-            val item = data.classes.firstOrNull { it.id == change.classId } ?: return@mapNotNull null
-            val assignment = data.semesterPrograms.firstOrNull { it.id == item.semesterProgramId }
-            val program = assignment?.let { link ->
-                data.courses.firstOrNull { it.id == link.studyProgramId }
+    private fun cancelledItems(data: ActivePlanData, date: LocalDate, activeFilter: String): List<ClassItemUi> =
+        cancelledOccurrences(data, date)
+            .filter { activeFilter == "all" || it.classItem.semesterProgramId == activeFilter }
+            .map { cancelled ->
+                val item = cancelled.classItem
+                ClassItemUi(
+                    id = "${item.id}:$date",
+                    name = item.name,
+                    type = item.type,
+                    courseName = cancelled.studyProgram?.name.orEmpty(),
+                    courseColor = cancelled.studyProgram?.color,
+                    startTime = item.startTime.toString(),
+                    endTime = item.endTime.toString(),
+                    room = item.room?.trim()?.ifEmpty { null },
+                    building = item.building,
+                    teacherName = item.teacherName,
+                    classNote = item.classNote?.takeIf { it.isNotBlank() },
+                    occurrenceNote = cancelled.occurrenceNote?.body?.takeIf { it.isNotBlank() },
+                    statusBadge = "Odwołane",
+                    isCancelled = true
+                )
             }
-            ClassItemUi(
-                id = "${item.id}:$date",
-                name = item.name,
-                type = item.type,
-                courseName = program?.name.orEmpty(),
-                courseColor = program?.color,
-                startTime = item.startTime.toString(),
-                endTime = item.endTime.toString(),
-                room = item.room?.trim()?.ifEmpty { null },
-                building = item.building,
-                teacherName = item.teacherName,
-                classNote = item.classNote?.takeIf { it.isNotBlank() },
-                occurrenceNote = data.occurrenceNotes
-                    .firstOrNull { it.classId == item.id && it.occurrenceDate == date }
-                    ?.body
-                    ?.takeIf { it.isNotBlank() },
-                statusBadge = "Odwołane",
-                isCancelled = true
-            )
-        }
 
     private fun activePlan(data: ActivePlanData, date: LocalDate) =
         activePlanProvider.resolve(data, date)

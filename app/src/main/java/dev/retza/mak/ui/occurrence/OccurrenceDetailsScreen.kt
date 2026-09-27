@@ -16,6 +16,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
+import dev.retza.mak.ui.components.MakFieldPair
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakDialog
@@ -165,21 +166,23 @@ private fun OccurrenceEditDialog(
                 isError = state.draftErrors.containsKey(OccurrenceEditField.Date)
             )
             FieldError(state.draftErrors[OccurrenceEditField.Date])
-            Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
-                MakTimePickerField(
-                    label = "Od",
-                    value = state.startTimeDraft,
-                    onValueChange = onStartTimeDraftChanged,
-                    modifier = Modifier.weight(1f)
-                )
-                MakTimePickerField(
-                    label = "Do",
-                    value = state.endTimeDraft,
-                    onValueChange = onEndTimeDraftChanged,
-                    modifier = Modifier.weight(1f),
-                    isError = state.draftErrors.containsKey(OccurrenceEditField.EndTime)
-                )
-            }
+            MakFieldPair(
+                first = {
+                    MakTimePickerField(
+                        label = "Od",
+                        value = state.startTimeDraft,
+                        onValueChange = onStartTimeDraftChanged
+                    )
+                },
+                second = {
+                    MakTimePickerField(
+                        label = "Do",
+                        value = state.endTimeDraft,
+                        onValueChange = onEndTimeDraftChanged,
+                        isError = state.draftErrors.containsKey(OccurrenceEditField.EndTime)
+                    )
+                }
+            )
             FieldError(state.draftErrors[OccurrenceEditField.EndTime])
             MakField(
                 label = "Sala",

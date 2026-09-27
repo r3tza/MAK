@@ -5,6 +5,8 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -48,6 +50,22 @@ class ScheduleScreenTest {
             .performClick()
         composeTestRule.onNodeWithText("Zmień tydzień A/B").assertIsDisplayed()
         composeTestRule.onAllNodesWithContentDescription("Więcej opcji").assertCountEquals(0)
+    }
+
+    @Test
+    fun weekRowWithoutCorrectableCalendarIsInformationOnlyAt320Dp() {
+        setScheduleContent(
+            state = scheduleState().copy(
+                weekTypeLabel = "Różne tygodnie",
+                weekSourceLabel = "Różne kalendarze",
+                canCorrectWeek = false
+            )
+        )
+
+        composeTestRule.onNodeWithText("Wybierz kierunek w filtrach, aby zmienić tydzień.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zmień").assertDoesNotExist()
+        composeTestRule.onAllNodes(hasClickAction() and hasText("Różne tygodnie", substring = true))
+            .assertCountEquals(0)
     }
 
     @Test

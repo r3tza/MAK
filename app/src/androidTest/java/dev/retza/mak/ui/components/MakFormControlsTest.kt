@@ -8,7 +8,18 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.input.InputMode
+import androidx.compose.ui.input.InputModeManager
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.platform.LocalInputModeManager
+import androidx.compose.ui.test.ExperimentalTestApi
+import androidx.compose.ui.test.assertIsFocused
+import androidx.compose.ui.test.performKeyInput
+import androidx.compose.ui.test.pressKey
+import androidx.compose.ui.test.requestFocus
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assert
@@ -31,6 +42,38 @@ import org.junit.runner.RunWith
 class MakFormControlsTest {
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    @OptIn(ExperimentalTestApi::class)
+    @Test
+    fun eachControlTakesOneTabStopAndEnterTogglesCheckbox() {
+        var checked by mutableStateOf(false)
+        lateinit var inputModeManager: InputModeManager
+        composeTestRule.setContent {
+            inputModeManager = LocalInputModeManager.current
+            MAKTheme(dynamicColor = false) {
+                Column(modifier = Modifier.width(320.dp)) {
+                    MakIconButton(label = "Pierwszy", icon = Icons.Outlined.Settings, onClick = {})
+                    MakChoiceRow(label = "Opcja", selected = false, onClick = {})
+                    MakCheckbox(label = "Pole", checked = checked, onCheckedChange = { checked = it })
+                    MakRoundButton(label = "Nieaktywny", icon = Icons.Outlined.Settings, onClick = {}, enabled = false)
+                    MakIconButton(label = "Ostatni", icon = Icons.Outlined.Settings, onClick = {})
+                }
+            }
+        }
+
+        // Clickable controls take focus only in keyboard mode, as on a device with a keyboard.
+        composeTestRule.runOnIdle { inputModeManager.requestInputMode(InputMode.Keyboard) }
+        composeTestRule.onNodeWithContentDescription("Pierwszy").requestFocus()
+        composeTestRule.onNodeWithContentDescription("Pierwszy").assertIsFocused()
+            .performKeyInput { pressKey(Key.Tab) }
+        composeTestRule.onNodeWithText("Opcja").assertIsFocused()
+            .performKeyInput { pressKey(Key.Tab) }
+        composeTestRule.onNodeWithText("Pole").assertIsFocused()
+            .performKeyInput { pressKey(Key.Enter) }
+        assertEquals(true, checked)
+        composeTestRule.onNodeWithText("Pole").performKeyInput { pressKey(Key.Tab) }
+        composeTestRule.onNodeWithContentDescription("Ostatni").assertIsFocused()
+    }
 
     @Test
     fun colorPickerAcceptsReadableCodeAndNamesSlidersAt320Dp() {

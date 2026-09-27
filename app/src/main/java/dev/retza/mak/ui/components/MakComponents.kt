@@ -3,7 +3,6 @@ package dev.retza.mak.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
-import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -23,6 +22,10 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.widthIn
+import androidx.compose.foundation.text.BasicText
+import androidx.compose.foundation.text.TextAutoSize
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -62,7 +65,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.draw.rotate
@@ -238,9 +240,8 @@ fun MakIconButton(
                 RoundedCornerShape(12.dp)
             )
             .background(MaterialTheme.colorScheme.surface)
-            .clickable(role = Role.Button, onClick = onClick)
-            .focusable()
             .onFocusChanged { focused = it.isFocused }
+            .clickable(role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center
     ) {
@@ -266,9 +267,8 @@ fun MakIconButton(
                 RoundedCornerShape(12.dp)
             )
             .background(MaterialTheme.colorScheme.surface)
-            .clickable(role = Role.Button, onClick = onClick)
-            .focusable()
             .onFocusChanged { focused = it.isFocused }
+            .clickable(role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center
     ) {
@@ -299,9 +299,8 @@ fun MakRoundButton(
                 RoundedCornerShape(10.dp)
             )
             .background(MaterialTheme.colorScheme.surface)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .focusable(enabled = enabled)
             .onFocusChanged { focused = it.isFocused }
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center
     ) {
@@ -332,9 +331,8 @@ fun MakRoundButton(
                 RoundedCornerShape(10.dp)
             )
             .background(MaterialTheme.colorScheme.surface)
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .focusable(enabled = enabled)
             .onFocusChanged { focused = it.isFocused }
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .semantics { contentDescription = label },
         contentAlignment = Alignment.Center
     ) {
@@ -415,7 +413,15 @@ private fun SummaryColumn(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
     ) {
-        Text(label, color = Color.White.copy(alpha = 0.78f), fontSize = 13.sp)
+        // One line that shrinks down to 12 sp instead of breaking a word at a large font scale.
+        BasicText(
+            text = label,
+            style = TextStyle(color = Color.White, fontSize = 13.sp),
+            maxLines = 1,
+            softWrap = false,
+            overflow = TextOverflow.Ellipsis,
+            autoSize = TextAutoSize.StepBased(minFontSize = 12.sp, maxFontSize = 13.sp)
+        )
         Text(value.toString(), color = valueColor, fontSize = 28.sp, fontWeight = FontWeight.Bold)
     }
 }
@@ -439,15 +445,23 @@ fun MakRowTitle(
     meta: String,
     modifier: Modifier = Modifier
 ) {
-    Row(
+    // Without room for both, the meta text moves under the title instead of breaking a word.
+    FlowRow(
         modifier = modifier
             .fillMaxWidth()
             .padding(start = 2.dp, end = 2.dp, bottom = 11.dp, top = 6.dp),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.xs),
+        itemVerticalAlignment = Alignment.CenterVertically
     ) {
         Text(title, style = MaterialTheme.typography.titleMedium)
-        Text(meta, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            meta,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis
+        )
     }
 }
 
@@ -469,7 +483,6 @@ fun ClassCard(
         modifier = modifier
             .fillMaxWidth()
             .height(IntrinsicSize.Min)
-            .alpha(if (item.isCancelled) 0.68f else 1f)
             .shadow(4.dp, shape, spotColor = Color(0x091C2A46))
             .clip(shape)
             .border(
@@ -479,9 +492,8 @@ fun ClassCard(
                 shape = shape
             )
             .background(MaterialTheme.colorScheme.surface)
-            .then(clickable)
             .onFocusChanged { focused = it.isFocused }
-            .focusable(enabled = onClick != null)
+            .then(clickable)
             .semantics { contentDescription = classCardDescription(item) }
     ) {
         Box(
@@ -496,7 +508,8 @@ fun ClassCard(
             .padding(start = MakSpacing.sm, end = MakSpacing.lg, top = MakSpacing.md, bottom = MakSpacing.md),
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)
         ) {
-            Column(modifier = Modifier.width(48.dp)) {
+            // At least 48 dp, wider with a large font scale, so the start time is never cut.
+            Column(modifier = Modifier.widthIn(min = 48.dp)) {
                 Text(
                     text = item.startTime,
                     fontSize = 14.sp,
@@ -972,7 +985,8 @@ fun MakNavBar(
     ) {
         MakNavButton("Dzisiaj", Icons.Outlined.Today, todaySelected, onToday, Modifier.weight(1f))
         MakNavButton("Plan", Icons.Outlined.CalendarMonth, planSelected, onPlan, Modifier.weight(1f))
-        MakNavButton("Dodaj", Icons.Outlined.Add, addSelected, onAdd, Modifier.weight(1f))
+        // "Dodaj" opens a form, so it is an action, not a destination tab.
+        MakNavButton("Dodaj", Icons.Outlined.Add, addSelected, onAdd, Modifier.weight(1f), role = Role.Button)
     }
 }
 
@@ -982,7 +996,8 @@ private fun RowScope.MakNavButton(
     icon: ImageVector,
     selected: Boolean,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    role: Role = Role.Tab
 ) {
     var focused by remember { mutableStateOf(false) }
     Column(
@@ -994,12 +1009,11 @@ private fun RowScope.MakNavButton(
                 RoundedCornerShape(12.dp)
             )
             .background(if (selected) MaterialTheme.colorScheme.primaryContainer else Color.Transparent)
-            .clickable(role = Role.Tab, onClick = onClick)
+            .onFocusChanged { focused = it.isFocused }
+            .clickable(role = role, onClick = onClick)
             .heightIn(min = 48.dp)
             .padding(horizontal = 8.dp, vertical = 4.dp)
-            .focusable()
-            .onFocusChanged { focused = it.isFocused }
-            .semantics { this.selected = selected },
+            .semantics { if (role == Role.Tab) this.selected = selected },
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
         Icon(
@@ -1101,9 +1115,8 @@ fun MakExpandableSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .clickable(role = Role.Button, onClick = { onExpandedChange(!expanded) })
-                .focusable()
                 .onFocusChanged { focused = it.isFocused }
+                .clickable(role = Role.Button, onClick = { onExpandedChange(!expanded) })
                 .heightIn(min = 48.dp)
                 .padding(horizontal = MakSpacing.md, vertical = MakSpacing.sm)
                 .semantics {
@@ -1202,10 +1215,9 @@ fun MakChoiceRow(
                 if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                 shape
             )
+            .onFocusChanged { focused = it.isFocused }
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
             .heightIn(min = 48.dp)
-            .focusable()
-            .onFocusChanged { focused = it.isFocused }
             .padding(10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -1244,9 +1256,8 @@ fun MakCheckbox(
     Row(
         modifier = modifier
             .heightIn(min = 48.dp)
-            .clickable(role = Role.Checkbox, onClick = { onCheckedChange(!checked) })
-            .focusable()
             .onFocusChanged { focused = it.isFocused }
+            .clickable(role = Role.Checkbox, onClick = { onCheckedChange(!checked) })
             .semantics {
                 stateDescription = if (checked) "Zaznaczone" else "Niezaznaczone"
             },
@@ -1393,9 +1404,14 @@ private fun classMeta(item: ClassItemUi): String = listOfNotNull(
     item.teacherName
 ).joinToString(", ")
 
-private fun classCardDescription(item: ClassItemUi): String = buildList {
+/** What TalkBack reads for a class card; empty parts are skipped. */
+internal fun classCardDescription(item: ClassItemUi): String = buildList {
     add("${item.startTime}-${item.endTime}, ${item.name}")
-    add("${item.courseName}, ${item.type}")
+    item.statusBadge?.takeIf(String::isNotBlank)?.let(::add)
+    item.courseName.takeIf(String::isNotBlank)?.let(::add)
+    item.type.takeIf(String::isNotBlank)?.let(::add)
+    // "Jednorazowe" is already read as the status badge.
+    item.weekLabel?.takeIf { it.isNotBlank() && it != item.statusBadge }?.let(::add)
     add(classMeta(item))
     item.conflictLabel?.let(::add)
     item.classNote?.takeIf(String::isNotBlank)?.let { add("Notatka do zajęć: $it") }

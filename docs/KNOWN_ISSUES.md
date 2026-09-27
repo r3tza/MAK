@@ -13,17 +13,17 @@ Zadania i kryteria są w `QUEUE.md`, a kroki wykonawcze w `PLAN.md`.
 Audyt objął przegląd domeny, repozytoriów, importu, powiadomień, widgetu i ViewModeli, `gradlew.bat test` (333 testy, 0 błędów) oraz lint (0 błędów, 4 ostrzeżenia o wersjach, `targetSdk` i grafice podglądu widgetu). Zadania i kryteria są w `QUEUE.md`, a kroki w `PLAN.md`.
 
 1. **Konfiguracja semestru aktywuje go (I-23).** Naprawione 2026-09-27: konfiguracja nie zmienia aktywnego semestru i zachowuje niezapisane zmiany po powrocie z podekranów.
-2. **Zmiana tygodnia bez zapisu (I-24).** Przy filtrze „Wszystkie” i kilku kalendarzach „Zapisz” w dialogu tygodnia nic nie zapisuje i nie pokazuje komunikatu.
-3. **Odwołane terminy w „Planie” (I-25).** „Pokaż odwołane” ignoruje filtr kierunku i pokazuje odwołania z dni, w które zajęcia już się nie odbywają; licznik dnia wlicza odwołane.
+2. **Zmiana tygodnia bez zapisu (I-24).** Naprawione 2026-09-27: wiersz tygodnia nie jest akcją, gdy nie ma jednego kalendarza do korekty.
+3. **Odwołane terminy w „Planie” (I-25).** Naprawione 2026-09-27: reguła w domenie, filtr kierunku, licznik bez odwołanych.
 4. **Drobne błędy (I-26).** Ponowne przejście z powiadomienia albo widgetu po przywróceniu procesu, pusty ekran szczegółów usuniętych zajęć, błędny komunikat przy zapisie progu okienka, równoległe odświeżanie alarmów i nieusuwany kalendarz po przepięciu przypisania.
 
 ## Problemy potwierdzone audytem interfejsu z 2026-09-27
 
 Audyt objął przegląd wspólnych komponentów i ekranów, obliczenie kontrastu kolorów motywu oraz zrzuty z emulatora (Android 16) przy 320 dp, skalach czcionki 1,0, 1,3 i 2,0, w motywie jasnym i ciemnym, i przejście klawiszem Tab. TalkBack nie był uruchamiany; semantykę sprawdzono w kodzie.
 
-1. **Focus klawiatury (I-27).** Każda własna kontrolka ma dwa przystanki Tab, drugi niewidoczny; własna ramka focusu się nie włącza, widać tylko słabą nakładkę.
-2. **Powiększony tekst i 320 dp (I-28).** Godzina karty ucięta do „12:0” przy skali 1,3; etykiety łamane w środku słowa przy skali 2,0; źródło tygodnia ucięte przy 320 dp; pola „Od” i „Do” obok siebie mimo reguły 340 dp.
-3. **Semantyka i kontrast kart (I-29).** TalkBack nie słyszy statusu „Odwołane” ani tygodnia; odwołana karta ma kontrast tekstu pomocniczego 2,68:1; etykiety karty podsumowania 4,09:1; „Dodaj” ma rolę karty.
+1. **Focus klawiatury (I-27).** Naprawione 2026-09-27: jeden przystanek Tab z ramką 2 dp; sprawdzone na emulatorze.
+2. **Powiększony tekst i 320 dp (I-28).** Naprawione 2026-09-27; sprawdzone na zrzutach przy skalach 1,0, 1,3 i 2,0.
+3. **Semantyka i kontrast kart (I-29).** Naprawione 2026-09-27; odczyt TalkBackiem na urządzeniu należy do O-05.
 4. **Fałszywy stan pusty przy starcie (I-30).** Naprawione 2026-09-27: ekran ładowania z pełną nazwą i ekran startowy w motywie aplikacji.
 5. **Granice kontrolek (I-31).** Naprawione 2026-09-27; motyw ciemny do obejrzenia na urządzeniu (O-05).
 6. **Nazwy notatek (I-32).** Naprawione 2026-09-27: „Notatka do zajęć” i „Notatka do terminu”.

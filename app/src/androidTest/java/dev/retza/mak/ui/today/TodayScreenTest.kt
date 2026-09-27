@@ -3,7 +3,13 @@ package dev.retza.mak.ui.today
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.text.TextLayoutResult
+import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasClickAction
@@ -19,6 +25,9 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
+import kotlin.math.floor
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -27,6 +36,60 @@ import org.junit.runner.RunWith
 class TodayScreenTest {
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    @Test
+    fun startTimeIsNotCutAtFontScaleTwoAt320Dp() {
+        val item = ClassItemUi(
+            id = "class-1",
+            name = "Programowanie obiektowe z bardzo długą nazwą przedmiotu",
+            type = "Wykład",
+            courseName = "Informatyka",
+            startTime = "12:00",
+            endTime = "13:30"
+        )
+        composeTestRule.setContent {
+            val density = LocalDensity.current
+            CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) {
+                MAKTheme(dynamicColor = false) {
+                    Box(modifier = Modifier.width(320.dp).height(1400.dp)) {
+                        TodayScreen(
+                            state = TodayUiState(
+                                dateLabel = "Poniedziałek, 12 października",
+                                semesterLabel = "Semestr zimowy",
+                                weekLabel = "Tydzień A",
+                                hasActiveSemester = true,
+                                classCount = 1,
+                                items = listOf(item)
+                            ),
+                            onOpenPlan = {},
+                            onOpenClass = {},
+                            onStartSetup = {},
+                            onRetry = {}
+                        )
+                    }
+                }
+            }
+        }
+
+        fun layoutOf(text: String): TextLayoutResult {
+            val node = composeTestRule.onNodeWithText(text, useUnmergedTree = true).fetchSemanticsNode()
+            val results = mutableListOf<TextLayoutResult>()
+            node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
+            return results.single()
+        }
+
+        // The start time is shown in full: one line, no ellipsis, and wide enough for all digits.
+        val time = layoutOf("12:00")
+        assertFalse(time.multiParagraph.didExceedMaxLines)
+        assertFalse(time.isLineEllipsized(0))
+        assertTrue(time.size.width >= floor(time.multiParagraph.maxIntrinsicWidth).toInt())
+        // Labels stay on one line instead of breaking inside a word; at this scale an ellipsis
+        // is allowed, the full label stays in the content description.
+        for (text in listOf("Okienka", "Od najwcześniejszego")) {
+            assertEquals("$text lines", 1, layoutOf(text).lineCount)
+        }
+        composeTestRule.onNodeWithContentDescription("Okienka: 0").assertExists()
+    }
 
     @Test
     fun todayScreenShowsFixedItemAndInvokesActionsAt320Dp() {
