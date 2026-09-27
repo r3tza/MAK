@@ -36,7 +36,7 @@ internal fun NavGraphBuilder.todayRoute(
             onRetry = {},
             requiresSetup = appState.requiresSetup,
             availableUpdateVersion = updateState.availableUpdate?.versionName.takeIf { updateState.showUpdateBanner },
-            onViewUpdate = { navController.navigate(MakRoutes.SettingsAbout) },
+            onViewUpdate = { navController.navigate(MakRoutes.SettingsUpdate) },
             onDismissUpdate = updateViewModel::dismissAvailableUpdate,
             modifier = Modifier.fillMaxSize()
         )

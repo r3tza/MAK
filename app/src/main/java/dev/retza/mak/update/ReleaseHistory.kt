@@ -6,6 +6,7 @@ data class ReleaseHistoryEntry(
     val changes: List<String> = emptyList()
 )
 
+// Newest release first.
 private val knownReleaseHistory = listOf(
     ReleaseHistoryEntry(
         versionName = "0.1.0",
@@ -19,10 +20,12 @@ private val knownReleaseHistory = listOf(
 )
 
 fun releaseHistoryFor(installedVersionName: String): List<ReleaseHistoryEntry> {
-    val installedEntry = knownReleaseHistory.firstOrNull { it.versionName == installedVersionName }
-        ?: ReleaseHistoryEntry(versionName = installedVersionName)
-    return (listOf(installedEntry) + knownReleaseHistory.filterNot { it.versionName == installedVersionName })
+    val releaseName = installedVersionName.removeSuffix(DEBUG_VERSION_SUFFIX)
+    val installedIndex = knownReleaseHistory.indexOfFirst { it.versionName == releaseName }
+    return knownReleaseHistory
+        .drop(installedIndex.coerceAtLeast(0))
         .take(MAX_RELEASE_HISTORY_ENTRIES)
 }
 
+private const val DEBUG_VERSION_SUFFIX = "-debug"
 private const val MAX_RELEASE_HISTORY_ENTRIES = 3

@@ -10,6 +10,7 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: Ustawienia główne dostają sekcję „Aktualizacje” z wierszem „Sprawdź aktualizacje”, warunkowym wierszem „Aktualizacja do {wersja}” i przełącznikiem „Sprawdzaj przy uruchomieniu”. Pobieranie i instalacja mają osobny ekran „Aktualizacja”, do którego prowadzi też „Zobacz” na banerze „Dzisiaj”. „O aplikacji” zawiera nazwę, wersję, krótki opis, autora `r3tza` i najwyżej trzy znane wydania, bez pustej pozycji nieznanej wersji (`FEATURES.md`, `ARCHITECTURE.md`). Użytkownik zaakceptował wariant 2026-09-27.
 - Powód: Częste akcje są dostępne bez wchodzenia na ekran opisu, a główne ustawienia nie rozwijają bloków pobierania i błędów.
 - Odrzucone: Dialog pobierania otwierany z ustawień, link do kodu źródłowego i sekcja licencji na ekranie „O aplikacji”.
+- Weryfikacja: testy JVM, lint i 95 testów urządzenia przechodzą; zrzuty ustawień w obu motywach i „O aplikacji” przy 320 dp na emulatorze. Wariant debug ma osobny pakiet, więc testy urządzenia działają obok wydania o `versionCode` 200.
 
 ## 2026-09-27: Implementacja aktualizacji w aplikacji (I-36 do I-40)
 

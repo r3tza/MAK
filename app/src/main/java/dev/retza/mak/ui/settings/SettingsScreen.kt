@@ -11,17 +11,21 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.MakChoiceRow
@@ -123,7 +127,10 @@ fun SettingsScreen(
     onGapThresholdSelected: (String) -> Unit,
     notificationsBlocked: Boolean,
     onRetry: () -> Unit,
-    aboutVersion: String = "0.1.0",
+    updates: UpdateSettingsUi = UpdateSettingsUi(),
+    onCheckUpdates: () -> Unit = {},
+    onOpenUpdate: () -> Unit = {},
+    onAutomaticChecksChanged: (Boolean) -> Unit = {},
     onOpenAbout: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
@@ -188,10 +195,35 @@ fun SettingsScreen(
                         onClick = onOpenData
                     )
                 }
+                SettingsSection("Aktualizacje") {
+                    SettingsActionRow(
+                        title = "Sprawdź aktualizacje",
+                        value = updates.checkSummary,
+                        enabled = updates.canCheck,
+                        onClick = onCheckUpdates
+                    )
+                    updates.pendingVersion?.let { version ->
+                        SettingsNavigationRow(
+                            title = "Aktualizacja do $version",
+                            value = "Pobieranie i instalacja",
+                            onClick = onOpenUpdate
+                        )
+                    }
+                    SettingsSwitchRow(
+                        title = "Sprawdzaj przy uruchomieniu",
+                        details = if (updates.automaticChecks) {
+                            "Najwyżej raz na 24 godziny. Aplikacja łączy się tylko z GitHubem i nie wysyła planu. GitHub widzi adres IP."
+                        } else {
+                            "Nowe wersje nie pojawią się same."
+                        },
+                        checked = updates.automaticChecks,
+                        onCheckedChange = onAutomaticChecksChanged
+                    )
+                }
                 SettingsSection("O aplikacji") {
                     SettingsNavigationRow(
                         title = "Wersja",
-                        value = aboutVersion,
+                        value = updates.installedVersion,
                         onClick = onOpenAbout
                     )
                 }
@@ -264,6 +296,59 @@ private fun SettingsNavigationRow(
             contentDescription = "Otwórz $title",
             tint = MaterialTheme.colorScheme.onSurfaceVariant
         )
+    }
+}
+
+@Composable
+private fun SettingsActionRow(
+    title: String,
+    value: String,
+    enabled: Boolean,
+    onClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
+            .alpha(if (enabled) 1f else 0.6f)
+            .padding(vertical = MakSpacing.sm),
+        verticalArrangement = Arrangement.Center
+    ) {
+        Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+        Text(
+            text = value,
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
+
+@Composable
+private fun SettingsSwitchRow(
+    title: String,
+    details: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = 48.dp)
+            .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
+            .padding(vertical = MakSpacing.sm),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+            Text(
+                text = details,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+        Switch(checked = checked, onCheckedChange = null)
     }
 }
 

@@ -9,12 +9,15 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -75,8 +78,8 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithText("Wygląd").assertIsDisplayed()
         composeTestRule.onNodeWithText("Powiadomienia").assertIsDisplayed()
         composeTestRule.onNodeWithText("Dane").assertIsDisplayed()
-        composeTestRule.onNodeWithText("O aplikacji").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Wersja").assertIsDisplayed()
+        composeTestRule.onNodeWithText("O aplikacji").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Wersja").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Włączone").assertIsDisplayed()
         composeTestRule.onNodeWithText("20:00 dzień wcześniej, 30 min przed zajęciami")
             .assertIsDisplayed()
@@ -87,8 +90,80 @@ class SettingsScreenTest {
         assertEquals("notifications", opened)
         composeTestRule.onNodeWithText("Kopia zapasowa i import").performClick()
         assertEquals("data", opened)
-        composeTestRule.onNodeWithText("Wersja").performClick()
+        composeTestRule.onNodeWithText("Wersja").performScrollTo().performClick()
         assertEquals("about", opened)
+    }
+
+    @Test
+    fun updatesSectionChecksTogglesAndOpensPendingReleaseAt320Dp() {
+        var checked = false
+        var openedUpdate = false
+        var automatic: Boolean? = null
+        showUpdates(
+            UpdateSettingsUi(
+                installedVersion = "0.1.0",
+                checkSummary = "Dostępna wersja 0.2.0",
+                pendingVersion = "0.2.0"
+            ),
+            onCheck = { checked = true },
+            onOpenUpdate = { openedUpdate = true },
+            onAutomatic = { automatic = it }
+        )
+
+        composeTestRule.onNodeWithText("Aktualizacje").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Sprawdź aktualizacje").performScrollTo().performClick()
+        assertTrue(checked)
+        composeTestRule.onNodeWithText("Aktualizacja do 0.2.0").performScrollTo().performClick()
+        assertTrue(openedUpdate)
+        composeTestRule.onNodeWithText("Nowe wersje nie pojawią się same.").assertExists()
+        composeTestRule.onNodeWithText("Sprawdzaj przy uruchomieniu").performScrollTo().performClick()
+        assertEquals(true, automatic)
+    }
+
+    @Test
+    fun updatesSectionDisablesCheckAndHidesPendingRowWhileChecking() {
+        showUpdates(UpdateSettingsUi(installedVersion = "0.1.0", checkSummary = "Sprawdzanie...", canCheck = false))
+
+        composeTestRule.onNodeWithText("Sprawdzanie...").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Sprawdź aktualizacje")
+            .assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Aktualizacja do", substring = true).assertDoesNotExist()
+    }
+
+    private fun showUpdates(
+        updates: UpdateSettingsUi,
+        onCheck: () -> Unit = {},
+        onOpenUpdate: () -> Unit = {},
+        onAutomatic: (Boolean) -> Unit = {}
+    ) {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(900.dp)) {
+                    SettingsScreen(
+                        state = SettingsUiState(
+                            semesters = listOf(semester),
+                            activeSemesterId = "1",
+                            themeOptions = listOf(ThemeOptionUi("system", "Systemowy", true)),
+                            gapThresholdOptions = listOf(GapThresholdOptionUi("30", "30 min", true))
+                        ),
+                        onOpenSemesters = {},
+                        onOpenPrograms = {},
+                        onOpenNotifications = {},
+                        onOpenData = {},
+                        onSemesterSelected = {},
+                        onAddSemester = {},
+                        onThemeSelected = {},
+                        onGapThresholdSelected = {},
+                        notificationsBlocked = false,
+                        onRetry = {},
+                        updates = updates,
+                        onCheckUpdates = onCheck,
+                        onOpenUpdate = onOpenUpdate,
+                        onAutomaticChecksChanged = onAutomatic
+                    )
+                }
+            }
+        }
     }
 
     @Test

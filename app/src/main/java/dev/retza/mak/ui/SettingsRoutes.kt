@@ -17,6 +17,8 @@ import dev.retza.mak.ui.settings.SettingsNotificationsScreen
 import dev.retza.mak.ui.settings.SettingsScreen
 import dev.retza.mak.ui.settings.SettingsSemestersScreen
 import dev.retza.mak.ui.settings.SettingsViewModel
+import dev.retza.mak.ui.settings.UpdateScreen
+import dev.retza.mak.ui.settings.toSettingsUi
 import dev.retza.mak.update.UpdateViewModel
 
 internal fun openSettings(navController: NavController) {
@@ -52,7 +54,10 @@ internal fun NavGraphBuilder.settingsRoute(
             onGapThresholdSelected = settingsViewModel::setGapThresholdMinutes,
             notificationsBlocked = notificationsBlocked,
             onRetry = {},
-            aboutVersion = updateState.installedVersionName,
+            updates = updateState.toSettingsUi(),
+            onCheckUpdates = updateViewModel::checkNow,
+            onOpenUpdate = { navController.navigate(MakRoutes.SettingsUpdate) },
+            onAutomaticChecksChanged = updateViewModel::setAutomaticChecks,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -60,13 +65,21 @@ internal fun NavGraphBuilder.settingsRoute(
     composable(MakRoutes.SettingsAbout) {
         val updateState by updateViewModel.state.collectAsStateWithLifecycle()
         AboutScreen(
+            installedVersionName = updateState.installedVersionName,
+            releaseHistory = updateState.releaseHistory,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+
+    composable(MakRoutes.SettingsUpdate) {
+        val updateState by updateViewModel.state.collectAsStateWithLifecycle()
+        UpdateScreen(
             state = updateState,
             onCheckNow = updateViewModel::checkNow,
             onDownload = updateViewModel::downloadUpdate,
             onCancelDownload = updateViewModel::cancelDownload,
             onInstall = updateViewModel::installUpdate,
             onGrantInstallPermission = onGrantInstallPermission,
-            onAutomaticChecksChanged = updateViewModel::setAutomaticChecks,
             modifier = Modifier.fillMaxSize()
         )
     }
