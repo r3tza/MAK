@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Lokalny odbiór aktualizacji N do N+1 (I-39)
+
+- Fakty: Wersja release pobiera `update.json` tylko z `releases/latest` na GitHubie i przyjmuje wyłącznie adresy github.com, więc lokalnego artefaktu N+1 nie da się podać aktualizatorowi bez zmiany kodu. Na emulatorze nie było wcześniejszego wydania z `versionCode` 200.
+- Decyzja: I-39 sprawdza lokalnie to, co zagraża danym: podpis tym samym kluczem i zachowanie planu przy instalacji N+1 na N (`adb install -r`). Przebieg przez aplikację przechodzi do O-07 po wydaniu `v0.2.0`. Użytkownik zaakceptował podział i zbudował oba APK lokalnie 2026-09-27; klucz nie opuścił jego komputera.
+- Wynik: 201 i 202 mają ten sam certyfikat, plan przetrwał aktualizację, a instalacja starszej wersji na nowszą jest odrzucana. Testowe wydanie odinstalowano z emulatora, aby nie blokowało `v0.2.0`.
+- Odrzucone: Tagi testowe na GitHubie (zajmują numery wersji i zostawiają ślady w publicznym repozytorium) oraz testowy adres aktualizacji w kodzie wydania.
+
 ## 2026-09-27: Publiczne repozytorium (I-41, I-49)
 
 - Fakty: Użytkownik zmienił widoczność `r3tza/MAK` na publiczną. Strona repozytorium odpowiada bez logowania, a `releases/latest/download/update.json` zwraca 404, bo nie ma opublikowanego wydania. Przegląd historii przed zmianą nie wykazał sekretów ani plików podpisu.
@@ -139,11 +146,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: Po zapisie kroku 2 wybór trybu i kierunku jest zablokowany do końca kreatora. Nazwę i kolor kierunku utworzonego w tym kreatorze nadal można poprawić. Kolejne kierunki dodaje się w ustawieniach semestru. Opis jest w `FEATURES.md`.
 - Powód: Blokada nie zmienia danych innych semestrów i nie wymaga reguły zastępowania przypisania, które mogło już dostać zajęcia.
 - Odrzucone: Zastępowanie pierwszego przypisania nowym, bo kaskada usunęłaby jego zajęcia; dopisywanie drugiego przypisania bez wiedzy użytkownika.
-
-## 2026-09-26: Aktywacja nowego semestru i dane po edycji zajęć (I-18, I-19)
-
-- Fakty: Audyt z 2026-09-25 wykazał, że semestr utworzony w kreatorze zawsze staje się aktywny, a zmiana dnia, cyklu albo daty zajęć ukrywa ich zmiany wystąpień i notatki przypięte do dotychczasowych dat.
-- Decyzja: Nowy semestr staje się aktywny tylko wtedy, gdy dzisiejsza data mieści się w jego kalendarzu albo gdy nie ma aktywnego semestru; drugi warunek dodano, bo bez aktywnego semestru utworzony plan byłby niedostępny. Edycja zajęć zachowuje zmiany wystąpień i notatki, a formularz przed zapisem informuje, ile z nich przestanie być widocznych. Reguły zapisano w `DOMAIN.md`, a kroki w `PLAN.md` (kroki 4 i 5).
-- Powód: Dodanie semestru z wyprzedzeniem nie może przełączać bieżącego planu. Utrata danych użytkownika bez jego wiedzy jest niedopuszczalna, a zachowane dane wracają po przywróceniu poprzedniego terminu.
-- Odrzucone: Aktywacja każdego nowego semestru; pytanie o aktywację przy każdym dodaniu; usuwanie osieroconych zmian i notatek po potwierdzeniu; automatyczne przenoszenie ich na nowe daty, bo odwzorowanie starych dat na nowe jest niejednoznaczne przy zmianie cyklu.
-- Poza zakresem: automatyczne przełączenie aktywnego semestru, gdy nadejdzie data nowego.
