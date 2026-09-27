@@ -10,7 +10,11 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Settings
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
+import dev.retza.mak.ui.withAppLocale
 import androidx.compose.ui.input.InputMode
 import androidx.compose.ui.input.InputModeManager
 import androidx.compose.ui.input.key.Key
@@ -42,6 +46,30 @@ import org.junit.runner.RunWith
 class MakFormControlsTest {
     @get:Rule
     val composeTestRule = createComposeRule()
+
+    @Test
+    fun datePickerCalendarIsPolishWhateverThePhoneLanguage() {
+        composeTestRule.setContent {
+            // MainActivity applies the same context in attachBaseContext.
+            val context = LocalContext.current.withAppLocale()
+            CompositionLocalProvider(
+                LocalContext provides context,
+                LocalConfiguration provides context.resources.configuration
+            ) {
+                MAKTheme(dynamicColor = false) {
+                    MakDatePickerField(label = "Data zajęć", value = "2026-09-21", onValueChange = {})
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithContentDescription("Wybierz datę").performClick()
+
+        // Month names and the Monday start come from the picker state locale. Dialog titles use
+        // the activity resources, which AppLocaleTest checks on MainActivity.
+        composeTestRule.onNodeWithText("Wrzesień 2026").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Wybierz").assertIsDisplayed()
+        composeTestRule.onNodeWithText("September 2026").assertDoesNotExist()
+    }
 
     @OptIn(ExperimentalTestApi::class)
     @Test

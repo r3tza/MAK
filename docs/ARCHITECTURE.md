@@ -107,7 +107,7 @@ Logo to kwiat maku (wariant M, wybrany 2026-09-27): pięć czerwonych płatków 
 
 ### Precyzyjny język po polsku
 
-Komunikaty są krótkie i konkretne. Nazwy pojęć pozostają stałe. Powiadomienia są bezosobowe i pozbawione ozdobników. Dwujęzyczność pozostaje poza bieżącym zakresem, dlatego polski jest świadomym priorytetem.
+Komunikaty są krótkie i konkretne. Nazwy pojęć pozostają stałe. `MainActivity` używa polskich zasobów niezależnie od języka telefonu (`withAppLocale` w `attachBaseContext`), więc komponenty Material 3, w tym wybór daty i godziny oraz ich opisy dla czytnika ekranu, są po polsku. Powiadomienia są bezosobowe i pozbawione ozdobników. Dwujęzyczność pozostaje poza bieżącym zakresem, dlatego polski jest świadomym priorytetem.
 
 ### Szacunek dla pracy użytkownika
 

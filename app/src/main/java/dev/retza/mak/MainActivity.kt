@@ -2,6 +2,7 @@ package dev.retza.mak
 
 import android.Manifest
 import android.app.UiModeManager
+import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.os.Build
@@ -32,6 +33,7 @@ import dev.retza.mak.export.BackupFileRead
 import dev.retza.mak.export.readBackupFile
 import dev.retza.mak.ui.AppViewModel
 import dev.retza.mak.ui.MakApp
+import dev.retza.mak.ui.withAppLocale
 import dev.retza.mak.ui.MakLoadingGate
 import dev.retza.mak.ui.areSystemAnimationsOn
 import dev.retza.mak.ui.StartupBloom
@@ -68,6 +70,10 @@ class MainActivity : ComponentActivity() {
     private val openTodayRequests = Channel<Unit>(Channel.CONFLATED)
     private val openPlanRequests = Channel<String>(Channel.CONFLATED)
     private var splashReleased by mutableStateOf(false)
+
+    override fun attachBaseContext(newBase: Context) {
+        super.attachBaseContext(newBase.withAppLocale())
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)

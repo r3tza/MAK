@@ -27,6 +27,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material3.TimePicker
+import androidx.compose.material3.TimePickerLayoutType
 import androidx.compose.material3.rememberDatePickerState
 import androidx.compose.material3.rememberTimePickerState
 import androidx.compose.runtime.Composable
@@ -54,14 +55,24 @@ import androidx.compose.ui.semantics.onClick
 import androidx.compose.ui.semantics.selected
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
+import androidx.compose.foundation.layout.widthIn
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import java.util.Locale
+
+private val LowWindowHeight = 560.dp
+
+/** The vertical clock does not fit a window lower than 560 dp, e.g. a split screen. */
+internal fun useHorizontalTimePicker(windowHeight: Dp): Boolean = windowHeight < LowWindowHeight
 
 private val polishDateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.forLanguageTag("pl-PL"))
 
@@ -249,8 +260,15 @@ fun MakTimePickerField(
             initialMinute = selectedTime?.minute ?: 0,
             is24Hour = true
         )
-        Dialog(onDismissRequest = { open = false }) {
+        // A low window (split screen, landscape tablet) needs the side-by-side clock layout.
+        val windowHeight = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
+        val horizontal = useHorizontalTimePicker(windowHeight)
+        Dialog(
+            onDismissRequest = { open = false },
+            properties = DialogProperties(usePlatformDefaultWidth = !horizontal)
+        ) {
             Surface(
+                modifier = if (horizontal) Modifier.widthIn(max = 640.dp).padding(horizontal = 24.dp) else Modifier,
                 shape = RoundedCornerShape(24.dp),
                 tonalElevation = 6.dp
             ) {
@@ -259,7 +277,10 @@ fun MakTimePickerField(
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     Text("Wybierz godzinę", style = MaterialTheme.typography.titleLarge)
-                    TimePicker(state = pickerState)
+                    TimePicker(
+                        state = pickerState,
+                        layoutType = if (horizontal) TimePickerLayoutType.Horizontal else TimePickerLayoutType.Vertical
+                    )
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.End

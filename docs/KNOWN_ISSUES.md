@@ -29,7 +29,7 @@ Audyt objął przegląd wspólnych komponentów i ekranów, obliczenie kontrastu
 6. **Nazwy notatek (I-32).** Naprawione 2026-09-27: „Notatka do zajęć” i „Notatka do terminu”.
 7. **Rozmiary dni i widgetu (I-33).** Wyjątki zapisane i wdrożone 2026-09-27; widget do sprawdzenia na launcherze (O-06).
 
-8. **Wybór daty po angielsku (I-44).** Przy angielskim języku telefonu wybór daty ma angielskie teksty i nakładające się nagłówki dni tygodnia. Wykryte 2026-09-27 przy sprawdzaniu orientacji poziomej.
+8. **Wybór daty po angielsku (I-44).** Naprawione 2026-09-27: aktywność używa polskich zasobów niezależnie od języka telefonu.
 
 Rozbieżność do rozstrzygnięcia przy odbiorze O-05: `FEATURES.md` („Struktura karty zajęć”) wymaga subtelnego pionowego separatora między kolumną godzin a danymi, a karta go nie ma.
 
