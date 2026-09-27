@@ -62,7 +62,7 @@
 
 ## 7. Środowisko
 
-Repozytorium zawiera aplikację Android w wersji 0.1, konfigurację Gradle, lokalną bazę Room i testy. Aplikacja działa lokalnie na urządzeniu. Planowane testy zewnętrzne nie wymagają infrastruktury serwerowej.
+Repozytorium zawiera aplikację Android, konfigurację Gradle, lokalną bazę Room i testy. Aplikacja działa lokalnie na urządzeniu. Planowane testy zewnętrzne nie wymagają infrastruktury serwerowej.
 
 ### Wydania i licencja (decyzja z 2026-09-27)
 

@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Porządki w dokumentacji przed upublicznieniem
+
+- Fakty: `QUEUE.md` mieszał 27 otwartych i 29 zakończonych zadań w jednej tabeli, a `KNOWN_ISSUES.md` powtarzał naprawione problemy z adnotacją „Naprawione”.
+- Decyzja: Zakończone zadania są w osobnej tabeli „Zakończone” na końcu `QUEUE.md`; wiersz przechodzi tam po zmianie statusu na `gotowe` (`WORKFLOW.md`). `KNOWN_ISSUES.md` zawiera tylko otwarte problemy i brakujący odbiór. README ma instrukcję instalacji, a `.gitignore` wyklucza pliki kluczy podpisu. Użytkownik zlecił porządki 2026-09-27.
+- Powód: Po upublicznieniu repozytorium czytelnik ma od razu widzieć bieżący stan, a historia zostaje w kolejce i logu.
+- Odrzucone: Usunięcie zakończonych wierszy z `QUEUE.md`, bo otwarte zadania wskazują je jako zależności.
+
 ## 2026-09-27: Aktualizacje w głównych ustawieniach (I-48)
 
 - Fakty: Ekran „O aplikacji” łączył wersję, ręczne sprawdzanie, pobieranie, historię zmian i przełącznik automatu. Na wariancie debug historia pokazywała pustą pozycję „0.1.0-debug” z „Brak informacji” nad wpisem 0.1.0.
@@ -141,11 +148,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Najbardziej prawdopodobny scenariusz utraty danych to przepisywanie planu z innej aplikacji podczas dodawania zajęć. Pozostałe formularze są krótkie, a pełne odtwarzanie wszystkich ekranów nie jest powszechną praktyką i zwiększyłoby koszt zmian.
 - Odrzucone: Odtwarzanie wszystkich formularzy i przeniesienie ViewModeli na zakres tras w tym zadaniu; `Bundle` w `SavedStateHandle`, bo testy JVM nie sprawdzałyby zapisu.
 - Weryfikacja: Testy JVM odtwarzają ViewModel z tego samego `SavedStateHandle` dla nowych zajęć i edycji oraz sprawdzają, że ponowne otwarcie trasy nie nadpisuje szkicu. Na emulatorze wpisane dane przetrwały `am kill` procesu w tle. `connectedDebugAndroidTest` obejmuje `KoinGraphTest` z nowym parametrem.
-
-## 2026-09-25: Poprawki z audytu I-08 do I-13
-
-- Fakty: Audyt z 2026-09-23 wykazał powtórzony identyfikator wystąpienia, notatkę znikającą po przeniesieniu terminu, zegar trzymający strefę z chwili startu, nieobsłużone wyjątki zapisu i pracy w tle oraz drobne braki.
-- Decyzja: Wystąpienie identyfikują zajęcia i data oryginalna (I-08). Notatka do wystąpienia jest zapisana pod datą oryginalną; Room ma wersję 3, a migracja v2 do v3 i import pliku w wersji 2 przepinają istniejące notatki jedną funkcją `remapOccurrenceNotesToOriginalDates` (I-09). Eksport zapisuje wersję 3, import przyjmuje wersje 2 i 3; zastępuje to wcześniejszą decyzję o imporcie wyłącznie wersji 2, bo plik w wersji 2 ma komplet danych, a przepięcie jest regułą, nie zgadywaniem. `SystemZoneClock` odczytuje strefę przy każdym użyciu (I-10). Zapisy i praca w tle zgłaszają błąd albo go pomijają bez zamykania aplikacji, a `CancellationException` przechodzi dalej (I-11). Odbiornik przeliczania alarmów przyjmuje tylko akcje z manifestu, import ma limit 5 MB, „Plan” przechodzi na nowy dzień po powrocie, kod główny nie ma ostrzeżeń kompilatora, a dokumentacja opisuje środowisko Windows i warunek R8 (I-13).
-- Powód: Poprawność kolizji, notatek i alarmów oraz odporność na błędy bez utraty danych.
-- Odrzucone: UUID dla rekordów Room, bo aplikacja nie synchronizuje danych; zmiana nazwy kolumny `occurrence_date`; migracja alarmów zapisanych w starym formacie identyfikatora.
-- Weryfikacja: `gradlew.bat test lintDebug connectedDebugAndroidTest` przechodzi na emulatorze Android 16: 286 testów JVM i 67 testów urządzenia, w tym migracja v2 do v3. Lint: 0 błędów, 7 ostrzeżeń (wersje bibliotek i SDK, grafika podglądu widgetu). Migracja na prawdziwych danych należy do O-01.

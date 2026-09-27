@@ -1,38 +1,11 @@
-# Znane problemy interfejsu
+# Znane problemy
 
-Stan na 2026-09-27. Ten rejestr obejmuje braki potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`. Nie traktować poniższych punktów jako wyniku testu na urządzeniu.
+Stan na 2026-09-27. Ten rejestr obejmuje otwarte problemy potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`, a zadania i statusy `QUEUE.md`. Naprawione problemy nie są tu powtarzane; ich historia jest w sekcji „Zakończone” w `QUEUE.md` i w `LOG.md`.
 
-## Błędy potwierdzone audytem kodu z 2026-09-23
+## Otwarte problemy
 
-Zadania i kryteria są w `QUEUE.md`, a kroki wykonawcze w `PLAN.md`.
-
-1. **Systemowa kopia zapasowa (I-14).** Baza i ustawienia mogą trafiać do kopii Google. Czeka na decyzję.
-
-## Problemy potwierdzone audytem kodu z 2026-09-27
-
-Audyt objął przegląd domeny, repozytoriów, importu, powiadomień, widgetu i ViewModeli, `gradlew.bat test` (333 testy, 0 błędów) oraz lint (0 błędów, 4 ostrzeżenia o wersjach, `targetSdk` i grafice podglądu widgetu). Zadania i kryteria są w `QUEUE.md`, a kroki w `PLAN.md`.
-
-1. **Konfiguracja semestru aktywuje go (I-23).** Naprawione 2026-09-27: konfiguracja nie zmienia aktywnego semestru i zachowuje niezapisane zmiany po powrocie z podekranów.
-2. **Zmiana tygodnia bez zapisu (I-24).** Naprawione 2026-09-27: wiersz tygodnia nie jest akcją, gdy nie ma jednego kalendarza do korekty.
-3. **Odwołane terminy w „Planie” (I-25).** Naprawione 2026-09-27: reguła w domenie, filtr kierunku, licznik bez odwołanych.
-4. **Drobne błędy (I-26).** Naprawione 2026-09-27.
-
-## Problemy potwierdzone audytem interfejsu z 2026-09-27
-
-Audyt objął przegląd wspólnych komponentów i ekranów, obliczenie kontrastu kolorów motywu oraz zrzuty z emulatora (Android 16) przy 320 dp, skalach czcionki 1,0, 1,3 i 2,0, w motywie jasnym i ciemnym, i przejście klawiszem Tab. TalkBack nie był uruchamiany; semantykę sprawdzono w kodzie.
-
-1. **Focus klawiatury (I-27).** Naprawione 2026-09-27: jeden przystanek Tab z ramką 2 dp; sprawdzone na emulatorze.
-2. **Powiększony tekst i 320 dp (I-28).** Naprawione 2026-09-27; sprawdzone na zrzutach przy skalach 1,0, 1,3 i 2,0.
-3. **Semantyka i kontrast kart (I-29).** Naprawione 2026-09-27; odczyt TalkBackiem na urządzeniu należy do O-05.
-4. **Fałszywy stan pusty przy starcie (I-30).** Naprawione 2026-09-27: ekran ładowania z pełną nazwą i ekran startowy w motywie aplikacji.
-5. **Granice kontrolek (I-31).** Naprawione 2026-09-27; motyw ciemny do obejrzenia na urządzeniu (O-05).
-6. **Nazwy notatek (I-32).** Naprawione 2026-09-27: „Notatka do zajęć” i „Notatka do terminu”.
-7. **Rozmiary dni i widgetu (I-33).** Wyjątki zapisane i wdrożone 2026-09-27; widget do sprawdzenia na launcherze (O-06).
-
-8. **Wybór daty po angielsku (I-44).** Naprawione 2026-09-27: aktywność używa polskich zasobów niezależnie od języka telefonu.
-
-Rozbieżność do rozstrzygnięcia przy odbiorze O-05: `FEATURES.md` („Struktura karty zajęć”) wymaga subtelnego pionowego separatora między kolumną godzin a danymi, a karta go nie ma.
-
+1. **Systemowa kopia zapasowa (I-14).** Aplikacja ma `allowBackup="true"`, a reguły kopii to szablony, więc baza i ustawienia mogą trafiać do kopii Google. Czeka na decyzję użytkownika.
+2. **Separator w karcie zajęć (O-05).** `FEATURES.md` („Struktura karty zajęć”) wymaga subtelnego pionowego separatora między kolumną godzin a danymi, a karta go nie ma. Do rozstrzygnięcia przy odbiorze: dodać separator albo zmienić opis.
 
 ## Wymagają odbioru na urządzeniu
 
