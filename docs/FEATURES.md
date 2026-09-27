@@ -252,7 +252,7 @@ Ekran główny dzieli ustawienia na sekcje:
 4. „Dane”:
    - pozycja „Kopia zapasowa i import” prowadząca do osobnego ekranu danych.
 5. „O aplikacji”:
-   - informacja o wersji jako zwarty wiersz; osobny ekran dodać dopiero wraz z licencjami albo większą liczbą informacji.
+   - zwarty wiersz pokazuje zainstalowaną wersję i prowadzi do osobnego ekranu aktualizacji.
 
 Sekcje umieścić w neutralnych kontenerach i rozdzielić odstępem 16 dp. Wiersze tej samej sekcji mogą używać subtelnych separatorów. Każdy wiersz pokazuje nazwę, bieżącą wartość lub krótkie podsumowanie i ikonę przejścia, jeśli otwiera ekran podrzędny. Ikony Material są pomocnicze i nie zastępują tekstu. Nie nadawać wszystkim pozycjom wagi przycisku głównego.
 
@@ -269,6 +269,10 @@ Ekran „Powiadomienia” dzieli ustawienia na sekcje w neutralnych kontenerach,
 Ekrany podrzędne ustawień rozdzielają komunikaty, pola, wiersze i przyciski odstępem co najmniej 12 dp. Komunikat informacyjny ma 16 dp paddingu poziomego, 12 dp pionowego i tekst co najmniej 12 sp.
 
 Ekran „Dane” zawiera eksport, import oraz opis skutków pełnego zastąpienia danych. Globalny próg długości okienka, domyślnie 30 minut, umieścić w ustawieniach planu. Jeśli przybędzie więcej ustawień planu niezwiązanych z semestrem, wydzielić dla nich osobny ekran zamiast rozbudowywać ekran główny.
+
+Ekran „O aplikacji” pokazuje zainstalowaną wersję i akcję „Sprawdź teraz”. Wynik ma postać: „Masz najnowszą wersję.”, „Dostępna wersja {wersja}” z notatkami, informacja o wymaganym nowszym Androidzie albo „Nie udało się sprawdzić. Sprawdź połączenie.”. Dostępne wydanie można pobrać, anulować pobieranie i po weryfikacji przekazać do instalacji systemowej. Postęp oraz błędy braku miejsca, uszkodzonego pliku, obcego pakietu, starszej wersji i innego podpisu są krótkie i nie pokazują wyjątków.
+
+Na tym samym ekranie znajduje się domyślnie wyłączony przełącznik automatycznego sprawdzania. Opis wyjaśnia, że aplikacja łączy się tylko z GitHubem, nie wysyła planu, a GitHub widzi adres IP. Po wyłączeniu ekran informuje, że nowe wersje nie pojawią się same. Po włączeniu aplikacja sprawdza wersję przy uruchomieniu najwyżej raz na 24 godziny, bez pracy w tle i bez komunikatu o braku sieci. Dostępna wersja pokazuje na „Dzisiaj” baner z akcjami „Zobacz” i „Nie teraz”; pominięta wersja pozostaje ukryta, a wyższy `versionCode` pokazuje się ponownie.
 
 Ekrany podrzędne mają własne trasy w jednym `NavHost`, przewidywalny systemowy powrót i tytuł w topbarze. Stan ekranu głównego po powrocie nie może się resetować ani automatycznie otwierać innej sekcji.
 
@@ -296,3 +300,4 @@ Odbiór na urządzeniu jest odrębnym kryterium od kompilacji testów Android.
 - Sprawdzić tablet (O-08) w pionie, w poziomie i w podzielonym ekranie: boczny pasek nawigacji od 600 dp, dolny pasek poniżej, treść nie szersza niż 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp, wybór daty i godziny w całości i po polsku, zachowanie bieżącego ekranu i wpisanych danych po obrocie.
 - Sprawdzić nawigację i powrót systemowy, insety, TalkBack, klawiaturę, focus, motyw ciemny, długie treści i szerokość 320 dp. Potwierdzić, że po błędzie formularz zachowuje dane i pokazuje bezpieczny komunikat.
 - Sprawdzić widget na launcherze w małym, pośrednim i dużym rozmiarze, w obu motywach, po zmianie danych i po kliknięciu. Zweryfikować jego stany puste, kolizje i długie nazwy.
+- O-07: po upublicznieniu repozytorium zainstalować podpisane `v0.2.0` na telefonie, utworzyć plan, notatki i ustawienia, ręcznie opublikować `v0.2.1`, sprawdzić ręczne i automatyczne wykrycie, pobranie, zgodę na instalowanie nieznanych aplikacji, instalację systemową oraz zachowanie wszystkich danych. Sprawdzić też odmowę zgody, anulowanie pobierania, brak sieci i ukrycie banera przez „Nie teraz”.
