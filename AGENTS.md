@@ -92,10 +92,6 @@ Traktuj te zasady jako wskazówki przy proponowaniu rozwiązań. Szczegóły pro
 - Traktuj dostępność, motyw ciemny, focus, klawiaturę, TalkBack i stan błędu jako część projektu, nie jako końcowy audyt.
 - Przy istotnej zmianie wyglądu najpierw opisz wariant i role informacji. Po akceptacji zapisz decyzję, zaimplementuj ją i porównaj na zrzucie albo urządzeniu przed utrwaleniem drobnych szczegółów wizualnych.
 
-### Organizacja pracy
-
-- Przy zadaniach polegających głównie na czytaniu, porównaniu lub audycie wielu plików użyj subagenta Luna, jeśli równoległy przegląd realnie skróci pracę. Nie deleguj małego, jednoznacznego odczytu, gdy koszt koordynacji będzie większy niż korzyść.
-
 ## Zmiany w kodzie
 
 - Najpierw prześledź kod i przepływ danych, którego dotyczy zmiana.
