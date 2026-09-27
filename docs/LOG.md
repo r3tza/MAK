@@ -10,6 +10,7 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: Workflow tworzy szkic GitHub Release. Użytkownik sprawdza APK, `update.json`, sumę SHA-256 i opis, a następnie ręcznie publikuje wydanie.
 - Powód: Test taga ma sprawdzić pełny proces i pliki bez publicznego udostępniania niedokończonej wersji. Ręczna publikacja pozostawia użytkownikowi ostatnią decyzję.
 - Odrzucone: Natychmiastowa publikacja po samym przejściu testów; publiczne wydanie testowe `v0.1.0` przed ukończeniem mechanizmu aktualizacji.
+- Weryfikacja: Tag testowy `v0.1.1` przeszedł testy JVM i zbudował podpisany APK w GitHub Actions. Szkic wydania zawierał `MAK-0.1.1.apk` i `update.json`, a zapisana suma SHA-256 była zgodna z pobranym APK.
 
 ## 2026-09-27: Polskie zasoby aktywności i kolejność prac (I-44, I-26)
 
