@@ -16,6 +16,8 @@ import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakSummaryCard
+import dev.retza.mak.ui.components.MakNoteBanner
+import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.ScreenStatus
 
 data class TodayUiState(
@@ -41,7 +43,10 @@ fun TodayScreen(
     onStartSetup: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    requiresSetup: Boolean = false
+    requiresSetup: Boolean = false,
+    availableUpdateVersion: String? = null,
+    onViewUpdate: () -> Unit = {},
+    onDismissUpdate: () -> Unit = {}
 ) {
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
         MakSectionHeader(
@@ -52,6 +57,13 @@ fun TodayScreen(
                 state.semesterLabel.takeIf { it.isNotBlank() }
             ).joinToString(", ").ifBlank { null }
         )
+        if (availableUpdateVersion != null) {
+            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
+                MakNoteBanner("Dostępna aktualizacja", "Wersja $availableUpdateVersion jest gotowa do pobrania.")
+                MakPrimaryAction("Zobacz", onViewUpdate)
+                MakSecondaryAction("Nie teraz", onDismissUpdate)
+            }
+        }
         if (state.hasActiveSemester) {
             MakSummaryCard(
                 title = if (state.classCount == 0) "Dziś bez zajęć" else "Twój plan na dziś",

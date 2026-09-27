@@ -4,6 +4,12 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Implementacja aktualizacji w aplikacji (I-36 do I-40)
+
+- Fakty: Repozytorium i wydania pozostają prywatne, więc produkcyjny adres GitHub zwróci błąd do czasu I-41.
+- Zrealizowane: ręczne i automatyczne sprawdzanie, ekran „O aplikacji” z changelogiem trzech wersji, pobieranie i weryfikacja APK, instalacja przez `PackageInstaller`, zgoda systemowa oraz baner na „Dzisiaj”. Automatyczne sprawdzanie jest domyślnie wyłączone i działa najwyżej raz na 24 godziny.
+- Weryfikacja: testy JVM i lint przechodzą. Testy urządzenia nie uruchomiły się, ponieważ emulator ma wersję 200 podpisaną kluczem release, a wariant debug ma niższy `versionCode` 1. Odbiór lokalnej aktualizacji N do N+1 i pełny O-07 pozostają otwarte.
+
 ## 2026-09-27: Prywatne repozytorium do bramki pierwszego wydania (I-36 do I-41)
 
 - Fakty: Aplikacja ma pobierać `update.json` i APK anonimowo z GitHub Releases. Prywatne repozytorium wymaga uwierzytelnienia, a szkic wydania nie jest dostępny przez `releases/latest`. Użytkownik chce przed upublicznieniem wykonać jeszcze poprawki prezentacyjne.
@@ -144,11 +150,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Odrzucone: Globalny odstęp w `MakScreenContent`; własny komponent listy wyboru zamiast Material 3; ukrycie typu zajęć na karcie.
 - Poprawki przy okazji: Pierwsze uruchomienie testów Compose na emulatorze wykazało, że dotknięcie pola daty albo godziny poza ikoną nie otwierało wyboru, bo pole tekstowe przechwytywało dotknięcie. Pola otwierają teraz wybór po dotknięciu w dowolnym miejscu. Część testów Compose zawierała błędy, których nie wykryto, bo testy były tylko kompilowane: szukały nadtytułu małymi literami, nie rozróżniały powtórzonych tekstów, pomijały przewinięcie i miały niespójny stan. Poprawiono je bez zmiany sprawdzanych reguł.
 - Weryfikacja: `gradlew.bat test lintDebug connectedDebugAndroidTest` przechodzi na emulatorze Android 16: 261 testów JVM i 66 testów urządzenia. Ekrany obejrzano na emulatorze w obu motywach przy 320 dp i domyślnej szerokości. TalkBack należy do O-05.
-
-## 2026-09-23: Odstępy ekranów ustawień i sekcje powiadomień
-
-- Fakty: `MakScreenContent` nie ustawiał odstępów między elementami, a ekrany `Semestry`, `Dane`, `Powiadomienia` i podgląd importu ich nie dodawały, więc komunikaty, pola i przyciski stykały się ze sobą. Nagłówek tygodnia na ekranie „Plan” stykał się z oznaczeniem A/B. Komunikat informacyjny miał 10 sp tekstu i ciasny padding. Ekran powiadomień mieszał przełączniki obu rodzajów, a komunikat „Uwaga” zawierał zastępczy tekst „Treść i moment wysyłki zostaną ustalone.”.
-- Decyzja: `MakScreenContent` przyjmuje `verticalArrangement`. Ekrany podrzędne ustawień używają odstępu 12 dp i 12 dp od górnego paska, ekran powiadomień 16 dp między sekcjami. Nagłówek tygodnia ma 12 dp odstępu od oznaczenia A/B. `MakNoteBanner` ma padding 16 i 12 dp oraz tekst 13 i 12 sp. Powiadomienia są podzielone na sekcje „Kolizje w planie”, „Dzień wcześniej” i „Przed zajęciami”; godzina i wyprzedzenie są widoczne tylko przy włączonym danym rodzaju. Zastępczy tekst zastąpiono komunikatem „Czas dostarczenia” o możliwym opóźnieniu przez Androida.
-- Powód: Prośba użytkownika o większe odstępy i rozdzielenie kategorii powiadomień; zasady odstępów z `ARCHITECTURE.md`, sekcja „Stały język wizualny”.
-- Odrzucone: Globalny odstęp w `MakScreenContent` dla wszystkich ekranów, bo część ekranów ma już własne odstępy i zostałyby podwojone.
-- Weryfikacja: `SettingsScreenTest` sprawdza sekcje powiadomień i ukrycie ustawień wyłączonego rodzaju przy 320 dp. `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Ekrany „Plan”, „Semestry”, „Dane” i „Powiadomienia” obejrzano na emulatorze w motywie ciemnym. Szerokość 320 dp i TalkBack na urządzeniu należą do O-05.

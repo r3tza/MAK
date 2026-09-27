@@ -40,8 +40,6 @@ import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.distinctLabels
 
-private const val aboutVersion = "0.1.0"
-
 @Composable
 private fun ActiveSemesterField(
     semesters: List<SemesterUi>,
@@ -125,6 +123,8 @@ fun SettingsScreen(
     onGapThresholdSelected: (String) -> Unit,
     notificationsBlocked: Boolean,
     onRetry: () -> Unit,
+    aboutVersion: String = "0.1.0",
+    onOpenAbout: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val active = state.semesters.firstOrNull { it.id == state.activeSemesterId }
@@ -189,7 +189,11 @@ fun SettingsScreen(
                     )
                 }
                 SettingsSection("O aplikacji") {
-                    SettingsInfoRow(title = "Wersja", value = aboutVersion)
+                    SettingsNavigationRow(
+                        title = "Wersja",
+                        value = aboutVersion,
+                        onClick = onOpenAbout
+                    )
                 }
             }
 

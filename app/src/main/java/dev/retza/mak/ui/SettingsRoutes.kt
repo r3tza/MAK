@@ -10,12 +10,14 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import dev.retza.mak.ui.settings.ImportPreviewScreen
+import dev.retza.mak.ui.settings.AboutScreen
 import dev.retza.mak.ui.settings.SettingsDataScreen
 import dev.retza.mak.ui.settings.SettingsEffect
 import dev.retza.mak.ui.settings.SettingsNotificationsScreen
 import dev.retza.mak.ui.settings.SettingsScreen
 import dev.retza.mak.ui.settings.SettingsSemestersScreen
 import dev.retza.mak.ui.settings.SettingsViewModel
+import dev.retza.mak.update.UpdateViewModel
 
 internal fun openSettings(navController: NavController) {
     navController.navigate(MakRoutes.Settings)
@@ -23,6 +25,7 @@ internal fun openSettings(navController: NavController) {
 
 internal fun NavGraphBuilder.settingsRoute(
     settingsViewModel: SettingsViewModel,
+    updateViewModel: UpdateViewModel,
     navController: NavController,
     onAddSemester: () -> Unit,
     onConfigureSemester: (String) -> Unit,
@@ -30,22 +33,40 @@ internal fun NavGraphBuilder.settingsRoute(
     onImport: () -> Unit,
     notificationsBlocked: Boolean,
     onRequestNotificationPermission: () -> Unit,
-    onOpenAppSettings: () -> Unit
+    onOpenAppSettings: () -> Unit,
+    onGrantInstallPermission: () -> Unit
 ) {
     composable(MakRoutes.Settings) {
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
+        val updateState by updateViewModel.state.collectAsStateWithLifecycle()
         SettingsScreen(
             state = settingsState,
             onOpenSemesters = { navController.navigate(MakRoutes.SettingsSemesters) },
             onOpenPrograms = { navController.navigate(MakRoutes.StudyPrograms) },
             onOpenNotifications = { navController.navigate(MakRoutes.SettingsNotifications) },
             onOpenData = { navController.navigate(MakRoutes.SettingsData) },
+            onOpenAbout = { navController.navigate(MakRoutes.SettingsAbout) },
             onSemesterSelected = settingsViewModel::selectSemester,
             onAddSemester = onAddSemester,
             onThemeSelected = settingsViewModel::selectTheme,
             onGapThresholdSelected = settingsViewModel::setGapThresholdMinutes,
             notificationsBlocked = notificationsBlocked,
             onRetry = {},
+            aboutVersion = updateState.installedVersionName,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+
+    composable(MakRoutes.SettingsAbout) {
+        val updateState by updateViewModel.state.collectAsStateWithLifecycle()
+        AboutScreen(
+            state = updateState,
+            onCheckNow = updateViewModel::checkNow,
+            onDownload = updateViewModel::downloadUpdate,
+            onCancelDownload = updateViewModel::cancelDownload,
+            onInstall = updateViewModel::installUpdate,
+            onGrantInstallPermission = onGrantInstallPermission,
+            onAutomaticChecksChanged = updateViewModel::setAutomaticChecks,
             modifier = Modifier.fillMaxSize()
         )
     }

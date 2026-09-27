@@ -41,6 +41,7 @@ import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.today.TodayViewModel
+import dev.retza.mak.update.UpdateViewModel
 import kotlinx.coroutines.flow.Flow
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -55,6 +56,7 @@ fun MakApp(
     studyProgramsViewModel: StudyProgramsViewModel,
     scheduleViewModel: ScheduleViewModel,
     todayViewModel: TodayViewModel,
+    updateViewModel: UpdateViewModel,
     feedback: Flow<UiFeedback>,
     openTodayRequests: Flow<Unit>,
     openPlanRequests: Flow<String>,
@@ -62,7 +64,8 @@ fun MakApp(
     onImportPlan: () -> Unit,
     notificationsBlocked: Boolean,
     onRequestNotificationPermission: () -> Unit,
-    onOpenAppSettings: () -> Unit
+    onOpenAppSettings: () -> Unit,
+    onGrantInstallPermission: () -> Unit = {}
 ) {
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val navController = rememberNavController()
@@ -175,6 +178,8 @@ fun MakApp(
             todayRoute(
                 appState = state,
                 todayViewModel = todayViewModel,
+                updateViewModel = updateViewModel,
+                navController = navController,
                 onOpenPlan = { openRoot(MakRoutes.Schedule) },
                 onOpenOccurrence = openOccurrenceById,
                 startSetup = startSetup
@@ -193,6 +198,7 @@ fun MakApp(
             )
             settingsRoute(
                 settingsViewModel = settingsViewModel,
+                updateViewModel = updateViewModel,
                 navController = navController,
                 onAddSemester = {
                     setupViewModel.start()
@@ -205,7 +211,8 @@ fun MakApp(
                 onImport = onImportPlan,
                 notificationsBlocked = notificationsBlocked,
                 onRequestNotificationPermission = onRequestNotificationPermission,
-                onOpenAppSettings = onOpenAppSettings
+                onOpenAppSettings = onOpenAppSettings,
+                onGrantInstallPermission = onGrantInstallPermission
             )
             studyProgramRoutes(
                 studyProgramsViewModel = studyProgramsViewModel,

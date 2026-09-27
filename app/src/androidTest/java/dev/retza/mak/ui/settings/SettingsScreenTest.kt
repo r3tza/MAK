@@ -57,6 +57,7 @@ class SettingsScreenTest {
                         onOpenPrograms = { opened = "programs" },
                         onOpenNotifications = { opened = "notifications" },
                         onOpenData = { opened = "data" },
+                        onOpenAbout = { opened = "about" },
                         onSemesterSelected = {},
                         onAddSemester = {},
                         onThemeSelected = {},
@@ -86,6 +87,8 @@ class SettingsScreenTest {
         assertEquals("notifications", opened)
         composeTestRule.onNodeWithText("Kopia zapasowa i import").performClick()
         assertEquals("data", opened)
+        composeTestRule.onNodeWithText("Wersja").performClick()
+        assertEquals("about", opened)
     }
 
     @Test

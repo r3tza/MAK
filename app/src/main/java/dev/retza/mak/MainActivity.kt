@@ -55,6 +55,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.koin.android.ext.android.inject
 import org.koin.androidx.viewmodel.ext.android.viewModel
+import dev.retza.mak.update.UpdateViewModel
 
 class MainActivity : ComponentActivity() {
     private val appViewModel: AppViewModel by viewModel()
@@ -66,6 +67,7 @@ class MainActivity : ComponentActivity() {
     private val studyProgramsViewModel: StudyProgramsViewModel by viewModel()
     private val scheduleViewModel: ScheduleViewModel by viewModel()
     private val todayViewModel: TodayViewModel by viewModel()
+    private val updateViewModel: UpdateViewModel by viewModel()
     private val feedbackController: FeedbackController by inject()
     private val openTodayRequests = Channel<Unit>(Channel.CONFLATED)
     private val openPlanRequests = Channel<String>(Channel.CONFLATED)
@@ -102,6 +104,7 @@ class MainActivity : ComponentActivity() {
                     playIntro = playIntro,
                     introMayStart = splashReleased
                 ) {
+                    LaunchedEffect(updateViewModel) { updateViewModel.checkAutomatically() }
                     var notificationsBlocked by remember {
                         mutableStateOf(!NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled())
                     }
@@ -161,6 +164,9 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+                    val installPermissionLauncher = rememberLauncherForActivityResult(
+                        ActivityResultContracts.StartActivityForResult()
+                    ) { updateViewModel.resumeInstallationAfterPermission() }
                     MakApp(
                         viewModel = appViewModel,
                         occurrenceViewModel = occurrenceViewModel,
@@ -171,6 +177,7 @@ class MainActivity : ComponentActivity() {
                         studyProgramsViewModel = studyProgramsViewModel,
                         scheduleViewModel = scheduleViewModel,
                         todayViewModel = todayViewModel,
+                        updateViewModel = updateViewModel,
                         feedback = feedbackController.feedback,
                         openTodayRequests = openTodayRequests.receiveAsFlow(),
                         openPlanRequests = openPlanRequests.receiveAsFlow(),
@@ -196,6 +203,9 @@ class MainActivity : ComponentActivity() {
                                     Uri.fromParts("package", packageName, null)
                                 )
                             )
+                        },
+                        onGrantInstallPermission = {
+                            installPermissionLauncher.launch(updateViewModel.permissionIntent())
                         }
                     )
                 }

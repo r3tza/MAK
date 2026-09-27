@@ -5,6 +5,9 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import dev.retza.mak.data.database.AppDatabase
+import dev.retza.mak.update.InstalledAppInfoProvider
+import dev.retza.mak.update.UpdateCheckService
+import dev.retza.mak.update.UpdateChecker
 import java.time.Clock
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
@@ -30,4 +33,13 @@ class AppModule {
 
     @Single
     fun provideBackgroundDispatcher(): CoroutineDispatcher = Dispatchers.Default
+
+    @Single
+    fun provideUpdateChecker(appInfoProvider: InstalledAppInfoProvider): UpdateCheckService {
+        val info = appInfoProvider.get()
+        return UpdateChecker.production(
+            installedVersionCode = info.versionCode.coerceAtMost(Int.MAX_VALUE.toLong()).toInt(),
+            deviceSdk = info.deviceSdk
+        )
+    }
 }

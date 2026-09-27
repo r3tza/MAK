@@ -14,16 +14,20 @@ import dev.retza.mak.ui.schedule.ScheduleScreen
 import dev.retza.mak.ui.schedule.ScheduleViewModel
 import dev.retza.mak.ui.today.TodayScreen
 import dev.retza.mak.ui.today.TodayViewModel
+import dev.retza.mak.update.UpdateViewModel
 
 internal fun NavGraphBuilder.todayRoute(
     appState: AppUiState,
     todayViewModel: TodayViewModel,
+    updateViewModel: UpdateViewModel,
+    navController: NavController,
     onOpenPlan: () -> Unit,
     onOpenOccurrence: (String) -> Unit,
     startSetup: () -> Unit
 ) {
     composable(MakRoutes.Today) {
         val todayState = todayViewModel.today.collectAsStateWithLifecycle().value
+        val updateState = updateViewModel.state.collectAsStateWithLifecycle().value
         TodayScreen(
             state = todayState,
             onOpenPlan = onOpenPlan,
@@ -31,6 +35,9 @@ internal fun NavGraphBuilder.todayRoute(
             onStartSetup = startSetup,
             onRetry = {},
             requiresSetup = appState.requiresSetup,
+            availableUpdateVersion = updateState.availableUpdate?.versionName.takeIf { updateState.showUpdateBanner },
+            onViewUpdate = { navController.navigate(MakRoutes.SettingsAbout) },
+            onDismissUpdate = updateViewModel::dismissAvailableUpdate,
             modifier = Modifier.fillMaxSize()
         )
     }

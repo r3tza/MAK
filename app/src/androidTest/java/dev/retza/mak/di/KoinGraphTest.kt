@@ -18,6 +18,13 @@ import dev.retza.mak.ui.settings.SettingsPreferences
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.today.TodayViewModel
+import dev.retza.mak.update.InstalledAppInfoProvider
+import dev.retza.mak.update.UpdateCheckService
+import dev.retza.mak.update.UpdateViewModel
+import dev.retza.mak.update.UpdatePreferences
+import dev.retza.mak.update.ApkDownloader
+import dev.retza.mak.update.ApkVerifier
+import dev.retza.mak.update.UpdateInstaller
 import java.time.Clock
 import org.junit.Assert.assertNotNull
 import org.junit.Test
@@ -39,6 +46,12 @@ class KoinGraphTest {
         assertNotNull(koin.get<FeedbackSink>())
         assertNotNull(koin.get<SettingsPreferences>())
         assertNotNull(koin.get<Clock>())
+        assertNotNull(koin.get<InstalledAppInfoProvider>())
+        assertNotNull(koin.get<UpdateCheckService>())
+        assertNotNull(koin.get<UpdatePreferences>())
+        assertNotNull(koin.get<ApkDownloader>())
+        assertNotNull(koin.get<ApkVerifier>())
+        assertNotNull(koin.get<UpdateInstaller>())
 
         assertNotNull(koin.get<AppViewModel>())
         assertNotNull(koin.get<OccurrenceViewModel>())
@@ -50,5 +63,6 @@ class KoinGraphTest {
         assertNotNull(koin.get<StudyProgramsViewModel>())
         assertNotNull(koin.get<ScheduleViewModel>())
         assertNotNull(koin.get<TodayViewModel>())
+        assertNotNull(koin.get<UpdateViewModel>())
     }
 }
