@@ -17,7 +17,12 @@ import dev.retza.mak.ui.semester.SemesterScreen
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.semester.SemesterWeekOverridesScreen
 
-internal fun openSemesterConfiguration(navController: NavController, id: String) {
+internal fun openSemesterConfiguration(
+    semesterViewModel: SemesterViewModel,
+    navController: NavController,
+    id: String
+) {
+    semesterViewModel.open(id)
     navController.navigate(semesterRoute(id))
 }
 
@@ -31,7 +36,7 @@ internal fun NavGraphBuilder.semesterRoutes(
     ) { entry ->
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
-            semesterId?.let(semesterViewModel::open)
+            semesterId?.let(semesterViewModel::openIfNeeded)
         }
         SemesterScreen(
             state = semesterViewModel.semester.collectAsStateWithLifecycle().value,
@@ -62,7 +67,7 @@ internal fun NavGraphBuilder.semesterRoutes(
     ) { entry ->
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
-            semesterId?.let(semesterViewModel::open)
+            semesterId?.let(semesterViewModel::openIfNeeded)
         }
         SemesterCoursesScreen(
             state = semesterViewModel.semester.collectAsStateWithLifecycle().value,
@@ -90,7 +95,7 @@ internal fun NavGraphBuilder.semesterRoutes(
     ) { entry ->
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
-            semesterId?.let(semesterViewModel::open)
+            semesterId?.let(semesterViewModel::openIfNeeded)
         }
         SemesterWeekOverridesScreen(
             state = semesterViewModel.semester.collectAsStateWithLifecycle().value,
@@ -119,7 +124,7 @@ internal fun NavGraphBuilder.semesterRoutes(
     ) { entry ->
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
-            semesterId?.let(semesterViewModel::open)
+            semesterId?.let(semesterViewModel::openIfNeeded)
         }
         SemesterCalendarsScreen(
             state = semesterViewModel.semester.collectAsStateWithLifecycle().value,

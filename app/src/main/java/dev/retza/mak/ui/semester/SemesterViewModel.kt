@@ -50,6 +50,17 @@ class SemesterViewModel(
     private var sessionToken = 0L
     private var selectedCalendarId: Long? = null
 
+    /**
+     * Opens the configuration from a route. Keeps the loaded semester and its unsaved form when
+     * the user returns from one of its sub-screens, so only another semester starts a new session.
+     */
+    fun openIfNeeded(id: String) {
+        val parsed = id.toLongOrNull()
+        if (parsed != null && parsed == semesterIdState.value) return
+        open(id)
+    }
+
+    /** Loads [id] for configuration. It does not change the active semester (`DOMAIN.md`). */
     fun open(id: String) {
         sessionToken += 1
         val token = sessionToken
@@ -60,7 +71,6 @@ class SemesterViewModel(
         val parsed = id.toLongOrNull() ?: return
         openJob = viewModelScope.launch {
             try {
-                semesterRepository.setActiveSemester(parsed)
                 val snapshot = loadSnapshot(parsed) ?: return@launch
                 if (token != sessionToken) return@launch
                 semesterIdState.value = parsed

@@ -107,6 +107,37 @@ class SemesterViewModelTest {
     }
 
     @Test
+    fun openingConfigurationDoesNotChangeActiveSemester() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.open("2")
+        advanceUntilIdle()
+
+        assertEquals("Semestr drugi", viewModel.semester.value.semester.name)
+        assertEquals(1L, repository.activeSemesterId)
+    }
+
+    @Test
+    fun openIfNeededKeepsUnsavedFormOfTheSameSemester() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.update { it.copy(semester = it.semester.copy(name = "Zmieniona nazwa")) }
+        viewModel.openIfNeeded("1")
+        advanceUntilIdle()
+        assertEquals("Zmieniona nazwa", viewModel.semester.value.semester.name)
+
+        viewModel.openIfNeeded("2")
+        advanceUntilIdle()
+        assertEquals("Semestr drugi", viewModel.semester.value.semester.name)
+    }
+
+    @Test
     fun invalidIdDoesNotKeepPreviousSemester() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
@@ -893,7 +924,7 @@ class SemesterViewModelTest {
 
         assertEquals("Semestr drugi", viewModel.semester.value.semester.name)
         assertEquals(2L, viewModel.semesterId.value)
-        assertEquals(2L, repository.activeSemesterId)
+        assertEquals(1L, repository.activeSemesterId)
         assertTrue(effects.isEmpty())
         assertTrue(sink.published.isEmpty())
         assertFalse(viewModel.semester.value.semester.isSaving)

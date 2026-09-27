@@ -26,7 +26,7 @@ Przykład: pierwszy tydzień semestru to A, więc następny to B. Jeśli trzeci 
 
 Poza zakresem semestru aplikacja powinna jasno pokazać, że nie ma aktywnego semestru. Nie należy opierać działania wyłącznie na numerze tygodnia ISO, ponieważ uczelniana numeracja może zaczynać się w innym miejscu.
 
-Ustawienia semestrów umożliwiają dodanie, edycję, wybór i usunięcie semestru. Usunięcie wymaga potwierdzenia, usuwa plan, powiązania i nieużywane kalendarze, ale zachowuje globalne kierunki. Po usunięciu aktywnego semestru aplikacja wybiera inny istniejący semestr. Jeśli nie ma żadnego, pokazuje stan pusty z przyciskiem „Skonfiguruj plan” i nie otwiera kreatora automatycznie. Semestr utworzony w kreatorze staje się aktywny tylko wtedy, gdy dzisiejsza data mieści się w zakresie jego kalendarza albo gdy nie ma żadnego aktywnego semestru. W pozostałych przypadkach zostaje zapisany jako nieaktywny, a dotychczasowy aktywny semestr się nie zmienia.
+Ustawienia semestrów umożliwiają dodanie, edycję, wybór i usunięcie semestru. Aktywny semestr zmienia tylko jawny wybór w ustawieniach albo kreator; otwarcie konfiguracji semestru go nie zmienia. Usunięcie wymaga potwierdzenia, usuwa plan, powiązania i nieużywane kalendarze, ale zachowuje globalne kierunki. Po usunięciu aktywnego semestru aplikacja wybiera inny istniejący semestr. Jeśli nie ma żadnego, pokazuje stan pusty z przyciskiem „Skonfiguruj plan” i nie otwiera kreatora automatycznie. Semestr utworzony w kreatorze staje się aktywny tylko wtedy, gdy dzisiejsza data mieści się w zakresie jego kalendarza albo gdy nie ma żadnego aktywnego semestru. W pozostałych przypadkach zostaje zapisany jako nieaktywny, a dotychczasowy aktywny semestr się nie zmienia.
 
 ## Kierunki
 

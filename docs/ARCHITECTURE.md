@@ -190,7 +190,6 @@ Pierwszy zakres nie obejmuje:
 
 - Systemowa kopia zapasowa Androida (I-14). Manifest ma `allowBackup="true"` z szablonowymi regułami, więc baza i ustawienia mogą trafiać do kopii Google. Do decyzji: wyłączyć kopię, dopuścić ją jawnie albo dodać przełącznik w ustawieniach. Do czasu decyzji nie zmieniamy manifestu ani reguł kopii. Jeśli powstanie synchronizacja opisana niżej, kopia systemowa nadal może chronić użytkowników, którzy się nie zalogują.
 
-- Aktywacja przy konfiguracji semestru (I-23). Otwarcie ekranu „Semestr” ustawia go jako aktywny. Do decyzji: konfiguracja dowolnego semestru bez aktywacji albo jawna i potwierdzona aktywacja.
 
 ### Wydania, aktualizacje i synchronizacja (propozycje z 2026-09-25)
 

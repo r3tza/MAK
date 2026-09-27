@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Konfiguracja semestru bez aktywacji (I-23)
+
+- Fakty: Otwarcie ekranu „Semestr” ustawiało ten semestr jako aktywny, więc konfiguracja semestru dodanego z wyprzedzeniem przełączała „Dzisiaj”, widget i powiadomienia. Powrót z podekranów kasował niezapisany formularz.
+- Decyzja: Użytkownik wybrał 2026-09-27 konfigurację bez aktywacji. Aktywny semestr zmienia tylko wybór w ustawieniach albo kreator (`DOMAIN.md`). Trasy semestru wołają `openIfNeeded`, a wejście z listy semestrów `open`.
+- Powód: Zgodność z decyzją I-18: dodanie lub edycja przyszłego semestru nie może przełączać bieżącego planu.
+- Odrzucone: pytanie o aktywację przy każdym otwarciu nieaktywnego semestru, bo dodaje dialog do rzadkiej czynności bez korzyści dla danych.
+
 ## 2026-09-27: Granice kontrolek, nazwy notatek i wyjątki rozmiaru (I-31, I-32, I-33)
 
 - Fakty: Audyt interfejsu z 2026-09-27 wykazał kontrast granic kontrolek 1,22:1 w jasnym i 1,45:1 w ciemnym motywie, dwie pary nazw tych samych notatek oraz dni w siatce tygodnia i kalendarza poniżej 48 dp i tekst widgetu 10 sp.
@@ -151,13 +158,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Fakty: `PLAN.md` miał cztery kroki zgodne z kolejką, ale I-01, I-02 i I-03 nie podawały plików, podziału metod, kolejności kompilowalnych etapów, przypadków brzegowych ani poleceń weryfikacji. Słabszy agent musiałby odgadywać zakres.
 - Decyzja: Uzupełniono te kroki o kolejność małych zmian, konkretne pliki, przypisanie metod repozytorium, definicję unikalnej kolizji i okienka, format kontroli `check_map.py` oraz jawne wyłączenia zakresu. I-07 doprecyzowano bez zmiany celu. Nie zmieniono kolejki ani wymagań produktu.
 - Powód: Kroki w `PLAN.md` mają być wykonalne bez zgadywania intencji.
-
-## 2026-09-22: Mapa pracy, kolejka i krótki log
-
-- Decyzja: `AGENTS.md` kieruje do `MAP.md`, `WORKFLOW.md` opisuje odbiór, a `QUEUE.md` przechowuje status implementacji i odbioru.
-- Decyzja: `LOG.md` zawiera najwyżej 20 najnowszych wpisów. Starsze wpisy trafiają bez zmiany treści do `log_archive/2026.md`; trwałe reguły pozostają w dokumentach produktu, domeny, funkcji, architektury i stosu.
-- Decyzja: ujednolicono nazwy `PLAN.md` i `KNOWN_ISSUES.md` oraz zaktualizowano odwołania w bieżących dokumentach.
-- Korekta: `PLAN.md` pozostawia wymagania produktu i odbioru. Datowany stan wdrożenia oraz statusy poszczególnych ekranów należą do `QUEUE.md` i `KNOWN_ISSUES.md`; technologie i granice modułów są w `STACK.md` i `ARCHITECTURE.md`. Usunięto z planu wykonane zadania konfiguracji wrappera Gradle.
-- Późniejsza decyzja: `PLAN.md` zawiera najwyżej pięć najbliższych kroków. Cel i zakres przeniesiono do `PRODUCT.md`, reguły do `DOMAIN.md`, a zachowanie ekranów i odbiór do `FEATURES.md`. `MAP.md` kieruje do właściwego źródła. Ta decyzja zastępuje poprzedni opis roli planu.
-- Dalszy krok: zaplanowano `scripts/check_map.py` z testami dla linków, limitów planu i logu oraz spójności kolejki. `scripts/check_text.py` i CI pozostają pomysłami do osobnego zatwierdzenia. Plany mają być jednoznaczne także dla słabszych agentów.
-- Powód: Agent ma szybko znaleźć bieżącą pracę i wynik ostatnich zmian bez czytania całej historii.

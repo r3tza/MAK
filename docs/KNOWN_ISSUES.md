@@ -12,7 +12,7 @@ Zadania i kryteria są w `QUEUE.md`, a kroki wykonawcze w `PLAN.md`.
 
 Audyt objął przegląd domeny, repozytoriów, importu, powiadomień, widgetu i ViewModeli, `gradlew.bat test` (333 testy, 0 błędów) oraz lint (0 błędów, 4 ostrzeżenia o wersjach, `targetSdk` i grafice podglądu widgetu). Zadania i kryteria są w `QUEUE.md`, a kroki w `PLAN.md`.
 
-1. **Konfiguracja semestru aktywuje go (I-23).** Otwarcie ekranu „Semestr” ustawia ten semestr jako aktywny i kasuje niezapisane zmiany po powrocie z podekranów. Czeka na decyzję.
+1. **Konfiguracja semestru aktywuje go (I-23).** Naprawione 2026-09-27: konfiguracja nie zmienia aktywnego semestru i zachowuje niezapisane zmiany po powrocie z podekranów.
 2. **Zmiana tygodnia bez zapisu (I-24).** Przy filtrze „Wszystkie” i kilku kalendarzach „Zapisz” w dialogu tygodnia nic nie zapisuje i nie pokazuje komunikatu.
 3. **Odwołane terminy w „Planie” (I-25).** „Pokaż odwołane” ignoruje filtr kierunku i pokazuje odwołania z dni, w które zajęcia już się nie odbywają; licznik dnia wlicza odwołane.
 4. **Drobne błędy (I-26).** Ponowne przejście z powiadomienia albo widgetu po przywróceniu procesu, pusty ekran szczegółów usuniętych zajęć, błędny komunikat przy zapisie progu okienka, równoległe odświeżanie alarmów i nieusuwany kalendarz po przepięciu przypisania.

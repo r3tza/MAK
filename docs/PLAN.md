@@ -78,4 +78,4 @@ Kryterium zakończenia: dialog zmiany tygodnia nie otwiera się w stanie, w któ
 
 ## Po tych krokach
 
-Następne w kolejności są I-30 (stan ładowania i motyw przy starcie) oraz I-26 (drobne poprawki z audytu kodu). I-14 i I-23 czekają na decyzje użytkownika. Odbiór na urządzeniu można wykonywać niezależnie od powyższej kolejności; otwarte scenariusze są w `FEATURES.md`, sekcja „Odbiór na urządzeniu”.
+Następne w kolejności są I-30 (stan ładowania i motyw przy starcie) oraz I-26 (drobne poprawki z audytu kodu). I-14 czeka na decyzję użytkownika. Odbiór na urządzeniu można wykonywać niezależnie od powyższej kolejności; otwarte scenariusze są w `FEATURES.md`, sekcja „Odbiór na urządzeniu”.

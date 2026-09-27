@@ -198,6 +198,9 @@ fun MakApp(
                     setupViewModel.start()
                     openSetup(navController)
                 },
+                onConfigureSemester = { id ->
+                    openSemesterConfiguration(semesterViewModel, navController, id)
+                },
                 onExport = onCreateExportDocument,
                 onImport = onImportPlan,
                 notificationsBlocked = notificationsBlocked,
