@@ -117,7 +117,7 @@ private fun ColorPreview(color: Int?, name: String) {
                 .clip(RoundedCornerShape(2.dp))
                 .background(accent)
         )
-        CoursePill(name = name, accent = accent)
+        CourseNameText(name = name, accent = accent)
         Text(
             text = "Podgląd",
             style = MaterialTheme.typography.bodySmall,

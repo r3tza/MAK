@@ -2,6 +2,9 @@ package dev.retza.mak.ui.occurrence
 
 import androidx.compose.runtime.Immutable
 import dev.retza.mak.ui.components.FieldErrorUi
+import java.time.LocalDate
+import java.time.format.DateTimeFormatter
+import java.util.Locale
 
 enum class OccurrenceStatusUi {
     Scheduled,
@@ -71,3 +74,34 @@ data class OccurrenceDetailsUiState(
     val canMoveOccurrence: Boolean = true,
     val canRestoreOccurrence: Boolean = false
 )
+
+/** The status word shown with its icon on the details screen. */
+fun OccurrenceStatusUi.label(): String = when (this) {
+    OccurrenceStatusUi.Scheduled -> "Zaplanowane"
+    OccurrenceStatusUi.Cancelled -> "Odwołane"
+    OccurrenceStatusUi.Changed -> "Zmienione"
+    OccurrenceStatusUi.Moved -> "Przeniesione"
+    OccurrenceStatusUi.OneOff -> "Jednorazowe"
+}
+
+/**
+ * What differs from the base occurrence, one line per change; the class card shows only an icon,
+ * so this is where the user reads the details.
+ */
+fun OccurrenceDetailsUiState.changeLines(): List<String> {
+    if (status != OccurrenceStatusUi.Changed && status != OccurrenceStatusUi.Moved) return emptyList()
+    return buildList {
+        val from = originalDateLabel?.let(::changeDate)
+        val to = targetDateLabel?.let(::changeDate)
+        if (from != null && to != null && from != to) add("Przeniesione z $from na $to")
+        if (baseStartTime.isNotBlank() && (startTime != baseStartTime || endTime != baseEndTime)) {
+            add("Godziny: $baseStartTime–$baseEndTime → $startTime–$endTime")
+        }
+        if (room != baseRoom) add("Sala: ${baseRoom ?: "niepodana"} → ${room ?: "niepodana"}")
+    }
+}
+
+private val changeDateFormatter = DateTimeFormatter.ofPattern("d MMMM", Locale.forLanguageTag("pl"))
+
+private fun changeDate(iso: String): String =
+    runCatching { LocalDate.parse(iso).format(changeDateFormatter) }.getOrDefault(iso)

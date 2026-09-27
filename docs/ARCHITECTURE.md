@@ -85,7 +85,7 @@ Na karcie zajęć kolizja używa neutralnego stylu ostrzegawczego i pokazuje dok
 
 Gradientowe podsumowanie ekranu „Dzisiaj” pokazuje w trzech równych kolumnach liczbę zajęć, unikalnych kolizji i okienek. Liczba kolizji jest czerwona, gdy jest większa od zera, oraz zielona, gdy wynosi zero. Kolor opisuje stan planu i nie zmienia neutralnego sposobu opisywania kolizji na kartach zajęć.
 
-Karta zajęć używa dwukolumnowej siatki z osobną kolumną godzin oraz sekcjami danych, statusu i notatek. Pełny kolor kierunku występuje na pasku karty, a jego jaśniejszy wariant na pillu z nazwą kierunku. Cała karta pozostaje neutralna. Kolizja używa pomarańczowego stylu ostrzegawczego, notatka wspólna niebieskiego lub indygo pilla „Notatka do zajęć”, a notatka pojedynczego terminu fioletowego pilla „Notatka do terminu”. Te same nazwy mają pola notatek w szczegółach terminu i formularzu zajęć. Kolor zawsze występuje razem z etykietą tekstową.
+Karta zajęć używa dwukolumnowej siatki z osobną kolumną godzin oraz sekcjami danych, statusu i notatek. Pełny kolor kierunku występuje na pasku karty, a nazwa kierunku jest tekstem w tym samym odcieniu dopasowanym do kontrastu 4,5:1 z tłem (`courseTextColor`, jedna funkcja dla karty i podglądu koloru). Cała karta pozostaje neutralna i nie używa pilli. Stan terminu (odwołane, zmienione, jednorazowe) to ikona pod godzinami, kolizja używa pomarańczowego wiersza ostrzegawczego, a notatki to wiersze z ikoną: notatka do zajęć i notatka do terminu mają różne ikony. Te same nazwy mają pola notatek w szczegółach terminu i formularzu zajęć. Kolor zawsze występuje razem z etykietą tekstową.
 
 ### Gęstość ekranu planu
 

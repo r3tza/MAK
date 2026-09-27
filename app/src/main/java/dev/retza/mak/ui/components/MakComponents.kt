@@ -46,6 +46,11 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.material.icons.Icons
+import androidx.compose.ui.graphics.toArgb
+import androidx.compose.material.icons.outlined.StickyNote2
+import androidx.compose.material.icons.outlined.LooksOne
+import androidx.compose.material.icons.outlined.EventBusy
+import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Add
@@ -94,14 +99,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import dev.retza.mak.ui.theme.MakModified
-import dev.retza.mak.ui.theme.MakModifiedSoft
 import dev.retza.mak.ui.theme.MakOnce
-import dev.retza.mak.ui.theme.MakOnceSoft
 import dev.retza.mak.ui.theme.MakOrangeMark
 import dev.retza.mak.ui.theme.MakPillNeutral
 import dev.retza.mak.ui.theme.MakPillNeutralBg
-import dev.retza.mak.ui.theme.MakAccent
-import dev.retza.mak.ui.theme.MakAccentSoft
 import dev.retza.mak.ui.theme.MakInk
 import dev.retza.mak.ui.theme.MakSummaryEnd
 import dev.retza.mak.ui.theme.MakSummaryStart
@@ -509,6 +510,15 @@ fun ClassCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
+                classStatusIcon(item)?.let { (icon, tint) ->
+                    // The card's own description already reads the status.
+                    Icon(
+                        imageVector = icon,
+                        contentDescription = null,
+                        tint = tint,
+                        modifier = Modifier.padding(top = MakSpacing.sm).size(20.dp)
+                    )
+                }
             }
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
                 Text(
@@ -524,16 +534,7 @@ fun ClassCard(
                     itemVerticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    CoursePill(name = item.courseName, accent = accent)
-                    val badge = item.statusBadge
-                    if (badge != null) {
-                        StatusBadge(
-                            text = badge,
-                            cancelled = item.isCancelled,
-                            modified = item.isModified,
-                            oneOff = item.isOneOff
-                        )
-                    }
+                    CourseNameText(name = item.courseName, accent = accent)
                     if (item.type.isNotBlank()) {
                         Text(
                             text = item.type,
@@ -592,19 +593,17 @@ fun ClassCard(
                     )
                 }
                 if (classNote != null) {
-                    ClassNoteRow(
-                        label = "Notatka do zajęć",
-                        text = classNote,
-                        background = MakAccentSoft,
-                        foreground = MakAccent
+                    ClassNoteLine(
+                        icon = Icons.Outlined.StickyNote2,
+                        tint = MaterialTheme.colorScheme.primary,
+                        text = classNote
                     )
                 }
                 if (occurrenceNote != null) {
-                    ClassNoteRow(
-                        label = "Notatka do terminu",
-                        text = occurrenceNote,
-                        background = MakModifiedSoft,
-                        foreground = MakModified
+                    ClassNoteLine(
+                        icon = Icons.Outlined.Today,
+                        tint = modifiedTint(),
+                        text = occurrenceNote
                     )
                 }
             }
@@ -612,92 +611,69 @@ fun ClassCard(
     }
 }
 
+/** Course name in the course hue with text contrast on the current surface, as on the class card. */
 @Composable
-internal fun CoursePill(
+internal fun CourseNameText(
     name: String,
     accent: Color,
     modifier: Modifier = Modifier
 ) {
-    val dark = isDarkSurface()
-    val fill = if (dark) lerp(accent, MaterialTheme.colorScheme.surface, 0.55f) else lerp(accent, Color.White, 0.72f)
-    val content = when {
-        dark -> lerp(accent, Color.White, 0.85f)
-        fill.luminance() > 0.5f -> MakInk
-        else -> Color.White
-    }
+    val surface = MaterialTheme.colorScheme.surface
     Text(
         text = name,
-        modifier = modifier
-            .clip(RoundedCornerShape(50))
-            .background(fill)
-            .padding(horizontal = 8.dp, vertical = 3.dp),
-        color = content,
-        fontSize = 12.sp,
+        modifier = modifier,
+        color = Color(courseTextColor(accent.toArgb(), surface.toArgb())),
+        style = MaterialTheme.typography.bodySmall,
         fontWeight = FontWeight.Bold,
         maxLines = 1,
         overflow = TextOverflow.Ellipsis
     )
 }
 
+// The screen reader gets the note kind from the card description, the eye from the icon.
 @Composable
-private fun ClassNoteRow(
-    label: String,
+private fun ClassNoteLine(
+    icon: ImageVector,
+    tint: Color,
     text: String,
-    background: Color,
-    foreground: Color,
     modifier: Modifier = Modifier
 ) {
-    val dark = isDarkSurface()
-    Column(
+    Row(
         modifier = modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+        horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
-        Text(
-            text = label,
-            modifier = Modifier
-                .clip(RoundedCornerShape(50))
-                .background(if (dark) lerp(foreground, MaterialTheme.colorScheme.surface, 0.7f) else background)
-                .padding(horizontal = 8.dp, vertical = 3.dp),
-            color = if (dark) lerp(foreground, Color.White, 0.7f) else foreground,
-            fontSize = 12.sp,
-            fontWeight = FontWeight.Bold
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = tint,
+            modifier = Modifier.padding(top = 1.dp).size(16.dp)
         )
         Text(
             text = text,
             style = MaterialTheme.typography.bodySmall,
-            maxLines = 3,
-            overflow = TextOverflow.Ellipsis
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
         )
     }
 }
 
+/** Color of the "changed" state and of occurrence notes, readable on both themes. */
 @Composable
-private fun StatusBadge(text: String, cancelled: Boolean, modified: Boolean, oneOff: Boolean) {
-    val dark = isDarkSurface()
-    val base = when {
-        cancelled -> MaterialTheme.colorScheme.error
-        modified -> MakModified
-        oneOff -> MakOnce
-        else -> MakPillNeutral
-    }
-    val bg = when {
-        dark -> lerp(base, MaterialTheme.colorScheme.surface, 0.7f)
-        cancelled -> MaterialTheme.colorScheme.errorContainer
-        modified -> MakModifiedSoft
-        oneOff -> MakOnceSoft
-        else -> MakPillNeutralBg
-    }
-    val fg = if (dark) lerp(base, Color.White, 0.7f) else base
-    Text(
-        text = text,
-        modifier = Modifier
-            .clip(RoundedCornerShape(50))
-            .background(bg)
-            .padding(horizontal = 8.dp, vertical = 3.dp),
-        color = fg,
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold
-    )
+internal fun modifiedTint(): Color =
+    if (isDarkSurface()) lerp(MakModified, Color.White, 0.55f) else MakModified
+
+/** Color of the "one-off" state, readable on both themes. */
+@Composable
+internal fun oneOffTint(): Color =
+    if (isDarkSurface()) lerp(MakOnce, Color.White, 0.55f) else MakOnce
+
+/** Icon and color for a class state that changes the plan or marks a one-off date; null otherwise. */
+@Composable
+internal fun classStatusIcon(item: ClassItemUi): Pair<ImageVector, Color>? = when {
+    item.isCancelled -> Icons.Outlined.EventBusy to MaterialTheme.colorScheme.error
+    item.isModified -> Icons.Outlined.EditCalendar to modifiedTint()
+    item.isOneOff -> Icons.Outlined.LooksOne to oneOffTint()
+    else -> null
 }
 
 @Composable
@@ -939,7 +915,7 @@ private fun ViewSwitchButton(
 }
 
 @Composable
-private fun isDarkSurface(): Boolean = MaterialTheme.colorScheme.surface.luminance() < 0.5f
+internal fun isDarkSurface(): Boolean = MaterialTheme.colorScheme.surface.luminance() < 0.5f
 
 @Composable
 fun MakNavBar(

@@ -10,6 +10,17 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import dev.retza.mak.ui.components.oneOffTint
+import dev.retza.mak.ui.components.modifiedTint
+import androidx.compose.ui.Alignment
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.material3.Icon
+import androidx.compose.material.icons.outlined.LooksOne
+import androidx.compose.material.icons.outlined.EventBusy
+import androidx.compose.material.icons.outlined.Event
+import androidx.compose.material.icons.outlined.EditCalendar
+import androidx.compose.material.icons.Icons
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
@@ -29,7 +40,6 @@ import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSpacing
-import dev.retza.mak.ui.components.MakTag
 import dev.retza.mak.ui.components.MakTimePickerField
 
 @Composable
@@ -64,7 +74,7 @@ fun OccurrenceDetailsScreen(
                 .verticalScroll(rememberScrollState())
         ) {
             OccurrenceHeader(title = state.subjectName.ifBlank { state.title })
-            StatusTag(state)
+            StatusSummary(state)
             Facts(state)
             NotesBlock(
                 state = state,
@@ -231,15 +241,40 @@ private fun OccurrenceHeader(title: String) {
 }
 
 @Composable
-private fun StatusTag(state: OccurrenceDetailsUiState) {
-    val label = state.statusLabel ?: when (state.status) {
-        OccurrenceStatusUi.Scheduled -> "Zaplanowane"
-        OccurrenceStatusUi.Cancelled -> "Odwołane"
-        OccurrenceStatusUi.Changed -> "Zmienione"
-        OccurrenceStatusUi.Moved -> "Przeniesione"
-        OccurrenceStatusUi.OneOff -> "Jednorazowe"
+private fun StatusSummary(state: OccurrenceDetailsUiState) {
+    val (icon, tint) = when (state.status) {
+        OccurrenceStatusUi.Cancelled -> Icons.Outlined.EventBusy to MaterialTheme.colorScheme.error
+        OccurrenceStatusUi.Changed, OccurrenceStatusUi.Moved -> Icons.Outlined.EditCalendar to modifiedTint()
+        OccurrenceStatusUi.OneOff -> Icons.Outlined.LooksOne to oneOffTint()
+        OccurrenceStatusUi.Scheduled -> Icons.Outlined.Event to MaterialTheme.colorScheme.onSurfaceVariant
     }
-    MakTag(text = label, modifier = Modifier.padding(bottom = MakSpacing.md))
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(bottom = MakSpacing.md)
+            .semantics(mergeDescendants = true) {},
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
+            Text(
+                text = state.statusLabel ?: state.status.label(),
+                color = tint,
+                fontWeight = FontWeight.SemiBold,
+                style = MaterialTheme.typography.bodyMedium
+            )
+        }
+        state.changeLines().forEach { line ->
+            Text(
+                text = line,
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
 }
 
 @Composable
@@ -259,8 +294,6 @@ private fun Facts(state: OccurrenceDetailsUiState) {
         if (!state.teacherName.isNullOrBlank()) MakFactRow("Prowadzący", state.teacherName)
         if (!state.groupName.isNullOrBlank()) MakFactRow("Grupa", state.groupName)
         if (!state.weekLabel.isNullOrBlank()) MakFactRow("Tydzień", state.weekLabel)
-        if (!state.originalDateLabel.isNullOrBlank()) MakFactRow("Data bazowa", state.originalDateLabel)
-        if (!state.targetDateLabel.isNullOrBlank()) MakFactRow("Nowa data", state.targetDateLabel)
     }
 }
 

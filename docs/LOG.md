@@ -4,6 +4,12 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-28: Karta zajęć bez pilli (I-53)
+
+- Fakty: Karta pokazywała kierunek, stan i etykiety notatek w wypełnionych pillach. Kolor kierunku powtarzał się w pasku i pillu, etykiety notatek wyglądały jak przyciski, a przy skali czcionki 2,0 pille zajmowały pół szerokości karty. Przegląd innych aplikacji: kalendarze oznaczają kategorię paskiem albo kropką przy zwykłym tekście, Todoist używa linii metadanych z ikonami, a Material 3 przeznacza chipy do interakcji.
+- Decyzja: Nazwa kierunku jako tekst w odcieniu kierunku z kontrastem 4,5:1, stan terminu jako ikona pod godzinami (odwołane także z przekreśleniem), notatki jako wiersze z ikoną bez etykiety. Opis zmiany terminu jest w szczegółach terminu. Kolizja zostaje pomarańczowym wierszem. Użytkownik wybrał wariant 2026-09-28 w artefakcie z pięcioma wariantami (`FEATURES.md`, `ARCHITECTURE.md`).
+- Odrzucone: Wspólny blok notatek, jasne bloki dla każdej notatki, tagi obrysowe i podpisy nad notatkami.
+
 ## 2026-09-27: Błąd wstrzykiwania w aktualizatorze 0.2.0 (I-52)
 
 - Fakty: Przy przejściu historii wydań na plik okazało się, że Koin compiler plugin zostawia wartości domyślne parametrów konstruktora zamiast wstrzykiwać bindingi, bez błędu kompilacji. `UpdateViewModel` w wydaniu 0.2.0 ma atrapę pobierania, weryfikacji i instalacji, własny `InstallEventStore` i `Clock.systemUTC()`. Sprawdzanie wersji działa, ale pobranie zawsze kończy się błędem. Testy JVM tego nie wykryły, bo same korzystały z wartości domyślnych, a `KoinGraphTest` sprawdzał tylko, że ViewModel się tworzy.
@@ -134,10 +140,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: Plan działa w pełni bez sieci, a aplikacja łączy się wyłącznie z GitHubem w celu sprawdzenia i pobrania aktualizacji, bez wysyłania danych planu (`PRODUCT.md`). Repozytorium `r3tza/MAK` będzie publiczne, na licencji Apache 2.0 z `r3tza` w `NOTICE`; historia i adres e-mail w commitach zostają bez zmian. Wydania budują GitHub Actions z tagu, z APK i `update.json` w GitHub Release (`STACK.md`). Aktualizator sprawdza wersję ręcznie w „O aplikacji” albo automatycznie przy uruchomieniu najwyżej raz na 24 godziny, pokazuje baner na „Dzisiaj”, weryfikuje plik i instaluje go przez `PackageInstaller` (`ARCHITECTURE.md`, punkt „Aktualizacje”). Użytkownik zaakceptował te decyzje 2026-09-27. Synchronizacja przez konto Google pozostaje możliwym przyszłym rozszerzeniem, a rejestracja w Android Developer Console jest odłożona.
 - Powód: Apache 2.0 jest licencją reszty stosu, wprost nie daje prawa do nazwy i znaku i nie utrudnia przyszłej integracji z Usługami Google Play. Sprawdzanie przy uruchomieniu nie wymaga pracy w tle, nowej zależności ani zgody na powiadomienia, a aplikacja z planem zajęć jest otwierana często.
 - Odrzucone: WorkManager z powiadomieniem, Play In-App Updates, Obtainium jako jedyny sposób aktualizacji, osobne repozytorium na wydania, licencje MIT i GPL 3.0 oraz przepisywanie historii gita.
-
-## 2026-09-27: Konfiguracja semestru bez aktywacji (I-23)
-
-- Fakty: Otwarcie ekranu „Semestr” ustawiało ten semestr jako aktywny, więc konfiguracja semestru dodanego z wyprzedzeniem przełączała „Dzisiaj”, widget i powiadomienia. Powrót z podekranów kasował niezapisany formularz.
-- Decyzja: Użytkownik wybrał 2026-09-27 konfigurację bez aktywacji. Aktywny semestr zmienia tylko wybór w ustawieniach albo kreator (`DOMAIN.md`). Trasy semestru wołają `openIfNeeded`, a wejście z listy semestrów `open`.
-- Powód: Zgodność z decyzją I-18: dodanie lub edycja przyszłego semestru nie może przełączać bieżącego planu.
-- Odrzucone: pytanie o aktywację przy każdym otwarciu nieaktywnego semestru, bo dodaje dialog do rzadkiej czynności bez korzyści dla danych.

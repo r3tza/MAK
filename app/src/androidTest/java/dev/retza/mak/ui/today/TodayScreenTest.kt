@@ -12,6 +12,7 @@ import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.unit.Density
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.isHeading
@@ -284,7 +285,12 @@ class TodayScreenTest {
         }
 
         composeTestRule.onNodeWithText("Informatyka").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Notatka do zajęć").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Notatka do terminu").assertIsDisplayed()
+        // Notes show as icon lines; the kind stays in the card description for TalkBack.
+        composeTestRule.onNodeWithText("Notatka do zajęć").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Notatka do terminu").assertDoesNotExist()
+        composeTestRule.onNode(hasContentDescription("Notatka do zajęć: Przynieś projekt", substring = true)).assertExists()
+        composeTestRule.onNode(hasContentDescription("Notatka do terminu: Kolokwium", substring = true)).assertExists()
+        composeTestRule.onNodeWithText("Przynieś projekt").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Kolokwium").assertIsDisplayed()
     }
 }

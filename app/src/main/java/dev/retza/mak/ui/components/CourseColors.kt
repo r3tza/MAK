@@ -111,3 +111,34 @@ private fun hueDistance(first: Float, second: Float): Float {
     val difference = kotlin.math.abs(first - second) % 360f
     return if (difference > 180f) 360f - difference else difference
 }
+
+private const val TEXT_CONTRAST = 4.5
+
+/**
+ * The course color for text on [surface]: same hue and saturation, darker on a light surface and
+ * lighter on a dark one, until it reaches a 4.5:1 contrast. A color that already has it is kept.
+ */
+fun courseTextColor(color: Int, surface: Int): Int {
+    if (contrastRatio(color, surface) >= TEXT_CONTRAST) return color
+    val (hue, saturation, lightness) = hslOf(color)
+    val darken = relativeLuminance(surface) > 0.18
+    var current = lightness
+    repeat(100) {
+        current = (if (darken) current - 0.01 else current + 0.01).coerceIn(0.0, 1.0)
+        val candidate = hslToArgb(hue, saturation, current)
+        if (contrastRatio(candidate, surface) >= TEXT_CONTRAST) return candidate
+    }
+    return if (darken) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
+}
+
+private fun hslOf(color: Int): Triple<Double, Double, Double> {
+    val r = ((color shr 16) and 0xFF) / 255.0
+    val g = ((color shr 8) and 0xFF) / 255.0
+    val b = (color and 0xFF) / 255.0
+    val max = maxOf(r, g, b)
+    val min = minOf(r, g, b)
+    val lightness = (max + min) / 2
+    val delta = max - min
+    val saturation = if (delta == 0.0) 0.0 else delta / (1 - abs(2 * lightness - 1))
+    return Triple(hueOf(color).toDouble(), saturation.coerceIn(0.0, 1.0), lightness)
+}
