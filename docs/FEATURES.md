@@ -181,14 +181,14 @@ Zmiany mają poprawić hierarchię informacji, czytelność i wykorzystanie dost
 3. Umieścić liczbę zajęć obok etykiety tygodnia albo wyrównać ją do prawej strony nagłówka.
 4. Dodać do wiersza zajęć wąski pasek w kolorze kierunku. Zachować tekstową nazwę kierunku, ponieważ kolor nie może być jedynym nośnikiem informacji.
 5. Użyć stałej kolumny czasu. Obok niej pokazać nazwę zajęć oraz osobny wiersz metadanych z salą i prowadzącym.
-6. Pokazać kolizję i notatkę jako krótkie etykiety tekstowe o czytelnym kontraście.
+6. Pokazać kolizję jako krótki wiersz ostrzegawczy o czytelnym kontraście, a notatkę jako małą ikonę notatki przy metadanych, z opisem „Notatka” dla czytnika ekranu.
 7. Oddzielić zajęcia subtelnymi separatorami. Nie umieszczać każdego zajęcia w osobnej karcie.
 8. Dopasować tło do systemowego promienia widgetów Androida.
 
 #### Układ responsywny
 
 1. Traktować widget jako kompaktowy, gdy ma mniej niż 240 dp szerokości albo mniej niż 160 dp wysokości.
-2. W wariancie kompaktowym pokazać przewijaną listę dzisiejszych zajęć. Pokazać nazwę, czas i salę, pominąć prowadzącego oraz osobną etykietę notatki, ale zachować alert kolizji.
+2. W wariancie kompaktowym pokazać przewijaną listę dzisiejszych zajęć. Pokazać nazwę, czas i salę, pominąć prowadzącego oraz ikonę notatki, ale zachować alert kolizji.
 3. Jeśli wariant kompaktowy nie mieści wszystkich zajęć, użyć przewijanej listy zamiast tekstu „Jeszcze {liczba}”.
 4. W wariancie rozszerzonym pokazać przewijaną listę dzisiejszych zajęć wraz z salą, prowadzącym i statusem kolizji albo notatki.
 5. Wiersze powinny wykorzystać pełną szerokość widgetu. Wariant rozszerzony ma używać większych odstępów i pełniejszych metadanych, a nie tylko zwiększać wysokość listy.
@@ -222,14 +222,14 @@ Kryterium zakończenia: żaden wariant nie ucina czasu, nie nakłada tekstów i 
 
 Zmiana ma poprawić hierarchię i atrakcyjność widgetu bez zwiększania liczby informacji ani pogarszania czytelności. Ostateczne odcienie, odstępy i gęstość zatwierdzić po porównaniu na launcherze w jasnym i ciemnym motywie.
 
-1. Wydzielić nagłówek subtelnie odmiennym neutralnym tłem. Data pozostaje informacją główną. W drugim wierszu pokazać pill tygodnia A/B, liczbę zajęć oraz mały jasnoczerwony pill liczby kolizji, gdy liczba jest większa od zera. Ten układ zastępuje wcześniejszą decyzję o czerwonym tekście kolizji bez pilla w nagłówku.
+1. Wydzielić nagłówek subtelnie odmiennym neutralnym tłem. Data pozostaje informacją główną. W drugim wierszu pokazać zwykły tekst „Tydzień A/B, {liczba zajęć}” oraz czerwony tekst liczby kolizji, gdy liczba jest większa od zera. Widget nie używa pilli (decyzja z 2026-09-28, zastępuje wcześniejszy wariant z pillami tygodnia i kolizji).
 2. Zachować spokojne neutralne tło całego widgetu i zaokrąglony kontener. Nie tworzyć osobnej pełnej karty dla każdego wpisu, ponieważ ograniczałoby to miejsce na plan.
 3. Połączyć pionowy pasek kierunku z wizualną linią czasu. Dopuszczalna jest mała kropka przy początku przedziału i cienka linia w pełnym kolorze kierunku. Czas pozostaje w stałej kolumnie i nie może być ucinany.
-4. Nazwę kierunku oznaczyć jego kolorem. W wąskim wariancie użyć krótkiego kolorowego tekstu albo małego pilla. Nazwa zawsze towarzyszy kolorowi.
+4. Nazwę kierunku oznaczyć jego kolorem, jako krótki kolorowy tekst. Nazwa zawsze towarzyszy kolorowi.
 5. Rozdzielić kierunek od lokalizacji. W pierwszym wierszu metadanych pokazać kierunek, w następnym najważniejszą lokalizację. Prowadzącego pokazywać tylko w wariantach, w których mieści się bez wypierania czasu, nazwy, kierunku, sali lub kolizji.
 6. Zmniejszyć wizualny ciężar kolizji przy zajęciach. Zamiast dużego czerwonego bloku użyć jasnego tła ostrzegawczego, małej ikony lub znacznika, tekstu „Kolizja {zakres}” oraz nazwy drugich zajęć w kolejnym wierszu. Zakres i druga nazwa muszą pozostać dostępne bez polegania na kolorze.
 7. Separator renderować wyłącznie między zajęciami. Wewnątrz wpisu budować hierarchię przez odstępy, wagę tekstu i role kolorów.
-8. Dodać prezentacyjne stany „Teraz” i „Następne” tylko wtedy, gdy mieszczą się w danym progu rozmiaru. Zakończone zajęcia można lekko przygasić. Stan wynika z czasu odczytanego przez wstrzyknięty `Clock` podczas odświeżenia i nie może sugerować aktualizacji co minutę.
+8. Dodać prezentacyjne stany „Teraz” i „Następne” jako pogrubiony tekst w kolorze akcentu, bez tła, tylko wtedy, gdy mieszczą się w danym progu rozmiaru. Zakończone zajęcia można lekko przygasić. Stan wynika z czasu odczytanego przez wstrzyknięty `Clock` podczas odświeżenia i nie może sugerować aktualizacji co minutę.
 9. Zachować role kolorów: kolor kierunku dla osi czasu i nazwy kierunku, czerwony dla kolizji, niebieski lub indygo dla tygodnia A/B oraz neutralny dla lokalizacji, prowadzącego i zakończonych zajęć.
 10. Dla każdego progu rozmiaru ustalić jawnie widoczne metadane, maksymalną liczbę linii oraz obecność stanów „Teraz” i „Następne”. Nie polegać na przypadkowym przycinaniu przez `RemoteViews`.
 

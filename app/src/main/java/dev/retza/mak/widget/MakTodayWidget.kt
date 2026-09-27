@@ -8,6 +8,11 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import dev.retza.mak.R
+import androidx.glance.layout.size
+import androidx.glance.ImageProvider
+import androidx.glance.Image
+import androidx.glance.ColorFilter
 import androidx.glance.GlanceTheme
 import androidx.glance.LocalSize
 import androidx.glance.appwidget.GlanceAppWidget
@@ -190,7 +195,7 @@ private fun WidgetHeaderDetails(weekLabel: String, count: Int, collisionCount: I
         verticalAlignment = Alignment.CenterVertically
     ) {
         WidgetWeekLabel(weekLabel)
-        Spacer(GlanceModifier.width(6.dp))
+        Spacer(GlanceModifier.width(4.dp))
         Text(
             text = widgetCountLabel(count),
             style = TextStyle(
@@ -216,22 +221,15 @@ private fun WidgetHeaderDetails(weekLabel: String, count: Int, collisionCount: I
 
 @Composable
 private fun WidgetWeekLabel(label: String) {
-    Box(
-        modifier = GlanceModifier
-            .background(GlanceTheme.colors.secondaryContainer)
-            .cornerRadius(6.dp)
-            .padding(horizontal = 6.dp, vertical = 2.dp)
-    ) {
-        Text(
-            text = label,
-            style = TextStyle(
-                color = GlanceTheme.colors.onSecondaryContainer,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
-            ),
-            maxLines = 1
-        )
-    }
+    Text(
+        text = "$label,",
+        style = TextStyle(
+            color = GlanceTheme.colors.onSurfaceVariant,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold
+        ),
+        maxLines = 1
+    )
 }
 
 @Composable
@@ -296,19 +294,23 @@ private fun WidgetOccurrenceRow(
                     WidgetPhaseLabel(item.phase)
                 }
             }
-            Text(
-                text = widgetMetadataLabel(item, layoutPolicy),
-                style = TextStyle(
-                    color = GlanceTheme.colors.onSurfaceVariant,
-                    fontSize = 11.sp
-                ),
-                maxLines = 1
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Text(
+                    text = widgetMetadataLabel(item, layoutPolicy),
+                    modifier = GlanceModifier.defaultWeight(),
+                    style = TextStyle(
+                        color = GlanceTheme.colors.onSurfaceVariant,
+                        fontSize = 11.sp
+                    ),
+                    maxLines = 1
+                )
+                if (widgetShouldShowNote(item, layoutPolicy)) {
+                    Spacer(GlanceModifier.width(4.dp))
+                    WidgetNoteIcon()
+                }
+            }
             if (widgetShouldShowConflict(item, layoutPolicy)) {
                 WidgetConflictAlert(item, layoutPolicy)
-            }
-            if (widgetShouldShowNote(item, layoutPolicy)) {
-                WidgetNoteLabel()
             }
         }
     }
@@ -372,41 +374,25 @@ private fun WidgetConflictAlert(
 
 @Composable
 private fun WidgetPhaseLabel(phase: WidgetOccurrencePhase) {
-    Box(
-        modifier = GlanceModifier
-            .background(GlanceTheme.colors.secondaryContainer)
-            .cornerRadius(4.dp)
-            .padding(horizontal = 4.dp, vertical = 1.dp)
-    ) {
-        Text(
-            text = if (phase == WidgetOccurrencePhase.Current) "Teraz" else "Następne",
-            style = TextStyle(
-                color = GlanceTheme.colors.onSecondaryContainer,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold
-            ),
-            maxLines = 1
-        )
-    }
+    Text(
+        text = if (phase == WidgetOccurrencePhase.Current) "Teraz" else "Następne",
+        style = TextStyle(
+            color = GlanceTheme.colors.primary,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.Bold
+        ),
+        maxLines = 1
+    )
 }
 
 @Composable
-private fun WidgetNoteLabel() {
-    Box(
-        modifier = GlanceModifier
-            .background(GlanceTheme.colors.surfaceVariant)
-            .cornerRadius(4.dp)
-            .padding(horizontal = 4.dp, vertical = 1.dp)
-    ) {
-        Text(
-            text = "Notatka",
-            style = TextStyle(
-                color = GlanceTheme.colors.onSurfaceVariant,
-                fontSize = 11.sp
-            ),
-            maxLines = 1
-        )
-    }
+private fun WidgetNoteIcon() {
+    Image(
+        provider = ImageProvider(R.drawable.ic_widget_note),
+        contentDescription = "Notatka",
+        modifier = GlanceModifier.size(12.dp),
+        colorFilter = ColorFilter.tint(GlanceTheme.colors.primary)
+    )
 }
 
 internal fun widgetMetadataLabel(
