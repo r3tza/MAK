@@ -1,6 +1,5 @@
 package dev.retza.mak.ui
 
-import android.provider.Settings
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
@@ -79,9 +78,7 @@ private val SPLASH_ICON_SIZE = 240.dp
 @Composable
 fun MakLoadingScreen(modifier: Modifier = Modifier) {
     val context = LocalContext.current
-    val animationsOn = remember(context) {
-        Settings.Global.getFloat(context.contentResolver, Settings.Global.ANIMATOR_DURATION_SCALE, 1f) != 0f
-    }
+    val animationsOn = remember(context) { context.areSystemAnimationsOn() }
     Box(
         modifier = modifier
             .fillMaxSize()

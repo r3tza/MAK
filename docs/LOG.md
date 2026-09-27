@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Dłuższa animacja startu i znak w pasku (I-42)
+
+- Fakty: Animacja „Rozkwit” trwała około 870 ms i przy szybkim starcie system mógł ją przerwać. Użytkownik uznał ją za zbyt krótką. W górnym pasku został stary znak z czterech kwadratów.
+- Decyzja: Animacja trwa 1,6 s (makówka 350 ms, płatki po 800 ms co 130 ms). Przy zimnym starcie `MainActivity` przytrzymuje systemowy ekran startowy do końca animacji, licząc od startu procesu (`splashBloomEndsAt`); start w działającym procesie i wyłączone animacje systemu nie czekają. Użytkownik wybrał 2026-09-27 czas 1,6 s i odtwarzanie przy każdym zimnym starcie, co zmienia odrzucenie sztucznego wydłużania startu z I-30. Górny pasek pokazuje `MakPoppyMark` zamiast czterech kwadratów.
+- Powód: Przytrzymanie systemowego ekranu startowego pokazuje całą animację bez przeskoku do Compose, a plan wczytuje się w tym czasie w tle.
+- Odrzucone: animacja w Compose po statycznym ekranie startowym, bo wymaga drugiego źródła ruchu i przejścia między ekranami; 2 s, bo przy codziennym otwieraniu planu może męczyć; pełna animacja tylko raz dziennie, bo wymaga zapisu daty w ustawieniach.
+
 ## 2026-09-27: Tylko orientacja pionowa (I-43)
 
 - Fakty: W poziomie na telefonie górny i dolny pasek zajmują około 40% wysokości, „Plan” pokazuje zajęcia dopiero po przewinięciu kontrolek, a wybór godziny i daty jest ucięty.
@@ -148,11 +155,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Ekran główny ma służyć szybkiemu odczytowi i przejściu do właściwego obszaru, a rozbudowane formularze mają osobne trasy w jednym `NavHost`.
 - Odrzucone: Rozwijane formularze na ekranie głównym; powtórzony nagłówek; zmiana logiki eksportu, importu i powiadomień; ruszanie widgetu (I-06).
 - Weryfikacja: `SettingsScreenTest` sprawdza sekcje i przejścia na ekranie głównym, brak lokalnego nagłówka („Semestry i wygląd” i „USTAWIENIA” nie istnieją), dwie linie podsumowania powiadomień, ekran „Semestry”, ekran „Powiadomienia”, ekran „Dane” i podgląd importu przy 320 dp. `docs/KNOWN_ISSUES.md` opisuje istniejący kod i zostawia odbiór (O-05). `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Odbiór wyglądu i nawigacji na urządzeniu należy do O-05.
-
-## 2026-09-22: Neutralna sekcja rozwijana i odstępy (I-04)
-
-- Fakty: `MakExpandableSection` zmieniał tło nagłówka na `secondaryContainer` po rozwinięciu i używał `surfaceVariant` w treści, a przycisk „Wróć do ustawień” miał tylko 8 dp odstępu nad sobą.
-- Decyzja: Cały kontener używa jednego neutralnego tła `surfaceContainerLow` w obu stanach, a treść ma 16 dp paddingu; rozwinięcie pokazują tekst „Ukryj”/„Pokaż”, kierunek ikony i semantyka, bez zmiany na kolor akcentowy. Tekst i ikona mają kolor `onSurfaceVariant`, a obramowanie `outlineVariant` (`primary` tylko przy focusie). Przycisk „Wróć do ustawień” w semestrze dostał 12 dp odstępu.
-- Powód: Neutralne tło w obu stanach i przewidywalne odstępy wynikają z `ARCHITECTURE.md`, sekcja „Stały język wizualny”.
-- Odrzucone: Tło kontenera akcentowego po rozwinięciu; zmiany odstępów poza realne naruszenia; ruszanie kart zajęć i podsumowania „Dzisiaj”.
-- Weryfikacja: `SettingsScreenTest.expandableSectionTogglesAt320Dp` sprawdza rozwinięcie i zwinięcie przy 320 dp. `gradlew.bat test compileDebugAndroidTestKotlin lintDebug assembleDebug` przechodzi. Koloru tła nie da się sprawdzić bez urządzenia, więc odbiór wizualny należy do O-05.

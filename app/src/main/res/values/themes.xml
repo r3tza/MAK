@@ -7,7 +7,7 @@
         <!-- Splash screen: the animated poppy on a white icon circle, the same in both themes. -->
         <item name="android:windowSplashScreenBackground">@color/mak_paper</item>
         <item name="android:windowSplashScreenAnimatedIcon">@drawable/splash_logo_animated</item>
-        <item name="android:windowSplashScreenAnimationDuration">900</item>
+        <item name="android:windowSplashScreenAnimationDuration">1600</item>
         <item name="android:windowSplashScreenIconBackgroundColor">@color/mak_paper</item>
         <item name="android:colorPrimary">@color/mak_accent</item>
         <item name="android:windowLightStatusBar">true</item>

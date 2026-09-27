@@ -6,6 +6,7 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
+import android.os.Process
 import android.os.SystemClock
 import android.view.View
 import android.view.ViewTreeObserver
@@ -33,6 +34,8 @@ import dev.retza.mak.export.readBackupFile
 import dev.retza.mak.ui.AppViewModel
 import dev.retza.mak.ui.MakApp
 import dev.retza.mak.ui.MakLoadingGate
+import dev.retza.mak.ui.areSystemAnimationsOn
+import dev.retza.mak.ui.splashBloomEndsAt
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
@@ -210,16 +213,19 @@ class MainActivity : ComponentActivity() {
 
     /**
      * Holds the system splash screen until the stored theme is read, so a dark theme never starts
-     * with a light frame. A stalled read releases it after [THEME_WAIT_MILLIS].
+     * with a light frame, and on a cold start until the bloom animation ends. A stalled read
+     * releases it after [THEME_WAIT_MILLIS].
      */
     private fun keepSplashUntilThemeIsRead() {
         val content = findViewById<View>(android.R.id.content)
         val deadline = SystemClock.uptimeMillis() + THEME_WAIT_MILLIS
+        val bloomEnd = splashBloomEndsAt(Process.getStartUptimeMillis(), areSystemAnimationsOn())
         content.viewTreeObserver.addOnPreDrawListener(
             object : ViewTreeObserver.OnPreDrawListener {
                 override fun onPreDraw(): Boolean {
-                    val ready = settingsViewModel.loadedThemeMode.value != null ||
-                        SystemClock.uptimeMillis() >= deadline
+                    val now = SystemClock.uptimeMillis()
+                    val themeReady = settingsViewModel.loadedThemeMode.value != null || now >= deadline
+                    val ready = themeReady && now >= bloomEnd
                     // A cancelled draw is retried on the next frame, which re-checks the deadline.
                     if (ready) content.viewTreeObserver.removeOnPreDrawListener(this)
                     return ready

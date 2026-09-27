@@ -1,7 +1,8 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-    Splash screen icon: the "bloom" animation chosen 2026-09-27. The seed head pops in over 250 ms,
-    then each petal grows from the centre with a slight turn, 450 ms each, 60 ms apart (about 870 ms).
+    Splash screen icon: the "bloom" animation chosen 2026-09-27. The seed head pops in over 350 ms,
+    then each petal grows from the centre with a slight turn, 800 ms each, 130 ms apart (1.6 s in all,
+    SPLASH_BLOOM_MILLIS). MainActivity keeps the splash screen until it ends on a cold start.
     The icon is 240 dp and the flower stays inside the 160 dp circle of the icon background.
 -->
 <animated-vector xmlns:android="http://schemas.android.com/apk/res/android"
@@ -108,7 +109,7 @@
     </aapt:attr>
     <target android:name="seedHead">
         <aapt:attr name="android:animation">
-            <objectAnimator android:duration="250">
+            <objectAnimator android:duration="350">
                 <propertyValuesHolder android:propertyName="scaleX">
                     <keyframe android:fraction="0" android:value="0" android:valueType="floatType" />
                     <keyframe android:fraction="0.7" android:interpolator="@android:interpolator/fast_out_slow_in" android:value="1.12" android:valueType="floatType" />
@@ -125,8 +126,8 @@
     <target android:name="petal0">
         <aapt:attr name="android:animation">
             <objectAnimator
-                android:duration="450"
-                android:startOffset="180">
+                android:duration="800"
+                android:startOffset="250">
                 <propertyValuesHolder android:propertyName="scaleX">
                     <keyframe android:fraction="0" android:value="0.2" android:valueType="floatType" />
                     <keyframe android:fraction="0.7" android:interpolator="@android:interpolator/fast_out_slow_in" android:value="1.04" android:valueType="floatType" />
@@ -148,8 +149,8 @@
     <target android:name="petal1">
         <aapt:attr name="android:animation">
             <objectAnimator
-                android:duration="450"
-                android:startOffset="240">
+                android:duration="800"
+                android:startOffset="380">
                 <propertyValuesHolder android:propertyName="scaleX">
                     <keyframe android:fraction="0" android:value="0.2" android:valueType="floatType" />
                     <keyframe android:fraction="0.7" android:interpolator="@android:interpolator/fast_out_slow_in" android:value="1.04" android:valueType="floatType" />
@@ -171,8 +172,8 @@
     <target android:name="petal2">
         <aapt:attr name="android:animation">
             <objectAnimator
-                android:duration="450"
-                android:startOffset="300">
+                android:duration="800"
+                android:startOffset="510">
                 <propertyValuesHolder android:propertyName="scaleX">
                     <keyframe android:fraction="0" android:value="0.2" android:valueType="floatType" />
                     <keyframe android:fraction="0.7" android:interpolator="@android:interpolator/fast_out_slow_in" android:value="1.04" android:valueType="floatType" />
@@ -194,8 +195,8 @@
     <target android:name="petal3">
         <aapt:attr name="android:animation">
             <objectAnimator
-                android:duration="450"
-                android:startOffset="360">
+                android:duration="800"
+                android:startOffset="640">
                 <propertyValuesHolder android:propertyName="scaleX">
                     <keyframe android:fraction="0" android:value="0.2" android:valueType="floatType" />
                     <keyframe android:fraction="0.7" android:interpolator="@android:interpolator/fast_out_slow_in" android:value="1.04" android:valueType="floatType" />
@@ -217,8 +218,8 @@
     <target android:name="petal4">
         <aapt:attr name="android:animation">
             <objectAnimator
-                android:duration="450"
-                android:startOffset="420">
+                android:duration="800"
+                android:startOffset="770">
                 <propertyValuesHolder android:propertyName="scaleX">
                     <keyframe android:fraction="0" android:value="0.2" android:valueType="floatType" />
                     <keyframe android:fraction="0.7" android:interpolator="@android:interpolator/fast_out_slow_in" android:value="1.04" android:valueType="floatType" />
