@@ -2,6 +2,13 @@
 
 Techniczna historia wydań dla agentów. Notatki dla użytkowników są w `app/src/main/assets/release_notes.json`.
 
+## 0.2.1, 2026-09-28
+
+- Naprawiono wstrzykiwanie zależności `UpdateViewModel`: w 0.2.0 Koin zostawiał atrapy pobierania, weryfikacji i instalacji z wartości domyślnych konstruktora (I-52).
+- Kreator pozwala dodać kolejne kierunki ze wspólnym albo osobnym kalendarzem tygodni (I-50).
+- Notatki dla użytkowników mają jedno źródło w `release_notes.json`; workflow wypełnia `notes` w `update.json` i opis wydania (I-51).
+- Wiersze ustawień mają ramkę focusu, a historia wydań nie łamie daty przy dużej czcionce.
+
 ## 0.2.0, 2026-09-27
 
 Pierwsze publiczne wydanie w GitHub Releases.

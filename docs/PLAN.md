@@ -11,16 +11,14 @@ Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Pełna lis
 
 Kryterium zakończenia: automat nie wykonuje nadmiarowych zapytań, błąd pozostaje cichy, a pominięcie dotyczy tylko jednej wersji.
 
-## 2. Wydaj `v0.2.1` z poprawką aktualizatora (I-52)
+## 2. Sprawdź instrukcję instalacji u znajomego (I-49)
 
-`v0.2.0` nie potrafi pobrać aktualizacji (I-52), więc 0.2.1 instaluje się ręcznie. Notatki wydań są w `app/src/main/assets/release_notes.json` (I-51).
+`v0.2.1` z poprawką aktualizatora jest opublikowane 2026-09-28 i sprawdzone na emulatorze.
 
-1. Dodaj na początek listy `releases` wpis `0.2.1` z datą i zmianami odczuwalnymi dla użytkownika: naprawione pobieranie aktualizacji z aplikacji, kolejne kierunki w kreatorze. Tekst zatwierdza użytkownik. Uruchom `gradlew.bat test`.
-2. Wypchnij `main`, utwórz tag `v0.2.1`, sprawdź w szkicu APK, `update.json` z wypełnionym `notes` i opis wydania, a potem opublikuj.
-3. Na urządzeniach z 0.2.0 zainstaluj 0.2.1 ręcznie z GitHub Releases na istniejącą aplikację i sprawdź, że plan został.
-4. Poproś znajomego o instalację według sekcji „Instalacja” w `README.md` i zanotuj niejasne kroki.
+1. Na własnych urządzeniach z 0.2.0 zainstaluj 0.2.1 ręcznie z GitHub Releases na istniejącą aplikację i sprawdź, że plan został.
+2. Poproś znajomego o instalację według sekcji „Instalacja” w `README.md` i zanotuj niejasne kroki.
 
-Kryterium zakończenia: 0.2.1 jest opublikowane z notatkami z pliku, a urządzenia do odbioru mają 0.2.1.
+Kryterium zakończenia: instalacja u znajomego przebiegła według README, a niejasne kroki są poprawione.
 
 ## 3. Pełny odbiór aktualizacji na telefonie (O-07)
 
