@@ -13,7 +13,9 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.StrokeJoin
+import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.rotate
 import androidx.compose.ui.graphics.drawscope.scale
@@ -82,25 +84,60 @@ fun MakPoppyLogo(
         val wavePhase = phase?.value
         translate(left = (size.width - side) / 2f, top = (size.height - side) / 2f) {
             scale(scale = side / LOGO_VIEWPORT, pivot = Offset.Zero) {
-                scale(scale = FLOWER_SCALE, pivot = Offset(LOGO_CENTER, LOGO_CENTER)) {
-                    repeat(POPPY_PETAL_COUNT) { index ->
-                        rotate(degrees = 360f / POPPY_PETAL_COUNT * index, pivot = Offset(LOGO_CENTER, LOGO_CENTER)) {
-                            val alpha = wavePhase?.let { waitingPetalAlpha(it, index) } ?: 1f
-                            drawPath(path = petal, color = PoppyRed.copy(alpha = alpha))
-                            drawPath(
-                                path = petal,
-                                color = PoppyIconCircle,
-                                style = Stroke(width = PETAL_GAP_WIDTH, join = StrokeJoin.Round)
-                            )
-                        }
-                    }
-                    drawCircle(
-                        color = PoppySeedHead,
-                        radius = SEED_HEAD_RADIUS,
-                        center = Offset(LOGO_CENTER, LOGO_CENTER)
-                    )
+                drawPoppy(petal = petal, gapColor = PoppyIconCircle) { index ->
+                    wavePhase?.let { waitingPetalAlpha(it, index) } ?: 1f
                 }
             }
         }
+    }
+}
+
+/**
+ * Small poppy without the icon circle, filling its box, for the top bar next to the name. The
+ * lines between petals take [gapColor], which should match the surface behind the mark.
+ */
+@Composable
+fun MakPoppyMark(
+    gapColor: Color,
+    modifier: Modifier = Modifier
+) {
+    val petal = remember { PathParser().parsePathString(PETAL_PATH).toPath() }
+    Canvas(modifier = modifier) {
+        val side = size.minDimension
+        translate(left = size.width / 2f, top = size.height / 2f) {
+            scale(scale = side / (2f * MARK_RADIUS), pivot = Offset.Zero) {
+                translate(left = -LOGO_CENTER, top = -LOGO_CENTER) {
+                    drawPoppy(petal = petal, gapColor = gapColor) { 1f }
+                }
+            }
+        }
+    }
+}
+
+/** Radius, in grid units, that holds the whole flower with its outer gap line. */
+private const val MARK_RADIUS = 34.5f
+
+/** Draws the flower in the 108-unit grid of the launcher icon. */
+private fun DrawScope.drawPoppy(
+    petal: Path,
+    gapColor: Color,
+    petalAlpha: (Int) -> Float
+) {
+    scale(scale = FLOWER_SCALE, pivot = Offset(LOGO_CENTER, LOGO_CENTER)) {
+        repeat(POPPY_PETAL_COUNT) { index ->
+            rotate(degrees = 360f / POPPY_PETAL_COUNT * index, pivot = Offset(LOGO_CENTER, LOGO_CENTER)) {
+                drawPath(path = petal, color = PoppyRed.copy(alpha = petalAlpha(index)))
+                drawPath(
+                    path = petal,
+                    color = gapColor,
+                    style = Stroke(width = PETAL_GAP_WIDTH, join = StrokeJoin.Round)
+                )
+            }
+        }
+        drawCircle(
+            color = PoppySeedHead,
+            radius = SEED_HEAD_RADIUS,
+            center = Offset(LOGO_CENTER, LOGO_CENTER)
+        )
     }
 }

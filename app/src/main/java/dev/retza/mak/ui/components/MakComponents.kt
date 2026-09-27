@@ -67,7 +67,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
-import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
@@ -94,10 +93,6 @@ import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
-import dev.retza.mak.ui.theme.MakMarkBlue
-import dev.retza.mak.ui.theme.MakMarkGold
-import dev.retza.mak.ui.theme.MakMarkLilac
-import dev.retza.mak.ui.theme.MakMarkTeal
 import dev.retza.mak.ui.theme.MakModified
 import dev.retza.mak.ui.theme.MakModifiedSoft
 import dev.retza.mak.ui.theme.MakOnce
@@ -203,23 +198,13 @@ fun MakScreenIntro(text: String, modifier: Modifier = Modifier) {
     )
 }
 
+/** Poppy logo next to the name in the top bar; the petal gaps match the bar surface. */
 @Composable
 fun MakBrandMark(modifier: Modifier = Modifier) {
-    Row(
-        modifier = modifier
-            .size(31.dp)
-            .rotate(-9f),
-        horizontalArrangement = Arrangement.spacedBy(3.dp)
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Box(Modifier.size(14.dp).clip(RoundedCornerShape(5.dp)).background(MakMarkBlue))
-            Box(Modifier.size(14.dp).clip(RoundedCornerShape(5.dp)).background(MakMarkTeal))
-        }
-        Column(verticalArrangement = Arrangement.spacedBy(3.dp)) {
-            Box(Modifier.size(14.dp).clip(RoundedCornerShape(5.dp)).background(MakMarkGold))
-            Box(Modifier.size(14.dp).clip(RoundedCornerShape(5.dp)).background(MakMarkLilac))
-        }
-    }
+    MakPoppyMark(
+        gapColor = MaterialTheme.colorScheme.surface,
+        modifier = modifier.size(30.dp)
+    )
 }
 
 @Composable
