@@ -479,6 +479,136 @@ class SetupViewModelTest {
         viewModel.back()
         assertEquals(SetupStep.Semester, viewModel.setup.value.step)
     }
+
+    private suspend fun kotlinx.coroutines.test.TestScope.savedFirstProgram(
+        repository: FakeRepository,
+        name: String = "Matematyka"
+    ): SetupViewModel {
+        val viewModel = viewModel(repository)
+        viewModel.fillValidSemester()
+        viewModel.next()
+        advanceUntilIdle()
+        viewModel.update { it.copy(courseName = name) }
+        viewModel.next()
+        advanceUntilIdle()
+        repository.events.clear()
+        return viewModel
+    }
+
+    @Test
+    fun anotherProgramSharesTheFirstProgramCalendarByDefault() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = savedFirstProgram(repository)
+        val firstCalendarId = repository.lastSetupConfiguration!!.academicCalendarId
+
+        viewModel.startAnotherProgram()
+        assertTrue(viewModel.setup.value.isAddingAnotherProgram)
+        assertEquals("", viewModel.setup.value.courseName)
+        assertTrue(viewModel.setup.value.courseColor != repository.lastSetupStudyProgram?.color)
+        viewModel.update { it.copy(courseName = "Fizyka") }
+        viewModel.next()
+        advanceUntilIdle()
+
+        assertEquals(listOf("saveStudyProgramAssignment"), repository.events)
+        val added = repository.semesterPrograms.last()
+        assertEquals(firstCalendarId, added.academicCalendarId)
+        val state = viewModel.setup.value
+        assertEquals(SetupStep.Classes, state.step)
+        assertFalse(state.isAddingAnotherProgram)
+        assertEquals(listOf("Matematyka", "Fizyka"), state.semesterProgramNames)
+        assertEquals("Matematyka", state.courseName)
+    }
+
+    @Test
+    fun separateWeeksCreateTheirOwnCalendar() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = savedFirstProgram(repository)
+        val firstCalendarId = repository.lastSetupConfiguration!!.academicCalendarId
+
+        viewModel.startAnotherProgram()
+        viewModel.update { it.copy(courseName = "Fizyka") }
+        viewModel.selectCalendarMode(SetupCalendarMode.Separate)
+        viewModel.next()
+        advanceUntilIdle()
+
+        assertEquals(listOf("addSeparatedSemesterProgram"), repository.events)
+        assertTrue(repository.semesterPrograms.last().academicCalendarId != firstCalendarId)
+        assertEquals(SetupStep.Classes, viewModel.setup.value.step)
+    }
+
+    @Test
+    fun backFromAnotherProgramRestoresTheFirstWithoutWriting() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = savedFirstProgram(repository)
+
+        viewModel.startAnotherProgram()
+        viewModel.update { it.copy(courseName = "Porzucony") }
+        viewModel.back()
+
+        assertTrue(repository.events.isEmpty())
+        val state = viewModel.setup.value
+        assertEquals(SetupStep.Classes, state.step)
+        assertEquals("Matematyka", state.courseName)
+        assertEquals(listOf("Matematyka"), state.semesterProgramNames)
+    }
+
+    @Test
+    fun blankAnotherProgramShowsErrorWithoutWriting() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = savedFirstProgram(repository)
+
+        viewModel.startAnotherProgram()
+        viewModel.next()
+        advanceUntilIdle()
+
+        assertTrue(repository.events.isEmpty())
+        assertTrue(viewModel.setup.value.errors.containsKey(SetupField.CourseName))
+        assertEquals(SetupStep.Course, viewModel.setup.value.step)
+    }
+
+    @Test
+    fun programAlreadyInTheSemesterIsNotOfferedAgain() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val existing = repository.studyPrograms.first()
+        val viewModel = viewModel(repository)
+        viewModel.fillValidSemester()
+        viewModel.next()
+        advanceUntilIdle()
+        viewModel.selectProgramMode(SetupProgramMode.Existing)
+        viewModel.selectProgram(existing.id)
+        viewModel.next()
+        advanceUntilIdle()
+
+        viewModel.startAnotherProgram()
+
+        assertTrue(viewModel.setup.value.availableProgramOptions.none { it.id == existing.id })
+    }
+
+    @Test
+    fun failedAnotherProgramKeepsTheFormAndReportsError() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink)
+        viewModel.fillValidSemester()
+        viewModel.next()
+        advanceUntilIdle()
+        viewModel.update { it.copy(courseName = "Matematyka") }
+        viewModel.next()
+        advanceUntilIdle()
+
+        viewModel.startAnotherProgram()
+        viewModel.update { it.copy(courseName = "Fizyka") }
+        repository.failSaves = true
+        viewModel.next()
+        advanceUntilIdle()
+
+        val state = viewModel.setup.value
+        assertEquals(SetupStep.Course, state.step)
+        assertTrue(state.isAddingAnotherProgram)
+        assertEquals("Fizyka", state.courseName)
+        assertFalse(state.isSaving)
+        assertEquals("Nie udało się dodać kierunku.", sink.published.last().message)
+    }
 }
 
 private class RecordingFeedbackSink : FeedbackSink {

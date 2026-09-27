@@ -54,4 +54,19 @@ class CourseColorsTest {
         assertFalse(isReadableCourseColor(parseCourseHex("#FFEB3B")!!))
         assertFalse(isReadableCourseColor(parseCourseHex("#000000")!!))
     }
+
+    @Test
+    fun suggestedColorIsDefaultWithoutUsedColors() {
+        assertEquals(DefaultCourseColor, suggestedCourseColor(emptyList()))
+    }
+
+    @Test
+    fun suggestedColorAvoidsHuesAlreadyUsed() {
+        val first = suggestedCourseColor(emptyList())
+        val second = suggestedCourseColor(listOf(first))
+        val third = suggestedCourseColor(listOf(first, second))
+
+        assertTrue(first != second && second != third && first != third)
+        listOf(second, third).forEach { assertTrue(isReadableCourseColor(parseCourseHex(it)!!)) }
+    }
 }

@@ -1,6 +1,7 @@
 package dev.retza.mak.ui.setup
 
 import dev.retza.mak.ui.components.DefaultCourseColor
+import dev.retza.mak.ui.components.suggestedCourseColor
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
@@ -47,6 +48,12 @@ enum class SetupProgramMode {
     Existing
 }
 
+/** Week A/B source for a further program added in the wizard. */
+enum class SetupCalendarMode {
+    Shared,
+    Separate
+}
+
 data class SetupProgramOptionUi(
     val id: Long,
     val name: String,
@@ -73,8 +80,22 @@ data class SetupWizardUiState(
     val errors: Map<SetupField, FieldErrorUi> = emptyMap(),
     val status: ScreenStatus = ScreenStatus.Ready,
     val canSkipClasses: Boolean = true,
-    val isSaving: Boolean = false
-)
+    val isSaving: Boolean = false,
+    // True while the course step adds a further program to the already saved semester.
+    val isAddingAnotherProgram: Boolean = false,
+    val calendarMode: SetupCalendarMode = SetupCalendarMode.Shared,
+    // Programs saved in this wizard session, in the order they were added.
+    val semesterProgramNames: List<String> = emptyList(),
+    val semesterProgramIds: List<Long> = emptyList()
+) {
+    /** Existing programs the course step may offer; one already in the semester cannot be added twice. */
+    val availableProgramOptions: List<SetupProgramOptionUi>
+        get() = if (isAddingAnotherProgram) {
+            programOptions.filterNot { it.id in semesterProgramIds }
+        } else {
+            programOptions
+        }
+}
 
 sealed interface SetupEffect {
     data object FinishToToday : SetupEffect
@@ -109,6 +130,12 @@ class SetupViewModel(
     private var saveJob: Job? = null
     private var sessionToken = 0L
 
+    // The first program's draft, restored when the further program form closes.
+    private var firstProgramDraft: SetupWizardUiState? = null
+
+    // Colors of the programs saved in this session, so a further program starts with a distinct one.
+    private var semesterProgramColors: List<String> = emptyList()
+
     init {
         viewModelScope.launch {
             try {
@@ -125,6 +152,8 @@ class SetupViewModel(
         }
     }
 
+    fun selectCalendarMode(mode: SetupCalendarMode) = update { it.copy(calendarMode = mode) }
+
     fun selectProgramMode(mode: SetupProgramMode) = update {
         if (it.isProgramChoiceLocked) it else it.copy(programMode = mode)
     }
@@ -136,6 +165,8 @@ class SetupViewModel(
     fun start(resume: SetupSemesterResume? = null) {
         sessionToken += 1
         saveJob?.cancel()
+        firstProgramDraft = null
+        semesterProgramColors = emptyList()
         if (resume == null) {
             semesterId = null
             courseId = null
@@ -162,12 +193,16 @@ class SetupViewModel(
     fun next() {
         when (state.value.step) {
             SetupStep.Semester -> advanceFromSemester()
-            SetupStep.Course -> saveConfiguration()
+            SetupStep.Course -> if (state.value.isAddingAnotherProgram) saveAnotherProgram() else saveConfiguration()
             SetupStep.Classes -> Unit
         }
     }
 
     fun back() {
+        if (state.value.isAddingAnotherProgram) {
+            if (!state.value.isSaving) closeAnotherProgram()
+            return
+        }
         state.update {
             when (it.step) {
                 SetupStep.Classes -> it.copy(step = SetupStep.Course, errors = emptyMap())
@@ -176,6 +211,110 @@ class SetupViewModel(
             }
         }
     }
+
+    /** Opens the course form for a further program in the semester saved by this wizard. */
+    fun startAnotherProgram() {
+        val current = state.value
+        if (current.step != SetupStep.Classes || semesterId == null || calendarId == null) return
+        firstProgramDraft = current
+        state.value = current.copy(
+            step = SetupStep.Course,
+            isAddingAnotherProgram = true,
+            courseName = "",
+            courseColor = suggestedCourseColor(semesterProgramColors),
+            programMode = SetupProgramMode.New,
+            selectedProgramId = null,
+            isProgramChoiceLocked = false,
+            calendarMode = SetupCalendarMode.Shared,
+            errors = emptyMap()
+        )
+    }
+
+    private fun closeAnotherProgram(savedName: String? = null, savedId: Long? = null) {
+        val draft = firstProgramDraft ?: return
+        firstProgramDraft = null
+        val current = state.value
+        state.value = draft.copy(
+            step = SetupStep.Classes,
+            isAddingAnotherProgram = false,
+            programOptions = current.programOptions,
+            isSemesterActive = current.isSemesterActive,
+            semesterProgramNames = current.semesterProgramNames + listOfNotNull(savedName),
+            semesterProgramIds = current.semesterProgramIds + listOfNotNull(savedId),
+            errors = emptyMap()
+        )
+    }
+
+    private fun saveAnotherProgram() {
+        val current = state.value
+        if (current.isSaving) return
+        val semester = semesterId ?: return
+        val calendar = calendarId ?: return
+        val program = programRecordFor(current, id = 0L) ?: return
+        state.update { it.copy(isSaving = true, errors = emptyMap()) }
+        val token = sessionToken
+        saveJob = viewModelScope.launch {
+            try {
+                val ids = when (current.calendarMode) {
+                    SetupCalendarMode.Shared -> semesterRepository.saveStudyProgramAssignment(
+                        semesterId = semester,
+                        studyProgram = program,
+                        academicCalendarId = calendar
+                    )
+                    SetupCalendarMode.Separate -> semesterRepository.addSeparatedSemesterProgram(
+                        semesterId = semester,
+                        studyProgram = program,
+                        sourceCalendarId = calendar
+                    )
+                }
+                if (token != sessionToken) return@launch
+                semesterProgramColors = semesterProgramColors + program.color
+                state.update { it.copy(isSaving = false) }
+                closeAnotherProgram(savedName = program.name, savedId = ids.studyProgramId)
+                feedbackSink.publish(UiFeedback("Dodano kierunek", UiFeedbackKind.Success))
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                if (token == sessionToken) {
+                    state.update { it.copy(isSaving = false) }
+                    feedbackSink.publish(UiFeedback("Nie udało się dodać kierunku.", UiFeedbackKind.Error))
+                }
+            }
+        }
+    }
+
+    /** Validates the course form; shows the field error and returns null when it is incomplete. */
+    private fun programRecordFor(current: SetupWizardUiState, id: Long): StudyProgramRecord? =
+        when (current.programMode) {
+            SetupProgramMode.New -> {
+                val name = current.courseName.trim()
+                if (name.isBlank()) {
+                    state.update {
+                        it.copy(errors = mapOf(SetupField.CourseName to FieldErrorUi("Podaj nazwę kierunku.")))
+                    }
+                    null
+                } else {
+                    StudyProgramRecord(
+                        id = id,
+                        name = name,
+                        color = current.courseColor.ifBlank { DefaultCourseColor }
+                    )
+                }
+            }
+
+            SetupProgramMode.Existing -> {
+                val selected = current.availableProgramOptions.firstOrNull { it.id == current.selectedProgramId }
+                if (selected == null) {
+                    state.update {
+                        it.copy(errors = mapOf(SetupField.CourseProgram to FieldErrorUi("Wybierz kierunek.")))
+                    }
+                    null
+                } else {
+                    // A shared program keeps its current name and color.
+                    StudyProgramRecord(id = selected.id, name = selected.name, color = selected.color)
+                }
+            }
+        }
 
     fun addClass() {
         effectsChannel.trySend(SetupEffect.OpenNewClassEditor)
@@ -244,34 +383,7 @@ class SetupViewModel(
         val current = state.value
         val start = current.startDate.toLocalDateOrNull() ?: return
         val end = current.endDate.toLocalDateOrNull() ?: return
-        val program = when (current.programMode) {
-            SetupProgramMode.New -> {
-                val name = current.courseName.trim()
-                if (name.isBlank()) {
-                    state.update {
-                        it.copy(errors = mapOf(SetupField.CourseName to FieldErrorUi("Podaj nazwę kierunku.")))
-                    }
-                    return
-                }
-                StudyProgramRecord(
-                    id = courseId ?: 0L,
-                    name = name,
-                    color = current.courseColor.ifBlank { DefaultCourseColor }
-                )
-            }
-
-            SetupProgramMode.Existing -> {
-                val selected = current.programOptions.firstOrNull { it.id == current.selectedProgramId }
-                if (selected == null) {
-                    state.update {
-                        it.copy(errors = mapOf(SetupField.CourseProgram to FieldErrorUi("Wybierz kierunek.")))
-                    }
-                    return
-                }
-                // A shared program keeps its current name and color.
-                StudyProgramRecord(id = selected.id, name = selected.name, color = selected.color)
-            }
-        }
+        val program = programRecordFor(current, id = courseId ?: 0L) ?: return
         val existingSemester = semesterId
         val existingCalendar = calendarId
         val isUpdate = existingSemester != null
@@ -304,13 +416,16 @@ class SetupViewModel(
                 if (token != sessionToken) return@launch
                 semesterId = ids.semesterId
                 courseId = ids.studyProgramId
+                semesterProgramColors = listOf(program.color) + semesterProgramColors.drop(1)
                 calendarId = ids.academicCalendarId
                 state.update {
                     it.copy(
                         step = SetupStep.Classes,
                         errors = emptyMap(),
                         isProgramChoiceLocked = true,
-                        isSemesterActive = ids.semesterIsActive
+                        isSemesterActive = ids.semesterIsActive,
+                        semesterProgramNames = listOf(program.name) + it.semesterProgramNames.drop(1),
+                        semesterProgramIds = listOf(ids.studyProgramId) + it.semesterProgramIds.drop(1)
                     )
                 }
                 val message = when {

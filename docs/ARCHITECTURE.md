@@ -97,7 +97,7 @@ Główny ekran ustawień pokazuje wyłącznie sekcje „Plan”, „Wygląd”, 
 
 ### Konfiguracja początkowa
 
-Jeśli nie ma semestru, aplikacja pokazuje stan pusty z przyciskiem „Skonfiguruj plan”. Kreator otwiera się wyłącznie po jawnej akcji użytkownika. Prowadzi przez utworzenie semestru, pierwszego kierunku, kalendarza akademickiego i ich powiązania, a następnie pozwala przejść do dodawania zajęć.
+Jeśli nie ma semestru, aplikacja pokazuje stan pusty z przyciskiem „Skonfiguruj plan”. Kreator otwiera się wyłącznie po jawnej akcji użytkownika. Prowadzi przez utworzenie semestru, pierwszego kierunku, kalendarza akademickiego i ich powiązania, pozwala dodać kolejne kierunki ze wspólnymi albo osobnymi tygodniami A/B, a następnie przejść do dodawania zajęć.
 
 ### Spokojny, funkcjonalny styl
 
@@ -159,7 +159,7 @@ Logika domenowa nie zależy od Compose ani Glance. `ActivePlanProvider` jest wsp
 
 ## 8. Przepływ danych
 
-1. Przy pierwszym uruchomieniu bez semestrów aplikacja pokazuje stan pusty. Jawna akcja otwiera kreator, który atomowo tworzy semestr, pierwszy kierunek, kalendarz i przypisanie.
+1. Przy pierwszym uruchomieniu bez semestrów aplikacja pokazuje stan pusty. Jawna akcja otwiera kreator, który atomowo tworzy semestr, pierwszy kierunek, kalendarz i przypisanie. Każdy kolejny kierunek z kreatora jest osobną atomową operacją tej samej granicy co dodanie kierunku w ustawieniach semestru.
 2. Użytkownik wybiera aktywny semestr, przypina globalne kierunki oraz wybiera dla nich wspólny albo osobny kalendarz.
 3. Repozytorium zapisuje dane lokalnie przez Room.
 4. `ScheduleResolver` wywołuje kalkulator osobno dla kalendarza każdego przypisania kierunku i wyznacza A/B z uwzględnieniem jego korekt.

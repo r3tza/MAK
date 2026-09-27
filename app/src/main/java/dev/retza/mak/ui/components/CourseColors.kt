@@ -93,3 +93,21 @@ private fun hslToArgb(hue: Double, saturation: Double, lightness: Double): Int {
 
 /** Teal in the middle of the allowed shades; used for a new study program. */
 val DefaultCourseColor: String = courseHex(courseColorFrom(174f, 0.5f))
+
+// Hues tried in order for a further program; neighbours on the wheel are far apart.
+private val SuggestedHues = listOf(174f, 30f, 220f, 330f, 100f, 270f, 0f, 60f, 190f, 300f)
+private const val MIN_HUE_DISTANCE = 40f
+
+/** First readable color whose hue is far from every color in [used]; the default when nothing is used. */
+fun suggestedCourseColor(used: List<String>): String {
+    val usedHues = used.mapNotNull { parseCourseHex(it) }.map { hueAndShadeOf(it).hue }
+    val hue = SuggestedHues.firstOrNull { candidate ->
+        usedHues.none { hueDistance(it, candidate) < MIN_HUE_DISTANCE }
+    } ?: SuggestedHues[usedHues.size % SuggestedHues.size]
+    return courseHex(courseColorFrom(hue, 0.5f))
+}
+
+private fun hueDistance(first: Float, second: Float): Float {
+    val difference = kotlin.math.abs(first - second) % 360f
+    return if (difference > 180f) 360f - difference else difference
+}

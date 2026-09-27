@@ -4,6 +4,12 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Kolejne kierunki w kreatorze (I-50)
+
+- Fakty: Kreator tworzył tylko jeden kierunek i przechodził do zajęć. Osoba studiująca dwa kierunki musiała sama znaleźć dodawanie kierunków w ustawieniach semestru, a formularz zajęć pozwala wybrać tylko kierunki przypisane do semestru.
+- Decyzja: Krok „Dodaj zajęcia” ma akcję „Dodaj kolejny kierunek” z wyborem tygodni A/B („Wspólne z pierwszym kierunkiem” albo „Osobne dla tego kierunku”). Zapis używa istniejących operacji `SemesterRepository`, bez nowej reguły domenowej. Kolejny kierunek dostaje kolor o odcieniu odległym od kierunków już dodanych. Użytkownik wybrał wariant z wyborem A/B 2026-09-27.
+- Odrzucone: Samo zdanie z informacją o ustawieniach semestru oraz wariant bez wyboru tygodni A/B.
+
 ## 2026-09-27: Wydanie 0.2.0 (I-36, I-49)
 
 - Fakty: Tag `v0.2.0` zbudował szkic w GitHub Actions, a użytkownik go opublikował. `update.json` pod produkcyjnym adresem ma `versionCode` 200, suma SHA-256 zgadza się z APK, a certyfikat jest kluczem wydań. Ręczne sprawdzenie w zainstalowanym `v0.2.0` pokazuje „Masz najnowszą wersję”. Workflow zapisuje w `update.json` puste pole `notes`.
@@ -138,10 +144,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: Usuwanie korekty i nieużywanego kalendarza wymaga potwierdzenia w dialogu, bo snackbar nie obsługuje akcji cofnięcia. Data korekty jest zapisywana jako poniedziałek wybranego tygodnia. Na API poniżej 33 aplikacja otwiera systemowe ustawienia powiadomień aplikacji. Core KTX podniesiono do 1.19.1, Navigation do 2.10.2, a eksport otwiera plik trybem `wt`.
 - Powód: Kotlin 2.4.20 nie został użyty, bo 2026-09-26 najnowsze wersje to Koin compiler plugin 1.2.1 i KSP 2.3.12, obie zweryfikowane dla Kotlin 2.3.20 (`STACK.md`). Aktualizację Kotlin trzeba wykonać razem z nowymi wersjami obu narzędzi.
 - Odrzucone: Cofanie usunięcia w komunikacie, bo wymagałoby rozbudowy wspólnego mechanizmu komunikatów dla dwóch rzadkich akcji.
-
-## 2026-09-26: Edycja kierunków i kolor z pełnej palety (I-21, I-22)
-
-- Fakty: Użytkownik poprosił o wybór koloru kierunku z palety barw zamiast sześciu stałych kolorów, o edycję nazwy i koloru utworzonych kierunków oraz o kolor widoczny obok nazwy kierunku w ustawieniach.
-- Decyzja: Ustawienia dostają ekran „Kierunki” z listą globalnych kierunków i edycją nazwy oraz koloru. Kolor wybiera się ciągłym paskiem odcienia i suwakiem jasności ograniczonym do luminancji względnej od 0,18 do 0,27, co daje kontrast paska kierunku co najmniej 3:1 z jasnym tłem (`#FFFFFF`, `#F5F7FB`) i z kartami ciemnego motywu (`#202B40`, `#19243A`); zakres zawężono podczas implementacji, bo karty ciemnego motywu są jaśniejsze niż zakładał plan; pole kodu szesnastkowego obsługuje klawiaturę, a podgląd pokazuje pasek i pill. Wariant zaakceptował użytkownik 2026-09-26. Kroki są w `PLAN.md`.
-- Powód: Stałe kolory nie wystarczają przy wielu kierunkach, a bez ograniczenia jasności część kolorów byłaby niewidoczna na tle aplikacji.
-- Odrzucone: Dowolny kolor bez kontroli kontrastu; ostrzeżenie zamiast ograniczenia, bo zostawia nieczytelny kolor w planie i widgecie.

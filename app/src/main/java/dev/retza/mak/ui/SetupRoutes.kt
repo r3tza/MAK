@@ -49,6 +49,8 @@ internal fun NavGraphBuilder.setupRoute(
             onReturnToSettings = setupViewModel::returnToSettings,
             showReturnToSettings = settingsState.semesters.isNotEmpty(),
             onRetry = {},
+            onAddAnotherProgram = setupViewModel::startAnotherProgram,
+            onCalendarModeChanged = setupViewModel::selectCalendarMode,
             modifier = Modifier.fillMaxSize()
         )
     }

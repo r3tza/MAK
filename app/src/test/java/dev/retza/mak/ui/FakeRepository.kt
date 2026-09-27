@@ -473,6 +473,9 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         lastSetupSemester = semester.copy(id = semesterId, isActive = semesterIsActive)
         lastSetupStudyProgram = studyProgram.copy(id = studyProgramId)
         lastSetupCalendar = calendar.copy(id = calendarId, semesterId = semesterId)
+        if (calendars.none { it.id == calendarId }) {
+            calendarState.value = calendars + calendar.copy(id = calendarId, semesterId = semesterId)
+        }
         if (semesterIsActive) activeSemesterFlow.value = semesterId
         val existing = semesterPrograms.firstOrNull {
             it.semesterId == semesterId && it.studyProgramId == studyProgramId

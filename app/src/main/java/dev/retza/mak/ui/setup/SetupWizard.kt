@@ -7,6 +7,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.material3.Text
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
@@ -47,12 +50,22 @@ fun SetupWizard(
     modifier: Modifier = Modifier,
     onReturnToSettings: () -> Unit = {},
     showReturnToSettings: Boolean = false,
-    onRetry: () -> Unit
+    onRetry: () -> Unit,
+    onAddAnotherProgram: () -> Unit = {},
+    onCalendarModeChanged: (SetupCalendarMode) -> Unit = {}
 ) {
     val (title, subtitle) = when (state.step) {
         SetupStep.Semester -> "Utwórz semestr" to "Krok 1 z 3, najpierw ustaw semestr, potem dodaj kierunek i zajęcia."
-        SetupStep.Course -> "Dodaj kierunek" to "Krok 2 z 3. Kierunek oddziela zajęcia w planie."
-        SetupStep.Classes -> "Dodaj zajęcia" to "Krok 3 z 3. Semestr i kierunek są gotowe."
+        SetupStep.Course -> if (state.isAddingAnotherProgram) {
+            "Dodaj kolejny kierunek" to "Krok 2 z 3. Kierunek dołączy do semestru „${state.semesterName.trim()}”."
+        } else {
+            "Dodaj kierunek" to "Krok 2 z 3. Kierunek oddziela zajęcia w planie."
+        }
+        SetupStep.Classes -> if (state.semesterProgramNames.size > 1) {
+            "Dodaj zajęcia" to "Krok 3 z 3. Semestr i kierunki są gotowe."
+        } else {
+            "Dodaj zajęcia" to "Krok 3 z 3. Semestr i kierunek są gotowe."
+        }
     }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
         MakSectionHeader(
@@ -79,21 +92,26 @@ fun SetupWizard(
                     onCourseColorChanged = onCourseColorChanged,
                     onProgramModeChanged = onProgramModeChanged,
                     onProgramSelected = onProgramSelected,
+                    onCalendarModeChanged = onCalendarModeChanged,
                     onNext = onNext,
                     onBack = onBack
                 )
 
                 SetupStep.Classes -> if (state.isSemesterActive) {
                     ClassesStep(
+                        programNames = state.semesterProgramNames,
                         canSkip = state.canSkipClasses,
                         onAddClass = onAddClass,
+                        onAddAnotherProgram = onAddAnotherProgram,
                         onFinish = onFinish,
                         onBack = onBack
                     )
                 } else {
                     InactiveSemesterClassesStep(
+                        programNames = state.semesterProgramNames,
                         isActivating = state.isActivating,
                         onActivateAndAddClass = onActivateAndAddClass,
+                        onAddAnotherProgram = onAddAnotherProgram,
                         onFinish = onReturnToSettings,
                         onBack = onBack
                     )
@@ -172,11 +190,13 @@ private fun CourseStep(
     onCourseColorChanged: (String) -> Unit,
     onProgramModeChanged: (SetupProgramMode) -> Unit,
     onProgramSelected: (Long) -> Unit,
+    onCalendarModeChanged: (SetupCalendarMode) -> Unit,
     onNext: () -> Unit,
     onBack: () -> Unit
 ) {
+    val programOptions = state.availableProgramOptions
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        if (state.programOptions.isNotEmpty() && !state.isProgramChoiceLocked) {
+        if (programOptions.isNotEmpty() && !state.isProgramChoiceLocked) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(8.dp)
@@ -212,20 +232,20 @@ private fun CourseStep(
             }
 
             SetupProgramMode.Existing -> {
-                val selected = state.programOptions.firstOrNull { it.id == state.selectedProgramId }
+                val selected = programOptions.firstOrNull { it.id == state.selectedProgramId }
                 if (state.isProgramChoiceLocked) {
                     MakNoteBanner(
                         title = "Kierunek: ${selected?.name.orEmpty()}",
                         subtitle = LOCKED_PROGRAM_NOTE
                     )
                 } else {
-                    val labels = state.programOptions.map { it.id }
-                        .zip(distinctLabels(state.programOptions.map { it.name }))
+                    val labels = programOptions.map { it.id }
+                        .zip(distinctLabels(programOptions.map { it.name }))
                         .toMap()
                     MakSelectField(
                         label = "Istniejący kierunek",
                         value = selected?.let { labels[it.id] }.orEmpty(),
-                        options = state.programOptions,
+                        options = programOptions,
                         onSelected = { onProgramSelected(it.id) },
                         optionLabel = { labels[it.id].orEmpty() },
                         optionLeading = { MakColorDot(it.color) },
@@ -241,18 +261,71 @@ private fun CourseStep(
         if (state.isProgramChoiceLocked && state.programMode == SetupProgramMode.New) {
             MakHelperText(LOCKED_PROGRAM_NOTE)
         }
+        if (state.isAddingAnotherProgram) {
+            CalendarModeChoice(selected = state.calendarMode, onSelected = onCalendarModeChanged)
+        }
         MakPrimaryAction(text = "Zapisz kierunek", onClick = onNext, enabled = !state.isSaving)
         MakSecondaryAction(text = "Wstecz", onClick = onBack, enabled = !state.isSaving)
     }
 }
 
 private const val LOCKED_PROGRAM_NOTE =
-    "Kierunek jest już zapisany w tym semestrze. Kolejne kierunki dodasz w ustawieniach semestru."
+    "Kierunek jest już zapisany w tym semestrze. Kolejny kierunek dodasz w następnym kroku."
+
+@Composable
+private fun CalendarModeChoice(
+    selected: SetupCalendarMode,
+    onSelected: (SetupCalendarMode) -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            text = "Tygodnie A/B",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold
+        )
+        MakChoiceRow(
+            label = "Wspólne z pierwszym kierunkiem",
+            selected = selected == SetupCalendarMode.Shared,
+            onClick = { onSelected(SetupCalendarMode.Shared) }
+        )
+        MakChoiceRow(
+            label = "Osobne dla tego kierunku",
+            selected = selected == SetupCalendarMode.Separate,
+            onClick = { onSelected(SetupCalendarMode.Separate) }
+        )
+        MakHelperText(
+            when (selected) {
+                SetupCalendarMode.Shared -> "Kierunki mają ten sam rytm A/B i te same korekty tygodni."
+                SetupCalendarMode.Separate ->
+                    "Kierunek dostaje własny kalendarz z tymi samymi datami. Jego tygodnie A/B skorygujesz osobno w ustawieniach semestru."
+            }
+        )
+    }
+}
+
+@Composable
+private fun SemesterProgramsNote(programNames: List<String>) {
+    if (programNames.isEmpty()) return
+    Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+        Text(
+            text = if (programNames.size == 1) "Kierunek w semestrze" else "Kierunki w semestrze",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold
+        )
+        Text(
+            text = programNames.joinToString(", "),
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
+}
 
 @Composable
 private fun InactiveSemesterClassesStep(
+    programNames: List<String>,
     isActivating: Boolean,
     onActivateAndAddClass: () -> Unit,
+    onAddAnotherProgram: () -> Unit,
     onFinish: () -> Unit,
     onBack: () -> Unit
 ) {
@@ -261,11 +334,13 @@ private fun InactiveSemesterClassesStep(
             title = "Semestr zapisany",
             subtitle = "Zacznie obowiązywać, gdy wybierzesz go jako aktywny w ustawieniach."
         )
+        SemesterProgramsNote(programNames)
         MakPrimaryAction(
             text = "Ustaw jako aktywny i dodaj zajęcia",
             onClick = onActivateAndAddClass,
             enabled = !isActivating
         )
+        MakSecondaryAction(text = "Dodaj kolejny kierunek", onClick = onAddAnotherProgram, enabled = !isActivating)
         MakSecondaryAction(text = "Zakończ", onClick = onFinish, enabled = !isActivating)
         MakSecondaryAction(text = "Wstecz", onClick = onBack, enabled = !isActivating)
     }
@@ -273,13 +348,17 @@ private fun InactiveSemesterClassesStep(
 
 @Composable
 private fun ClassesStep(
+    programNames: List<String>,
     canSkip: Boolean,
     onAddClass: () -> Unit,
+    onAddAnotherProgram: () -> Unit,
     onFinish: () -> Unit,
     onBack: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+        SemesterProgramsNote(programNames)
         MakPrimaryAction(text = "Dodaj zajęcia", onClick = onAddClass)
+        MakSecondaryAction(text = "Dodaj kolejny kierunek", onClick = onAddAnotherProgram)
         if (canSkip) {
             MakSecondaryAction(text = "Przejdź do Dzisiaj", onClick = onFinish)
         }

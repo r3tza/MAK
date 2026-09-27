@@ -13,6 +13,7 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.theme.MAKTheme
@@ -68,6 +69,73 @@ class SetupWizardTest {
 
         assertEquals("B", selectedWeek)
         assertEquals(1, nextClicks)
+    }
+
+    @Test
+    fun classesStepListsProgramsAndOffersAnotherProgramAt320Dp() {
+        var anotherClicks = 0
+        showWizard(
+            SetupWizardUiState(step = SetupStep.Classes, semesterProgramNames = listOf("Informatyka", "Fizyka")),
+            onAddAnotherProgram = { anotherClicks += 1 }
+        )
+
+        composeTestRule.onNodeWithText("Krok 3 z 3. Semestr i kierunki są gotowe.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Kierunki w semestrze").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Informatyka, Fizyka").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dodaj kolejny kierunek").assertIsDisplayed().performClick()
+        assertEquals(1, anotherClicks)
+    }
+
+    @Test
+    fun anotherProgramStepOffersWeekChoiceAt320Dp() {
+        var mode: SetupCalendarMode? = null
+        showWizard(
+            SetupWizardUiState(
+                step = SetupStep.Course,
+                semesterName = "Zimowy",
+                isAddingAnotherProgram = true,
+                semesterProgramNames = listOf("Informatyka")
+            ),
+            onCalendarModeChanged = { mode = it }
+        )
+
+        composeTestRule.onNodeWithText("Dodaj kolejny kierunek").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Tygodnie A/B").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Wspólne z pierwszym kierunkiem").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Osobne dla tego kierunku").performScrollTo().performClick()
+        assertEquals(SetupCalendarMode.Separate, mode)
+    }
+
+    private fun showWizard(
+        state: SetupWizardUiState,
+        onAddAnotherProgram: () -> Unit = {},
+        onCalendarModeChanged: (SetupCalendarMode) -> Unit = {}
+    ) {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(700.dp)) {
+                    SetupWizard(
+                        state = state,
+                        onSemesterNameChanged = {},
+                        onStartDateChanged = {},
+                        onEndDateChanged = {},
+                        onFirstWeekChanged = {},
+                        onCourseNameChanged = {},
+                        onCourseColorChanged = {},
+                        onProgramModeChanged = {},
+                        onProgramSelected = {},
+                        onNext = {},
+                        onBack = {},
+                        onAddClass = {},
+                        onActivateAndAddClass = {},
+                        onFinish = {},
+                        onRetry = {},
+                        onAddAnotherProgram = onAddAnotherProgram,
+                        onCalendarModeChanged = onCalendarModeChanged
+                    )
+                }
+            }
+        }
     }
 
     @Test
