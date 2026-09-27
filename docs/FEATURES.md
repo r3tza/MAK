@@ -50,7 +50,7 @@ Kolejność sekcji w prawej kolumnie:
 
 Pionowy pasek przy krawędzi karty używa pełnego koloru kierunku. Pill z nazwą kierunku używa jaśniejszego wariantu tego samego koloru i tekstu o sprawdzonym kontraście. Nie kolorować całej karty według kierunku. Typ zajęć pozostaje neutralnym tekstem obok pilla. Kolor kierunku zawsze występuje razem z jego nazwą, więc nie jest jedynym nośnikiem informacji.
 
-Notatkę wspólną oznaczyć niebieskim lub indygo pillem „Notatka do zajęć”. Notatkę pojedynczego wystąpienia oznaczyć fioletowym pillem „Notatka na dziś”. Treść wyświetlić obok etykiety albo pod nią, bez zamykania całej długiej treści w pillu. Jeśli istnieją oba rodzaje notatek, pokazać dwa osobne wiersze. Kolizja zachowuje pomarańczowy styl ostrzegawczy. Kierunek, kolizja i oba rodzaje notatek mają osobne role kolorystyczne oraz jawne etykiety tekstowe.
+Notatkę wspólną oznaczyć niebieskim lub indygo pillem „Notatka do zajęć”. Notatkę pojedynczego terminu oznaczyć fioletowym pillem „Notatka do terminu”; ta sama etykieta obowiązuje w „Planie” dla każdego dnia. Treść wyświetlić obok etykiety albo pod nią, bez zamykania całej długiej treści w pillu. Jeśli istnieją oba rodzaje notatek, pokazać dwa osobne wiersze. Kolizja zachowuje pomarańczowy styl ostrzegawczy. Kierunek, kolizja i oba rodzaje notatek mają osobne role kolorystyczne oraz jawne etykiety tekstowe.
 
 Karta musi zachować wspólne wyrównanie wierszy, poprawne zawijanie długich nazw i notatek, kontrast oraz czytelność przy szerokości 320 dp. Semantyka czytnika ekranu ma przekazywać godziny, nazwę, kierunek, typ, metadane, kolizję i zakres każdej notatki w logicznej kolejności.
 
@@ -124,13 +124,13 @@ Formularz ogranicza zajęcia do jednego dnia kalendarzowego. Godzina zakończeni
 - budynek;
 - grupa - pole opcjonalne;
 - notatka do zajęć - opcjonalna, wspólna dla każdego wystąpienia tego wpisu;
-- notatka do wybranego wystąpienia - opcjonalna, przypięta do jednego terminu zajęć; po przeniesieniu terminu jest widoczna razem z nim w nowej dacie.
+- notatka do terminu - opcjonalna, przypięta do jednego terminu zajęć; po przeniesieniu terminu jest widoczna razem z nim w nowej dacie.
 
 Podczas dodawania notatki użytkownik wybiera zakres: „Do tych zajęć” albo „Tylko do tego terminu”. Notatkę do konkretnego wystąpienia można dodać z ekranu szczegółów zajęć na ekranie „Dzisiaj” lub „Plan”. Jeśli istnieją oba typy, aplikacja pokazuje je osobno i nie nadpisuje notatki wspólnej.
 
 Prowadzący jest opcjonalnym tekstem zapisanym przy zajęciach. Aplikacja nie prowadzi osobnej bazy prowadzących. Formularz powinien walidować, że nazwa, kierunek, godzina rozpoczęcia i zakończenia są uzupełnione, a godzina zakończenia jest późniejsza od rozpoczęcia. Zajęcia przechodzące przez północ są nieprawidłowe.
 
-Jeśli edycja dnia, cyklu, daty albo kierunku sprawia, że zmiany terminów lub notatki do wystąpień przestaną być widoczne, formularz przed zapisem pokazuje dialog „Część danych przestanie być widoczna” z ich liczbą oraz akcjami „Anuluj” i „Zapisz”. Dane zostają zachowane (`DOMAIN.md`). Zmiana samych godzin, sali ani nazwy nie wywołuje dialogu.
+Jeśli edycja dnia, cyklu, daty albo kierunku sprawia, że zmiany terminów lub notatki do terminów przestaną być widoczne, formularz przed zapisem pokazuje dialog „Część danych przestanie być widoczna” z ich liczbą oraz akcjami „Anuluj” i „Zapisz”. Dane zostają zachowane (`DOMAIN.md`). Zmiana samych godzin, sali ani nazwy nie wywołuje dialogu.
 
 Po usunięciu zajęć aplikacja powinna wymagać potwierdzenia. Edycja i usuwanie muszą aktualizować widget.
 

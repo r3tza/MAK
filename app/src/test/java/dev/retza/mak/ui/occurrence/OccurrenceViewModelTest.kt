@@ -534,13 +534,13 @@ class OccurrenceViewModelTest {
         advanceUntilIdle()
         viewModel.saveSharedNote()
         advanceUntilIdle()
-        assertEquals("Zapisano notatkę dla wszystkich terminów", sink.published.single().message)
+        assertEquals("Zapisano notatkę do zajęć", sink.published.single().message)
 
         viewModel.updateSharedNoteDraft("")
         advanceUntilIdle()
         viewModel.saveSharedNote()
         advanceUntilIdle()
-        assertEquals("Usunięto notatkę dla wszystkich terminów", sink.published.last().message)
+        assertEquals("Usunięto notatkę do zajęć", sink.published.last().message)
     }
 
     @Test
@@ -556,13 +556,13 @@ class OccurrenceViewModelTest {
         advanceUntilIdle()
         viewModel.saveOccurrenceNote()
         advanceUntilIdle()
-        assertEquals("Zapisano notatkę dla tej daty", sink.published.single().message)
+        assertEquals("Zapisano notatkę do terminu", sink.published.single().message)
 
         viewModel.updateOccurrenceNoteDraft("")
         advanceUntilIdle()
         viewModel.saveOccurrenceNote()
         advanceUntilIdle()
-        assertEquals("Usunięto notatkę dla tej daty", sink.published.last().message)
+        assertEquals("Usunięto notatkę do terminu", sink.published.last().message)
     }
 
     @Test

@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-27: Granice kontrolek, nazwy notatek i wyjątki rozmiaru (I-31, I-32, I-33)
+
+- Fakty: Audyt interfejsu z 2026-09-27 wykazał kontrast granic kontrolek 1,22:1 w jasnym i 1,45:1 w ciemnym motywie, dwie pary nazw tych samych notatek oraz dni w siatce tygodnia i kalendarza poniżej 48 dp i tekst widgetu 10 sp.
+- Decyzja: `outline` rysuje granice kontrolek i ma kontrast co najmniej 3:1 (`#808A9E` w jasnym, `#707D99` w ciemnym motywie); karty, separatory i ramki dekoracyjne używają `outlineVariant` (`#E4E9F1`, `#38445B`). Ramka przycisku ikony i pola wyboru ma 1 dp, a focus 2 dp w kolorze `primary`. Notatki nazywają się wszędzie „Notatka do zajęć” i „Notatka do terminu”, bo notatka należy do terminu i przechodzi z nim po przeniesieniu (`DOMAIN.md`). Komórka siatki siedmiu dni ma co najmniej 40 dp szerokości i 48 dp wysokości; widget używa tekstu co najmniej 11 sp. Użytkownik zaakceptował wariant granic, ujednolicenie nazw i wyjątki 2026-09-27.
+- Powód: WCAG 1.4.11 wymaga 3:1 dla granic kontrolek. „Notatka na dziś” była błędna przy innych dniach w „Planie”. Siedem kolumn po 48 dp nie mieści się w 288 dp treści przy 320 dp; 40 dp odpowiada komórkom wyboru daty Material 3. Widget ma mało miejsca, a 10 sp było za małe.
+- Odrzucone: „Notatka do daty”, bo po przeniesieniu terminu notatka nie należy do daty; przewijana siatka dni; tekst widgetu 12 sp bez sprawdzenia układu na launcherze.
+
 ## 2026-09-26: Drobne poprawki z audytu i wersje bibliotek (I-20)
 
 - Fakty: Audyt z 2026-09-25 wskazał usuwanie korekty i kalendarza bez potwierdzenia, formularz korekty przyjmujący dowolny dzień, prośbę o nieistniejącą na Androidzie 12 zgodę `POST_NOTIFICATIONS`, nieaktualne Core KTX i Navigation oraz eksport w trybie `w`.
@@ -154,9 +161,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Późniejsza decyzja: `PLAN.md` zawiera najwyżej pięć najbliższych kroków. Cel i zakres przeniesiono do `PRODUCT.md`, reguły do `DOMAIN.md`, a zachowanie ekranów i odbiór do `FEATURES.md`. `MAP.md` kieruje do właściwego źródła. Ta decyzja zastępuje poprzedni opis roli planu.
 - Dalszy krok: zaplanowano `scripts/check_map.py` z testami dla linków, limitów planu i logu oraz spójności kolejki. `scripts/check_text.py` i CI pozostają pomysłami do osobnego zatwierdzenia. Plany mają być jednoznaczne także dla słabszych agentów.
 - Powód: Agent ma szybko znaleźć bieżącą pracę i wynik ostatnich zmian bez czytania całej historii.
-
-
-## 2026-09-22: Dokumentacja w katalogu docs
-
-- Decyzja: `README.md`, `AGENTS.md` i `CLAUDE.md` pozostają w katalogu głównym. Dokumenty produktu, architektury, stosu, zasad pisania, historii zmian i wcześniejszy audyt interfejsu są w `docs/`.
-- Powód: Katalog główny zachowuje krótki punkt wejścia i instrukcje agentów, a pozostałe dokumenty mają jedno miejsce.

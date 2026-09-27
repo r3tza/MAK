@@ -4,7 +4,7 @@ Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Kroki poch
 
 Każdy krok ma być wykonalny także przez słabszego agenta bez odgadywania intencji. Podaj kolejność małych zmian, docelowe pliki lub obszary kodu, zależności, przypadki brzegowe, sposób sprawdzenia i jednoznaczne kryterium zakończenia. Jeśli do wykonania brakuje decyzji, zapisz ją jako bloker zamiast pozostawiać ukryte założenie.
 
-Kroki nie zmieniają kolorów palety, nazw notatek ani rozmiarów komórek dni. Te sprawy czekają na decyzje w I-31, I-32 i I-33.
+I-31, I-32 i I-33 wdrożono 2026-09-27 poza tymi krokami: granice kontrolek używają `outline` o kontraście 3:1, notatki nazywają się „Notatka do zajęć” i „Notatka do terminu”, a komórki siatki dni mają co najmniej 40 dp szerokości.
 
 ## 1. Jeden przystanek focusu na kontrolkę (I-27)
 
@@ -53,7 +53,7 @@ Kryterium zakończenia: test JVM przechodzi, odwołana karta nie ma przyciemnien
 
 ## 4. Odwołane terminy liczone w domenie (I-25)
 
-1. W `domain` dodaj funkcję `cancelledOccurrences(data: ActivePlanData, date: LocalDate): List<CancelledOccurrence>`. Zwraca zmiany `CANCELLED` z `originalDate == date` tylko dla zajęć cyklicznych, które mają termin bazowy w tym dniu według `ClassItem.hasBaseOccurrenceOn` i kalendarza swojego przypisania. `CancelledOccurrence` zawiera `ClassItem`, `StudyProgram?`, datę i notatkę do wystąpienia pod datą oryginalną.
+1. W `domain` dodaj funkcję `cancelledOccurrences(data: ActivePlanData, date: LocalDate): List<CancelledOccurrence>`. Zwraca zmiany `CANCELLED` z `originalDate == date` tylko dla zajęć cyklicznych, które mają termin bazowy w tym dniu według `ClassItem.hasBaseOccurrenceOn` i kalendarza swojego przypisania. `CancelledOccurrence` zawiera `ClassItem`, `StudyProgram?`, datę i notatkę do terminu pod datą oryginalną.
 2. `ScheduleViewModel.cancelledItems` zastąp wywołaniem tej funkcji i mapowaniem na `ClassItemUi`. Zastosuj ten sam filtr kierunku co dla aktywnych zajęć, także w widoku kalendarza.
 3. `selectedDayCountLabel` i `calendarSelectedDayCountLabel` liczą tylko aktywne zajęcia, tak jak „Dzisiaj” i widget.
 4. Testy JVM w `app/src/test/java/dev/retza/mak/domain/`: odwołanie zajęć, które po edycji nie mają terminu w tym dniu, nie jest zwracane; odwołanie w dniu spoza kalendarza nie jest zwracane. Test w `ScheduleViewModelTest`: przy filtrze kierunku B odwołanie kierunku A nie pojawia się; licznik dnia nie wlicza odwołanych.
@@ -78,4 +78,4 @@ Kryterium zakończenia: dialog zmiany tygodnia nie otwiera się w stanie, w któ
 
 ## Po tych krokach
 
-Następne w kolejności są I-30 (stan ładowania i motyw przy starcie) oraz I-26 (drobne poprawki z audytu kodu). I-14, I-23, I-31, I-32 i I-33 czekają na decyzje użytkownika. Odbiór na urządzeniu można wykonywać niezależnie od powyższej kolejności; otwarte scenariusze są w `FEATURES.md`, sekcja „Odbiór na urządzeniu”.
+Następne w kolejności są I-30 (stan ładowania i motyw przy starcie) oraz I-26 (drobne poprawki z audytu kodu). I-14 i I-23 czekają na decyzje użytkownika. Odbiór na urządzeniu można wykonywać niezależnie od powyższej kolejności; otwarte scenariusze są w `FEATURES.md`, sekcja „Odbiór na urządzeniu”.

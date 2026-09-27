@@ -162,7 +162,7 @@ Emulator jest wolny. Zostaw kilka przebiegów z wstrzykniętą datą, nie `Local
 - brak aktywnego semestru;
 - ekran „Dzisiaj” po dodaniu semestru, kierunku i zajęć;
 - odwołanie i przywrócenie jednego terminu;
-- notatka do zajęć kontra notatka do daty;
+- notatka do zajęć kontra notatka do terminu;
 - szerokość 320 px: brak poziomego przewijania, akcje widoczne.
 
 Kontrast, `reduced motion` i motyw ciemny sprawdzaj w kodzie oraz na emulatorze lub urządzeniu, dopóki nie ma stałego urządzenia w CI.

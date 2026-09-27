@@ -274,7 +274,7 @@ private fun NotesBlock(
             fontWeight = FontWeight.SemiBold
         )
         MakField(
-            label = "Notatka dla wszystkich terminów",
+            label = "Notatka do zajęć",
             value = state.sharedNoteDraft,
             onValueChange = onSharedNoteDraftChanged,
             singleLine = false,
@@ -285,13 +285,13 @@ private fun NotesBlock(
         FieldError(state.sharedNoteError?.let(::FieldErrorUi))
         if (state.canSaveSharedNote || state.isSavingSharedNote) {
             MakPrimaryAction(
-                text = "Zapisz notatkę dla wszystkich terminów",
+                text = "Zapisz notatkę do zajęć",
                 onClick = onSaveSharedNote,
                 enabled = !state.isSavingSharedNote
             )
         }
         MakField(
-            label = "Notatka tylko dla tej daty",
+            label = "Notatka do terminu",
             value = state.occurrenceNoteDraft,
             onValueChange = onOccurrenceNoteDraftChanged,
             singleLine = false,
@@ -302,7 +302,7 @@ private fun NotesBlock(
         FieldError(state.occurrenceNoteError?.let(::FieldErrorUi))
         if (state.canSaveOccurrenceNote || state.isSavingOccurrenceNote) {
             MakPrimaryAction(
-                text = "Zapisz notatkę dla tej daty",
+                text = "Zapisz notatkę do terminu",
                 onClick = onSaveOccurrenceNote,
                 enabled = !state.isSavingOccurrenceNote
             )

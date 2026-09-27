@@ -300,7 +300,7 @@ private fun WidgetOccurrenceRow(
                 text = widgetMetadataLabel(item, layoutPolicy),
                 style = TextStyle(
                     color = GlanceTheme.colors.onSurfaceVariant,
-                    fontSize = 10.sp
+                    fontSize = 11.sp
                 ),
                 maxLines = 1
             )
@@ -340,7 +340,7 @@ private fun WidgetConflictAlert(
                 text = "Kolizja ${firstConflict.timeRange}",
                 style = TextStyle(
                     color = GlanceTheme.colors.onErrorContainer,
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
                 ),
                 maxLines = 1
@@ -352,7 +352,7 @@ private fun WidgetConflictAlert(
                 )}",
                 style = TextStyle(
                     color = GlanceTheme.colors.onErrorContainer,
-                    fontSize = 10.sp
+                    fontSize = 11.sp
                 ),
                 maxLines = 1
             )
@@ -361,7 +361,7 @@ private fun WidgetConflictAlert(
                     text = "Jeszcze ${widgetConflictCountLabel(item.conflicts.size - 1)}",
                     style = TextStyle(
                         color = GlanceTheme.colors.onErrorContainer,
-                        fontSize = 10.sp
+                        fontSize = 11.sp
                     ),
                     maxLines = 1
                 )
@@ -382,7 +382,7 @@ private fun WidgetPhaseLabel(phase: WidgetOccurrencePhase) {
             text = if (phase == WidgetOccurrencePhase.Current) "Teraz" else "Następne",
             style = TextStyle(
                 color = GlanceTheme.colors.onSecondaryContainer,
-                fontSize = 10.sp,
+                fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
             ),
             maxLines = 1
@@ -402,7 +402,7 @@ private fun WidgetNoteLabel() {
             text = "Notatka",
             style = TextStyle(
                 color = GlanceTheme.colors.onSurfaceVariant,
-                fontSize = 10.sp
+                fontSize = 11.sp
             ),
             maxLines = 1
         )

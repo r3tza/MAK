@@ -233,7 +233,7 @@ fun MakIconButton(
             .size(48.dp)
             .clip(RoundedCornerShape(12.dp))
             .border(
-                2.dp,
+                if (focused) 2.dp else 1.dp,
                 if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                 RoundedCornerShape(12.dp)
             )
@@ -261,7 +261,7 @@ fun MakIconButton(
             .size(48.dp)
             .clip(RoundedCornerShape(12.dp))
             .border(
-                2.dp,
+                if (focused) 2.dp else 1.dp,
                 if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                 RoundedCornerShape(12.dp)
             )
@@ -294,7 +294,7 @@ fun MakRoundButton(
             .size(48.dp)
             .clip(RoundedCornerShape(10.dp))
             .border(
-                2.dp,
+                if (focused) 2.dp else 1.dp,
                 if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                 RoundedCornerShape(10.dp)
             )
@@ -327,7 +327,7 @@ fun MakRoundButton(
             .size(48.dp)
             .clip(RoundedCornerShape(10.dp))
             .border(
-                2.dp,
+                if (focused) 2.dp else 1.dp,
                 if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
                 RoundedCornerShape(10.dp)
             )
@@ -475,7 +475,7 @@ fun ClassCard(
             .border(
                 width = if (focused) 2.dp else 1.dp,
                 color = if (focused) MaterialTheme.colorScheme.primary
-                else MaterialTheme.colorScheme.outline,
+                else MaterialTheme.colorScheme.outlineVariant,
                 shape = shape
             )
             .background(MaterialTheme.colorScheme.surface)
@@ -603,7 +603,7 @@ fun ClassCard(
                 }
                 if (occurrenceNote != null) {
                     ClassNoteRow(
-                        label = "Notatka na dziś",
+                        label = "Notatka do terminu",
                         text = occurrenceNote,
                         background = MakModifiedSoft,
                         foreground = MakModified
@@ -704,7 +704,7 @@ private fun StatusBadge(text: String, cancelled: Boolean, modified: Boolean, one
 
 @Composable
 fun MakEmptyState(message: String, modifier: Modifier = Modifier) {
-    val outline = MaterialTheme.colorScheme.outline
+    val outline = MaterialTheme.colorScheme.outlineVariant
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -953,7 +953,7 @@ fun MakNavBar(
     onAdd: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val outline = MaterialTheme.colorScheme.outline
+    val outline = MaterialTheme.colorScheme.outlineVariant
     Row(
         modifier = modifier
             .fillMaxWidth()
@@ -1198,8 +1198,8 @@ fun MakChoiceRow(
             .fillMaxWidth()
             .clip(shape)
             .border(
-                2.dp,
-                if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                if (focused) 2.dp else 1.dp,
+                if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outlineVariant,
                 shape
             )
             .selectable(selected = selected, role = Role.RadioButton, onClick = onClick)
@@ -1399,7 +1399,7 @@ private fun classCardDescription(item: ClassItemUi): String = buildList {
     add(classMeta(item))
     item.conflictLabel?.let(::add)
     item.classNote?.takeIf(String::isNotBlank)?.let { add("Notatka do zajęć: $it") }
-    item.occurrenceNote?.takeIf(String::isNotBlank)?.let { add("Notatka na dziś: $it") }
+    item.occurrenceNote?.takeIf(String::isNotBlank)?.let { add("Notatka do terminu: $it") }
 }.joinToString(", ")
 
 @Composable

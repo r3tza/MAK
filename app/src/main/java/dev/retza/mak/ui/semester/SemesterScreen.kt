@@ -928,7 +928,7 @@ private fun WeekOverrideCard(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .border(1.dp, MaterialTheme.colorScheme.outline, shape)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
             .padding(14.dp),
         verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {

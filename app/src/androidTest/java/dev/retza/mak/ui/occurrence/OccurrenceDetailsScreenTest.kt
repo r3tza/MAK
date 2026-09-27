@@ -153,12 +153,12 @@ class OccurrenceDetailsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Notatka dla wszystkich terminów").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Notatka tylko dla tej daty").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Zapisz notatkę dla wszystkich terminów").assertIsDisplayed().performClick()
+        composeTestRule.onNodeWithText("Notatka do zajęć").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Notatka do terminu").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zapisz notatkę do zajęć").assertIsDisplayed().performClick()
         assertEquals(1, sharedSaves)
         assertEquals(0, occurrenceSaves)
-        composeTestRule.onNodeWithText("Zapisz notatkę dla tej daty").assertIsDisplayed().performClick()
+        composeTestRule.onNodeWithText("Zapisz notatkę do terminu").assertIsDisplayed().performClick()
         assertEquals(1, occurrenceSaves)
     }
 

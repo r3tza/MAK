@@ -238,9 +238,9 @@ class OccurrenceViewModel(
                     )
                 }
                 val message = if (note == null) {
-                    "Usunięto notatkę dla wszystkich terminów"
+                    "Usunięto notatkę do zajęć"
                 } else {
-                    "Zapisano notatkę dla wszystkich terminów"
+                    "Zapisano notatkę do zajęć"
                 }
                 feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
             } catch (error: CancellationException) {
@@ -292,9 +292,9 @@ class OccurrenceViewModel(
                     )
                 }
                 val message = if (note == null) {
-                    "Usunięto notatkę dla tej daty"
+                    "Usunięto notatkę do terminu"
                 } else {
-                    "Zapisano notatkę dla tej daty"
+                    "Zapisano notatkę do terminu"
                 }
                 feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
             } catch (error: CancellationException) {

@@ -432,7 +432,8 @@ private fun DaySelector(
         modifier = Modifier
             .fillMaxWidth()
             .padding(bottom = 17.dp),
-        horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+        // No gaps: seven day cells need at least 40 dp each at a 320 dp screen width.
+        horizontalArrangement = Arrangement.Start
     ) {
         days.forEach { day ->
             val selected = day.isSelected
@@ -508,10 +509,11 @@ private fun CalendarView(
             }
         }
         state.calendarDays.chunked(7).forEach { week ->
-            Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+            // No gaps: seven day cells need at least 40 dp each at a 320 dp screen width.
+            Row(modifier = Modifier.fillMaxWidth()) {
                 week.forEach { day -> CalendarDay(day, onCalendarDaySelected) }
                 repeat(7 - week.size) {
-                    Box(Modifier.weight(1f).height(45.dp))
+                    Box(Modifier.weight(1f).height(48.dp))
                 }
             }
         }
@@ -548,7 +550,7 @@ private fun RowScope.CalendarDay(day: CalendarDayUi, onSelected: (String) -> Uni
     Column(
         modifier = Modifier
             .weight(1f)
-            .height(45.dp)
+            .height(48.dp)
             .clip(shape)
             .then(
                 if (day.isToday && !day.isSelected) {

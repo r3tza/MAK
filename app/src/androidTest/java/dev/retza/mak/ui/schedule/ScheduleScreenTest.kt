@@ -122,7 +122,7 @@ class ScheduleScreenTest {
 
         composeTestRule.onNodeWithText("Informatyka").assertIsDisplayed()
         composeTestRule.onNodeWithText("Notatka do zajęć").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Notatka na dziś").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Notatka do terminu").assertIsDisplayed()
         composeTestRule.onNodeWithText("Przynieś projekt").assertIsDisplayed()
         composeTestRule.onNodeWithText("Kolokwium").assertIsDisplayed()
     }

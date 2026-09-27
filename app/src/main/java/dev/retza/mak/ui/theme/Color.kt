@@ -29,12 +29,15 @@ val MakModified = Color(0xFF7256AD)
 val MakModifiedSoft = Color(0xFFF1EDFF)
 val MakOnce = Color(0xFF315F9F)
 val MakOnceSoft = Color(0xFFE9F1FF)
-val MakFieldBorder = Color(0xFFDCE4EE)
+// Boundaries of controls: at least 3:1 against surface, surfaceVariant and primaryContainer.
+val MakControlLine = Color(0xFF808A9E)
 val MakFieldLabel = Color(0xFF516077)
 
 val MakInkDark = Color(0xFFE9EEF8)
 val MakMutedDark = Color(0xFFA6B3C9)
 val MakLineDark = Color(0xFF38445B)
+// Boundaries of controls: at least 3:1 against the dark surface, surfaceVariant and background.
+val MakControlLineDark = Color(0xFF707D99)
 val MakPaperDark = Color(0xFF202B40)
 val MakSoftDark = Color(0xFF19243A)
 val MakAccentDark = Color(0xFF9AAFFF)

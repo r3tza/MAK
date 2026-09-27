@@ -243,7 +243,7 @@ fun ClassEditScreen(
                         onValueChange = onGroupChanged
                     )
                     MakField(
-                        label = "Notatka",
+                        label = "Notatka do zajęć",
                         value = state.note,
                         onValueChange = onNoteChanged,
                         singleLine = false,

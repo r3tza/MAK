@@ -185,6 +185,6 @@ class TodayScreenTest {
 
         composeTestRule.onNodeWithText("Informatyka").assertIsDisplayed()
         composeTestRule.onNodeWithText("Notatka do zajęć").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Notatka na dziś").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Notatka do terminu").assertIsDisplayed()
     }
 }
