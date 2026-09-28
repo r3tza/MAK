@@ -478,7 +478,10 @@ fun ClassCard(
             modifier = Modifier
                 .width(4.dp)
                 .fillMaxHeight()
-                .background(if (item.isCancelled) MaterialTheme.colorScheme.error else accent)
+                .background(
+                    if (item.isCancelled) MaterialTheme.colorScheme.error
+                    else courseShapeColor(accent, MaterialTheme.colorScheme.surface)
+                )
         )
         Row(
             modifier = Modifier

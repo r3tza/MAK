@@ -19,28 +19,44 @@ import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableFloatStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.semantics.stateDescription
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardCapitalization
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
+import dev.retza.mak.ui.theme.MakLine
+import dev.retza.mak.ui.theme.MakLineDark
+import dev.retza.mak.ui.theme.MakMuted
+import dev.retza.mak.ui.theme.MakMutedDark
+import dev.retza.mak.ui.theme.MakPaper
+import dev.retza.mak.ui.theme.MakPaperDark
 import kotlin.math.roundToInt
 
-private const val HEX_ERROR = "Ten kolor będzie słabo widoczny. Wybierz inny odcień albo jasność."
 private const val HEX_FORMAT_ERROR = "Podaj kod w postaci #RRGGBB."
+private const val LIGHT_THEME_NOTE = "W motywie jasnym kolor będzie ciemniejszy, aby był czytelny."
+private const val DARK_THEME_NOTE = "W motywie ciemnym kolor będzie jaśniejszy, aby był czytelny."
+private const val DEFAULT_HUE = 174f
+
+// Greys have no hue; below this saturation the hue slider keeps its last position.
+private const val GREY_SATURATION = 0.02f
 
 /**
- * Course color chosen from a continuous hue bar and a shade slider. Every value the sliders
- * produce is readable on the light and dark theme, see [courseColorFrom]. A typed code is
- * accepted only when it is readable too.
+ * Course color chosen with a hue slider and a lightness slider from black to white. The picker
+ * stores the exact color; the app adapts it to each theme when drawing, which the two previews
+ * show. A typed code keeps its own saturation until a slider moves.
  */
 @Composable
 fun MakCourseColorPicker(
@@ -50,7 +66,13 @@ fun MakCourseColorPicker(
     previewName: String = "Kierunek"
 ) {
     val current = parseCourseHex(selectedColor)
-    val position = current?.let(::hueAndShadeOf) ?: HueAndShade(174f, 0.5f)
+    val defaultLightness = remember { hueAndLightnessOf(parseCourseHex(DefaultCourseColor)!!).lightness }
+    var lastHue by rememberSaveable { mutableFloatStateOf(DEFAULT_HUE) }
+    val hue = current
+        ?.takeIf { saturationOf(it) > GREY_SATURATION }
+        ?.let { hueAndLightnessOf(it).hue }
+        ?: lastHue
+    val lightness = current?.let { hueAndLightnessOf(it).lightness } ?: defaultLightness
     var hexText by remember(selectedColor) { mutableStateOf(selectedColor.uppercase()) }
     var hexError by remember(selectedColor) { mutableStateOf<String?>(null) }
 
@@ -59,23 +81,38 @@ fun MakCourseColorPicker(
         verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
         Text("Kolor kierunku", style = MaterialTheme.typography.labelLarge)
-        ColorPreview(color = current, name = previewName.ifBlank { "Kierunek" })
+        val name = previewName.ifBlank { "Kierunek" }
+        MakFieldPair(
+            first = { ThemePreview(color = current, name = name, dark = false) },
+            second = { ThemePreview(color = current, name = name, dark = true) }
+        )
+        current?.let { color ->
+            if (contrastRatio(color, MakPaper.toArgb()) < SHAPE_CONTRAST) MakHelperText(LIGHT_THEME_NOTE)
+            if (contrastRatio(color, MakPaperDark.toArgb()) < SHAPE_CONTRAST) MakHelperText(DARK_THEME_NOTE)
+        }
 
         GradientSlider(
             label = "Odcień",
-            value = position.hue,
+            value = hue,
             valueRange = 0f..360f,
-            stateDescription = "${position.hue.roundToInt()} stopni",
-            trackColors = (0..360 step 30).map { Color(courseColorFrom(it.toFloat(), position.shade)) },
-            onValueChange = { onColorSelected(courseHex(courseColorFrom(it, position.shade))) }
+            stateDescription = "${hue.roundToInt()} stopni",
+            // Pure hues keep the track readable also for a very light or dark color.
+            trackColors = (0..360 step 30).map { Color(courseColorFrom(it.toFloat(), 0.5f)) },
+            onValueChange = {
+                lastHue = it
+                onColorSelected(courseHex(courseColorFrom(it, lightness)))
+            }
         )
         GradientSlider(
             label = "Jasność",
-            value = position.shade,
+            value = lightness,
             valueRange = 0f..1f,
-            stateDescription = "${(position.shade * 100).roundToInt()} procent",
-            trackColors = listOf(0f, 0.5f, 1f).map { Color(courseColorFrom(position.hue, it)) },
-            onValueChange = { onColorSelected(courseHex(courseColorFrom(position.hue, it))) }
+            stateDescription = "${(lightness * 100).roundToInt()} procent",
+            trackColors = listOf(0f, 0.5f, 1f).map { Color(courseColorFrom(hue, it)) },
+            onValueChange = {
+                lastHue = hue
+                onColorSelected(courseHex(courseColorFrom(hue, it)))
+            }
         )
 
         MakField(
@@ -84,12 +121,8 @@ fun MakCourseColorPicker(
             onValueChange = { text ->
                 hexText = text.uppercase()
                 val parsed = parseCourseHex(text)
-                hexError = when {
-                    parsed == null -> if (text.trim().removePrefix("#").length >= 6) HEX_FORMAT_ERROR else null
-                    !isReadableCourseColor(parsed) -> HEX_ERROR
-                    else -> null
-                }
-                if (parsed != null && isReadableCourseColor(parsed)) onColorSelected(courseHex(parsed))
+                hexError = if (parsed == null && text.trim().removePrefix("#").length >= 6) HEX_FORMAT_ERROR else null
+                if (parsed != null) onColorSelected(courseHex(parsed))
             },
             placeholder = DefaultCourseColor,
             isError = hexError != null,
@@ -99,14 +132,20 @@ fun MakCourseColorPicker(
     }
 }
 
+/** Bar and course name as the app draws them on the card of one theme, independent of the current theme. */
 @Composable
-private fun ColorPreview(color: Int?, name: String) {
-    val accent = color?.let { Color(it) } ?: MaterialTheme.colorScheme.outline
+private fun ThemePreview(color: Int?, name: String, dark: Boolean) {
+    val surface = if (dark) MakPaperDark else MakPaper
+    val muted = if (dark) MakMutedDark else MakMuted
+    val shape = RoundedCornerShape(12.dp)
+    val bar = color?.let { Color(courseShapeColor(it, surface.toArgb())) } ?: muted
+    val text = color?.let { Color(courseTextColor(it, surface.toArgb())) } ?: muted
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .clip(RoundedCornerShape(12.dp))
-            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .clip(shape)
+            .background(surface)
+            .border(1.dp, if (dark) MakLineDark else MakLine, shape)
             .padding(MakSpacing.md),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
@@ -115,14 +154,23 @@ private fun ColorPreview(color: Int?, name: String) {
             modifier = Modifier
                 .size(width = 4.dp, height = 36.dp)
                 .clip(RoundedCornerShape(2.dp))
-                .background(accent)
+                .background(bar)
         )
-        CourseNameText(name = name, accent = accent)
-        Text(
-            text = "Podgląd",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = name,
+                color = text,
+                style = MaterialTheme.typography.bodySmall,
+                fontWeight = FontWeight.Bold,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+            Text(
+                text = if (dark) "Motyw ciemny" else "Motyw jasny",
+                color = muted,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
     }
 }
 

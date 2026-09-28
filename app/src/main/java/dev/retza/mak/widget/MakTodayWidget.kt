@@ -4,6 +4,7 @@ import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
@@ -43,6 +44,7 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import dev.retza.mak.MainActivity
+import dev.retza.mak.ui.components.courseShapeColor
 import dev.retza.mak.ui.theme.MakOrange
 import dev.retza.mak.ui.theme.MakOrangeDark
 import dev.retza.mak.ui.theme.MakOrangeSoft
@@ -266,7 +268,11 @@ private fun WidgetOccurrenceRow(
             modifier = GlanceModifier
                 .width(4.dp)
                 .height(layoutPolicy.accentHeight)
-                .background(parseWidgetColor(item.courseColor) ?: Color.Transparent)
+                .then(
+                    parseWidgetColor(item.courseColor)
+                        ?.let { GlanceModifier.background(widgetCourseColor(it)) }
+                        ?: GlanceModifier.background(Color.Transparent)
+                )
                 .cornerRadius(2.dp)
         ) {}
         Spacer(GlanceModifier.width(8.dp))
@@ -427,6 +433,15 @@ internal fun widgetMetadataLabel(
         truncateWidgetText(it, layoutPolicy.metadataCharacterLimit)
     }
 }
+
+// The widget follows the system theme, so white and the app's dark card approximate its background.
+private fun widgetCourseColor(color: Color): androidx.glance.unit.ColorProvider = ColorProvider(
+    day = Color(courseShapeColor(color.toArgb(), WidgetDayBackground)),
+    night = Color(courseShapeColor(color.toArgb(), WidgetNightBackground))
+)
+
+private val WidgetDayBackground = 0xFFFFFFFF.toInt()
+private val WidgetNightBackground = 0xFF202B40.toInt()
 
 internal fun parseWidgetColor(value: String?): Color? = runCatching {
     val hex = value?.trim()?.removePrefix("#") ?: return null

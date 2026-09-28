@@ -31,6 +31,10 @@ import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsSelected
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.test.performSemanticsAction
+import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performTextReplacement
 import androidx.compose.ui.unit.dp
@@ -104,7 +108,7 @@ class MakFormControlsTest {
     }
 
     @Test
-    fun colorPickerAcceptsReadableCodeAndNamesSlidersAt320Dp() {
+    fun colorPickerShowsBothThemesAndAcceptsCodeAt320Dp() {
         var selected by mutableStateOf(DefaultCourseColor)
 
         composeTestRule.setContent {
@@ -121,14 +125,34 @@ class MakFormControlsTest {
 
         composeTestRule.onNodeWithContentDescription("Odcień").assertIsDisplayed()
         composeTestRule.onNodeWithContentDescription("Jasność").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Informatyka").assertIsDisplayed()
-        val readable = courseHex(courseColorFrom(210f, 0.5f))
-        composeTestRule.onNodeWithText("Kod koloru").performTextReplacement(readable)
-        assertEquals(readable, selected)
+        composeTestRule.onAllNodesWithText("Informatyka").assertCountEquals(2)
+        composeTestRule.onNodeWithText("Motyw jasny").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Motyw ciemny").assertIsDisplayed()
+        val code = courseHex(courseColorFrom(210f, 0.3f))
+        composeTestRule.onNodeWithText("Kod koloru").performTextReplacement(code)
+        assertEquals(code, selected)
     }
 
     @Test
-    fun colorPickerRejectsTooLightCode() {
+    fun colorPickerHueSliderKeepsLightness() {
+        var selected by mutableStateOf(courseHex(courseColorFrom(30f, 0.7f)))
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                MakCourseColorPicker(selectedColor = selected, onColorSelected = { selected = it })
+            }
+        }
+
+        composeTestRule.onNodeWithContentDescription("Odcień")
+            .performSemanticsAction(SemanticsActions.SetProgress) { it(210f) }
+
+        val picked = hueAndLightnessOf(parseCourseHex(selected)!!)
+        assertEquals(210f, picked.hue, 2f)
+        assertEquals(0.7f, picked.lightness, 0.01f)
+    }
+
+    @Test
+    fun colorPickerAcceptsVeryLightCodeAndExplainsAdaptation() {
         var selected by mutableStateOf(DefaultCourseColor)
 
         composeTestRule.setContent {
@@ -137,12 +161,12 @@ class MakFormControlsTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Kod koloru").performTextReplacement("#FFEB3B")
+        composeTestRule.onNodeWithText("Kod koloru").performTextReplacement("#FFFFFF")
 
-        composeTestRule
-            .onNodeWithText("Ten kolor będzie słabo widoczny. Wybierz inny odcień albo jasność.")
+        assertEquals("#FFFFFF", selected)
+        composeTestRule.onNodeWithText("W motywie jasnym kolor będzie ciemniejszy, aby był czytelny.")
             .assertIsDisplayed()
-        assertEquals(DefaultCourseColor, selected)
+        composeTestRule.onAllNodesWithText("słabo widoczny", substring = true).assertCountEquals(0)
     }
 
     @Test

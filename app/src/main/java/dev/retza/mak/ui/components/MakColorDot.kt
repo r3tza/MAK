@@ -24,7 +24,8 @@ fun MakColorDot(
     Box(
         modifier = modifier
             .size(size)
-            .background(parseHexColor(color) ?: MaterialTheme.colorScheme.outline, CircleShape)
+            // The surface is lighter than the screen in the dark theme, so it is the stricter background.
+            .background(courseShapeColor(color, MaterialTheme.colorScheme.surface), CircleShape)
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, CircleShape)
     )
 }
