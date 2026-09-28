@@ -27,6 +27,7 @@ import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.fullDateFormatter
 import dev.retza.mak.ui.monthFormatter
+import dev.retza.mak.ui.polishLocale
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.shortDateFormatter
@@ -318,7 +319,9 @@ class ScheduleViewModel(
             calendarMonthLabel = control.calendarMonth.format(monthFormatter),
             calendarDays = calendarDays,
             calendarLegend = calendarLegend(data, activeFilter),
-            calendarSelectedDayLabel = control.calendarDate.format(fullDateFormatter),
+            // Capitalized like the list heading; fullDateFormatter stays lowercase for screen readers.
+            calendarSelectedDayLabel = control.calendarDate.format(fullDateFormatter)
+                .replaceFirstChar { it.titlecase(polishLocale) },
             calendarSelectedDayCountLabel = classCountLabel(calendarFiltered.size),
             calendarItems = calendarFiltered.map { it.toUi(calendarLabels[it.id], calendarNames[it.id]) } +
                 if (control.showCancelled) cancelledItems(data, control.calendarDate, activeFilter) else emptyList(),
