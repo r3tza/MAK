@@ -8,13 +8,19 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertCountEquals
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.hasClickAction
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.theme.MAKTheme
@@ -88,6 +94,45 @@ class SemesterScreenTest {
         assertEquals("courses", opened)
         composeTestRule.onNodeWithText("Korekty tygodni").performScrollTo().assertIsDisplayed().performClick()
         assertEquals("overrides", opened)
+    }
+
+    @Test
+    fun navigationRowsShowCountLabelAreButtonsAndAreNotHeadingsAt320Dp() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(900.dp)) {
+                    SemesterScreen(
+                        state = SemesterScreenUiState(
+                            semester = SemesterFormUiState(name = "Semestr zimowy"),
+                            courseItems = listOf(course("1", "Informatyka"), course("2", "Matematyka")),
+                            calendars = listOf(calendar("1"), calendar("2", "2026-11-01", "2027-03-15")),
+                            overrideCount = 0
+                        ),
+                        onSemesterNameChanged = {},
+                        onSemesterStartDateChanged = {},
+                        onSemesterEndDateChanged = {},
+                        onSemesterFirstWeekChanged = {},
+                        onSaveSemester = {},
+                        onOpenCourses = {},
+                        onOpenOverrides = {},
+                        onOpenCalendars = {},
+                        onRetry = {}
+                    )
+                }
+            }
+        }
+
+        listOf(
+            "Kierunki" to "2 kierunki",
+            "Korekty tygodni" to "0 korekt",
+            "Kalendarze" to "2 kalendarze"
+        ).forEach { (title, countLabel) ->
+            composeTestRule.onNodeWithText(countLabel).performScrollTo().assertIsDisplayed()
+            composeTestRule.onNode(hasClickAction() and hasText(title))
+                .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            composeTestRule.onNodeWithText(title, useUnmergedTree = true)
+                .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Heading))
+        }
     }
 
     @Test
@@ -454,6 +499,8 @@ class SemesterScreenTest {
         composeTestRule.onNodeWithText("Zapisz kalendarz").assertIsDisplayed()
         composeTestRule.onNodeWithText("Kierunki: Informatyka").assertIsDisplayed()
         composeTestRule.onNodeWithText("Brak przypisanych kierunków").assertIsDisplayed()
+        composeTestRule.onNodeWithText("1 lis 2026 - 15 mar 2027").assertIsDisplayed()
+        composeTestRule.onNodeWithText("2026-11-01 - 2027-03-15").assertDoesNotExist()
         composeTestRule.onNodeWithText("Usuń").performClick()
         assertEquals("2", deleted)
     }
@@ -539,12 +586,24 @@ class SemesterScreenTest {
         composeTestRule.onNodeWithText("Dzień w tygodniu korekty").assertDoesNotExist()
         composeTestRule.onNodeWithText("Dodaj").performClick()
         composeTestRule.onNodeWithText("Dzień w tygodniu korekty").assertIsDisplayed()
+        // The form title has the same text as the save button, so pick the clickable one.
+        val addSaveLeft = composeTestRule.onNode(hasText("Dodaj korektę") and hasClickAction())
+            .fetchSemanticsNode().boundsInRoot.left
+        assertTrue(
+            "cancel comes before save",
+            composeTestRule.onNodeWithText("Anuluj").fetchSemanticsNode().boundsInRoot.left < addSaveLeft
+        )
         composeTestRule.onNodeWithText("Anuluj").performClick()
         composeTestRule.onNodeWithText("Dzień w tygodniu korekty").assertDoesNotExist()
 
         composeTestRule.onNodeWithContentDescription("Więcej opcji").performClick()
         composeTestRule.onNodeWithText("Edytuj").performClick()
         composeTestRule.onNodeWithText("Dzień w tygodniu korekty").assertIsDisplayed()
+        assertTrue(
+            "cancel comes before save",
+            composeTestRule.onNodeWithText("Anuluj").fetchSemanticsNode().boundsInRoot.left <
+                composeTestRule.onNodeWithText("Zapisz zmiany").fetchSemanticsNode().boundsInRoot.left
+        )
     }
 
     @Test

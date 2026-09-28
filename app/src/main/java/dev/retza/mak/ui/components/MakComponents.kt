@@ -30,6 +30,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -46,6 +47,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material.icons.Icons
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.material.icons.outlined.StickyNote2
@@ -83,6 +85,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -201,33 +204,6 @@ fun MakBrandMark(modifier: Modifier = Modifier) {
 @Composable
 fun MakIconButton(
     label: String,
-    symbol: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var focused by remember { mutableStateOf(false) }
-    Box(
-        modifier = modifier
-            .size(48.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .border(
-                if (focused) 2.dp else 1.dp,
-                if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                RoundedCornerShape(12.dp)
-            )
-            .background(MaterialTheme.colorScheme.surface)
-            .onFocusChanged { focused = it.isFocused }
-            .clickable(role = Role.Button, onClick = onClick)
-            .semantics { contentDescription = label },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(symbol, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
-    }
-}
-
-@Composable
-fun MakIconButton(
-    label: String,
     icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -252,38 +228,6 @@ fun MakIconButton(
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-fun MakRoundButton(
-    label: String,
-    symbol: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true
-) {
-    var focused by remember { mutableStateOf(false) }
-    Box(
-        modifier = modifier
-            .size(48.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .border(
-                if (focused) 2.dp else 1.dp,
-                if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                RoundedCornerShape(10.dp)
-            )
-            .background(MaterialTheme.colorScheme.surface)
-            .onFocusChanged { focused = it.isFocused }
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .semantics { contentDescription = label },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = symbol,
-            fontSize = 19.sp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.35f)
         )
     }
 }
@@ -486,7 +430,8 @@ fun ClassCard(
         Row(
             modifier = Modifier
                 .weight(1f)
-            .padding(start = MakSpacing.sm, end = MakSpacing.lg, top = MakSpacing.md, bottom = MakSpacing.md),
+                .fillMaxHeight()
+                .padding(start = MakSpacing.sm, end = MakSpacing.lg, top = MakSpacing.md, bottom = MakSpacing.md),
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)
         ) {
             // At least 48 dp, wider with a large font scale, so the start time is never cut.
@@ -515,6 +460,11 @@ fun ClassCard(
                     )
                 }
             }
+            VerticalDivider(
+                modifier = Modifier.fillMaxHeight().testTag("class-card-divider"),
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
                 Text(
                     text = item.name,
@@ -722,7 +672,6 @@ fun MakEmptyState(message: String, modifier: Modifier = Modifier) {
 fun MakStateMessage(
     status: ScreenStatus,
     modifier: Modifier = Modifier,
-    emptyTitle: String? = null,
     emptyMessage: String? = null,
     onRetry: (() -> Unit)? = null
 ) {
@@ -1376,6 +1325,33 @@ fun MakDialog(
             content()
         }
     }
+}
+
+/** Confirmation of an irreversible deletion; both actions are blocked while [isDeleting]. */
+@Composable
+fun MakConfirmDeletionDialog(
+    title: String,
+    text: String,
+    isDeleting: Boolean,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+    confirmLabel: String = "Usuń"
+) {
+    AlertDialog(
+        onDismissRequest = { if (!isDeleting) onCancel() },
+        title = { Text(title) },
+        text = { Text(text) },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                enabled = !isDeleting,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) { Text(confirmLabel) }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel, enabled = !isDeleting) { Text("Anuluj") }
+        }
+    )
 }
 
 @Composable

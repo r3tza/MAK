@@ -181,7 +181,6 @@ fun MakApp(
                 todayViewModel = todayViewModel,
                 updateViewModel = updateViewModel,
                 navController = navController,
-                onOpenPlan = { openRoot(MakRoutes.Schedule) },
                 onOpenOccurrence = openOccurrenceById,
                 startSetup = startSetup
             )

@@ -37,6 +37,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakHelperText
@@ -518,27 +519,13 @@ private fun DeleteSemesterDialog(
     onConfirm: () -> Unit,
     onCancel: () -> Unit
 ) {
-    MakDialog(
+    MakConfirmDeletionDialog(
         title = "Usuń semestr",
-        description = "Usunięcie semestru usunie jego plan i dane. Tej operacji nie można cofnąć.",
-        onDismiss = onCancel
-    ) {
-        Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
-            MakSecondaryAction(
-                text = "Anuluj",
-                onClick = onCancel,
-                modifier = Modifier.weight(1f),
-                enabled = !isDeleting
-            )
-            MakSecondaryAction(
-                text = "Usuń",
-                onClick = onConfirm,
-                modifier = Modifier.weight(1f),
-                enabled = !isDeleting,
-                destructive = true
-            )
-        }
-    }
+        text = "Usunięcie semestru usunie jego plan i dane. Tej operacji nie można cofnąć.",
+        isDeleting = isDeleting,
+        onConfirm = onConfirm,
+        onCancel = onCancel
+    )
 }
 
 @Composable

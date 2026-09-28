@@ -322,7 +322,10 @@ class ScheduleViewModelTest {
         viewModel.selectCalendarDay("2026-10-05")
         advanceUntilIdle()
 
-        assertEquals("poniedziałek, 5 października 2026", viewModel.schedule.value.calendarSelectedDayLabel)
+        assertEquals("Poniedziałek, 5 października 2026", viewModel.schedule.value.calendarSelectedDayLabel)
+        // The description read by TalkBack keeps the formatter's lowercase weekday.
+        val cell = viewModel.schedule.value.calendarDays.first { it.id == "2026-10-05" }
+        assertTrue(cell.accessibilityLabel.startsWith("poniedziałek, 5 października 2026"))
     }
 
     @Test

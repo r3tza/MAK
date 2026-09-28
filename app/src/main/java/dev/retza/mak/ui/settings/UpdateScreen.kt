@@ -40,7 +40,7 @@ fun UpdateScreen(
     ) {
         val update = state.availableUpdate
         if (update == null) {
-            AboutSection("Nowa wersja") {
+            AboutGroup("Nowa wersja", spacing = MakSpacing.md) {
                 NoUpdateMessage(state)
                 MakSecondaryAction(
                     text = "Sprawdź teraz",
@@ -89,7 +89,7 @@ private fun AvailableUpdate(
     onInstall: () -> Unit,
     onGrantPermission: () -> Unit
 ) {
-    AboutSection("Dostępna wersja ${update.versionName}") {
+    AboutGroup("Dostępna wersja ${update.versionName}", spacing = MakSpacing.md) {
         Text("Zainstalowana: ${state.installedVersionName}", color = MaterialTheme.colorScheme.onSurfaceVariant)
         Text("Zmiany", style = MaterialTheme.typography.titleSmall, fontWeight = FontWeight.Bold)
         val notes = releaseNoteLines(update.notes)

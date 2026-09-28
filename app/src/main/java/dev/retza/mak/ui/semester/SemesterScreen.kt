@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +38,7 @@ import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakColorDot
+import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakField
@@ -223,7 +223,9 @@ fun SemesterScreen(
                 }
                 SemesterNavigationRow(
                     title = "Kierunki",
-                    count = state.courseItems.size,
+                    countLabel = state.courseItems.size.let {
+                        "$it ${polishPlural(it, "kierunek", "kierunki", "kierunków")}"
+                    },
                     onClick = onOpenCourses
                 )
                 HorizontalDivider(
@@ -232,7 +234,9 @@ fun SemesterScreen(
                 )
                 SemesterNavigationRow(
                     title = "Korekty tygodni",
-                    count = state.overrideCount,
+                    countLabel = state.overrideCount.let {
+                        "$it ${polishPlural(it, "korekta", "korekty", "korekt")}"
+                    },
                     onClick = onOpenOverrides
                 )
                 if (state.calendars.size > 1) {
@@ -242,7 +246,9 @@ fun SemesterScreen(
                     )
                     SemesterNavigationRow(
                         title = "Kalendarze",
-                        count = state.calendars.size,
+                        countLabel = state.calendars.size.let {
+                            "$it ${polishPlural(it, "kalendarz", "kalendarze", "kalendarzy")}"
+                        },
                         onClick = onOpenCalendars
                     )
                 }
@@ -256,7 +262,7 @@ fun SemesterScreen(
 @Composable
 private fun SemesterNavigationRow(
     title: String,
-    count: Int,
+    countLabel: String,
     onClick: () -> Unit
 ) {
     Row(
@@ -273,15 +279,10 @@ private fun SemesterNavigationRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.semantics { heading() }
+                fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = when (title) {
-                    "Kierunki" -> "$count ${polishPlural(count, "kierunek", "kierunki", "kierunków")}"
-                    "Korekty tygodni" -> "$count ${polishPlural(count, "korekta", "korekty", "korekt")}"
-                    else -> "$count ${polishPlural(count, "kalendarz", "kalendarze", "kalendarzy")}"
-                },
+                text = countLabel,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
@@ -340,7 +341,7 @@ fun SemesterWeekOverridesScreen(
     modifier: Modifier = Modifier
 ) {
     state.pendingOverrideDeletion?.let { override ->
-        ConfirmDeletionDialog(
+        MakConfirmDeletionDialog(
             title = "Usunąć korektę tygodnia?",
             text = "Korekta tygodnia od ${override.weekStartDate.asLongDate()} zostanie usunięta. " +
                 "Rytm A/B wróci do automatycznego wyliczenia.",
@@ -392,7 +393,7 @@ fun SemesterCalendarsScreen(
     modifier: Modifier = Modifier
 ) {
     state.pendingCalendarDeletion?.let { calendar ->
-        ConfirmDeletionDialog(
+        MakConfirmDeletionDialog(
             title = "Usunąć kalendarz?",
             text = "Kalendarz ${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()} " +
                 "nie jest używany przez żaden kierunek i zostanie usunięty razem ze swoimi korektami.",
@@ -457,7 +458,10 @@ private fun CalendarCard(
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("${calendar.startDate} - ${calendar.endDate}", fontWeight = FontWeight.SemiBold)
+                Text(
+                    "${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()}",
+                    fontWeight = FontWeight.SemiBold
+                )
                 Text(
                     text = "Pierwszy tydzień: ${calendar.firstWeek.name}",
                     style = MaterialTheme.typography.bodySmall,
@@ -681,37 +685,12 @@ private fun CourseDeletionDialog(
     onConfirm: () -> Unit,
     onCancel: () -> Unit
 ) {
-    ConfirmDeletionDialog(
+    MakConfirmDeletionDialog(
         title = "Usunąć kierunek z semestru?",
         text = courseDeletionMessage(deletion),
         isDeleting = isDeleting,
         onConfirm = onConfirm,
         onCancel = onCancel
-    )
-}
-
-@Composable
-private fun ConfirmDeletionDialog(
-    title: String,
-    text: String,
-    isDeleting: Boolean,
-    onConfirm: () -> Unit,
-    onCancel: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = { if (!isDeleting) onCancel() },
-        title = { Text(title) },
-        text = { Text(text) },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                enabled = !isDeleting,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) { Text("Usuń") }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel, enabled = !isDeleting) { Text("Anuluj") }
-        }
     )
 }
 
@@ -887,15 +866,15 @@ private fun WeekOverrideForm(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
         ) {
-            MakPrimaryAction(
-                text = if (state.isEditing) "Zapisz zmiany" else "Dodaj korektę",
-                onClick = onSave,
-                modifier = Modifier.weight(1f),
-                enabled = !state.isSaving
-            )
             MakSecondaryAction(
                 text = "Anuluj",
                 onClick = onCancel,
+                modifier = Modifier.weight(1f),
+                enabled = !state.isSaving
+            )
+            MakPrimaryAction(
+                text = if (state.isEditing) "Zapisz zmiany" else "Dodaj korektę",
+                onClick = onSave,
                 modifier = Modifier.weight(1f),
                 enabled = !state.isSaving
             )

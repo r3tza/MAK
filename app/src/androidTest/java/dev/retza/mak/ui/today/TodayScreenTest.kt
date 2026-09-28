@@ -54,7 +54,6 @@ class TodayScreenTest {
                                 weekLabel = "Tydzień A",
                                 hasActiveSemester = true
                             ),
-                            onOpenPlan = {},
                             onOpenClass = {},
                             onStartSetup = {},
                             onRetry = {},
@@ -99,7 +98,6 @@ class TodayScreenTest {
                                 classCount = 1,
                                 items = listOf(item)
                             ),
-                            onOpenPlan = {},
                             onOpenClass = {},
                             onStartSetup = {},
                             onRetry = {}
@@ -160,7 +158,6 @@ class TodayScreenTest {
                             classCount = 1,
                             items = listOf(item)
                         ),
-                        onOpenPlan = {},
                         onOpenClass = { openedClassId = it },
                         onStartSetup = {},
                         onRetry = {}
@@ -202,7 +199,6 @@ class TodayScreenTest {
                             weekLabel = "Tydzień A",
                             hasActiveSemester = true
                         ),
-                        onOpenPlan = {},
                         onOpenClass = {},
                         onStartSetup = {},
                         onRetry = {}
@@ -232,7 +228,6 @@ class TodayScreenTest {
                             weekLabel = "",
                             emptyMessage = "Nie masz jeszcze aktywnego semestru."
                         ),
-                        onOpenPlan = {},
                         onOpenClass = {},
                         onStartSetup = {},
                         onRetry = {},
@@ -276,7 +271,6 @@ class TodayScreenTest {
                             classCount = 1,
                             items = listOf(item)
                         ),
-                        onOpenPlan = {},
                         onOpenClass = {},
                         onStartSetup = {},
                         onRetry = {}

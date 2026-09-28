@@ -161,6 +161,32 @@ class ScheduleScreenTest {
     }
 
     @Test
+    fun cardSeparatorSpansContentHeightWithLongNameAndBothNotesAt320Dp() {
+        val name = "Bardzo długa nazwa zajęć z analizą danych i statystyką"
+        val item = ClassItemUi(
+            id = "class-divider",
+            name = name,
+            type = "Wykład",
+            courseName = "Informatyka",
+            startTime = "09:00",
+            endTime = "10:30",
+            classNote = "Przynieś projekt",
+            occurrenceNote = "Kolokwium"
+        )
+        setScheduleContent(state = scheduleState(items = listOf(item)))
+
+        val card = composeTestRule.onNode(hasContentDescription(name, substring = true))
+            .fetchSemanticsNode().boundsInRoot
+        val divider = composeTestRule.onNodeWithTag("class-card-divider", useUnmergedTree = true)
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        val density = composeTestRule.density.density
+        assertEquals("separator is 1 dp wide", density, divider.width, 1f)
+        // The card pads its content by 12 dp at the top and at the bottom.
+        assertEquals("separator spans the content height", card.height - 24f * density, divider.height, 1f)
+    }
+
+    @Test
     fun longCourseNameKeepsClassTypeVisibleAt320Dp() {
         val item = ClassItemUi(
             id = "class-long-course",
@@ -312,6 +338,8 @@ class ScheduleScreenTest {
             .fetchSemanticsNode().boundsInRoot
         val number = composeTestRule.onNodeWithTag("calendar-day-number-$selectedDate", useUnmergedTree = true)
             .fetchSemanticsNode().boundsInRoot
+        val neighbourCell = composeTestRule.onNodeWithTag("calendar-day-2026-09-02", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
         val markers = markerIds.map { markerId ->
             composeTestRule.onNodeWithTag("calendar-marker-$markerId", useUnmergedTree = true)
                 .assertIsDisplayed()
@@ -322,7 +350,11 @@ class ScheduleScreenTest {
             .assertIsDisplayed()
             .fetchSemanticsNode().boundsInRoot
 
-        assertEquals(48f * composeTestRule.density.density, cell.height, 1f)
+        assertTrue(
+            "cell is at least 48 dp tall",
+            cell.height >= 48f * composeTestRule.density.density - 1f
+        )
+        assertEquals("days of one week have equal height", cell.height, neighbourCell.height, 1f)
         markers.forEach { marker ->
             assertTrue("marker has a nonzero size", marker.width > 0f && marker.height > 0f)
             assertEquals(6f * composeTestRule.density.density, marker.height, 1f)
@@ -335,6 +367,47 @@ class ScheduleScreenTest {
         assertTrue("plus is inside the day cell", overflow.left >= cell.left && overflow.right <= cell.right)
         assertTrue("plus is inside the day cell", overflow.top >= cell.top && overflow.bottom <= cell.bottom)
         assertTrue("plus stays below the enlarged day number", overflow.top >= number.bottom)
+    }
+
+    @Test
+    fun calendarCellsKeepFortyEightDpAndEqualWeekHeightAtFontScaleOneAt320Dp() {
+        val selectedDate = "2026-09-01"
+        setScheduleContent(
+            width = 320.dp,
+            state = scheduleState().copy(
+                view = ScheduleView.Calendar,
+                calendarMonthLabel = "wrzesień 2026",
+                calendarDays = (1..7).map { day ->
+                    val date = "2026-09-${day.toString().padStart(2, '0')}"
+                    CalendarDayUi(
+                        id = date,
+                        dayLabel = day.toString(),
+                        accessibilityLabel = "Dzień $day",
+                        isSelected = date == selectedDate,
+                        markers = if (date == selectedDate) {
+                            listOf(
+                                CalendarMarkerUi(
+                                    id = "marker-1-$date",
+                                    contentDescription = "Zajęcia testowe",
+                                    colorHex = "#137B71"
+                                )
+                            )
+                        } else {
+                            emptyList()
+                        }
+                    )
+                },
+                calendarSelectedDayLabel = "Wtorek, 1 września 2026",
+                calendarSelectedDayCountLabel = "1 zajęcie"
+            )
+        )
+
+        val cell = composeTestRule.onNodeWithTag("calendar-day-$selectedDate", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        val neighbourCell = composeTestRule.onNodeWithTag("calendar-day-2026-09-02", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        assertEquals(48f * composeTestRule.density.density, cell.height, 1f)
+        assertEquals(cell.height, neighbourCell.height, 1f)
     }
 
     private fun setScheduleContent(

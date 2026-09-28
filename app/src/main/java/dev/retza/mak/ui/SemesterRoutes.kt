@@ -83,7 +83,15 @@ internal fun NavGraphBuilder.semesterRoutes(
                 }
             },
             onEditCourse = { assignmentId ->
-                semesterId?.let { navController.navigate(semesterCourseEditRoute(it, assignmentId)) }
+                semesterId?.let {
+                    // Explicit entry starts from the saved values, so an abandoned draft does not return.
+                    semesterViewModel.semester.value.courseItems
+                        .firstOrNull { item -> item.assignmentId == assignmentId }
+                        ?.programId
+                        ?.toLongOrNull()
+                        ?.let(studyProgramsViewModel::openEdit)
+                    navController.navigate(semesterCourseEditRoute(it, assignmentId))
+                }
             },
             onDeleteCourse = semesterViewModel::requestCourseDeletion,
             onConfirmCourseDeletion = semesterViewModel::confirmCourseDeletion,
