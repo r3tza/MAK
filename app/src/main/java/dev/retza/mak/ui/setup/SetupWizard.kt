@@ -69,7 +69,6 @@ fun SetupWizard(
     }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
         MakSectionHeader(
-            eyebrow = "Konfiguracja początkowa",
             title = title,
             subtitle = subtitle
         )

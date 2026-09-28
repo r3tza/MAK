@@ -50,7 +50,6 @@ fun TodayScreen(
 ) {
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
         MakSectionHeader(
-            eyebrow = "Dzisiaj",
             title = state.dateLabel,
             subtitle = listOfNotNull(
                 state.weekLabel.takeIf { it.isNotBlank() },
@@ -73,7 +72,7 @@ fun TodayScreen(
                 modifier = Modifier.padding(bottom = MakSpacing.xl)
             )
         }
-        MakRowTitle(title = "Zajęcia", meta = "Od najwcześniejszego")
+        MakRowTitle(title = "Zajęcia")
         when (state.status) {
             ScreenStatus.Ready -> if (state.items.isEmpty()) {
                 Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {

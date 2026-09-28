@@ -123,22 +123,12 @@ fun MakScreenContent(
 
 @Composable
 fun MakSectionHeader(
-    eyebrow: String?,
     title: String,
     modifier: Modifier = Modifier,
     subtitle: String? = null
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
-        if (eyebrow != null) {
-            Text(
-                text = eyebrow.uppercase(),
-                style = MaterialTheme.typography.labelSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = MakSpacing.xs, top = MakSpacing.xs, bottom = MakSpacing.sm)
-            )
-        } else {
-            Spacer(modifier = Modifier.height(MakSpacing.sm))
-        }
+        Spacer(modifier = Modifier.height(MakSpacing.sm))
         Text(
             text = title,
             style = MaterialTheme.typography.headlineSmall,
@@ -426,7 +416,7 @@ private val SummaryOk = Color(0xFF7FE0A6)
 @Composable
 fun MakRowTitle(
     title: String,
-    meta: String,
+    meta: String? = null,
     modifier: Modifier = Modifier
 ) {
     // Without room for both, the meta text moves under the title instead of breaking a word.
@@ -439,13 +429,15 @@ fun MakRowTitle(
         itemVerticalAlignment = Alignment.CenterVertically
     ) {
         Text(title, style = MaterialTheme.typography.titleMedium)
-        Text(
-            meta,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis
-        )
+        meta?.takeIf(String::isNotEmpty)?.let {
+            Text(
+                it,
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis
+            )
+        }
     }
 }
 
@@ -770,7 +762,8 @@ fun MakSecondaryAction(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    destructive: Boolean = false
+    destructive: Boolean = false,
+    icon: ImageVector? = null
 ) {
     val content = if (destructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     OutlinedButton(
@@ -785,7 +778,22 @@ fun MakSecondaryAction(
         ),
         contentPadding = PaddingValues(horizontal = 12.dp)
     ) {
-        Text(text, fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center)
+        if (icon == null) {
+            Text(text, fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center)
+        } else {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = content,
+                    modifier = Modifier.size(18.dp)
+                )
+                Text(text, fontWeight = FontWeight.Bold, fontSize = 14.sp, textAlign = TextAlign.Center)
+            }
+        }
     }
 }
 

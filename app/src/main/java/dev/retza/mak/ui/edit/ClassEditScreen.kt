@@ -126,7 +126,6 @@ fun ClassEditScreen(
     var showMoreOptions by remember { mutableStateOf(false) }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
         MakSectionHeader(
-            eyebrow = null,
             title = state.title,
             subtitle = "Najpierw termin i przedmiot. Resztę możesz uzupełnić później."
         )
