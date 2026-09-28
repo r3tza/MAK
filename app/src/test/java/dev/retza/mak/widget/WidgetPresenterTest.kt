@@ -117,14 +117,11 @@ class WidgetPresenterTest {
         assertEquals(listOf("first:$date", "second:$date", "third:$date"), state.items.map { it.id })
         assertEquals(2, state.collisionCount)
         assertEquals(
-            listOf(
-                WidgetConflictUi("09:30-10:00", "second"),
-                WidgetConflictUi("10:15-10:45", "third")
-            ),
-            state.items[0].conflicts
+            "Kolizje: 09:30-10:00, 10:15-10:45",
+            state.items[0].conflictLabel
         )
-        assertEquals(listOf(WidgetConflictUi("09:30-10:00", "first")), state.items[1].conflicts)
-        assertEquals(listOf(WidgetConflictUi("10:15-10:45", "first")), state.items[2].conflicts)
+        assertEquals("Kolizja 09:30-10:00", state.items[1].conflictLabel)
+        assertEquals("Kolizja 10:15-10:45", state.items[2].conflictLabel)
         assertEquals("Stała notatka", state.items[0].classNote)
         assertNull(state.items[0].occurrenceNote)
         assertEquals("Sala niepodana", state.items[0].roomLabel)
@@ -245,7 +242,7 @@ class WidgetPresenterTest {
             courseColor = "#137B71",
             roomLabel = "Sala 101",
             teacherName = "Jan Kowalski",
-            conflicts = emptyList(),
+            conflictLabel = null,
             classNote = "Przeczytać rozdział"
         )
 
@@ -278,7 +275,7 @@ class WidgetPresenterTest {
             courseColor = "#137B71",
             roomLabel = "Sala 101",
             teacherName = "Jan Kowalski",
-            conflicts = listOf(WidgetConflictUi("09:30-10:00", "Inny przedmiot")),
+            conflictLabel = "Kolizja 09:30-10:00",
             classNote = "Przeczytać rozdział"
         )
 

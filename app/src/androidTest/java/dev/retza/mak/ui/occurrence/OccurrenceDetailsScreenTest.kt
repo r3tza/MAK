@@ -91,6 +91,7 @@ class OccurrenceDetailsScreenTest {
         composeTestRule.onNodeWithText("Notatka wspólna").assertIsDisplayed()
         composeTestRule.onNodeWithText("Notatka tylko dla tego terminu").assertIsDisplayed()
         composeTestRule.onNodeWithText("Zmień termin").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Zaplanowane").assertCountEquals(0)
         composeTestRule.onNodeWithText("Zamknij").assertDoesNotExist()
         composeTestRule.onAllNodesWithText("TERMIN").assertCountEquals(0)
         composeTestRule.onAllNodesWithText("Pokaż notatkę").assertCountEquals(0)
@@ -107,6 +108,38 @@ class OccurrenceDetailsScreenTest {
         composeTestRule.onNodeWithText("Do").assertIsDisplayed()
         composeTestRule.onNodeWithText("Anuluj").assertIsDisplayed()
         composeTestRule.onNodeWithText("Zapisz").assertIsDisplayed()
+    }
+
+    @Test
+    fun oneOffAndCollisionDetailsShowOnlyMeaningfulStatusAndPartner() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                OccurrenceDetailsScreen(
+                    state = OccurrenceDetailsUiState(
+                        subjectName = "Laboratorium",
+                        dateLabel = "Poniedziałek, 21 września",
+                        currentDate = "2026-09-21",
+                        startTime = "09:00",
+                        endTime = "10:00",
+                        status = OccurrenceStatusUi.OneOff,
+                        conflictLabel = "Kolizja 09:30-10:00",
+                        conflictWith = "Matematyka"
+                    ),
+                    onDeleteBaseClass = {}, onDismissDeleteConfirmation = {},
+                    onOpenOccurrenceEdit = {}, onDismissOccurrenceEdit = {},
+                    onSaveOccurrenceChange = {}, onRestoreOccurrence = {},
+                    onOccurrenceNoteDraftChanged = {}, onSharedNoteDraftChanged = {},
+                    onTargetDateDraftChanged = {}, onStartTimeDraftChanged = {},
+                    onEndTimeDraftChanged = {}, onRoomDraftChanged = {},
+                    onSaveSharedNote = {}, onSaveOccurrenceNote = {}
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Jednorazowe").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Kolizja 09:30-10:00").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Z: Matematyka").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Zaplanowane").assertCountEquals(0)
     }
 
     @Test

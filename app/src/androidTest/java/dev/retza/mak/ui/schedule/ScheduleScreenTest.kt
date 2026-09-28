@@ -102,7 +102,7 @@ class ScheduleScreenTest {
     }
 
     @Test
-    fun cardExposesNeutralConflictRangeAndOrderedDetailsInDarkThemeAt390Dp() {
+    fun cardExposesNeutralConflictRangePartnerAndOrderedDetailsInDarkThemeAt390Dp() {
         val item = ClassItemUi(
             id = "class-1",
             name = "Bardzo długa nazwa zajęć z analizą danych",
@@ -114,7 +114,8 @@ class ScheduleScreenTest {
             building = "Budynek A",
             teacherName = "Bardzo długi tytuł i nazwisko prowadzącego",
             classNote = "Przynieś projekt",
-            conflictLabel = "Kolizja 09:30-10:00"
+            conflictLabel = "Kolizja 09:30-10:00",
+            conflictWith = "Matematyka"
         )
         setScheduleContent(
             width = 390.dp,
@@ -126,10 +127,11 @@ class ScheduleScreenTest {
         composeTestRule.onNodeWithText("L204, Budynek A, Bardzo długi tytuł i nazwisko prowadzącego")
             .assertIsDisplayed()
         composeTestRule.onNodeWithText("Kolizja 09:30-10:00").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Z: Matematyka").assertIsDisplayed()
         composeTestRule.onNodeWithText("Przynieś projekt").assertIsDisplayed()
         composeTestRule
             .onNodeWithContentDescription(
-                "09:00-10:30, Bardzo długa nazwa zajęć z analizą danych, Informatyka, Laboratorium, L204, Budynek A, Bardzo długi tytuł i nazwisko prowadzącego, Kolizja 09:30-10:00, Notatka do zajęć: Przynieś projekt"
+                "09:00-10:30, Bardzo długa nazwa zajęć z analizą danych, Informatyka, Laboratorium, L204, Budynek A, Bardzo długi tytuł i nazwisko prowadzącego, Kolizja 09:30-10:00, z: Matematyka, Notatka do zajęć: Przynieś projekt"
             )
             .assertIsDisplayed()
     }

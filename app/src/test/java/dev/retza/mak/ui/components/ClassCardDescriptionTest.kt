@@ -47,4 +47,12 @@ class ClassCardDescriptionTest {
         assertEquals("08:00-09:30, Analiza, A1", description)
         assertFalse(description.contains(", ,"))
     }
+
+    @Test
+    fun partnerNameIsNotReadWithoutConflictLabel() {
+        val description = classCardDescription(base.copy(conflictWith = "Matematyka"))
+
+        assertFalse(description.contains("Matematyka"))
+        assertFalse(description.contains("z:"))
+    }
 }

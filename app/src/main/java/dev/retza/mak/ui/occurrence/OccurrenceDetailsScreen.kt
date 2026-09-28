@@ -35,6 +35,7 @@ import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakFactRow
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakHelperText
+import dev.retza.mak.ui.components.MakConflictNote
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakScreenContent
@@ -75,6 +76,13 @@ fun OccurrenceDetailsScreen(
         ) {
             OccurrenceHeader(title = state.subjectName.ifBlank { state.title })
             StatusSummary(state)
+            state.conflictLabel?.let { label ->
+                MakConflictNote(
+                    label = label,
+                    partners = state.conflictWith,
+                    modifier = Modifier.padding(bottom = MakSpacing.md)
+                )
+            }
             Facts(state)
             NotesBlock(
                 state = state,
@@ -242,6 +250,8 @@ private fun OccurrenceHeader(title: String) {
 
 @Composable
 private fun StatusSummary(state: OccurrenceDetailsUiState) {
+    val changeLines = state.changeLines()
+    if (state.status == OccurrenceStatusUi.Scheduled && changeLines.isEmpty()) return
     val (icon, tint) = when (state.status) {
         OccurrenceStatusUi.Cancelled -> Icons.Outlined.EventBusy to MaterialTheme.colorScheme.error
         OccurrenceStatusUi.Changed, OccurrenceStatusUi.Moved -> Icons.Outlined.EditCalendar to modifiedTint()
@@ -267,7 +277,7 @@ private fun StatusSummary(state: OccurrenceDetailsUiState) {
                 style = MaterialTheme.typography.bodyMedium
             )
         }
-        state.changeLines().forEach { line ->
+        changeLines.forEach { line ->
             Text(
                 text = line,
                 style = MaterialTheme.typography.bodyMedium,
@@ -327,7 +337,7 @@ private fun NotesBlock(
         MakHelperText("Wspólna dla każdego wystąpienia tych zajęć.")
         FieldError(state.sharedNoteError?.let(::FieldErrorUi))
         if (state.canSaveSharedNote || state.isSavingSharedNote) {
-            MakPrimaryAction(
+            MakSecondaryAction(
                 text = "Zapisz notatkę do zajęć",
                 onClick = onSaveSharedNote,
                 enabled = !state.isSavingSharedNote
@@ -344,7 +354,7 @@ private fun NotesBlock(
         MakHelperText("Dotyczy tylko tego terminu i przechodzi z nim po przeniesieniu.")
         FieldError(state.occurrenceNoteError?.let(::FieldErrorUi))
         if (state.canSaveOccurrenceNote || state.isSavingOccurrenceNote) {
-            MakPrimaryAction(
+            MakSecondaryAction(
                 text = "Zapisz notatkę do terminu",
                 onClick = onSaveOccurrenceNote,
                 enabled = !state.isSavingOccurrenceNote

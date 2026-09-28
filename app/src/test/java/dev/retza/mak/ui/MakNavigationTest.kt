@@ -16,6 +16,13 @@ class MakNavigationTest {
     }
 
     @Test
+    fun editorRouteUsesDynamicEditorTitle() {
+        assertEquals("Dodaj zajęcia", titleForRoute(MakRoutes.Edit, "Dodaj zajęcia"))
+        assertEquals("Edytuj zajęcia", titleForRoute(MakRoutes.Edit, "Edytuj zajęcia"))
+        assertEquals("Plan", titleForRoute(MakRoutes.Schedule, "Dodaj zajęcia"))
+    }
+
+    @Test
     fun semesterSubRoutesKeepTheirSemesterIdWhenRestored() {
         val courses = semesterCoursesRoute("9")
         val overrides = semesterOverridesRoute("9")

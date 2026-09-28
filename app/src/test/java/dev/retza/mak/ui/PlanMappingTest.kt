@@ -47,11 +47,13 @@ class PlanMappingTest {
 
     @Test
     fun conflictDoesNotOverrideNotes() {
-        val ui = occurrence(classNote = "Wspólna", occurrenceBody = "Na dziś").toUi("Kolizja 09:30-10:00")
+        val ui = occurrence(classNote = "Wspólna", occurrenceBody = "Na dziś")
+            .toUi("Kolizja 09:30-10:00", "Matematyka")
 
         assertEquals("Wspólna", ui.classNote)
         assertEquals("Na dziś", ui.occurrenceNote)
         assertEquals("Kolizja 09:30-10:00", ui.conflictLabel)
+        assertEquals("Matematyka", ui.conflictWith)
     }
 
     private fun occurrence(

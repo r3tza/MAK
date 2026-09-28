@@ -14,6 +14,7 @@ import androidx.glance.ImageProvider
 import androidx.glance.Image
 import androidx.glance.ColorFilter
 import androidx.glance.GlanceTheme
+import androidx.glance.color.ColorProvider
 import androidx.glance.LocalSize
 import androidx.glance.appwidget.GlanceAppWidget
 import androidx.glance.appwidget.GlanceAppWidgetReceiver
@@ -42,6 +43,10 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import dev.retza.mak.MainActivity
+import dev.retza.mak.ui.theme.MakOrange
+import dev.retza.mak.ui.theme.MakOrangeDark
+import dev.retza.mak.ui.theme.MakOrangeSoft
+import dev.retza.mak.ui.theme.MakOrangeSoftDark
 import org.koin.core.context.GlobalContext
 
 class MakTodayWidget : GlanceAppWidget() {
@@ -306,7 +311,7 @@ private fun WidgetOccurrenceRow(
                 )
             }
             if (widgetShouldShowConflict(item, layoutPolicy)) {
-                WidgetConflictAlert(item, layoutPolicy)
+                WidgetConflictAlert(item)
             }
             if (widgetShouldShowNotes(item, layoutPolicy)) {
                 item.classNote?.let {
@@ -333,15 +338,11 @@ private fun WidgetOccurrenceRow(
 }
 
 @Composable
-private fun WidgetConflictAlert(
-    item: WidgetOccurrenceUi,
-    layoutPolicy: WidgetLayoutPolicy
-) {
-    val firstConflict = item.conflicts.first()
+private fun WidgetConflictAlert(item: WidgetOccurrenceUi) {
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
-            .background(GlanceTheme.colors.errorContainer)
+            .background(ColorProvider(day = MakOrangeSoft, night = MakOrangeSoftDark))
             .cornerRadius(4.dp)
             .padding(4.dp),
         verticalAlignment = Alignment.Top
@@ -349,42 +350,20 @@ private fun WidgetConflictAlert(
         Box(
             modifier = GlanceModifier
                 .width(3.dp)
-                .height(30.dp)
-                .background(GlanceTheme.colors.error)
+                .height(14.dp)
+                .background(ColorProvider(day = MakOrange, night = MakOrangeDark))
         ) {}
         Spacer(GlanceModifier.width(4.dp))
-        Column(modifier = GlanceModifier.defaultWeight()) {
-            Text(
-                text = "Kolizja ${firstConflict.timeRange}",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onErrorContainer,
-                    fontSize = 11.sp,
-                    fontWeight = FontWeight.Bold
-                ),
-                maxLines = 1
-            )
-            Text(
-                text = "Z: ${truncateWidgetText(
-                    firstConflict.otherOccurrenceName,
-                    layoutPolicy.metadataCharacterLimit
-                )}",
-                style = TextStyle(
-                    color = GlanceTheme.colors.onErrorContainer,
-                    fontSize = 11.sp
-                ),
-                maxLines = 1
-            )
-            if (item.conflicts.size > 1) {
-                Text(
-                    text = "Jeszcze ${widgetConflictCountLabel(item.conflicts.size - 1)}",
-                    style = TextStyle(
-                        color = GlanceTheme.colors.onErrorContainer,
-                        fontSize = 11.sp
-                    ),
-                    maxLines = 1
-                )
-            }
-        }
+        Text(
+            text = item.conflictLabel.orEmpty(),
+            modifier = GlanceModifier.defaultWeight(),
+            style = TextStyle(
+                color = ColorProvider(day = MakOrange, night = MakOrangeDark),
+                fontSize = 11.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            maxLines = 1
+        )
     }
 }
 

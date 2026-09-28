@@ -94,7 +94,7 @@ internal fun widgetShouldShowConflict(
 ): Boolean = when (policy.statusMode) {
     WidgetStatusMode.ConflictOnly,
     WidgetStatusMode.Primary,
-    WidgetStatusMode.All -> item.conflicts.isNotEmpty()
+    WidgetStatusMode.All -> item.conflictLabel != null
 }
 
 internal fun widgetShouldShowNotes(
@@ -102,7 +102,7 @@ internal fun widgetShouldShowNotes(
     policy: WidgetLayoutPolicy
 ): Boolean = (item.classNote != null || item.occurrenceNote != null) && when (policy.statusMode) {
     WidgetStatusMode.ConflictOnly -> false
-    WidgetStatusMode.Primary -> item.conflicts.isEmpty()
+    WidgetStatusMode.Primary -> item.conflictLabel == null
     WidgetStatusMode.All -> true
 }
 

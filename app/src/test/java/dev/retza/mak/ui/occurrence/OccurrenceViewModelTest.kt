@@ -54,6 +54,25 @@ class OccurrenceViewModelTest {
     }
 
     @Test
+    fun detailsShowCollisionRangeAndPartnerOnEffectiveDate() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.classes += repository.classes.single().copy(
+            id = 2L,
+            name = "Matematyka",
+            startTime = java.time.LocalTime.of(10, 0),
+            endTime = java.time.LocalTime.of(11, 0)
+        )
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        assertEquals("Kolizja 10:00-10:30", viewModel.details.value.conflictLabel)
+        assertEquals("Matematyka", viewModel.details.value.conflictWith)
+    }
+
+    @Test
     fun openingDeletedClassShowsNotFound() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = occurrenceViewModel(repository)

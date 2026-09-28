@@ -28,7 +28,7 @@ class MakTodayWidgetCompositionTest {
                     courseColor = "#137B71",
                     roomLabel = "Sala 101",
                     teacherName = "Jan Kowalski",
-                    conflicts = emptyList()
+                    conflictLabel = null
                 )
             }
             val state = WidgetUiState.Ready(
@@ -95,7 +95,7 @@ class MakTodayWidgetCompositionTest {
                 courseColor = "#137B71",
                 roomLabel = "Sala 101",
                 teacherName = null,
-                conflicts = emptyList(),
+                conflictLabel = null,
                 classNote = "Przeczytać rozdział 4",
                 occurrenceNote = "Przynieść materiały",
                 phase = WidgetOccurrencePhase.Current
@@ -126,5 +126,36 @@ class MakTodayWidgetCompositionTest {
             onNode(hasText("Przynieść materiały")).assertExists()
             onNode(hasText("Teraz")).assertExists()
             onNode(hasText("Tydzień A,")).assertExists()
+        }
+
+    @Test
+    fun collisionAlertIsOneRangeLineWithoutPartnerNames() =
+        runGlanceAppWidgetUnitTest {
+            setAppWidgetSize(DpSize(240.dp, 340.dp))
+            val item = WidgetOccurrenceUi(
+                id = "collision:2026-09-21",
+                startTime = "09:00",
+                endTime = "11:00",
+                name = "Programowanie",
+                courseName = "Informatyka",
+                courseColor = "#137B71",
+                roomLabel = "Sala 101",
+                teacherName = null,
+                conflictLabel = "Kolizje: 09:30-10:00, 10:15-10:45"
+            )
+            val action = actionStartActivity(Intent("dev.retza.mak.OPEN_TODAY"))
+
+            provideComposable {
+                WidgetOccurrenceList(
+                    items = listOf(item),
+                    openTodayAction = action,
+                    layoutPolicy = widgetLayoutPolicy(widgetLayoutMode(240.dp, 340.dp)),
+                    modifier = GlanceModifier.fillMaxWidth()
+                )
+            }
+
+            onNode(hasText("Kolizje: 09:30-10:00, 10:15-10:45")).assertExists()
+            onAllNodes(hasText("Z:")).assertCountEquals(0)
+            onAllNodes(hasText("Jeszcze")).assertCountEquals(0)
         }
 }

@@ -25,7 +25,7 @@ import dev.retza.mak.ui.components.MakFieldPair
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
-import dev.retza.mak.ui.components.MakSectionHeader
+import dev.retza.mak.ui.components.MakScreenIntro
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
@@ -125,10 +125,7 @@ fun ClassEditScreen(
     }
     var showMoreOptions by remember { mutableStateOf(false) }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
-        MakSectionHeader(
-            title = state.title,
-            subtitle = "Najpierw termin i przedmiot. Resztę możesz uzupełnić później."
-        )
+        MakScreenIntro("Najpierw termin i przedmiot. Resztę możesz uzupełnić później.")
         when (state.status) {
             ScreenStatus.Ready -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 MakField(

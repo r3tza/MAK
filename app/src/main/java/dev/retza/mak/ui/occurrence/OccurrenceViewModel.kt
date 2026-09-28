@@ -10,6 +10,8 @@ import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.toRecord
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
+import dev.retza.mak.domain.collisionLabels
+import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.OccurrenceEditDecision
 import dev.retza.mak.domain.OccurrenceEditResult
@@ -17,6 +19,7 @@ import dev.retza.mak.domain.OccurrenceSlot
 import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.decideOccurrenceEdit
 import dev.retza.mak.domain.noteContentChanged
+import dev.retza.mak.domain.occurrenceId
 import dev.retza.mak.domain.occurrenceRoomOverride
 import dev.retza.mak.ui.calendarForAssignment
 import dev.retza.mak.ui.components.FieldErrorUi
@@ -421,6 +424,8 @@ class OccurrenceViewModel(
             it.classId == classId.toString() && it.originalDate == originalDate
         }
         val effectiveDate = change?.targetDate ?: originalDate
+        val plan = activePlan(data, effectiveDate)
+        val id = occurrenceId(classId.toString(), originalDate)
         val effectiveStart = change?.startTime ?: base.startTime
         val effectiveEnd = change?.endTime ?: base.endTime
         val effectiveRoom = (change?.room ?: base.room)?.trim()?.ifEmpty { null }
@@ -448,7 +453,9 @@ class OccurrenceViewModel(
             building = change?.building ?: base.building,
             teacherName = change?.teacherName ?: base.teacherName,
             groupName = base.group,
-            weekLabel = activePlan(data, effectiveDate).schedule.weekType?.let { "Tydzień ${it.name}" },
+            weekLabel = plan.schedule.weekType?.let { "Tydzień ${it.name}" },
+            conflictLabel = collisionLabels(plan.collisions)[id],
+            conflictWith = collisionPartnerNames(plan.collisions)[id],
             originalDateLabel = change?.originalDate?.toString(),
             targetDateLabel = change?.targetDate?.toString(),
             status = status,
