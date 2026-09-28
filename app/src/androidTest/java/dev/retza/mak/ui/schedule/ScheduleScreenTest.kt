@@ -3,7 +3,12 @@ package dev.retza.mak.ui.schedule
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.SemanticsActions
+import androidx.compose.ui.semantics.getOrNull
+import androidx.compose.ui.text.TextLayoutResult
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.hasContentDescription
 import androidx.compose.ui.test.hasText
@@ -15,11 +20,16 @@ import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.components.ClassItemUi
+import dev.retza.mak.ui.components.CalendarDayUi
+import dev.retza.mak.ui.components.CalendarLegendUi
 import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -40,7 +50,7 @@ class ScheduleScreenTest {
             )
         )
 
-        composeTestRule.onNodeWithText("Plan zajęć").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Plan zajęć").assertDoesNotExist()
         composeTestRule.onNodeWithText("1 wrz - 7 wrz").assertIsDisplayed()
         composeTestRule.onNodeWithText("Tydzień A").assertIsDisplayed()
         composeTestRule.onNodeWithText("Korekta ręczna").assertIsDisplayed()
@@ -63,33 +73,30 @@ class ScheduleScreenTest {
             )
         )
 
-        composeTestRule.onNodeWithText("Wybierz kierunek w filtrach, aby zmienić tydzień.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Wybierz kierunek w polu „Kierunek”, aby zmienić tydzień.").assertIsDisplayed()
         composeTestRule.onNodeWithText("Zmień").assertDoesNotExist()
         composeTestRule.onAllNodes(hasClickAction() and hasText("Różne tygodnie", substring = true))
             .assertCountEquals(0)
     }
 
     @Test
-    fun collapsedFilterNamesSelectedCourseAndExpandsAt320Dp() {
+    fun filterShowsSelectedCourseInFieldAt320Dp() {
+        val selectedCourse = "Bardzo długa nazwa kierunku Informatyka i analiza danych"
         setScheduleContent(
             state = scheduleState(
                 filters = listOf(
                     ScheduleFilterUi("all", "Wszystkie", false),
                     ScheduleFilterUi(
                         "course",
-                        "Bardzo długa nazwa kierunku Informatyka i analiza danych",
+                        selectedCourse,
                         true
                     )
                 )
             )
         )
 
-        composeTestRule
-            .onNodeWithText("Filtry: Bardzo długa nazwa kierunku Informatyka i analiza danych")
-            .assertIsDisplayed()
-        composeTestRule.onNodeWithText("Filtry: Bardzo długa nazwa kierunku Informatyka i analiza danych")
-            .performClick()
         composeTestRule.onNodeWithText("Kierunek").assertIsDisplayed()
+        composeTestRule.onNodeWithText(selectedCourse).assertIsDisplayed()
     }
 
     @Test
@@ -183,7 +190,6 @@ class ScheduleScreenTest {
             onFilterSelected = { selected = it }
         )
 
-        composeTestRule.onNodeWithText("Filtry").performClick()
         composeTestRule.onNodeWithText("Kierunek").performClick()
         composeTestRule.onNodeWithText("Informatyka (1)").assertIsDisplayed()
         composeTestRule.onNodeWithText("Informatyka (2)").performClick()
@@ -191,33 +197,111 @@ class ScheduleScreenTest {
         assertEquals("b", selected)
     }
 
+    @Test
+    fun calendarShowsCancelledToggleAndOneOffActionWithoutExpansionAt320Dp() {
+        var addedOneOff = 0
+        var showCancelled: Boolean? = null
+        setScheduleContent(
+            state = scheduleState().copy(
+                view = ScheduleView.Calendar,
+                calendarMonthLabel = "wrzesień 2026",
+                calendarDays = listOf(
+                    CalendarDayUi(
+                        id = "2026-09-01",
+                        dayLabel = "1",
+                        accessibilityLabel = "Wtorek, 1 września 2026",
+                        isSelected = true
+                    )
+                ),
+                calendarLegend = listOf(
+                    CalendarLegendUi(label = "Informatyka"),
+                    CalendarLegendUi(label = "Zmieniony termin", isChange = true)
+                ),
+                calendarSelectedDayLabel = "Wtorek, 1 września 2026",
+                calendarSelectedDayCountLabel = "0 zajęć"
+            ),
+            onAddOneOff = { addedOneOff += 1 },
+            onShowCancelledChanged = { showCancelled = it }
+        )
+
+        composeTestRule.onNodeWithText("Pokaż odwołane").assertIsDisplayed().performClick()
+        val addAction = composeTestRule.onNodeWithText("Dodaj termin jednorazowy").assertIsDisplayed()
+        val emptyState = composeTestRule.onNodeWithText("Brak zajęć w tym dniu.").assertIsDisplayed()
+        assertTrue(addAction.fetchSemanticsNode().boundsInRoot.top < emptyState.fetchSemanticsNode().boundsInRoot.top)
+        addAction.performClick()
+        composeTestRule.onNodeWithContentDescription("opcje kalendarza").assertDoesNotExist()
+        assertEquals(1, addedOneOff)
+        assertEquals(true, showCancelled)
+    }
+
+    @Test
+    fun calendarOneOffActionWrapsWithoutClippingAtFontScaleTwoAt320Dp() {
+        setScheduleContent(
+            state = scheduleState().copy(
+                view = ScheduleView.Calendar,
+                calendarMonthLabel = "wrzesień 2026",
+                calendarDays = listOf(
+                    CalendarDayUi(
+                        id = "2026-09-01",
+                        dayLabel = "1",
+                        accessibilityLabel = "Wtorek, 1 września 2026",
+                        isSelected = true
+                    )
+                ),
+                calendarLegend = listOf(CalendarLegendUi(label = "Informatyka")),
+                calendarSelectedDayLabel = "Wtorek, 1 września 2026",
+                calendarSelectedDayCountLabel = "0 zajęć"
+            ),
+            fontScale = 2f,
+            height = 1400.dp
+        )
+
+        val node = composeTestRule.onNodeWithText(
+            "Dodaj termin jednorazowy",
+            useUnmergedTree = true
+        ).fetchSemanticsNode()
+        val results = mutableListOf<TextLayoutResult>()
+        node.config.getOrNull(SemanticsActions.GetTextLayoutResult)?.action?.invoke(results)
+        val layout = results.single()
+        assertTrue(layout.lineCount > 1)
+        assertFalse((0 until layout.lineCount).any(layout::isLineEllipsized))
+    }
+
     private fun setScheduleContent(
         width: androidx.compose.ui.unit.Dp = 320.dp,
         darkTheme: Boolean = false,
         state: ScheduleUiState,
-        onFilterSelected: (String) -> Unit = {}
+        onFilterSelected: (String) -> Unit = {},
+        onAddOneOff: () -> Unit = {},
+        onShowCancelledChanged: (Boolean) -> Unit = {},
+        fontScale: Float? = null,
+        height: androidx.compose.ui.unit.Dp = 720.dp
     ) {
         composeTestRule.setContent {
-            MAKTheme(darkTheme = darkTheme, dynamicColor = false) {
-                Box(modifier = Modifier.width(width).height(720.dp)) {
-                    ScheduleScreen(
-                        state = state,
-                        onViewChanged = {},
-                        onPreviousWeek = {},
-                        onNextWeek = {},
-                        onDaySelected = {},
-                        onFilterSelected = onFilterSelected,
-                        onPreviousMonth = {},
-                        onNextMonth = {},
-                        onCalendarDaySelected = {},
-                        onShowCancelledChanged = {},
-                        onAddOneOff = {},
-                        onOpenClass = {},
-                        onSaveWeekCorrection = { _, _ -> },
-                        onClearWeekCorrection = {},
-                        onStartSetup = {},
-                        onRetry = {}
-                    )
+            val density = LocalDensity.current
+            val testDensity = fontScale?.let { Density(density.density, it) } ?: density
+            CompositionLocalProvider(LocalDensity provides testDensity) {
+                MAKTheme(darkTheme = darkTheme, dynamicColor = false) {
+                    Box(modifier = Modifier.width(width).height(height)) {
+                        ScheduleScreen(
+                            state = state,
+                            onViewChanged = {},
+                            onPreviousWeek = {},
+                            onNextWeek = {},
+                            onDaySelected = {},
+                            onFilterSelected = onFilterSelected,
+                            onPreviousMonth = {},
+                            onNextMonth = {},
+                            onCalendarDaySelected = {},
+                            onShowCancelledChanged = onShowCancelledChanged,
+                            onAddOneOff = onAddOneOff,
+                            onOpenClass = {},
+                            onSaveWeekCorrection = { _, _ -> },
+                            onClearWeekCorrection = {},
+                            onStartSetup = {},
+                            onRetry = {}
+                        )
+                    }
                 }
             }
         }

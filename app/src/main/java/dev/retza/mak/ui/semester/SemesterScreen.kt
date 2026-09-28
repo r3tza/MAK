@@ -584,7 +584,7 @@ private fun CoursesBlock(
     ) {
         MakRowTitle(
             title = "Przypisane kierunki",
-            meta = if (state.courseItems.isEmpty()) "Brak" else "${state.courseItems.size}"
+            meta = if (state.courseItems.isEmpty()) null else "${state.courseItems.size}"
         )
         if (state.courseItems.isEmpty()) {
             MakEmptyState("Dodaj kierunek, aby przypisać zajęcia.")

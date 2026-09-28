@@ -23,9 +23,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Edit
-import androidx.compose.material.icons.outlined.ExpandLess
-import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material.icons.outlined.FilterList
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -61,7 +59,6 @@ import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDot
 import dev.retza.mak.ui.components.MakEmptyState
-import dev.retza.mak.ui.components.MakExpandableSection
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakRoundButton
 import dev.retza.mak.ui.components.MakRowTitle
@@ -149,19 +146,13 @@ fun ScheduleScreen(
 ) {
     var showWeekDialog by remember { mutableStateOf(false) }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
-        Text(
-            text = "Plan zajęć",
-            style = MaterialTheme.typography.headlineSmall,
-            color = MaterialTheme.colorScheme.onBackground,
-            modifier = Modifier.padding(start = MakSpacing.xs, top = MakSpacing.xs, bottom = MakSpacing.sm)
-        )
         MakViewSwitch(
             firstLabel = "Lista",
             secondLabel = "Kalendarz",
             firstSelected = state.view == ScheduleView.List,
             onFirst = { onViewChanged(ScheduleView.List) },
             onSecond = { onViewChanged(ScheduleView.Calendar) },
-            modifier = Modifier.padding(bottom = 4.dp)
+            modifier = Modifier.padding(top = MakSpacing.sm, bottom = MakSpacing.xs)
         )
         when {
             state.status != ScreenStatus.Ready ->
@@ -379,7 +370,7 @@ private fun WeekTypeBadge(
         }
         if (!canCorrect) {
             Text(
-                text = "Wybierz kierunek w filtrach, aby zmienić tydzień.",
+                text = "Wybierz kierunek w polu „Kierunek”, aby zmienić tydzień.",
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(bottom = MakSpacing.xs)
@@ -393,80 +384,17 @@ private fun ScheduleFilterSection(
     filters: List<ScheduleFilterUi>,
     onFilterSelected: (String) -> Unit
 ) {
-    var expanded by remember { mutableStateOf(false) }
     val selectedFilter = filters.firstOrNull { it.isSelected } ?: filters.first()
     val labelById = filters.map { it.id }.zip(distinctLabels(filters.map { it.label })).toMap()
     val selectedLabel = labelById[selectedFilter.id].orEmpty()
-    val allSelected = selectedFilter.id == "all"
-    val headerLabel = if (allSelected) "Filtry" else "Filtry: $selectedLabel"
-    val stateLabel = if (expanded) "Rozwinięte" else "Zwinięte"
-    val shape = RoundedCornerShape(10.dp)
-    var focused by remember { mutableStateOf(false) }
-
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(bottom = MakSpacing.sm)
-    ) {
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .heightIn(min = 48.dp)
-                .clip(shape)
-                .border(
-                    width = 2.dp,
-                    color = if (focused) MaterialTheme.colorScheme.primary
-                    else MaterialTheme.colorScheme.outlineVariant,
-                    shape = shape
-                )
-                .background(MaterialTheme.colorScheme.surfaceVariant)
-                .onFocusChanged { focused = it.isFocused }
-                .clickable(
-                    role = Role.Button,
-                    onClick = { expanded = !expanded }
-                )
-                .semantics {
-                    contentDescription =
-                        "$headerLabel, wybór: $selectedLabel, $stateLabel"
-                }
-                .padding(horizontal = MakSpacing.md, vertical = MakSpacing.xs),
-            verticalAlignment = Alignment.CenterVertically,
-            horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
-        ) {
-            Icon(
-                imageVector = Icons.Outlined.FilterList,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-            Text(
-                text = headerLabel,
-                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                fontWeight = FontWeight.Bold,
-                fontSize = 14.sp,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                modifier = Modifier.weight(1f)
-            )
-            Icon(
-                imageVector = if (expanded) Icons.Outlined.ExpandLess else Icons.Outlined.ExpandMore,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-        if (expanded) {
-            MakSelectField(
-                label = "Kierunek",
-                value = selectedLabel,
-                options = filters,
-                onSelected = { filter ->
-                    onFilterSelected(filter.id)
-                    expanded = false
-                },
-                optionLabel = { labelById[it.id].orEmpty() },
-                modifier = Modifier.padding(top = MakSpacing.sm)
-            )
-        }
-    }
+    MakSelectField(
+        label = "Kierunek",
+        value = selectedLabel,
+        options = filters,
+        onSelected = { onFilterSelected(it.id) },
+        optionLabel = { labelById[it.id].orEmpty() },
+        modifier = Modifier.padding(bottom = MakSpacing.sm)
+    )
 }
 
 @Composable
@@ -477,7 +405,7 @@ private fun DaySelector(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(bottom = 17.dp),
+            .padding(bottom = MakSpacing.md),
         // No gaps: seven day cells need at least 40 dp each at a 320 dp screen width.
         horizontalArrangement = Arrangement.Start
     ) {
@@ -529,7 +457,6 @@ private fun CalendarView(
     onAddOneOff: () -> Unit,
     onOpenClass: (String) -> Unit
 ) {
-    var showCalendarOptions by remember { mutableStateOf(false) }
     Column {
         Row(
             modifier = Modifier
@@ -564,22 +491,21 @@ private fun CalendarView(
             }
         }
         CalendarLegend(state.calendarLegend)
-        MakExpandableSection(
-            label = "opcje kalendarza",
-            expanded = showCalendarOptions,
-            onExpandedChange = { showCalendarOptions = it },
-            modifier = Modifier.padding(bottom = 14.dp)
-        ) {
-            MakCheckbox(
-                label = "Pokaż odwołane",
-                checked = state.showCancelled,
-                onCheckedChange = onShowCancelledChanged
-            )
-            MakSecondaryAction(text = "Dodaj jednorazowe", onClick = onAddOneOff)
-        }
+        MakCheckbox(
+            label = "Pokaż odwołane",
+            checked = state.showCancelled,
+            onCheckedChange = onShowCancelledChanged,
+            modifier = Modifier.padding(bottom = MakSpacing.md)
+        )
         MakRowTitle(title = state.calendarSelectedDayLabel, meta = state.calendarSelectedDayCountLabel)
+        MakSecondaryAction(
+            text = "Dodaj termin jednorazowy",
+            icon = Icons.Outlined.Add,
+            onClick = onAddOneOff,
+            modifier = Modifier.padding(bottom = MakSpacing.md)
+        )
         if (state.calendarItems.isEmpty()) {
-            MakEmptyState("Brak zajęć. Możesz dodać termin jednorazowy.")
+            MakEmptyState("Brak zajęć w tym dniu.")
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 state.calendarItems.forEach { item ->

@@ -60,7 +60,6 @@ class SetupWizardTest {
             }
         }
 
-        composeTestRule.onNodeWithText("KONFIGURACJA POCZĄTKOWA").assertIsDisplayed()
         composeTestRule.onNodeWithText("Nazwa semestru").assertIsDisplayed()
         composeTestRule.onNodeWithText("A", substring = false).performClick()
         composeTestRule.onNodeWithText("B").performClick()

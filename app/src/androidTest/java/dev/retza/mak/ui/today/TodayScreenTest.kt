@@ -123,9 +123,9 @@ class TodayScreenTest {
         assertTrue(time.size.width >= floor(time.multiParagraph.maxIntrinsicWidth).toInt())
         // Labels stay on one line instead of breaking inside a word; at this scale an ellipsis
         // is allowed, the full label stays in the content description.
-        for (text in listOf("Okienka", "Od najwcześniejszego")) {
-            assertEquals("$text lines", 1, layoutOf(text).lineCount)
-        }
+        composeTestRule.onNodeWithText("Okienka").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Od najwcześniejszego").assertDoesNotExist()
+        assertEquals("Okienka lines", 1, layoutOf("Okienka").lineCount)
         composeTestRule.onNodeWithContentDescription("Okienka: 0").assertExists()
     }
 
@@ -169,7 +169,8 @@ class TodayScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("DZISIAJ").assertIsDisplayed()
+        composeTestRule.onNodeWithText("DZISIAJ").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Od najwcześniejszego").assertDoesNotExist()
         composeTestRule.onNode(hasText("Twój plan na dziś") and isHeading()).assertIsDisplayed()
         composeTestRule.onNodeWithText("Dziś bez zajęć").assertDoesNotExist()
         // "Zajęcia" is both a summary label and the list title; check the summary column.
