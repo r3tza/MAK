@@ -17,6 +17,7 @@ import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onAllNodesWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
@@ -25,6 +26,7 @@ import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
+import dev.retza.mak.ui.components.CalendarMarkerUi
 import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
@@ -265,6 +267,72 @@ class ScheduleScreenTest {
         val layout = results.single()
         assertTrue(layout.lineCount > 1)
         assertFalse((0 until layout.lineCount).any(layout::isLineEllipsized))
+    }
+
+    @Test
+    fun calendarMarkersAndOverflowStayVisibleBelowGrowingDayNumberAtFontScaleTwoAt320Dp() {
+        val selectedDate = "2026-09-01"
+        val markerIds = (1..4).map { "marker-$it-$selectedDate" }
+        setScheduleContent(
+            width = 320.dp,
+            state = scheduleState().copy(
+                view = ScheduleView.Calendar,
+                calendarMonthLabel = "wrzesień 2026",
+                calendarDays = (1..7).map { day ->
+                    val date = "2026-09-${day.toString().padStart(2, '0')}"
+                    CalendarDayUi(
+                        id = date,
+                        dayLabel = day.toString(),
+                        accessibilityLabel = "Dzień $day",
+                        isSelected = date == selectedDate,
+                        markers = if (date == selectedDate) {
+                            markerIds.map { markerId ->
+                                CalendarMarkerUi(
+                                    id = markerId,
+                                    contentDescription = "Zajęcia testowe",
+                                    colorHex = "#137B71"
+                                )
+                            }
+                        } else {
+                            emptyList()
+                        },
+                        hasMoreMarkers = date == selectedDate
+                    )
+                },
+                calendarSelectedDayLabel = "Wtorek, 1 września 2026",
+                calendarSelectedDayCountLabel = "1 zajęcie"
+            ),
+            fontScale = 2f,
+            height = 1400.dp
+        )
+
+        val cell = composeTestRule.onNodeWithTag("calendar-day-$selectedDate", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        val number = composeTestRule.onNodeWithTag("calendar-day-number-$selectedDate", useUnmergedTree = true)
+            .fetchSemanticsNode().boundsInRoot
+        val markers = markerIds.map { markerId ->
+            composeTestRule.onNodeWithTag("calendar-marker-$markerId", useUnmergedTree = true)
+                .assertIsDisplayed()
+                .fetchSemanticsNode().boundsInRoot
+        }
+        val overflow = composeTestRule
+            .onNodeWithTag("calendar-marker-overflow-$selectedDate", useUnmergedTree = true)
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+
+        assertEquals(48f * composeTestRule.density.density, cell.height, 1f)
+        markers.forEach { marker ->
+            assertTrue("marker has a nonzero size", marker.width > 0f && marker.height > 0f)
+            assertEquals(6f * composeTestRule.density.density, marker.height, 1f)
+            assertTrue("marker is inside the day cell", marker.left >= cell.left && marker.right <= cell.right)
+            assertTrue("marker is inside the day cell", marker.top >= cell.top && marker.bottom <= cell.bottom)
+            assertTrue("marker stays below the enlarged day number", marker.top >= number.bottom)
+        }
+        assertEquals(8f * composeTestRule.density.density, overflow.width, 1f)
+        assertEquals(8f * composeTestRule.density.density, overflow.height, 1f)
+        assertTrue("plus is inside the day cell", overflow.left >= cell.left && overflow.right <= cell.right)
+        assertTrue("plus is inside the day cell", overflow.top >= cell.top && overflow.bottom <= cell.bottom)
+        assertTrue("plus stays below the enlarged day number", overflow.top >= number.bottom)
     }
 
     private fun setScheduleContent(

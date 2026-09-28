@@ -326,6 +326,76 @@ class ScheduleViewModelTest {
     }
 
     @Test
+    fun calendarShowsThreeMarkersWithoutOverflow() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        addMondayClasses(repository, 3)
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        val day = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }
+        assertEquals(3, day.markers.size)
+        assertFalse(day.hasMoreMarkers)
+    }
+
+    @Test
+    fun calendarShowsFiveMarkersWithoutOverflow() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        addMondayClasses(repository, 5)
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        val day = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }
+        assertEquals(5, day.markers.size)
+        assertFalse(day.hasMoreMarkers)
+    }
+
+    @Test
+    fun calendarShowsFourMarkersAndOverflowAtSixClasses() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        addMondayClasses(repository, 6)
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        val day = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }
+        assertEquals(4, day.markers.size)
+        assertTrue(day.hasMoreMarkers)
+    }
+
+    @Test
+    fun calendarMarksChangedOccurrencesAndLeavesRegularOnesFilled() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        addMondayClasses(repository, 2)
+        repository.occurrenceChanges += OccurrenceChangeEntity(
+            id = 1L,
+            semesterId = 1L,
+            classId = 1L,
+            originalDate = LocalDate.of(2026, 9, 21),
+            kind = dev.retza.mak.data.entity.OccurrenceChangeKind.MODIFIED,
+            targetDate = LocalDate.of(2026, 9, 21),
+            newStartTime = LocalTime.of(10, 0),
+            newEndTime = LocalTime.of(11, 30),
+            newRoom = null,
+            newBuilding = null,
+            newTeacherName = null,
+            newNote = null
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        val markers = viewModel.schedule.value.calendarDays
+            .single { it.id == "2026-09-21" }
+            .markers
+        assertEquals(
+            mapOf("1:2026-09-21" to true, "2:2026-09-21" to false),
+            markers.associate { it.id to it.isChanged }
+        )
+    }
+
+    @Test
     fun openNewClassForSelectedCalendarDayEmitsEffectWithSelectedDate() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
@@ -375,6 +445,17 @@ class ScheduleViewModelTest {
         advanceUntilIdle()
 
         assertTrue(repository.weekOverrides.isEmpty())
+    }
+}
+
+private fun addMondayClasses(repository: FakeRepository, count: Int) {
+    (2..count).forEach { index ->
+        repository.classes += repository.classes.first().copy(
+            id = index.toLong(),
+            name = "Zajęcia $index",
+            startTime = LocalTime.of(8 + index, 0),
+            endTime = LocalTime.of(9 + index, 0)
+        )
     }
 }
 

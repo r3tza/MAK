@@ -43,14 +43,15 @@ data class CalendarDayUi(
     val isInCurrentMonth: Boolean = true,
     val isToday: Boolean = false,
     val isSelected: Boolean = false,
-    val markers: List<CalendarMarkerUi> = emptyList()
+    val markers: List<CalendarMarkerUi> = emptyList(),
+    val hasMoreMarkers: Boolean = false
 )
 
 @Immutable
 data class CalendarMarkerUi(
     val id: String,
     val contentDescription: String,
-    val colorToken: CalendarMarkerColor = CalendarMarkerColor.Primary,
+    val isChanged: Boolean = false,
     val colorHex: String? = null
 )
 
@@ -61,13 +62,6 @@ data class CalendarLegendUi(
     val colorHex: String? = null,
     val isChange: Boolean = false
 )
-
-enum class CalendarMarkerColor {
-    Primary,
-    Secondary,
-    Warning,
-    Error
-}
 
 @Immutable
 data class FieldErrorUi(

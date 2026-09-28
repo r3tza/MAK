@@ -4,6 +4,12 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-28: Angielskie nazwy i wspólne pull requesty dla małych zadań
+
+- Decyzja użytkownika: nazwy gałęzi i tytuły pull requestów są po angielsku, a opisy pull requestów mogą pozostać po polsku. Większe zadanie ma własny pull request. Kilka małych, powiązanych zadań należy łączyć w jeden pull request zamiast tworzyć osobny dla każdej drobnej zmiany.
+- Powód: spójne nazewnictwo repozytorium i mniej narzutu przy recenzowaniu niewielkich zmian.
+- Warunek: wspólny pull request ma jeden czytelny zakres, a każde zawarte zadanie zachowuje własny status, kryteria i odpowiednie testy.
+
 ## 2026-09-28: Gałąź i pull request dla każdego zadania
 
 - Decyzja użytkownika (wariant zaproponowany przez agenta): każde zadanie, także zmiana samej dokumentacji, powstaje na gałęzi `task/<ID>-<opis>` od `origin/main` i kończy się pull requestem do `main`. Agent sam wypycha gałąź i otwiera pull request, a scala go wyłącznie użytkownik przez squash. Workflow `checks.yml` uruchamia kontrolę dokumentacji i testy JVM na każdym pull requeście. Gałąź `main` ma ochronę: zmiany tylko przez pull request z zielonym `checks`, bez wyjątku dla administratora, bo agenci działają na poświadczeniach użytkownika.
@@ -130,11 +136,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: Repozytorium pozostaje prywatne podczas I-36 do I-40 i poprawek prezentacyjnych. Granice sieci, pobierania i instalacji są wstrzykiwalne, więc implementacja korzysta z fałszywych źródeł i lokalnych artefaktów. I-41 zaczyna się po jawnym potwierdzeniu gotowości: audyt historii, upublicznienie repozytorium, ręczna publikacja `v0.2.0` i `v0.2.1` oraz pełny odbiór O-07 na telefonie.
 - Powód: Logika i interfejs nie wymagają publicznego hostingu podczas tworzenia, a kod oraz wygląd mogą zostać dopracowane przed udostępnieniem repozytorium i aplikacji.
 - Odrzucone: Token prywatnego GitHuba w aplikacji; osobne publiczne repozytorium wydań; upublicznienie repozytorium przed poprawkami prezentacyjnymi.
-
-## 2026-09-27: Szkic przed publikacją wydania (I-35)
-
-- Fakty: Workflow wydań uruchamia testy, buduje i podpisuje APK oraz tworzy `update.json` po wypchnięciu taga. Bez dodatkowej bramki udany przebieg publikowałby wydanie od razu.
-- Decyzja: Workflow tworzy szkic GitHub Release. Użytkownik sprawdza APK, `update.json`, sumę SHA-256 i opis, a następnie ręcznie publikuje wydanie.
-- Powód: Test taga ma sprawdzić pełny proces i pliki bez publicznego udostępniania niedokończonej wersji. Ręczna publikacja pozostawia użytkownikowi ostatnią decyzję.
-- Odrzucone: Natychmiastowa publikacja po samym przejściu testów; publiczne wydanie testowe `v0.1.0` przed ukończeniem mechanizmu aktualizacji.
-- Weryfikacja: Tag testowy `v0.1.1` przeszedł testy JVM i zbudował podpisany APK w GitHub Actions. Szkic wydania zawierał `MAK-0.1.1.apk` i `update.json`, a zapisana suma SHA-256 była zgodna z pobranym APK.
