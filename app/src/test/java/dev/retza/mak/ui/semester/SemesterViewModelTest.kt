@@ -275,6 +275,8 @@ class SemesterViewModelTest {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
+        val effects = mutableListOf<SemesterEffect>()
+        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
         advanceUntilIdle()
         viewModel.open("1")
         advanceUntilIdle()
@@ -290,6 +292,41 @@ class SemesterViewModelTest {
             listOf(UiFeedback("Dodano kierunek", UiFeedbackKind.Success)),
             sink.published
         )
+        assertEquals(listOf(SemesterEffect.CourseAdded), effects)
+    }
+
+    @Test
+    fun resetCourseDraftClearsCourseForm() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.update {
+            it.copy(
+                courseNameDraft = "Nowy kierunek",
+                courseColorDraft = "#123456",
+                courseCalendarMode = CourseCalendarModeUi.SEPARATE,
+                courseCalendarId = "2",
+                courseProgramMode = CourseProgramModeUi.EXISTING,
+                courseProgramId = "2",
+                courseNameError = "Błąd formularza."
+            )
+        }
+        assertEquals("2", viewModel.semester.value.courseProgramId)
+        assertEquals("2", viewModel.semester.value.courseCalendarId)
+
+        viewModel.resetCourseDraft()
+
+        val state = viewModel.semester.value
+        assertEquals("", state.courseNameDraft)
+        assertEquals(DefaultCourseColor, state.courseColorDraft)
+        assertNull(state.courseNameError)
+        assertEquals(CourseProgramModeUi.NEW, state.courseProgramMode)
+        assertNull(state.courseProgramId)
+        assertEquals(CourseCalendarModeUi.SHARED, state.courseCalendarMode)
+        assertEquals(state.selectedCalendarId, state.courseCalendarId)
     }
 
     @Test

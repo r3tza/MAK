@@ -62,7 +62,8 @@ internal fun StudyProgramEffects(
         studyProgramsViewModel.effects.collect { effect ->
             when (effect) {
                 StudyProgramsEffect.CloseEditor -> {
-                    if (navController.currentBackStackEntry?.destination?.route == MakRoutes.StudyProgramEdit) {
+                    val route = navController.currentBackStackEntry?.destination?.route
+                    if (route == MakRoutes.StudyProgramEdit || route == MakRoutes.SemesterCourseEdit) {
                         navController.popBackStack()
                     }
                 }

@@ -30,6 +30,7 @@ import kotlinx.coroutines.launch
 
 sealed interface SemesterEffect {
     data object CloseConfiguration : SemesterEffect
+    data object CourseAdded : SemesterEffect
 }
 
 @KoinViewModel
@@ -224,6 +225,18 @@ class SemesterViewModel(
         it.copy(courseColorDraft = value)
     }
 
+    fun resetCourseDraft() = update { current ->
+        current.copy(
+            courseNameDraft = "",
+            courseColorDraft = DefaultCourseColor,
+            courseCalendarMode = CourseCalendarModeUi.SHARED,
+            courseCalendarId = current.selectedCalendarId,
+            courseProgramMode = CourseProgramModeUi.NEW,
+            courseProgramId = null,
+            courseNameError = null
+        )
+    }
+
     fun setCourseProgramMode(mode: CourseProgramModeUi) = update { current ->
         current.copy(
             courseProgramMode = mode,
@@ -324,6 +337,7 @@ class SemesterViewModel(
                     it.copy(courseNameDraft = "", courseProgramId = null, isAddingCourse = false)
                 }
                 feedbackSink.publish(UiFeedback("Dodano kierunek", UiFeedbackKind.Success))
+                effectsChannel.trySend(SemesterEffect.CourseAdded)
             } catch (error: CancellationException) {
                 throw error
             } catch (error: Exception) {

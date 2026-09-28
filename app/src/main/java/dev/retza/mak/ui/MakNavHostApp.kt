@@ -195,7 +195,8 @@ fun MakApp(
             occurrenceDetailsRoute(occurrenceViewModel = occurrenceViewModel)
             semesterRoutes(
                 semesterViewModel = semesterViewModel,
-                navController = navController
+                navController = navController,
+                studyProgramsViewModel = studyProgramsViewModel
             )
             settingsRoute(
                 settingsViewModel = settingsViewModel,
