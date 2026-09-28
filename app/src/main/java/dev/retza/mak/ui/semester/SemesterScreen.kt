@@ -863,15 +863,15 @@ private fun WeekOverrideForm(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
         ) {
-            MakPrimaryAction(
-                text = if (state.isEditing) "Zapisz zmiany" else "Dodaj korektę",
-                onClick = onSave,
-                modifier = Modifier.weight(1f),
-                enabled = !state.isSaving
-            )
             MakSecondaryAction(
                 text = "Anuluj",
                 onClick = onCancel,
+                modifier = Modifier.weight(1f),
+                enabled = !state.isSaving
+            )
+            MakPrimaryAction(
+                text = if (state.isEditing) "Zapisz zmiany" else "Dodaj korektę",
+                onClick = onSave,
                 modifier = Modifier.weight(1f),
                 enabled = !state.isSaving
             )
