@@ -35,7 +35,7 @@ To domyślny ekran otwierany po uruchomieniu aplikacji.
 Powinien pokazywać:
 
 - dzień tygodnia i pełną datę;
-- gradientową kartę podsumowania bez nagłówka, z trzema równymi kolumnami „Zajęcia”, „Kolizje” i „Okienka”; każda kolumna ma etykietę u góry i liczbę poniżej;
+- gradientową kartę podsumowania z nagłówkiem „Twój plan na dziś”, a w dniu bez zajęć „Dziś bez zajęć”, oraz trzema równymi kolumnami „Zajęcia”, „Kolizje” i „Okienka”; każda kolumna ma etykietę u góry i liczbę poniżej;
 - czerwony kolor liczby kolizji, gdy jest większa od zera, oraz zielony, gdy wynosi zero; pozostałe liczby zachowują neutralny kolor;
 - wszystkie aktywne zajęcia w kolejności od najwcześniejszego;
 - kolor kierunku;
@@ -44,7 +44,7 @@ Powinien pokazywać:
 
 Definicja okienka i reguła jego liczenia są w `DOMAIN.md`, sekcja „Okienka”. Użytkownik może zmienić próg globalnie w ustawieniach.
 
-`TodayViewModel` umieszcza liczbę zajęć, unikalnych kolizji i okienek w stanie widoku. Karta zachowuje obecny gradient i nie pokazuje ozdobnej ikony. Przy braku zajęć karta pokazuje trzy wartości równe zero, bez dodatkowego tekstu pod liczbami. Pionowe separatory między kolumnami są wyraźnie widoczne na gradiencie (biel 50% krycia, 40 dp wysokości). Układ musi zachować czytelność i semantykę przy szerokości 320 dp oraz w motywie jasnym i ciemnym. Etykiety kolumn są w pełni białe, mieszczą się w jednej linii i przy dużej czcionce zmniejszają się do 12 sp; przy skali 2,0 dopuszczalny jest wielokropek, a pełną etykietę czyta czytnik ekranu. Nad kartą są tylko data oraz wiersz z tygodniem A/B i semestrem, bez nadtytułu „Dzisiaj”, a tytuł listy „Zajęcia” nie ma podpisu o kolejności (decyzja z 2026-09-28: te elementy powtarzały zaznaczoną pozycję paska, datę i stały porządek).
+`TodayViewModel` umieszcza liczbę zajęć, unikalnych kolizji i okienek w stanie widoku. Karta zachowuje obecny gradient i nie pokazuje ozdobnej ikony. Nagłówek karty jest pogrubiony, większy od etykiet kolumn (17 sp), w pełni biały i oznaczony semantycznie jako nagłówek. Przy braku zajęć nagłówek brzmi „Dziś bez zajęć” zamiast „Twój plan na dziś”, a karta pokazuje trzy wartości równe zero, bez dodatkowego tekstu pod liczbami. Pionowe separatory między kolumnami są wyraźnie widoczne na gradiencie (biel 50% krycia, 40 dp wysokości). Układ musi zachować czytelność i semantykę przy szerokości 320 dp oraz w motywie jasnym i ciemnym. Etykiety kolumn są w pełni białe, mieszczą się w jednej linii i przy dużej czcionce zmniejszają się do 12 sp; przy skali 2,0 dopuszczalny jest wielokropek, a pełną etykietę czyta czytnik ekranu. Nad kartą są tylko data oraz wiersz z tygodniem A/B i semestrem, bez nadtytułu „Dzisiaj”, a tytuł listy „Zajęcia” nie ma podpisu o kolejności (decyzja z 2026-09-28: te elementy powtarzały zaznaczoną pozycję paska i stały porządek; nagłówek karty podsumowania zostaje).
 
 ### Struktura karty zajęć
 
@@ -229,10 +229,10 @@ Zmiana ma poprawić hierarchię i atrakcyjność widgetu bez zwiększania liczby
 3. Połączyć pionowy pasek kierunku z wizualną linią czasu. Dopuszczalna jest mała kropka przy początku przedziału i cienka linia w pełnym kolorze kierunku. Czas pozostaje w stałej kolumnie i nie może być ucinany.
 4. Nazwę kierunku oznaczyć jego kolorem, jako krótki kolorowy tekst. Nazwa zawsze towarzyszy kolorowi.
 5. Rozdzielić kierunek od lokalizacji. W pierwszym wierszu metadanych pokazać kierunek, w następnym najważniejszą lokalizację. Prowadzącego pokazywać tylko w wariantach, w których mieści się bez wypierania czasu, nazwy, kierunku, sali lub kolizji.
-6. Zmniejszyć wizualny ciężar kolizji przy zajęciach. Zamiast dużego czerwonego bloku użyć jasnego tła ostrzegawczego, małej ikony lub znacznika, tekstu „Kolizja {zakres}” oraz nazwy drugich zajęć w kolejnym wierszu. Zakres i druga nazwa muszą pozostać dostępne bez polegania na kolorze.
+6. Zmniejszyć wizualny ciężar kolizji przy zajęciach. Zamiast dużego bloku użyć jasnego czerwonego tła (`errorContainer`) z cienkim czerwonym paskiem albo małą ikoną, tekstu „Kolizja {zakres}” oraz nazwy drugich zajęć w kolejnym wierszu. Zakres i druga nazwa muszą pozostać dostępne bez polegania na kolorze.
 7. Separator renderować wyłącznie między zajęciami. Wewnątrz wpisu budować hierarchię przez odstępy, wagę tekstu i role kolorów.
 8. Dodać prezentacyjne stany „Teraz” i „Następne” jako pogrubiony tekst w kolorze akcentu, bez tła, tylko wtedy, gdy mieszczą się w danym progu rozmiaru. Zakończone zajęcia można lekko przygasić. Stan wynika z czasu odczytanego przez wstrzyknięty `Clock` podczas odświeżenia i nie może sugerować aktualizacji co minutę.
-9. Zachować role kolorów: kolor kierunku dla osi czasu i nazwy kierunku, czerwony dla kolizji, niebieski lub indygo dla tygodnia A/B oraz neutralny dla godzin, lokalizacji, prowadzącego i zakończonych zajęć. Kolor akcentu w wierszu mają tylko „Teraz” i „Następne”.
+9. Zachować role kolorów: kolor kierunku dla osi czasu i nazwy kierunku, czerwony dla kolizji (decyzja użytkownika z 2026-09-28; w aplikacji karta zajęć zachowuje pomarańczowy wiersz ostrzegawczy), niebieski lub indygo dla tygodnia A/B oraz neutralny dla godzin, lokalizacji, prowadzącego i zakończonych zajęć. Kolor akcentu w wierszu mają tylko „Teraz” i „Następne”.
 10. Dla każdego progu rozmiaru ustalić jawnie widoczne metadane, maksymalną liczbę linii oraz obecność stanów „Teraz” i „Następne”. Nie polegać na przypadkowym przycinaniu przez `RemoteViews`.
 
 Odbiór na launcherze obejmuje mały, pośredni i duży rozmiar, oba motywy, brak kolizji, jedną i kilka kolizji, długie nazwy, trwające, następne i zakończone zajęcia oraz brak danych. Porównać co najmniej dwa warianty odcieni nagłówka i intensywności tła kolizji.

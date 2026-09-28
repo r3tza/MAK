@@ -7,11 +7,11 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 ## 2026-09-28: Decyzje po audycie interfejsu i plan poprawek (I-54, I-56 do I-59)
 
 - Fakty: Audyt kodu i przegląd na emulatorze (motyw jasny i ciemny, 320 dp) wykazał: nadmiar elementów nad pierwszymi zajęciami na „Dzisiaj” i w „Planie”, filtr kierunku ukryty w sekcji rozwijanej, akcję „Dodaj jednorazowe” schowaną w zwiniętych opcjach, kolor błędu dla każdej zmiany w kalendarzu, brak nazwy drugich zajęć przy kolizji, stan „Zaplanowane” przy zwykłym terminie, powtórzony tytuł formularza zajęć, banery powtarzające tytuły i niespójne dialogi, kolejność przycisków oraz odmianę liczebników.
-- Decyzja użytkownika: nadtytuł „Dzisiaj”, nagłówek karty podsumowania i podpis „Od najwcześniejszego” znikają; „Anuluj” w formularzach zostaje i `ARCHITECTURE.md` odróżnia je od przycisku powrotu; pionowy separator karty zajęć zostaje w specyfikacji i trafia do kodu. Tytuł formularza zajęć i kolory kalendarza użytkownik zostawił do wyboru agenta.
+- Decyzja użytkownika: nadtytuł „Dzisiaj” i podpis „Od najwcześniejszego” znikają, a nagłówek karty podsumowania zostaje; kolizja w widgecie jest czerwona (tło `errorContainer` i czerwony pasek, jak w obecnym kodzie); „Anuluj” w formularzach zostaje i `ARCHITECTURE.md` odróżnia je od przycisku powrotu; pionowy separator karty zajęć zostaje w specyfikacji i trafia do kodu. Tytuł formularza zajęć i kolory kalendarza użytkownik zostawił do wyboru agenta.
 - Decyzja agenta: tytuł „Dodaj zajęcia” albo „Edytuj zajęcia” jest tylko w górnym pasku. W kalendarzu kolor znacznika oznacza wyłącznie kierunek (kontrast co najmniej 3:1 z tłem), a zmieniony lub przeniesiony termin ma pierścień zamiast kropki, bo kolor stanu mógłby się pokryć z kolorem wybranym dla kierunku. Filtr kierunku to jedno pole wyboru. Kolizja pokazuje nazwę drugich zajęć na karcie i w szczegółach, z jednej funkcji domenowej wspólnej z widgetem.
 - Plan: `PLAN.md` ma pięć kroków (I-56, I-57, I-58, I-54, I-59) opisanych dla słabszego agenta; listy kontrolne odbioru O-07, I-40 i I-49 przeniesiono do `QUEUE.md`.
 - Odrzucone: rozróżnianie stanów w kalendarzu kolorem (czerwony, fioletowy); trzy różne kształty dla odwołania, zmiany i terminu jednorazowego, bo przy znaczniku 8 dp są nieczytelne; usuwanie „Anuluj” z formularzy.
-- Otwarte: obramowanie przycisków ikon w górnym pasku, trzy style zaznaczenia na „Planie”, kolor kolizji w widgecie i jasność karty podsumowania w motywie ciemnym (`KNOWN_ISSUES.md`, pozycja 9).
+- Otwarte: obramowanie przycisków ikon w górnym pasku, trzy style zaznaczenia na „Planie” i jasność karty podsumowania w motywie ciemnym (`KNOWN_ISSUES.md`, pozycja 9).
 
 ## 2026-09-28: Reguły redukcji interfejsu i audyt (I-54, I-55)
 

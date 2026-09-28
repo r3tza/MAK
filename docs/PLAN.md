@@ -19,14 +19,14 @@ Kroki pochodzą z audytu interfejsu z 2026-09-28 (`LOG.md`). Odbiór na telefoni
 Cel: pierwsze zajęcia widać wyżej, a ekran nie powtarza informacji. Pliki: `ui/components/MakComponents.kt`, `ui/today/TodayScreen.kt`, `ui/schedule/ScheduleScreen.kt`, `ui/setup/SetupWizard.kt`, `ui/edit/ClassEditScreen.kt` i testy Compose tych ekranów (`androidTest/.../TodayScreenTest.kt`, `ScheduleScreenTest.kt`, `SetupWizardTest.kt`).
 
 1. `MakSectionHeader`: usuń parametr `eyebrow` i gałąź rysującą nadtytuł. Zostaw górny odstęp `Spacer(Modifier.height(MakSpacing.sm))`. W wywołaniach usuń argument: `TodayScreen` (`"Dzisiaj"`), `SetupWizard` (`"Konfiguracja początkowa"`), `ClassEditScreen` (`null`).
-2. `MakSummaryCard`: usuń parametr `title` i jego `Text` z semantyką nagłówka. Kolumny i ich opisy dla czytnika ekranu zostają bez zmian. W `TodayScreen` usuń argument `title`.
+2. `MakSummaryCard` zostaje bez zmian, razem z nagłówkiem „Twój plan na dziś” albo „Dziś bez zajęć” (decyzja użytkownika z 2026-09-28).
 3. `MakRowTitle`: zmień `meta: String` na `meta: String? = null`. Tekst `meta` rysuj tylko, gdy nie jest pusty. W `TodayScreen` wywołaj `MakRowTitle(title = "Zajęcia")`. Pozostałe wywołania zostają.
 4. `ScheduleScreen`: usuń `Text("Plan zajęć")`. `MakViewSwitch` dostaje `Modifier.padding(top = MakSpacing.sm, bottom = MakSpacing.xs)`.
 5. `ScheduleFilterSection`: usuń stan `expanded`, `focused`, wiersz z ikoną `FilterList` i strzałką. Funkcja rysuje tylko `MakSelectField(label = "Kierunek", value = selectedLabel, options = filters, onSelected = { onFilterSelected(it.id) }, optionLabel = { labelById[it.id].orEmpty() }, modifier = Modifier.padding(bottom = MakSpacing.sm))`. Zostaw `distinctLabels`. W `DaySelector` zmień dolny odstęp z 17 dp na `MakSpacing.md`. Usuń nieużywane importy.
 6. `WeekTypeBadge`: zmień tekst „Wybierz kierunek w filtrach, aby zmienić tydzień.” na „Wybierz kierunek w polu „Kierunek”, aby zmienić tydzień.”. Znajdź ten tekst w testach (`rg "w filtrach"`) i zaktualizuj.
 7. `CalendarView`: usuń `MakExpandableSection` „opcje kalendarza” i stan `showCalendarOptions`. Pod legendą umieść `MakCheckbox(label = "Pokaż odwołane", ...)` z `Modifier.padding(bottom = MakSpacing.md)`. Stan pusty dnia ma tekst „Brak zajęć w tym dniu.”. Pod listą kart albo pod stanem pustym dodaj `MakSecondaryAction(text = "Dodaj jednorazowe", onClick = onAddOneOff, modifier = Modifier.padding(top = MakSpacing.md))`.
 8. Testy Compose:
-   - `TodayScreenTest`: nie istnieją teksty „DZISIAJ”, „Twój plan na dziś”, „Dziś bez zajęć” i „Od najwcześniejszego”; etykiety „Zajęcia”, „Kolizje”, „Okienka” nadal są widoczne. Usuń asercje nagłówka karty (`isHeading`).
+   - `TodayScreenTest`: nie istnieją teksty „DZISIAJ” i „Od najwcześniejszego”; nagłówek karty i etykiety „Zajęcia”, „Kolizje”, „Okienka” nadal są widoczne. Asercje nagłówka karty (`isHeading`) zostają.
    - `ScheduleScreenTest`: „Plan zajęć” nie istnieje; filtr to pole „Kierunek” z długą nazwą kierunku jako wartością (zastąp testy klikające „Filtry”; wzór wyboru opcji weź z testu pola motywu w `SettingsScreenTest`); w widoku kalendarza „Pokaż odwołane” i „Dodaj jednorazowe” są dostępne bez rozwijania.
    - `SetupWizardTest`: usuń asercję „KONFIGURACJA POCZĄTKOWA”.
 
@@ -34,7 +34,7 @@ Przypadki brzegowe: brak aktywnego semestru na „Dzisiaj” (karta podsumowania
 
 Weryfikacja: `gradlew.bat test`, trzy klasy testów Compose, zrzuty „Dzisiaj”, „Plan” (lista i kalendarz) przy 320 dp w obu motywach. Przed zmianą przy 320 dp pierwsza karta listy „Plan” zaczynała się około 1310 px od góry zrzutu 840x1866.
 
-Kryterium zakończenia: brak nadtytułów, nagłówka karty podsumowania, podpisu „Od najwcześniejszego” i nagłówka „Plan zajęć”; filtr to jedno pole wyboru; opcje kalendarza nie są zwinięte; pierwsza karta listy „Plan” przy 320 dp zaczyna się co najmniej 70 px (około 27 dp) wyżej niż przed zmianą; testy przechodzą.
+Kryterium zakończenia: brak nadtytułów, podpisu „Od najwcześniejszego” i nagłówka „Plan zajęć”, a nagłówek karty podsumowania zostaje; filtr to jedno pole wyboru; opcje kalendarza nie są zwinięte; pierwsza karta listy „Plan” przy 320 dp zaczyna się co najmniej 70 px (około 27 dp) wyżej niż przed zmianą; testy przechodzą.
 
 ## 2. Oznacz zmiany w kalendarzu kształtem, nie kolorem (I-57)
 
