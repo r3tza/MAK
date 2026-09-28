@@ -5,7 +5,7 @@ Stan na 2026-09-28. Ten rejestr obejmuje otwarte problemy potwierdzone przegląd
 ## Otwarte problemy
 
 1. **Systemowa kopia zapasowa (I-14).** Aplikacja ma `allowBackup="true"`, a reguły kopii to szablony, więc baza i ustawienia mogą trafiać do kopii Google. Czeka na decyzję użytkownika.
-2. **Czekają na decyzję użytkownika (audyt z 2026-09-28).** (a) Przyciski ikon w górnym pasku mają obramowanie zgodnie z `ARCHITECTURE.md`; na zrzutach to najcięższy element paska, a standardowy pasek Material 3 ich nie ma. (b) Ekran „Plan” ma trzy style zaznaczenia: dzień z pełnym tłem akcentu, widok z białym tłem i ramką, pasek nawigacji z jasnym tłem. (c) Karta podsumowania „Dzisiaj” jest w motywie ciemnym najjaśniejszym elementem ekranu; nieużywany jaśniejszy wariant gradientu (`MakSummaryStartDark`, `MakSummaryEndDark`) usunięto w I-59 jako martwy kod, więc przyciemnienie wymaga porównania nowych wariantów.
+2. **Karta podsumowania w motywie ciemnym (I-63).** Karta „Dzisiaj” ma w obu motywach ten sam gradient, więc w motywie ciemnym jest najjaśniejszym elementem ekranu, a czerwona i zielona liczba mają na niej kontrast 3,3:1 i 3,5:1. Użytkownik przyjął 2026-09-29 ciemniejszy wariant (`FEATURES.md`, sekcja „Ekran Dzisiaj”); czeka na implementację. Pozostałe dwie kwestie z audytu (obramowane przyciski ikon w górnym pasku i trzy style zaznaczenia na „Planie”) użytkownik zamknął bez zmian (`LOG.md`, 2026-09-29).
 
 ## Wymagają odbioru na urządzeniu
 

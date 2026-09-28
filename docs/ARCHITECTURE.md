@@ -51,7 +51,7 @@ Interfejs ma szybko odpowiadać na pytania: jakie zajęcia są dziś, co wymaga 
 
 Każdy widoczny element musi przekazywać informację, budować hierarchię, wskazywać stan, wspierać nawigację, pomagać wykonać zadanie, dawać głębię lub rytm albo budować rozpoznawalność aplikacji. Jeśli dwa warianty są równie czytelne i użyteczne, wybieramy prostszy.
 
-Zaakceptowane elementy wyglądu nie podlegają redukcji bez nowej decyzji użytkownika: gradientowa karta podsumowania „Dzisiaj” z nagłówkiem, znak maku i animacja startu, cienie karty zajęć i zaznaczonej opcji przełącznika widoku, pionowy i poziome separatory karty zajęć oraz kolory kierunków. Przegląd redukcyjny ich nie zgłasza.
+Zaakceptowane elementy wyglądu nie podlegają redukcji bez nowej decyzji użytkownika: gradientowa karta podsumowania „Dzisiaj” z nagłówkiem (w motywie ciemnym z ciemniejszym gradientem, I-63), znak maku i animacja startu, cienie karty zajęć i zaznaczonej opcji przełącznika widoku, pionowy i poziome separatory karty zajęć oraz kolory kierunków. Przegląd redukcyjny ich nie zgłasza.
 
 Hierarchię budujemy najpierw typografią, odstępami, wyrównaniem i kontrastem tekstu. Kontener, obramowanie, kolor lub ikona są kolejnym środkiem, gdy sama struktura nie wystarcza. Karta oznacza rzeczywisty obiekt albo grupę, która potrzebuje wspólnej granicy. Nie zamykamy każdej sekcji w osobnej karcie.
 

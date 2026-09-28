@@ -4,6 +4,12 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-29: Decyzje po makietach audytu interfejsu (I-63)
+
+- Decyzja użytkownika po przeglądzie makiet w artefakcie „MAK: audyt interfejsu, przed i po”: karta podsumowania „Dzisiaj” dostaje w motywie ciemnym ciemniejszy gradient `#2C3F94` do `#1C2A6A` z krawędzią 1 dp w bieli o kryciu 8% (I-63, `FEATURES.md`, sekcja „Ekran Dzisiaj”). Przyciski ikon w górnym pasku zachowują obramowanie, a przełącznik widoku na „Planie” zachowuje obecny wygląd z cieniem.
+- Powód: w motywie ciemnym karta była najjaśniejszym elementem ekranu, a czerwona i zielona liczba miały na niej kontrast 3,3:1 i 3,5:1; nowy wariant daje 5,5:1 i 5,8:1. Usunięcie ramek w pasku było zmianą estetyczną, która tworzyłaby dwa style przycisków ikon, a zmiana przełącznika nie poprawiała kontrastu stanu zaznaczenia.
+- Odrzucone: przyciski ikon bez ramek w górnym pasku; przełącznik widoku z jasnym tłem akcentu i znacznikiem wyboru zamiast cienia.
+
 ## 2026-09-29: Kolejność akcji w formularzu
 
 - Decyzja użytkownika: w formularzu z akcjami w jednym wierszu „Anuluj” stoi przed akcją zapisu, a akcja zapisu jest na końcu wiersza; gdy akcje stoją jedna pod drugą, akcja zapisu jest na górze, a „Anuluj” pod nią. Reguła jest w `ARCHITECTURE.md`, sekcja „Stały język wizualny”.
@@ -128,9 +134,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Częste akcje są dostępne bez wchodzenia na ekran opisu, a główne ustawienia nie rozwijają bloków pobierania i błędów.
 - Odrzucone: Dialog pobierania otwierany z ustawień, link do kodu źródłowego i sekcja licencji na ekranie „O aplikacji”.
 - Weryfikacja: testy JVM, lint i 95 testów urządzenia przechodzą; zrzuty ustawień w obu motywach i „O aplikacji” przy 320 dp na emulatorze. Wariant debug ma osobny pakiet, więc testy urządzenia działają obok wydania o `versionCode` 200.
-
-## 2026-09-27: Implementacja aktualizacji w aplikacji (I-36 do I-40)
-
-- Fakty: Repozytorium i wydania pozostają prywatne, więc produkcyjny adres GitHub zwróci błąd do czasu I-41.
-- Zrealizowane: ręczne i automatyczne sprawdzanie, ekran „O aplikacji” z changelogiem trzech wersji, pobieranie i weryfikacja APK, instalacja przez `PackageInstaller`, zgoda systemowa oraz baner na „Dzisiaj”. Automatyczne sprawdzanie jest domyślnie wyłączone i działa najwyżej raz na 24 godziny.
-- Weryfikacja: testy JVM i lint przechodzą. Testy urządzenia nie uruchomiły się, ponieważ emulator ma wersję 200 podpisaną kluczem release, a wariant debug ma niższy `versionCode` 1. Odbiór lokalnej aktualizacji N do N+1 i pełny O-07 pozostają otwarte.
