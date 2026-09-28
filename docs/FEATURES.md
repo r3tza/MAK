@@ -35,7 +35,7 @@ To domyślny ekran otwierany po uruchomieniu aplikacji.
 Powinien pokazywać:
 
 - dzień tygodnia i pełną datę;
-- gradientową kartę podsumowania z nagłówkiem „Twój plan na dziś”, a w dniu bez zajęć „Dziś bez zajęć”, oraz trzema równymi kolumnami „Zajęcia”, „Kolizje” i „Okienka”; każda kolumna ma etykietę u góry i liczbę poniżej;
+- gradientową kartę podsumowania bez nagłówka, z trzema równymi kolumnami „Zajęcia”, „Kolizje” i „Okienka”; każda kolumna ma etykietę u góry i liczbę poniżej;
 - czerwony kolor liczby kolizji, gdy jest większa od zera, oraz zielony, gdy wynosi zero; pozostałe liczby zachowują neutralny kolor;
 - wszystkie aktywne zajęcia w kolejności od najwcześniejszego;
 - kolor kierunku;
@@ -44,7 +44,7 @@ Powinien pokazywać:
 
 Definicja okienka i reguła jego liczenia są w `DOMAIN.md`, sekcja „Okienka”. Użytkownik może zmienić próg globalnie w ustawieniach.
 
-`TodayViewModel` umieszcza liczbę zajęć, unikalnych kolizji i okienek w stanie widoku. Karta zachowuje obecny gradient i nie pokazuje ozdobnej ikony. Nagłówek karty jest pogrubiony, większy od etykiet kolumn (17 sp), w pełni biały i oznaczony semantycznie jako nagłówek. Przy braku zajęć nagłówek brzmi „Dziś bez zajęć” zamiast „Twój plan na dziś”, a karta pokazuje trzy wartości równe zero, bez dodatkowego tekstu pod liczbami. Pionowe separatory między kolumnami są wyraźnie widoczne na gradiencie (biel 50% krycia, 40 dp wysokości). Układ musi zachować czytelność i semantykę przy szerokości 320 dp oraz w motywie jasnym i ciemnym. Etykiety kolumn są w pełni białe, mieszczą się w jednej linii i przy dużej czcionce zmniejszają się do 12 sp; przy skali 2,0 dopuszczalny jest wielokropek, a pełną etykietę czyta czytnik ekranu. Podpis „Od najwcześniejszego” przechodzi pod tytuł listy, gdy nie mieści się obok.
+`TodayViewModel` umieszcza liczbę zajęć, unikalnych kolizji i okienek w stanie widoku. Karta zachowuje obecny gradient i nie pokazuje ozdobnej ikony. Przy braku zajęć karta pokazuje trzy wartości równe zero, bez dodatkowego tekstu pod liczbami. Pionowe separatory między kolumnami są wyraźnie widoczne na gradiencie (biel 50% krycia, 40 dp wysokości). Układ musi zachować czytelność i semantykę przy szerokości 320 dp oraz w motywie jasnym i ciemnym. Etykiety kolumn są w pełni białe, mieszczą się w jednej linii i przy dużej czcionce zmniejszają się do 12 sp; przy skali 2,0 dopuszczalny jest wielokropek, a pełną etykietę czyta czytnik ekranu. Nad kartą są tylko data oraz wiersz z tygodniem A/B i semestrem, bez nadtytułu „Dzisiaj”, a tytuł listy „Zajęcia” nie ma podpisu o kolejności (decyzja z 2026-09-28: te elementy powtarzały zaznaczoną pozycję paska, datę i stały porządek).
 
 ### Struktura karty zajęć
 
@@ -60,9 +60,9 @@ Kolejność sekcji w prawej kolumnie:
 
 Pionowy pasek przy krawędzi karty używa pełnego koloru kierunku. Nazwa kierunku jest pogrubionym tekstem w tym samym odcieniu, przyciemnionym w motywie jasnym i rozjaśnionym w ciemnym tak, aby miał kontrast co najmniej 4,5:1 z tłem karty; zapisany kolor kierunku się nie zmienia. Nie kolorować całej karty według kierunku. Typ zajęć pozostaje neutralnym tekstem obok nazwy kierunku. Kolor kierunku zawsze występuje razem z jego nazwą, więc nie jest jedynym nośnikiem informacji.
 
-Każda notatka to jeden wiersz: ikona i pełna treść, bez etykiety tekstowej i bez tła. Notatka do zajęć ma ikonę notatki w kolorze akcentu, a notatka do terminu ikonę kalendarza w kolorze zmiany; ten sam zapis obowiązuje w „Planie” dla każdego dnia. Jeśli istnieją oba rodzaje notatek, pokazać dwa osobne wiersze. Pełną nazwę rodzaju notatki czyta czytnik ekranu i pokazują pola w szczegółach terminu. Kolizja zachowuje pomarańczowy wiersz ostrzegawczy z ikoną i tekstem.
+Każda notatka to jeden wiersz: ikona i pełna treść, bez etykiety tekstowej i bez tła. Notatka do zajęć ma ikonę notatki w kolorze akcentu, a notatka do terminu ikonę kalendarza w kolorze zmiany; ten sam zapis obowiązuje w „Planie” dla każdego dnia. Jeśli istnieją oba rodzaje notatek, pokazać dwa osobne wiersze. Pełną nazwę rodzaju notatki czyta czytnik ekranu i pokazują pola w szczegółach terminu. Kolizja zachowuje pomarańczowy wiersz ostrzegawczy z ikoną i zakresem nakładania, a w drugiej linii nazwą drugich zajęć („Z: {nazwa}”, kilka nazw po przecinku).
 
-Ikona stanu pod godzinami: odwołane (kalendarz z krzyżykiem, kolor błędu), zmienione lub przeniesione (kalendarz z ołówkiem, kolor zmiany), jednorazowe (cyfra 1 w kwadracie, kolor zajęć jednorazowych). Ikona nie ma własnego opisu, bo stan czyta opis całej karty. Odwołane zajęcia mają dodatkowo przekreśloną nazwę i pasek w kolorze błędu. Szczegóły terminu pokazują stan ikoną i słowem oraz opisują zmianę: poprzednią i nową salę, poprzednie i nowe godziny albo datę bazową i nową datę.
+Ikona stanu pod godzinami: odwołane (kalendarz z krzyżykiem, kolor błędu), zmienione lub przeniesione (kalendarz z ołówkiem, kolor zmiany), jednorazowe (cyfra 1 w kwadracie, kolor zajęć jednorazowych). Ikona nie ma własnego opisu, bo stan czyta opis całej karty. Odwołane zajęcia mają dodatkowo przekreśloną nazwę i pasek w kolorze błędu. Szczegóły terminu pokazują stan ikoną i słowem tylko dla terminu odwołanego, zmienionego, przeniesionego albo jednorazowego i opisują zmianę: poprzednią i nową salę, poprzednie i nowe godziny albo datę bazową i nową datę. Zwykły termin nie ma wiersza stanu. Kolizję szczegóły pokazują tym samym wierszem ostrzegawczym co karta. Jedyną akcją główną szczegółów jest „Zmień termin” albo „Przywróć termin”; zapis notatek to akcje drugorzędne.
 
 Karta musi zachować wspólne wyrównanie wierszy, poprawne zawijanie długich nazw i notatek, kontrast oraz czytelność przy szerokości 320 dp. Semantyka czytnika ekranu ma przekazywać godziny, nazwę, status („Odwołane”, „Zmienione”, „Jednorazowe”), kierunek, typ, tydzień A/B, metadane, kolizję i zakres każdej notatki w logicznej kolejności i pomijać puste części. Odwołanej karty nie przyciemnia się w całości: stan pokazują przekreślenie nazwy, ikona odwołania pod godzinami i pasek w kolorze błędu. Kolumna godzin ma co najmniej 48 dp i rośnie z rozmiarem czcionki, aby godzina nigdy nie była ucięta.
 
@@ -79,7 +79,7 @@ Po przekroczeniu północy ekran pokazuje plan nowego dnia przy ponownym otwarci
 
 ## Ekran „Plan”
 
-Ekran oferuje dwa równorzędne sposoby przeglądania planu: **Lista** i **Kalendarz**. Ostatnio wybrany sposób może być zapamiętany lokalnie.
+Ekran oferuje dwa równorzędne sposoby przeglądania planu: **Lista** i **Kalendarz**. Ostatnio wybrany sposób może być zapamiętany lokalnie. Ekran nie ma nagłówka treści; jego nazwę pokazuje zaznaczona pozycja dolnego paska, a przełącznik widoku stoi na górze.
 
 ### Widok „Lista”
 
@@ -89,8 +89,8 @@ Widok listy na telefonie składa się z:
 - przesuwania między dniami gestem;
 - przechodzenia między tygodniami oraz powrotu do bieżącego tygodnia;
 - daty i oznaczenia A/B widocznego przy przeglądanym tygodniu;
-- akcji „Zmień tydzień A/B”, z wyborem zakresu „Tylko ten tydzień” lub „Od tego tygodnia”; gdy filtr „Wszystkie” obejmuje kilka kalendarzy, wiersz tygodnia nie jest akcją i pokazuje „Wybierz kierunek w filtrach, aby zmienić tydzień.”; nazwa tygodnia stoi nad źródłem korekty, a przy dużej czcionce „Zmień” przechodzi do osobnej linii;
-- filtrów: „Wszystkie” oraz poszczególne kierunki;
+- akcji „Zmień tydzień A/B”, z wyborem zakresu „Tylko ten tydzień” lub „Od tego tygodnia”; gdy filtr „Wszystkie” obejmuje kilka kalendarzy, wiersz tygodnia nie jest akcją i pokazuje „Wybierz kierunek w polu „Kierunek”, aby zmienić tydzień.”; nazwa tygodnia stoi nad źródłem korekty, a przy dużej czcionce „Zmień” przechodzi do osobnej linii;
+- pola wyboru „Kierunek” z opcją „Wszystkie” i poszczególnymi kierunkami, widocznego bez rozwijania dodatkowej sekcji;
 - listy zajęć posortowanej według godziny;
 - oznaczeń wykrytych kolizji.
 
@@ -102,14 +102,16 @@ Widok kalendarza pokazuje jeden miesiąc i zawiera:
 
 - przejście do poprzedniego i następnego miesiąca;
 - powrót do bieżącej daty;
-- oznaczenie zajęć w każdym dniu kropkami w kolorze kierunku, a zmienionych terminów kropką w kolorze błędu; pod siatką legenda z nazwami kierunków i pozycją „Zmieniony termin”, bo kolor nie może być jedynym nośnikiem informacji;
+- oznaczenie zajęć w każdym dniu znacznikami w kolorze kierunku: wypełniona kropka dla zwykłego terminu i pierścień dla terminu zmienionego lub przeniesionego; kolor znacznika ma kontrast co najmniej 3:1 z tłem w obu motywach, a kolory stanów nie występują, bo mogłyby się pokryć z kolorem wybranym dla kierunku (decyzja z 2026-09-28); pod siatką legenda z nazwami kierunków i pierścieniem „Zmieniony termin”;
 - czytelne oznaczenie dni z odwołanymi, zmienionymi lub jednorazowymi zajęciami;
 - wybór dnia i listę jego aktywnych zajęć pod kalendarzem;
-- akcję dodania nowych zajęć jednorazowych dla wybranej daty.
+- pole „Pokaż odwołane” pod legendą i akcję „Dodaj jednorazowe” pod listą wybranego dnia, obie widoczne bez rozwijania.
 
 Kalendarz pokazuje wynik `ScheduleResolver`, dlatego musi być zgodny z ekranem „Dzisiaj”, listą planu i widgetem. Odwołane zajęcia mogą pozostać widoczne jako przekreślone tylko wtedy, gdy użytkownik włączy opcję „Pokaż odwołane”. Lista odwołanych terminów pochodzi z domeny (`cancelledOccurrences`), stosuje ten sam filtr kierunku co plan i pomija odwołania z dni, w które zajęcia po edycji już się nie odbywają. Licznik zajęć dnia liczy tylko zajęcia, które się odbywają. Domyślnie kalendarz pokazuje plan aktywny.
 
 ## Dodawanie i edycja zajęć
+
+Tytuł „Dodaj zajęcia” albo „Edytuj zajęcia” jest w górnym pasku; treść zaczyna się krótkim opisem. Formularz kończą akcje „Dodaj do planu” (przy edycji „Zapisz zajęcia”) i „Anuluj”.
 
 Formularz powinien zawierać:
 
@@ -230,7 +232,7 @@ Zmiana ma poprawić hierarchię i atrakcyjność widgetu bez zwiększania liczby
 6. Zmniejszyć wizualny ciężar kolizji przy zajęciach. Zamiast dużego czerwonego bloku użyć jasnego tła ostrzegawczego, małej ikony lub znacznika, tekstu „Kolizja {zakres}” oraz nazwy drugich zajęć w kolejnym wierszu. Zakres i druga nazwa muszą pozostać dostępne bez polegania na kolorze.
 7. Separator renderować wyłącznie między zajęciami. Wewnątrz wpisu budować hierarchię przez odstępy, wagę tekstu i role kolorów.
 8. Dodać prezentacyjne stany „Teraz” i „Następne” jako pogrubiony tekst w kolorze akcentu, bez tła, tylko wtedy, gdy mieszczą się w danym progu rozmiaru. Zakończone zajęcia można lekko przygasić. Stan wynika z czasu odczytanego przez wstrzyknięty `Clock` podczas odświeżenia i nie może sugerować aktualizacji co minutę.
-9. Zachować role kolorów: kolor kierunku dla osi czasu i nazwy kierunku, czerwony dla kolizji, niebieski lub indygo dla tygodnia A/B oraz neutralny dla lokalizacji, prowadzącego i zakończonych zajęć.
+9. Zachować role kolorów: kolor kierunku dla osi czasu i nazwy kierunku, czerwony dla kolizji, niebieski lub indygo dla tygodnia A/B oraz neutralny dla godzin, lokalizacji, prowadzącego i zakończonych zajęć. Kolor akcentu w wierszu mają tylko „Teraz” i „Następne”.
 10. Dla każdego progu rozmiaru ustalić jawnie widoczne metadane, maksymalną liczbę linii oraz obecność stanów „Teraz” i „Następne”. Nie polegać na przypadkowym przycinaniu przez `RemoteViews`.
 
 Odbiór na launcherze obejmuje mały, pośredni i duży rozmiar, oba motywy, brak kolizji, jedną i kilka kolizji, długie nazwy, trwające, następne i zakończone zajęcia oraz brak danych. Porównać co najmniej dwa warianty odcieni nagłówka i intensywności tła kolizji.
@@ -256,15 +258,15 @@ Ekran główny dzieli ustawienia na sekcje:
 4. „Dane”:
    - pozycja „Kopia zapasowa i import” prowadząca do osobnego ekranu danych.
 5. „Aktualizacje”:
-   - wiersz „Sprawdź aktualizacje” uruchamia ręczne sprawdzenie i w drugiej linii pokazuje wynik: „Sprawdź, czy jest nowsza wersja”, „Sprawdzanie...”, „Masz najnowszą wersję”, „Dostępna wersja {wersja}”, „Wymaga nowszego Androida” albo „Nie udało się sprawdzić”; w trakcie sprawdzania wiersz jest nieaktywny;
+   - wiersz „Sprawdź aktualizacje” uruchamia ręczne sprawdzenie i przed pierwszym sprawdzeniem nie ma drugiej linii, a potem pokazuje w niej wynik: „Sprawdzanie...”, „Masz najnowszą wersję”, „Dostępna wersja {wersja}”, „Wymaga nowszego Androida” albo „Nie udało się sprawdzić”; w trakcie sprawdzania wiersz jest nieaktywny;
    - gdy jest dostępna wersja albo trwa lub zakończyło się jej pobieranie, pod nim pojawia się wiersz „Aktualizacja do {wersja}” z ikoną przejścia, prowadzący do ekranu „Aktualizacja”; wynik sprawdzenia nie otwiera tego ekranu sam;
    - wiersz z przełącznikiem „Sprawdzaj przy uruchomieniu” i jednym zdaniem opisu pod nazwą.
 6. „O aplikacji”:
    - zwarty wiersz pokazuje zainstalowaną wersję i prowadzi do ekranu „O aplikacji”.
 
-Sekcje umieścić w neutralnych kontenerach i rozdzielić odstępem 16 dp. Wiersze tej samej sekcji mogą używać subtelnych separatorów. Każdy wiersz pokazuje nazwę, bieżącą wartość lub krótkie podsumowanie i ikonę przejścia, jeśli otwiera ekran podrzędny. Ikony Material są pomocnicze i nie zastępują tekstu. Nie nadawać wszystkim pozycjom wagi przycisku głównego. Wiersze z akcją sięgają krawędzi karty, więc podświetlenie po naciśnięciu obejmuje cały wiersz; tekst ma 16 dp marginesu poziomego i 12 dp pionowego, a wiersz co najmniej 56 dp wysokości. Pola wyboru w tej samej karcie zachowują ten sam margines.
+Sekcje umieścić w neutralnych kontenerach i rozdzielić odstępem 16 dp. Wiersze tej samej sekcji mogą używać subtelnych separatorów. Każdy wiersz pokazuje nazwę, bieżącą wartość lub krótkie podsumowanie i ikonę przejścia, jeśli otwiera ekran podrzędny. Wiersz bez wartości do podsumowania, na przykład „Kierunki” albo „Kopia zapasowa i import”, pokazuje samą nazwę; opis nie powtarza nazwy innymi słowami. Ikony Material są pomocnicze i nie zastępują tekstu. Nie nadawać wszystkim pozycjom wagi przycisku głównego. Wiersze z akcją sięgają krawędzi karty, więc podświetlenie po naciśnięciu obejmuje cały wiersz; tekst ma 16 dp marginesu poziomego i 12 dp pionowego, a wiersz co najmniej 56 dp wysokości. Pola wyboru w tej samej karcie zachowują ten sam margines.
 
-Ekran „Semestry” zawiera listę semestrów, wybór aktywnego, konfigurację, usuwanie i akcję „Dodaj semestr”. Konfiguracja przypisań kierunków, wspólnych lub osobnych kalendarzy i korekt A/B pozostaje częścią przepływu wybranego semestru. Otwarcie konfiguracji nie zmienia aktywnego semestru, a powrót z ekranów „Kierunki”, „Kalendarze” i „Korekty tygodni” zachowuje niezapisane zmiany nazwy i dat. Lista globalnych kierunków i kolorów jest dostępna z sekcji „Plan” ustawień. Usunięcie kierunku z semestru wymaga potwierdzenia w dialogu, który podaje liczbę usuwanych zajęć i informuje, że znikną też ich notatki i zmiany terminów, a kierunek zostanie w innych semestrach. Usunięcie korekty tygodnia i nieużywanego kalendarza też wymaga potwierdzenia w dialogu z akcją „Usuń” w kolorze błędu. W formularzu korekty można wybrać dowolny dzień; aplikacja zapisuje poniedziałek jego tygodnia i pokazuje pod polem „Korekta obejmuje tydzień od poniedziałku {data}.”. „Dodaj semestr” nie jest główną akcją całych ustawień.
+Ekran „Semestry” zawiera listę semestrów, wybór aktywnego, konfigurację, usuwanie i akcję „Dodaj semestr”. Aktywny semestr pokazuje pole wyboru nad listą; wiersze semestrów nie powtarzają tego stanu, a ekran nie ma komunikatu z tytułem „Semestry”. Konfiguracja przypisań kierunków, wspólnych lub osobnych kalendarzy i korekt A/B pozostaje częścią przepływu wybranego semestru. Otwarcie konfiguracji nie zmienia aktywnego semestru, a powrót z ekranów „Kierunki”, „Kalendarze” i „Korekty tygodni” zachowuje niezapisane zmiany nazwy i dat. Lista globalnych kierunków i kolorów jest dostępna z sekcji „Plan” ustawień. Usunięcie kierunku z semestru wymaga potwierdzenia w dialogu, który podaje liczbę usuwanych zajęć i informuje, że znikną też ich notatki i zmiany terminów, a kierunek zostanie w innych semestrach. Usunięcie korekty tygodnia i nieużywanego kalendarza też wymaga potwierdzenia w dialogu z akcją „Usuń” w kolorze błędu. W formularzu korekty można wybrać dowolny dzień; aplikacja zapisuje poniedziałek jego tygodnia i pokazuje pod polem „Korekta obejmuje tydzień od poniedziałku {data}.”. „Dodaj semestr” nie jest główną akcją całych ustawień.
 
 Kolor kierunku wybiera się w kreatorze, na ekranie „Kierunki” semestru i w edycji kierunku tym samym komponentem: podgląd paska i nazwy kierunku w kolorze tekstu karty, suwak „Odcień” z torem w kolorach całego koła barw, suwak „Jasność” z torem od najciemniejszego do najjaśniejszego wariantu bieżącego odcienia i pole „Kod koloru” (`#RRGGBB`). Suwaki dają tylko kolory z kontrastem paska co najmniej 3:1 na jasnym i ciemnym motywie. Wpisany kod spoza tego zakresu pokazuje „Ten kolor będzie słabo widoczny. Wybierz inny odcień albo jasność.” i nie zmienia koloru. Kolory zapisane wcześniej zostają bez zmian, dopóki użytkownik ich nie zmieni.
 
@@ -272,7 +274,7 @@ Ekran „Kierunki” w ustawieniach pokazuje globalne kierunki: kropkę w kolorz
 
 Na Androidzie 13 i nowszym włączenie powiadomień przy braku zgody prosi o zgodę systemową. Na Androidzie 12 taka zgoda nie istnieje, więc aplikacja otwiera systemowe ustawienia powiadomień aplikacji, a po powrocie odświeża stan „Zablokowane przez system”.
 
-Ekran „Powiadomienia” dzieli ustawienia na sekcje w neutralnych kontenerach, rozdzielone odstępem 16 dp: „Kolizje w planie” z głównym przełącznikiem, „Dzień wcześniej” z przełącznikiem powiadomienia wieczornego i godziną oraz „Przed zajęciami” z przełącznikiem i wyprzedzeniem. Sekcje obu rodzajów są widoczne tylko przy włączonej funkcji, a godzina albo wyprzedzenie tylko przy włączonym danym rodzaju. Pod sekcjami komunikat „Czas dostarczenia” informuje, że Android może opóźnić powiadomienie o kilkanaście minut.
+Ekran „Powiadomienia” dzieli ustawienia na sekcje w neutralnych kontenerach, rozdzielone odstępem 16 dp: „Kolizje w planie” z głównym przełącznikiem, „Dzień wcześniej” z przełącznikiem powiadomienia wieczornego i godziną oraz „Przed zajęciami” z przełącznikiem i wyprzedzeniem. Sekcje obu rodzajów są widoczne tylko przy włączonej funkcji, a godzina albo wyprzedzenie tylko przy włączonym danym rodzaju. Każde włączenie to wiersz z przełącznikiem. Przy włączonej funkcji pod sekcjami tekst pomocniczy informuje, że Android może opóźnić powiadomienie o kilkanaście minut.
 
 Ekrany podrzędne ustawień rozdzielają komunikaty, pola, wiersze i przyciski odstępem co najmniej 12 dp. Komunikat informacyjny ma 16 dp paddingu poziomego, 12 dp pionowego i tekst co najmniej 12 sp.
 

@@ -4,6 +4,15 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-28: Decyzje po audycie interfejsu i plan poprawek (I-54, I-56 do I-59)
+
+- Fakty: Audyt kodu i przegląd na emulatorze (motyw jasny i ciemny, 320 dp) wykazał: nadmiar elementów nad pierwszymi zajęciami na „Dzisiaj” i w „Planie”, filtr kierunku ukryty w sekcji rozwijanej, akcję „Dodaj jednorazowe” schowaną w zwiniętych opcjach, kolor błędu dla każdej zmiany w kalendarzu, brak nazwy drugich zajęć przy kolizji, stan „Zaplanowane” przy zwykłym terminie, powtórzony tytuł formularza zajęć, banery powtarzające tytuły i niespójne dialogi, kolejność przycisków oraz odmianę liczebników.
+- Decyzja użytkownika: nadtytuł „Dzisiaj”, nagłówek karty podsumowania i podpis „Od najwcześniejszego” znikają; „Anuluj” w formularzach zostaje i `ARCHITECTURE.md` odróżnia je od przycisku powrotu; pionowy separator karty zajęć zostaje w specyfikacji i trafia do kodu. Tytuł formularza zajęć i kolory kalendarza użytkownik zostawił do wyboru agenta.
+- Decyzja agenta: tytuł „Dodaj zajęcia” albo „Edytuj zajęcia” jest tylko w górnym pasku. W kalendarzu kolor znacznika oznacza wyłącznie kierunek (kontrast co najmniej 3:1 z tłem), a zmieniony lub przeniesiony termin ma pierścień zamiast kropki, bo kolor stanu mógłby się pokryć z kolorem wybranym dla kierunku. Filtr kierunku to jedno pole wyboru. Kolizja pokazuje nazwę drugich zajęć na karcie i w szczegółach, z jednej funkcji domenowej wspólnej z widgetem.
+- Plan: `PLAN.md` ma pięć kroków (I-56, I-57, I-58, I-54, I-59) opisanych dla słabszego agenta; listy kontrolne odbioru O-07, I-40 i I-49 przeniesiono do `QUEUE.md`.
+- Odrzucone: rozróżnianie stanów w kalendarzu kolorem (czerwony, fioletowy); trzy różne kształty dla odwołania, zmiany i terminu jednorazowego, bo przy znaczniku 8 dp są nieczytelne; usuwanie „Anuluj” z formularzy.
+- Otwarte: obramowanie przycisków ikon w górnym pasku, trzy style zaznaczenia na „Planie”, kolor kolizji w widgecie i jasność karty podsumowania w motywie ciemnym (`KNOWN_ISSUES.md`, pozycja 9).
+
 ## 2026-09-28: Reguły redukcji interfejsu i audyt (I-54, I-55)
 
 - Fakty: Zasady UI opisywały czytelność, stałe odstępy, dostępność i zakaz statycznych pilli, ale nie mówiły wprost, kiedy zrezygnować z karty, ikony, koloru albo animacji. Audyt kodu wykazał jeden styl `MakNoteBanner` dla neutralnych informacji, ostrzeżeń i błędów oraz osobną kartę dla każdej grupy ekranu „O aplikacji”.
@@ -126,11 +135,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: Cała animacja (1,6 s) gra w jednym ekranie Compose. Systemowy ekran startowy ma pustą ikonę (`splash_empty.xml`), więc pokazuje tylko tło motywu; ekran ładowania najpierw wyświetla makówkę na białym kole, potem dorysowuje płatki (po 800 ms co 130 ms) i od początku rozwija pełną nazwę od środka. Pusty ekran startowy wybrał użytkownik, bo sama makówka przed animacją wyglądała jak zawieszony obraz. Animacja zaczyna się, gdy ekran startowy znika (bez systemowego wygaszania), gra raz na proces i zawsze do końca; potem ekran ładowania czeka na dane i znika przez przenikanie. Użytkownik wybrał 2026-09-27 czas 1,6 s, odtwarzanie przy każdym zimnym starcie i nazwę rozwijaną od początku animacji, co zmienia odrzucenie sztucznego wydłużania startu z I-30. Górny pasek pokazuje `MakPoppyMark`.
 - Powód: Jeden ekran daje ciągły ruch bez mignięcia i pozwala animować nazwę, której ikona ekranu startowego nie może pokazać. Plan wczytuje się w tym czasie w tle.
 - Odrzucone: przytrzymanie systemowego ekranu startowego z animowaną ikoną, bo po nim musiał pojawić się drugi ekran z nazwą; 2 s, bo przy codziennym otwieraniu planu może męczyć; pełna animacja tylko raz dziennie, bo wymaga zapisu daty w ustawieniach.
-
-## 2026-09-27: Tylko orientacja pionowa (I-43)
-
-- Fakty: W poziomie na telefonie górny i dolny pasek zajmują około 40% wysokości, „Plan” pokazuje zajęcia dopiero po przewinięciu kontrolek, a wybór godziny i daty jest ucięty.
-- Decyzja: Użytkownik zdecydował 2026-09-27, że `MainActivity` działa tylko w pionie, bo z układu poziomego korzystałoby niewiele osób. Ostrzeżenia lint o blokadzie orientacji są wyciszone w manifeście.
-- Powód: Poprawienie układu poziomego i dialogów kosztowałoby więcej niż daje.
-- Ograniczenia: Na urządzeniach od 600 dp Android 16 ignoruje blokadę przy `targetSdk` 36. Odtwarzanie aktywności przy zmianie motywu, czcionki i języka nadal występuje, więc poprawka z I-26 pozostaje potrzebna.
-- Odrzucone: osobny układ poziomy; blokada tylko na części ekranów.
