@@ -223,7 +223,9 @@ fun SemesterScreen(
                 }
                 SemesterNavigationRow(
                     title = "Kierunki",
-                    count = state.courseItems.size,
+                    countLabel = state.courseItems.size.let {
+                        "$it ${polishPlural(it, "kierunek", "kierunki", "kierunków")}"
+                    },
                     onClick = onOpenCourses
                 )
                 HorizontalDivider(
@@ -232,7 +234,9 @@ fun SemesterScreen(
                 )
                 SemesterNavigationRow(
                     title = "Korekty tygodni",
-                    count = state.overrideCount,
+                    countLabel = state.overrideCount.let {
+                        "$it ${polishPlural(it, "korekta", "korekty", "korekt")}"
+                    },
                     onClick = onOpenOverrides
                 )
                 if (state.calendars.size > 1) {
@@ -242,7 +246,9 @@ fun SemesterScreen(
                     )
                     SemesterNavigationRow(
                         title = "Kalendarze",
-                        count = state.calendars.size,
+                        countLabel = state.calendars.size.let {
+                            "$it ${polishPlural(it, "kalendarz", "kalendarze", "kalendarzy")}"
+                        },
                         onClick = onOpenCalendars
                     )
                 }
@@ -256,7 +262,7 @@ fun SemesterScreen(
 @Composable
 private fun SemesterNavigationRow(
     title: String,
-    count: Int,
+    countLabel: String,
     onClick: () -> Unit
 ) {
     Row(
@@ -273,15 +279,10 @@ private fun SemesterNavigationRow(
             Text(
                 text = title,
                 style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.SemiBold,
-                modifier = Modifier.semantics { heading() }
+                fontWeight = FontWeight.SemiBold
             )
             Text(
-                text = when (title) {
-                    "Kierunki" -> "$count ${polishPlural(count, "kierunek", "kierunki", "kierunków")}"
-                    "Korekty tygodni" -> "$count ${polishPlural(count, "korekta", "korekty", "korekt")}"
-                    else -> "$count ${polishPlural(count, "kalendarz", "kalendarze", "kalendarzy")}"
-                },
+                text = countLabel,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
