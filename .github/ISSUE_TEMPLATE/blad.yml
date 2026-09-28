@@ -1,0 +1,78 @@
+name: Błąd
+description: Zgłoś błąd w aplikacji MAK.
+title: "Błąd: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Nie dołączaj pliku eksportu planu ani zrzutów z prywatnymi notatkami. Jeśli błąd dotyczy bezpieczeństwa, nie opisuj szczegółów i napisz tylko prośbę o kontakt.
+  - type: input
+    id: wersja-mak
+    attributes:
+      label: Wersja MAK
+      description: „Ustawienia”, sekcja „O aplikacji”, wiersz „Wersja”.
+      placeholder: "0.2.2"
+    validations:
+      required: true
+  - type: input
+    id: wersja-androida
+    attributes:
+      label: Wersja Androida
+      placeholder: "Android 15"
+    validations:
+      required: true
+  - type: input
+    id: telefon
+    attributes:
+      label: Model telefonu
+      placeholder: "Pixel 8"
+    validations:
+      required: false
+  - type: dropdown
+    id: motyw
+    attributes:
+      label: Motyw aplikacji
+      options:
+        - Systemowy
+        - Jasny
+        - Ciemny
+    validations:
+      required: false
+  - type: textarea
+    id: kroki
+    attributes:
+      label: Kroki
+      description: Wypisz po kolei, co trzeba zrobić, aby zobaczyć błąd.
+      placeholder: |
+        1. Otwórz „Plan”.
+        2. Wybierz widok „Kalendarz”.
+        3. Wybierz 1 października.
+    validations:
+      required: true
+  - type: textarea
+    id: wynik
+    attributes:
+      label: Co się stało
+    validations:
+      required: true
+  - type: textarea
+    id: oczekiwany-wynik
+    attributes:
+      label: Co powinno się stać
+    validations:
+      required: true
+  - type: textarea
+    id: zrzuty
+    attributes:
+      label: Zrzuty ekranu
+      description: Przeciągnij pliki tutaj, jeśli błąd dotyczy wyglądu.
+    validations:
+      required: false
+  - type: checkboxes
+    id: prywatnosc
+    attributes:
+      label: Prywatność
+      options:
+        - label: Zgłoszenie nie zawiera prywatnych danych, na przykład treści notatek.
+          required: true

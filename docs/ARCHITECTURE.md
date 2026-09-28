@@ -57,9 +57,13 @@ Hierarchię budujemy najpierw typografią, odstępami, wyrównaniem i kontrastem
 
 Ikona musi ułatwiać rozpoznanie działania lub informacji. Jeden typ informacji używa tej samej ikony w całej aplikacji. Nie dodajemy ikon do nagłówków, etykiet ani przycisków wyłącznie jako dekoracji.
 
+Ograniczamy przeciążenie poznawcze. Opcje grupujemy w nazwane sekcje, a rozbudowane lub rzadkie przepływy przenosimy na osobne ekrany. Karty, wiersze, krótkie podsumowania i jawny grid stosujemy wtedy, gdy pomagają porównać kilka informacji. Układu tabelarycznego nie dodajemy, jeśli nie poprawia skanowania.
+
 ### Stały język wizualny
 
 Wspólne prymitywy, przewidywalne odstępy, jawny grid, powtarzalne akcje i udokumentowane wyjątki mają pierwszeństwo przed ręcznym dopieszczaniem każdej funkcji osobno.
+
+Kolor ma stałe znaczenie. Powierzchnie są głównie neutralne, a akcent służy informacji, kategorii, ostrzeżeniu i działaniu o rzeczywistej wadze. Kolor nie jest jedynym nośnikiem informacji: towarzyszy mu etykieta, ikona, kształt albo treść semantyczna. Akcentu nie używamy wyłącznie do pokazania zwykłego stanu komponentu, jeśli tekst, ikona i semantyka wystarczają.
 
 Duże sekcje ekranu rozdziela odstęp 16 dp, powiązane elementy wewnątrz sekcji 12 dp, a krótką etykietę od jej wartości 8 dp. Przycisk pełnej szerokości ma co najmniej 12 dp wolnego miejsca nad i pod nim. Elementy sterujące nie mogą wizualnie stykać się z sąsiednimi kontenerami. Tekst w interfejsie ma co najmniej 12 sp; 11 sp dopuszczamy wyłącznie dla tekstu widgetu. Granice kontrolek (pola, opcje wyboru, pola wyboru, przyciski ikon i przyciski obrysowane) używają `outline` o kontraście co najmniej 3:1 z tłem; karty, separatory i ramki dekoracyjne używają jaśniejszego `outlineVariant`. Statyczne etykiety stanu, kategorii i wersji nie są pillami: pokazuje je tekst, ikona z tekstem albo kropka koloru, a w motywie ciemnym ich kolor jest rozjaśniony do czytelnego kontrastu. Dotyczy to także widgetu. Akcja usuwająca w wierszu używa koloru błędu. Pola wyboru używają rozwijanego pola Material 3 z tą samą etykietą przesuwaną nad ramkę co pola tekstowe. Dwa powiązane pola stoją obok siebie tylko wtedy, gdy każde ma co najmniej połowę z 340 dp; na węższym ekranie stoją jedno pod drugim. Ekran podrzędny nie powtarza tytułu z górnego paska ani nie ma osobnego przycisku powrotu; wraca strzałka w pasku i systemowy gest wstecz. Formularz może mieć akcję „Anuluj” obok akcji zapisu (decyzja z 2026-09-28): porzuca wpisane zmiany i nie jest przyciskiem powrotu. Kreator ma akcję „Wstecz”, bo nie pokazuje strzałki powrotu w górnym pasku. Komunikat nie powtarza tytułu z górnego paska i nie zastępuje nagłówka sekcji. Komunikat ma jedną z trzech ról: neutralną (neutralne tło, bez ikony), ostrzegawczą (kolory ostrzeżenia i ikona) albo błędu (kolory błędu i ikona). Kolor akcentu nie jest tłem komunikatu.
 
@@ -129,11 +133,11 @@ Komunikaty są krótkie i konkretne. Nazwy pojęć pozostają stałe. `MainActiv
 
 ### Szacunek dla pracy użytkownika
 
-Formularze nie kasują wpisanych wartości. Dialogi prawidłowo zwracają focus. Stany puste, błędy i ładowanie korzystają z tego samego modelu widoku co pełne dane.
+Formularze nie kasują wpisanych wartości. Dialogi prawidłowo zwracają focus. Nie otwieramy automatycznie kreatora, formularza ani innego przepływu, jeśli stan pusty z jasną akcją daje użytkownikowi większą kontrolę. Stany puste, błędy i ładowanie korzystają z tego samego modelu widoku co pełne dane.
 
 ## 5. Zasada modularności
 
-Projekt dzielimy na małe, wymienne części, ponieważ funkcje i wygląd będą regularnie przebudowywane na podstawie bieżącego feedbacku. Granice między danymi, logiką domenową, ekranami i widgetem mają ograniczać koszt zmiany oraz pozwalać zastąpić jedną część bez przepisywania pozostałych.
+Projekt dzielimy na małe, wymienne części, ponieważ funkcje i wygląd będą regularnie przebudowywane na podstawie bieżącego feedbacku. Dzielimy według odpowiedzialności, stabilnych obszarów danych i przepływów użytkownika, a nie dla każdej tabeli, funkcji czy pliku. Abstrakcję, warstwę albo moduł dodajemy wtedy, gdy tworzy wyraźną granicę, usuwa duplikację reguł albo realnie zmniejsza koszt przyszłych zmian. Wybieramy rozwiązania zgodne ze współczesnymi praktykami platformy, ale na miarę skali projektu: bez prowizorycznych skrótów utrudniających rozwój i bez infrastruktury projektowanej bez konkretnej potrzeby. Preferujemy rozwiązania lokalne, energooszczędne i łatwe w utrzymaniu; usług działających stale w tle nie dodajemy bez potwierdzonej potrzeby. Granice między danymi, logiką domenową, ekranami i widgetem mają ograniczać koszt zmiany oraz pozwalać zastąpić jedną część bez przepisywania pozostałych.
 
 Każda funkcja powinna mieć własną, czytelną odpowiedzialność i komunikować się z innymi częściami przez proste modele lub interfejsy. Logika obliczania planu nie może zależeć od komponentów UI, a widget nie może powielać reguł `ScheduleResolver`.
 
@@ -174,6 +178,30 @@ Aplikacja składa się z lokalnej warstwy danych, logiki domenowej, ekranów Com
 - **Aktualizacje** (`update`, decyzja z 2026-09-27, zadania I-34 do I-41 i I-49) sprawdzają, pobierają i przekazują do instalacji nowe wydanie z GitHub Releases. To jedyne połączenie sieciowe aplikacji. Aplikacja pobiera plik `update.json` z ostatniego wydania, porównuje jego `versionCode` z zainstalowaną wersją, a po decyzji użytkownika pobiera APK do katalogu cache. Przed instalacją sprawdza sumę SHA-256, nazwę pakietu, wyższy `versionCode` i certyfikat podpisu zgodny z zainstalowaną aplikacją. Instalację wykonuje systemowy `PackageInstaller` z potwierdzeniem użytkownika; przy pierwszej aktualizacji aplikacja wyjaśnia i otwiera systemową zgodę na instalowanie nieznanych aplikacji. Zapytania nie zawierają danych planu ani identyfikatora użytkownika. Ręczne sprawdzenie i przełącznik automatu są w ustawieniach, w sekcji „Aktualizacje”; pobieranie i instalacja odbywają się na osobnym ekranie „Aktualizacja” (decyzja z 2026-09-27, I-48). Automatyczne sprawdzanie jest domyślnie wyłączone; po włączeniu działa tylko przy uruchomieniu aplikacji, najwyżej raz na 24 godziny według wstrzykniętego `Clock`, bez pracy w tle i bez powiadomień. Nowa wersja pokazuje baner na ekranie „Dzisiaj” z akcjami „Zobacz” i „Nie teraz”; „Nie teraz” ukrywa baner do kolejnej wersji. Brak sieci przy sprawdzeniu automatycznym nie pokazuje komunikatu. Logika porównania wersji, walidacji `update.json` i reguły 24 godzin jest czystym Kotlinem testowanym na JVM. Repozytorium jest publiczne od 2026-09-27. Testy JVM używają wstrzykiwanych źródeł i lokalnych artefaktów. Pełny przebieg sieciowy wymaga opublikowanego, nie roboczego wydania (I-49). Aplikacja nie obsługuje tokenu GitHuba.
 
 Logika domenowa nie zależy od Compose ani Glance. `ActivePlanProvider` jest wspólnym punktem obliczania planu i kolizji dla ekranów oraz widgetu.
+
+### Zasady widgetu
+
+Przed zmianą widgetu przeczytaj też sekcję „Widget” w `FEATURES.md`.
+
+- Realizuj etapy po kolei. Każdy etap pozostaw w stanie kompilującym się i sprawdzalnym bez zależności od kolejnego etapu.
+- Widget czyta dane przez `SemesterRepository` i `ScheduleRepository`, mapuje je przez wspólną granicę danych i oblicza plan przez `ActivePlanProvider`. Widget nie woła DAO ani `ScheduleResolver` bezpośrednio i nie kopiuje reguł z ViewModelu.
+- Wstrzykuj `Clock`. Nie używaj `LocalDate.now()` bezpośrednio w loaderze, prezenterze ani testach widgetu.
+- Room jest źródłem planu. Nie przechowuj kopii planu w preferencjach Glance ani wyłącznie w pamięci procesu.
+- Odświeżaj wszystkie instancje po udanej zmianie danych na jednej wspólnej granicy. Nie wywołuj aktualizacji z każdego ekranu osobno i nie aktualizuj przed zakończeniem transakcji.
+- Nie dodawaj ciągłego serwisu, dokładnych alarmów ani odświeżania co minutę. Okresowa aktualizacja jest zabezpieczeniem i może zostać opóźniona przez system.
+- Używaj ograniczonego zestawu progów rozmiaru. Każdy próg ma jawny limit pozycji i stan pusty, bez poziomego przewijania oraz obciętych akcji.
+- Kliknięcie widgetu otwiera jawnie ekran „Dzisiaj”. Szczegóły wystąpienia wymagają osobnej decyzji o kontrakcie deep linków.
+- Stan błędu jest krótki, bez surowych wyjątków, i pozwala otworzyć aplikację.
+- Widget korzysta z kolorów dynamicznych systemu. Kolor o stałym znaczeniu, na przykład pomarańczowy alert kolizji, podawaj wprost przez `ColorProvider(day, night)` z wartościami z `Color.kt`, a nie przez `GlanceTheme.colors`.
+
+### Zasady powiadomień
+
+Przed zmianą powiadomień przeczytaj też odpowiednie decyzje w `LOG.md` albo archiwum logu.
+
+- Planista używa `ActivePlanProvider` i wstrzykniętego `Clock`. Nie licz kolizji ponownie w odbiorniku własną regułą.
+- Zachowaj dwa rodzaje powiadomień, grupowanie kolizji, domyślnie wyłączoną funkcję i rozdział preferencji użytkownika od zgody systemowej. Używaj alarmów przybliżonych bez ciągłego serwisu i dostępu do dokładnych alarmów.
+- Po zmianach danych i ustawień odnawiaj przyszłe alarmy na wspólnej granicy. Przy dostarczeniu sprawdź bieżący plan, zgodę, przełączniki i czas.
+- Test planisty na JVM nie zastępuje odbioru `AlarmManager`, zgody i kliknięcia na urządzeniu.
 
 ## 8. Przepływ danych
 

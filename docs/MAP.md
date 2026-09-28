@@ -11,7 +11,10 @@ Zacznij od pytania, które rozwiązuje zadanie. Otwórz wskazany dokument i potr
 | Jakich narzędzi i testów używać? | [STACK.md](STACK.md): wersje bibliotek, środowisko, rodzaje kontroli i odrzucone alternatywy |
 | Co wykonać teraz? | [PLAN.md](PLAN.md): najwyżej pięć najbliższych kroków z kryteriami zakończenia. [QUEUE.md](QUEUE.md) zawiera pozostałe zadania, zależności i statusy; zakończone są w osobnej tabeli na końcu |
 | Co jest gotowe w kodzie, ale czeka na urządzenie? | [QUEUE.md](QUEUE.md): osobne pozycje odbioru; szczegółowe scenariusze w [FEATURES.md](FEATURES.md) |
-| Jak rozpocząć, sprawdzić i zakończyć zadanie? | [WORKFLOW.md](WORKFLOW.md): kolejność pracy i znaczenie statusów |
+| Jak rozpocząć, sprawdzić i zakończyć zadanie? | [WORKFLOW.md](WORKFLOW.md): kolejność pracy, szablon kroku planu i znaczenie statusów |
+| Jakie zasady obowiązują przy zmianie widgetu albo powiadomień? | [ARCHITECTURE.md](ARCHITECTURE.md): sekcja 7, podsekcje „Zasady widgetu” i „Zasady powiadomień” |
+| Co testować i jak uruchomić testy albo zrzuty na emulatorze? | [STACK.md](STACK.md): sekcja 5, „Sposób testowania”, i sekcja 6, „Narzędzia” |
+| Jak ludzie zgłaszają błędy i pomysły? | [CONTRIBUTING.md](../CONTRIBUTING.md): tylko zgłoszenia, bez pull requestów od innych osób; szablon zgłoszenia błędu w `.github/ISSUE_TEMPLATE/blad.yml` |
 | Co ostatnio zmieniono i dlaczego? | [LOG.md](LOG.md): najwyżej 20 ostatnich wpisów, czytaj kilka górnych. Starsze wpisy są w [archiwum](log_archive/2026.md); log nie zastępuje obowiązujących reguł |
 | Co zostało wydane użytkownikom? | [CHANGELOG.md](CHANGELOG.md): techniczna historia wydań, nie bieżąca kolejka prac. Notatki dla użytkowników są w `app/src/main/assets/release_notes.json` ([STACK.md](STACK.md), sekcja „Wydania i licencja”) |
 | Jakie braki potwierdzono w obecnym kodzie? | [KNOWN_ISSUES.md](KNOWN_ISSUES.md): otwarte problemy i brakujący odbiór, nie docelowa specyfikacja |

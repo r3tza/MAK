@@ -29,7 +29,7 @@ DEPENDENCY_ID_RE = re.compile(r"[IO]-\d+")
 LINK_RE = re.compile(r"\[[^\]]*\]\(([^)]+)\)")
 EXTERNAL_PREFIXES = ("http://", "https://", "mailto:", "tel:", "data:")
 
-ROOT_DOCUMENTS = ("README.md", "AGENTS.md", "CLAUDE.md")
+ROOT_DOCUMENTS = ("README.md", "AGENTS.md", "CLAUDE.md", "CONTRIBUTING.md")
 
 
 def active_documents(root: Path) -> list[Path]:

@@ -5,7 +5,7 @@
 - Źródło prawdy dla narzędzi i wersji: ten plik.
 - Język dokumentacji: polski.
 - Język odpowiedzi dla użytkownika: polski.
-- Ostatnia zaakceptowana aktualizacja: 2026-09-27.
+- Ostatnia zaakceptowana aktualizacja: 2026-09-28.
 
 ## 2. Język i środowisko uruchomieniowe
 
@@ -14,6 +14,7 @@
 - Android Gradle Plugin 9.4.1 i Gradle 9.7.1.
 - Compose BOM 2026.09.00, Material Icons Extended, Room 2.8.5, Lifecycle 2.11.0, Navigation 2.10.2, KSP 2.3.12, Glance 1.2.0, Core KTX 1.19.1, `kotlinx.coroutines` 1.11.0 i `kotlinx.serialization` 1.11.0.
 - Stabilny zestaw zaktualizowano 2026-09-21, a 2026-09-26 podniesiono Core KTX do 1.19.1 i Navigation do 2.10.2. Kotlin 2.3.20 jest zweryfikowany przez Koin compiler plugin 1.2.1 i zgodny z KSP 2.3.12; linii 2.4.x nie użyto, bo KSP 2.3.12 jest zbudowany przeciw Kotlin 2.3.20. `compileSdk` podniesiono do 37.2, ponieważ nowe AndroidX wymagają API 37; `targetSdk` pozostaje 36, aby nie zmieniać zachowania działania.
+- Narzędzia aktualizujemy do najnowszych stabilnych, wzajemnie zgodnych wersji. Nie wybieramy wersji eksperymentalnej tylko dlatego, że jest najnowsza.
 - Deprecacje `androidx.compose.ui.test.junit4.createComposeRule` pozostają; migrację do `v2.createComposeRule` wykonamy osobno, ponieważ zmienia dyspozytor testów.
 
 ## 3. Warstwa aplikacji
@@ -48,6 +49,31 @@
 - Walidacja pełnej konfiguracji Koin podczas kompilacji. Jeśli typy Androida nie są objęte compiler pluginem, dodać uzupełniający test uruchomienia modułów.
 - Kontrola spójności dokumentów: `python3 scripts/test_check_map.py` po zmianie skryptu oraz `python3 scripts/check_map.py` na repozytorium; zakres i ograniczenia są w sekcji Narzędzia.
 
+### Sposób testowania
+
+Agenci sprawdzają działanie aplikacji testami, które da się uruchomić lokalnie. Priorytet ma logika domenowa na JVM. Ten sam `ActivePlanProvider` jest źródłem planu dla listy, kalendarza, ekranu „Dzisiaj”, widgetu i powiadomień, więc testy widoków nie powielają reguł planu. Nie piszemy testów rozstrzygających pytania, które nadal są otwarte w `ARCHITECTURE.md`.
+
+**JVM.** Czysty Kotlin i `java.time`, bez Compose i Room:
+
+- `WeekCalculator`: semestr od środka tygodnia, A/B, data poza semestrem, `ONE_WEEK`, `FROM_WEEK`, nakładanie korekt;
+- `ScheduleResolver`: cykle, `ONCE`, odwołanie, zmiana, przeniesienie, przywrócenie, rozdział notatki wspólnej od notatki do daty;
+- `CollisionDetector`: nakładka jest kolizją, stykanie godzin nie jest; kolizje po zmianach wystąpień;
+- eksport JSON: `schemaVersion` i round-trip modelu;
+- walidacja: nazwa, kierunek, godziny; koniec później niż start; zajęcia przechodzące przez północ są odrzucane;
+- prezenter widgetu, z testem, że loader woła ten sam `ActivePlanProvider`.
+
+**Room.** Warstwa bazy jest cienka, więc nie ma testów CRUD dla każdego DAO. Utrzymujemy test trwałości semestru, korekty, `OccurrenceChange` i `OccurrenceNote`. Przy zmianie schematu dochodzi test migracji na zachowanych danych. Operacje wieloetapowe, w tym import i konfigurację, sprawdza test rollbacku. Testy DAO i Glance nie powielają testów domeny.
+
+**Compose.** Emulator jest wolny, więc zostaje kilka przebiegów z wstrzykniętą datą zamiast `LocalDate.now()`:
+
+- brak aktywnego semestru;
+- ekran „Dzisiaj” po dodaniu semestru, kierunku i zajęć;
+- odwołanie i przywrócenie jednego terminu;
+- notatka do zajęć kontra notatka do terminu;
+- szerokość 320 dp: brak poziomego przewijania, akcje widoczne.
+
+Kontrast, `reduced motion` i motyw ciemny sprawdzamy w kodzie oraz na emulatorze lub urządzeniu, dopóki nie ma stałego urządzenia w CI.
+
 ## 6. Narzędzia
 
 - Android Studio i Gradle do budowania istniejącego projektu aplikacji.
@@ -57,7 +83,9 @@
 - Na Windowsie interpreter Pythona nazywa się zwykle `python`; polecenia zapisane z `python3` uruchamiaj wtedy przez `python`. Jeśli `python` otwiera Microsoft Store albo zwraca „nie znaleziono Python”, użyj programu uruchamiającego `py`.
 - Duży ekran bez tabletu: na emulatorze telefonu `adb shell wm size 2560x1600` i `adb shell wm density 320` dają najkrótszy bok 800 dp (tablet poziomo), `wm size 1600x2560` tablet pionowo, a `wm size 1400x2000` z tą samą gęstością 700 dp. Po sprawdzeniu przywróć `adb shell wm size reset` i `adb shell wm density reset`. Emulator ma język angielski, więc nadaje się też do sprawdzania polskich tekstów niezależnych od języka telefonu.
 - Gradle wymaga Android SDK: pliku `local.properties` z `sdk.dir` poza repozytorium albo zmiennej `ANDROID_HOME`. Domyślna lokalizacja na Windowsie to `%LOCALAPPDATA%\Android\Sdk`.
-- Testy Compose i Room uruchamia `gradlew.bat connectedDebugAndroidTest` na emulatorze albo urządzeniu. Sama kompilacja (`compileDebugAndroidTestKotlin`) nie zastępuje uruchomienia.
+- Testy Compose i Room uruchamia `gradlew.bat connectedDebugAndroidTest` na emulatorze albo urządzeniu. Sama kompilacja (`compileDebugAndroidTestKotlin`) nie zastępuje uruchomienia. Jedną klasę testów uruchamia `gradlew.bat connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.retza.mak.ui.today.TodayScreenTest"`.
+- Zrzuty na emulatorze `Medium_Phone` (gęstość 420, `adb` z `%LOCALAPPDATA%\Android\Sdk\platform-tools`): `gradlew.bat installDebug`, potem `adb exec-out screencap -p > plik.png`. Szerokość 320 dp: `adb shell wm size 840x1866`, powrót: `adb shell wm size reset`. Motyw ciemny: `adb shell cmd uimode night yes`, powrót: `night no`. Skala czcionki 2,0: `adb shell settings put system font_scale 2.0`, powrót: `1.0`. Wersja debug ma dane demonstracyjne. Porównuj zrzuty przed zmianą i po niej w tych samych ustawieniach.
+- W Git Bash na Windowsie długi skrypt z polskimi znakami zapisz do pliku i uruchom przez `py plik.py`. Przekazany przez heredoc bywa przekłamany.
 - Wersja release ma wyłączoną minifikację. Przed włączeniem `isMinifyEnabled` trzeba dodać reguły R8 dla `kotlinx.serialization` i klas eksportu JSON, inaczej import i eksport przestaną działać.
 
 ## 7. Środowisko

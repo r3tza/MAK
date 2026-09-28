@@ -22,6 +22,21 @@ Przed zakończeniem zmiany interfejsu wykonaj przegląd redukcyjny w zakresie za
 
 Sprawdź też odwrotnie, czy ekran nie gubi informacji: rzadkich stanów (odwołane, zmienione, jednorazowe), dużej liczby elementów, długich nazw, pustych danych i sytuacji, gdy element sterujący lub stan znika z ekranu przy przewijaniu.
 
+## Planowanie
+
+Krok w `PLAN.md` ma nagłówek `## N. Tytuł w trybie rozkazującym (ID)` i zawiera:
+
+1. cel w jednym akapicie oraz listę plików;
+2. numerowane zmiany w kolejności wykonania, z nazwami funkcji, parametrów i tekstów interfejsu;
+3. testy do dodania albo poprawienia;
+4. przypadki brzegowe;
+5. weryfikację: polecenia, klasy testów i zrzuty;
+6. kryterium zakończenia, które da się sprawdzić bez zgadywania.
+
+Każdy krok kończy się kompilującym się kodem, zielonymi testami i osobnym commitem. Duży refaktor dziel na małe etapy o jawnej kolejności, odpowiedzialności, kryterium zakończenia i stanie możliwym do sprawdzenia. Drobne różnice między opisem kroku a kodem wykonawca rozwiązuje zgodnie z celem i opisuje w commicie; zatrzymuje się tylko wtedy, gdy nie da się ustalić zamierzonego zachowania.
+
+Przy istotnej zmianie wyglądu najpierw opisz wariant i role informacji, najlepiej jako makietę do porównania. Po akceptacji użytkownika zapisz decyzję, zaimplementuj ją i porównaj zrzuty przed zmianą i po niej, zanim utrwalisz drobne szczegóły wizualne.
+
 ## Zakończenie i status
 
 - `do implementacji`: kod wymagany przez kryteria jeszcze nie istnieje.

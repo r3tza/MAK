@@ -4,6 +4,12 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-28: Zgłoszenia od ludzi i uporządkowanie AGENTS.md
+
+- Decyzja użytkownika: publiczne repozytorium przyjmuje zgłoszenia błędów i pomysłów, ale nie pull requesty od innych osób. `CONTRIBUTING.md` jest po polsku i opisuje zgłoszenia, pomysły, brak pull requestów, forki na licencji Apache 2.0 oraz prywatność danych w zgłoszeniach. `.github/ISSUE_TEMPLATE/blad.yml` to formularz zgłoszenia błędu z wersją MAK, wersją Androida, krokami, wynikiem i zgodą na brak prywatnych danych. README odsyła do `CONTRIBUTING.md`, a `scripts/check_map.py` sprawdza też jego odnośniki.
+- Decyzja użytkownika (wariant zaproponowany przez agenta): `AGENTS.md` zawiera tylko rdzeń zasad. Zasady widgetu i powiadomień przeszły do `ARCHITECTURE.md`, sekcja 7, bo `AGENTS.md` odsyłał do nieistniejących tam sekcji. Zakres i sposób testowania przeszły do `STACK.md`, sekcja 5, a polecenia testów pojedynczej klasy, zrzutów, szerokości 320 dp, motywu ciemnego i skali czcionki do sekcji 6. Preferencje projektowe użytkownika przeszły do `ARCHITECTURE.md`, sekcje 4 i 5, bez powtórzeń z istniejącymi zasadami; sprzeczne z zakazem pilli sformułowanie „preferuj pille” usunięto. Szablon kroku planu, podział refaktoru na etapy i proces istotnej zmiany wyglądu przeszły do `WORKFLOW.md`, sekcja „Planowanie”. Usunięto nieaktualne zdanie o przykładowych testach szablonu.
+- Nowe zasady w `AGENTS.md`: wpis w logu podaje, kto podjął decyzję; pytanie użytkownika o zdanie agenta nie jest akceptacją (korekta użytkownika z 2026-09-28).
+
 ## 2026-09-28: Rewizja zasad po korektach użytkownika
 
 - Fakty: Podczas planowania poprawek interfejsu nowe ogólne zasady (redukcja środków wizualnych, reguła powtarzania stanu, zakaz osobnego przycisku powrotu, „Kolizja nie jest winą użytkownika”, ograniczona paleta kolorów) kłóciły się z wcześniej przyjętymi elementami i z korektami użytkownika. Agent traktował przyjęte elementy jak naruszenia.
@@ -132,10 +138,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: `MainActivity.attachBaseContext` nakłada polskie zasoby (`withAppLocale`), zamiast tłumaczyć tytuły pojedynczych komponentów; aplikacja jest tylko po polsku (`ARCHITECTURE.md`). Wybór godziny w oknie niższym niż 560 dp używa układu poziomego. Kolejność prac ustalona przez użytkownika: I-44 i I-26, potem aktualizacje w aplikacji (I-36 do I-41), potem tryb tabletowy (I-45 do I-47).
 - Powód: Własne tytuły naprawiłyby tylko widoczne teksty; opisy przycisków dla czytnika ekranu i tryb wpisywania daty nadal byłyby w języku telefonu. Mechanizm aktualizacji musi być w pierwszej wersji dla znajomych.
 - Odrzucone: własny tytuł i nagłówek `DatePicker` z polskim `Locale` tylko w stanie wyboru; ustawianie języka aplikacji przez `LocaleManager`, bo działa od Androida 13, a `minSdk` to 31.
-
-## 2026-09-27: Tryb tabletowy, wariant A (I-44 do I-47)
-
-- Fakty: Po blokadzie pionu użytkownik zapytał, jak robią to duże aplikacje, i poprosił o tryb tabletowy. Android 16 ignoruje blokadę orientacji na ekranach od 600 dp, a w poziomie wybór daty i godziny był ucięty.
-- Decyzja: Użytkownik wybrał wariant A: telefon w pionie, tablet w obu orientacjach, boczny pasek nawigacji od 600 dp, treść najwyżej 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp, dialogi wyboru daty i godziny dopasowane do niskiego okna. Klasy szerokości liczy własna funkcja z progami Material 3, bez biblioteki `material3-adaptive`. Zakres zapisano w `PRODUCT.md` i `ARCHITECTURE.md`, kroki w `PLAN.md`.
-- Powód: Poprawny układ na tabletach bez przebudowy nawigacji i danych.
-- Odrzucone: wariant B z dwoma panelami (lista i szczegóły obok siebie) jako zbyt duża zmiana nawigacji na obecnym etapie; może wrócić jako osobne zadanie; biblioteka `material3-adaptive`, bo potrzebna jest tylko szerokość okna.
