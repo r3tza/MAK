@@ -166,7 +166,7 @@ Cel (decyzja użytkownika z 2026-09-28, sposób zapewnienia czytelności zapropo
    - `courseColorFrom(hue: Float, lightness: Float): Int` zwraca kolor HSL o odcieniu `hue` (0 do 360), nasyceniu `COURSE_SATURATION` (0,7) i jasności `lightness` (0 czarny, 0,5 czysty odcień, 1 biały), bez szukania luminancji;
    - `hueAndShadeOf` zastąp `hueAndLightnessOf(color: Int): HueAndLightness` (odcień z `hueOf`, jasność HSL z `hslOf`); zmień nazwę klasy `HueAndShade` na `HueAndLightness`;
    - usuń `MIN_COURSE_LUMINANCE`, `MAX_COURSE_LUMINANCE` i `isReadableCourseColor`;
-   - `DefaultCourseColor` i `suggestedCourseColor` używają jasności 0,42 (kolor czytelny w obu motywach dla większości odcieni); zapisane kolory zostają bez zmian;
+   - `DefaultCourseColor` i `suggestedCourseColor` zostają w środku pasma czytelnego w obu motywach bez dopasowania (luminancja 0,225, jak dotąd); stała jasność 0,42 dawała w motywie jasnym za jasny turkus; zapisane kolory zostają bez zmian;
    - pętlę z `courseTextColor` wydziel do `fun courseColorOn(color: Int, surface: Int, minContrast: Double): Int`; `courseTextColor(color, surface)` woła ją z 4,5, a nowa `fun courseShapeColor(color: Int, surface: Int): Int` z 3,0.
 2. W `ui/components` dodaj `@Composable internal fun courseShapeColor(hex: String?, background: Color): Color`: kolor z `parseHexColor(hex)` dopasowany przez `courseShapeColor` do `background`; bez koloru zwraca `MaterialTheme.colorScheme.onSurfaceVariant`. Użyj jej wszędzie, gdzie aplikacja rysuje kolor kierunku jako kształt:
    - pasek `ClassCard` (tło `surface`), z zachowaniem obecnego zastępczego koloru z `classAccentColor`, gdy kierunek nie ma koloru;

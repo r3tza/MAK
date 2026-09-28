@@ -71,7 +71,7 @@ import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakViewSwitch
 import dev.retza.mak.ui.components.ScreenStatus
-import dev.retza.mak.ui.components.parseHexColor
+import dev.retza.mak.ui.components.courseShapeColor
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
 
@@ -584,7 +584,7 @@ private fun RowScope.CalendarDay(day: CalendarDayUi, onSelected: (String) -> Uni
 
 @Composable
 private fun courseMarkerTint(hex: String?): Color =
-    hex?.let(::parseHexColor) ?: MaterialTheme.colorScheme.onSurfaceVariant
+    courseShapeColor(hex, MaterialTheme.colorScheme.background)
 
 @Composable
 private fun CalendarMarker(

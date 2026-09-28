@@ -4,37 +4,34 @@ import kotlin.math.abs
 import kotlin.math.pow
 
 /**
- * Course colors picked by hue and shade. Every picked color keeps a WCAG contrast of at least
- * 3:1 for the course bar against the light surfaces (#FFFFFF, #F5F7FB) and the dark cards
- * (#202B40, #19243A) of the app theme, so the relative luminance is limited to
- * [MIN_COURSE_LUMINANCE, MAX_COURSE_LUMINANCE]. Colors are ARGB [Int] values, without Compose.
+ * Course colors picked by hue and lightness. The app stores the exact picked color and adapts it
+ * only when drawing: shapes get at least [SHAPE_CONTRAST] and text at least [TEXT_CONTRAST] against
+ * their background. Colors are ARGB [Int] values, without Compose.
  */
-const val MIN_COURSE_LUMINANCE = 0.18
-const val MAX_COURSE_LUMINANCE = 0.27
 private const val COURSE_SATURATION = 0.7
 
-data class HueAndShade(val hue: Float, val shade: Float)
+/** Contrast of a course bar, dot or marker against its background. */
+const val SHAPE_CONTRAST = 3.0
 
-/** [hue] in degrees (0 to 360), [shade] from 0 (darkest allowed) to 1 (lightest allowed). */
-fun courseColorFrom(hue: Float, shade: Float): Int {
-    val target = MIN_COURSE_LUMINANCE + shade.coerceIn(0f, 1f) * (MAX_COURSE_LUMINANCE - MIN_COURSE_LUMINANCE)
-    var low = 0.0
-    var high = 1.0
-    // Luminance grows with HSL lightness for a fixed hue and saturation.
-    repeat(40) {
-        val mid = (low + high) / 2
-        if (relativeLuminance(hslToArgb(hue.toDouble(), COURSE_SATURATION, mid)) < target) low = mid else high = mid
-    }
-    return hslToArgb(hue.toDouble(), COURSE_SATURATION, (low + high) / 2)
+/** Contrast of a course name against its background. */
+const val TEXT_CONTRAST = 4.5
+
+// Luminance band readable on the light and dark theme without adaptation; used for new programs.
+private const val BALANCED_LUMINANCE = 0.225
+
+data class HueAndLightness(val hue: Float, val lightness: Float)
+
+/** [hue] in degrees (0 to 360), [lightness] from 0 (black) through 0.5 (pure hue) to 1 (white). */
+fun courseColorFrom(hue: Float, lightness: Float): Int =
+    hslToArgb(hue.toDouble(), COURSE_SATURATION, lightness.coerceIn(0f, 1f).toDouble())
+
+fun hueAndLightnessOf(color: Int): HueAndLightness {
+    val (hue, _, lightness) = hslOf(color)
+    return HueAndLightness(hue.toFloat(), lightness.toFloat())
 }
 
-fun hueAndShadeOf(color: Int): HueAndShade {
-    val shade = (relativeLuminance(color) - MIN_COURSE_LUMINANCE) / (MAX_COURSE_LUMINANCE - MIN_COURSE_LUMINANCE)
-    return HueAndShade(hueOf(color), shade.coerceIn(0.0, 1.0).toFloat())
-}
-
-fun isReadableCourseColor(color: Int): Boolean =
-    relativeLuminance(color) in (MIN_COURSE_LUMINANCE - 0.005)..(MAX_COURSE_LUMINANCE + 0.005)
+/** HSL saturation of [color]; 0 for greys, whose hue is undefined. */
+fun saturationOf(color: Int): Float = hslOf(color).second.toFloat()
 
 /** Parses "#RRGGBB" (the hash is optional); returns null for anything else. */
 fun parseCourseHex(text: String): Int? {
@@ -91,20 +88,34 @@ private fun hslToArgb(hue: Double, saturation: Double, lightness: Double): Int {
     return (0xFF shl 24) or (byte(r1) shl 16) or (byte(g1) shl 8) or byte(b1)
 }
 
-/** Teal in the middle of the allowed shades; used for a new study program. */
-val DefaultCourseColor: String = courseHex(courseColorFrom(174f, 0.5f))
+/** Color of [hue] whose luminance reads well on both themes without adaptation. */
+private fun balancedCourseColor(hue: Float): Int {
+    var low = 0.0
+    var high = 1.0
+    // Luminance grows with HSL lightness for a fixed hue and saturation.
+    repeat(40) {
+        val mid = (low + high) / 2
+        if (relativeLuminance(hslToArgb(hue.toDouble(), COURSE_SATURATION, mid)) < BALANCED_LUMINANCE) low = mid else high = mid
+    }
+    return hslToArgb(hue.toDouble(), COURSE_SATURATION, (low + high) / 2)
+}
+
+/** Teal readable on both themes; used for a new study program. */
+val DefaultCourseColor: String = courseHex(balancedCourseColor(174f))
 
 // Hues tried in order for a further program; neighbours on the wheel are far apart.
 private val SuggestedHues = listOf(174f, 30f, 220f, 330f, 100f, 270f, 0f, 60f, 190f, 300f)
 private const val MIN_HUE_DISTANCE = 40f
 
-/** First readable color whose hue is far from every color in [used]; the default when nothing is used. */
+/** First balanced color whose hue is far from every color in [used]; the default when nothing is used. */
 fun suggestedCourseColor(used: List<String>): String {
-    val usedHues = used.mapNotNull { parseCourseHex(it) }.map { hueAndShadeOf(it).hue }
+    val usedHues = used.mapNotNull { parseCourseHex(it) }
+        .filter { saturationOf(it) > 0f }
+        .map { hueAndLightnessOf(it).hue }
     val hue = SuggestedHues.firstOrNull { candidate ->
         usedHues.none { hueDistance(it, candidate) < MIN_HUE_DISTANCE }
     } ?: SuggestedHues[usedHues.size % SuggestedHues.size]
-    return courseHex(courseColorFrom(hue, 0.5f))
+    return courseHex(balancedCourseColor(hue))
 }
 
 private fun hueDistance(first: Float, second: Float): Float {
@@ -112,24 +123,28 @@ private fun hueDistance(first: Float, second: Float): Float {
     return if (difference > 180f) 360f - difference else difference
 }
 
-private const val TEXT_CONTRAST = 4.5
-
 /**
- * The course color for text on [surface]: same hue and saturation, darker on a light surface and
- * lighter on a dark one, until it reaches a 4.5:1 contrast. A color that already has it is kept.
+ * [color] with at least [minContrast] against [surface]: same hue and saturation, darker on a light
+ * surface and lighter on a dark one. A color that already has the contrast is kept.
  */
-fun courseTextColor(color: Int, surface: Int): Int {
-    if (contrastRatio(color, surface) >= TEXT_CONTRAST) return color
+fun courseColorOn(color: Int, surface: Int, minContrast: Double): Int {
+    if (contrastRatio(color, surface) >= minContrast) return color
     val (hue, saturation, lightness) = hslOf(color)
     val darken = relativeLuminance(surface) > 0.18
     var current = lightness
     repeat(100) {
         current = (if (darken) current - 0.01 else current + 0.01).coerceIn(0.0, 1.0)
         val candidate = hslToArgb(hue, saturation, current)
-        if (contrastRatio(candidate, surface) >= TEXT_CONTRAST) return candidate
+        if (contrastRatio(candidate, surface) >= minContrast) return candidate
     }
     return if (darken) 0xFF000000.toInt() else 0xFFFFFFFF.toInt()
 }
+
+/** The course color for text on [surface], with a 4.5:1 contrast. */
+fun courseTextColor(color: Int, surface: Int): Int = courseColorOn(color, surface, TEXT_CONTRAST)
+
+/** The course color for a bar, dot or marker on [surface], with a 3:1 contrast. */
+fun courseShapeColor(color: Int, surface: Int): Int = courseColorOn(color, surface, SHAPE_CONTRAST)
 
 private fun hslOf(color: Int): Triple<Double, Double, Double> {
     val r = ((color shr 16) and 0xFF) / 255.0
