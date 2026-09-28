@@ -48,7 +48,6 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
-import androidx.compose.ui.unit.TextUnit
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import dev.retza.mak.ui.shortDayNames
@@ -485,7 +484,7 @@ private fun CalendarView(
             Row(modifier = Modifier.fillMaxWidth()) {
                 week.forEach { day -> CalendarDay(day, onCalendarDaySelected) }
                 repeat(7 - week.size) {
-                    Box(Modifier.weight(1f).height(48.dp))
+                    Box(Modifier.weight(1f).heightIn(min = 48.dp))
                 }
             }
         }
@@ -525,10 +524,10 @@ private fun RowScope.CalendarDay(day: CalendarDayUi, onSelected: (String) -> Uni
         day.markers.size <= 3 && !day.hasMoreMarkers -> 8.dp
         else -> 6.dp
     }
-    Box(
+    Column(
         modifier = Modifier
             .weight(1f)
-            .height(48.dp)
+            .heightIn(min = 48.dp)
             .clip(shape)
             .then(
                 if (day.isToday && !day.isSelected) {
@@ -542,23 +541,25 @@ private fun RowScope.CalendarDay(day: CalendarDayUi, onSelected: (String) -> Uni
                 selected = day.isSelected
             }
             .testTag("calendar-day-${day.id}")
-            .padding(top = 5.dp, bottom = 4.dp)
+            .padding(top = 5.dp, bottom = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.SpaceBetween
     ) {
         Text(
             day.dayLabel,
-            fontSize = if (largeFont) 11.sp else 13.sp,
-            lineHeight = if (largeFont) 12.sp else TextUnit.Unspecified,
+            fontSize = 13.sp,
             color = when {
                 day.isSelected -> MaterialTheme.colorScheme.onPrimary
                 day.isInCurrentMonth -> MaterialTheme.colorScheme.onSurface
                 else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
             },
-            modifier = Modifier.align(Alignment.TopCenter).testTag("calendar-day-number-${day.id}")
+            modifier = Modifier.testTag("calendar-day-number-${day.id}")
         )
+        // Always drawn, also without markers, so every cell of a week has the same height.
         Row(
             horizontalArrangement = Arrangement.spacedBy(2.dp),
             modifier = Modifier
-                .align(Alignment.BottomCenter)
+                .padding(top = 2.dp)
                 .height(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
