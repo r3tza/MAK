@@ -16,7 +16,6 @@ import dev.retza.mak.domain.cancelledOccurrences
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
-import dev.retza.mak.ui.components.CalendarMarkerColor
 import dev.retza.mak.ui.components.CalendarMarkerUi
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.ScreenStatus
@@ -243,14 +242,15 @@ class ScheduleViewModel(
                 isInCurrentMonth = YearMonth.from(date) == control.calendarMonth,
                 isToday = date == control.today,
                 isSelected = date == control.calendarDate,
-                markers = occurrences.take(3).map {
+                markers = occurrences.take(if (occurrences.size > 5) 4 else 5).map {
                     CalendarMarkerUi(
                         id = it.id,
                         contentDescription = calendarOccurrenceLabel(it),
-                        colorToken = markerColor(it),
+                        isChanged = it.occurrenceChange != null,
                         colorHex = it.studyProgram?.color
                     )
-                }
+                },
+                hasMoreMarkers = occurrences.size > 5
             )
         }
         val calendarPlan = activePlan(data, control.calendarDate)
@@ -367,9 +367,6 @@ private fun emptyScheduleState() = ScheduleUiState(
     weekSourceLabel = "",
     status = ScreenStatus.Ready
 )
-
-private fun markerColor(occurrence: PlannedOccurrence): CalendarMarkerColor =
-    if (occurrence.occurrenceChange != null) CalendarMarkerColor.Error else CalendarMarkerColor.Primary
 
 private fun calendarLegend(data: ActivePlanData, activeFilter: String): List<CalendarLegendUi> {
     val courses = data.semesterPrograms
