@@ -57,6 +57,13 @@ class SettingsViewModelTest {
         assertEquals(2, state.semesters.size)
         assertEquals("1", state.activeSemesterId)
         assertEquals("Semestr", state.semesters.first { it.id == "1" }.name)
+        val activeSemester = state.semesters.first { it.id == "1" }
+        assertTrue(activeSemester.firstWeekLabel.startsWith("pierwszy tydzień "))
+        val inactiveSemester = state.semesters.first { it.id != "1" }
+        assertEquals("", inactiveSemester.dateRangeLabel)
+        assertEquals("", inactiveSemester.firstWeekLabel)
+        assertEquals("", inactiveSemester.courseCountLabel)
+        assertEquals("", inactiveSemester.classCountLabel)
         assertEquals("system", state.themeOptions.first { it.isSelected }.id)
     }
 

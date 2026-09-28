@@ -16,6 +16,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -27,21 +28,20 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
-import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakEmptyState
+import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakNoteBanner
+import dev.retza.mak.ui.components.MakNoteRole
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
@@ -52,6 +52,8 @@ import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.distinctLabels
+import dev.retza.mak.ui.components.makRowFocus
+import dev.retza.mak.ui.polishPlural
 
 @Composable
 private fun ActiveSemesterField(
@@ -164,7 +166,7 @@ fun SettingsScreen(
                         SettingsNavigationRow(
                             title = "Zarządzaj semestrami",
                             value = active
-                                ?.let { "${it.dateRangeLabel}, ${it.firstWeekLabel.replaceFirstChar { char -> char.lowercase() }}" }
+                                ?.let { "${it.dateRangeLabel}, ${it.firstWeekLabel}" }
                                 .orEmpty(),
                             onClick = onOpenSemesters
                         )
@@ -172,9 +174,10 @@ fun SettingsScreen(
                     }
                     SettingsNavigationRow(
                         title = "Kierunki",
-                        value = "Nazwy i kolory kierunków",
+                        value = "",
                         onClick = onOpenPrograms
                     )
+                    SettingsRowDivider()
                     SettingsFieldItem {
                         MakSelectField(
                             label = "Próg okienka",
@@ -209,7 +212,7 @@ fun SettingsScreen(
                 SettingsListSection("Dane") {
                     SettingsNavigationRow(
                         title = "Kopia zapasowa i import",
-                        value = "Eksport i import pliku JSON",
+                        value = "",
                         onClick = onOpenData
                     )
                 }
@@ -251,30 +254,6 @@ fun SettingsScreen(
 
             else -> MakStateMessage(status = state.status, onRetry = onRetry)
         }
-    }
-}
-
-@Composable
-private fun SettingsSection(
-    title: String,
-    content: @Composable ColumnScope.() -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(14.dp))
-                .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(14.dp))
-                .background(MaterialTheme.colorScheme.surfaceContainerLow)
-                .padding(MakSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(MakSpacing.md),
-            content = content
-        )
     }
 }
 
@@ -322,19 +301,6 @@ private fun SettingsRowDivider() {
 }
 
 private val SettingsCardShape = RoundedCornerShape(14.dp)
-private val SettingsRowFocusShape = RoundedCornerShape(12.dp)
-
-/** Keyboard focus ring for full-width rows; the chain must place it before the click modifier. */
-@Composable
-private fun Modifier.settingsRowFocus(): Modifier {
-    var focused by remember { mutableStateOf(false) }
-    val ring = if (focused) {
-        Modifier.border(2.dp, MaterialTheme.colorScheme.primary, SettingsRowFocusShape)
-    } else {
-        Modifier
-    }
-    return this.then(ring).onFocusChanged { focused = it.isFocused }
-}
 private val SettingsRowPadding = PaddingValues(horizontal = MakSpacing.lg, vertical = MakSpacing.md)
 
 @Composable
@@ -362,7 +328,7 @@ private fun SettingsNavigationRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .settingsRowFocus()
+            .makRowFocus()
             .clickable(onClick = onClick)
             .padding(SettingsRowPadding),
         verticalAlignment = Alignment.CenterVertically,
@@ -388,7 +354,7 @@ private fun SettingsActionRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .settingsRowFocus()
+            .makRowFocus()
             .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
             .padding(SettingsRowPadding),
         verticalAlignment = Alignment.CenterVertically,
@@ -410,7 +376,7 @@ private fun SettingsActionRow(
 @Composable
 private fun SettingsSwitchRow(
     title: String,
-    details: String,
+    details: String? = null,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit
 ) {
@@ -418,26 +384,14 @@ private fun SettingsSwitchRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 56.dp)
-            .settingsRowFocus()
+            .makRowFocus()
             .toggleable(value = checked, role = Role.Switch, onValueChange = onCheckedChange)
             .padding(SettingsRowPadding),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
-        SettingsRowText(title, listOf(details), Modifier.weight(1f))
+        SettingsRowText(title, listOfNotNull(details), Modifier.weight(1f))
         Switch(checked = checked, onCheckedChange = null)
-    }
-}
-
-@Composable
-private fun SettingsInfoRow(title: String, value: String) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
-    ) {
-        Text(title, modifier = Modifier.weight(1f), style = MaterialTheme.typography.bodyMedium)
-        Text(value, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }
 
@@ -469,9 +423,7 @@ fun SettingsSemestersScreen(
             .padding(top = MakSpacing.md),
         verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
-        if (state.semesters.isEmpty()) {
-            MakEmptyState("Dodaj semestr, aby rozpocząć pracę z planem.")
-        } else {
+        if (state.semesters.isNotEmpty()) {
             ActiveSemesterField(
                 semesters = state.semesters,
                 activeSemesterId = state.activeSemesterId,
@@ -479,17 +431,33 @@ fun SettingsSemestersScreen(
             )
         }
         MakNoteBanner(
-            title = "Semestry",
-            subtitle = "Konfiguracja przypisań, kalendarzy i korekt należy do wybranego semestru."
+            title = null,
+            subtitle = "Konfiguracja przypisań, kalendarzy i korekt należy do wybranego semestru.",
+            role = MakNoteRole.Neutral
         )
-        state.semesters.forEach { semester ->
-            SemesterRow(
-                semester = semester,
-                onConfigure = { onConfigureSemester(semester.id) },
-                onDelete = { onDeleteSemester(semester.id) }
+        Text(
+            text = "Lista semestrów",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.SemiBold,
+            modifier = Modifier.semantics { heading() }
+        )
+        if (state.semesters.isNotEmpty()) {
+            MakSecondaryAction(
+                text = "Dodaj semestr",
+                onClick = onAddSemester,
+                icon = Icons.Outlined.Add
             )
+            state.semesters.forEach { semester ->
+                SemesterRow(
+                    semester = semester,
+                    onConfigure = { onConfigureSemester(semester.id) },
+                    onDelete = { onDeleteSemester(semester.id) }
+                )
+            }
+        } else {
+            MakEmptyState("Dodaj semestr, aby rozpocząć pracę z planem.")
+            MakSecondaryAction(text = "Dodaj semestr", onClick = onAddSemester, icon = Icons.Outlined.Add)
         }
-        MakPrimaryAction(text = "Dodaj semestr", onClick = onAddSemester)
     }
     if (state.semesterToDeleteId != null) {
         DeleteSemesterDialog(
@@ -525,12 +493,18 @@ private fun SemesterRow(
                 StatusText(text = "Aktywny")
             }
         }
-        Text(
-            text = "${semester.dateRangeLabel}, ${semester.firstWeekLabel}, " +
-                "${semester.courseCountLabel}, ${semester.classCountLabel}",
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        listOf(
+            semester.dateRangeLabel,
+            semester.firstWeekLabel,
+            semester.courseCountLabel,
+            semester.classCountLabel
+        ).filter { it.isNotBlank() }.takeIf { it.isNotEmpty() }?.let { details ->
+            Text(
+                text = details.joinToString(", "),
+                style = MaterialTheme.typography.bodySmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
         Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
             MakTextAction(text = "Konfiguruj", onClick = onConfigure)
             MakTextAction(text = "Usuń", onClick = onDelete, destructive = true)
@@ -591,78 +565,61 @@ fun SettingsNotificationsScreen(
             Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 MakNoteBanner(
                     title = "Zablokowane przez system",
-                    subtitle = "Aplikacja nie może wyświetlać powiadomień, dopóki nie włączysz ich w ustawieniach systemowych."
+                    subtitle = "Aplikacja nie może wyświetlać powiadomień, dopóki nie włączysz ich w ustawieniach systemowych.",
+                    role = MakNoteRole.Warning
                 )
                 MakSecondaryAction(text = "Otwórz ustawienia aplikacji", onClick = onOpenAppSettings)
             }
         }
-        SettingsSection("Kolizje w planie") {
-            NotificationToggle(
-                title = "Powiadomienia",
-                enabled = notifications.enabled,
-                onEnabledChange = { enabled ->
+        SettingsListSection("Kolizje w planie") {
+            SettingsSwitchRow(
+                title = "Powiadomienia o kolizjach",
+                checked = notifications.enabled,
+                onCheckedChange = { enabled ->
                     onNotificationsEnabled(enabled)
                     if (enabled && notificationsBlocked) onRequestNotificationPermission()
                 }
             )
         }
         if (notifications.enabled) {
-            SettingsSection("Dzień wcześniej") {
-                NotificationToggle(
+            SettingsListSection("Dzień wcześniej") {
+                SettingsSwitchRow(
                     title = "Powiadomienie wieczorne",
-                    enabled = notifications.eveningEnabled,
-                    onEnabledChange = onEveningNotificationsEnabled
+                    checked = notifications.eveningEnabled,
+                    onCheckedChange = onEveningNotificationsEnabled
                 )
                 if (notifications.eveningEnabled) {
-                    MakSelectField(
-                        label = "Godzina wieczorna",
-                        value = notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                        options = notifications.eveningHourOptions,
-                        onSelected = { onEveningHourSelected(it.id) },
-                        optionLabel = { it.label }
-                    )
+                    SettingsFieldItem {
+                        MakSelectField(
+                            label = "Godzina wieczorna",
+                            value = notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
+                            options = notifications.eveningHourOptions,
+                            onSelected = { onEveningHourSelected(it.id) },
+                            optionLabel = { it.label }
+                        )
+                    }
                 }
             }
-            SettingsSection("Przed zajęciami") {
-                NotificationToggle(
+            SettingsListSection("Przed zajęciami") {
+                SettingsSwitchRow(
                     title = "Powiadomienie przed zajęciami",
-                    enabled = notifications.beforeClassEnabled,
-                    onEnabledChange = onBeforeClassNotificationsEnabled
+                    checked = notifications.beforeClassEnabled,
+                    onCheckedChange = onBeforeClassNotificationsEnabled
                 )
                 if (notifications.beforeClassEnabled) {
-                    MakSelectField(
-                        label = "Wyprzedzenie przed zajęciami",
-                        value = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                        options = notifications.leadOptions,
-                        onSelected = { onBeforeClassLeadSelected(it.id) },
-                        optionLabel = { it.label }
-                    )
+                    SettingsFieldItem {
+                        MakSelectField(
+                            label = "Wyprzedzenie przed zajęciami",
+                            value = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
+                            options = notifications.leadOptions,
+                            onSelected = { onBeforeClassLeadSelected(it.id) },
+                            optionLabel = { it.label }
+                        )
+                    }
                 }
             }
         }
-        MakNoteBanner(title = "Czas dostarczenia", subtitle = state.notificationsDetails)
-    }
-}
-
-@Composable
-private fun NotificationToggle(
-    title: String,
-    enabled: Boolean,
-    onEnabledChange: (Boolean) -> Unit
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
-        Text(title, style = MaterialTheme.typography.bodyMedium)
-        Row(
-            horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Column(modifier = Modifier.weight(1f)) {
-                MakChoiceRow(label = "Włączone", selected = enabled, onClick = { onEnabledChange(true) })
-            }
-            Column(modifier = Modifier.weight(1f)) {
-                MakChoiceRow(label = "Wyłączone", selected = !enabled, onClick = { onEnabledChange(false) })
-            }
-        }
+        if (notifications.enabled) MakHelperText(state.notificationsDetails)
     }
 }
 
@@ -680,15 +637,16 @@ fun SettingsDataScreen(
             .padding(top = MakSpacing.md),
         verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
-        MakNoteBanner(
-            title = "Kopia zapasowa i import",
-            subtitle = "Import zastępuje wszystkie lokalne dane. Tej operacji nie można cofnąć."
-        )
         MakSecondaryAction(text = "Eksportuj plan do JSON", onClick = onExport)
         MakSecondaryAction(
             text = "Importuj plan z JSON",
             onClick = onImport,
             enabled = !state.isPreparingImport
+        )
+        MakNoteBanner(
+            title = null,
+            subtitle = "Import zastępuje wszystkie lokalne dane. Tej operacji nie można cofnąć.",
+            role = MakNoteRole.Warning
         )
     }
     if (state.importErrorMessage != null) {
@@ -721,7 +679,8 @@ fun ImportPreviewScreen(
         } else {
             MakNoteBanner(
                 title = "Zastąpisz wszystkie lokalne dane",
-                subtitle = "Import zastępuje cały plan. Tej operacji nie można cofnąć."
+                subtitle = "Tej operacji nie można cofnąć.",
+                role = MakNoteRole.Warning
             )
             Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
                 ImportStatRow("Semestry", preview.semesterCount)

@@ -30,6 +30,7 @@ import androidx.compose.ui.unit.dp
 import dev.retza.mak.update.ReleaseHistoryEntry
 import dev.retza.mak.ui.components.MakDot
 import dev.retza.mak.ui.components.MakNoteBanner
+import dev.retza.mak.ui.components.MakNoteRole
 import dev.retza.mak.ui.components.MakPoppyMark
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSpacing
@@ -71,7 +72,8 @@ fun AboutScreen(
                 MakNoteBanner(
                     title = "Wersja przed pełnym wydaniem",
                     subtitle = "MAK jest nadal rozwijany. Mogą pojawiać się błędy, dlatego regularnie " +
-                        "rób kopię zapasową planu w ustawieniach, w sekcji „Dane”."
+                        "rób kopię zapasową planu w ustawieniach, w sekcji „Dane”.",
+                    role = MakNoteRole.Warning
                 )
             }
         }

@@ -34,11 +34,8 @@ internal val shortDayNames = linkedMapOf(
     DayOfWeek.SUNDAY to "Nd"
 )
 
-internal fun classCountLabel(count: Int): String = when {
-    count == 1 -> "1 zajęcie"
-    count in 2..4 -> "$count zajęcia"
-    else -> "$count zajęć"
-}
+internal fun classCountLabel(count: Int): String =
+    "$count ${polishPlural(count, "zajęcie", "zajęcia", "zajęć")}"
 
 internal fun PlannedOccurrence.toUi(conflictLabel: String?, conflictWith: String? = null): ClassItemUi {
     val cancelled = occurrenceChange?.kind == OccurrenceChangeKind.CANCELLED

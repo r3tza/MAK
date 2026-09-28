@@ -31,8 +31,8 @@ class SettingsScreenTest {
         id = "1",
         name = "Semestr zimowy",
         dateRangeLabel = "1 paź - 28 lut",
-        firstWeekLabel = "Pierwszy tydzień A",
-        courseCountLabel = "2 kierunków",
+        firstWeekLabel = "pierwszy tydzień A",
+        courseCountLabel = "2 kierunki",
         classCountLabel = "5 zajęć",
         isActive = true
     )
@@ -223,6 +223,30 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun semestersScreenKeepsEmptyStateAndAddActionTogether() {
+        var added = false
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(900.dp)) {
+                    SettingsSemestersScreen(
+                        state = SettingsUiState(),
+                        onSemesterSelected = {},
+                        onAddSemester = { added = true },
+                        onConfigureSemester = {},
+                        onDeleteSemester = {},
+                        onConfirmDelete = {},
+                        onCancelDelete = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Dodaj semestr, aby rozpocząć pracę z planem.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dodaj semestr").assertIsDisplayed().performClick()
+        assertTrue(added)
+    }
+
+    @Test
     fun semestersScreenShowsManageActionsAt320Dp() {
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
@@ -248,6 +272,11 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithText("Aktywny").assertIsDisplayed()
         composeTestRule.onNodeWithText("Konfiguruj").assertIsDisplayed()
         composeTestRule.onNodeWithText("Usuń").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Lista semestrów").assertIsDisplayed()
+        composeTestRule.onNodeWithText(
+            "Konfiguracja przypisań, kalendarzy i korekt należy do wybranego semestru."
+        ).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dodaj semestr").assertIsDisplayed()
     }
 
     @Test
@@ -263,7 +292,7 @@ class SettingsScreenTest {
                                 leadOptions = listOf(NotificationOptionUi("30", "30 min", true))
                             )
                         ),
-                        notificationsBlocked = false,
+                        notificationsBlocked = true,
                         onNotificationsEnabled = {},
                         onEveningNotificationsEnabled = {},
                         onBeforeClassNotificationsEnabled = {},
@@ -281,7 +310,14 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithText("Przed zajęciami").assertIsDisplayed()
         composeTestRule.onNodeWithText("Godzina wieczorna").assertIsDisplayed()
         composeTestRule.onNodeWithText("Wyprzedzenie przed zajęciami").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Czas dostarczenia").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zablokowane przez system").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Otwórz ustawienia aplikacji").assertIsDisplayed()
+        composeTestRule.onNodeWithText(
+            "Android może opóźnić powiadomienie o kilkanaście minut, aby oszczędzać baterię."
+        ).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Powiadomienia o kolizjach").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Włączone").assertCountEquals(0)
+        composeTestRule.onAllNodesWithText("Wyłączone").assertCountEquals(0)
     }
 
     @Test
@@ -318,6 +354,31 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun enablingBlockedNotificationsRequestsSystemPermission() {
+        var permissionRequested = false
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(900.dp)) {
+                    SettingsNotificationsScreen(
+                        state = SettingsUiState(notifications = NotificationSettingsUi(enabled = false)),
+                        notificationsBlocked = true,
+                        onNotificationsEnabled = {},
+                        onEveningNotificationsEnabled = {},
+                        onBeforeClassNotificationsEnabled = {},
+                        onEveningHourSelected = {},
+                        onBeforeClassLeadSelected = {},
+                        onRequestNotificationPermission = { permissionRequested = true },
+                        onOpenAppSettings = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Powiadomienia o kolizjach").performClick()
+        assertTrue(permissionRequested)
+    }
+
+    @Test
     fun dataScreenOffersExportAndImportAt320Dp() {
         var imported = 0
 
@@ -336,6 +397,9 @@ class SettingsScreenTest {
 
         composeTestRule.onNodeWithText("Eksportuj plan do JSON").assertIsDisplayed()
         composeTestRule.onNodeWithText("Importuj plan z JSON").assertIsDisplayed().performClick()
+        composeTestRule.onNodeWithText(
+            "Import zastępuje wszystkie lokalne dane. Tej operacji nie można cofnąć."
+        ).assertIsDisplayed()
         assertEquals(1, imported)
     }
 

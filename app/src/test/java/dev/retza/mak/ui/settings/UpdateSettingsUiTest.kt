@@ -15,7 +15,7 @@ class UpdateSettingsUiTest {
     fun idleStateInvitesCheckWithoutPendingRow() {
         val ui = state().toSettingsUi()
 
-        assertEquals("Sprawdź, czy jest nowsza wersja", ui.checkSummary)
+        assertEquals("", ui.checkSummary)
         assertTrue(ui.canCheck)
         assertNull(ui.pendingVersion)
     }

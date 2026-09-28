@@ -19,6 +19,7 @@ import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakColorDot
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakNoteBanner
+import dev.retza.mak.ui.components.MakNoteRole
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakPrimaryAction
@@ -235,7 +236,8 @@ private fun CourseStep(
                 if (state.isProgramChoiceLocked) {
                     MakNoteBanner(
                         title = "Kierunek: ${selected?.name.orEmpty()}",
-                        subtitle = LOCKED_PROGRAM_NOTE
+                        subtitle = LOCKED_PROGRAM_NOTE,
+                        role = MakNoteRole.Neutral
                     )
                 } else {
                     val labels = programOptions.map { it.id }
@@ -331,7 +333,8 @@ private fun InactiveSemesterClassesStep(
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
         MakNoteBanner(
             title = "Semestr zapisany",
-            subtitle = "Zacznie obowiązywać, gdy wybierzesz go jako aktywny w ustawieniach."
+            subtitle = "Zacznie obowiązywać, gdy wybierzesz go jako aktywny w ustawieniach.",
+            role = MakNoteRole.Neutral
         )
         SemesterProgramsNote(programNames)
         MakPrimaryAction(

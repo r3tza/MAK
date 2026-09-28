@@ -20,12 +20,16 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.heading
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -41,6 +45,7 @@ import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakFieldPair
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakNoteBanner
+import dev.retza.mak.ui.components.MakNoteRole
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakRowTitle
 import dev.retza.mak.ui.components.MakScreenContent
@@ -51,6 +56,8 @@ import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakTextAction
+import dev.retza.mak.ui.components.makRowFocus
+import dev.retza.mak.ui.polishPlural
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.parseHexColor
 import java.time.LocalDate
@@ -210,25 +217,31 @@ fun SemesterScreen(
                     MakNoteBanner(
                         title = "Różne kalendarze",
                         subtitle = "Kierunki używają różnych zakresów dat i rytmów A/B. " +
-                            "Zmień daty na ekranie Kalendarze."
+                            "Zmień daty na ekranie Kalendarze.",
+                        role = MakNoteRole.Neutral
                     )
                 }
                 SemesterNavigationRow(
                     title = "Kierunki",
-                    description = "Kierunki i ich kalendarze.",
                     count = state.courseItems.size,
                     onClick = onOpenCourses
                 )
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = MakSpacing.md),
+                    color = MaterialTheme.colorScheme.outlineVariant
+                )
                 SemesterNavigationRow(
                     title = "Korekty tygodni",
-                    description = "Ręczne oznaczenia tygodni A/B.",
                     count = state.overrideCount,
                     onClick = onOpenOverrides
                 )
                 if (state.calendars.size > 1) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = MakSpacing.md),
+                        color = MaterialTheme.colorScheme.outlineVariant
+                    )
                     SemesterNavigationRow(
                         title = "Kalendarze",
-                        description = "Zakresy dat i rytmy A/B kierunków.",
                         count = state.calendars.size,
                         onClick = onOpenCalendars
                     )
@@ -243,7 +256,6 @@ fun SemesterScreen(
 @Composable
 private fun SemesterNavigationRow(
     title: String,
-    description: String,
     count: Int,
     onClick: () -> Unit
 ) {
@@ -251,16 +263,26 @@ private fun SemesterNavigationRow(
         modifier = Modifier
             .fillMaxWidth()
             .heightIn(min = 64.dp)
-            .clickable(onClick = onClick)
+            .makRowFocus()
+            .clickable(role = Role.Button, onClick = onClick)
             .padding(horizontal = MakSpacing.md, vertical = MakSpacing.sm),
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, fontWeight = FontWeight.SemiBold)
             Text(
-                text = "$description Liczba: $count.",
-                style = MaterialTheme.typography.bodySmall,
+                text = title,
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.SemiBold,
+                modifier = Modifier.semantics { heading() }
+            )
+            Text(
+                text = when (title) {
+                    "Kierunki" -> "$count ${polishPlural(count, "kierunek", "kierunki", "kierunków")}"
+                    "Korekty tygodni" -> "$count ${polishPlural(count, "korekta", "korekty", "korekt")}"
+                    else -> "$count ${polishPlural(count, "kalendarz", "kalendarze", "kalendarzy")}"
+                },
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -605,7 +627,8 @@ private fun CoursesBlock(
 
         MakNoteBanner(
             title = "Kierunek w semestrze",
-            subtitle = "Wybierz istniejący kierunek albo utwórz nowy."
+            subtitle = "Wybierz istniejący kierunek albo utwórz nowy.",
+            role = MakNoteRole.Neutral
         )
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -968,9 +991,11 @@ private fun WeekOverrideForm(
     onCancel: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
-        MakNoteBanner(
-            title = if (state.isEditing) "Edytuj korektę" else "Dodaj korektę",
-            subtitle = "Oznaczenie A albo B dla wybranego tygodnia."
+        Text(
+            text = if (state.isEditing) "Edytuj korektę" else "Dodaj korektę",
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.Bold,
+            modifier = Modifier.semantics { heading() }
         )
         MakDatePickerField(
             label = "Dzień w tygodniu korekty",

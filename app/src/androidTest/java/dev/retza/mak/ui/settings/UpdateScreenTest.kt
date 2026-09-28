@@ -7,6 +7,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -64,6 +65,21 @@ class UpdateScreenTest {
         composeTestRule.onNodeWithText("Brak informacji o nowej wersji.").assertIsDisplayed()
         composeTestRule.onNodeWithText("Sprawdź teraz").performClick()
         assertTrue(checked)
+    }
+
+    @Test
+    fun downloadFailureUsesErrorRoleWithoutRepeatingTitle() {
+        show(
+            state(
+                checkStatus = UpdateCheckStatus.Available,
+                availableUpdate = release,
+                downloadStatus = UpdateDownloadStatus.WrongPackage
+            )
+        )
+
+        composeTestRule.onNodeWithText("Plik zawiera inną aplikację.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Aktualizacja").assertDoesNotExist()
+        composeTestRule.onNodeWithContentDescription("Błąd: Plik zawiera inną aplikację.").assertExists()
     }
 
     private val release = UpdateInfo(

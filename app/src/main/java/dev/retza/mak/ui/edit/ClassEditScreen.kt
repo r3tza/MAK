@@ -16,6 +16,7 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
+import dev.retza.mak.ui.polishPlural
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakDatePickerField
@@ -278,10 +279,4 @@ internal fun hiddenDataMessage(warning: HiddenDataWarningUi): String {
     }
     return "Po zapisie przestaną być widoczne dane przypięte do dotychczasowych terminów: " +
         parts.joinToString(" i ") + ". Dane zostaną zachowane i wrócą, jeśli przywrócisz poprzedni termin."
-}
-
-private fun polishPlural(count: Int, one: String, few: String, many: String): String = when {
-    count == 1 -> one
-    count % 10 in 2..4 && count % 100 !in 12..14 -> few
-    else -> many
 }
