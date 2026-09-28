@@ -553,27 +553,7 @@ fun ClassCard(
                     )
                 }
                 if (item.conflictLabel != null) {
-                    Row(
-                        modifier = Modifier
-                            .clip(RoundedCornerShape(8.dp))
-                            .background(MaterialTheme.colorScheme.tertiaryContainer)
-                            .padding(horizontal = MakSpacing.sm, vertical = MakSpacing.xs),
-                        horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Outlined.WarningAmber,
-                            contentDescription = null,
-                            tint = MaterialTheme.colorScheme.onTertiaryContainer,
-                            modifier = Modifier.size(16.dp)
-                        )
-                        Text(
-                            text = item.conflictLabel,
-                            color = MaterialTheme.colorScheme.onTertiaryContainer,
-                            fontWeight = FontWeight.SemiBold,
-                            fontSize = 12.sp
-                        )
-                    }
+                    MakConflictNote(item.conflictLabel, item.conflictWith)
                 }
                 if (item.conflictLabel != null && hasNotes) {
                     HorizontalDivider(
@@ -597,6 +577,44 @@ fun ClassCard(
                     )
                 }
             }
+        }
+    }
+}
+
+@Composable
+internal fun MakConflictNote(label: String, partners: String?, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(8.dp))
+            .background(MaterialTheme.colorScheme.tertiaryContainer)
+            .padding(horizontal = MakSpacing.sm, vertical = MakSpacing.xs),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = Icons.Outlined.WarningAmber,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onTertiaryContainer,
+                modifier = Modifier.size(16.dp)
+            )
+            Text(
+                text = label,
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp
+            )
+        }
+        partners?.let {
+            Text(
+                text = "Z: $it",
+                modifier = Modifier.padding(start = 20.dp),
+                color = MaterialTheme.colorScheme.onTertiaryContainer,
+                fontSize = 12.sp
+            )
         }
     }
 }
@@ -1363,7 +1381,10 @@ internal fun classCardDescription(item: ClassItemUi): String = buildList {
     // "Jednorazowe" is already read as the status badge.
     item.weekLabel?.takeIf { it.isNotBlank() && it != item.statusBadge }?.let(::add)
     add(classMeta(item))
-    item.conflictLabel?.let(::add)
+    item.conflictLabel?.let { label ->
+        add(label)
+        item.conflictWith?.let { add("z: $it") }
+    }
     item.classNote?.takeIf(String::isNotBlank)?.let { add("Notatka do zajęć: $it") }
     item.occurrenceNote?.takeIf(String::isNotBlank)?.let { add("Notatka do terminu: $it") }
 }.joinToString(", ")

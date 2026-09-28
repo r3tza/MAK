@@ -38,6 +38,8 @@ data class OccurrenceDetailsUiState(
     val targetDateLabel: String? = null,
     val status: OccurrenceStatusUi = OccurrenceStatusUi.Scheduled,
     val statusLabel: String? = null,
+    val conflictLabel: String? = null,
+    val conflictWith: String? = null,
     val sharedNote: String? = null,
     val sharedNoteDraft: String = sharedNote.orEmpty(),
     val sharedNoteError: String? = null,

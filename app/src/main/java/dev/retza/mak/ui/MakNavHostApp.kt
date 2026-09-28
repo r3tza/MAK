@@ -68,6 +68,7 @@ fun MakApp(
     onGrantInstallPermission: () -> Unit = {}
 ) {
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
+    val editor = classEditViewModel.editor.collectAsStateWithLifecycle().value
     val navController = rememberNavController()
     val currentRoute = navController.currentBackStackEntryAsState().value
         ?.destination
@@ -132,7 +133,7 @@ fun MakApp(
         },
         topBar = {
             MakTopBar(
-                title = titleForRoute(currentRoute),
+                title = titleForRoute(currentRoute, editor.title),
                 showBack = showBack,
                 showSettings = isRoot,
                 onBack = ::navigateBack,

@@ -145,7 +145,7 @@ data class PlannedOccurrence(
     // Identified by the class and its original planned date, like iCalendar RECURRENCE-ID,
     // so an occurrence moved onto a day with a regular one of the same class stays distinct.
     val id: String
-        get() = "${classItem.id}:$originalDate"
+        get() = occurrenceId(classItem.id, originalDate)
 
     val classId: String
         get() = classItem.id
@@ -162,6 +162,8 @@ data class PlannedOccurrence(
     val occurrenceNoteBody: String?
         get() = occurrenceNote?.body
 }
+
+fun occurrenceId(classId: String, originalDate: LocalDate): String = "$classId:$originalDate"
 
 data class ResolvedSchedule(
     val date: LocalDate,

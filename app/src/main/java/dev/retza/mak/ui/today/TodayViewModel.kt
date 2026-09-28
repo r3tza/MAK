@@ -8,10 +8,11 @@ import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.countGaps
+import dev.retza.mak.domain.collisionLabels
+import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.uniqueCollisionCount
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.polishLocale
-import dev.retza.mak.ui.schedule.conflictLabels
 import dev.retza.mak.ui.settings.SettingsPreferences
 import dev.retza.mak.ui.toUi
 import dev.retza.mak.ui.todayTitleFormatter
@@ -72,7 +73,8 @@ class TodayViewModel(
         if (data == null) return emptyTodayState()
         val plan = activePlanProvider.resolve(data, day)
         val schedule = plan.schedule
-        val labels = conflictLabels(plan.collisions)
+        val labels = collisionLabels(plan.collisions)
+        val names = collisionPartnerNames(plan.collisions)
         return TodayUiState(
             dateLabel = day.format(todayTitleFormatter).replaceFirstChar { it.titlecase(polishLocale) },
             semesterLabel = data.semester.name,
@@ -85,7 +87,7 @@ class TodayViewModel(
             classCount = schedule.occurrences.size,
             collisionCount = uniqueCollisionCount(plan.collisions),
             gapCount = countGaps(schedule.occurrences, thresholdMinutes.toLong()),
-            items = schedule.occurrences.map { it.toUi(labels[it.id]) }
+            items = schedule.occurrences.map { it.toUi(labels[it.id], names[it.id]) }
         )
     }
 }

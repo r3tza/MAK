@@ -13,6 +13,8 @@ import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
 import dev.retza.mak.domain.cancelledOccurrences
+import dev.retza.mak.domain.collisionLabels
+import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
@@ -228,7 +230,8 @@ class ScheduleViewModel(
             activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
         }
         val cancelled = if (control.showCancelled) cancelledItems(data, control.scheduleDate, activeFilter) else emptyList()
-        val labels = conflictLabels(selectedPlan.collisions)
+        val labels = collisionLabels(selectedPlan.collisions)
+        val names = collisionPartnerNames(selectedPlan.collisions)
         val monday = control.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val currentWeekMonday = control.today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val calendarDays = calendarDates(control.calendarMonth).map { date ->
@@ -258,7 +261,8 @@ class ScheduleViewModel(
         val calendarFiltered = calendarSchedule.occurrences.filter {
             activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
         }
-        val calendarLabels = conflictLabels(calendarPlan.collisions)
+        val calendarLabels = collisionLabels(calendarPlan.collisions)
+        val calendarNames = collisionPartnerNames(calendarPlan.collisions)
         val relevantCalendarIds = if (activeFilter == "all") {
             data.calendars.mapTo(mutableSetOf()) { it.id }
         } else {
@@ -310,13 +314,13 @@ class ScheduleViewModel(
             selectedDayLabel = dayNames[control.scheduleDate.dayOfWeek].orEmpty(),
             // Counts only classes that take place, like "Dzisiaj" and the widget.
             selectedDayCountLabel = classCountLabel(filtered.size),
-            items = filtered.map { it.toUi(labels[it.id]) } + cancelled,
+            items = filtered.map { it.toUi(labels[it.id], names[it.id]) } + cancelled,
             calendarMonthLabel = control.calendarMonth.format(monthFormatter),
             calendarDays = calendarDays,
             calendarLegend = calendarLegend(data, activeFilter),
             calendarSelectedDayLabel = control.calendarDate.format(fullDateFormatter),
             calendarSelectedDayCountLabel = classCountLabel(calendarFiltered.size),
-            calendarItems = calendarFiltered.map { it.toUi(calendarLabels[it.id]) } +
+            calendarItems = calendarFiltered.map { it.toUi(calendarLabels[it.id], calendarNames[it.id]) } +
                 if (control.showCancelled) cancelledItems(data, control.calendarDate, activeFilter) else emptyList(),
             showCancelled = control.showCancelled,
             hasOneWeekCorrection = data.weekOverrides.any {

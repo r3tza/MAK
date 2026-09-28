@@ -46,13 +46,8 @@ data class WidgetOccurrenceUi(
     val courseColor: String?,
     val roomLabel: String,
     val teacherName: String?,
-    val conflicts: List<WidgetConflictUi>,
+    val conflictLabel: String? = null,
     val classNote: String? = null,
     val occurrenceNote: String? = null,
     val phase: WidgetOccurrencePhase = WidgetOccurrencePhase.Scheduled
-)
-
-data class WidgetConflictUi(
-    val timeRange: String,
-    val otherOccurrenceName: String
 )

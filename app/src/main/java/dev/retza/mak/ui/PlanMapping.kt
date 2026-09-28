@@ -40,7 +40,7 @@ internal fun classCountLabel(count: Int): String = when {
     else -> "$count zajęć"
 }
 
-internal fun PlannedOccurrence.toUi(conflictLabel: String?): ClassItemUi {
+internal fun PlannedOccurrence.toUi(conflictLabel: String?, conflictWith: String? = null): ClassItemUi {
     val cancelled = occurrenceChange?.kind == OccurrenceChangeKind.CANCELLED
     val modified = occurrenceChange?.kind == OccurrenceChangeKind.MODIFIED
     val oneOff = classItem.recurrence == Recurrence.ONCE
@@ -72,6 +72,7 @@ internal fun PlannedOccurrence.toUi(conflictLabel: String?): ClassItemUi {
         isCancelled = cancelled,
         isModified = modified,
         isOneOff = oneOff,
-        conflictLabel = conflictLabel
+        conflictLabel = conflictLabel,
+        conflictWith = conflictWith
     )
 }

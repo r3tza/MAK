@@ -21,7 +21,8 @@ data class ClassItemUi(
     val isCancelled: Boolean = false,
     val isModified: Boolean = false,
     val isOneOff: Boolean = false,
-    val conflictLabel: String? = null
+    val conflictLabel: String? = null,
+    val conflictWith: String? = null
 )
 
 @Immutable
