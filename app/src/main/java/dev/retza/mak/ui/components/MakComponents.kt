@@ -30,6 +30,7 @@ import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -1384,6 +1385,33 @@ fun MakDialog(
             content()
         }
     }
+}
+
+/** Confirmation of an irreversible deletion; both actions are blocked while [isDeleting]. */
+@Composable
+fun MakConfirmDeletionDialog(
+    title: String,
+    text: String,
+    isDeleting: Boolean,
+    onConfirm: () -> Unit,
+    onCancel: () -> Unit,
+    confirmLabel: String = "Usuń"
+) {
+    AlertDialog(
+        onDismissRequest = { if (!isDeleting) onCancel() },
+        title = { Text(title) },
+        text = { Text(text) },
+        confirmButton = {
+            TextButton(
+                onClick = onConfirm,
+                enabled = !isDeleting,
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+            ) { Text(confirmLabel) }
+        },
+        dismissButton = {
+            TextButton(onClick = onCancel, enabled = !isDeleting) { Text("Anuluj") }
+        }
+    )
 }
 
 @Composable

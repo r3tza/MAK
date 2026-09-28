@@ -19,7 +19,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
@@ -39,6 +38,7 @@ import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakColorDot
+import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakField
@@ -341,7 +341,7 @@ fun SemesterWeekOverridesScreen(
     modifier: Modifier = Modifier
 ) {
     state.pendingOverrideDeletion?.let { override ->
-        ConfirmDeletionDialog(
+        MakConfirmDeletionDialog(
             title = "Usunąć korektę tygodnia?",
             text = "Korekta tygodnia od ${override.weekStartDate.asLongDate()} zostanie usunięta. " +
                 "Rytm A/B wróci do automatycznego wyliczenia.",
@@ -393,7 +393,7 @@ fun SemesterCalendarsScreen(
     modifier: Modifier = Modifier
 ) {
     state.pendingCalendarDeletion?.let { calendar ->
-        ConfirmDeletionDialog(
+        MakConfirmDeletionDialog(
             title = "Usunąć kalendarz?",
             text = "Kalendarz ${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()} " +
                 "nie jest używany przez żaden kierunek i zostanie usunięty razem ze swoimi korektami.",
@@ -682,37 +682,12 @@ private fun CourseDeletionDialog(
     onConfirm: () -> Unit,
     onCancel: () -> Unit
 ) {
-    ConfirmDeletionDialog(
+    MakConfirmDeletionDialog(
         title = "Usunąć kierunek z semestru?",
         text = courseDeletionMessage(deletion),
         isDeleting = isDeleting,
         onConfirm = onConfirm,
         onCancel = onCancel
-    )
-}
-
-@Composable
-private fun ConfirmDeletionDialog(
-    title: String,
-    text: String,
-    isDeleting: Boolean,
-    onConfirm: () -> Unit,
-    onCancel: () -> Unit
-) {
-    AlertDialog(
-        onDismissRequest = { if (!isDeleting) onCancel() },
-        title = { Text(title) },
-        text = { Text(text) },
-        confirmButton = {
-            TextButton(
-                onClick = onConfirm,
-                enabled = !isDeleting,
-                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
-            ) { Text("Usuń") }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel, enabled = !isDeleting) { Text("Anuluj") }
-        }
     )
 }
 

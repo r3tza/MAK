@@ -30,6 +30,7 @@ import java.time.LocalDate
 import dev.retza.mak.ui.components.MakFieldPair
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
+import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakFactRow
@@ -112,21 +113,15 @@ fun OccurrenceDetailsScreen(
     }
 
     if (state.showDeleteConfirmation) {
-        MakDialog(
+        MakConfirmDeletionDialog(
             title = "Usuń zajęcia",
-            description = "Usunięcie wpisu usunie wszystkie jego wystąpienia. Tej operacji nie można cofnąć.",
-            onDismiss = onDismissDeleteConfirmation
-        ) {
-            Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
-                MakSecondaryAction(text = "Anuluj", onClick = onDismissDeleteConfirmation, modifier = Modifier.weight(1f))
-                MakSecondaryAction(
-                    text = "Usuń zajęcia",
-                    onClick = onDeleteBaseClass,
-                    modifier = Modifier.weight(1f),
-                    destructive = true
-                )
-            }
-        }
+            text = "Usunięcie wpisu usunie wszystkie jego wystąpienia. Tej operacji nie można cofnąć.",
+            confirmLabel = "Usuń zajęcia",
+            // The screen has no in-progress deletion state: success closes the screen, failure the dialog.
+            isDeleting = false,
+            onConfirm = onDeleteBaseClass,
+            onCancel = onDismissDeleteConfirmation
+        )
     }
 }
 
