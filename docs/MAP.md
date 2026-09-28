@@ -12,6 +12,7 @@ Zacznij od pytania, które rozwiązuje zadanie. Otwórz wskazany dokument i potr
 | Co wykonać teraz? | [PLAN.md](PLAN.md): najwyżej pięć najbliższych kroków z kryteriami zakończenia. [QUEUE.md](QUEUE.md) zawiera pozostałe zadania, zależności i statusy; zakończone są w osobnej tabeli na końcu |
 | Co jest gotowe w kodzie, ale czeka na urządzenie? | [QUEUE.md](QUEUE.md): osobne pozycje odbioru; szczegółowe scenariusze w [FEATURES.md](FEATURES.md) |
 | Jak rozpocząć, sprawdzić i zakończyć zadanie? | [WORKFLOW.md](WORKFLOW.md): kolejność pracy, szablon kroku planu i znaczenie statusów |
+| Jak prowadzić gałąź i pull request? | [WORKFLOW.md](WORKFLOW.md): sekcja „Gałąź i pull request”; zasady ogólne w [AGENTS.md](../AGENTS.md), sekcja „Git” |
 | Jakie zasady obowiązują przy zmianie widgetu albo powiadomień? | [ARCHITECTURE.md](ARCHITECTURE.md): sekcja 7, podsekcje „Zasady widgetu” i „Zasady powiadomień” |
 | Co testować i jak uruchomić testy albo zrzuty na emulatorze? | [STACK.md](STACK.md): sekcja 5, „Sposób testowania”, i sekcja 6, „Narzędzia” |
 | Jak ludzie zgłaszają błędy i pomysły? | [CONTRIBUTING.md](../CONTRIBUTING.md): tylko zgłoszenia, bez pull requestów od innych osób; szablon zgłoszenia błędu w `.github/ISSUE_TEMPLATE/blad.yml` |

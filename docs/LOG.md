@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-28: Gałąź i pull request dla każdego zadania
+
+- Decyzja użytkownika (wariant zaproponowany przez agenta): każde zadanie, także zmiana samej dokumentacji, powstaje na gałęzi `task/<ID>-<opis>` od `origin/main` i kończy się pull requestem do `main`. Agent sam wypycha gałąź i otwiera pull request, a scala go wyłącznie użytkownik przez squash. Workflow `checks.yml` uruchamia kontrolę dokumentacji i testy JVM na każdym pull requeście. Gałąź `main` ma ochronę: zmiany tylko przez pull request z zielonym `checks`, bez wyjątku dla administratora, bo agenci działają na poświadczeniach użytkownika.
+- Powód: izolacja nieudanych kroków, jedno miejsce recenzji i testy przed scaleniem zamiast dopiero przy tagu wydania.
+- Odrzucone: gałąź `dev` z przenoszeniem na `main` przy wydaniu (stan wydania wyznacza tag); bezpośrednie commity małych poprawek dokumentacji na `main` (użytkownik najpierw je dopuścił, potem wybrał pełną ochronę gałęzi).
+- Ograniczenie: na komputerze użytkownika nie ma GitHub CLI (`gh`), więc do czasu jego instalacji i logowania agent podaje odnośnik do utworzenia pull requesta, a ochronę gałęzi użytkownik włącza w ustawieniach repozytorium.
+
 ## 2026-09-28: Zgłoszenia od ludzi i uporządkowanie AGENTS.md
 
 - Decyzja użytkownika: publiczne repozytorium przyjmuje zgłoszenia błędów i pomysłów, ale nie pull requesty od innych osób. `CONTRIBUTING.md` jest po polsku i opisuje zgłoszenia, pomysły, brak pull requestów, forki na licencji Apache 2.0 oraz prywatność danych w zgłoszeniach. `.github/ISSUE_TEMPLATE/blad.yml` to formularz zgłoszenia błędu z wersją MAK, wersją Androida, krokami, wynikiem i zgodą na brak prywatnych danych. README odsyła do `CONTRIBUTING.md`, a `scripts/check_map.py` sprawdza też jego odnośniki.
@@ -131,10 +138,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Test taga ma sprawdzić pełny proces i pliki bez publicznego udostępniania niedokończonej wersji. Ręczna publikacja pozostawia użytkownikowi ostatnią decyzję.
 - Odrzucone: Natychmiastowa publikacja po samym przejściu testów; publiczne wydanie testowe `v0.1.0` przed ukończeniem mechanizmu aktualizacji.
 - Weryfikacja: Tag testowy `v0.1.1` przeszedł testy JVM i zbudował podpisany APK w GitHub Actions. Szkic wydania zawierał `MAK-0.1.1.apk` i `update.json`, a zapisana suma SHA-256 była zgodna z pobranym APK.
-
-## 2026-09-27: Polskie zasoby aktywności i kolejność prac (I-44, I-26)
-
-- Fakty: Przy angielskim języku telefonu wybór daty pokazywał „Select date” i angielskie nazwy, a nagłówki dni tygodnia nakładały się na siebie. Teksty pochodziły z zasobów Material 3 w języku systemu.
-- Decyzja: `MainActivity.attachBaseContext` nakłada polskie zasoby (`withAppLocale`), zamiast tłumaczyć tytuły pojedynczych komponentów; aplikacja jest tylko po polsku (`ARCHITECTURE.md`). Wybór godziny w oknie niższym niż 560 dp używa układu poziomego. Kolejność prac ustalona przez użytkownika: I-44 i I-26, potem aktualizacje w aplikacji (I-36 do I-41), potem tryb tabletowy (I-45 do I-47).
-- Powód: Własne tytuły naprawiłyby tylko widoczne teksty; opisy przycisków dla czytnika ekranu i tryb wpisywania daty nadal byłyby w języku telefonu. Mechanizm aktualizacji musi być w pierwszej wersji dla znajomych.
-- Odrzucone: własny tytuł i nagłówek `DatePicker` z polskim `Locale` tylko w stanie wyboru; ustawianie języka aplikacji przez `LocaleManager`, bo działa od Androida 13, a `minSdk` to 31.

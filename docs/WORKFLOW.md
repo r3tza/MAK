@@ -37,6 +37,17 @@ Każdy krok kończy się kompilującym się kodem, zielonymi testami i osobnym c
 
 Przy istotnej zmianie wyglądu najpierw opisz wariant i role informacji, najlepiej jako makietę do porównania. Po akceptacji użytkownika zapisz decyzję, zaimplementuj ją i porównaj zrzuty przed zmianą i po niej, zanim utrwalisz drobne szczegóły wizualne.
 
+## Gałąź i pull request
+
+Zasady ogólne są w `AGENTS.md`, sekcja „Git”. `main` jest chroniona: zmiany trafiają tam tylko przez pull request z zielonym testem `checks` (`.github/workflows/checks.yml`).
+
+1. Na początku zadania pobierz zmiany (`git fetch origin`) i utwórz gałąź od `origin/main` (`git switch -c task/I-56-dzisiaj-plan origin/main`). Jeśli w katalogu są niezatwierdzone zmiany spoza zadania, nie przenoś ich do gałęzi i zapytaj użytkownika.
+2. Pracuj i twórz commity na gałęzi. Aktualizacja statusu w `QUEUE.md`, wpis w `LOG.md` i zmiany w `KNOWN_ISSUES.md` należą do tej samej gałęzi.
+3. Przed pull requestem uruchom kontrole z sekcji „Wykonanie i sprawdzenie”. Jeśli `origin/main` poszła do przodu i są konflikty, scal ją do gałęzi (`git merge origin/main`); nie przepisuj historii wypchniętej gałęzi. W konflikcie w `QUEUE.md`, `LOG.md` albo `KNOWN_ISSUES.md` zachowaj oba wpisy i popraw limity.
+4. Wypchnij gałąź i otwórz pull request do `main`. Tytuł ma format tematu commita. Opis zawiera: identyfikator zadania i krok `PLAN.md`, jeśli jest; listę zmian; uruchomione testy z wynikiem; zrzuty przed zmianą i po niej przy zmianie interfejsu; to, czego nie sprawdzono, na przykład odbiór na urządzeniu.
+5. Po otwarciu poczekaj na wynik `checks`. Jeśli test nie przejdzie, popraw go na tej samej gałęzi.
+6. Pull request scala użytkownik przez squash. Po scaleniu przełącz się na `main`, pobierz ją (`git pull --ff-only`) i usuń lokalną gałąź zadania.
+
 ## Zakończenie i status
 
 - `do implementacji`: kod wymagany przez kryteria jeszcze nie istnieje.

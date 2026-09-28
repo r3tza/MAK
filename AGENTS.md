@@ -77,7 +77,11 @@ Po zmianie `WeekCalculator`, `ScheduleResolver`, `CollisionDetector`, eksportu J
 
 ## Git
 
-Po zakończeniu zadania możesz samodzielnie utworzyć commit obejmujący jego logiczną zmianę. Wypychaj zmiany, twórz gałęzie i zmieniaj historię tylko na wyraźne polecenie użytkownika.
+Każde zadanie, także zmianę samej dokumentacji, wykonuj na osobnej gałęzi od aktualnego `origin/main` i kończ pull requestem do `main`. Szczegóły są w `docs/WORKFLOW.md`, sekcja „Gałąź i pull request”.
+
+- Nazwa gałęzi: `task/<ID>-<krótki-opis>`, na przykład `task/I-56-dzisiaj-plan`; bez identyfikatora zadania `task/<krótki-opis>`. Tylko małe litery ASCII, cyfry i myślniki.
+- Twórz commity dla logicznych części zadania. Po zielonych kontrolach lokalnych sam wypchnij gałąź i otwórz pull request przez `gh pr create`. Jeśli `gh` nie jest dostępne, podaj użytkownikowi odnośnik `https://github.com/r3tza/MAK/compare/main...<gałąź>?expand=1` i gotowy opis pull requesta.
+- Pull request scala wyłącznie użytkownik. Nie scalaj, nie włączaj automatycznego scalania, nie wypychaj na `main` i nie zmieniaj historii wypchniętej gałęzi bez wyraźnego polecenia użytkownika.
 
 Nie dodawaj stopki `Co-authored-by:` przypisującej pracę agentowi.
 

@@ -95,6 +95,7 @@ Repozytorium zawiera aplikację Android, konfigurację Gradle, lokalną bazę Ro
 ### Wydania i licencja (decyzja z 2026-09-27)
 
 - Repozytorium `r3tza/MAK` jest publiczne od 2026-09-27. Przed zmianą widoczności sprawdzono historię i bieżące pliki pod kątem sekretów i prywatnych danych. Pliki kluczy podpisu są wykluczone w `.gitignore`. Kod ma licencję Apache 2.0 (`LICENSE`), a właścicielem praw w `NOTICE` jest `r3tza`. Licencja nie obejmuje nazwy „MAK” ani ikony. Historia gita zostaje bez zmian, razem z adresem e-mail autora w commitach.
+- Zmiany trafiają na `main` tylko przez pull request (decyzja użytkownika z 2026-09-28). Workflow `.github/workflows/checks.yml` uruchamia na każdym pull requeście kontrolę dokumentacji i testy JVM (`gradlew test`); ochrona gałęzi `main` wymaga jego zielonego wyniku. Testy Compose zostają lokalne, na emulatorze. Osobnej gałęzi `dev` nie ma: stan wydania wyznacza tag.
 - Wydanie budują GitHub Actions po wypchnięciu tagu `v<major>.<minor>.<patch>`. Workflow uruchamia testy i tworzy szkic GitHub Release; użytkownik publikuje go ręcznie po sprawdzeniu plików. Wydaniem jest zawsze wersja release, bo wersja debug wczytuje dane demonstracyjne.
 - Jeden klucz podpisu release na zawsze. Klucz generuje użytkownik lokalnie; jest przechowywany w sekretach GitHuba i w dwóch kopiach poza nim. Nie trafia do repozytorium ani do rozmowy z agentem. Utrata klucza uniemożliwia aktualizację bez odinstalowania aplikacji i utraty lokalnych danych.
 - `versionCode` rośnie z każdym wydaniem i jest wyliczany z tagu. Wydanie z niższym albo równym `versionCode` jest odrzucane.
@@ -112,5 +113,6 @@ Repozytorium zawiera aplikację Android, konfigurację Gradle, lokalną bazę Ro
 - Aktualizacje przez Google Play (Play In-App Updates): odrzucone, bo aplikacja nie jest dystrybuowana w Google Play.
 - WorkManager do okresowego sprawdzania aktualizacji w tle: odrzucony na rzecz sprawdzenia przy uruchomieniu aplikacji, które nie wymaga pracy w tle, nowej zależności ani zgody na powiadomienia.
 - Obtainium jako jedyny sposób aktualizacji: odrzucone, bo wymaga od mało technicznych użytkowników instalacji i konfiguracji drugiej aplikacji.
+- Gałąź `dev` z przenoszeniem zmian na `main` przy wydaniu: odrzucona, bo stan wydania wyznacza tag, użytkownicy korzystają z GitHub Releases, a druga długo żyjąca gałąź wymaga stałego scalania w obie strony i łatwo o pull request do złej gałęzi.
 - Osobne publiczne repozytorium tylko na wydania: odrzucone, bo główne repozytorium zostanie upublicznione przed pierwszym wydaniem dla znajomych, a osobne wymagałoby dodatkowego tokenu w workflow.
 - Licencje MIT i GPL 3.0: odrzucone. MIT nie wyklucza wprost prawa do nazwy i znaku; GPL 3.0 utrudnia forkom połączenie z zamkniętymi Usługami Google Play przy ewentualnej synchronizacji.
