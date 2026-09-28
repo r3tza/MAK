@@ -2,6 +2,13 @@
 
 Techniczna historia wydań dla agentów. Notatki dla użytkowników są w `app/src/main/assets/release_notes.json`.
 
+## 0.2.2, 2026-09-28
+
+- Karty zajęć pokazują kierunek jako kolorowy tekst, stan jako ikonę, a notatki jako wiersze z ikoną i treścią, bez statycznych pilli (I-53).
+- Widget nie używa pilli dla tygodnia, liczby zajęć ani fazy zajęć. W rozszerzonych rozmiarach pokazuje treść obu rodzajów notatek z właściwymi ikonami (I-53).
+- Usunięto pozostałe statyczne pille i strzałki z interfejsu oraz tekstów dla użytkownika (I-53).
+- W notatkach wydania przypomniano o możliwości dodania wielu kierunków podczas pierwszej konfiguracji (I-50).
+
 ## 0.2.1, 2026-09-28
 
 - Naprawiono wstrzykiwanie zależności `UpdateViewModel`: w 0.2.0 Koin zostawiał atrapy pobierania, weryfikacji i instalacji z wartości domyślnych konstruktora (I-52).

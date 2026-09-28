@@ -4,6 +4,12 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-28: Wydanie 0.2.2 i działająca aktualizacja (I-49, I-52, O-07)
+
+- Fakty: Tag `v0.2.2` zbudował się poprawnie w GitHub Actions, a użytkownik opublikował wydanie. Użytkownik potwierdził, że aktualizacja z aplikacji do 0.2.2 działa.
+- Decyzja: I-52 ma status `gotowe`. O-07 pozostaje otwarty dla niepotwierdzonych przypadków błędów i jawnego potwierdzenia zachowania danych. I-49 pozostaje w toku do sprawdzenia instalacji według README na drugim telefonie i domknięcia O-07.
+- Weryfikacja: Przed tagiem przeszły testy JVM, kompilacja testów urządzenia, lint i `assembleDebug`; workflow wydania zakończył się sukcesem. Główny przebieg aktualizacji potwierdził użytkownik 2026-09-28.
+
 ## 2026-09-28: Treść notatek w widgetcie (I-53)
 
 - Fakty: Rozszerzony widget pokazywał przy metadanych tylko ikonę, że zajęcia mają notatkę. Nie pokazywał treści ani nie rozróżniał notatki do zajęć od notatki do terminu, mimo wolnego miejsca w dużych rozmiarach.
@@ -130,10 +136,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: `ARCHITECTURE.md` wymaga klawiatury, 320 dp, braku obciętych informacji i jednego źródła reguł planu.
 - Odrzucone: zmniejszanie etykiet poniżej 12 sp; osobny komponent paska dla „Dodaj”; ukrywanie „Zmień” przy dużej czcionce.
 - Weryfikacja: 347 testów JVM, 83 testy urządzenia, lint bez nowych ostrzeżeń; zrzuty na emulatorze przy 320 dp i skalach 1,0, 1,3 i 2,0 oraz przejście klawiszem Tab.
-
-## 2026-09-27: Logo maku i animacja startu (I-42)
-
-- Fakty: Aplikacja miała szablonową ikonę Androida, a ekran ładowania z I-30 pokazywał tylko pełną nazwę. Użytkownik chciał logo w kształcie maku, od skrótu nazwy.
-- Decyzja: Po trzech rundach wariantów w artefakcie „Logo MAK: warianty maku” użytkownik wybrał 2026-09-27 wariant M (pięć czerwonych płatków z pofalowanym brzegiem, ciemna makówka, białe tło) i animację „Rozkwit”. Ikona adaptacyjna ma białe tło, kwiat na pierwszym planie i osobną warstwę monochromatyczną, w której przerwy między płatkami i wokół makówki daje zmniejszenie płatków i wycięcie. Ekran startowy używa `windowSplashScreenAnimatedIcon` z białym kołem ikony w obu motywach. `MakPoppyLogo` rysuje ten sam kwiat w Compose na ekranie ładowania, w miejscu i rozmiarze ikony ekranu startowego, z pętlą przezroczystości płatków, którą wyłącza skala animacji 0. Szablonowe ikony bitmapowe usunięto, bo przy `minSdk` 31 launcher używa ikony adaptacyjnej.
-- Powód: Wzorem były ikony popularnych aplikacji: jeden duży znak bez drobnych detali. Na ciemnym tle makówka zlewała się z tłem, stąd białe koło. Animacja korzysta tylko z obrotu, skali i przezroczystości, więc ma jedno źródło kształtu w XML i w Compose.
-- Odrzucone: warianty z boku kwiatu i z łodygą, bo łodyga znika w małym rozmiarze; wydłużanie ekranu startowego do końca animacji, zgodnie z decyzją z I-30; Lottie jako nowa zależność.

@@ -2,7 +2,19 @@
 
 Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Pełna lista i oddzielny status odbioru są w `QUEUE.md`. Repozytorium jest publiczne, a `v0.2.0` opublikowano 2026-09-27.
 
-## 1. Odbierz automatyczne sprawdzanie i baner (I-40)
+## 1. Domknij przypadki błędów aktualizacji (O-07)
+
+Główny przebieg aktualizacji z aplikacji do `v0.2.2` działa, co użytkownik potwierdził 2026-09-28.
+
+1. Wyłącz sieć i potwierdź czytelny błąd ręcznego sprawdzania.
+2. Odmów zgody na instalowanie z tego źródła, wróć do aplikacji i potwierdź możliwość ponowienia.
+3. Anuluj pobieranie i sprawdź usunięcie pliku częściowego.
+4. Użyj „Nie teraz” i potwierdź ukrycie banera tylko dla wersji 0.2.2.
+5. Potwierdź zachowanie planu, notatek i ustawień po aktualizacji, jeśli nie sprawdzono tego w pierwszym przebiegu.
+
+Kryterium zakończenia: wszystkie przypadki O-07 są potwierdzone na telefonie.
+
+## 2. Odbierz automatyczne sprawdzanie i baner (I-40)
 
 1. Włącz automatyczne sprawdzanie i uruchom aplikację ponownie.
 2. Potwierdź, że brak sieci nie pokazuje komunikatu oraz że kolejna próba nie następuje przed upływem 24 godzin.
@@ -11,20 +23,21 @@ Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Pełna lis
 
 Kryterium zakończenia: automat nie wykonuje nadmiarowych zapytań, błąd pozostaje cichy, a pominięcie dotyczy tylko jednej wersji.
 
-## 2. Sprawdź instrukcję instalacji u znajomego (I-49)
+## 3. Sprawdź instrukcję instalacji u znajomego (I-49)
 
-`v0.2.1` z poprawką aktualizatora jest opublikowane 2026-09-28 i sprawdzone na emulatorze.
+`v0.2.2` jest opublikowane, a aktualizacja z aplikacji działa na telefonie użytkownika.
 
-1. Na własnych urządzeniach z 0.2.0 zainstaluj 0.2.1 ręcznie z GitHub Releases na istniejącą aplikację i sprawdź, że plan został.
-2. Poproś znajomego o instalację według sekcji „Instalacja” w `README.md` i zanotuj niejasne kroki.
+1. Poproś znajomego o instalację `v0.2.2` według sekcji „Instalacja” w `README.md`.
+2. Zanotuj niejasne kroki i popraw instrukcję.
 
 Kryterium zakończenia: instalacja u znajomego przebiegła według README, a niejasne kroki są poprawione.
 
-## 3. Pełny odbiór aktualizacji na telefonie (O-07)
+## 4. Dodaj klasy szerokości i obrót tabletów (I-45)
 
-1. Opublikuj `v0.2.2` z nowym `versionCode`, tym samym certyfikatem i wpisem w `release_notes.json`.
-2. Sprawdź ręczne oraz automatyczne wykrycie, baner, ekran „Aktualizacja”, pobranie, zgodę i instalację.
-3. Sprawdź brak sieci, odmowę zgody, anulowanie pobierania i „Nie teraz”.
-4. Potwierdź zachowanie planu, notatek i ustawień po aktualizacji.
+1. Dodaj `MakWidthClass` z progami 600 i 840 dp, liczonymi z szerokości okna.
+2. Udostępnij klasę przez `LocalMakWidthClass` bez kopiowania progów w ekranach.
+3. Zdejmij blokadę pionu w `MainActivity`, gdy najkrótszy bok ma co najmniej 600 dp.
+4. Dodaj testy JVM progów i decyzji o orientacji.
+5. Sprawdź, że telefon zostaje w pionie, a symulowany tablet może się obracać.
 
-Kryterium zakończenia: O-07 jest potwierdzony na telefonie, a I-49 może otrzymać status „gotowe”.
+Kryterium zakończenia: progi mają jedno źródło, telefon zachowuje blokadę pionu, a tablet obsługuje obie orientacje.
