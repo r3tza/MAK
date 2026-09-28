@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -40,6 +43,12 @@ class AboutScreenTest {
         composeTestRule.onNodeWithText("Autor: r3tza").assertIsDisplayed()
         composeTestRule.onNodeWithText("Wersja przed pełnym wydaniem").assertIsDisplayed()
         composeTestRule.onNodeWithText("plan kilku kierunków i semestrów").assertIsDisplayed()
+        // Sections without a card keep their heading as the only structure.
+        listOf("Możliwości", "Dane i prywatność").forEach { title ->
+            composeTestRule.onNodeWithText(title).performScrollTo().assertIsDisplayed()
+                .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
+        }
+        composeTestRule.onNodeWithText("Ostatnie zmiany").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Wersja 0.1.0").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("19 września 2026").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Zainstalowana").performScrollTo().assertIsDisplayed()

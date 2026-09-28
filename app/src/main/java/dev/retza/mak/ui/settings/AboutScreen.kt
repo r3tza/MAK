@@ -61,7 +61,10 @@ fun AboutScreen(
         modifier = modifier.verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(MakSpacing.xl)
     ) {
-        AboutCard(modifier = Modifier.padding(top = MakSpacing.sm)) {
+        Column(
+            modifier = Modifier.padding(top = MakSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
+        ) {
             AppHeader(installedVersionName)
             Text(
                 "Aplikacja na Androida do zarządzania planem zajęć. Powstała na potrzeby prywatnego " +
@@ -79,31 +82,27 @@ fun AboutScreen(
         }
 
         AboutGroup("Możliwości") {
-            AboutCard {
-                BulletList(appFeatures)
-            }
+            BulletList(appFeatures)
         }
 
-        AboutGroup("Dane i prywatność") {
-            AboutCard {
-                Text(
-                    "Plan i notatki są przechowywane tylko na telefonie. Podstawowe funkcje działają " +
-                        "bez konta i połączenia z siecią.",
-                    style = MaterialTheme.typography.bodyMedium
-                )
-                Text(
-                    "Sieć służy wyłącznie do sprawdzania i pobierania aktualizacji z GitHuba. " +
-                        "Aplikacja nie wysyła danych planu.",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+        AboutGroup("Dane i prywatność", spacing = MakSpacing.md) {
+            Text(
+                "Plan i notatki są przechowywane tylko na telefonie. Podstawowe funkcje działają " +
+                    "bez konta i połączenia z siecią.",
+                style = MaterialTheme.typography.bodyMedium
+            )
+            Text(
+                "Sieć służy wyłącznie do sprawdzania i pobierania aktualizacji z GitHuba. " +
+                    "Aplikacja nie wysyła danych planu.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
         }
 
         if (releaseHistory.isNotEmpty()) {
             val installedRelease = installedVersionName.removeSuffix("-debug")
             AboutGroup("Ostatnie zmiany") {
-                AboutCard(contentPadding = 0.dp, spacing = 0.dp) {
+                AboutCard {
                     releaseHistory.forEachIndexed { index, entry ->
                         if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
                         ReleaseEntry(entry, isInstalled = entry.versionName == installedRelease)
@@ -121,7 +120,8 @@ private fun AppHeader(installedVersionName: String) {
         horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
         MakPoppyMark(
-            gapColor = MaterialTheme.colorScheme.surfaceContainerLow,
+            // The mark no longer stands on a card, so the petal gaps match the screen background.
+            gapColor = MaterialTheme.colorScheme.background,
             modifier = Modifier.size(44.dp)
         )
         Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
@@ -144,9 +144,14 @@ private fun AppHeader(installedVersionName: String) {
     }
 }
 
+/** Section heading with its content underneath, without a container. */
 @Composable
-private fun AboutGroup(title: String, content: @Composable ColumnScope.() -> Unit) {
-    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
+internal fun AboutGroup(
+    title: String,
+    spacing: Dp = MakSpacing.sm,
+    content: @Composable ColumnScope.() -> Unit
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(spacing)) {
         Text(
             text = title,
             modifier = Modifier.semantics { heading() },
@@ -157,28 +162,17 @@ private fun AboutGroup(title: String, content: @Composable ColumnScope.() -> Uni
     }
 }
 
+/** Shared border for the release history, the only list that needs a common boundary. */
 @Composable
-private fun AboutCard(
-    modifier: Modifier = Modifier,
-    contentPadding: Dp = MakSpacing.lg,
-    spacing: Dp = MakSpacing.md,
-    content: @Composable ColumnScope.() -> Unit
-) {
+private fun AboutCard(content: @Composable ColumnScope.() -> Unit) {
     val shape = RoundedCornerShape(14.dp)
     Column(
-        modifier = modifier
+        modifier = Modifier
             .fillMaxWidth()
             .border(1.dp, MaterialTheme.colorScheme.outlineVariant, shape)
-            .background(MaterialTheme.colorScheme.surfaceContainerLow, shape)
-            .padding(contentPadding),
-        verticalArrangement = Arrangement.spacedBy(spacing),
+            .background(MaterialTheme.colorScheme.surfaceContainerLow, shape),
         content = content
     )
-}
-
-@Composable
-internal fun AboutSection(title: String, content: @Composable ColumnScope.() -> Unit) {
-    AboutGroup(title) { AboutCard(content = content) }
 }
 
 @Composable
@@ -222,7 +216,7 @@ internal fun BulletList(items: List<String>) {
         items.forEach { item ->
             Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 MakDot(
-                    color = MaterialTheme.colorScheme.primary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(top = 8.dp),
                     size = 6.dp
                 )

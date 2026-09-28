@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -35,6 +38,7 @@ class UpdateScreenTest {
         )
 
         composeTestRule.onNodeWithText("Dostępna wersja 0.2.0").assertIsDisplayed()
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
         composeTestRule.onNodeWithText("Nowy wygląd planu").assertIsDisplayed()
         composeTestRule.onNodeWithText("Pobierz aktualizację").performClick()
         assertTrue(downloaded)
@@ -62,6 +66,8 @@ class UpdateScreenTest {
         var checked = false
         show(state(), onCheck = { checked = true })
 
+        composeTestRule.onNodeWithText("Nowa wersja").assertIsDisplayed()
+            .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
         composeTestRule.onNodeWithText("Brak informacji o nowej wersji.").assertIsDisplayed()
         composeTestRule.onNodeWithText("Sprawdź teraz").performClick()
         assertTrue(checked)
