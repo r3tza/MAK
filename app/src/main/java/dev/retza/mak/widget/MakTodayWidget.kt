@@ -281,7 +281,8 @@ private fun WidgetOccurrenceRow(
             text = "${item.startTime}-${item.endTime}",
             modifier = GlanceModifier.width(62.dp),
             style = TextStyle(
-                color = if (past) GlanceTheme.colors.onSurfaceVariant else GlanceTheme.colors.primary,
+                // The accent stays on the "Teraz" and "Następne" labels only.
+                color = if (past) GlanceTheme.colors.onSurfaceVariant else GlanceTheme.colors.onBackground,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
             ),
