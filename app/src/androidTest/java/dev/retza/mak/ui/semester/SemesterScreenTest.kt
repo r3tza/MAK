@@ -499,6 +499,8 @@ class SemesterScreenTest {
         composeTestRule.onNodeWithText("Zapisz kalendarz").assertIsDisplayed()
         composeTestRule.onNodeWithText("Kierunki: Informatyka").assertIsDisplayed()
         composeTestRule.onNodeWithText("Brak przypisanych kierunków").assertIsDisplayed()
+        composeTestRule.onNodeWithText("1 lis 2026 - 15 mar 2027").assertIsDisplayed()
+        composeTestRule.onNodeWithText("2026-11-01 - 2027-03-15").assertDoesNotExist()
         composeTestRule.onNodeWithText("Usuń").performClick()
         assertEquals("2", deleted)
     }
@@ -584,12 +586,24 @@ class SemesterScreenTest {
         composeTestRule.onNodeWithText("Dzień w tygodniu korekty").assertDoesNotExist()
         composeTestRule.onNodeWithText("Dodaj").performClick()
         composeTestRule.onNodeWithText("Dzień w tygodniu korekty").assertIsDisplayed()
+        // The form title has the same text as the save button, so pick the clickable one.
+        val addSaveLeft = composeTestRule.onNode(hasText("Dodaj korektę") and hasClickAction())
+            .fetchSemanticsNode().boundsInRoot.left
+        assertTrue(
+            "cancel comes before save",
+            composeTestRule.onNodeWithText("Anuluj").fetchSemanticsNode().boundsInRoot.left < addSaveLeft
+        )
         composeTestRule.onNodeWithText("Anuluj").performClick()
         composeTestRule.onNodeWithText("Dzień w tygodniu korekty").assertDoesNotExist()
 
         composeTestRule.onNodeWithContentDescription("Więcej opcji").performClick()
         composeTestRule.onNodeWithText("Edytuj").performClick()
         composeTestRule.onNodeWithText("Dzień w tygodniu korekty").assertIsDisplayed()
+        assertTrue(
+            "cancel comes before save",
+            composeTestRule.onNodeWithText("Anuluj").fetchSemanticsNode().boundsInRoot.left <
+                composeTestRule.onNodeWithText("Zapisz zmiany").fetchSemanticsNode().boundsInRoot.left
+        )
     }
 
     @Test

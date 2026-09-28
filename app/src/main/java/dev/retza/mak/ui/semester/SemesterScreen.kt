@@ -458,7 +458,10 @@ private fun CalendarCard(
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text("${calendar.startDate} - ${calendar.endDate}", fontWeight = FontWeight.SemiBold)
+                Text(
+                    "${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()}",
+                    fontWeight = FontWeight.SemiBold
+                )
                 Text(
                     text = "Pierwszy tydzień: ${calendar.firstWeek.name}",
                     style = MaterialTheme.typography.bodySmall,
