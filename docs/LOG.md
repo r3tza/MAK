@@ -41,7 +41,7 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Dalsze decyzje użytkownika tego dnia: znaczniki kalendarza 8 dp przy 1 do 3 zajęciach, 6 dp przy 4 i 5 zajęciach, a od 6 zajęć cztery znaczniki i plus (pięć znaczników z plusem nie mieści się w komórce 41 dp przy 320 dp); na ekranie „Edytuj kierunek” nazwa stoi na górze; suwak „Odcień” zmienia tylko odcień, a „Jasność” prowadzi od czarnego do białego (I-61). Sposób zapewnienia czytelności zaproponował agent na pytanie użytkownika, a użytkownik go przyjął: zapis dokładnego koloru i dopasowanie przy wyświetlaniu do 3:1 dla kształtów i 4,5:1 dla nazwy, z podglądem w obu motywach. Z tego powodu znaczniki kalendarza jednak dostają dopasowanie kontrastu, mimo wcześniejszej rezygnacji z podniesionego progu. Cienie karty zajęć i przełącznika widoku zapisano w `ARCHITECTURE.md` jako zaakceptowany wyjątek.
 - Korekta użytkownika tego dnia: alert kolizji w widgecie jest pomarańczowy, w kolorach ostrzeżenia aplikacji, a nie czerwony, zgodnie z zasadą „Kolizja nie jest winą użytkownika”. Wcześniejsza decyzja o czerwonym alercie przestaje obowiązywać.
 - Odrzucone: pięć znaczników z plusem; ostrzeżenie bez dopasowania koloru; blokada zapisu nieczytelnych kolorów.
-- Otwarte: obramowanie przycisków ikon w górnym pasku, trzy style zaznaczenia na „Planie” i jasność karty podsumowania w motywie ciemnym (`KNOWN_ISSUES.md`, pozycja 10).
+- Otwarte: obramowanie przycisków ikon w górnym pasku, trzy style zaznaczenia na „Planie” i jasność karty podsumowania w motywie ciemnym (`KNOWN_ISSUES.md`, pozycja „Czekają na decyzję użytkownika”).
 
 ## 2026-09-28: Reguły redukcji interfejsu i audyt (I-54, I-55)
 
