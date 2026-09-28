@@ -47,13 +47,27 @@ Każdy semestr jest osobnym kontenerem planu. Globalne kierunki mogą być przyp
 
 ### Czytelność ponad dekorację
 
-Interfejs ma szybko odpowiadać na pytania: jakie zajęcia są dziś, co wymaga działania i jaki jest stan planu. Preferowane są karty, fakty, odznaki, sekcje i wiersze zamiast długich bloków tekstu.
+Interfejs ma szybko odpowiadać na pytania: jakie zajęcia są dziś, co wymaga działania i jaki jest stan planu. Preferowane są krótkie fakty, nazwane sekcje, wiersze i karty grupujące rzeczywiste obiekty zamiast długich bloków tekstu.
+
+Każdy widoczny element musi przekazywać informację, budować hierarchię, wskazywać stan, wspierać nawigację, pomagać wykonać zadanie, dawać głębię lub rytm albo budować rozpoznawalność aplikacji. Jeśli dwa warianty są równie czytelne i użyteczne, wybieramy prostszy.
+
+Zaakceptowane elementy wyglądu nie podlegają redukcji bez nowej decyzji użytkownika: gradientowa karta podsumowania „Dzisiaj” z nagłówkiem, znak maku i animacja startu, cienie karty zajęć i zaznaczonej opcji przełącznika widoku, pionowy i poziome separatory karty zajęć oraz kolory kierunków. Przegląd redukcyjny ich nie zgłasza.
+
+Hierarchię budujemy najpierw typografią, odstępami, wyrównaniem i kontrastem tekstu. Kontener, obramowanie, kolor lub ikona są kolejnym środkiem, gdy sama struktura nie wystarcza. Karta oznacza rzeczywisty obiekt albo grupę, która potrzebuje wspólnej granicy. Nie zamykamy każdej sekcji w osobnej karcie.
+
+Ikona musi ułatwiać rozpoznanie działania lub informacji. Jeden typ informacji używa tej samej ikony w całej aplikacji. Nie dodajemy ikon do nagłówków, etykiet ani przycisków wyłącznie jako dekoracji.
+
+Ograniczamy przeciążenie poznawcze. Opcje grupujemy w nazwane sekcje, a rozbudowane lub rzadkie przepływy przenosimy na osobne ekrany. Karty, wiersze, krótkie podsumowania i jawny grid stosujemy wtedy, gdy pomagają porównać kilka informacji. Układu tabelarycznego nie dodajemy, jeśli nie poprawia skanowania.
 
 ### Stały język wizualny
 
 Wspólne prymitywy, przewidywalne odstępy, jawny grid, powtarzalne akcje i udokumentowane wyjątki mają pierwszeństwo przed ręcznym dopieszczaniem każdej funkcji osobno.
 
-Duże sekcje ekranu rozdziela odstęp 16 dp, powiązane elementy wewnątrz sekcji 12 dp, a krótką etykietę od jej wartości 8 dp. Przycisk pełnej szerokości ma co najmniej 12 dp wolnego miejsca nad i pod nim. Elementy sterujące nie mogą wizualnie stykać się z sąsiednimi kontenerami. Tekst w interfejsie ma co najmniej 12 sp; 11 sp dopuszczamy wyłącznie dla wersalikowych nadtytułów i dla tekstu widgetu. Granice kontrolek (pola, opcje wyboru, pola wyboru, przyciski ikon i przyciski obrysowane) używają `outline` o kontraście co najmniej 3:1 z tłem; karty, separatory i ramki dekoracyjne używają jaśniejszego `outlineVariant`. Statyczne etykiety stanu, kategorii i wersji nie są pillami: pokazuje je tekst, ikona z tekstem albo kropka koloru, a w motywie ciemnym ich kolor jest rozjaśniony do czytelnego kontrastu. Dotyczy to także widgetu. Akcja usuwająca w wierszu używa koloru błędu. Pola wyboru używają rozwijanego pola Material 3 z tą samą etykietą przesuwaną nad ramkę co pola tekstowe. Dwa powiązane pola stoją obok siebie tylko wtedy, gdy każde ma co najmniej połowę z 340 dp; na węższym ekranie stoją jedno pod drugim. Ekran podrzędny nie powtarza tytułu z górnego paska ani nie ma osobnego przycisku powrotu; wraca strzałka w pasku i systemowy gest wstecz.
+Kolor ma stałe znaczenie. Powierzchnie są głównie neutralne, a akcent służy informacji, kategorii, ostrzeżeniu i działaniu o rzeczywistej wadze. Kolor nie jest jedynym nośnikiem informacji: towarzyszy mu etykieta, ikona, kształt albo treść semantyczna. Akcentu nie używamy wyłącznie do pokazania zwykłego stanu komponentu, jeśli tekst, ikona i semantyka wystarczają.
+
+Duże sekcje ekranu rozdziela odstęp 16 dp, powiązane elementy wewnątrz sekcji 12 dp, a krótką etykietę od jej wartości 8 dp. Przycisk pełnej szerokości ma co najmniej 12 dp wolnego miejsca nad i pod nim. Elementy sterujące nie mogą wizualnie stykać się z sąsiednimi kontenerami. Tekst w interfejsie ma co najmniej 12 sp; 11 sp dopuszczamy wyłącznie dla tekstu widgetu. Granice kontrolek (pola, opcje wyboru, pola wyboru, przyciski ikon i przyciski obrysowane) używają `outline` o kontraście co najmniej 3:1 z tłem; karty, separatory i ramki dekoracyjne używają jaśniejszego `outlineVariant`. Statyczne etykiety stanu, kategorii i wersji nie są pillami: pokazuje je tekst, ikona z tekstem albo kropka koloru, a w motywie ciemnym ich kolor jest rozjaśniony do czytelnego kontrastu. Dotyczy to także widgetu. Akcja usuwająca w wierszu używa koloru błędu. Pola wyboru używają rozwijanego pola Material 3 z tą samą etykietą przesuwaną nad ramkę co pola tekstowe. Dwa powiązane pola stoją obok siebie tylko wtedy, gdy każde ma co najmniej połowę z 340 dp; na węższym ekranie stoją jedno pod drugim. Ekran podrzędny nie powtarza tytułu z górnego paska ani nie ma osobnego przycisku powrotu; wraca strzałka w pasku i systemowy gest wstecz. Formularz może mieć akcję „Anuluj” obok akcji zapisu (decyzja z 2026-09-28): porzuca wpisane zmiany i nie jest przyciskiem powrotu. Kreator ma akcję „Wstecz”, bo nie pokazuje strzałki powrotu w górnym pasku. Komunikat nie powtarza tytułu z górnego paska i nie zastępuje nagłówka sekcji. Komunikat ma jedną z trzech ról: neutralną (neutralne tło, bez ikony), ostrzegawczą (kolory ostrzeżenia i ikona) albo błędu (kolory błędu i ikona). Kolor akcentu nie jest tłem komunikatu.
+
+Karta zajęć i zaznaczona opcja przełącznika Lista/Kalendarz mają subtelny cień obok obramowania. Cień daje głębię i jest zaakceptowanym wyjątkiem od zasady ograniczania środków wizualnych (decyzja użytkownika z 2026-09-28); przegląd redukcyjny go nie zgłasza.
 
 Sekcja rozwijana zachowuje neutralne tło `surfaceContainer` albo `surfaceContainerLow` w obu stanach. Rozwinięcie wskazują tekst, kierunek ikony i semantyka, nie stała zmiana na kolor akcentowy. Nagłówek i treść pozostają jednym kontenerem ze wspólnym kształtem oraz subtelnym obramowaniem. Treść ma 16 dp wewnętrznego paddingu.
 
@@ -67,6 +81,12 @@ Własne komponenty stosujemy tylko wtedy, gdy są potrzebne do odtworzenia zaakc
 
 Klawiatura, focus, semantyczne etykiety, kontrast, `reduced motion`, małe ekrany i brak obciętych akcji są kryteriami akceptacji. Dostępność należy uwzględniać podczas projektowania każdego widoku.
 
+Stan pokazujemy tylko wtedy, gdy może przyjąć co najmniej dwie znaczące wartości i znajomość bieżącej wartości pomaga podjąć decyzję albo wykonać działanie. Nie powtarzamy oczywistego lub stałego stanu. Stan wymagany wprost przez `FEATURES.md` albo inną zasadę tego dokumentu zostaje, na przykład źródło oznaczenia tygodnia A/B i zera w podsumowaniu dnia bez zajęć. Powtórzenie stanu jest też dozwolone, gdy jego pierwsze wystąpienie może zniknąć z ekranu, na przykład przy przewijanej liście, albo gdy stan dotyczy konkretnego wiersza, jak „Aktywny” na liście semestrów.
+
+Czytelność zapewniamy przy wyświetlaniu, a nie przez ograniczanie wyboru użytkownika. Przykładem jest kolor kierunku: użytkownik wybiera dowolny kolor, a aplikacja dopasowuje go do tła przy rysowaniu.
+
+Animacja przedstawia przejście, postęp, zmianę stanu, informację zwrotną albo relację przestrzenną. Nie dodajemy stałego ruchu, pulsowania ani ruchu otoczenia wyłącznie po to, aby ekran wyglądał na aktywny. Animacja oczekiwania jest dozwolona tylko podczas rzeczywistego oczekiwania i respektuje systemową skalę animacji.
+
 ### Praktyczne mobile-first
 
 Dokumentacja i testy interfejsu muszą obejmować szerokości 320–390 px, obsługę dotyku, długie nazwy, arkusze mobilne i brak poziomego przewijania.
@@ -79,17 +99,19 @@ Interfejs nie pokazuje akcji, która zakończy się przewidywalnym błędem. Dat
 
 ### Kolizja nie jest winą użytkownika
 
-Kolizja godzin jest informacją o tym, że zajęcia z dwóch kierunków nakładają się w planie. Nie jest błędem użytkownika ani sugestią, że powinien zmienić własne dane. Aplikacja ma ostrzec, wskazać zajęcia i pokazać zakres nakładania, ale nie proponuje zmiany terminu i nie zmienia go automatycznie. Decyzja o kontakcie z uczelnią, opuszczeniu zajęć albo ręcznym przeniesieniu terminu należy do użytkownika.
+Kolizja godzin jest informacją o tym, że zajęcia z dwóch kierunków nakładają się w planie. Nie jest błędem użytkownika ani sugestią, że powinien zmienić własne dane. Aplikacja ma ostrzec, pokazać zakres nakładania i wskazać drugie zajęcia wszędzie, gdzie jest na to miejsce; widget pokazuje co najmniej zakres. Nie proponuje zmiany terminu i nie zmienia go automatycznie. Decyzja o kontakcie z uczelnią, opuszczeniu zajęć albo ręcznym przeniesieniu terminu należy do użytkownika.
 
-Na karcie zajęć kolizja używa neutralnego stylu ostrzegawczego i pokazuje dokładny zakres nakładania. Nie używa koloru błędu ani komunikatu sugerującego winę użytkownika.
+Na karcie zajęć kolizja używa neutralnego stylu ostrzegawczego i pokazuje dokładny zakres nakładania oraz nazwę drugich zajęć. Szczegóły terminu pokazują tę samą informację. Widget pokazuje tylko zakres, bo ma mało miejsca. Zapis zakresu i nazwy drugich zajęć pochodzą z funkcji domenowych wspólnych dla aplikacji i widgetu. Nie używa komunikatu sugerującego winę użytkownika.
 
-Gradientowe podsumowanie ekranu „Dzisiaj” pokazuje w trzech równych kolumnach liczbę zajęć, unikalnych kolizji i okienek. Liczba kolizji jest czerwona, gdy jest większa od zera, oraz zielona, gdy wynosi zero. Kolor opisuje stan planu i nie zmienia neutralnego sposobu opisywania kolizji na kartach zajęć.
+Kolor kolizji zależy od roli (decyzja użytkownika z 2026-09-28). Kolizja pokazana jako ostrzeżenie przy zajęciach, czyli wiersz na karcie, blok w szczegółach terminu i alert w widgecie, używa pomarańczowego koloru ostrzeżenia, nigdy koloru błędu. Liczba kolizji w podsumowaniu i nagłówku, czyli na karcie podsumowania „Dzisiaj” i w nagłówku widgetu, jest czerwona, gdy jest większa od zera, bo opisuje stan całego dnia.
 
-Karta zajęć używa dwukolumnowej siatki z osobną kolumną godzin oraz sekcjami danych, statusu i notatek. Pełny kolor kierunku występuje na pasku karty, a nazwa kierunku jest tekstem w tym samym odcieniu dopasowanym do kontrastu 4,5:1 z tłem (`courseTextColor`, jedna funkcja dla karty i podglądu koloru). Cała karta pozostaje neutralna i nie używa pilli. Stan terminu (odwołane, zmienione, jednorazowe) to ikona pod godzinami, kolizja używa pomarańczowego wiersza ostrzegawczego, a notatki to wiersze z ikoną: notatka do zajęć i notatka do terminu mają różne ikony. Te same nazwy mają pola notatek w szczegółach terminu i formularzu zajęć. Kolor zawsze występuje razem z etykietą tekstową.
+Gradientowe podsumowanie ekranu „Dzisiaj” pokazuje w trzech równych kolumnach liczbę zajęć, unikalnych kolizji i okienek. Liczba kolizji jest czerwona, gdy jest większa od zera, oraz zielona, gdy wynosi zero. Kolor opisuje stan planu i nie zmienia pomarańczowego sposobu opisywania kolizji przy zajęciach.
+
+Karta zajęć używa dwukolumnowej siatki z osobną kolumną godzin oraz sekcjami danych, statusu i notatek. Kolor kierunku występuje na pasku karty, dopasowany do kontrastu co najmniej 3:1 z tłem (`courseShapeColor`), a nazwa kierunku jest tekstem w tym samym odcieniu dopasowanym do kontrastu 4,5:1 (`courseTextColor`). Obie funkcje są jedynym źródłem tej reguły dla karty, kalendarza, list kierunków, widgetu i podglądu palety. Aplikacja zapisuje kolor wybrany przez użytkownika bez zmian i dopasowuje go tylko przy wyświetlaniu (decyzja z 2026-09-28). Cała karta pozostaje neutralna i nie używa pilli. Stan terminu (odwołane, zmienione, jednorazowe) to ikona pod godzinami, kolizja używa pomarańczowego wiersza ostrzegawczego, a notatki to wiersze z ikoną: notatka do zajęć i notatka do terminu mają różne ikony. Te same nazwy mają pola notatek w szczegółach terminu i formularzu zajęć. Kolor zawsze występuje razem z etykietą tekstową.
 
 ### Gęstość ekranu planu
 
-Ekran „Plan” grupuje zakres dat, nawigację tygodnia, oznaczenie A/B i źródło korekty w jednej sekcji. Akcja zmiany tygodnia A/B znajduje się przy tej informacji, a nie w odłączonym menu, i jest widoczna jako przycisk z ikoną edycji i słowem „Zmień”. Zwinięte filtry pokazują aktywny kierunek. Karty zajęć rozdzielają nazwę, kierunek i typ, metadane, kolizję oraz notatkę na czytelne wiersze. Układ nie może ukrywać pierwszych zajęć przez nadmiernie wysokie elementy sterujące.
+Ekran „Plan” grupuje zakres dat, nawigację tygodnia, oznaczenie A/B i źródło korekty w jednej sekcji. Akcja zmiany tygodnia A/B znajduje się przy tej informacji, a nie w odłączonym menu, i jest widoczna jako przycisk z ikoną edycji i słowem „Zmień”. Pojedynczy filtr, obecnie kierunku, to jedno pole wyboru, którego wartością jest aktywny kierunek; nie jest ukryty w dodatkowej sekcji rozwijanej. Ekran nie ma nagłówka treści, bo nazwę pokazuje pasek nawigacji. W kalendarzu kolor znacznika oznacza wyłącznie kierunek i jest kolorem kierunku dopasowanym do kontrastu 3:1 z tłem tą samą funkcją co pasek karty, a stan terminu oddaje kształt: wypełniona kropka to zwykły termin, pierścień to termin zmieniony lub przeniesiony. Kolory stanów nie występują w znacznikach, bo użytkownik może wybrać dla kierunku podobny odcień. Karty zajęć rozdzielają nazwę, kierunek i typ, metadane, kolizję oraz notatkę na czytelne wiersze. Układ nie może ukrywać pierwszych zajęć przez nadmiernie wysokie elementy sterujące.
 
 ### Hierarchia ustawień
 
@@ -111,11 +133,11 @@ Komunikaty są krótkie i konkretne. Nazwy pojęć pozostają stałe. `MainActiv
 
 ### Szacunek dla pracy użytkownika
 
-Formularze nie kasują wpisanych wartości. Dialogi prawidłowo zwracają focus. Stany puste, błędy i ładowanie korzystają z tego samego modelu widoku co pełne dane.
+Formularze nie kasują wpisanych wartości. Dialogi prawidłowo zwracają focus. Nie otwieramy automatycznie kreatora, formularza ani innego przepływu, jeśli stan pusty z jasną akcją daje użytkownikowi większą kontrolę. Stany puste, błędy i ładowanie korzystają z tego samego modelu widoku co pełne dane.
 
 ## 5. Zasada modularności
 
-Projekt dzielimy na małe, wymienne części, ponieważ funkcje i wygląd będą regularnie przebudowywane na podstawie bieżącego feedbacku. Granice między danymi, logiką domenową, ekranami i widgetem mają ograniczać koszt zmiany oraz pozwalać zastąpić jedną część bez przepisywania pozostałych.
+Projekt dzielimy na małe, wymienne części, ponieważ funkcje i wygląd będą regularnie przebudowywane na podstawie bieżącego feedbacku. Dzielimy według odpowiedzialności, stabilnych obszarów danych i przepływów użytkownika, a nie dla każdej tabeli, funkcji czy pliku. Abstrakcję, warstwę albo moduł dodajemy wtedy, gdy tworzy wyraźną granicę, usuwa duplikację reguł albo realnie zmniejsza koszt przyszłych zmian. Wybieramy rozwiązania zgodne ze współczesnymi praktykami platformy, ale na miarę skali projektu: bez prowizorycznych skrótów utrudniających rozwój i bez infrastruktury projektowanej bez konkretnej potrzeby. Preferujemy rozwiązania lokalne, energooszczędne i łatwe w utrzymaniu; usług działających stale w tle nie dodajemy bez potwierdzonej potrzeby. Granice między danymi, logiką domenową, ekranami i widgetem mają ograniczać koszt zmiany oraz pozwalać zastąpić jedną część bez przepisywania pozostałych.
 
 Każda funkcja powinna mieć własną, czytelną odpowiedzialność i komunikować się z innymi częściami przez proste modele lub interfejsy. Logika obliczania planu nie może zależeć od komponentów UI, a widget nie może powielać reguł `ScheduleResolver`.
 
@@ -156,6 +178,30 @@ Aplikacja składa się z lokalnej warstwy danych, logiki domenowej, ekranów Com
 - **Aktualizacje** (`update`, decyzja z 2026-09-27, zadania I-34 do I-41 i I-49) sprawdzają, pobierają i przekazują do instalacji nowe wydanie z GitHub Releases. To jedyne połączenie sieciowe aplikacji. Aplikacja pobiera plik `update.json` z ostatniego wydania, porównuje jego `versionCode` z zainstalowaną wersją, a po decyzji użytkownika pobiera APK do katalogu cache. Przed instalacją sprawdza sumę SHA-256, nazwę pakietu, wyższy `versionCode` i certyfikat podpisu zgodny z zainstalowaną aplikacją. Instalację wykonuje systemowy `PackageInstaller` z potwierdzeniem użytkownika; przy pierwszej aktualizacji aplikacja wyjaśnia i otwiera systemową zgodę na instalowanie nieznanych aplikacji. Zapytania nie zawierają danych planu ani identyfikatora użytkownika. Ręczne sprawdzenie i przełącznik automatu są w ustawieniach, w sekcji „Aktualizacje”; pobieranie i instalacja odbywają się na osobnym ekranie „Aktualizacja” (decyzja z 2026-09-27, I-48). Automatyczne sprawdzanie jest domyślnie wyłączone; po włączeniu działa tylko przy uruchomieniu aplikacji, najwyżej raz na 24 godziny według wstrzykniętego `Clock`, bez pracy w tle i bez powiadomień. Nowa wersja pokazuje baner na ekranie „Dzisiaj” z akcjami „Zobacz” i „Nie teraz”; „Nie teraz” ukrywa baner do kolejnej wersji. Brak sieci przy sprawdzeniu automatycznym nie pokazuje komunikatu. Logika porównania wersji, walidacji `update.json` i reguły 24 godzin jest czystym Kotlinem testowanym na JVM. Repozytorium jest publiczne od 2026-09-27. Testy JVM używają wstrzykiwanych źródeł i lokalnych artefaktów. Pełny przebieg sieciowy wymaga opublikowanego, nie roboczego wydania (I-49). Aplikacja nie obsługuje tokenu GitHuba.
 
 Logika domenowa nie zależy od Compose ani Glance. `ActivePlanProvider` jest wspólnym punktem obliczania planu i kolizji dla ekranów oraz widgetu.
+
+### Zasady widgetu
+
+Przed zmianą widgetu przeczytaj też sekcję „Widget” w `FEATURES.md`.
+
+- Realizuj etapy po kolei. Każdy etap pozostaw w stanie kompilującym się i sprawdzalnym bez zależności od kolejnego etapu.
+- Widget czyta dane przez `SemesterRepository` i `ScheduleRepository`, mapuje je przez wspólną granicę danych i oblicza plan przez `ActivePlanProvider`. Widget nie woła DAO ani `ScheduleResolver` bezpośrednio i nie kopiuje reguł z ViewModelu.
+- Wstrzykuj `Clock`. Nie używaj `LocalDate.now()` bezpośrednio w loaderze, prezenterze ani testach widgetu.
+- Room jest źródłem planu. Nie przechowuj kopii planu w preferencjach Glance ani wyłącznie w pamięci procesu.
+- Odświeżaj wszystkie instancje po udanej zmianie danych na jednej wspólnej granicy. Nie wywołuj aktualizacji z każdego ekranu osobno i nie aktualizuj przed zakończeniem transakcji.
+- Nie dodawaj ciągłego serwisu, dokładnych alarmów ani odświeżania co minutę. Okresowa aktualizacja jest zabezpieczeniem i może zostać opóźniona przez system.
+- Używaj ograniczonego zestawu progów rozmiaru. Każdy próg ma jawny limit pozycji i stan pusty, bez poziomego przewijania oraz obciętych akcji.
+- Kliknięcie widgetu otwiera jawnie ekran „Dzisiaj”. Szczegóły wystąpienia wymagają osobnej decyzji o kontrakcie deep linków.
+- Stan błędu jest krótki, bez surowych wyjątków, i pozwala otworzyć aplikację.
+- Widget korzysta z kolorów dynamicznych systemu. Kolor o stałym znaczeniu, na przykład pomarańczowy alert kolizji, podawaj wprost przez `ColorProvider(day, night)` z wartościami z `Color.kt`, a nie przez `GlanceTheme.colors`.
+
+### Zasady powiadomień
+
+Przed zmianą powiadomień przeczytaj też odpowiednie decyzje w `LOG.md` albo archiwum logu.
+
+- Planista używa `ActivePlanProvider` i wstrzykniętego `Clock`. Nie licz kolizji ponownie w odbiorniku własną regułą.
+- Zachowaj dwa rodzaje powiadomień, grupowanie kolizji, domyślnie wyłączoną funkcję i rozdział preferencji użytkownika od zgody systemowej. Używaj alarmów przybliżonych bez ciągłego serwisu i dostępu do dokładnych alarmów.
+- Po zmianach danych i ustawień odnawiaj przyszłe alarmy na wspólnej granicy. Przy dostarczeniu sprawdź bieżący plan, zgodę, przełączniki i czas.
+- Test planisty na JVM nie zastępuje odbioru `AlarmManager`, zgody i kliknięcia na urządzeniu.
 
 ## 8. Przepływ danych
 

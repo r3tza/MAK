@@ -4,6 +4,51 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-28: Gałąź i pull request dla każdego zadania
+
+- Decyzja użytkownika (wariant zaproponowany przez agenta): każde zadanie, także zmiana samej dokumentacji, powstaje na gałęzi `task/<ID>-<opis>` od `origin/main` i kończy się pull requestem do `main`. Agent sam wypycha gałąź i otwiera pull request, a scala go wyłącznie użytkownik przez squash. Workflow `checks.yml` uruchamia kontrolę dokumentacji i testy JVM na każdym pull requeście. Gałąź `main` ma ochronę: zmiany tylko przez pull request z zielonym `checks`, bez wyjątku dla administratora, bo agenci działają na poświadczeniach użytkownika.
+- Powód: izolacja nieudanych kroków, jedno miejsce recenzji i testy przed scaleniem zamiast dopiero przy tagu wydania.
+- Odrzucone: gałąź `dev` z przenoszeniem na `main` przy wydaniu (stan wydania wyznacza tag); bezpośrednie commity małych poprawek dokumentacji na `main` (użytkownik najpierw je dopuścił, potem wybrał pełną ochronę gałęzi).
+- Ograniczenie: na komputerze użytkownika nie ma GitHub CLI (`gh`), więc do czasu jego instalacji i logowania agent podaje odnośnik do utworzenia pull requesta, a ochronę gałęzi użytkownik włącza w ustawieniach repozytorium.
+
+## 2026-09-28: Zgłoszenia od ludzi i uporządkowanie AGENTS.md
+
+- Decyzja użytkownika: publiczne repozytorium przyjmuje zgłoszenia błędów i pomysłów, ale nie pull requesty od innych osób. `CONTRIBUTING.md` jest po polsku i opisuje zgłoszenia, pomysły, brak pull requestów, forki na licencji Apache 2.0 oraz prywatność danych w zgłoszeniach. `.github/ISSUE_TEMPLATE/blad.yml` to formularz zgłoszenia błędu z wersją MAK, wersją Androida, krokami, wynikiem i zgodą na brak prywatnych danych. README odsyła do `CONTRIBUTING.md`, a `scripts/check_map.py` sprawdza też jego odnośniki.
+- Decyzja użytkownika (wariant zaproponowany przez agenta): `AGENTS.md` zawiera tylko rdzeń zasad. Zasady widgetu i powiadomień przeszły do `ARCHITECTURE.md`, sekcja 7, bo `AGENTS.md` odsyłał do nieistniejących tam sekcji. Zakres i sposób testowania przeszły do `STACK.md`, sekcja 5, a polecenia testów pojedynczej klasy, zrzutów, szerokości 320 dp, motywu ciemnego i skali czcionki do sekcji 6. Preferencje projektowe użytkownika przeszły do `ARCHITECTURE.md`, sekcje 4 i 5, bez powtórzeń z istniejącymi zasadami; sprzeczne z zakazem pilli sformułowanie „preferuj pille” usunięto. Szablon kroku planu, podział refaktoru na etapy i proces istotnej zmiany wyglądu przeszły do `WORKFLOW.md`, sekcja „Planowanie”. Usunięto nieaktualne zdanie o przykładowych testach szablonu.
+- Nowe zasady w `AGENTS.md`: wpis w logu podaje, kto podjął decyzję; pytanie użytkownika o zdanie agenta nie jest akceptacją (korekta użytkownika z 2026-09-28).
+
+## 2026-09-28: Rewizja zasad po korektach użytkownika
+
+- Fakty: Podczas planowania poprawek interfejsu nowe ogólne zasady (redukcja środków wizualnych, reguła powtarzania stanu, zakaz osobnego przycisku powrotu, „Kolizja nie jest winą użytkownika”, ograniczona paleta kolorów) kłóciły się z wcześniej przyjętymi elementami i z korektami użytkownika. Agent traktował przyjęte elementy jak naruszenia.
+- Decyzja: `AGENTS.md` mówi, że nowa zasada nie unieważnia przyjętej decyzji, a sprzeczność między dokumentami agent zgłasza zamiast ją rozstrzygać. `ARCHITECTURE.md` dopuszcza role głębi, rytmu i rozpoznawalności, wymienia zaakceptowane elementy wyglądu, pozwala powtórzyć stan, który może zniknąć z ekranu albo dotyczy wiersza, zapewnia czytelność przy wyświetlaniu zamiast ograniczania wyboru, wyjaśnia „Wstecz” w kreatorze i rozdziela kolory kolizji: ostrzeżenie przy zajęciach jest pomarańczowe, liczba kolizji w podsumowaniu i nagłówku czerwona. Drugie zajęcia kolizji aplikacja wskazuje tam, gdzie jest miejsce, a widget pokazuje co najmniej zakres. `WORKFLOW.md` pomija zaakceptowane elementy w przeglądzie redukcyjnym i dodaje sprawdzenie brakującej informacji.
+- Powód: Korekty użytkownika dotyczyły zarówno nadmiernej redukcji (nagłówek podsumowania, cienie, separator, „Aktywny”, „Anuluj”), jak i brakującej informacji (stan „Jednorazowe”, dni z wieloma zajęciami, nazwa drugich zajęć).
+
+## 2026-09-28: Decyzje po audycie interfejsu i plan poprawek (I-54, I-56 do I-59)
+
+- Fakty: Audyt kodu i przegląd na emulatorze (motyw jasny i ciemny, 320 dp) wykazał: nadmiar elementów nad pierwszymi zajęciami na „Dzisiaj” i w „Planie”, filtr kierunku ukryty w sekcji rozwijanej, akcję „Dodaj jednorazowe” schowaną w zwiniętych opcjach, kolor błędu dla każdej zmiany w kalendarzu, brak nazwy drugich zajęć przy kolizji, stan „Zaplanowane” przy zwykłym terminie, powtórzony tytuł formularza zajęć, banery powtarzające tytuły i niespójne dialogi, kolejność przycisków oraz odmianę liczebników.
+- Decyzja użytkownika: nadtytuł „Dzisiaj” i podpis „Od najwcześniejszego” znikają, a nagłówek karty podsumowania zostaje; kolizja w widgecie jest czerwona (tło `errorContainer` i czerwony pasek, jak w obecnym kodzie); „Anuluj” w formularzach zostaje i `ARCHITECTURE.md` odróżnia je od przycisku powrotu; pionowy separator karty zajęć zostaje w specyfikacji i trafia do kodu. Tytuł formularza zajęć i kolory kalendarza użytkownik zostawił do wyboru agenta.
+- Decyzja agenta: tytuł „Dodaj zajęcia” albo „Edytuj zajęcia” jest tylko w górnym pasku. W kalendarzu kolor znacznika oznacza wyłącznie kierunek (kontrast co najmniej 3:1 z tłem), a zmieniony lub przeniesiony termin ma pierścień zamiast kropki, bo kolor stanu mógłby się pokryć z kolorem wybranym dla kierunku. Filtr kierunku to jedno pole wyboru. Kolizja pokazuje nazwę drugich zajęć na karcie i w szczegółach, z jednej funkcji domenowej wspólnej z widgetem.
+- Plan: `PLAN.md` ma pięć kroków (I-56, I-57, I-58, I-54, I-59) opisanych dla słabszego agenta; listy kontrolne odbioru O-07, I-40 i I-49 przeniesiono do `QUEUE.md`.
+- Odrzucone: rozróżnianie stanów w kalendarzu kolorem (czerwony, fioletowy); trzy różne kształty dla odwołania, zmiany i terminu jednorazowego, bo przy znaczniku 8 dp są nieczytelne; usuwanie „Anuluj” z formularzy.
+- Uzupełnienie tego samego dnia: użytkownik wybrał ekran „Semestry” z sekcjami „Aktywny semestr” i „Pozostałe semestry” oraz dialogiem wyboru aktywnego semestru, a na „Dzisiaj” przyciski tekstowe wewnątrz banera aktualizacji. Zasady złagodzono: przegląd redukcyjny w `WORKFLOW.md` zgłasza elementy do usunięcia zamiast je usuwać; stan wymagany przez `FEATURES.md` zostaje mimo reguły o stanie; komunikat nie powtarza tylko tytułu górnego paska; reguła filtra dotyczy pojedynczego filtra; wyjątek 11 sp dla nadtytułów usunięto. Plan dopuszcza drobne różnice między opisem a kodem, zamiast liczby pikseli porównuje zrzuty, obejmuje skalę czcionki 2,0 w kalendarzu i buduje identyfikator terminu jedną funkcją domenową.
+- Decyzje po przeglądzie makiet „Podgląd poprawek MAK”: nowe „O aplikacji”, „Ustawienia”, „Powiadomienia”, baner aktualizacji, formularz zajęć, „Dzisiaj” i konfiguracja semestru przyjęte; szczegóły terminu pokazują też „Jednorazowe”; znaczniki kalendarza bez dopasowania kontrastu, a dzień z więcej niż trzema zajęciami ma dwa znaczniki i plus; cienie kart i przełącznika zostają; widget pokazuje tylko zakres kolizji, a aplikacja także nazwę drugich zajęć; ostrzeżenie na ekranie „Dane” pod przyciskami; ekran „Semestry” zachowuje pole wyboru i listę z oznaczeniem „Aktywny”, z neutralnym komunikatem, nagłówkiem „Lista semestrów” i „Dodaj semestr” nad listą (dialog wyboru odrzucony); ekran „Kierunki” semestru dostaje „Edytuj” i „Usuń” w kartach, osobny ekran dodawania i ekran edycji z kalendarzem, nazwą i kolorem (I-60). Decyzja agenta na prośbę użytkownika: akcje dodawania stoją nad listami jako obrysowane przyciski z ikoną plusa, bo pełny przycisk pod długą listą znika z widoku.
+- Dalsze decyzje użytkownika tego dnia: znaczniki kalendarza 8 dp przy 1 do 3 zajęciach, 6 dp przy 4 i 5 zajęciach, a od 6 zajęć cztery znaczniki i plus (pięć znaczników z plusem nie mieści się w komórce 41 dp przy 320 dp); na ekranie „Edytuj kierunek” nazwa stoi na górze; suwak „Odcień” zmienia tylko odcień, a „Jasność” prowadzi od czarnego do białego (I-61). Sposób zapewnienia czytelności zaproponował agent na pytanie użytkownika, a użytkownik go przyjął: zapis dokładnego koloru i dopasowanie przy wyświetlaniu do 3:1 dla kształtów i 4,5:1 dla nazwy, z podglądem w obu motywach. Z tego powodu znaczniki kalendarza jednak dostają dopasowanie kontrastu, mimo wcześniejszej rezygnacji z podniesionego progu. Cienie karty zajęć i przełącznika widoku zapisano w `ARCHITECTURE.md` jako zaakceptowany wyjątek.
+- Korekta użytkownika tego dnia: alert kolizji w widgecie jest pomarańczowy, w kolorach ostrzeżenia aplikacji, a nie czerwony, zgodnie z zasadą „Kolizja nie jest winą użytkownika”. Wcześniejsza decyzja o czerwonym alercie przestaje obowiązywać.
+- Odrzucone: pięć znaczników z plusem; ostrzeżenie bez dopasowania koloru; blokada zapisu nieczytelnych kolorów.
+- Otwarte: obramowanie przycisków ikon w górnym pasku, trzy style zaznaczenia na „Planie” i jasność karty podsumowania w motywie ciemnym (`KNOWN_ISSUES.md`, pozycja 10).
+
+## 2026-09-28: Reguły redukcji interfejsu i audyt (I-54, I-55)
+
+- Fakty: Zasady UI opisywały czytelność, stałe odstępy, dostępność i zakaz statycznych pilli, ale nie mówiły wprost, kiedy zrezygnować z karty, ikony, koloru albo animacji. Audyt kodu wykazał jeden styl `MakNoteBanner` dla neutralnych informacji, ostrzeżeń i błędów oraz osobną kartę dla każdej grupy ekranu „O aplikacji”.
+- Decyzja: Każdy element wizualny musi przekazywać informację, budować hierarchię, wskazywać stan, wspierać nawigację albo działanie. Hierarchia najpierw używa typografii, odstępów, wyrównania i kontrastu. Karty grupują rzeczywiste obiekty, ikony wspierają rozpoznanie, status wpływa na decyzję, a animacja przedstawia rzeczywistą zmianę lub oczekiwanie. `WORKFLOW.md` wymaga przeglądu redukcyjnego przed zakończeniem zmiany UI.
+- Wynik audytu: I-54 rozdziela role komunikatów, a I-55 ogranicza karty na ekranie „O aplikacji”. Gradient podsumowania, kolory kierunków i animacja podczas rzeczywistego ładowania są zaakceptowanymi elementami funkcjonalnymi. Nie znaleziono tekstów marketingowych, fontu monospace, dekoracyjnych ikon ani ciągłej animacji poza oczekiwaniem na dane. Oględziny na urządzeniu nadal należą do O-05 i O-06.
+
+## 2026-09-28: Wydanie 0.2.2 i działająca aktualizacja (I-49, I-52, O-07)
+
+- Fakty: Tag `v0.2.2` zbudował się poprawnie w GitHub Actions, a użytkownik opublikował wydanie. Użytkownik potwierdził, że aktualizacja z aplikacji do 0.2.2 działa.
+- Decyzja: I-52 ma status `gotowe`. O-07 pozostaje otwarty dla niepotwierdzonych przypadków błędów i jawnego potwierdzenia zachowania danych. I-49 pozostaje w toku do sprawdzenia instalacji według README na drugim telefonie i domknięcia O-07.
+- Weryfikacja: Przed tagiem przeszły testy JVM, kompilacja testów urządzenia, lint i `assembleDebug`; workflow wydania zakończył się sukcesem. Główny przebieg aktualizacji potwierdził użytkownik 2026-09-28.
+
 ## 2026-09-28: Treść notatek w widgetcie (I-53)
 
 - Fakty: Rozszerzony widget pokazywał przy metadanych tylko ikonę, że zajęcia mają notatkę. Nie pokazywał treści ani nie rozróżniał notatki do zajęć od notatki do terminu, mimo wolnego miejsca w dużych rozmiarach.
@@ -93,47 +138,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: Test taga ma sprawdzić pełny proces i pliki bez publicznego udostępniania niedokończonej wersji. Ręczna publikacja pozostawia użytkownikowi ostatnią decyzję.
 - Odrzucone: Natychmiastowa publikacja po samym przejściu testów; publiczne wydanie testowe `v0.1.0` przed ukończeniem mechanizmu aktualizacji.
 - Weryfikacja: Tag testowy `v0.1.1` przeszedł testy JVM i zbudował podpisany APK w GitHub Actions. Szkic wydania zawierał `MAK-0.1.1.apk` i `update.json`, a zapisana suma SHA-256 była zgodna z pobranym APK.
-
-## 2026-09-27: Polskie zasoby aktywności i kolejność prac (I-44, I-26)
-
-- Fakty: Przy angielskim języku telefonu wybór daty pokazywał „Select date” i angielskie nazwy, a nagłówki dni tygodnia nakładały się na siebie. Teksty pochodziły z zasobów Material 3 w języku systemu.
-- Decyzja: `MainActivity.attachBaseContext` nakłada polskie zasoby (`withAppLocale`), zamiast tłumaczyć tytuły pojedynczych komponentów; aplikacja jest tylko po polsku (`ARCHITECTURE.md`). Wybór godziny w oknie niższym niż 560 dp używa układu poziomego. Kolejność prac ustalona przez użytkownika: I-44 i I-26, potem aktualizacje w aplikacji (I-36 do I-41), potem tryb tabletowy (I-45 do I-47).
-- Powód: Własne tytuły naprawiłyby tylko widoczne teksty; opisy przycisków dla czytnika ekranu i tryb wpisywania daty nadal byłyby w języku telefonu. Mechanizm aktualizacji musi być w pierwszej wersji dla znajomych.
-- Odrzucone: własny tytuł i nagłówek `DatePicker` z polskim `Locale` tylko w stanie wyboru; ustawianie języka aplikacji przez `LocaleManager`, bo działa od Androida 13, a `minSdk` to 31.
-
-## 2026-09-27: Tryb tabletowy, wariant A (I-44 do I-47)
-
-- Fakty: Po blokadzie pionu użytkownik zapytał, jak robią to duże aplikacje, i poprosił o tryb tabletowy. Android 16 ignoruje blokadę orientacji na ekranach od 600 dp, a w poziomie wybór daty i godziny był ucięty.
-- Decyzja: Użytkownik wybrał wariant A: telefon w pionie, tablet w obu orientacjach, boczny pasek nawigacji od 600 dp, treść najwyżej 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp, dialogi wyboru daty i godziny dopasowane do niskiego okna. Klasy szerokości liczy własna funkcja z progami Material 3, bez biblioteki `material3-adaptive`. Zakres zapisano w `PRODUCT.md` i `ARCHITECTURE.md`, kroki w `PLAN.md`.
-- Powód: Poprawny układ na tabletach bez przebudowy nawigacji i danych.
-- Odrzucone: wariant B z dwoma panelami (lista i szczegóły obok siebie) jako zbyt duża zmiana nawigacji na obecnym etapie; może wrócić jako osobne zadanie; biblioteka `material3-adaptive`, bo potrzebna jest tylko szerokość okna.
-
-## 2026-09-27: Dłuższa animacja startu i znak w pasku (I-42)
-
-- Fakty: Animacja „Rozkwit” trwała około 870 ms i przy szybkim starcie system mógł ją przerwać; użytkownik uznał ją za zbyt krótką. Pierwsza poprawka wydłużyła animację ekranu startowego do 1,6 s, ale po niej na moment pojawiał się ekran ładowania z pełną nazwą, czyli drugi, osobny ekran. W górnym pasku został stary znak z czterech kwadratów.
-- Decyzja: Cała animacja (1,6 s) gra w jednym ekranie Compose. Systemowy ekran startowy ma pustą ikonę (`splash_empty.xml`), więc pokazuje tylko tło motywu; ekran ładowania najpierw wyświetla makówkę na białym kole, potem dorysowuje płatki (po 800 ms co 130 ms) i od początku rozwija pełną nazwę od środka. Pusty ekran startowy wybrał użytkownik, bo sama makówka przed animacją wyglądała jak zawieszony obraz. Animacja zaczyna się, gdy ekran startowy znika (bez systemowego wygaszania), gra raz na proces i zawsze do końca; potem ekran ładowania czeka na dane i znika przez przenikanie. Użytkownik wybrał 2026-09-27 czas 1,6 s, odtwarzanie przy każdym zimnym starcie i nazwę rozwijaną od początku animacji, co zmienia odrzucenie sztucznego wydłużania startu z I-30. Górny pasek pokazuje `MakPoppyMark`.
-- Powód: Jeden ekran daje ciągły ruch bez mignięcia i pozwala animować nazwę, której ikona ekranu startowego nie może pokazać. Plan wczytuje się w tym czasie w tle.
-- Odrzucone: przytrzymanie systemowego ekranu startowego z animowaną ikoną, bo po nim musiał pojawić się drugi ekran z nazwą; 2 s, bo przy codziennym otwieraniu planu może męczyć; pełna animacja tylko raz dziennie, bo wymaga zapisu daty w ustawieniach.
-
-## 2026-09-27: Tylko orientacja pionowa (I-43)
-
-- Fakty: W poziomie na telefonie górny i dolny pasek zajmują około 40% wysokości, „Plan” pokazuje zajęcia dopiero po przewinięciu kontrolek, a wybór godziny i daty jest ucięty.
-- Decyzja: Użytkownik zdecydował 2026-09-27, że `MainActivity` działa tylko w pionie, bo z układu poziomego korzystałoby niewiele osób. Ostrzeżenia lint o blokadzie orientacji są wyciszone w manifeście.
-- Powód: Poprawienie układu poziomego i dialogów kosztowałoby więcej niż daje.
-- Ograniczenia: Na urządzeniach od 600 dp Android 16 ignoruje blokadę przy `targetSdk` 36. Odtwarzanie aktywności przy zmianie motywu, czcionki i języka nadal występuje, więc poprawka z I-26 pozostaje potrzebna.
-- Odrzucone: osobny układ poziomy; blokada tylko na części ekranów.
-
-## 2026-09-27: Focus, duża czcionka i odwołane terminy (I-24, I-25, I-27 do I-29)
-
-- Fakty: Audyt interfejsu wykazał dwa przystanki Tab na każdej własnej kontrolce, ucinanie godziny przy skali czcionki 1,3, słowa łamane w środku przy skali 2,0, brak statusu w opisie karty dla TalkBack i odwołane terminy liczone w ViewModelu bez filtra kierunku.
-- Decyzja: Własna kontrolka ma jeden cel focusu (`clickable` albo `selectable`), a `onFocusChanged` stoi przed nim; zasada jest w `ARCHITECTURE.md`. Kolumna godzin karty rośnie z czcionką. Etykiety karty podsumowania zmniejszają się do 12 sp, a przy skali 2,0 mogą mieć wielokropek, bo pełną etykietę czyta czytnik ekranu. Wiersz tygodnia przy szerokości poniżej 180 sp przenosi „Zmień” do osobnej linii. Odwołane terminy liczy domena (`cancelledOccurrences`) tą samą regułą terminu co resolver. Wiersz tygodnia nie jest akcją, gdy nie ma jednego kalendarza do korekty.
-- Powód: `ARCHITECTURE.md` wymaga klawiatury, 320 dp, braku obciętych informacji i jednego źródła reguł planu.
-- Odrzucone: zmniejszanie etykiet poniżej 12 sp; osobny komponent paska dla „Dodaj”; ukrywanie „Zmień” przy dużej czcionce.
-- Weryfikacja: 347 testów JVM, 83 testy urządzenia, lint bez nowych ostrzeżeń; zrzuty na emulatorze przy 320 dp i skalach 1,0, 1,3 i 2,0 oraz przejście klawiszem Tab.
-
-## 2026-09-27: Logo maku i animacja startu (I-42)
-
-- Fakty: Aplikacja miała szablonową ikonę Androida, a ekran ładowania z I-30 pokazywał tylko pełną nazwę. Użytkownik chciał logo w kształcie maku, od skrótu nazwy.
-- Decyzja: Po trzech rundach wariantów w artefakcie „Logo MAK: warianty maku” użytkownik wybrał 2026-09-27 wariant M (pięć czerwonych płatków z pofalowanym brzegiem, ciemna makówka, białe tło) i animację „Rozkwit”. Ikona adaptacyjna ma białe tło, kwiat na pierwszym planie i osobną warstwę monochromatyczną, w której przerwy między płatkami i wokół makówki daje zmniejszenie płatków i wycięcie. Ekran startowy używa `windowSplashScreenAnimatedIcon` z białym kołem ikony w obu motywach. `MakPoppyLogo` rysuje ten sam kwiat w Compose na ekranie ładowania, w miejscu i rozmiarze ikony ekranu startowego, z pętlą przezroczystości płatków, którą wyłącza skala animacji 0. Szablonowe ikony bitmapowe usunięto, bo przy `minSdk` 31 launcher używa ikony adaptacyjnej.
-- Powód: Wzorem były ikony popularnych aplikacji: jeden duży znak bez drobnych detali. Na ciemnym tle makówka zlewała się z tłem, stąd białe koło. Animacja korzysta tylko z obrotu, skali i przezroczystości, więc ma jedno źródło kształtu w XML i w Compose.
-- Odrzucone: warianty z boku kwiatu i z łodygą, bo łodyga znika w małym rozmiarze; wydłużanie ekranu startowego do końca animacji, zgodnie z decyzją z I-30; Lottie jako nowa zależność.

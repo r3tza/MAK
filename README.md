@@ -47,6 +47,10 @@ Dokumentacja produktu, architektury i procesu pracy zaczyna się w [docs/MAP.md]
 
 Projekt jest aktywnie rozwijany. Pierwsze publiczne wydanie to 0.2.0; wersje przed 1.0 mogą zawierać błędy, dlatego warto regularnie robić kopię zapasową planu. Lista bieżących prac znajduje się w [docs/QUEUE.md](docs/QUEUE.md), a opis zmian w kolejnych wersjach na stronie [wydań](https://github.com/r3tza/MAK/releases) i w aplikacji, w „O aplikacji”.
 
+## Zgłaszanie błędów
+
+Błędy i pomysły zgłaszaj na GitHubie. Zasady są w [CONTRIBUTING.md](CONTRIBUTING.md). Projekt nie przyjmuje pull requestów od innych osób.
+
 ## Licencja
 
 Kod jest udostępniony na licencji Apache 2.0. Pełny tekst i informacja o prawach autorskich znajdują się w [LICENSE](LICENSE) oraz [NOTICE](NOTICE). Licencja nie udziela prawa do używania nazwy „MAK” ani ikony aplikacji. Zmodyfikowana dystrybucja musi używać innej nazwy, ikony i identyfikatora pakietu.

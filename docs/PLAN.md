@@ -2,29 +2,213 @@
 
 Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Pełna lista i oddzielny status odbioru są w `QUEUE.md`. Repozytorium jest publiczne, a `v0.2.0` opublikowano 2026-09-27.
 
-## 1. Odbierz automatyczne sprawdzanie i baner (I-40)
+Kroki pochodzą z audytu interfejsu z 2026-09-28 i decyzji użytkownika po przeglądzie makiet „Podgląd poprawek MAK” (`LOG.md`). Odbiór na telefonie (O-07, I-40, I-49) wykonuje użytkownik; listy kontrolne są w odpowiednich wierszach `QUEUE.md`.
 
-1. Włącz automatyczne sprawdzanie i uruchom aplikację ponownie.
-2. Potwierdź, że brak sieci nie pokazuje komunikatu oraz że kolejna próba nie następuje przed upływem 24 godzin.
-3. Sprawdź „Zobacz” i „Nie teraz” oraz ponowne pokazanie banera dla wyższego `versionCode`.
-4. Obejrzyj przełącznik i baner w obu motywach, przy 320 dp i dużej czcionce.
+## Zasady wspólne dla wszystkich kroków
 
-Kryterium zakończenia: automat nie wykonuje nadmiarowych zapytań, błąd pozostaje cichy, a pominięcie dotyczy tylko jednej wersji.
+- Wykonuj kroki w podanej kolejności. Każdy krok (i każda część kroku 4) kończy się kompilującym się kodem, zielonymi testami i osobnym commitem (`feat:` albo `fix:`).
+- Przed zmianą przeczytaj wskazane pliki w całości. Numery linii w opisie są orientacyjne; szukaj po nazwie funkcji albo tekście.
+- Nie zmieniaj niczego poza opisanym zakresem. Drobne różnice między opisem a kodem (inna nazwa parametru, przesunięta funkcja, inny import) rozwiąż zgodnie z celem kroku i opisz w treści commita. Zatrzymaj się i zapisz bloker w `QUEUE.md` tylko wtedy, gdy nie da się ustalić zamierzonego zachowania albo zmiana wymagałaby decyzji spoza planu.
+- Testy JVM: `gradlew.bat test`. Testy Compose jednej klasy: `gradlew.bat connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.retza.mak.ui.today.TodayScreenTest"` (podmień nazwę klasy). Wymagają uruchomionego emulatora (`adb devices`).
+- Zrzuty na emulatorze `Medium_Phone` (gęstość 420): `gradlew.bat installDebug`, potem `adb exec-out screencap -p > plik.png`. Szerokość 320 dp: `adb shell wm size 840x1866`, powrót: `adb shell wm size reset`. Motyw ciemny: `adb shell cmd uimode night yes`, powrót: `night no`. Skala czcionki 2,0: `adb shell settings put system font_scale 2.0`, powrót: `1.0`. Dane demonstracyjne ma wersja debug. Zrób zrzuty przed zmianą i po niej w tych samych ustawieniach, aby je porównać.
+- Po zmianie `docs/*.md` uruchom `py scripts/check_map.py`.
+- Przed commitem wykonaj przegląd redukcyjny z `WORKFLOW.md`.
+- Cienie kart zajęć i przełącznika Lista/Kalendarz zostają (decyzja użytkownika z 2026-09-28: dodają głębi).
 
-## 2. Sprawdź instrukcję instalacji u znajomego (I-49)
+## 1. Odchudź górę ekranów „Dzisiaj” i „Plan” (I-56)
 
-`v0.2.1` z poprawką aktualizatora jest opublikowane 2026-09-28 i sprawdzone na emulatorze.
+Cel: pierwsze zajęcia widać wyżej, a ekran nie powtarza informacji. Pliki: `ui/components/MakComponents.kt`, `ui/today/TodayScreen.kt`, `ui/schedule/ScheduleScreen.kt`, `ui/semester/SemesterScreen.kt`, `ui/setup/SetupWizard.kt`, `ui/edit/ClassEditScreen.kt` i testy Compose tych ekranów (`androidTest/.../TodayScreenTest.kt`, `ScheduleScreenTest.kt`, `SetupWizardTest.kt`).
 
-1. Na własnych urządzeniach z 0.2.0 zainstaluj 0.2.1 ręcznie z GitHub Releases na istniejącą aplikację i sprawdź, że plan został.
-2. Poproś znajomego o instalację według sekcji „Instalacja” w `README.md` i zanotuj niejasne kroki.
+1. `MakSectionHeader`: usuń parametr `eyebrow` i gałąź rysującą nadtytuł. Zostaw górny odstęp `Spacer(Modifier.height(MakSpacing.sm))`. W wywołaniach usuń argument: `TodayScreen` (`"Dzisiaj"`), `SetupWizard` (`"Konfiguracja początkowa"`), `ClassEditScreen` (`null`).
+2. `MakSummaryCard` zostaje bez zmian, razem z nagłówkiem „Twój plan na dziś” albo „Dziś bez zajęć”.
+3. `MakRowTitle`: zmień `meta: String` na `meta: String? = null`. Tekst `meta` rysuj tylko, gdy nie jest pusty. W `TodayScreen` wywołaj `MakRowTitle(title = "Zajęcia")`. W `CoursesBlock` (`SemesterScreen.kt`) przekaż `meta = null`, gdy lista kierunków jest pusta, bo stan pusty pod spodem mówi to samo. Pozostałe wywołania zostają.
+4. `ScheduleScreen`: usuń `Text("Plan zajęć")`. `MakViewSwitch` dostaje `Modifier.padding(top = MakSpacing.sm, bottom = MakSpacing.xs)`.
+5. `ScheduleFilterSection`: usuń stan `expanded`, `focused`, wiersz z ikoną `FilterList` i strzałką. Funkcja rysuje tylko `MakSelectField(label = "Kierunek", value = selectedLabel, options = filters, onSelected = { onFilterSelected(it.id) }, optionLabel = { labelById[it.id].orEmpty() }, modifier = Modifier.padding(bottom = MakSpacing.sm))`. Zostaw `distinctLabels`. W `DaySelector` zmień dolny odstęp z 17 dp na `MakSpacing.md`. Usuń nieużywane importy.
+6. `WeekTypeBadge`: zmień tekst „Wybierz kierunek w filtrach, aby zmienić tydzień.” na „Wybierz kierunek w polu „Kierunek”, aby zmienić tydzień.”. Znajdź ten tekst w testach (`rg "w filtrach"`) i zaktualizuj.
+7. `MakSecondaryAction`: dodaj opcjonalny parametr `icon: ImageVector? = null`. Gdy jest ustawiony, ikona 18 dp stoi przed tekstem z odstępem 8 dp, w kolorze tekstu przycisku, bez własnego opisu. Wygląd przycisków bez ikony się nie zmienia.
+8. `CalendarView`: usuń `MakExpandableSection` „opcje kalendarza” i stan `showCalendarOptions`. Pod legendą umieść `MakCheckbox(label = "Pokaż odwołane", ...)` z `Modifier.padding(bottom = MakSpacing.md)`. Bezpośrednio pod nagłówkiem wybranego dnia (`MakRowTitle` z datą i liczbą zajęć), a nad kartami albo stanem pustym, umieść `MakSecondaryAction(text = "Dodaj termin jednorazowy", icon = Icons.Outlined.Add, onClick = onAddOneOff, modifier = Modifier.padding(bottom = MakSpacing.md))`. Akcja stoi nad listą, aby była widoczna niezależnie od liczby zajęć, tak samo jak „Dodaj semestr” i „Dodaj kierunek”. Stan pusty dnia ma tekst „Brak zajęć w tym dniu.”.
+9. Testy Compose:
+   - `TodayScreenTest`: nie istnieją teksty „DZISIAJ” i „Od najwcześniejszego”; nagłówek karty i etykiety „Zajęcia”, „Kolizje”, „Okienka” nadal są widoczne. Asercje nagłówka karty (`isHeading`) zostają.
+   - `ScheduleScreenTest`: „Plan zajęć” nie istnieje; filtr to pole „Kierunek” z długą nazwą kierunku jako wartością (zastąp testy klikające „Filtry”; wzór wyboru opcji weź z testu pola motywu w `SettingsScreenTest`); w widoku kalendarza „Pokaż odwołane” i „Dodaj termin jednorazowy” są dostępne bez rozwijania, a kliknięcie akcji wywołuje `onAddOneOff`.
+   - `SetupWizardTest`: usuń asercję „KONFIGURACJA POCZĄTKOWA”.
 
-Kryterium zakończenia: instalacja u znajomego przebiegła według README, a niejasne kroki są poprawione.
+Przypadki brzegowe: brak aktywnego semestru na „Dzisiaj” (karta podsumowania się nie pokazuje, stan pusty z „Skonfiguruj plan” zostaje); jeden kierunek (filtr pokazuje się tak samo jak dotąd, warunek `filters.isNotEmpty()` bez zmian); dzień z wieloma zajęciami (akcja dodania nadal pod nagłówkiem dnia); duża czcionka przy 320 dp (tekst przycisku z ikoną się zawija, nie jest obcięty).
 
-## 3. Pełny odbiór aktualizacji na telefonie (O-07)
+Weryfikacja: `gradlew.bat test`, trzy klasy testów Compose, zrzuty „Dzisiaj”, „Plan” (lista i kalendarz) przy 320 dp w obu motywach, przed zmianą i po niej.
 
-1. Opublikuj `v0.2.2` z nowym `versionCode`, tym samym certyfikatem i wpisem w `release_notes.json`.
-2. Sprawdź ręczne oraz automatyczne wykrycie, baner, ekran „Aktualizacja”, pobranie, zgodę i instalację.
-3. Sprawdź brak sieci, odmowę zgody, anulowanie pobierania i „Nie teraz”.
-4. Potwierdź zachowanie planu, notatek i ustawień po aktualizacji.
+Kryterium zakończenia: brak nadtytułów, podpisu „Od najwcześniejszego” i nagłówka „Plan zajęć”, a nagłówek karty podsumowania zostaje; filtr to jedno pole wyboru; opcje kalendarza nie są zwinięte, a „Dodaj termin jednorazowy” stoi nad listą dnia; na zrzutach przy 320 dp pierwsza karta listy „Plan” stoi wyżej niż przed zmianą, a pole „Kierunek” nie jest wyższe niż dawna sekcja filtrów razem z jej odstępem; testy przechodzą.
 
-Kryterium zakończenia: O-07 jest potwierdzony na telefonie, a I-49 może otrzymać status „gotowe”.
+## 2. Oznacz zmiany w kalendarzu kształtem, nie kolorem (I-57)
+
+Cel: kolor znacznika oznacza wyłącznie kierunek, więc nie kłóci się z kolorem wybranym przez użytkownika. Zmieniony lub przeniesiony termin ma pierścień zamiast wypełnionej kropki. Rozmiar znacznika zależy od liczby zajęć: 1 do 3 zajęć to kropki 8 dp, 4 i 5 zajęć kropki 6 dp, od 6 zajęć cztery kropki 6 dp i plus (decyzja użytkownika z 2026-09-28; pięć kropek z plusem nie mieści się w komórce 41 dp przy 320 dp). W tym kroku znacznik używa zapisanego koloru kierunku; dopasowanie kontrastu do tła dochodzi w kroku 4, części C. Reguła jest w `ARCHITECTURE.md`, sekcja „Gęstość ekranu planu”, i w `FEATURES.md`, sekcja „Widok „Kalendarz””. Pliki: `ui/components/PresentationModels.kt`, `ui/schedule/ScheduleViewModel.kt`, `ui/schedule/ScheduleScreen.kt`, test `test/.../ui/schedule/ScheduleViewModelTest.kt`.
+
+1. `PresentationModels.kt`: w `CalendarMarkerUi` usuń `colorToken`, dodaj `val isChanged: Boolean = false`. Usuń `enum class CalendarMarkerColor`. W `CalendarDayUi` dodaj `val hasMoreMarkers: Boolean = false`.
+2. `ScheduleViewModel.kt`: przy budowie `markers` ustaw `isChanged = it.occurrenceChange != null` zamiast `colorToken`. Usuń funkcję `markerColor`. Gdy dzień ma najwyżej pięć terminów, pokaż znacznik dla każdego; gdy więcej, pokaż znaczniki czterech pierwszych (w kolejności godzin) i ustaw `hasMoreMarkers = true`. Odwołane terminy nie trafiają do `occurrences` (`ScheduleResolver` je pomija), więc pierścień oznacza zmianę albo przeniesienie. Opis dnia dla czytnika ekranu (`calendarAccessibilityLabel`) już podaje liczbę zajęć i zostaje bez zmian. Legenda (`calendarLegend`) zostaje bez zmian.
+3. `ScheduleScreen.kt`:
+   - usuń prywatną funkcję `markerColor(marker)` i importy `CalendarMarkerColor`, `MakOrangeMark`, `MakTeal`, jeśli przestaną być używane;
+   - dodaj prywatną funkcję `@Composable courseMarkerTint(hex: String?): Color`: `parseHexColor(hex) ?: MaterialTheme.colorScheme.onSurfaceVariant`;
+   - dodaj prywatny komponent `CalendarMarker(color: Color, changed: Boolean, size: Dp)`: gdy `changed == false` wypełnione koło (`background(color, CircleShape)`), gdy `true` pierścień bez wypełnienia (`border(if (size >= 8.dp) 1.5.dp else 1.dp, color, CircleShape)`);
+   - `CalendarDay`: rozmiar znacznika to 8 dp, gdy `markers.size <= 3` i `!hasMoreMarkers`, a w pozostałych przypadkach 6 dp; wiersz znaczników ma wysokość 8 dp, odstęp 2 dp i wyśrodkowane w pionie elementy; każdy znacznik to `CalendarMarker(color = if (day.isSelected) onPrimary else courseMarkerTint(marker.colorHex), changed = marker.isChanged, size = size)`; gdy `day.hasMoreMarkers`, po czterech znacznikach stoi `Icon(Icons.Outlined.Add, contentDescription = null, modifier = Modifier.size(8.dp))` w kolorze `onSurfaceVariant` (w wybranym dniu `onPrimary`); szerokość wiersza wynosi wtedy 40 dp i mieści się w komórce 41 dp przy 320 dp;
+   - `CalendarLegend`: kierunki pokazują `CalendarMarker(courseMarkerTint(item.colorHex), changed = false)`, pozycja „Zmieniony termin” `CalendarMarker(MaterialTheme.colorScheme.onSurfaceVariant, changed = true)`. Legenda nie opisuje plusa; liczbę zajęć podaje lista dnia i opis dla czytnika ekranu.
+4. Testy JVM w `ScheduleViewModelTest` (wzór budowy danych weź z istniejącego testu kalendarza w tym pliku): termin zmieniony przez `OccurrenceChange` ma znacznik z `isChanged = true`, zwykły termin `false`; dzień z trzema terminami ma trzy znaczniki i `hasMoreMarkers = false`; dzień z pięcioma terminami ma pięć znaczników i `hasMoreMarkers = false`; dzień z sześcioma terminami ma cztery znaczniki i `hasMoreMarkers = true`.
+
+Przypadki brzegowe: kierunek bez koloru (neutralny znacznik); wybrany dzień (oba kształty i plus w `onPrimary`); 320 dp (najszerszy wiersz to pięć kropek 6 dp, 38 dp, albo cztery kropki i plus, 40 dp; komórka ma około 41 dp); skala czcionki 2,0 (komórka ma stałe 48 dp wysokości, a numer dnia rośnie). Jeśli przy skali 2,0 kropki 8 dp nachodzą na numer, używaj 6 dp dla każdej liczby zajęć; wysokości komórki nie zmieniaj, bo wynika z wyjątku rozmiaru w `ARCHITECTURE.md`.
+
+Weryfikacja: `gradlew.bat test`, `ScheduleScreenTest`, zrzuty kalendarza w obu motywach oraz przy 320 dp ze skalą czcionki 2,0. W danych demonstracyjnych przeniesiony termin 1 października ma pierścień w kolorze kierunku. Dni z czterema i sześcioma zajęciami sprawdź, dodając w wersji debug terminy jednorazowe do jednego dnia i usuwając je po zrzucie.
+
+Kryterium zakończenia: w kalendarzu nie występuje kolor błędu ani inny kolor stanu; zmiana jest oznaczona pierścieniem w kolorze kierunku; legenda pokazuje pierścień przy „Zmieniony termin”; rozmiar i liczba znaczników odpowiadają liczbie zajęć, a od sześciu zajęć dzień pokazuje cztery znaczniki i plus; testy przechodzą.
+
+## 3. Pokaż, z czym koliduje termin, i uprość szczegóły terminu (I-58)
+
+Cel: karta i szczegóły terminu wskazują drugie zajęcia kolizji (`ARCHITECTURE.md`, „Kolizja nie jest winą użytkownika”); widget zostaje przy krótkim zapisie z samym zakresem godzin (decyzja użytkownika z 2026-09-28); szczegóły nie pokazują oczywistego stanu; formularz zajęć ma tytuł tylko w górnym pasku. Pliki: `domain/Models.kt`, `domain/CollisionRanges.kt`, `ui/schedule/ScheduleCollisionLabels.kt`, `widget/WidgetPresenter.kt`, `widget/WidgetUiState.kt`, `widget/MakTodayWidget.kt`, `widget/WidgetLayoutPolicy.kt`, `ui/PlanMapping.kt`, `ui/components/PresentationModels.kt`, `ui/components/MakComponents.kt`, `ui/today/TodayViewModel.kt`, `ui/schedule/ScheduleViewModel.kt`, `ui/occurrence/OccurrenceDetailsModels.kt`, `ui/occurrence/OccurrenceViewModel.kt`, `ui/occurrence/OccurrenceDetailsScreen.kt`, `ui/MakNavHostApp.kt`, `ui/edit/ClassEditScreen.kt`.
+
+1. Domena:
+   - w `Models.kt` dodaj `fun occurrenceId(classId: String, originalDate: LocalDate): String = "$classId:$originalDate"` i użyj jej w getterze `PlannedOccurrence.id`, aby format identyfikatora miał jedno źródło;
+   - przenieś `conflictLabels` z `ui/schedule/ScheduleCollisionLabels.kt` do `domain/CollisionRanges.kt` jako `fun collisionLabels(collisions: Collection<Collision>): Map<String, String>` z tymi samymi tekstami („Kolizja 09:00-09:30”, „Kolizje: 09:00-09:30, 10:00-10:30”), aby aplikacja i widget miały jeden zapis; usuń `ScheduleCollisionLabels.kt`, a jego test przenieś do `test/.../domain/CollisionLabelsTest.kt`;
+   - w `CollisionRanges.kt` dodaj `fun collisionPartnerNames(collisions: Collection<Collision>): Map<String, String>`: dla każdego terminu nazwy drugich zajęć ze wszystkich jego kolizji, bez powtórzeń, w kolejności początku nakładania, a przy równym początku alfabetycznie, złączone `", "`;
+   - w `CollisionLabelsTest` dodaj przypadki `collisionPartnerNames`: symetria (oba terminy wskazują siebie nawzajem), kolejność, brak duplikatów, termin z dwiema kolizjami.
+2. Widget, krótki zapis kolizji:
+   - w modelu wiersza widgetu (`WidgetUiState.kt`) zastąp listę `conflicts` polem `conflictLabel: String?` z `collisionLabels`; usuń `WidgetConflictUi`, `widgetConflicts`, `WidgetConflictCandidate` i `addConflict` z `WidgetPresenter.kt`;
+   - `WidgetConflictAlert` pokazuje jedną linię z `conflictLabel` (11 sp, pogrubiona) z paskiem 3 dp o wysokości 14 dp; wiersze „Z: …” i „Jeszcze …” znikają;
+   - kolor alertu zmienia się z czerwonego na pomarańczowy, bo kolizja nie jest winą użytkownika (decyzja użytkownika z 2026-09-28, `ARCHITECTURE.md`): tło `ColorProvider(day = MakOrangeSoft, night = MakOrangeSoftDark)`, tekst i pasek `ColorProvider(day = MakOrange, night = MakOrangeDark)`, czyli te same wartości co `tertiaryContainer` i `onTertiaryContainer` aplikacji. Nie używaj `GlanceTheme.colors.tertiaryContainer`, bo widget korzysta z kolorów dynamicznych systemu i ten kolor zależy od tapety; liczba kolizji w nagłówku widgetu zostaje bez zmian;
+   - `widgetShouldShowConflict` sprawdza `conflictLabel != null`; jeśli `WidgetLayoutPolicy` liczy linie alertu kolizji, zmniejsz je do jednej;
+   - popraw testy prezentera i kompozycji widgetu.
+3. `ClassItemUi`: dodaj `val conflictWith: String? = null`. `PlannedOccurrence.toUi(conflictLabel: String?, conflictWith: String? = null)` ustawia pole. W `TodayViewModel` (jedno wywołanie) i `ScheduleViewModel` (dwa wywołania: `items` i `calendarItems`) użyj `collisionLabels` zamiast `conflictLabels`, policz z tych samych kolizji mapę `collisionPartnerNames` i przekaż `names[it.id]`.
+4. `MakComponents.kt`: wydziel blok kolizji z `ClassCard` do `@Composable internal fun MakConflictNote(label: String, partners: String?, modifier: Modifier = Modifier)`: ten sam kontener (`tertiaryContainer`, zaokrąglenie 8 dp, padding 8 i 4 dp), w pierwszym wierszu ikona `WarningAmber` 16 dp i pogrubiona etykieta, pod nią, gdy `partners != null`, tekst „Z: {partners}” 12 sp w `onTertiaryContainer` z lewym wcięciem 20 dp (szerokość ikony i odstępu). Tekst zawija się, bez limitu linii. `ClassCard` używa `MakConflictNote(item.conflictLabel, item.conflictWith)`. `classCardDescription` dopisuje po etykiecie kolizji „z: {conflictWith}”, gdy jest.
+5. Szczegóły terminu:
+   - `OccurrenceDetailsUiState`: dodaj `conflictLabel: String? = null` i `conflictWith: String? = null`;
+   - `OccurrenceViewModel.buildDetails`: policz raz `val plan = activePlan(data, effectiveDate)`, użyj go też dla `weekLabel`; `val id = occurrenceId(classId.toString(), originalDate)`; `conflictLabel = collisionLabels(plan.collisions)[id]`, `conflictWith = collisionPartnerNames(plan.collisions)[id]`;
+   - `OccurrenceDetailsScreen`: pod `StatusSummary` pokaż `MakConflictNote`, gdy `conflictLabel != null`, z odstępem 12 dp pod spodem.
+6. `StatusSummary`: nic nie rysuj tylko wtedy, gdy `state.status == OccurrenceStatusUi.Scheduled` i `state.changeLines()` jest puste. Pozostałe stany zostają z ikoną i słowem, w tym „Jednorazowe” dla terminu jednorazowego (wymaganie użytkownika z 2026-09-28). Usuń import ikony `Event`, jeśli przestanie być używany.
+7. `NotesBlock`: przyciski „Zapisz notatkę do zajęć” i „Zapisz notatkę do terminu” zmień z `MakPrimaryAction` na `MakSecondaryAction`. Jedyną akcją główną ekranu zostaje dolne „Zmień termin” albo „Przywróć termin”.
+8. Tytuł formularza zajęć: w `MakApp` odczytaj stan formularza (`classEditViewModel.editor`, tę samą właściwość, której używa `classEditRoute` w `ClassOccurrenceRoutes.kt`) przez `collectAsStateWithLifecycle()`. Tytuł górnego paska to `editor.title` („Dodaj zajęcia” albo „Edytuj zajęcia”), gdy `currentRoute == MakRoutes.Edit`, w pozostałych przypadkach `titleForRoute(currentRoute)`. W `ClassEditScreen` zamień `MakSectionHeader` na `MakScreenIntro("Najpierw termin i przedmiot. Resztę możesz uzupełnić później.")`. „Anuluj” zostaje.
+9. Testy: `CollisionLabelsTest` (JVM); `PlanMappingTest` z `conflictWith`; `OccurrenceViewModelTest`: dwa nakładające się terminy dają `conflictLabel` i nazwę drugiego w `conflictWith` (wzór danych weź z istniejących testów tej klasy); `OccurrenceDetailsScreenTest`: zwykły termin nie pokazuje „Zaplanowane”, termin jednorazowy pokazuje „Jednorazowe”, termin z kolizją pokazuje etykietę i „Z: …”; `ScheduleScreenTest`: karta z `conflictWith` pokazuje „Z: …”, a opis karty zawiera „z: …”; testy widgetu: alert kolizji ma jedną linię z zakresem i nie zawiera „Z:”; zrzut widgetu w obu motywach pokazuje pomarańczowy alert.
+
+Przypadki brzegowe: termin kolidujący z dwoma zajęciami (obie nazwy w jednym wierszu, oddzielone przecinkiem; w widgecie „Kolizje: …” z oboma zakresami); dwa terminy o tej samej nazwie (nazwa raz); termin przeniesiony na inny dzień (kolizje liczone dla daty docelowej); odwołany termin (brak kolizji); długa nazwa przy 320 dp (zawija się, bez obcięcia).
+
+Weryfikacja: `gradlew.bat test`, testy Compose `OccurrenceDetailsScreenTest`, `ScheduleScreenTest`, `TodayScreenTest`; zrzuty karty z kolizją i szczegółów terminu przy 320 dp w obu motywach; widget z kolizją na launcherze emulatora.
+
+Kryterium zakończenia: karta i szczegóły terminu pokazują zakres i nazwę drugich zajęć z jednej funkcji domenowej; widget pokazuje tylko zakres z tej samej funkcji `collisionLabels`; szczegóły nie pokazują „Zaplanowane”, a pokazują „Jednorazowe”; na ekranie szczegółów jest najwyżej jeden przycisk główny; tytuł formularza jest tylko w górnym pasku; testy przechodzą.
+
+## 4. Rozdziel role komunikatów i uporządkuj ustawienia (I-54)
+
+Cel: kolor komunikatu ma stałe znaczenie, komunikaty nie powtarzają tytułów, ustawienia pokazują wartości zamiast opisów, a ekrany semestru mają czytelne akcje. Krok ma trzy części z osobnymi commitami: A (I-54), B (I-60) i C (I-61).
+
+### Część A: komunikaty, ustawienia i semestry (I-54)
+
+Pliki: `ui/components/MakComponents.kt`, `ui/today/TodayScreen.kt`, `ui/settings/SettingsScreen.kt`, `ui/settings/UpdateSettingsUi.kt`, `ui/settings/SettingsViewModel.kt`, `ui/settings/UpdateScreen.kt`, `ui/settings/AboutScreen.kt`, `ui/semester/SemesterScreen.kt`, `ui/setup/SetupWizard.kt`, `ui/PlanMapping.kt`, `ui/edit/ClassEditScreen.kt`.
+
+1. Odmiana liczebników: utwórz `ui/PolishPlural.kt` z `internal fun polishPlural(count: Int, one: String, few: String, many: String): String` (1 daje `one`; ostatnia cyfra 2 do 4 poza 12 do 14 daje `few`; reszta `many`). Test JVM `PolishPluralTest`: 1, 2, 4, 5, 12, 14, 21, 22, 25, 112, 0. Zastąp nią prywatną kopię w `ClassEditScreen.kt`, obie funkcje `classCountLabel` (`PlanMapping.kt` i `SettingsViewModel.kt`, druga ma używać pierwszej) oraz tekst `"... kierunków"` w `SettingsViewModel` (formy: kierunek, kierunki, kierunków). W `SettingsViewModel` etykieta `firstWeekLabel` aktywnego semestru zaczyna się małą literą („pierwszy tydzień A”); w `SettingsScreen` usuń wtedy `replaceFirstChar`.
+2. `MakNoteBanner`: dodaj `enum class MakNoteRole { Neutral, Warning, Error }` i wymagany parametr `role` (bez wartości domyślnej, aby każde użycie było świadomie przypisane). `title` staje się `String?`. Wygląd:
+   - `Neutral`: tło `surfaceContainerLow`, obramowanie 1 dp `outlineVariant`, tytuł `onSurface`, treść `onSurfaceVariant`, bez ikony;
+   - `Warning`: tło `tertiaryContainer`, tekst `onTertiaryContainer`, ikona `WarningAmber` 20 dp przed tekstem;
+   - `Error`: tło `errorContainer`, tekst `onErrorContainer`, ikona `ErrorOutline` 20 dp.
+   Kolory wybiera czysta funkcja `internal fun noteRoleColors(role: MakNoteRole, scheme: ColorScheme): NoteRoleColors` (tło, obramowanie albo `null`, kolor tytułu, kolor treści, ikona albo `null`), a komponent tylko ją wywołuje. Ikona nie ma własnego opisu; baner ma `semantics(mergeDescendants = true)` z opisem zaczynającym się od „Ostrzeżenie: ” albo „Błąd: ” dla tych ról.
+   Parametry `actionLabel` i `onAction` nie są nigdzie używane: zastąp je parametrem `actions: (@Composable RowScope.() -> Unit)? = null`. Układ banera: `Column` z wierszem treści (ikona roli, jeśli jest, i kolumna z tytułem i treścią), a pod nim, gdy `actions != null`, `Row` wyrównany do prawej z odstępem 8 dp.
+3. Przypisz każde użycie dokładnie tak:
+   - `TodayScreen`, „Dostępna aktualizacja”: `Neutral`; dwa przyciski pełnej szerokości znikają, a baner dostaje `actions = { MakTextAction("Nie teraz", onDismissUpdate); MakTextAction("Zobacz", onViewUpdate) }`;
+   - `SettingsSemestersScreen`, baner „Semestry”: `Neutral`, bez tytułu (tytuł powtarzał górny pasek), treść bez zmian; miejsce opisuje punkt 6;
+   - `SettingsNotificationsScreen`, „Zablokowane przez system”: `Warning`;
+   - `SettingsNotificationsScreen`, „Czas dostarczenia”: usuń baner; `MakHelperText(state.notificationsDetails)` tylko przy włączonych powiadomieniach;
+   - `SettingsDataScreen`: kolejność: „Eksportuj plan do JSON”, „Importuj plan z JSON”, a pod nimi baner `Warning` bez tytułu z treścią „Import zastępuje wszystkie lokalne dane. Tej operacji nie można cofnąć.” (decyzja użytkownika z 2026-09-28: baner między przyciskami rozbijał układ);
+   - `ImportPreviewScreen`: `Warning`, tytuł „Zastąpisz wszystkie lokalne dane”, treść „Tej operacji nie można cofnąć.”;
+   - `SemesterScreen`, „Różne kalendarze”: `Neutral`;
+   - `CoursesBlock`, „Kierunek w semestrze”: tymczasowo `Neutral`, aby kod się kompilował; baner znika razem z formularzem w części B;
+   - `WeekOverrideForm`: usuń baner; nagłówek `Text(if (state.isEditing) "Edytuj korektę" else "Dodaj korektę")` w stylu `titleSmall`, pogrubiony, z `heading()`;
+   - `AboutScreen`, „Wersja przed pełnym wydaniem”: `Warning`;
+   - `UpdateScreen`, „Wymagana zgoda”: `Neutral`;
+   - `UpdateScreen.DownloadError`: `Error`, bez tytułu;
+   - `SetupWizard`, „Kierunek: …” i „Semestr zapisany”: `Neutral`.
+4. Ekran „Powiadomienia”: zamień każdy `NotificationToggle` (dwie opcje radio) na wiersz z przełącznikiem, zgodnie z `FEATURES.md`. Użyj `SettingsListSection` i `SettingsSwitchRow`; parametr `details` w `SettingsSwitchRow` zmień na `String? = null`. Sekcje: „Kolizje w planie” z wierszem „Powiadomienia o kolizjach” (przy włączaniu przy blokadzie zachowaj wywołanie `onRequestNotificationPermission`), „Dzień wcześniej” z wierszem „Powiadomienie wieczorne” i polem godziny w `SettingsFieldItem`, „Przed zajęciami” z wierszem „Powiadomienie przed zajęciami” i polem wyprzedzenia. Usuń `NotificationToggle` i nieużywany `SettingsSection`.
+5. Główne ustawienia: w `UpdateSettingsUi.kt` stan `Idle` i wartość domyślna mają pusty `checkSummary` (wiersz pokazuje sam tytuł); popraw asercję w `UpdateSettingsUiTest`; wiersze „Kierunki” oraz „Kopia zapasowa i import” mają pustą wartość; między wierszem „Kierunki” a polem „Próg okienka” dodaj `SettingsRowDivider()`. `SettingsRowText` już pomija puste linie.
+6. Ekran „Semestry” (układ wybrany przez użytkownika 2026-09-28, `FEATURES.md`, sekcja „Ustawienia i dane”), od góry:
+   - `ActiveSemesterField` zostaje, jak dziś;
+   - baner `Neutral` bez tytułu z treścią „Konfiguracja przypisań, kalendarzy i korekt należy do wybranego semestru.”;
+   - nagłówek „Lista semestrów” (`titleMedium`, `SemiBold`, `heading()`);
+   - `MakSecondaryAction(text = "Dodaj semestr", icon = Icons.Outlined.Add, onClick = onAddSemester)`; przycisk przestaje być wypełniony i nie stoi już na dole;
+   - karty semestrów (`SemesterRow`) jak dziś, z oznaczeniem „Aktywny” przy aktywnym semestrze (decyzja użytkownika z 2026-09-28: przy przewiniętej liście pole wyboru znika z ekranu);
+   - w `SettingsViewModel` semestr nieaktywny ma puste etykiety dat, tygodnia, kierunków i zajęć zamiast „Dane odizolowane”, „Osobny kalendarz” i „Osobny plan”; karta pokazuje wiersz opisu tylko wtedy, gdy nie jest pusty;
+   - bez semestrów zostaje obecny stan pusty, a przycisk „Dodaj semestr” stoi pod nim.
+7. Konfiguracja semestru: `SemesterNavigationRow` pokazuje pod tytułem tylko liczbę z odmianą: „2 kierunki”, „1 korekta” (korekta, korekty, korekt), „2 kalendarze” (kalendarz, kalendarze, kalendarzy). Usuń parametr `description`. Strzałka zostaje ikoną 24 dp, jak w wierszach ustawień. Przenieś `settingsRowFocus` z `SettingsScreen.kt` do `ui/components` jako `internal fun Modifier.makRowFocus()` i użyj go w wierszach ustawień oraz w `SemesterNavigationRow` (przed `clickable`, które dostaje `role = Role.Button`). Między wierszami nawigacji dodaj `HorizontalDivider` w `outlineVariant`.
+8. Testy: JVM `NoteRoleColorsTest` sprawdza dla jasnego i ciemnego schematu z `Theme.kt` (jeśli schematy są prywatne, zmień je na `internal`), że żadna rola nie używa `primaryContainer`, `Neutral` nie ma ikony, a `Warning` i `Error` mają ikony oraz kolory ostrzeżenia i błędu. Jeśli klasa `ColorScheme` nie działa w teście JVM, przenieś te asercje do testu Compose. Compose `MakNoteBannerTest` w `androidTest/.../ui/components` sprawdza tylko treść, prefiks opisu dla `Warning` i `Error` oraz kliknięcie akcji; nie porównuje pikseli. Zaktualizuj `SettingsScreenTest` (asercje „Czas dostarczenia”, banera „Semestry”, radia „Włączone”; „Aktywny” zostaje) i dodaj w nim przypadki ekranu „Semestry”: nagłówek „Lista semestrów”, „Dodaj semestr” nad listą, baner bez tytułu; ekranu „Dane”: ostrzeżenie pod oboma przyciskami. Zaktualizuj też `TodayScreenTest` (akcje banera aktualizacji), `SemesterScreenTest`, `UpdateScreenTest`, `AboutScreenTest`, `SetupWizardTest`. Wyszukuj teksty przez `rg`.
+
+Przypadki brzegowe: powiadomienia włączone przy blokadzie systemowej (ostrzeżenie i akcja „Otwórz ustawienia aplikacji” zostają); import z błędem (`importErrorMessage` nadal w kolorze błędu); brak semestrów na ekranie „Semestry”; wiele semestrów i przewinięta lista; długie nazwy i teksty komunikatów przy 320 dp.
+
+Weryfikacja: `gradlew.bat test`, wymienione testy Compose, zrzuty ekranów „Powiadomienia”, „Dane”, „Semestry”, konfiguracji semestru i „Dzisiaj” z banerem przy 320 dp w obu motywach.
+
+Kryterium zakończenia części A: `MakNoteBanner` nie używa `primaryContainer`; każde użycie ma rolę z listy; żaden komunikat nie powtarza tytułu górnego paska ani nie zastępuje nagłówka; ekran „Semestry” ma pole wyboru, neutralny baner, nagłówek „Lista semestrów” i „Dodaj semestr” nad listą; ostrzeżenie na ekranie „Dane” stoi pod przyciskami; powiadomienia używają przełączników; odmiana liczebników ma jedno źródło z testem; testy przechodzą.
+
+### Część B: ekran „Kierunki” semestru (I-60)
+
+Cel (decyzja użytkownika z 2026-09-28): lista kierunków ma przy każdym kierunku „Edytuj” i „Usuń”; „Edytuj” otwiera ekran, na którym są razem kalendarz kierunku w semestrze oraz nazwa i kolor; „Dodaj kierunek” to przycisk nad listą, który otwiera osobny ekran z formularzem. Pliki: `ui/MakRoutes.kt`, `ui/SemesterRoutes.kt`, `ui/StudyProgramRoutes.kt`, `ui/semester/SemesterScreen.kt` (albo nowy plik `ui/semester/SemesterCourseScreens.kt` na dwa nowe ekrany), `ui/semester/SemesterViewModel.kt`, testy `androidTest/.../SemesterScreenTest.kt` i test JVM `SemesterViewModel`.
+
+1. Trasy: w `MakRoutes` dodaj `SemesterCourseAdd = "semester/{semesterId}/course-new"` i `SemesterCourseEdit = "semester/{semesterId}/course/{assignmentId}"` z funkcjami budującymi trasę. Nie używaj `courses/new` obok `courses/{assignmentId}`, bo wzorce byłyby niejednoznaczne. W `titleForRoute` dodaj tytuły „Dodaj kierunek” i „Edytuj kierunek”.
+2. Lista (`SemesterCoursesScreen`): zostaje opis ekranu i nagłówek „Przypisane kierunki”. Pod nagłówkiem `MakSecondaryAction(text = "Dodaj kierunek", icon = Icons.Outlined.Add)` otwiera trasę dodawania. Karta kierunku (`CourseRow`) ma kropkę koloru, nazwę, etykietę kalendarza („… (wspólny)” albo „… (osobny)”) i po prawej `MakTextAction("Edytuj")` oraz `MakTextAction("Usuń", destructive = true)`. Z karty znikają pole „Kalendarz” i akcja „Rozdziel kalendarz”. Formularz dodawania (`CoursesBlock` od banera „Kierunek w semestrze” w dół) znika z tego ekranu. Dialog usunięcia kierunku zostaje na liście.
+3. Ekran „Dodaj kierunek” (nowy `SemesterCourseAddScreen`): obecny formularz bez banera: wybór „Nowy kierunek” albo „Wybierz istniejący”, nazwa albo pole istniejącego kierunku, `MakCourseColorPicker`, wybór „Wspólne daty i tygodnie” albo „Osobne daty i tygodnie” z polem kalendarza, teksty pomocnicze, na dole `MakPrimaryAction("Dodaj kierunek")` i `MakSecondaryAction("Anuluj")` jeden pod drugim, jak w „Edytuj kierunek” w ustawieniach. Stan formularza zostaje w `SemesterViewModel`. Dodaj `fun resetCourseDraft()` czyszczący szkic kierunku; wołaj ją przy otwarciu ekranu dodawania i przy „Anuluj”. Po udanym `addCourse` `SemesterViewModel` emituje nowy efekt `SemesterEffect.CourseAdded`; obsługa efektów w `SemesterRoutes.kt` zdejmuje ekran dodawania ze stosu tylko wtedy, gdy bieżąca trasa to `SemesterCourseAdd`. Błędy walidacji zostają na ekranie dodawania.
+4. Ekran „Edytuj kierunek” (nowy `SemesterCourseEditScreen`), od góry (kolejność zatwierdzona przez użytkownika 2026-09-28):
+   - pole `MakField("Nazwa kierunku")` bez nagłówka sekcji, pierwsze na ekranie;
+   - sekcja „Kalendarz w tym semestrze” (nagłówek `titleMedium` z `heading()`): etykieta bieżącego kalendarza; gdy semestr ma więcej niż jeden kalendarz, pole „Kalendarz”, którego wybór woła `requestReconnect` i pokazuje na tym ekranie istniejący `ReconnectCalendarDialog`; gdy kierunek współdzieli kalendarz, `MakSecondaryAction("Rozdziel kalendarz")` wołające `separateCourseCalendar` oraz tekst pomocniczy „Kierunek dostanie własną kopię dat, rytmu A/B i korekt.”; pod sekcją tekst pomocniczy „Zmiana kalendarza zapisuje się od razu.”;
+   - `MakCourseColorPicker` (ma własną etykietę „Kolor kierunku”), tekst pomocniczy „Nazwa i kolor zmienią się we wszystkich semestrach, w planie i w widgecie.”, a na dole `MakPrimaryAction("Zapisz kierunek")` i `MakSecondaryAction("Anuluj")`. Nazwa i kolor używają `StudyProgramsViewModel` tak jak ekran „Edytuj kierunek” w ustawieniach: `openEditIfNeeded(programId)` przy wejściu, `updateName`, `updateColor`, `save`, `closeEditor`. Przyciski dotyczą tylko nazwy i koloru; kalendarz zapisuje się od razu, co mówi tekst pomocniczy jego sekcji.
+   - `StudyProgramEffects` zdejmuje ekran po zapisie także wtedy, gdy bieżąca trasa to `SemesterCourseEdit`. Ekran „Edytuj kierunek” w ustawieniach zostaje bez zmian.
+5. Testy: `SemesterScreenTest`: karta kierunku pokazuje „Edytuj” i „Usuń”, a nie pokazuje „Rozdziel kalendarz”; „Dodaj kierunek” stoi nad listą; ekran dodawania pokazuje formularz i „Anuluj”; ekran edycji pokazuje pole nazwy jako pierwsze, sekcję kalendarza i paletę, „Rozdziel kalendarz” tylko przy wspólnym kalendarzu i pole „Kalendarz” tylko przy kilku kalendarzach. Test JVM: po udanym dodaniu `SemesterViewModel` emituje `CourseAdded`, a `resetCourseDraft` czyści szkic (dopisz do istniejącego testu `SemesterViewModel` albo utwórz `SemesterViewModelTest`).
+
+Przypadki brzegowe: semestr z jednym kalendarzem (brak pola „Kalendarz”); kierunek z osobnym kalendarzem (brak „Rozdziel kalendarz”); błąd zapisu nazwy (komunikat zostaje na ekranie edycji, dane kalendarza się nie cofają); powrót systemowy z ekranu dodawania czyści szkic przy następnym otwarciu; obrót ekranu na obu nowych ekranach; długie nazwy przy 320 dp.
+
+Weryfikacja: `gradlew.bat test`, `SemesterScreenTest`, przejście na emulatorze: dodanie kierunku, edycja nazwy i koloru, rozdzielenie kalendarza, usunięcie kierunku; zrzuty trzech ekranów przy 320 dp w obu motywach.
+
+Kryterium zakończenia części B: lista kierunków ma „Edytuj” i „Usuń” oraz przycisk „Dodaj kierunek” nad listą; dodawanie i edycja mają osobne ekrany; na ekranie edycji nazwa jest na górze, a kalendarz i kolor są w tym samym miejscu; testy przechodzą.
+
+### Część C: paleta kolorów kierunku (I-61)
+
+Cel (decyzja użytkownika z 2026-09-28, sposób zapewnienia czytelności zaproponowany przez agenta i przyjęty przez użytkownika): suwak „Odcień” zmienia tylko odcień, a suwak „Jasność” prowadzi od czarnego przez czysty odcień do białego. Aplikacja zapisuje dokładnie wybrany kolor, a przy wyświetlaniu dopasowuje go do tła bieżącego motywu: pasek karty, kropki i znaczniki do kontrastu co najmniej 3:1, nazwę kierunku do 4,5:1. Podgląd pokazuje kolor w obu motywach. Pliki: `ui/components/CourseColors.kt`, `ui/components/MakCourseColorPicker.kt`, `ui/components/MakComponents.kt`, `ui/components/MakColorDot.kt`, `ui/schedule/ScheduleScreen.kt`, `widget/MakTodayWidget.kt`, testy `test/.../ui/components/CourseColorsTest.kt` i `androidTest/.../ui/components/MakFormControlsTest.kt`.
+
+1. `CourseColors.kt`:
+   - `courseColorFrom(hue: Float, lightness: Float): Int` zwraca kolor HSL o odcieniu `hue` (0 do 360), nasyceniu `COURSE_SATURATION` (0,7) i jasności `lightness` (0 czarny, 0,5 czysty odcień, 1 biały), bez szukania luminancji;
+   - `hueAndShadeOf` zastąp `hueAndLightnessOf(color: Int): HueAndLightness` (odcień z `hueOf`, jasność HSL z `hslOf`); zmień nazwę klasy `HueAndShade` na `HueAndLightness`;
+   - usuń `MIN_COURSE_LUMINANCE`, `MAX_COURSE_LUMINANCE` i `isReadableCourseColor`;
+   - `DefaultCourseColor` i `suggestedCourseColor` używają jasności 0,42 (kolor czytelny w obu motywach dla większości odcieni); zapisane kolory zostają bez zmian;
+   - pętlę z `courseTextColor` wydziel do `fun courseColorOn(color: Int, surface: Int, minContrast: Double): Int`; `courseTextColor(color, surface)` woła ją z 4,5, a nowa `fun courseShapeColor(color: Int, surface: Int): Int` z 3,0.
+2. W `ui/components` dodaj `@Composable internal fun courseShapeColor(hex: String?, background: Color): Color`: kolor z `parseHexColor(hex)` dopasowany przez `courseShapeColor` do `background`; bez koloru zwraca `MaterialTheme.colorScheme.onSurfaceVariant`. Użyj jej wszędzie, gdzie aplikacja rysuje kolor kierunku jako kształt:
+   - pasek `ClassCard` (tło `surface`), z zachowaniem obecnego zastępczego koloru z `classAccentColor`, gdy kierunek nie ma koloru;
+   - `MakColorDot` (tło `surface`, bo w motywie ciemnym jest jaśniejsze od tła ekranu i daje ostrzejszy warunek);
+   - znaczniki i legenda kalendarza: `courseMarkerTint` w `ScheduleScreen.kt` woła `courseShapeColor(hex, MaterialTheme.colorScheme.background)`;
+   - pasek w podglądzie palety.
+   `CourseNameText` zostaje przy `courseTextColor`.
+3. Widget: pasek kierunku w `WidgetOccurrenceRow` używa `ColorProvider(day = …, night = …)` z kolorem dopasowanym przez `courseShapeColor` do `#FFFFFF` (dzień) i `#202B40` (noc). To przybliżenie tła widgetu, bo tło zależy od motywu systemu; zapisz to w komentarzu przy wywołaniu.
+4. `MakCourseColorPicker`:
+   - odcień i jasność czytaj z wybranego koloru przez `hueAndLightnessOf`; odcień trzymaj też w `rememberSaveable`, aby przy kolorze szarym (nasycenie 0, odcień nieokreślony) suwak nie przeskakiwał;
+   - suwak „Odcień” (0 do 360) zmienia tylko odcień: `courseColorFrom(nowyOdcień, bieżącaJasność)`; tor pokazuje czyste odcienie co 30 stopni przy jasności 0,5, żeby był czytelny także przy bardzo jasnym albo ciemnym kolorze;
+   - suwak „Jasność” (0 do 1) zmienia tylko jasność: `courseColorFrom(bieżącyOdcień, nowaJasność)`; tor ma trzy kolory: czarny, czysty odcień i biały; lewo to czarny, prawo biały; opis stanu „{n} procent”;
+   - pole „Kod koloru” przyjmuje każdy poprawny zapis `#RRGGBB` i aktualizuje suwaki; zostaje tylko błąd formatu „Podaj kod w postaci #RRGGBB.”; komunikat „Ten kolor będzie słabo widoczny…” znika; wpisany kolor zachowuje swoje nasycenie, dopóki użytkownik nie przesunie suwaka, a po przesunięciu nasycenie wraca do 0,7;
+   - podgląd: dwa pola obok siebie, „Motyw jasny” i „Motyw ciemny”, każde na tle karty danego motywu (`MakPaper` i `MakPaperDark` z `Color.kt`, bo oba motywy trzeba pokazać naraz), z paskiem w `courseShapeColor` i nazwą w `courseTextColor` dla tego tła oraz podpisem w `MakMuted` albo `MakMutedDark`; poniżej 340 dp pola stoją jedno pod drugim, jak w `MakFieldPair`;
+   - pod podglądem, gdy wybrany kolor ma kontrast mniejszy niż 3:1 z tłem jasnego motywu, tekst pomocniczy „W motywie jasnym kolor będzie ciemniejszy, aby był czytelny.”, a gdy z tłem ciemnego, „W motywie ciemnym kolor będzie jaśniejszy, aby był czytelny.”; oba zdania mogą się pojawić razem.
+5. Testy:
+   - `CourseColorsTest` (przepisz): jasność 0 daje czarny, 1 biały; zmiana odcienia przy jasności 0,2, 0,5 i 0,8 nie zmienia jasności HSL (tolerancja 0,01); `hueAndLightnessOf` odtwarza odcień i jasność; `courseColorOn` daje co najmniej zadany kontrast dla `#FFFFFF`, `#000000`, `#F4F0C8`, `#137B71` i `#334FCE` względem `#FFFFFF`, `#202B40` i `#10192B`; kolor, który już ma kontrast, zostaje bez zmian; `suggestedCourseColor` nadal daje odległe odcienie;
+   - `SemesterViewModelTest`: popraw oczekiwaną wartość `DefaultCourseColor`, jeśli test porównuje konkretny kod;
+   - `MakFormControlsTest`: przesunięcie suwaka „Odcień” (`SemanticsActions.SetProgress`) nie zmienia opisu stanu suwaka „Jasność”; wpisanie `#FFFFFF` zmienia kolor i pokazuje zdanie o motywie jasnym; nie ma tekstu „słabo widoczny”.
+
+Przypadki brzegowe: kolor zapisany przed zmianą (suwaki pokazują jego odcień i jasność, kolor się nie zmienia, dopóki użytkownik go nie przesunie); kolor szary z kodu; kolor biały i czarny w obu motywach na karcie, w kalendarzu, na liście kierunków i w widgecie; 320 dp i skala czcionki 2,0 w podglądzie.
+
+Weryfikacja: `gradlew.bat test`, `MakFormControlsTest`, zrzuty palety w obu motywach przy 320 dp; w wersji debug ustaw jednemu kierunkowi kolor prawie biały, a drugiemu prawie czarny, obejrzyj kartę, kalendarz, ustawienia „Kierunki” i widget w obu motywach, potem przywróć kolory.
+
+Kryterium zakończenia części C: suwak „Odcień” nie zmienia jasności, a suwak „Jasność” obejmuje zakres od czarnego do białego; zapisany kolor jest dokładnie wybranym kolorem; wszystkie kształty w kolorze kierunku mają kontrast co najmniej 3:1 z tłem w obu motywach, a nazwa kierunku 4,5:1; podgląd pokazuje oba motywy i informuje o dopasowaniu; testy przechodzą.
+
+## 5. Ujednolić wzorce i usunąć drobne błędy (I-59)
+
+Cel: te same czynności wyglądają tak samo, a dekoracyjne środki znikają. Obejmuje I-55. Wykonuj punkty po kolei, każdy może być osobnym commitem.
+
+1. Karta zajęć (`ClassCard`, decyzja użytkownika z 2026-09-28: separator zostaje): między kolumną godzin a kolumną danych dodaj `VerticalDivider(thickness = 1.dp, color = MaterialTheme.colorScheme.outlineVariant)`. Wewnętrzny `Row` dostaje `.fillMaxHeight()`, aby separator sięgał od góry do dołu treści. Cień karty zostaje. Zmiana zamyka rozbieżność O-05 z `FEATURES.md`, sekcja „Struktura karty zajęć”.
+2. Dialogi usuwania: przenieś `ConfirmDeletionDialog` z `SemesterScreen.kt` do `ui/components` jako `MakConfirmDeletionDialog(title, text, confirmLabel = "Usuń", isDeleting, onConfirm, onCancel)` (Material 3 `AlertDialog`, przyciski tekstowe, potwierdzenie w kolorze błędu). Użyj go w `SemesterScreen` (trzy miejsca), w `DeleteSemesterDialog` w `SettingsScreen.kt` i w dialogu „Usuń zajęcia” w `OccurrenceDetailsScreen.kt` (`confirmLabel = "Usuń zajęcia"`). Treść i tytuły zostają. Zmienia się tylko tych pięć dialogów potwierdzenia usunięcia. Pozostałe dialogi zostają bez zmian: błąd importu, „Część danych przestanie być widoczna”, zmiana tygodnia A/B, edycja terminu i połączenie kalendarzy.
+3. `WeekOverrideForm`: kolejność przycisków „Anuluj”, potem przycisk zapisu, jak w pozostałych formularzach z przyciskami w jednym wierszu.
+4. `CalendarCard` w `SemesterScreen.kt`: daty przez `asCalendarDate()` zamiast surowego ISO.
+5. Nagłówek wybranego dnia w kalendarzu zaczyna się wielką literą, jak w liście („Poniedziałek, 28 września 2026”). W `ScheduleViewModel` zmień tylko wartość `calendarSelectedDayLabel` (`replaceFirstChar { it.titlecase(Locale.forLanguageTag("pl-PL")) }`); nie zmieniaj `fullDateFormatter`, bo tworzy też opis dnia dla czytnika ekranu. Popraw test, który sprawdza ten tekst.
+6. Kreator: pole „Pierwszy tydzień” pokazuje wartość „Tydzień {A albo B}” oraz opcje „Tydzień A” i „Tydzień B”, jak w konfiguracji semestru; do `onFirstWeekChanged` przekazuj ostatni znak opcji, bo stan kreatora przechowuje samą literę.
+7. „O aplikacji” (I-55): usuń `AboutCard` wokół nagłówka aplikacji oraz wokół sekcji „Możliwości” i „Dane i prywatność”; zostaw nagłówki sekcji i odstęp 24 dp. W `AppHeader` zmień `gapColor` znaku maku z `surfaceContainerLow` na `MaterialTheme.colorScheme.background`, bo znak nie stoi już na karcie. Kartę zachowuje tylko lista „Ostatnie zmiany”. Punktory `BulletList` mają kolor `onSurfaceVariant`. W `UpdateScreen` zastąp `AboutSection` nagłówkiem `titleMedium` z `heading()` i treścią bez karty; usuń `AboutSection`, jeśli jest nieużywana.
+8. Widget: godzina nadchodzących zajęć w `WidgetOccurrenceRow` ma kolor `onBackground` zamiast `primary`; kolor akcentu zostaje tylko dla „Teraz” i „Następne”.
+9. Martwy kod: usuń `SettingsInfoRow`, wersje `MakIconButton` i `MakRoundButton` z parametrem `symbol`, `MakSummaryStartDark` i `MakSummaryEndDark`, pole `TodayUiState.showPlanAction`, parametr `onOpenPlan` ekranu `TodayScreen` razem z jego przekazywaniem w `todayRoute` (`TodayScheduleRoutes.kt`) i w `MakApp` (`MakNavHostApp.kt`), pole `TodayUiState.emptyTitle` oraz parametr `emptyTitle` w `MakStateMessage`. Przed usunięciem sprawdź `rg`, że nic poza testami z tego nie korzysta, i popraw testy.
+
+Weryfikacja: `gradlew.bat test`, pełny `gradlew.bat connectedDebugAndroidTest`, zrzuty „Dzisiaj”, „Plan”, szczegółów terminu, „Semestry”, konfiguracji semestru i „O aplikacji” przy 320 dp w obu motywach; widget na launcherze emulatora.
+
+Kryterium zakończenia: karta zajęć ma separator pionowy; dialogi usuwania mają jeden wzorzec; formularze z przyciskami w jednym wierszu mają tę samą kolejność; „O aplikacji” ma kartę tylko przy historii wydań; martwy kod usunięty; testy przechodzą. Po tym kroku I-54 do I-61 mają status `odbiór otwarty` z odbiorem w ramach O-05.
+
+Klasy szerokości i obrót tabletów (I-45) są następnym zadaniem po powyższym planie.

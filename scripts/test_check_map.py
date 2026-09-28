@@ -96,6 +96,13 @@ class CheckMapTest(unittest.TestCase):
         write_repo(self.root, readme="# README\n\n[Plan](docs/MISSING.md)\n")
         self.assertHasError("nieistniejącego pliku")
 
+    def test_missing_link_in_contributing_is_reported(self) -> None:
+        write_repo(self.root)
+        (self.root / "CONTRIBUTING.md").write_text(
+            "# Współpraca\n\n[Produkt](docs/MISSING.md)\n", encoding="utf-8"
+        )
+        self.assertHasError("nieistniejącego pliku")
+
     def test_wrong_case_link_is_reported(self) -> None:
         write_repo(self.root, readme="# README\n\n[Plan](docs/plan.md)\n")
         self.assertHasError("nieistniejącego pliku")
