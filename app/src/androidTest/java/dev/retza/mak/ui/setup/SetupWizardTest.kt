@@ -61,8 +61,9 @@ class SetupWizardTest {
         }
 
         composeTestRule.onNodeWithText("Nazwa semestru").assertIsDisplayed()
-        composeTestRule.onNodeWithText("A", substring = false).performClick()
-        composeTestRule.onNodeWithText("B").performClick()
+        composeTestRule.onNodeWithText("Pierwszy tydzień").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Tydzień A").performClick()
+        composeTestRule.onNodeWithText("Tydzień B").performClick()
         // The step title repeats the button label, so target the clickable node.
         composeTestRule.onNode(hasText("Utwórz semestr") and hasClickAction()).performClick()
 

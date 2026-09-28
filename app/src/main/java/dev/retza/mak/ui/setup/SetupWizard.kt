@@ -170,9 +170,10 @@ private fun SemesterStep(
         )
         MakSelectField(
             label = "Pierwszy tydzień",
-            value = state.firstWeekLabel,
-            options = listOf("A", "B"),
-            onSelected = onFirstWeekChanged
+            value = "Tydzień ${state.firstWeekLabel}",
+            options = listOf("Tydzień A", "Tydzień B"),
+            // The wizard state keeps only the letter.
+            onSelected = { onFirstWeekChanged(it.last().toString()) }
         )
         MakPrimaryAction(text = "Utwórz semestr", onClick = onNext)
         if (showReturnToSettings) {
