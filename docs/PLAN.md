@@ -2,7 +2,7 @@
 
 Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Pełna lista i oddzielny status odbioru są w `QUEUE.md`. Repozytorium jest publiczne, a `v0.2.0` opublikowano 2026-09-27.
 
-Kroki z audytu interfejsu z 2026-09-28 dla I-54, I-56, I-57, I-58, I-60 i I-61 są wykonane; ich odbiór należy do O-05 i O-06. Poniższy krok domyka ten audyt. Odbiór na telefonie (O-07, I-40, I-49) wykonuje użytkownik; listy kontrolne są w odpowiednich wierszach `QUEUE.md`.
+Kroki z audytu interfejsu z 2026-09-28 dla I-54, I-56, I-57, I-58, I-60 i I-61 są wykonane; ich odbiór należy do O-05 i O-06. Poniższy krok domyka ten audyt; jego kod jest gotowy (I-55, I-59 i I-62 mają status `odbiór otwarty` w `QUEUE.md`), a opis zostaje do czasu rozpisania kroków trybu tabletowego. Odbiór na telefonie (O-07, I-40, I-49) wykonuje użytkownik; listy kontrolne są w odpowiednich wierszach `QUEUE.md`.
 
 ## Zasady wspólne dla wszystkich kroków
 
