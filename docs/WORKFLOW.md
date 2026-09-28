@@ -18,7 +18,9 @@ Ten dokument opisuje kolejność pracy. Cel i kryteria produktu są w `PRODUCT.m
 5. Zrób przegląd diffu. Zaktualizuj odpowiednią dokumentację, jeśli zmieniło się zachowanie, architektura albo zakres. Ważną decyzję zapisz w `LOG.md`, a starszy dwudziesty wpis przenieś do archiwum.
 6. Przy zmianie `README.md`, `AGENTS.md`, `CLAUDE.md` albo `docs/*.md` uruchom `python3 scripts/check_map.py` (na Windowsie `python` albo `py`). Przy zmianie `scripts/check_map.py` uruchom też `python3 scripts/test_check_map.py`. Nie dodawaj hooka ani bramki CI.
 
-Przed zakończeniem zmiany interfejsu wykonaj przegląd redukcyjny w zakresie zadania. Sprawdź, czy kartę, ikonę, kolor, status, obramowanie albo animację można usunąć bez utraty informacji, hierarchii, dostępności lub działania, i zgłoś takie miejsca w podsumowaniu. Potwierdź też, że hierarchia pozostaje czytelna dzięki typografii, odstępom i wyrównaniu.
+Przed zakończeniem zmiany interfejsu wykonaj przegląd redukcyjny w zakresie zadania. Sprawdź, czy kartę, ikonę, kolor, status, obramowanie albo animację można usunąć bez utraty informacji, hierarchii, dostępności lub działania, i zgłoś takie miejsca w podsumowaniu. Potwierdź też, że hierarchia pozostaje czytelna dzięki typografii, odstępom i wyrównaniu. Elementów wymienionych w `ARCHITECTURE.md` jako zaakceptowane nie zgłaszaj.
+
+Sprawdź też odwrotnie, czy ekran nie gubi informacji: rzadkich stanów (odwołane, zmienione, jednorazowe), dużej liczby elementów, długich nazw, pustych danych i sytuacji, gdy element sterujący lub stan znika z ekranu przy przewijaniu.
 
 ## Zakończenie i status
 

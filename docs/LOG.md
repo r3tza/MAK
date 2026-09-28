@@ -4,6 +4,12 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-28: Rewizja zasad po korektach użytkownika
+
+- Fakty: Podczas planowania poprawek interfejsu nowe ogólne zasady (redukcja środków wizualnych, reguła powtarzania stanu, zakaz osobnego przycisku powrotu, „Kolizja nie jest winą użytkownika”, ograniczona paleta kolorów) kłóciły się z wcześniej przyjętymi elementami i z korektami użytkownika. Agent traktował przyjęte elementy jak naruszenia.
+- Decyzja: `AGENTS.md` mówi, że nowa zasada nie unieważnia przyjętej decyzji, a sprzeczność między dokumentami agent zgłasza zamiast ją rozstrzygać. `ARCHITECTURE.md` dopuszcza role głębi, rytmu i rozpoznawalności, wymienia zaakceptowane elementy wyglądu, pozwala powtórzyć stan, który może zniknąć z ekranu albo dotyczy wiersza, zapewnia czytelność przy wyświetlaniu zamiast ograniczania wyboru, wyjaśnia „Wstecz” w kreatorze i rozdziela kolory kolizji: ostrzeżenie przy zajęciach jest pomarańczowe, liczba kolizji w podsumowaniu i nagłówku czerwona. Drugie zajęcia kolizji aplikacja wskazuje tam, gdzie jest miejsce, a widget pokazuje co najmniej zakres. `WORKFLOW.md` pomija zaakceptowane elementy w przeglądzie redukcyjnym i dodaje sprawdzenie brakującej informacji.
+- Powód: Korekty użytkownika dotyczyły zarówno nadmiernej redukcji (nagłówek podsumowania, cienie, separator, „Aktywny”, „Anuluj”), jak i brakującej informacji (stan „Jednorazowe”, dni z wieloma zajęciami, nazwa drugich zajęć).
+
 ## 2026-09-28: Decyzje po audycie interfejsu i plan poprawek (I-54, I-56 do I-59)
 
 - Fakty: Audyt kodu i przegląd na emulatorze (motyw jasny i ciemny, 320 dp) wykazał: nadmiar elementów nad pierwszymi zajęciami na „Dzisiaj” i w „Planie”, filtr kierunku ukryty w sekcji rozwijanej, akcję „Dodaj jednorazowe” schowaną w zwiniętych opcjach, kolor błędu dla każdej zmiany w kalendarzu, brak nazwy drugich zajęć przy kolizji, stan „Zaplanowane” przy zwykłym terminie, powtórzony tytuł formularza zajęć, banery powtarzające tytuły i niespójne dialogi, kolejność przycisków oraz odmianę liczebników.
@@ -133,10 +139,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: Użytkownik wybrał wariant A: telefon w pionie, tablet w obu orientacjach, boczny pasek nawigacji od 600 dp, treść najwyżej 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp, dialogi wyboru daty i godziny dopasowane do niskiego okna. Klasy szerokości liczy własna funkcja z progami Material 3, bez biblioteki `material3-adaptive`. Zakres zapisano w `PRODUCT.md` i `ARCHITECTURE.md`, kroki w `PLAN.md`.
 - Powód: Poprawny układ na tabletach bez przebudowy nawigacji i danych.
 - Odrzucone: wariant B z dwoma panelami (lista i szczegóły obok siebie) jako zbyt duża zmiana nawigacji na obecnym etapie; może wrócić jako osobne zadanie; biblioteka `material3-adaptive`, bo potrzebna jest tylko szerokość okna.
-
-## 2026-09-27: Dłuższa animacja startu i znak w pasku (I-42)
-
-- Fakty: Animacja „Rozkwit” trwała około 870 ms i przy szybkim starcie system mógł ją przerwać; użytkownik uznał ją za zbyt krótką. Pierwsza poprawka wydłużyła animację ekranu startowego do 1,6 s, ale po niej na moment pojawiał się ekran ładowania z pełną nazwą, czyli drugi, osobny ekran. W górnym pasku został stary znak z czterech kwadratów.
-- Decyzja: Cała animacja (1,6 s) gra w jednym ekranie Compose. Systemowy ekran startowy ma pustą ikonę (`splash_empty.xml`), więc pokazuje tylko tło motywu; ekran ładowania najpierw wyświetla makówkę na białym kole, potem dorysowuje płatki (po 800 ms co 130 ms) i od początku rozwija pełną nazwę od środka. Pusty ekran startowy wybrał użytkownik, bo sama makówka przed animacją wyglądała jak zawieszony obraz. Animacja zaczyna się, gdy ekran startowy znika (bez systemowego wygaszania), gra raz na proces i zawsze do końca; potem ekran ładowania czeka na dane i znika przez przenikanie. Użytkownik wybrał 2026-09-27 czas 1,6 s, odtwarzanie przy każdym zimnym starcie i nazwę rozwijaną od początku animacji, co zmienia odrzucenie sztucznego wydłużania startu z I-30. Górny pasek pokazuje `MakPoppyMark`.
-- Powód: Jeden ekran daje ciągły ruch bez mignięcia i pozwala animować nazwę, której ikona ekranu startowego nie może pokazać. Plan wczytuje się w tym czasie w tle.
-- Odrzucone: przytrzymanie systemowego ekranu startowego z animowaną ikoną, bo po nim musiał pojawić się drugi ekran z nazwą; 2 s, bo przy codziennym otwieraniu planu może męczyć; pełna animacja tylko raz dziennie, bo wymaga zapisu daty w ustawieniach.

@@ -58,6 +58,8 @@ Nie traktuj propozycji z rozmowy jako decyzji, dopóki użytkownik jej nie zaakc
 
 Nie implementuj elementów oznaczonych jako pytania otwarte lub poza zakresem bez decyzji użytkownika.
 
+Nowa ogólna zasada nie unieważnia wcześniejszej decyzji zapisanej w `docs/FEATURES.md`, `docs/ARCHITECTURE.md` albo `docs/LOG.md`. Jeśli przyjęty element jest z nią sprzeczny, opisz sprzeczność jako pytanie do użytkownika, a nie jako błąd do naprawy. Przy sprzeczności między dokumentami nie rozstrzygaj jej sam: zgłoś ją z cytatami i zapisz w `docs/KNOWN_ISSUES.md`.
+
 Po zaakceptowanej zmianie architektury, stosu lub zasad pracy zaktualizuj właściwy dokument i dodaj wpis do `docs/LOG.md`. Utrzymuj tam najwyżej 20 wpisów; starsze przenoś do `docs/log_archive/`. `docs/CHANGELOG.md` aktualizuj dopiero po wydaniu zmiany użytkownikom. Przed tagiem wydania dodaj wpis do `app/src/main/assets/release_notes.json`: tylko zmiany odczuwalne dla użytkownika, prostym językiem; bez takich zmian zostaw pustą listę, a aplikacja i workflow pokażą „Pomniejsze poprawki”. Tekst wpisu zatwierdza użytkownik.
 
 ## Preferencje projektowe użytkownika
