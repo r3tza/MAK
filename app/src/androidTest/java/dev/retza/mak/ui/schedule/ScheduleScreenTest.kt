@@ -161,6 +161,32 @@ class ScheduleScreenTest {
     }
 
     @Test
+    fun cardSeparatorSpansContentHeightWithLongNameAndBothNotesAt320Dp() {
+        val name = "Bardzo długa nazwa zajęć z analizą danych i statystyką"
+        val item = ClassItemUi(
+            id = "class-divider",
+            name = name,
+            type = "Wykład",
+            courseName = "Informatyka",
+            startTime = "09:00",
+            endTime = "10:30",
+            classNote = "Przynieś projekt",
+            occurrenceNote = "Kolokwium"
+        )
+        setScheduleContent(state = scheduleState(items = listOf(item)))
+
+        val card = composeTestRule.onNode(hasContentDescription(name, substring = true))
+            .fetchSemanticsNode().boundsInRoot
+        val divider = composeTestRule.onNodeWithTag("class-card-divider", useUnmergedTree = true)
+            .assertIsDisplayed()
+            .fetchSemanticsNode().boundsInRoot
+        val density = composeTestRule.density.density
+        assertEquals("separator is 1 dp wide", density, divider.width, 1f)
+        // The card pads its content by 12 dp at the top and at the bottom.
+        assertEquals("separator spans the content height", card.height - 24f * density, divider.height, 1f)
+    }
+
+    @Test
     fun longCourseNameKeepsClassTypeVisibleAt320Dp() {
         val item = ClassItemUi(
             id = "class-long-course",

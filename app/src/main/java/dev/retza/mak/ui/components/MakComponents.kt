@@ -46,6 +46,7 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
+import androidx.compose.material3.VerticalDivider
 import androidx.compose.material.icons.Icons
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.material.icons.outlined.StickyNote2
@@ -83,6 +84,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
@@ -486,7 +488,8 @@ fun ClassCard(
         Row(
             modifier = Modifier
                 .weight(1f)
-            .padding(start = MakSpacing.sm, end = MakSpacing.lg, top = MakSpacing.md, bottom = MakSpacing.md),
+                .fillMaxHeight()
+                .padding(start = MakSpacing.sm, end = MakSpacing.lg, top = MakSpacing.md, bottom = MakSpacing.md),
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)
         ) {
             // At least 48 dp, wider with a large font scale, so the start time is never cut.
@@ -515,6 +518,11 @@ fun ClassCard(
                     )
                 }
             }
+            VerticalDivider(
+                modifier = Modifier.fillMaxHeight().testTag("class-card-divider"),
+                thickness = 1.dp,
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
             Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
                 Text(
                     text = item.name,
