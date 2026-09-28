@@ -21,7 +21,6 @@ internal fun NavGraphBuilder.todayRoute(
     todayViewModel: TodayViewModel,
     updateViewModel: UpdateViewModel,
     navController: NavController,
-    onOpenPlan: () -> Unit,
     onOpenOccurrence: (String) -> Unit,
     startSetup: () -> Unit
 ) {
@@ -30,7 +29,6 @@ internal fun NavGraphBuilder.todayRoute(
         val updateState = updateViewModel.state.collectAsStateWithLifecycle().value
         TodayScreen(
             state = todayState,
-            onOpenPlan = onOpenPlan,
             onOpenClass = onOpenOccurrence,
             onStartSetup = startSetup,
             onRetry = {},

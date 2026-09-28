@@ -32,15 +32,12 @@ data class TodayUiState(
     val gapCount: Int = 0,
     val items: List<ClassItemUi> = emptyList(),
     val status: ScreenStatus = ScreenStatus.Ready,
-    val emptyTitle: String = "Brak zajęć",
-    val emptyMessage: String = "Nie masz dziś zajęć.",
-    val showPlanAction: Boolean = true
+    val emptyMessage: String = "Nie masz dziś zajęć."
 )
 
 @Composable
 fun TodayScreen(
     state: TodayUiState,
-    onOpenPlan: () -> Unit,
     onOpenClass: (String) -> Unit,
     onStartSetup: () -> Unit,
     onRetry: () -> Unit,
@@ -86,7 +83,6 @@ fun TodayScreen(
                 Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                     MakStateMessage(
                         status = state.status,
-                        emptyTitle = state.emptyTitle,
                         emptyMessage = state.emptyMessage
                     )
                     if (requiresSetup) {

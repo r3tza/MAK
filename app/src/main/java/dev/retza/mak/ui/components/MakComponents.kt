@@ -204,33 +204,6 @@ fun MakBrandMark(modifier: Modifier = Modifier) {
 @Composable
 fun MakIconButton(
     label: String,
-    symbol: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    var focused by remember { mutableStateOf(false) }
-    Box(
-        modifier = modifier
-            .size(48.dp)
-            .clip(RoundedCornerShape(12.dp))
-            .border(
-                if (focused) 2.dp else 1.dp,
-                if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                RoundedCornerShape(12.dp)
-            )
-            .background(MaterialTheme.colorScheme.surface)
-            .onFocusChanged { focused = it.isFocused }
-            .clickable(role = Role.Button, onClick = onClick)
-            .semantics { contentDescription = label },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(symbol, fontSize = 18.sp, color = MaterialTheme.colorScheme.onSurface)
-    }
-}
-
-@Composable
-fun MakIconButton(
-    label: String,
     icon: ImageVector,
     onClick: () -> Unit,
     modifier: Modifier = Modifier
@@ -255,38 +228,6 @@ fun MakIconButton(
             imageVector = icon,
             contentDescription = null,
             tint = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-@Composable
-fun MakRoundButton(
-    label: String,
-    symbol: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    enabled: Boolean = true
-) {
-    var focused by remember { mutableStateOf(false) }
-    Box(
-        modifier = modifier
-            .size(48.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .border(
-                if (focused) 2.dp else 1.dp,
-                if (focused) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                RoundedCornerShape(10.dp)
-            )
-            .background(MaterialTheme.colorScheme.surface)
-            .onFocusChanged { focused = it.isFocused }
-            .clickable(enabled = enabled, role = Role.Button, onClick = onClick)
-            .semantics { contentDescription = label },
-        contentAlignment = Alignment.Center
-    ) {
-        Text(
-            text = symbol,
-            fontSize = 19.sp,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = if (enabled) 1f else 0.35f)
         )
     }
 }
@@ -731,7 +672,6 @@ fun MakEmptyState(message: String, modifier: Modifier = Modifier) {
 fun MakStateMessage(
     status: ScreenStatus,
     modifier: Modifier = Modifier,
-    emptyTitle: String? = null,
     emptyMessage: String? = null,
     onRetry: (() -> Unit)? = null
 ) {
