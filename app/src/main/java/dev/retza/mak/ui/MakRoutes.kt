@@ -7,6 +7,8 @@ object MakRoutes {
     const val Occurrence = "occurrence/{classId}/{date}"
     const val Semester = "semester/{semesterId}"
     const val SemesterCourses = "semester/{semesterId}/courses"
+    const val SemesterCourseAdd = "semester/{semesterId}/course-new"
+    const val SemesterCourseEdit = "semester/{semesterId}/course/{assignmentId}"
     const val SemesterOverrides = "semester/{semesterId}/week-overrides"
     const val SemesterCalendars = "semester/{semesterId}/calendars"
     const val Settings = "settings"
@@ -34,6 +36,11 @@ fun semesterRoute(id: String): String = "semester/$id"
 fun studyProgramEditRoute(id: Long): String = "settings/programs/$id"
 
 fun semesterCoursesRoute(id: String): String = "semester/$id/courses"
+
+fun semesterCourseAddRoute(id: String): String = "semester/$id/course-new"
+
+fun semesterCourseEditRoute(semesterId: String, assignmentId: String): String =
+    "semester/$semesterId/course/$assignmentId"
 
 fun semesterOverridesRoute(id: String): String = "semester/$id/week-overrides"
 
@@ -72,6 +79,8 @@ internal fun titleForRoute(route: String?, editorTitle: String? = null): String 
     MakRoutes.Occurrence -> "Termin"
     MakRoutes.Semester -> "Semestr"
     MakRoutes.SemesterCourses -> "Kierunki"
+    MakRoutes.SemesterCourseAdd -> "Dodaj kierunek"
+    MakRoutes.SemesterCourseEdit -> "Edytuj kierunek"
     MakRoutes.SemesterOverrides -> "Korekty tygodni"
     MakRoutes.SemesterCalendars -> "Kalendarze"
     MakRoutes.Settings -> "Ustawienia"

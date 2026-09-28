@@ -11,11 +11,15 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import dev.retza.mak.ui.semester.SemesterCalendarsScreen
+import dev.retza.mak.ui.semester.SemesterCourseAddScreen
+import dev.retza.mak.ui.semester.SemesterCourseEditScreen
 import dev.retza.mak.ui.semester.SemesterCoursesScreen
 import dev.retza.mak.ui.semester.SemesterEffect
 import dev.retza.mak.ui.semester.SemesterScreen
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.semester.SemesterWeekOverridesScreen
+import dev.retza.mak.ui.programs.StudyProgramEditorUi
+import dev.retza.mak.ui.programs.StudyProgramsViewModel
 
 internal fun openSemesterConfiguration(
     semesterViewModel: SemesterViewModel,
@@ -28,7 +32,8 @@ internal fun openSemesterConfiguration(
 
 internal fun NavGraphBuilder.semesterRoutes(
     semesterViewModel: SemesterViewModel,
-    navController: NavController
+    navController: NavController,
+    studyProgramsViewModel: StudyProgramsViewModel
 ) {
     composable(
         route = MakRoutes.Semester,
@@ -71,6 +76,32 @@ internal fun NavGraphBuilder.semesterRoutes(
         }
         SemesterCoursesScreen(
             state = semesterViewModel.semester.collectAsStateWithLifecycle().value,
+            onAddCourse = {
+                semesterId?.let {
+                    semesterViewModel.resetCourseDraft()
+                    navController.navigate(semesterCourseAddRoute(it))
+                }
+            },
+            onEditCourse = { assignmentId ->
+                semesterId?.let { navController.navigate(semesterCourseEditRoute(it, assignmentId)) }
+            },
+            onDeleteCourse = semesterViewModel::requestCourseDeletion,
+            onConfirmCourseDeletion = semesterViewModel::confirmCourseDeletion,
+            onCancelCourseDeletion = semesterViewModel::cancelCourseDeletion,
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+
+    composable(
+        route = MakRoutes.SemesterCourseAdd,
+        arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
+    ) { entry ->
+        val semesterId = entry.arguments?.getString("semesterId")
+        LaunchedEffect(semesterId) {
+            semesterId?.let(semesterViewModel::openIfNeeded)
+        }
+        SemesterCourseAddScreen(
+            state = semesterViewModel.semester.collectAsStateWithLifecycle().value,
             onCourseNameChanged = semesterViewModel::updateCourseName,
             onCourseColorChanged = semesterViewModel::updateCourseColor,
             onProgramModeChanged = semesterViewModel::setCourseProgramMode,
@@ -78,13 +109,54 @@ internal fun NavGraphBuilder.semesterRoutes(
             onCourseModeChanged = semesterViewModel::setCourseCalendarMode,
             onCourseCalendarChanged = semesterViewModel::selectCourseCalendar,
             onAddCourse = semesterViewModel::addCourse,
-            onDeleteCourse = semesterViewModel::requestCourseDeletion,
+            onCancel = {
+                semesterViewModel.resetCourseDraft()
+                navController.popBackStack()
+            },
+            modifier = Modifier.fillMaxSize()
+        )
+    }
+
+    composable(
+        route = MakRoutes.SemesterCourseEdit,
+        arguments = listOf(
+            navArgument("semesterId") { type = NavType.StringType },
+            navArgument("assignmentId") { type = NavType.StringType }
+        )
+    ) { entry ->
+        val semesterId = entry.arguments?.getString("semesterId")
+        val assignmentId = entry.arguments?.getString("assignmentId")
+        val semesterState = semesterViewModel.semester.collectAsStateWithLifecycle().value
+        val programId = semesterState.courseItems
+            .firstOrNull { it.assignmentId == assignmentId }
+            ?.programId
+            ?.toLongOrNull()
+        LaunchedEffect(semesterId) {
+            semesterId?.let(semesterViewModel::openIfNeeded)
+        }
+        LaunchedEffect(programId) {
+            programId?.let(studyProgramsViewModel::openEditIfNeeded)
+        }
+        val programsState = studyProgramsViewModel.programs.collectAsStateWithLifecycle().value
+        val editor = if (programId != null && programsState.editor.id == programId) {
+            programsState.editor
+        } else {
+            StudyProgramEditorUi()
+        }
+        SemesterCourseEditScreen(
+            state = semesterState,
+            editor = editor,
+            onNameChanged = studyProgramsViewModel::updateName,
+            onColorChanged = studyProgramsViewModel::updateColor,
+            onSave = studyProgramsViewModel::save,
+            onCancel = {
+                studyProgramsViewModel.closeEditor()
+                navController.popBackStack()
+            },
             onSeparateCourse = semesterViewModel::separateCourseCalendar,
             onRequestReconnect = semesterViewModel::requestReconnect,
             onConfirmReconnect = semesterViewModel::confirmReconnect,
             onCancelReconnect = semesterViewModel::cancelReconnect,
-            onConfirmCourseDeletion = semesterViewModel::confirmCourseDeletion,
-            onCancelCourseDeletion = semesterViewModel::cancelCourseDeletion,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -157,6 +229,11 @@ internal fun SemesterEffects(
             when (effect) {
                 SemesterEffect.CloseConfiguration -> {
                     if (shouldCloseSemesterConfiguration(navController.currentBackStackEntry?.destination?.route)) {
+                        navController.popBackStack()
+                    }
+                }
+                SemesterEffect.CourseAdded -> {
+                    if (navController.currentBackStackEntry?.destination?.route == MakRoutes.SemesterCourseAdd) {
                         navController.popBackStack()
                     }
                 }

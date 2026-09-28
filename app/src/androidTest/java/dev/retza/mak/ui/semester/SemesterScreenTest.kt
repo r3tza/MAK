@@ -18,7 +18,9 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.theme.MAKTheme
+import dev.retza.mak.ui.programs.StudyProgramEditorUi
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -123,6 +125,7 @@ class SemesterScreenTest {
     @Test
     fun coursesScreenKeepsLongNamesAndActionsAt320Dp() {
         var added = 0
+        var edited = ""
         var deleted = ""
 
         composeTestRule.setContent {
@@ -133,21 +136,11 @@ class SemesterScreenTest {
                             courseItems = listOf(
                                 course("1", "Informatyka stosowana i systemy wbudowane"),
                                 course("2", "Automatyka i robotyka")
-                            ),
-                            courseNameDraft = "Nowy kierunek"
+                            )
                         ),
-                        onCourseNameChanged = {},
-                        onCourseColorChanged = {},
-                        onProgramModeChanged = {},
-                        onSelectProgram = {},
-                        onCourseModeChanged = {},
-                        onCourseCalendarChanged = {},
                         onAddCourse = { added += 1 },
+                        onEditCourse = { edited = it },
                         onDeleteCourse = { deleted = it },
-                        onSeparateCourse = {},
-                        onRequestReconnect = { _, _ -> },
-                        onConfirmReconnect = {},
-                        onCancelReconnect = {},
                         onConfirmCourseDeletion = {},
                         onCancelCourseDeletion = {},
                     )
@@ -156,23 +149,32 @@ class SemesterScreenTest {
         }
 
         composeTestRule.onNodeWithText("Informatyka stosowana i systemy wbudowane").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dodaj kierunek").assertIsDisplayed()
+        assertTrue(
+            composeTestRule.onNodeWithText("Dodaj kierunek").fetchSemanticsNode().boundsInRoot.top <
+                composeTestRule.onNodeWithText("Informatyka stosowana i systemy wbudowane")
+                    .fetchSemanticsNode().boundsInRoot.top
+        )
         composeTestRule.onAllNodesWithText("Usuń").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("Edytuj").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("Edytuj")[0].performClick()
+        assertEquals("1", edited)
         composeTestRule.onAllNodesWithText("Usuń")[1].performClick()
         assertEquals("2", deleted)
-        composeTestRule.onNodeWithText("Dodaj kierunek").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Rozdziel kalendarz").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Dodaj kierunek").performClick()
         assertEquals(1, added)
     }
 
     @Test
-    fun coursesScreenOffersSeparateModeAndSharedProgramNoteAt320Dp() {
+    fun courseAddScreenShowsFormAndCancelAt320Dp() {
+        var cancelled = 0
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
-                    SemesterCoursesScreen(
+                    SemesterCourseAddScreen(
                         state = SemesterScreenUiState(
                             calendars = listOf(calendar("1"), calendar("2", "2026-11-01", "2027-03-15")),
-                            courseProgramMode = CourseProgramModeUi.EXISTING,
-                            courseProgramId = "1",
                             courseProgramOptions = listOf(
                                 SemesterProgramOptionUi("1", "Informatyka", "#137B71")
                             ),
@@ -186,36 +188,38 @@ class SemesterScreenTest {
                         onCourseModeChanged = {},
                         onCourseCalendarChanged = {},
                         onAddCourse = {},
-                        onDeleteCourse = {},
-                        onSeparateCourse = {},
-                        onRequestReconnect = { _, _ -> },
-                        onConfirmReconnect = {},
-                        onCancelReconnect = {},
-                        onConfirmCourseDeletion = {},
-                        onCancelCourseDeletion = {},
+                        onCancel = { cancelled++ },
                     )
                 }
             }
         }
 
         composeTestRule.onNodeWithText("Wybierz istniejący").assertIsDisplayed()
-        composeTestRule.onNodeWithText(
-            "Kierunek jest współdzielony między semestrami. " +
-                "Nazwę i kolor zmienisz w ustawieniach, w pozycji Kierunki."
-        ).assertIsDisplayed()
+        composeTestRule.onNodeWithText("Nazwa nowego kierunku").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Kolor kierunku").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Wspólne daty i tygodnie").assertIsDisplayed()
         composeTestRule.onNodeWithText("Osobne daty i tygodnie").assertIsDisplayed()
         composeTestRule.onNodeWithText("Kalendarz kierunku").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dodaj kierunek").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Anuluj").performScrollTo().performClick()
+        assertEquals(1, cancelled)
     }
 
     @Test
-    fun coursesScreenSeparateModeExplainsCopyAt320Dp() {
+    fun courseAddScreenExistingProgramShowsSelectionInsteadOfNameAndColorDraft() {
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
-                    SemesterCoursesScreen(
+                    SemesterCourseAddScreen(
                         state = SemesterScreenUiState(
-                            courseCalendarMode = CourseCalendarModeUi.SEPARATE
+                            calendars = listOf(calendar("1")),
+                            selectedCalendarId = "1",
+                            courseCalendarId = "1",
+                            courseProgramMode = CourseProgramModeUi.EXISTING,
+                            courseProgramId = "1",
+                            courseProgramOptions = listOf(
+                                SemesterProgramOptionUi("1", "Informatyka", "#137B71")
+                            )
                         ),
                         onCourseNameChanged = {},
                         onCourseColorChanged = {},
@@ -224,20 +228,115 @@ class SemesterScreenTest {
                         onCourseModeChanged = {},
                         onCourseCalendarChanged = {},
                         onAddCourse = {},
-                        onDeleteCourse = {},
-                        onSeparateCourse = {},
-                        onRequestReconnect = { _, _ -> },
-                        onConfirmReconnect = {},
-                        onCancelReconnect = {},
-                        onConfirmCourseDeletion = {},
-                        onCancelCourseDeletion = {},
+                        onCancel = {},
                     )
                 }
             }
         }
 
-        // The color picker above is tall, so the note may start below the fold.
-        composeTestRule.onNodeWithText("Powstanie kopia dat, rytmu i korekt wybranego kalendarza.")
+        composeTestRule.onNodeWithText("Istniejący kierunek").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Nazwa nowego kierunku").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Kolor kierunku").assertDoesNotExist()
+        composeTestRule.onNodeWithText(
+            "Nazwa i kolor istniejącego kierunku są wspólne dla wszystkich semestrów."
+        ).assertIsDisplayed()
+    }
+
+    @Test
+    fun courseEditScreenShowsNameCalendarAndColorInOrderAndSharedSplitActionAt320Dp() {
+        var separated = ""
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
+                    SemesterCourseEditScreen(
+                        state = SemesterScreenUiState(
+                            courseItems = listOf(course("1", "Informatyka", sharesCalendar = true)),
+                            calendars = listOf(calendar("1")),
+                            selectedCalendarId = "1"
+                        ),
+                        editor = StudyProgramEditorUi(id = 1L, name = "Informatyka", color = "#137B71"),
+                        onNameChanged = {},
+                        onColorChanged = {},
+                        onSave = {},
+                        onCancel = {},
+                        onSeparateCourse = { separated = it },
+                        onRequestReconnect = { _, _ -> },
+                        onConfirmReconnect = {},
+                        onCancelReconnect = {},
+                    )
+                }
+            }
+        }
+
+        val nameTop = composeTestRule.onNodeWithText("Nazwa kierunku").fetchSemanticsNode().boundsInRoot.top
+        val calendarTop = composeTestRule.onNodeWithText("Kalendarz w tym semestrze")
+            .fetchSemanticsNode().boundsInRoot.top
+        val colorTop = composeTestRule.onNodeWithText("Kolor kierunku")
+            .fetchSemanticsNode().boundsInRoot.top
+        assertTrue(nameTop < calendarTop)
+        assertTrue(calendarTop < colorTop)
+        composeTestRule.onNodeWithText("Rozdziel kalendarz").performScrollTo().performClick()
+        assertEquals("1", separated)
+        composeTestRule.onNodeWithText("Kalendarz").assertDoesNotExist()
+    }
+
+    @Test
+    fun courseEditScreenShowsCalendarPickerOnlyWithMultipleCalendarsAndNoSplitForSeparateCalendar() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
+                    SemesterCourseEditScreen(
+                        state = SemesterScreenUiState(
+                            courseItems = listOf(course("1", "Informatyka", sharesCalendar = false)),
+                            calendars = listOf(calendar("1"), calendar("2", "2026-11-01", "2027-03-15")),
+                            selectedCalendarId = "1"
+                        ),
+                        editor = StudyProgramEditorUi(id = 1L, name = "Informatyka", color = "#137B71"),
+                        onNameChanged = {},
+                        onColorChanged = {},
+                        onSave = {},
+                        onCancel = {},
+                        onSeparateCourse = {},
+                        onRequestReconnect = { _, _ -> },
+                        onConfirmReconnect = {},
+                        onCancelReconnect = {},
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Kalendarz").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Rozdziel kalendarz").assertDoesNotExist()
+    }
+
+    @Test
+    fun courseEditScreenOmitsCalendarPickerWithSingleCalendar() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
+                    SemesterCourseEditScreen(
+                        state = SemesterScreenUiState(
+                            courseItems = listOf(course("1", "Informatyka", sharesCalendar = true)),
+                            calendars = listOf(calendar("1")),
+                            selectedCalendarId = "1"
+                        ),
+                        editor = StudyProgramEditorUi(id = 1L, name = "Informatyka", color = "#137B71"),
+                        onNameChanged = {},
+                        onColorChanged = {},
+                        onSave = {},
+                        onCancel = {},
+                        onSeparateCourse = {},
+                        onRequestReconnect = { _, _ -> },
+                        onConfirmReconnect = {},
+                        onCancelReconnect = {},
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Kalendarz").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Rozdziel kalendarz").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Kierunek dostanie własną kopię dat, rytmu A/B i korekt.")
             .performScrollTo()
             .assertIsDisplayed()
     }
@@ -249,8 +348,11 @@ class SemesterScreenTest {
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
-                    SemesterCoursesScreen(
+                    SemesterCourseEditScreen(
                         state = SemesterScreenUiState(
+                            courseItems = listOf(course("1", "Informatyka", sharesCalendar = true)),
+                            calendars = listOf(calendar("1"), calendar("2", "2026-11-01", "2027-03-15")),
+                            selectedCalendarId = "1",
                             pendingReconnect = ReconnectCalendarUi(
                                 assignmentId = "1",
                                 calendarId = "2",
@@ -258,20 +360,15 @@ class SemesterScreenTest {
                                 sourceBecomesUnused = true
                             )
                         ),
-                        onCourseNameChanged = {},
-                        onCourseColorChanged = {},
-                        onProgramModeChanged = {},
-                        onSelectProgram = {},
-                        onCourseModeChanged = {},
-                        onCourseCalendarChanged = {},
-                        onAddCourse = {},
-                        onDeleteCourse = {},
+                        editor = StudyProgramEditorUi(id = 1L, name = "Informatyka", color = "#137B71"),
+                        onNameChanged = {},
+                        onColorChanged = {},
+                        onSave = {},
+                        onCancel = {},
                         onSeparateCourse = {},
                         onRequestReconnect = { _, _ -> },
                         onConfirmReconnect = { confirmed += 1 },
                         onCancelReconnect = {},
-                        onConfirmCourseDeletion = {},
-                        onCancelCourseDeletion = {},
                     )
                 }
             }
@@ -302,18 +399,9 @@ class SemesterScreenTest {
                                 classCount = 5
                             )
                         ),
-                        onCourseNameChanged = {},
-                        onCourseColorChanged = {},
-                        onProgramModeChanged = {},
-                        onSelectProgram = {},
-                        onCourseModeChanged = {},
-                        onCourseCalendarChanged = {},
                         onAddCourse = {},
+                        onEditCourse = {},
                         onDeleteCourse = {},
-                        onSeparateCourse = {},
-                        onRequestReconnect = { _, _ -> },
-                        onConfirmReconnect = {},
-                        onCancelReconnect = {},
                         onConfirmCourseDeletion = { confirmed += 1 },
                         onCancelCourseDeletion = { cancelled += 1 },
                     )
