@@ -70,9 +70,22 @@ class StudyProgramsViewModel(
         }
     }
 
-    /** Keeps the current draft when the route is shown again for the same program. */
+    /** Starts a fresh edit of the program: discards any earlier draft, then loads the saved values. */
+    fun openEdit(id: Long) {
+        state.update { it.copy(editor = StudyProgramEditorUi()) }
+        loadEditor(id)
+    }
+
+    /**
+     * Restores the screen after rotation or process death: keeps the current draft when the route
+     * is shown again for the same program.
+     */
     fun openEditIfNeeded(id: Long) {
         if (state.value.editor.id == id) return
+        loadEditor(id)
+    }
+
+    private fun loadEditor(id: Long) {
         viewModelScope.launch {
             val program = state.value.programs.firstOrNull { it.id == id }
                 ?: semesterRepository.observeStudyPrograms().first()

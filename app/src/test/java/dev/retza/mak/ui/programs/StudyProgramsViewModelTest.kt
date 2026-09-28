@@ -135,4 +135,37 @@ class StudyProgramsViewModelTest {
 
         assertEquals("Szkic", viewModel.programs.value.editor.name)
     }
+
+    @Test
+    fun explicitOpenDiscardsAbandonedDraft() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        val program = repository.studyPrograms.first()
+        advanceUntilIdle()
+        viewModel.openEdit(program.id)
+        advanceUntilIdle()
+        viewModel.updateName("Szkic")
+
+        viewModel.openEdit(program.id)
+        advanceUntilIdle()
+
+        assertEquals(program.name, viewModel.programs.value.editor.name)
+        assertEquals(program.id, viewModel.programs.value.editor.id)
+    }
+
+    @Test
+    fun restoringRouteAfterExplicitOpenKeepsDraft() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        val id = repository.studyPrograms.first().id
+        advanceUntilIdle()
+        viewModel.openEdit(id)
+        advanceUntilIdle()
+        viewModel.updateName("Szkic")
+
+        viewModel.openEditIfNeeded(id)
+        advanceUntilIdle()
+
+        assertEquals("Szkic", viewModel.programs.value.editor.name)
+    }
 }

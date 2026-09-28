@@ -25,7 +25,10 @@ internal fun NavGraphBuilder.studyProgramRoutes(
         val state by studyProgramsViewModel.programs.collectAsStateWithLifecycle()
         StudyProgramsScreen(
             state = state,
-            onOpenProgram = { id -> navController.navigate(studyProgramEditRoute(id)) },
+            onOpenProgram = { id ->
+                studyProgramsViewModel.openEdit(id)
+                navController.navigate(studyProgramEditRoute(id))
+            },
             modifier = Modifier.fillMaxSize()
         )
     }
