@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-29: Jawna systemowa kopia zapasowa (I-14)
+
+- Decyzja użytkownika: systemowa kopia zapasowa Androida zostaje włączona i opisana w „Dane i prywatność”. Reguły kopii są listą dozwolonych plików (baza planu i plik ustawień), a kopia w chmurze działa tylko z szyfrowaniem end-to-end (`ARCHITECTURE.md`, sekcja 8, punkt 14).
+- Fakty: próba na emulatorze z lokalnym transportem kopii potwierdziła, że Android przywraca dane przy instalacji z pliku APK, a nie tylko ze Sklepu Play; dokumentacja Androida mówi to samo. Szablonowe reguły kopiowały też identyfikatory widgetów i zaplanowanych alarmów, które należą do jednego urządzenia. Porównywalne aplikacje (Tasks.org, Loop Habit Tracker, AnkiDroid, Fossify Calendar, Signal) mają kopię włączoną i różnią się zakresem kopiowanych danych.
+- Powód: mało techniczni odbiorcy rzadko robią ręczny eksport JSON, a kopia systemowa chroni plan przy resecie lub reinstalacji bez pracy po ich stronie. Lista dozwolonych plików sprawia, że przyszły stan synchronizacji domyślnie nie trafi do kopii, więc kopia nie koliduje z opcjonalną synchronizacją.
+- Odrzucone: wyłączenie kopii (`allowBackup="false"`); przełącznik kopii w ustawieniach aplikacji, bo użytkownik steruje kopią w ustawieniach Androida.
+
 ## 2026-09-29: Decyzje po makietach audytu interfejsu (I-63)
 
 - Decyzja użytkownika po przeglądzie makiet w artefakcie „MAK: audyt interfejsu, przed i po”: karta podsumowania „Dzisiaj” dostaje w motywie ciemnym ciemniejszy gradient `#2C3F94` do `#1C2A6A` z krawędzią 1 dp w bieli o kryciu 8% (I-63, `FEATURES.md`, sekcja „Ekran Dzisiaj”). Przyciski ikon w górnym pasku zachowują obramowanie, a przełącznik widoku na „Planie” zachowuje obecny wygląd z cieniem.
@@ -126,11 +133,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: Zakończone zadania są w osobnej tabeli „Zakończone” na końcu `QUEUE.md`; wiersz przechodzi tam po zmianie statusu na `gotowe` (`WORKFLOW.md`). `KNOWN_ISSUES.md` zawiera tylko otwarte problemy i brakujący odbiór. README ma instrukcję instalacji, a `.gitignore` wyklucza pliki kluczy podpisu. Użytkownik zlecił porządki 2026-09-27.
 - Powód: Po upublicznieniu repozytorium czytelnik ma od razu widzieć bieżący stan, a historia zostaje w kolejce i logu.
 - Odrzucone: Usunięcie zakończonych wierszy z `QUEUE.md`, bo otwarte zadania wskazują je jako zależności.
-
-## 2026-09-27: Aktualizacje w głównych ustawieniach (I-48)
-
-- Fakty: Ekran „O aplikacji” łączył wersję, ręczne sprawdzanie, pobieranie, historię zmian i przełącznik automatu. Na wariancie debug historia pokazywała pustą pozycję „0.1.0-debug” z „Brak informacji” nad wpisem 0.1.0.
-- Decyzja: Ustawienia główne dostają sekcję „Aktualizacje” z wierszem „Sprawdź aktualizacje”, warunkowym wierszem „Aktualizacja do {wersja}” i przełącznikiem „Sprawdzaj przy uruchomieniu”. Pobieranie i instalacja mają osobny ekran „Aktualizacja”, do którego prowadzi też „Zobacz” na banerze „Dzisiaj”. „O aplikacji” zawiera nazwę, wersję, krótki opis, autora `r3tza` i najwyżej trzy znane wydania, bez pustej pozycji nieznanej wersji (`FEATURES.md`, `ARCHITECTURE.md`). Użytkownik zaakceptował wariant 2026-09-27.
-- Powód: Częste akcje są dostępne bez wchodzenia na ekran opisu, a główne ustawienia nie rozwijają bloków pobierania i błędów.
-- Odrzucone: Dialog pobierania otwierany z ustawień, link do kodu źródłowego i sekcja licencji na ekranie „O aplikacji”.
-- Weryfikacja: testy JVM, lint i 95 testów urządzenia przechodzą; zrzuty ustawień w obu motywach i „O aplikacji” przy 320 dp na emulatorze. Wariant debug ma osobny pakiet, więc testy urządzenia działają obok wydania o `versionCode` 200.

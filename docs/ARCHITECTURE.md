@@ -218,6 +218,7 @@ Przed zmianą powiadomień przeczytaj też odpowiednie decyzje w `LOG.md` albo a
 11. Zmiana danych wywołuje odświeżenie widgetu bez ciągłego serwisu w tle. Okresowe odświeżenie stanowi zabezpieczenie; platforma może opóźnić aktualizację po północy.
 12. Powiadomienia o kolizjach są planowane przybliżonymi alarmami wieczorem dnia poprzedniego i w oknie przed kolidującymi zajęciami. Zmiana danych lub ustawień zastępuje przyszłe alarmy aktualnym zestawem.
 13. Eksport zapisuje pełny snapshot. Import pokazuje podgląd i po potwierdzeniu atomowo zastępuje wszystkie lokalne dane.
+14. Systemowa kopia zapasowa Androida jest włączona (decyzja z 2026-09-29, I-14). `data_extraction_rules.xml` jest listą dozwolonych plików: baza `mak.db` z plikami `-wal` i `-shm` oraz plik ustawień `datastore/mak_settings.preferences_pb`, osobno dla kopii w chmurze i przenoszenia na nowy telefon. Każdy inny plik zostaje poza kopią, w tym identyfikatory widgetów, identyfikatory zaplanowanych alarmów i przyszły stan synchronizacji, bo należą do jednego urządzenia. Kopia w chmurze działa tylko z szyfrowaniem end-to-end, czyli przy ustawionej blokadzie ekranu (`disableIfNoEncryptionCapabilities`). Android przywraca dane przy każdej instalacji aplikacji, także z pliku APK. Ewentualna synchronizacja trzyma swój stan w `noBackupFilesDir` albo poza listą dozwolonych plików, aby przywrócona kopia nie udawała zsynchronizowanej wersji. Zmiana nazwy bazy albo pliku ustawień wymaga zmiany reguł; pilnuje tego test JVM `BackupRulesTest`.
 
 Poza zakresem semestru aplikacja pokazuje jednoznaczny stan wymagający konfiguracji albo informację, że nie ma aktywnego semestru.
 
@@ -238,9 +239,6 @@ Pierwszy zakres nie obejmuje:
 - skalowania dla wielu użytkowników i obsługi ruchu serwerowego.
 
 ## 10. Otwarte pytania
-
-- Systemowa kopia zapasowa Androida (I-14). Manifest ma `allowBackup="true"` z szablonowymi regułami, więc baza i ustawienia mogą trafiać do kopii Google. Do decyzji: wyłączyć kopię, dopuścić ją jawnie albo dodać przełącznik w ustawieniach. Do czasu decyzji nie zmieniamy manifestu ani reguł kopii. Jeśli powstanie synchronizacja opisana niżej, kopia systemowa nadal może chronić użytkowników, którzy się nie zalogują.
-
 
 ### Weryfikacja deweloperów i synchronizacja (propozycje)
 
