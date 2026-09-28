@@ -41,6 +41,7 @@ import androidx.compose.material3.ExposedDropdownMenuBox
 import androidx.compose.material3.ExposedDropdownMenuDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.ColorScheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Text
@@ -62,6 +63,7 @@ import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material.icons.outlined.WarningAmber
+import androidx.compose.material.icons.outlined.ErrorOutline
 import androidx.compose.material3.Icon
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
@@ -838,39 +840,107 @@ fun MakTextAction(
     }
 }
 
+enum class MakNoteRole {
+    Neutral,
+    Warning,
+    Error
+}
+
+internal data class NoteRoleColors(
+    val container: Color,
+    val border: Color?,
+    val title: Color,
+    val body: Color,
+    val icon: ImageVector?
+)
+
+internal fun noteRoleColors(role: MakNoteRole, scheme: ColorScheme): NoteRoleColors = when (role) {
+    MakNoteRole.Neutral -> NoteRoleColors(
+        container = scheme.surfaceContainerLow,
+        border = scheme.outlineVariant,
+        title = scheme.onSurface,
+        body = scheme.onSurfaceVariant,
+        icon = null
+    )
+    MakNoteRole.Warning -> NoteRoleColors(
+        container = scheme.tertiaryContainer,
+        border = null,
+        title = scheme.onTertiaryContainer,
+        body = scheme.onTertiaryContainer,
+        icon = Icons.Outlined.WarningAmber
+    )
+    MakNoteRole.Error -> NoteRoleColors(
+        container = scheme.errorContainer,
+        border = null,
+        title = scheme.onErrorContainer,
+        body = scheme.onErrorContainer,
+        icon = Icons.Outlined.ErrorOutline
+    )
+}
+
 @Composable
 fun MakNoteBanner(
-    title: String,
+    title: String?,
     subtitle: String,
+    role: MakNoteRole,
     modifier: Modifier = Modifier,
-    actionLabel: String? = null,
-    onAction: (() -> Unit)? = null
+    actions: (@Composable RowScope.() -> Unit)? = null
 ) {
-    Row(
+    val colors = noteRoleColors(role, MaterialTheme.colorScheme)
+    val prefix = when (role) {
+        MakNoteRole.Neutral -> null
+        MakNoteRole.Warning -> "Ostrzeżenie: "
+        MakNoteRole.Error -> "Błąd: "
+    }
+    Column(
         modifier = modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(13.dp))
-            .background(MaterialTheme.colorScheme.primaryContainer)
+            .background(colors.container)
+            .then(colors.border?.let { Modifier.border(1.dp, it, RoundedCornerShape(13.dp)) } ?: Modifier)
+            .semantics(mergeDescendants = true) {
+                if (prefix != null) {
+                    contentDescription = prefix + listOfNotNull(title, subtitle).joinToString(". ")
+                }
+            }
             .padding(horizontal = MakSpacing.lg, vertical = MakSpacing.md),
-        horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm),
-        verticalAlignment = Alignment.CenterVertically
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
-        Column(
-            modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Text(title, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-            Text(
-                subtitle,
-                fontSize = 12.sp,
-                lineHeight = 16.sp,
-                color = MaterialTheme.colorScheme.onPrimaryContainer
+            colors.icon?.let { icon ->
+                Icon(icon, contentDescription = null, tint = colors.body, modifier = Modifier.size(20.dp))
+            }
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+            ) {
+                title?.let { Text(it, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.title) }
+                Text(subtitle, fontSize = 12.sp, lineHeight = 16.sp, color = colors.body)
+            }
+        }
+        actions?.let {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm, Alignment.End),
+                content = it
             )
         }
-        if (actionLabel != null && onAction != null) {
-            MakTextAction(text = actionLabel, onClick = onAction)
-        }
     }
+}
+
+private val MakRowFocusShape = RoundedCornerShape(12.dp)
+
+/** Keyboard focus ring for full-width rows; place it before the click modifier. */
+@Composable
+internal fun Modifier.makRowFocus(): Modifier {
+    var focused by remember { mutableStateOf(false) }
+    val ring = if (focused) {
+        Modifier.border(2.dp, MaterialTheme.colorScheme.primary, MakRowFocusShape)
+    } else Modifier
+    return then(ring).onFocusChanged { focused = it.isFocused }
 }
 
 @Composable

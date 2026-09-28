@@ -17,7 +17,9 @@ import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakSummaryCard
 import dev.retza.mak.ui.components.MakNoteBanner
+import dev.retza.mak.ui.components.MakNoteRole
 import dev.retza.mak.ui.components.MakSecondaryAction
+import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.ScreenStatus
 
 data class TodayUiState(
@@ -58,9 +60,15 @@ fun TodayScreen(
         )
         if (availableUpdateVersion != null) {
             Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
-                MakNoteBanner("Dostępna aktualizacja", "Wersja $availableUpdateVersion jest gotowa do pobrania.")
-                MakPrimaryAction("Zobacz", onViewUpdate)
-                MakSecondaryAction("Nie teraz", onDismissUpdate)
+                MakNoteBanner(
+                    title = "Dostępna aktualizacja",
+                    subtitle = "Wersja $availableUpdateVersion jest gotowa do pobrania.",
+                    role = MakNoteRole.Neutral,
+                    actions = {
+                        MakTextAction("Nie teraz", onDismissUpdate)
+                        MakTextAction("Zobacz", onViewUpdate)
+                    }
+                )
             }
         }
         if (state.hasActiveSemester) {

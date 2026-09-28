@@ -12,6 +12,8 @@ import dev.retza.mak.export.ImportPreparation
 import dev.retza.mak.export.ImportSummary
 import dev.retza.mak.export.PlanBackupService
 import dev.retza.mak.ui.components.SemesterUi
+import dev.retza.mak.ui.classCountLabel
+import dev.retza.mak.ui.polishPlural
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
@@ -356,24 +358,17 @@ private fun buildSettingsState(
             dateRangeLabel = if (isActive && calendar != null) {
                 "${calendar.startDate.format(shortDateFormatter)} - " +
                     calendar.endDate.format(shortDateFormatter)
-            } else {
-                "Dane odizolowane"
-            },
+            } else "",
             firstWeekLabel = if (isActive && calendar != null) {
-                "Pierwszy tydzień ${calendar.firstWeekType.name}"
-            } else {
-                "Osobny kalendarz"
-            },
+                "pierwszy tydzień ${calendar.firstWeekType.name}"
+            } else "",
             courseCountLabel = if (isActive) {
-                "${activeData.semesterPrograms.size} kierunków"
-            } else {
-                "Dane odizolowane"
-            },
+                "${activeData.semesterPrograms.size} " +
+                    polishPlural(activeData.semesterPrograms.size, "kierunek", "kierunki", "kierunków")
+            } else "",
             classCountLabel = if (isActive) {
                 classCountLabel(activeData.classes.size)
-            } else {
-                "Osobny plan"
-            },
+            } else "",
             isActive = isActive
         )
     },
@@ -419,9 +414,3 @@ private val notificationLeadOptions = listOf(15L, 30L, 45L, 60L)
 private val gapThresholdOptions = listOf(15, 20, 30, 45, 60)
 
 private val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.forLanguageTag("pl-PL"))
-
-private fun classCountLabel(count: Int): String = when {
-    count == 1 -> "1 zajęcie"
-    count in 2..4 -> "$count zajęcia"
-    else -> "$count zajęć"
-}

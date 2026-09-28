@@ -6,7 +6,7 @@ import dev.retza.mak.update.UpdateUiState
 
 data class UpdateSettingsUi(
     val installedVersion: String = "",
-    val checkSummary: String = "Sprawdź, czy jest nowsza wersja",
+    val checkSummary: String = "",
     val canCheck: Boolean = true,
     val pendingVersion: String? = null,
     val automaticChecks: Boolean = false
@@ -15,7 +15,7 @@ data class UpdateSettingsUi(
 fun UpdateUiState.toSettingsUi(): UpdateSettingsUi = UpdateSettingsUi(
     installedVersion = installedVersionName,
     checkSummary = when (checkStatus) {
-        UpdateCheckStatus.Idle -> "Sprawdź, czy jest nowsza wersja"
+        UpdateCheckStatus.Idle -> ""
         UpdateCheckStatus.Checking -> "Sprawdzanie..."
         UpdateCheckStatus.UpToDate -> "Masz najnowszą wersję"
         UpdateCheckStatus.Available -> "Dostępna wersja ${availableUpdate?.versionName.orEmpty()}"

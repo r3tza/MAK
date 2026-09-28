@@ -18,6 +18,7 @@ import dev.retza.mak.update.UpdateDownloadStatus
 import dev.retza.mak.update.UpdateInfo
 import dev.retza.mak.update.UpdateUiState
 import dev.retza.mak.ui.components.MakNoteBanner
+import dev.retza.mak.ui.components.MakNoteRole
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
@@ -109,7 +110,11 @@ private fun AvailableUpdate(
         }
         UpdateDownloadStatus.Ready -> MakPrimaryAction("Zainstaluj", onInstall)
         UpdateDownloadStatus.NeedsPermission -> {
-            MakNoteBanner("Wymagana zgoda", "Zezwól systemowi na instalowanie aktualizacji z aplikacji MAK.")
+            MakNoteBanner(
+                title = "Wymagana zgoda",
+                subtitle = "Zezwól systemowi na instalowanie aktualizacji z aplikacji MAK.",
+                role = MakNoteRole.Neutral
+            )
             MakPrimaryAction("Otwórz ustawienia systemu", onGrantPermission)
         }
         UpdateDownloadStatus.Installing -> Text("Oczekiwanie na potwierdzenie instalacji...")
@@ -127,7 +132,7 @@ private fun AvailableUpdate(
 // Temporary failures can be retried; a file from another package, older version or signing key cannot.
 @Composable
 private fun DownloadError(message: String, onRetry: (() -> Unit)?) {
-    MakNoteBanner("Aktualizacja", message)
+    MakNoteBanner(title = null, subtitle = message, role = MakNoteRole.Error)
     onRetry?.let { MakSecondaryAction("Pobierz ponownie", it) }
 }
 

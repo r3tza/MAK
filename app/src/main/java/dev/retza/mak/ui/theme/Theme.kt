@@ -14,7 +14,7 @@ import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.unit.dp
 import androidx.core.view.WindowCompat
 
-private val LightColorScheme = lightColorScheme(
+internal val LightColorScheme = lightColorScheme(
     primary = MakAccent,
     onPrimary = Color.White,
     primaryContainer = MakAccentSoft,
@@ -45,7 +45,7 @@ private val LightColorScheme = lightColorScheme(
     surfaceContainerHigh = MakAccentSoft
 )
 
-private val DarkColorScheme = darkColorScheme(
+internal val DarkColorScheme = darkColorScheme(
     primary = MakAccentDark,
     onPrimary = MakBackgroundDark,
     primaryContainer = MakAccentSoftDark,

@@ -80,8 +80,8 @@ class SemesterScreenTest {
 
         composeTestRule.onAllNodesWithText("Pokaż kierunki").assertCountEquals(0)
         composeTestRule.onAllNodesWithText("Pokaż korekty tygodni").assertCountEquals(0)
-        composeTestRule.onNodeWithText("Kierunki i ich kalendarze. Liczba: 1.").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Ręczne oznaczenia tygodni A/B. Liczba: 1.").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("1 kierunek").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("1 korekta").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Kierunki").performScrollTo().assertIsDisplayed().performClick()
         assertEquals("courses", opened)
         composeTestRule.onNodeWithText("Korekty tygodni").performScrollTo().assertIsDisplayed().performClick()
@@ -115,7 +115,7 @@ class SemesterScreenTest {
         }
 
         composeTestRule.onNodeWithText("Różne kalendarze").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Zakresy dat i rytmy A/B kierunków. Liczba: 2.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("2 kalendarze").assertIsDisplayed()
         composeTestRule.onNodeWithText("Kalendarze").assertIsDisplayed().performClick()
         assertEquals("calendars", opened)
     }
