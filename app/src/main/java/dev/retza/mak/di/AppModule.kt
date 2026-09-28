@@ -16,7 +16,10 @@ import org.koin.core.annotation.Configuration
 import org.koin.core.annotation.Module
 import org.koin.core.annotation.Single
 
-private val Context.settingsDataStore by preferencesDataStore(name = "mak_settings")
+/** Also named in `res/xml/data_extraction_rules.xml`, which allows it into Android backup. */
+internal const val SETTINGS_DATASTORE_NAME = "mak_settings"
+
+private val Context.settingsDataStore by preferencesDataStore(name = SETTINGS_DATASTORE_NAME)
 
 @Module
 @Configuration
