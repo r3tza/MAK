@@ -4,6 +4,11 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-29: Kolejność akcji w formularzu
+
+- Decyzja użytkownika: w formularzu z akcjami w jednym wierszu „Anuluj” stoi przed akcją zapisu, a akcja zapisu jest na końcu wiersza; gdy akcje stoją jedna pod drugą, akcja zapisu jest na górze, a „Anuluj” pod nią. Reguła jest w `ARCHITECTURE.md`, sekcja „Stały język wizualny”.
+- Powód: I-59 ujednolicił kolejność w kodzie, bo formularz korekty tygodnia miał ją odwrotną niż pozostałe formularze. Zapisana reguła zapobiega powrotowi tej niespójności w nowych formularzach. Kolejność w wierszu odpowiada wzorcowi Material 3, w którym akcja potwierdzająca stoi na końcu.
+
 ## 2026-09-28: Angielskie nazwy i wspólne pull requesty dla małych zadań
 
 - Decyzja użytkownika: nazwy gałęzi i tytuły pull requestów są po angielsku, a opisy pull requestów mogą pozostać po polsku. Większe zadanie ma własny pull request. Kilka małych, powiązanych zadań należy łączyć w jeden pull request zamiast tworzyć osobny dla każdej drobnej zmiany.
@@ -129,10 +134,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Fakty: Repozytorium i wydania pozostają prywatne, więc produkcyjny adres GitHub zwróci błąd do czasu I-41.
 - Zrealizowane: ręczne i automatyczne sprawdzanie, ekran „O aplikacji” z changelogiem trzech wersji, pobieranie i weryfikacja APK, instalacja przez `PackageInstaller`, zgoda systemowa oraz baner na „Dzisiaj”. Automatyczne sprawdzanie jest domyślnie wyłączone i działa najwyżej raz na 24 godziny.
 - Weryfikacja: testy JVM i lint przechodzą. Testy urządzenia nie uruchomiły się, ponieważ emulator ma wersję 200 podpisaną kluczem release, a wariant debug ma niższy `versionCode` 1. Odbiór lokalnej aktualizacji N do N+1 i pełny O-07 pozostają otwarte.
-
-## 2026-09-27: Prywatne repozytorium do bramki pierwszego wydania (I-36 do I-41)
-
-- Fakty: Aplikacja ma pobierać `update.json` i APK anonimowo z GitHub Releases. Prywatne repozytorium wymaga uwierzytelnienia, a szkic wydania nie jest dostępny przez `releases/latest`. Użytkownik chce przed upublicznieniem wykonać jeszcze poprawki prezentacyjne.
-- Decyzja: Repozytorium pozostaje prywatne podczas I-36 do I-40 i poprawek prezentacyjnych. Granice sieci, pobierania i instalacji są wstrzykiwalne, więc implementacja korzysta z fałszywych źródeł i lokalnych artefaktów. I-41 zaczyna się po jawnym potwierdzeniu gotowości: audyt historii, upublicznienie repozytorium, ręczna publikacja `v0.2.0` i `v0.2.1` oraz pełny odbiór O-07 na telefonie.
-- Powód: Logika i interfejs nie wymagają publicznego hostingu podczas tworzenia, a kod oraz wygląd mogą zostać dopracowane przed udostępnieniem repozytorium i aplikacji.
-- Odrzucone: Token prywatnego GitHuba w aplikacji; osobne publiczne repozytorium wydań; upublicznienie repozytorium przed poprawkami prezentacyjnymi.
