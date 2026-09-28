@@ -47,7 +47,13 @@ Każdy semestr jest osobnym kontenerem planu. Globalne kierunki mogą być przyp
 
 ### Czytelność ponad dekorację
 
-Interfejs ma szybko odpowiadać na pytania: jakie zajęcia są dziś, co wymaga działania i jaki jest stan planu. Preferowane są karty, fakty, odznaki, sekcje i wiersze zamiast długich bloków tekstu.
+Interfejs ma szybko odpowiadać na pytania: jakie zajęcia są dziś, co wymaga działania i jaki jest stan planu. Preferowane są krótkie fakty, nazwane sekcje, wiersze i karty grupujące rzeczywiste obiekty zamiast długich bloków tekstu.
+
+Każdy widoczny element musi przekazywać informację, budować hierarchię, wskazywać stan, wspierać nawigację albo pomagać wykonać zadanie. Jeśli dwa warianty są równie czytelne i użyteczne, wybieramy prostszy.
+
+Hierarchię budujemy najpierw typografią, odstępami, wyrównaniem i kontrastem tekstu. Kontener, obramowanie, kolor lub ikona są kolejnym środkiem, gdy sama struktura nie wystarcza. Karta oznacza rzeczywisty obiekt albo grupę, która potrzebuje wspólnej granicy. Nie zamykamy każdej sekcji w osobnej karcie.
+
+Ikona musi ułatwiać rozpoznanie działania lub informacji. Jeden typ informacji używa tej samej ikony w całej aplikacji. Nie dodajemy ikon do nagłówków, etykiet ani przycisków wyłącznie jako dekoracji.
 
 ### Stały język wizualny
 
@@ -66,6 +72,10 @@ Własne komponenty stosujemy tylko wtedy, gdy są potrzebne do odtworzenia zaakc
 ### Dostępność jako część projektu
 
 Klawiatura, focus, semantyczne etykiety, kontrast, `reduced motion`, małe ekrany i brak obciętych akcji są kryteriami akceptacji. Dostępność należy uwzględniać podczas projektowania każdego widoku.
+
+Stan pokazujemy tylko wtedy, gdy może przyjąć co najmniej dwie znaczące wartości i znajomość bieżącej wartości pomaga podjąć decyzję albo wykonać działanie. Nie powtarzamy oczywistego lub stałego stanu.
+
+Animacja przedstawia przejście, postęp, zmianę stanu, informację zwrotną albo relację przestrzenną. Nie dodajemy stałego ruchu, pulsowania ani ruchu otoczenia wyłącznie po to, aby ekran wyglądał na aktywny. Animacja oczekiwania jest dozwolona tylko podczas rzeczywistego oczekiwania i respektuje systemową skalę animacji.
 
 ### Praktyczne mobile-first
 

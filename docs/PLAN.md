@@ -32,12 +32,22 @@ Kryterium zakończenia: automat nie wykonuje nadmiarowych zapytań, błąd pozos
 
 Kryterium zakończenia: instalacja u znajomego przebiegła według README, a niejasne kroki są poprawione.
 
-## 4. Dodaj klasy szerokości i obrót tabletów (I-45)
+## 4. Rozdziel role komunikatów (I-54)
 
-1. Dodaj `MakWidthClass` z progami 600 i 840 dp, liczonymi z szerokości okna.
-2. Udostępnij klasę przez `LocalMakWidthClass` bez kopiowania progów w ekranach.
-3. Zdejmij blokadę pionu w `MainActivity`, gdy najkrótszy bok ma co najmniej 600 dp.
-4. Dodaj testy JVM progów i decyzji o orientacji.
-5. Sprawdź, że telefon zostaje w pionie, a symulowany tablet może się obracać.
+1. Zastąp jeden styl `MakNoteBanner` jawnymi rolami neutralną, ostrzegawczą i błędu.
+2. Przypisz każde obecne użycie według znaczenia treści.
+3. Zwykłe instrukcje pokaż bez akcentowego tła.
+4. Dodaj testy Compose ról w obu motywach.
 
-Kryterium zakończenia: progi mają jedno źródło, telefon zachowuje blokadę pionu, a tablet obsługuje obie orientacje.
+Kryterium zakończenia: kolor komunikatu ma stałe znaczenie, a informacja neutralna nie wygląda jak ostrzeżenie ani główna akcja.
+
+## 5. Ogranicz karty na ekranie „O aplikacji” (I-55)
+
+1. Zachowaj nagłówki i odstępy sekcji.
+2. Usuń osobne karty z sekcji „Możliwości” oraz „Dane i prywatność”.
+3. Zachowaj wspólną granicę historii wydań, ponieważ grupuje listę wersji.
+4. Porównaj ekran przy 320 dp w obu motywach.
+
+Kryterium zakończenia: hierarchia pozostaje czytelna bez obramowania każdej sekcji, a lista wydań nadal jest jednoznaczną grupą.
+
+Klasy szerokości i obrót tabletów (I-45) są następnym zadaniem po powyższym planie.
