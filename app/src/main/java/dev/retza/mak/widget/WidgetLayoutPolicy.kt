@@ -2,6 +2,7 @@ package dev.retza.mak.widget
 
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import dev.retza.mak.ui.polishPlural
 
 internal enum class WidgetStatusMode {
     ConflictOnly,
@@ -78,11 +79,8 @@ internal fun widgetNameMaxLines(mode: WidgetLayoutMode): Int =
 internal fun widgetNameCharacterLimit(mode: WidgetLayoutMode): Int =
     widgetLayoutPolicy(mode).nameCharacterLimit
 
-internal fun widgetCountLabel(count: Int): String = when {
-    count == 1 -> "1 zajęcie"
-    count in 2..4 -> "$count zajęcia"
-    else -> "$count zajęć"
-}
+internal fun widgetCountLabel(count: Int): String =
+    "$count ${polishPlural(count, "zajęcie", "zajęcia", "zajęć")}"
 
 internal fun truncateWidgetText(value: String, maxCharacters: Int): String =
     if (value.length <= maxCharacters) value
@@ -106,8 +104,5 @@ internal fun widgetShouldShowNotes(
     WidgetStatusMode.All -> true
 }
 
-internal fun widgetConflictCountLabel(count: Int): String = when {
-    count == 1 -> "1 kolizja"
-    count in 2..4 -> "$count kolizje"
-    else -> "$count kolizji"
-}
+internal fun widgetConflictCountLabel(count: Int): String =
+    "$count ${polishPlural(count, "kolizja", "kolizje", "kolizji")}"

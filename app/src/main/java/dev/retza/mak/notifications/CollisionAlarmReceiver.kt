@@ -17,6 +17,7 @@ import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.CollisionNotificationKind
 import dev.retza.mak.domain.collisionNotificationGroups
 import dev.retza.mak.domain.shouldShowCollisionNotification
+import dev.retza.mak.ui.polishPlural
 import dev.retza.mak.ui.settings.SettingsPreferences
 import java.time.Clock
 import java.time.LocalDate
@@ -130,11 +131,8 @@ class CollisionAlarmReceiver : BroadcastReceiver(), KoinComponent {
     }
 }
 
-private fun groupLabel(count: Int): String = when {
-    count == 1 -> "grupa kolizji"
-    count in 2..4 -> "grupy kolizji"
-    else -> "grup kolizji"
-}
+private fun groupLabel(count: Int): String =
+    "${polishPlural(count, "grupa", "grupy", "grup")} kolizji"
 
 fun ensureCollisionChannel(context: Context) {
     val manager = context.getSystemService(NotificationManager::class.java) ?: return
