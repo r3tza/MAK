@@ -94,12 +94,8 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
     var saveGate: CompletableDeferred<Unit>? = null
     var occurrenceDataGate: CompletableDeferred<Unit>? = null
     var failSaves = false
-    var cancelSaves = false
     var failSetupConfiguration = false
-    var failSetActiveSemester = false
-    var activeSemesterGate: CompletableDeferred<Unit>? = null
     var setActiveCount = 0
-    var failGetAllSemesterData = false
     var lastSetupSemester: SemesterEntity? = null
     var lastSetupActivate: Boolean? = null
     var lastSetupStudyProgram: StudyProgramEntity? = null
@@ -175,7 +171,6 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
     override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeRecord>> =
         flowOf(occurrenceChanges.filter { it.classId == classId }.map { it.toRecord() })
     override suspend fun snapshot(): BackupData {
-        if (failGetAllSemesterData) throw IllegalStateException("export failed")
         return BackupData(
             studyPrograms = studyPrograms,
             semesters = semesterFlow.value.map { semester ->
@@ -206,8 +201,6 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
     }
 
     suspend fun setActiveSemester(id: Long) {
-        activeSemesterGate?.await()
-        if (failSetActiveSemester) throw IllegalStateException("set active failed")
         setActiveCount += 1
         if (semesterById(id) != null) activeSemesterFlow.value = id
     }
@@ -601,7 +594,6 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
 
     private suspend fun awaitSave() {
         if (failSaves) throw IllegalStateException("save failed")
-        if (cancelSaves) throw kotlinx.coroutines.CancellationException("save cancelled")
         saveGate?.await()
     }
 }

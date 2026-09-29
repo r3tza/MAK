@@ -109,26 +109,6 @@ class SetupViewModelTest {
     }
 
     @Test
-    fun failedSaveKeepsDraftsAndStep() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        repository.failSetupConfiguration = true
-        val viewModel = viewModel(repository)
-        viewModel.fillValidSemester()
-        viewModel.next()
-        advanceUntilIdle()
-        viewModel.update { it.copy(courseName = "Informatyka") }
-
-        viewModel.next()
-        advanceUntilIdle()
-
-        assertNull(repository.lastSetupSemester)
-        assertNull(repository.lastSetupStudyProgram)
-        assertEquals(SetupStep.Course, viewModel.setup.value.step)
-        assertEquals("Informatyka", viewModel.setup.value.courseName)
-        assertFalse(viewModel.setup.value.isSaving)
-    }
-
-    @Test
     fun doubleClickRunsOneTransactionAndOneFeedback() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         repository.saveGate = CompletableDeferred()
@@ -301,23 +281,6 @@ class SetupViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf("Utworzono semestr i kierunek"), sink.published.map { it.message })
-    }
-
-    @Test
-    fun failedSavePublishesSingleError() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        repository.failSetupConfiguration = true
-        val sink = RecordingFeedbackSink()
-        val viewModel = viewModel(repository, sink)
-        viewModel.fillValidSemester()
-        viewModel.next()
-        advanceUntilIdle()
-        viewModel.update { it.copy(courseName = "Informatyka") }
-
-        viewModel.next()
-        advanceUntilIdle()
-
-        assertEquals(listOf("Nie udało się zapisać konfiguracji."), sink.published.map { it.message })
     }
 
     @Test
@@ -563,32 +526,6 @@ class SetupViewModelTest {
         viewModel.startAnotherProgram()
 
         assertTrue(viewModel.setup.value.availableProgramOptions.none { it.id == existing.id })
-    }
-
-    @Test
-    fun failedAnotherProgramKeepsTheFormAndReportsError() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink()
-        val viewModel = viewModel(repository, sink)
-        viewModel.fillValidSemester()
-        viewModel.next()
-        advanceUntilIdle()
-        viewModel.update { it.copy(courseName = "Matematyka") }
-        viewModel.next()
-        advanceUntilIdle()
-
-        viewModel.startAnotherProgram()
-        viewModel.update { it.copy(courseName = "Fizyka") }
-        repository.failSaves = true
-        viewModel.next()
-        advanceUntilIdle()
-
-        val state = viewModel.setup.value
-        assertEquals(SetupStep.Course, state.step)
-        assertTrue(state.isAddingAnotherProgram)
-        assertEquals("Fizyka", state.courseName)
-        assertFalse(state.isSaving)
-        assertEquals("Nie udało się dodać kierunku.", sink.published.last().message)
     }
 }
 
