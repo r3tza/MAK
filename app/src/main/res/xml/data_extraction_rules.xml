@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!--
-   Android backup covers only the plan database and the user's settings (I-14).
+   Android backup covers only the plan database and the user's settings.
    Rules are an allow-list, so any other file stays out of the backup by default:
    widget ids, scheduled alarm ids and future sync state belong to one device.
    Cloud backup runs only when it can be end-to-end encrypted (screen lock set).

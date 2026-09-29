@@ -51,7 +51,7 @@ private val appFeatures = listOf(
     "aktualizacje z GitHub Releases"
 )
 
-// Matches res/xml/data_extraction_rules.xml: plan and settings only, encrypted cloud backup (I-14).
+// Matches res/xml/data_extraction_rules.xml: plan and settings only, encrypted cloud backup.
 internal const val BACKUP_NOTICE =
     "Jeśli w telefonie jest włączona kopia zapasowa Google i ustawiona blokada ekranu, Android " +
         "dołącza plan i ustawienia do zaszyfrowanej kopii i przywraca je po ponownej instalacji aplikacji."
