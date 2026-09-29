@@ -6,7 +6,7 @@ Krok 1 realizuje ciemniejszą kartę podsumowania (I-63, decyzja z 2026-09-29). 
 
 ## Zasady wspólne dla wszystkich kroków
 
-- Krok 1 wykonaj na gałęzi `task/I-63-dark-summary-card` z osobnym pull requestem. Kroki 2 do 4 wykonaj po kolei na jednej gałęzi `task/I-45-tablet-mode` z jednym pull requestem. Obie gałęzie zaczynaj od aktualnego `origin/main`. Każdy krok kończy się kompilującym się kodem, zielonymi testami i osobnym commitem (`feat:`). Gałąź i pull request prowadź według `WORKFLOW.md`, sekcja „Gałąź i pull request”; tytuł pull requesta ma format tematu commita, z prefiksem.
+- Kroki 1 do 4 wykonaj po kolei na jednej gałęzi `task/tablet-mode-and-dark-card` z jednym pull requestem; na tej gałęzi jest już ten plan. Każdy krok kończy się kompilującym się kodem, zielonymi testami i jednym commitem (`feat:`) razem z aktualizacją dokumentów, której dotyczy. Gałąź i pull request prowadź według `WORKFLOW.md`, sekcja „Gałąź i pull request”; tytuł pull requesta ma format tematu commita, z prefiksem.
 - Przed zmianą przeczytaj wskazane pliki w całości. Numery linii są orientacyjne; szukaj po nazwie funkcji albo tekście.
 - Nie zmieniaj niczego poza opisanym zakresem. Drobne różnice między opisem a kodem rozwiąż zgodnie z celem kroku i opisz w treści commita. Zatrzymaj się i zapisz bloker w `QUEUE.md` tylko wtedy, gdy nie da się ustalić zamierzonego zachowania.
 - Układ telefonu (szerokość okna poniżej 600 dp) nie może się zmienić w krokach 2 do 4. Zrzuty „Dzisiaj”, „Planu”, szczegółów terminu i ustawień przy 411 dp i 320 dp przed zmianą i po niej muszą być takie same.
