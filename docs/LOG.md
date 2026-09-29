@@ -4,6 +4,12 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-29: Testy tylko z realną wartością
+
+- Decyzja użytkownika: każdy test ma wykrywać błąd, który może realnie wystąpić. Kryteria są w `STACK.md`, sekcja 5, „Sposób testowania”.
+- Przegląd: usunięto 23 testy (19 JVM, 4 Compose), które sprawdzały logikę atrapy repozytorium, tautologie modeli danych, dokładne wartości krzywych animacji albo powtarzały inny test. Testy ochrony przed podwójnym zapisem, anulowaniem i błędem zapisu zostały, bo każda akcja ma w kodzie osobną ścieżkę.
+- Znaleziony błąd: widget i powiadomienie miały własną odmianę liczebników i dla 22 do 24 pisały „22 kolizji” i „22 zajęć”. Używają teraz wspólnej `polishPlural`.
+
 ## 2026-09-29: Jawna systemowa kopia zapasowa (I-14)
 
 - Decyzja użytkownika: systemowa kopia zapasowa Androida zostaje włączona i opisana w „Dane i prywatność”. Reguły kopii są listą dozwolonych plików (baza planu i plik ustawień), a kopia w chmurze działa tylko z szyfrowaniem end-to-end (`ARCHITECTURE.md`, sekcja 8, punkt 14).
@@ -126,10 +132,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: I-41 obejmuje tylko upublicznienie i ma status `gotowe`. Wydanie `v0.2.0` i `v0.2.1` przeniesiono do nowego zadania I-49, od którego zależy O-07 (`QUEUE.md`, `PLAN.md`). `STACK.md` i `ARCHITECTURE.md` opisują repozytorium jako publiczne.
 - Powód: Upublicznienie nie wymaga odbioru aktualizacji na urządzeniu, a wydanie znajomym wymaga zakończonego I-39.
 - Uzupełnienie: Użytkownik potwierdził weryfikację dwuetapową konta GitHub 2026-09-27.
-
-## 2026-09-27: Porządki w dokumentacji przed upublicznieniem
-
-- Fakty: `QUEUE.md` mieszał 27 otwartych i 29 zakończonych zadań w jednej tabeli, a `KNOWN_ISSUES.md` powtarzał naprawione problemy z adnotacją „Naprawione”.
-- Decyzja: Zakończone zadania są w osobnej tabeli „Zakończone” na końcu `QUEUE.md`; wiersz przechodzi tam po zmianie statusu na `gotowe` (`WORKFLOW.md`). `KNOWN_ISSUES.md` zawiera tylko otwarte problemy i brakujący odbiór. README ma instrukcję instalacji, a `.gitignore` wyklucza pliki kluczy podpisu. Użytkownik zlecił porządki 2026-09-27.
-- Powód: Po upublicznieniu repozytorium czytelnik ma od razu widzieć bieżący stan, a historia zostaje w kolejce i logu.
-- Odrzucone: Usunięcie zakończonych wierszy z `QUEUE.md`, bo otwarte zadania wskazują je jako zależności.
