@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.UiModeManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -17,6 +18,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,6 +26,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -32,11 +36,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.retza.mak.export.BackupFileRead
 import dev.retza.mak.export.readBackupFile
 import dev.retza.mak.ui.AppViewModel
+import dev.retza.mak.ui.LocalMakWidthClass
 import dev.retza.mak.ui.MakApp
-import dev.retza.mak.ui.withAppLocale
 import dev.retza.mak.ui.MakLoadingGate
-import dev.retza.mak.ui.areSystemAnimationsOn
 import dev.retza.mak.ui.StartupBloom
+import dev.retza.mak.ui.areSystemAnimationsOn
+import dev.retza.mak.ui.makWidthClassFor
+import dev.retza.mak.ui.shouldLockPortrait
+import dev.retza.mak.ui.withAppLocale
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
@@ -79,6 +86,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedOrientation = if (shouldLockPortrait(resources.configuration.smallestScreenWidthDp)) {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
         enableEdgeToEdge()
         // A recreated activity (theme change, process death) keeps its restored screens; the system
         // may hand back the original intent, so its open request applies to the first start only.
@@ -99,11 +111,13 @@ class MainActivity : ComponentActivity() {
                     ThemeMode.System, null -> systemDark
                 }
             ) {
-                MakLoadingGate(
-                    isReady = appState.hasLoadedData,
-                    playIntro = playIntro,
-                    introMayStart = splashReleased
-                ) {
+                val windowWidth = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+                CompositionLocalProvider(LocalMakWidthClass provides makWidthClassFor(windowWidth)) {
+                    MakLoadingGate(
+                        isReady = appState.hasLoadedData,
+                        playIntro = playIntro,
+                        introMayStart = splashReleased
+                    ) {
                     LaunchedEffect(updateViewModel) { updateViewModel.checkAutomatically() }
                     var notificationsBlocked by remember {
                         mutableStateOf(!NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled())
@@ -211,7 +225,8 @@ class MainActivity : ComponentActivity() {
                 }
             }
         }
-        keepSplashUntilThemeIsRead()
+    }
+    keepSplashUntilThemeIsRead()
     }
 
     /**

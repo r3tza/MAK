@@ -4,7 +4,7 @@ Ten dokument opisuje docelowe zachowanie ekranów i widgetu. Bieżące braki są
 
 ## Nawigacja
 
-Aplikacja działa w orientacji pionowej; obrót telefonu nie zmienia układu (`ARCHITECTURE.md`, „Praktyczne mobile-first”).
+Telefon działa w orientacji pionowej, a urządzenie o najkrótszym boku od 600 dp w obu orientacjach (`ARCHITECTURE.md`, „Praktyczne mobile-first”).
 
 ### Start aplikacji
 
