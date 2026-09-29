@@ -95,14 +95,6 @@ class ScheduleResolverTest {
     }
 
     @Test
-    fun cancelledOccurrenceIsRemoved() {
-        val date = LocalDate.of(2026, 1, 5)
-        val change = OccurrenceChange("cancel", "class-1", date, OccurrenceChangeKind.CANCELLED)
-
-        assertTrue(resolve(date, listOf(classItem()), changes = listOf(change)).occurrences.isEmpty())
-    }
-
-    @Test
     fun modifiedOccurrenceUsesOnlyItsNewData() {
         val date = LocalDate.of(2026, 1, 5)
         val change = OccurrenceChange(

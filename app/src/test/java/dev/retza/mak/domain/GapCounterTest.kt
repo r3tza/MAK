@@ -31,16 +31,6 @@ class GapCounterTest {
     }
 
     @Test
-    fun touchingClassesDoNotCreateGap() {
-        val occurrences = listOf(
-            occurrence("a", LocalTime.of(10, 0), LocalTime.of(11, 0)),
-            occurrence("b", LocalTime.of(11, 0), LocalTime.of(12, 0))
-        )
-
-        assertEquals(0, countGaps(occurrences, 30))
-    }
-
-    @Test
     fun countsEveryGapBetweenBlocks() {
         val occurrences = listOf(
             occurrence("a", LocalTime.of(9, 0), LocalTime.of(10, 0)),

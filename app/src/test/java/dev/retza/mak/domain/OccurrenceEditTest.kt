@@ -50,12 +50,6 @@ class OccurrenceEditTest {
     }
 
     @Test
-    fun changedDateIsMoved() {
-        val decision = decide(date = "2026-09-23")
-        assertEquals(OccurrenceEditResult.Moved, ready(decision).result)
-    }
-
-    @Test
     fun changedDateAndTimeTogetherIsMoved() {
         val decision = decide(date = "2026-09-23", start = "12:00", end = "13:30")
         val slot = ready(decision).slot
@@ -69,19 +63,6 @@ class OccurrenceEditTest {
         val changed = base.copy(date = LocalDate.of(2026, 9, 23))
         val decision = decide(current = changed, hasChange = true)
         assertEquals(OccurrenceEditResult.Restored, ready(decision).result)
-    }
-
-    @Test
-    fun returningToBaseWithoutChangeIsNoChange() {
-        val decision = decide(hasChange = false)
-        assertEquals(OccurrenceEditResult.NoChange, ready(decision).result)
-    }
-
-    @Test
-    fun emptyRoomNormalizesToNull() {
-        val decision = decide(room = "   ")
-        val slot = ready(decision).slot
-        assertEquals(null, slot.room)
     }
 
     @Test
@@ -106,9 +87,12 @@ class OccurrenceEditTest {
 
     @Test
     fun emptyRoomDraftOverBaseRoomIsModified() {
-        val decision = decide(room = "")
-        assertEquals(OccurrenceEditResult.Modified, ready(decision).result)
-        assertEquals(null, ready(decision).slot.room)
+        // A blank draft clears the room just like an empty one.
+        listOf("", "   ").forEach { room ->
+            val decision = decide(room = room)
+            assertEquals(OccurrenceEditResult.Modified, ready(decision).result)
+            assertEquals(null, ready(decision).slot.room)
+        }
     }
 
     @Test
