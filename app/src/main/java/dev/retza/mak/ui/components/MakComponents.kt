@@ -108,7 +108,9 @@ import dev.retza.mak.ui.theme.MakOnce
 import dev.retza.mak.ui.theme.MakOrangeMark
 import dev.retza.mak.ui.theme.MakInk
 import dev.retza.mak.ui.theme.MakSummaryEnd
+import dev.retza.mak.ui.theme.MakSummaryEndDark
 import dev.retza.mak.ui.theme.MakSummaryStart
+import dev.retza.mak.ui.theme.MakSummaryStartDark
 import dev.retza.mak.ui.theme.MakTeal
 
 @Composable
@@ -272,12 +274,22 @@ fun MakSummaryCard(
     gapCount: Int,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
+    val dark = isDarkSurface()
+    val shape = RoundedCornerShape(22.dp)
+    val cardModifier = if (dark) {
+        modifier
             .fillMaxWidth()
-            .shadow(11.dp, RoundedCornerShape(22.dp), spotColor = Color(0x332D46A4))
-            .clip(RoundedCornerShape(22.dp))
-            .background(Brush.linearGradient(listOf(MakSummaryStart, MakSummaryEnd)))
+            .clip(shape)
+            .border(1.dp, Color.White.copy(alpha = 0.08f), shape)
+    } else {
+        modifier
+            .fillMaxWidth()
+            .shadow(11.dp, shape, spotColor = Color(0x332D46A4))
+            .clip(shape)
+    }
+    Column(
+        modifier = cardModifier
+            .background(Brush.linearGradient(summaryCardGradient(dark)))
             .padding(horizontal = MakSpacing.lg, vertical = MakSpacing.lg),
         verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
@@ -319,6 +331,9 @@ fun MakSummaryCard(
     }
 }
 
+internal fun summaryCardGradient(dark: Boolean): List<Color> =
+    if (dark) listOf(MakSummaryStartDark, MakSummaryEndDark) else listOf(MakSummaryStart, MakSummaryEnd)
+
 @Composable
 private fun SummaryColumn(
     label: String,
@@ -356,8 +371,8 @@ private fun SummaryDivider() {
     )
 }
 
-private val SummaryAlert = Color(0xFFFFB4AB)
-private val SummaryOk = Color(0xFF7FE0A6)
+internal val SummaryAlert = Color(0xFFFFB4AB)
+internal val SummaryOk = Color(0xFF7FE0A6)
 
 @Composable
 fun MakRowTitle(
