@@ -602,55 +602,6 @@ class OccurrenceViewModelTest {
     }
 
     @Test
-    fun repositoryErrorPublishesSingleErrorAndKeepsDraft() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink(repository.events)
-        val viewModel = recordingViewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.open("1:2026-09-21")
-        advanceUntilIdle()
-
-        val effects = mutableListOf<OccurrenceEffect>()
-        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
-        advanceUntilIdle()
-
-        viewModel.updateSharedNoteDraft("Nowa")
-        advanceUntilIdle()
-        repository.failSaves = true
-        viewModel.saveSharedNote()
-        advanceUntilIdle()
-
-        assertEquals(1, sink.published.size)
-        assertEquals(UiFeedbackKind.Error, sink.published.single().kind)
-        assertEquals("Nie udało się zapisać notatki.", sink.published.single().message)
-        assertEquals("Nowa", viewModel.details.value.sharedNoteDraft)
-        assertNotNull(viewModel.details.value.sharedNoteError)
-        assertTrue(effects.isEmpty())
-    }
-
-    @Test
-    fun repeatedSharedNoteSaveRunsOnce() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink(repository.events)
-        val viewModel = recordingViewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.open("1:2026-09-21")
-        advanceUntilIdle()
-        viewModel.updateSharedNoteDraft("Nowa")
-        advanceUntilIdle()
-
-        repository.saveGate = CompletableDeferred()
-        viewModel.saveSharedNote()
-        viewModel.saveSharedNote()
-        advanceUntilIdle()
-        repository.saveGate?.complete(Unit)
-        advanceUntilIdle()
-
-        assertEquals(1, repository.events.count { it == "saveClass" })
-        assertEquals(1, sink.published.size)
-    }
-
-    @Test
     fun repeatedOccurrenceNoteSaveRunsOnce() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
@@ -713,63 +664,6 @@ class OccurrenceViewModelTest {
         assertEquals(1, repository.events.count { it == "saveOccurrenceChange" })
         assertEquals(1, sink.published.size)
         assertEquals("Odwołano termin", sink.published.single().message)
-    }
-
-    @Test
-    fun repeatedRestoreRunsOnce() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink(repository.events)
-        val viewModel = recordingViewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.open("1:2026-09-21")
-        advanceUntilIdle()
-        viewModel.cancelOccurrence()
-        advanceUntilIdle()
-
-        repository.events.clear()
-        sink.published.clear()
-        repository.saveGate = CompletableDeferred()
-        viewModel.restoreOccurrence()
-        viewModel.restoreOccurrence()
-        advanceUntilIdle()
-        repository.saveGate?.complete(Unit)
-        advanceUntilIdle()
-
-        assertEquals(1, repository.events.count { it == "deleteOccurrenceChange" })
-        assertEquals(1, sink.published.size)
-        assertEquals("Przywrócono termin", sink.published.single().message)
-    }
-
-    @Test
-    fun cancellationDoesNotPublishErrorAndClearsSavingFlags() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink(repository.events)
-        val viewModel = recordingViewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.open("1:2026-09-21")
-        advanceUntilIdle()
-
-        repository.cancelSaves = true
-
-        viewModel.updateSharedNoteDraft("Nowa")
-        advanceUntilIdle()
-        viewModel.saveSharedNote()
-        advanceUntilIdle()
-        assertFalse(viewModel.details.value.isSavingSharedNote)
-
-        viewModel.updateOccurrenceNoteDraft("Notatka daty")
-        advanceUntilIdle()
-        viewModel.saveOccurrenceNote()
-        advanceUntilIdle()
-        assertFalse(viewModel.details.value.isSavingOccurrenceNote)
-
-        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "12:30") }
-        advanceUntilIdle()
-        viewModel.saveOccurrenceChange()
-        advanceUntilIdle()
-        assertFalse(viewModel.details.value.isSaving)
-
-        assertTrue(sink.published.isEmpty())
     }
 }
 

@@ -26,6 +26,7 @@ import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
+import dev.retza.mak.ui.feedback.launchUiOperation
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -158,37 +159,33 @@ class OccurrenceViewModel(
         val classId = selectedClassIdState.value ?: return
         val original = originalDate ?: return
         occurrenceStateOperationRunning = true
-        viewModelScope.launch {
-            try {
-                val existing = freshPlanData()?.occurrenceChanges?.firstOrNull {
-                    it.classId == classId.toString() && it.originalDate == original
-                }
-                scheduleRepository.saveOccurrenceChange(
-                    OccurrenceChangeRecord(
-                        id = existing?.id?.toLongOrNull() ?: 0,
-                        semesterId = data.semester.id.toLong(),
-                        classId = classId,
-                        originalDate = original,
-                        kind = OccurrenceChangeKind.CANCELLED,
-                        targetDate = null,
-                        startTime = null,
-                        endTime = null,
-                        room = null,
-                        building = null,
-                        teacherName = null,
-                        note = null
-                    )
-                )
-                reload(data.semester.id.toLong(), classId, original)
-                feedbackSink.publish(UiFeedback("Odwołano termin", UiFeedbackKind.Success))
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                update { it.copy(draftError = "Nie udało się odwołać terminu.") }
-                feedbackSink.publish(UiFeedback("Nie udało się odwołać terminu.", UiFeedbackKind.Error))
-            } finally {
-                occurrenceStateOperationRunning = false
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się odwołać terminu.",
+            onFinish = { occurrenceStateOperationRunning = false },
+            onError = { update { it.copy(draftError = "Nie udało się odwołać terminu.") } }
+        ) {
+            val existing = freshPlanData()?.occurrenceChanges?.firstOrNull {
+                it.classId == classId.toString() && it.originalDate == original
             }
+            scheduleRepository.saveOccurrenceChange(
+                OccurrenceChangeRecord(
+                    id = existing?.id?.toLongOrNull() ?: 0,
+                    semesterId = data.semester.id.toLong(),
+                    classId = classId,
+                    originalDate = original,
+                    kind = OccurrenceChangeKind.CANCELLED,
+                    targetDate = null,
+                    startTime = null,
+                    endTime = null,
+                    room = null,
+                    building = null,
+                    teacherName = null,
+                    note = null
+                )
+            )
+            reload(data.semester.id.toLong(), classId, original)
+            feedbackSink.publish(UiFeedback("Odwołano termin", UiFeedbackKind.Success))
         }
     }
 
@@ -198,21 +195,17 @@ class OccurrenceViewModel(
         val classId = selectedClassIdState.value ?: return
         val original = originalDate ?: return
         occurrenceStateOperationRunning = true
-        viewModelScope.launch {
-            try {
-                val change = freshPlanData()?.occurrenceChanges?.firstOrNull {
-                    it.classId == classId.toString() && it.originalDate == original
-                } ?: return@launch
-                scheduleRepository.deleteOccurrenceChange(change.id.toLong())
-                reload(data.semester.id.toLong(), classId, original)
-                feedbackSink.publish(UiFeedback("Przywrócono termin", UiFeedbackKind.Success))
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                feedbackSink.publish(UiFeedback("Nie udało się przywrócić terminu.", UiFeedbackKind.Error))
-            } finally {
-                occurrenceStateOperationRunning = false
-            }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się przywrócić terminu.",
+            onFinish = { occurrenceStateOperationRunning = false }
+        ) {
+            val change = freshPlanData()?.occurrenceChanges?.firstOrNull {
+                it.classId == classId.toString() && it.originalDate == original
+            } ?: return@launchUiOperation
+            scheduleRepository.deleteOccurrenceChange(change.id.toLong())
+            reload(data.semester.id.toLong(), classId, original)
+            feedbackSink.publish(UiFeedback("Przywrócono termin", UiFeedbackKind.Success))
         }
     }
 
@@ -231,35 +224,33 @@ class OccurrenceViewModel(
         val note = draft.sharedNoteDraft.trim().ifEmpty { null }
         if (!noteContentChanged(draft.sharedNoteDraft, draft.sharedNote)) return
         update { it.copy(isSavingSharedNote = true, sharedNoteError = null) }
-        viewModelScope.launch {
-            try {
-                val base = freshPlanData()?.classes?.firstOrNull { it.id == classId.toString() }
-                    ?: return@launch
-                scheduleRepository.saveClass(base.copy(classNote = note).toRecord())
-                update { current ->
-                    val draftUnchanged = !noteContentChanged(current.sharedNoteDraft, note)
-                    current.copy(
-                        sharedNote = note,
-                        sharedNoteDraft = if (draftUnchanged) note.orEmpty() else current.sharedNoteDraft,
-                        isSavingSharedNote = false
-                    )
-                }
-                val message = if (note == null) {
-                    "Usunięto notatkę do zajęć"
-                } else {
-                    "Zapisano notatkę do zajęć"
-                }
-                feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać notatki.",
+            onFinish = { update { it.copy(isSavingSharedNote = false) } },
+            onError = {
                 update {
                     it.copy(isSavingSharedNote = false, sharedNoteError = "Nie udało się zapisać notatki.")
                 }
-                feedbackSink.publish(UiFeedback("Nie udało się zapisać notatki.", UiFeedbackKind.Error))
-            } finally {
-                update { it.copy(isSavingSharedNote = false) }
             }
+        ) {
+            val base = freshPlanData()?.classes?.firstOrNull { it.id == classId.toString() }
+                ?: return@launchUiOperation
+            scheduleRepository.saveClass(base.copy(classNote = note).toRecord())
+            update { current ->
+                val draftUnchanged = !noteContentChanged(current.sharedNoteDraft, note)
+                current.copy(
+                    sharedNote = note,
+                    sharedNoteDraft = if (draftUnchanged) note.orEmpty() else current.sharedNoteDraft,
+                    isSavingSharedNote = false
+                )
+            }
+            val message = if (note == null) {
+                "Usunięto notatkę do zajęć"
+            } else {
+                "Zapisano notatkę do zajęć"
+            }
+            feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
         }
     }
 
@@ -272,48 +263,46 @@ class OccurrenceViewModel(
         val note = draft.occurrenceNoteDraft.trim().ifEmpty { null }
         if (!noteContentChanged(draft.occurrenceNoteDraft, draft.occurrenceNote)) return
         update { it.copy(isSavingOccurrenceNote = true, occurrenceNoteError = null) }
-        viewModelScope.launch {
-            try {
-                val existing = freshPlanData()?.occurrenceNotes?.firstOrNull {
-                    it.classId == classId.toString() && it.occurrenceDate == date
-                }
-                if (note == null) {
-                    existing?.let { scheduleRepository.deleteOccurrenceNote(it.id.toLong()) }
-                } else {
-                    scheduleRepository.saveOccurrenceNote(
-                        OccurrenceNoteRecord(
-                            id = existing?.id?.toLongOrNull() ?: 0,
-                            semesterId = data.semester.id.toLong(),
-                            classId = classId,
-                            occurrenceDate = date,
-                            body = note
-                        )
-                    )
-                }
-                update { current ->
-                    val draftUnchanged = !noteContentChanged(current.occurrenceNoteDraft, note)
-                    current.copy(
-                        occurrenceNote = note,
-                        occurrenceNoteDraft = if (draftUnchanged) note.orEmpty() else current.occurrenceNoteDraft,
-                        isSavingOccurrenceNote = false
-                    )
-                }
-                val message = if (note == null) {
-                    "Usunięto notatkę do terminu"
-                } else {
-                    "Zapisano notatkę do terminu"
-                }
-                feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać notatki.",
+            onFinish = { update { it.copy(isSavingOccurrenceNote = false) } },
+            onError = {
                 update {
                     it.copy(isSavingOccurrenceNote = false, occurrenceNoteError = "Nie udało się zapisać notatki.")
                 }
-                feedbackSink.publish(UiFeedback("Nie udało się zapisać notatki.", UiFeedbackKind.Error))
-            } finally {
-                update { it.copy(isSavingOccurrenceNote = false) }
             }
+        ) {
+            val existing = freshPlanData()?.occurrenceNotes?.firstOrNull {
+                it.classId == classId.toString() && it.occurrenceDate == date
+            }
+            if (note == null) {
+                existing?.let { scheduleRepository.deleteOccurrenceNote(it.id.toLong()) }
+            } else {
+                scheduleRepository.saveOccurrenceNote(
+                    OccurrenceNoteRecord(
+                        id = existing?.id?.toLongOrNull() ?: 0,
+                        semesterId = data.semester.id.toLong(),
+                        classId = classId,
+                        occurrenceDate = date,
+                        body = note
+                    )
+                )
+            }
+            update { current ->
+                val draftUnchanged = !noteContentChanged(current.occurrenceNoteDraft, note)
+                current.copy(
+                    occurrenceNote = note,
+                    occurrenceNoteDraft = if (draftUnchanged) note.orEmpty() else current.occurrenceNoteDraft,
+                    isSavingOccurrenceNote = false
+                )
+            }
+            val message = if (note == null) {
+                "Usunięto notatkę do terminu"
+            } else {
+                "Zapisano notatkę do terminu"
+            }
+            feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
         }
     }
 
@@ -351,49 +340,45 @@ class OccurrenceViewModel(
                     return
                 }
                 update { it.copy(isSaving = true, draftErrors = emptyMap(), draftError = null) }
-                viewModelScope.launch {
-                    try {
-                        val existing = freshPlanData()?.occurrenceChanges?.firstOrNull {
-                            it.classId == classId.toString() && it.originalDate == original
-                        }
-                        when (decision.result) {
-                            OccurrenceEditResult.NoChange -> Unit
-                            OccurrenceEditResult.Restored ->
-                                existing?.let { scheduleRepository.deleteOccurrenceChange(it.id.toLong()) }
-
-                            OccurrenceEditResult.Modified,
-                            OccurrenceEditResult.Moved -> scheduleRepository.saveOccurrenceChange(
-                                OccurrenceChangeRecord(
-                                    id = existing?.id?.toLongOrNull() ?: 0,
-                                    semesterId = data.semester.id.toLong(),
-                                    classId = classId,
-                                    originalDate = original,
-                                    kind = OccurrenceChangeKind.MODIFIED,
-                                    targetDate = decision.slot.date,
-                                    startTime = decision.slot.startTime,
-                                    endTime = decision.slot.endTime,
-                                    room = occurrenceRoomOverride(base.room, decision.slot.room),
-                                    building = null,
-                                    teacherName = null,
-                                    note = null
-                                )
-                            )
-                        }
-                        reload(data.semester.id.toLong(), classId, original)
-                        val message = when (decision.result) {
-                            OccurrenceEditResult.Restored -> "Przywrócono termin"
-                            OccurrenceEditResult.Moved -> "Przeniesiono termin"
-                            else -> "Zmieniono termin"
-                        }
-                        feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
-                    } catch (error: CancellationException) {
-                        throw error
-                    } catch (error: Exception) {
-                        update { it.copy(isSaving = false, draftError = "Nie udało się zapisać zmian.") }
-                        feedbackSink.publish(UiFeedback("Nie udało się zapisać zmian.", UiFeedbackKind.Error))
-                    } finally {
-                        update { it.copy(isSaving = false) }
+                viewModelScope.launchUiOperation(
+                    feedbackSink = feedbackSink,
+                    errorMessage = "Nie udało się zapisać zmian.",
+                    onFinish = { update { it.copy(isSaving = false) } },
+                    onError = { update { it.copy(isSaving = false, draftError = "Nie udało się zapisać zmian.") } }
+                ) {
+                    val existing = freshPlanData()?.occurrenceChanges?.firstOrNull {
+                        it.classId == classId.toString() && it.originalDate == original
                     }
+                    when (decision.result) {
+                        OccurrenceEditResult.NoChange -> Unit
+                        OccurrenceEditResult.Restored ->
+                            existing?.let { scheduleRepository.deleteOccurrenceChange(it.id.toLong()) }
+
+                        OccurrenceEditResult.Modified,
+                        OccurrenceEditResult.Moved -> scheduleRepository.saveOccurrenceChange(
+                            OccurrenceChangeRecord(
+                                id = existing?.id?.toLongOrNull() ?: 0,
+                                semesterId = data.semester.id.toLong(),
+                                classId = classId,
+                                originalDate = original,
+                                kind = OccurrenceChangeKind.MODIFIED,
+                                targetDate = decision.slot.date,
+                                startTime = decision.slot.startTime,
+                                endTime = decision.slot.endTime,
+                                room = occurrenceRoomOverride(base.room, decision.slot.room),
+                                building = null,
+                                teacherName = null,
+                                note = null
+                            )
+                        )
+                    }
+                    reload(data.semester.id.toLong(), classId, original)
+                    val message = when (decision.result) {
+                        OccurrenceEditResult.Restored -> "Przywrócono termin"
+                        OccurrenceEditResult.Moved -> "Przeniesiono termin"
+                        else -> "Zmieniono termin"
+                    }
+                    feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
                 }
             }
         }
