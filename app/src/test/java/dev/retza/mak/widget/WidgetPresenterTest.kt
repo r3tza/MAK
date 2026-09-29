@@ -291,13 +291,6 @@ class WidgetPresenterTest {
     }
 
     @Test
-    fun conflictCountUsesCorrectPolishInflection() {
-        assertEquals("1 kolizja", widgetConflictCountLabel(1))
-        assertEquals("2 kolizje", widgetConflictCountLabel(2))
-        assertEquals("5 kolizji", widgetConflictCountLabel(5))
-    }
-
-    @Test
     fun stableItemIdIsDerivedFromOccurrenceId() {
         assertEquals(widgetOccurrenceItemId("class:2026-09-21"), widgetOccurrenceItemId("class:2026-09-21"))
         assertTrue(

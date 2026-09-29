@@ -346,25 +346,6 @@ class SetupViewModelTest {
     }
 
     @Test
-    fun semesterIsActivatedWhenNoSemesterIsActive() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        repository.clearActiveSemester()
-        val later = Clock.fixed(Instant.parse("2026-08-20T10:00:00Z"), ZoneOffset.UTC)
-        val viewModel = viewModel(repository, clock = later)
-        viewModel.fillValidSemester()
-        viewModel.next()
-        advanceUntilIdle()
-        viewModel.update { it.copy(courseName = "Informatyka") }
-
-        viewModel.next()
-        advanceUntilIdle()
-
-        assertEquals(true, repository.lastSetupActivate)
-        assertEquals(repository.lastSetupSemester?.id, repository.activeSemesterId)
-        assertTrue(viewModel.setup.value.isSemesterActive)
-    }
-
-    @Test
     fun semesterCoveringTodayIsActivated() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)

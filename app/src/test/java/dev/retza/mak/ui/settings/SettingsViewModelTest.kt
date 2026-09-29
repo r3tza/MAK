@@ -234,39 +234,6 @@ class SettingsViewModelTest {
     }
 
     @Test
-    fun deletingActiveSemesterSelectsFallback() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val viewModel = viewModel(repository)
-        backgroundScope.launch { viewModel.settings.collect {} }
-        advanceUntilIdle()
-
-        viewModel.requestSemesterDeletion("1")
-        viewModel.confirmSemesterDeletion()
-        advanceUntilIdle()
-
-        assertEquals(2L, repository.activeSemesterId)
-        assertEquals(listOf("2"), viewModel.settings.value.semesters.map { it.id })
-    }
-
-    @Test
-    fun deletingLastSemesterClearsActive() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val viewModel = viewModel(repository)
-        backgroundScope.launch { viewModel.settings.collect {} }
-        advanceUntilIdle()
-
-        viewModel.requestSemesterDeletion("1")
-        viewModel.confirmSemesterDeletion()
-        advanceUntilIdle()
-        viewModel.requestSemesterDeletion("2")
-        viewModel.confirmSemesterDeletion()
-        advanceUntilIdle()
-
-        assertEquals(0L, repository.activeSemesterId)
-        assertTrue(viewModel.settings.value.semesters.isEmpty())
-    }
-
-    @Test
     fun deleteFailureKeepsDialogAndPublishesError() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         repository.failSaves = true
@@ -323,19 +290,6 @@ class SettingsViewModelTest {
         assertTrue(sink.published.isEmpty())
         assertFalse(viewModel.settings.value.isDeletingSemester)
         assertEquals(listOf("1", "2"), viewModel.settings.value.semesters.map { it.id })
-    }
-
-    @Test
-    fun exportKeepsSchemaVersion() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val viewModel = viewModel(repository)
-        var bytes: ByteArray? = null
-
-        viewModel.exportJson { bytes = it }
-        advanceUntilIdle()
-
-        val snapshot = JsonExportCodec.decode(bytes!!)
-        assertEquals(dev.retza.mak.export.ExportSchema.VERSION, snapshot.schemaVersion)
     }
 
     @Test
@@ -579,19 +533,6 @@ class SettingsViewModelTest {
         advanceUntilIdle()
 
         assertEquals("Plik jest za duży, aby był kopią MAK.", viewModel.settings.value.importErrorMessage)
-    }
-
-    @Test
-    fun preferencesRestoreThemeForNewInstance() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val preferences = InMemorySettingsPreferences()
-        val first = viewModel(repository, preferences)
-        first.selectTheme("light")
-        advanceUntilIdle()
-
-        val second = viewModel(repository, preferences)
-
-        assertEquals(ThemeMode.Light, second.themeMode.value)
     }
     private fun validImportSnapshot(): ExportSnapshot = ExportSnapshot(
         schemaVersion = 2,

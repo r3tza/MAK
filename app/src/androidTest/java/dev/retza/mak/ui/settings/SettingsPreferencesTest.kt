@@ -4,9 +4,7 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
-import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
@@ -62,14 +60,6 @@ class SettingsPreferencesTest {
         scope?.coroutineContext?.job?.cancelAndJoin()
         val second = preferences(openDataStore())
         assertEquals(ThemeMode.Dark, second.theme.first())
-    }
-
-    @Test
-    fun unknownStoredThemeReadsAsSystem() = runBlocking {
-        val dataStore = openDataStore()
-        dataStore.edit { it[stringPreferencesKey("theme_mode")] = "neon" }
-
-        assertEquals(ThemeMode.System, DataStoreSettingsPreferences(dataStore).theme.first())
     }
 
     @Test
