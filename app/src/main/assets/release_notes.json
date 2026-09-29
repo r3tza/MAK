@@ -2,6 +2,19 @@
   "minorChanges": "Pomniejsze poprawki",
   "releases": [
     {
+      "version": "0.2.3",
+      "date": "2026-09-29",
+      "changes": [
+        "Dodano tryb tabletowy: na tabletach i składanych telefonach aplikacja obraca się, ma boczny pasek nawigacji, a „Dzisiaj” pokazuje podsumowanie obok listy zajęć.",
+        "Uproszczono ekrany „Dzisiaj” i „Plan”: filtr kierunku jest jednym polem wyboru, a zbędne nagłówki zniknęły.",
+        "Kalendarz oznacza kolorem kierunek, pokazuje zmienione terminy jako pierścień, a przy wielu zajęciach dodaje plus.",
+        "Przy kolizji karta i szczegóły terminu pokazują, z którymi zajęciami termin się nakłada.",
+        "Kierunki w semestrze mają osobny ekran edycji nazwy, kalendarza i koloru, a kolor wybiera się suwakami odcienia i jasności.",
+        "Plan i ustawienia trafiają do szyfrowanej kopii zapasowej Google i wracają po ponownej instalacji aplikacji.",
+        "Ciemniejsza karta podsumowania w motywie ciemnym, jedno okno potwierdzenia usuwania i czytelniejsze daty w kalendarzu."
+      ]
+    },
+    {
       "version": "0.2.2",
       "date": "2026-09-28",
       "changes": [
