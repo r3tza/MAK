@@ -9,6 +9,7 @@ Zacznij od pytania, które rozwiązuje zadanie. Otwórz wskazany dokument i potr
 | Jak obliczać plan? | [DOMAIN.md](DOMAIN.md): semestry i kalendarze, rytm A/B, zajęcia, zmiany wystąpień, okienka i kolizje |
 | Jakie są granice kodu i zasady UI? | [ARCHITECTURE.md](ARCHITECTURE.md): repozytoria, wspólna logika planu, nawigacja, integracje i zasady interfejsu |
 | Jakich narzędzi i testów używać? | [STACK.md](STACK.md): wersje bibliotek, środowisko, rodzaje kontroli i odrzucone alternatywy |
+| Jaka jest robocza propozycja synchronizacji Google i wynik audytu gotowości aplikacji? | [SYNC_PROPOSAL.md](SYNC_PROPOSAL.md): zakres, scalanie, pierwszy kontakt urządzeń, kolejność prac, ryzyka i otwarte warunki. To nie jest zaakceptowane wymaganie |
 | Co wykonać teraz? | [PLAN.md](PLAN.md): najwyżej pięć najbliższych kroków z kryteriami zakończenia. [QUEUE.md](QUEUE.md) zawiera pozostałe zadania, zależności i statusy; zakończone są w osobnej tabeli na końcu |
 | Co jest gotowe w kodzie, ale czeka na urządzenie? | [QUEUE.md](QUEUE.md): osobne pozycje odbioru; szczegółowe scenariusze w [FEATURES.md](FEATURES.md) |
 | Jak rozpocząć, sprawdzić i zakończyć zadanie? | [WORKFLOW.md](WORKFLOW.md): kolejność pracy, szablon kroku planu i znaczenie statusów |
