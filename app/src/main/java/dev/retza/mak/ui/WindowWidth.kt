@@ -28,3 +28,11 @@ internal fun makNavigationLayout(widthClass: MakWidthClass, isRootRoute: Boolean
     widthClass == MakWidthClass.Compact -> MakNavigationLayout.BottomBar
     else -> MakNavigationLayout.Rail
 }
+
+/** Widest screen content; wider windows center it. */
+val MakContentMaxWidth = 640.dp
+
+/** Widest content of a two-column screen. */
+val MakTwoColumnMaxWidth = 1040.dp
+
+val MakDialogMaxWidth = 560.dp

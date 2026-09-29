@@ -32,7 +32,7 @@ Semestr utworzony w kreatorze staje się aktywny tylko wtedy, gdy dzisiejsza dat
 
 ## Ekran „Dzisiaj”
 
-To domyślny ekran otwierany po uruchomieniu aplikacji.
+To domyślny ekran otwierany po uruchomieniu aplikacji. Od 840 dp szerokości okna karta podsumowania stoi po lewej, a lista zajęć po prawej, łącznie najwyżej 1040 dp; bez aktywnego semestru ekran zostaje w jednej kolumnie.
 
 Powinien pokazywać:
 

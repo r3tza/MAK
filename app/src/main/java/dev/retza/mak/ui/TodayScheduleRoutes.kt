@@ -36,7 +36,8 @@ internal fun NavGraphBuilder.todayRoute(
             availableUpdateVersion = updateState.availableUpdate?.versionName.takeIf { updateState.showUpdateBanner },
             onViewUpdate = { navController.navigate(MakRoutes.SettingsUpdate) },
             onDismissUpdate = updateViewModel::dismissAvailableUpdate,
-            modifier = Modifier.fillMaxSize()
+            modifier = Modifier.fillMaxSize(),
+            twoColumns = LocalMakWidthClass.current == MakWidthClass.Expanded
         )
     }
 }

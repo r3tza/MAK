@@ -3,6 +3,10 @@ package dev.retza.mak.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import dev.retza.mak.ui.MakContentMaxWidth
+import dev.retza.mak.ui.MakDialogMaxWidth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -116,16 +120,22 @@ import dev.retza.mak.ui.theme.MakTeal
 @Composable
 fun MakScreenContent(
     modifier: Modifier = Modifier,
+    maxWidth: Dp = MakContentMaxWidth,
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = MakSpacing.lg, end = MakSpacing.lg, top = MakSpacing.xs, bottom = MakSpacing.xl),
-        verticalArrangement = verticalArrangement,
-        content = content
-    )
+    // The caller's modifier (scroll or weight) stays on the full-width box, so a wide window
+    // still scrolls anywhere while the content itself is limited and centered.
+    Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = maxWidth)
+                .fillMaxWidth()
+                .padding(start = MakSpacing.lg, end = MakSpacing.lg, top = MakSpacing.xs, bottom = MakSpacing.xl),
+            verticalArrangement = verticalArrangement,
+            content = content
+        )
+    }
 }
 
 @Composable
@@ -1355,9 +1365,12 @@ fun MakDialog(
     Dialog(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
+                .widthIn(max = MakDialogMaxWidth)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(22.dp))
                 .background(MaterialTheme.colorScheme.surface)
+                // A low window (landscape tablet, split screen) scrolls instead of cutting off actions.
+                .verticalScroll(rememberScrollState())
                 .padding(MakSpacing.xl)
                 .semantics { paneTitle = title },
             verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
