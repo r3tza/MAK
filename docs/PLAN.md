@@ -6,13 +6,13 @@ Kroki audytu interfejsu z 2026-09-28 (I-54 do I-62) są wykonane; ich odbiór na
 
 ## Zasady wspólne dla wszystkich kroków
 
-- Kroki 1 do 4 wykonuj po kolei na jednej gałęzi `task/I-64-shared-ui-operation` od aktualnego `origin/main`, z jednym pull requestem na końcu. Każdy krok kończy się kompilującym się kodem, zielonymi testami i osobnym commitem (`feat:` dla kroku 1, `chore:` dla kroków 2 do 4). Gałąź i pull request prowadź według `WORKFLOW.md`, sekcja „Gałąź i pull request”.
+- Krok 1 i przeniesienie `SemesterViewModel.saveSemester` z kroku 3 są wykonane na lokalnej gałęzi `task/I-64-shared-ui-operation` (próba z 2026-09-29: wszystkie dotychczasowe testy przechodzą bez zmian, a mutacje funkcji i akcji potwierdziły, które testy je pilnują). Kroki 1 do 4 wykonuj po kolei na jednej gałęzi `task/I-64-shared-ui-operation` od aktualnego `origin/main`, z jednym pull requestem na końcu. Każdy krok kończy się kompilującym się kodem, zielonymi testami i osobnym commitem (`feat:` dla kroku 1, `chore:` dla kroków 2 do 4). Gałąź i pull request prowadź według `WORKFLOW.md`, sekcja „Gałąź i pull request”.
 - Przed zmianą przeczytaj wskazane pliki w całości. Numery linii są orientacyjne; szukaj po nazwie funkcji albo tekście.
 - To refaktor bez zmiany zachowania. Teksty i rodzaje komunikatów, efekty nawigacyjne, ich kolejność względem komunikatów, stany widoku po sukcesie i po błędzie oraz kolejność wywołań repozytorium zostają takie same. Dozwolone są tylko dwie różnice: flaga trwania operacji jest zawsze czyszczona na końcu, także tam, gdzie dziś czyści ją tylko blok sukcesu i `catch` (`StudyProgramsViewModel.save`, `SetupViewModel.saveAnotherProgram`), a komunikat błędu `SetupViewModel.saveAnotherProgram` pomija się po zmianie sesji kreatora, jak w pozostałych akcjach kreatora.
 - Blokada podwójnego wywołania zostaje w ViewModelu, tak jak dziś: `if (<flaga>) return` na początku akcji i ustawienie flagi tuż przed wywołaniem wspólnej funkcji. Wspólna funkcja nie przejmuje blokady, bo każda akcja ma własną flagę, a pomylenie flag przy przenoszeniu wykrywa tylko test tej akcji.
 - Poza zakresem są operacje, które nie są zapisem uruchamianym przez użytkownika: zbieranie przepływów w `init` (`SetupViewModel`, `StudyProgramsViewModel`), `SemesterViewModel.open`, `SemesterViewModel.requestCourseDeletion` (odczyt liczby zajęć), `OccurrenceViewModel.deleteSelectedClass` (bez blokady i bez `finally`) oraz cały `ScheduleViewModel` z prywatną `runReportingFailure`.
 - Drobne różnice między opisem a kodem rozwiąż zgodnie z celem kroku i opisz w treści commita. Zatrzymaj się i zapisz bloker w `QUEUE.md` przy I-64 tylko wtedy, gdy akcja nie pasuje do opisanego wzorca i nie da się jej przenieść bez zmiany zachowania.
-- Testy usuwaj tylko te, które są wymienione w krokach. Jeśli wymieniony test ma asercję, której nie ma nigdzie indziej i która nie wynika ze wspólnej funkcji (anulowanie, jeden komunikat błędu, czyszczenie flagi), przenieś ją do wskazanego testu, który zostaje. Testy podwójnego wywołania zostają przy akcjach, których powtórzenie utworzyłoby zduplikowane dane; usuwane są tylko przy akcjach, których powtórzenie niczego nie psuje (aktualizacja, usunięcie, wybór ustawienia).
+- Testy usuwaj tylko te, które są wymienione w krokach. Jeśli wymieniony test ma asercję, której nie ma nigdzie indziej i która nie wynika ze wspólnej funkcji (anulowanie, jeden komunikat błędu, czyszczenie flagi), przenieś ją do wskazanego testu, który zostaje. Testy podwójnego wywołania zostają przy akcjach, których powtórzenie utworzyłoby zduplikowane dane albo wysłałoby drugi efekt nawigacyjny (drugie zamknięcie ekranu); usuwane są tylko przy akcjach, których powtórzenie niczego nie psuje (aktualizacja bez efektu, usunięcie, wybór ustawienia).
 - W komentarzach kodu nie wpisuj identyfikatorów zadań. Testy JVM: `gradlew.bat test`. Testy na urządzeniu: `gradlew.bat connectedDebugAndroidTest` przy uruchomionym emulatorze (`adb devices`); jeśli przebieg przerwie się błędem emulatora (na przykład „Can't find service: package”), uruchom emulator ponownie i powtórz. Po zmianie `docs/*.md` uruchom `py scripts/check_map.py`.
 
 ## 1. Dodaj wspólną obsługę błędów operacji zapisu (I-64)
@@ -46,7 +46,7 @@ Przypadki brzegowe: `onFinish` po anulowaniu; `onError` nie może zostać wywoł
 
 Weryfikacja: `gradlew.bat test`.
 
-Kryterium zakończenia: `launchUiOperation` istnieje, pięć testów przechodzi, żaden ViewModel jeszcze jej nie używa.
+Kryterium zakończenia: `launchUiOperation` istnieje, pięć testów przechodzi, żaden ViewModel jeszcze jej nie używa. Stan: wykonane.
 
 ## 2. Przenieś zapisy w szczegółach terminu i formularzu zajęć (I-64)
 
@@ -54,7 +54,7 @@ Cel: akcje zapisu w `OccurrenceViewModel` i `ClassEditViewModel` korzystają z `
 
 Pliki: `ui/occurrence/OccurrenceViewModel.kt`, `ui/edit/ClassEditViewModel.kt`, `test/.../ui/occurrence/OccurrenceViewModelTest.kt`, `test/.../ui/edit/ClassEditViewModelTest.kt`.
 
-Sposób przeniesienia każdej akcji (dotyczy też kroków 3 i 4): blokada, walidacja i ustawienie flagi zostają bez zmian przed wywołaniem; `viewModelScope.launch { try { ... } catch ... finally { ... } }` zamień na `viewModelScope.launchUiOperation(...) { ... }`. Treść dzisiejszego `try` trafia do `block` bez zmian, poza zamianą `return@launch` na `return@launchUiOperation`. `onFinish` robi to samo co dzisiejszy `finally`. `onError` robi to samo co dzisiejszy `catch (Exception)` poza publikacją komunikatu, a `errorMessage` to tekst dzisiejszego komunikatu błędu.
+Sposób przeniesienia każdej akcji (dotyczy też kroków 3 i 4): blokada, walidacja i ustawienie flagi zostają bez zmian przed wywołaniem; `viewModelScope.launch { try { ... } catch ... finally { ... } }` zamień na `viewModelScope.launchUiOperation(...) { ... }`. Treść dzisiejszego `try` trafia do `block` bez zmian, poza zamianą `return@launch` na `return@launchUiOperation`. `onFinish` robi dokładnie to samo co dzisiejszy `finally`, razem z warunkami; na przykład w `SemesterViewModel` flaga jest czyszczona tylko przy aktualnej sesji i tak ma zostać. `onError` robi to samo co dzisiejszy `catch (Exception)` poza publikacją komunikatu, a `errorMessage` to tekst dzisiejszego komunikatu błędu.
 
 1. `OccurrenceViewModel`: przenieś `cancelOccurrence`, `restoreOccurrence` (wspólna zmienna `occurrenceStateOperationRunning`; w `cancelOccurrence` `onError` ustawia `draftError = "Nie udało się odwołać terminu."`), `saveSharedNote`, `saveOccurrenceNote` i `saveOccurrenceChange` (`onError` ustawia odpowiednio `sharedNoteError`, `occurrenceNoteError` i `draftError` razem z wyzerowaniem flagi, tak jak dziś).
 2. `ClassEditViewModel.save(confirmedHiddenData)`: `errorMessage = "Nie udało się zapisać zajęć."`; komunikat sukcesu i efekt `CloseEditor` zostają w `block` w dzisiejszej kolejności.
@@ -73,17 +73,17 @@ Cel: akcje zapisu w `SemesterViewModel` i `StudyProgramsViewModel` korzystają z
 
 Pliki: `ui/semester/SemesterViewModel.kt`, `ui/programs/StudyProgramsViewModel.kt` i ich testy JVM.
 
-1. `SemesterViewModel`: przenieś `saveSemester`, `saveCalendar`, `addCourse`, `separateCourseCalendar`, `confirmReconnect`, `confirmCalendarDeletion`, `confirmCourseDeletion`, `saveWeekOverride` i `confirmWeekOverrideDeletion` według sposobu z kroku 2, z `isCurrent = { isCurrentSession(token) }` i tokenem pobranym przed wywołaniem, tak jak dziś. `onError` przenosi stan błędu tam, gdzie jest: `saveSemester` i `saveCalendar` (błąd przy formularzu dat), `confirmReconnect` (`reconnectError`).
+1. `SemesterViewModel`: przenieś `saveCalendar`, `addCourse`, `separateCourseCalendar`, `confirmReconnect`, `confirmCalendarDeletion`, `confirmCourseDeletion`, `saveWeekOverride` i `confirmWeekOverrideDeletion` według sposobu z kroku 2 i wzoru już przeniesionej `saveSemester`, z `isCurrent = { isCurrentSession(token) }` i tokenem pobranym przed wywołaniem, tak jak dziś. `onError` przenosi stan błędu tam, gdzie jest: `saveSemester` i `saveCalendar` (błąd przy formularzu dat), `confirmReconnect` (`reconnectError`).
 2. `StudyProgramsViewModel.save`: `onFinish` zeruje `editor.isSaving`, reset edytora zostaje w `block`, `errorMessage = "Nie udało się zapisać kierunku."`.
-3. Usuń testy z `SemesterViewModelTest`: `cancellationDoesNotPublishOrKeepSaving`, `addCourseErrorKeepsDraftAndPublishesError`, `addCourseCancellationDoesNotPublish`, `deleteCourseErrorKeepsItemAndPublishesError`, `saveOverrideErrorKeepsFormOpen`, `deleteOverrideCancellationDoesNotPublish`. Zostają `addCourseRunsOnce` i `saveOverrideRunsOnce` (powtórzenie dodałoby drugi rekord), `saveErrorKeepsFormAndPublishesError` (stan błędu formularza dat) i `lateSaveFromPreviousSessionDoesNotCloseOrModifyCurrentSemester` (sesja).
-4. Zmień w `SemesterViewModelTest` trzy testy akcji, których powtórzenie niczego nie psuje, na testy jednego wywołania: usuń drugie wywołanie i asercję o liczbie zapisów, zachowaj pozostałe asercje i nadaj nazwy `saveSemesterPublishesSuccessAndClosesConfiguration` (z `saveRunsOnceAndPublishesSuccessWithOneEffect`), `deleteCoursePublishesSuccessAndClearsPending` (z `deleteCourseRunsOnceAndPublishesSuccess`) i `deleteOverridePublishesSuccessAfterConfirmation` (z `deleteOverrideRunsOnceAndPublishesSuccess`).
-5. Usuń z `StudyProgramsViewModelTest` testy `doubleSaveWritesOnce` (zapis nazwy i koloru jest aktualizacją) i `failedSaveKeepsDraftAndPublishesError`.
+3. Usuń testy z `SemesterViewModelTest`: `cancellationDoesNotPublishOrKeepSaving`, `addCourseErrorKeepsDraftAndPublishesError`, `addCourseCancellationDoesNotPublish`, `deleteCourseErrorKeepsItemAndPublishesError`, `saveOverrideErrorKeepsFormOpen`, `deleteOverrideCancellationDoesNotPublish`. Zostają `addCourseRunsOnce` i `saveOverrideRunsOnce` (powtórzenie dodałoby drugi rekord), `saveRunsOnceAndPublishesSuccessWithOneEffect` (powtórzenie zamknęłoby dwa ekrany), `saveErrorKeepsFormAndPublishesError` (stan błędu formularza dat) i `lateSaveFromPreviousSessionDoesNotCloseOrModifyCurrentSemester` (sesja na ścieżce sukcesu; ścieżki błędu po zmianie sesji dziś żaden test nie sprawdza).
+4. Zmień w `SemesterViewModelTest` dwa testy akcji, których powtórzenie niczego nie psuje, na testy jednego wywołania: usuń drugie wywołanie i asercję o liczbie zapisów, zachowaj pozostałe asercje i nadaj nazwy `deleteCoursePublishesSuccessAndClearsPending` (z `deleteCourseRunsOnceAndPublishesSuccess`) i `deleteOverridePublishesSuccessAfterConfirmation` (z `deleteOverrideRunsOnceAndPublishesSuccess`).
+5. Usuń z `StudyProgramsViewModelTest` test `failedSaveKeepsDraftAndPublishesError`. `doubleSaveWritesOnce` zostaje, bo zapis wysyła efekt `CloseEditor`, a powtórzenie zamknęłoby dwa ekrany.
 
 Przypadki brzegowe: zapis z poprzedniej sesji semestru nie publikuje komunikatu ani nie zamyka nowej; dodanie kierunku z osobnym kalendarzem wybiera inną operację repozytorium niż kierunek ze wspólnym kalendarzem.
 
 Weryfikacja: `gradlew.bat test`; `SemesterScreenTest` i `StudyProgramsScreenTest` na emulatorze.
 
-Kryterium zakończenia: dziesięć wymienionych akcji używa `launchUiOperation`; osiem testów usunięto, a trzy zmieniono; pozostałe testy przechodzą.
+Kryterium zakończenia: `saveSemester` i dziewięć wymienionych akcji używa `launchUiOperation`; siedem testów usunięto, a dwa zmieniono; pozostałe testy przechodzą.
 
 ## 4. Przenieś zapisy ustawień i kreatora oraz zamknij I-64 (I-64)
 

@@ -15,6 +15,7 @@ import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
+import dev.retza.mak.ui.feedback.launchUiOperation
 import java.time.DayOfWeek
 import java.time.temporal.TemporalAdjusters
 import kotlinx.coroutines.CancellationException
@@ -125,34 +126,34 @@ class SemesterViewModel(
             )
         }
         val token = sessionToken
-        viewModelScope.launch {
-            try {
-                semesterRepository.updateSemesterWithCalendar(
-                    SemesterRecord(id = id, name = form.name.trim()),
-                    AcademicCalendarRecord(
-                        id = currentCalendarId,
-                        semesterId = id,
-                        startDate = start,
-                        endDate = end,
-                        firstWeekType = WeekType.valueOf(form.firstWeek.name)
-                    )
-                )
-                if (!isCurrentSession(token)) return@launch
-                feedbackSink.publish(UiFeedback("Zapisano semestr", UiFeedbackKind.Success))
-                effectsChannel.trySend(SemesterEffect.CloseConfiguration)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                if (!isCurrentSession(token)) return@launch
-                update {
-                    it.copy(semester = it.semester.copy(dateRangeError = "Nie udało się zapisać semestru."))
-                }
-                feedbackSink.publish(UiFeedback("Nie udało się zapisać semestru.", UiFeedbackKind.Error))
-            } finally {
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać semestru.",
+            onFinish = {
                 if (isCurrentSession(token)) {
                     update { it.copy(semester = it.semester.copy(isSaving = false)) }
                 }
-            }
+            },
+            onError = {
+                update {
+                    it.copy(semester = it.semester.copy(dateRangeError = "Nie udało się zapisać semestru."))
+                }
+            },
+            isCurrent = { isCurrentSession(token) }
+        ) {
+            semesterRepository.updateSemesterWithCalendar(
+                SemesterRecord(id = id, name = form.name.trim()),
+                AcademicCalendarRecord(
+                    id = currentCalendarId,
+                    semesterId = id,
+                    startDate = start,
+                    endDate = end,
+                    firstWeekType = WeekType.valueOf(form.firstWeek.name)
+                )
+            )
+            if (!isCurrentSession(token)) return@launchUiOperation
+            feedbackSink.publish(UiFeedback("Zapisano semestr", UiFeedbackKind.Success))
+            effectsChannel.trySend(SemesterEffect.CloseConfiguration)
         }
     }
 
