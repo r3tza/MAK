@@ -236,23 +236,6 @@ class SemesterViewModelTest {
     }
 
     @Test
-    fun cancellationDoesNotPublishOrKeepSaving() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink()
-        val viewModel = recordingViewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.open("1")
-        advanceUntilIdle()
-
-        repository.cancelSaves = true
-        viewModel.saveSemester()
-        advanceUntilIdle()
-
-        assertTrue(sink.published.isEmpty())
-        assertFalse(viewModel.semester.value.semester.isSaving)
-    }
-
-    @Test
     fun addCourseRejectsBlankName() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
@@ -352,28 +335,7 @@ class SemesterViewModelTest {
     }
 
     @Test
-    fun addCourseErrorKeepsDraftAndPublishesError() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink()
-        val viewModel = recordingViewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.open("1")
-        advanceUntilIdle()
-
-        viewModel.updateCourseName("Fizyka")
-        repository.failSaves = true
-        viewModel.addCourse()
-        advanceUntilIdle()
-
-        assertEquals("Fizyka", viewModel.semester.value.courseNameDraft)
-        assertFalse(viewModel.semester.value.isAddingCourse)
-        assertEquals(1, sink.published.size)
-        assertEquals(UiFeedbackKind.Error, sink.published.single().kind)
-        assertEquals("Nie udało się dodać kierunku.", sink.published.single().message)
-    }
-
-    @Test
-    fun deleteCourseRunsOnceAndPublishesSuccess() = runTest(mainDispatcher) {
+    fun deleteCoursePublishesSuccessAndClearsPending() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
@@ -383,14 +345,9 @@ class SemesterViewModelTest {
 
         viewModel.requestCourseDeletion("1")
         advanceUntilIdle()
-        repository.saveGate = CompletableDeferred()
         viewModel.confirmCourseDeletion()
-        viewModel.confirmCourseDeletion()
-        advanceUntilIdle()
-        repository.saveGate?.complete(Unit)
         advanceUntilIdle()
 
-        assertEquals(1, repository.events.count { it == "deleteSemesterProgram" })
         assertTrue(repository.semesterPrograms.isEmpty())
         assertEquals(
             listOf(UiFeedback("Usunięto kierunek", UiFeedbackKind.Success)),
@@ -435,46 +392,6 @@ class SemesterViewModelTest {
         assertNull(viewModel.semester.value.pendingCourseDeletion)
         assertFalse("deleteSemesterProgram" in repository.events)
         assertEquals(1, repository.semesterPrograms.size)
-    }
-
-    @Test
-    fun deleteCourseErrorKeepsItemAndPublishesError() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink()
-        val viewModel = recordingViewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.open("1")
-        advanceUntilIdle()
-
-        viewModel.requestCourseDeletion("1")
-        advanceUntilIdle()
-        repository.failSaves = true
-        viewModel.confirmCourseDeletion()
-        advanceUntilIdle()
-
-        assertEquals(1, repository.studyPrograms.size)
-        assertEquals(1, sink.published.size)
-        assertEquals(UiFeedbackKind.Error, sink.published.single().kind)
-        assertEquals("Nie udało się usunąć kierunku.", sink.published.single().message)
-        assertFalse(viewModel.semester.value.isDeletingCourse)
-    }
-
-    @Test
-    fun addCourseCancellationDoesNotPublish() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink()
-        val viewModel = recordingViewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.open("1")
-        advanceUntilIdle()
-
-        viewModel.updateCourseName("Fizyka")
-        repository.cancelSaves = true
-        viewModel.addCourse()
-        advanceUntilIdle()
-
-        assertTrue(sink.published.isEmpty())
-        assertFalse(viewModel.semester.value.isAddingCourse)
     }
 
     @Test
@@ -599,29 +516,7 @@ class SemesterViewModelTest {
     }
 
     @Test
-    fun saveOverrideErrorKeepsFormOpen() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink()
-        val viewModel = recordingViewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.open("1")
-        advanceUntilIdle()
-
-        viewModel.newWeekOverride()
-        viewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekStartDate = "2026-10-05")) }
-        repository.failSaves = true
-        viewModel.saveWeekOverride()
-        advanceUntilIdle()
-
-        assertTrue(viewModel.semester.value.overrideForm.isOpen)
-        assertEquals("2026-10-05", viewModel.semester.value.overrideForm.weekStartDate)
-        assertFalse(viewModel.semester.value.overrideForm.isSaving)
-        assertEquals(1, sink.published.size)
-        assertEquals(UiFeedbackKind.Error, sink.published.single().kind)
-    }
-
-    @Test
-    fun deleteOverrideRunsOnceAndPublishesSuccess() = runTest(mainDispatcher) {
+    fun deleteOverridePublishesSuccessAfterConfirmation() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         repository.weekOverrides += WeekOverrideEntity(
             id = 5L,
@@ -639,45 +534,14 @@ class SemesterViewModelTest {
 
         viewModel.requestWeekOverrideDeletion("5")
         assertTrue(repository.events.none { it == "deleteWeekOverride" })
-        repository.saveGate = CompletableDeferred()
         viewModel.confirmWeekOverrideDeletion()
-        viewModel.confirmWeekOverrideDeletion()
-        advanceUntilIdle()
-        repository.saveGate?.complete(Unit)
         advanceUntilIdle()
 
-        assertEquals(1, repository.events.count { it == "deleteWeekOverride" })
         assertTrue(repository.weekOverrides.isEmpty())
         assertEquals(
             listOf(UiFeedback("Usunięto korektę tygodnia", UiFeedbackKind.Success)),
             sink.published
         )
-        assertFalse(viewModel.semester.value.isDeletingOverride)
-    }
-
-    @Test
-    fun deleteOverrideCancellationDoesNotPublish() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        repository.weekOverrides += WeekOverrideEntity(
-            id = 5L,
-            semesterId = 1L,
-            academicCalendarId = 1L,
-            weekStartDate = LocalDate.of(2026, 10, 5),
-            weekType = WeekType.A,
-            scope = WeekOverrideScope.ONE_WEEK
-        )
-        val sink = RecordingFeedbackSink()
-        val viewModel = recordingViewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.open("1")
-        advanceUntilIdle()
-
-        viewModel.requestWeekOverrideDeletion("5")
-        repository.cancelSaves = true
-        viewModel.confirmWeekOverrideDeletion()
-        advanceUntilIdle()
-
-        assertTrue(sink.published.isEmpty())
         assertFalse(viewModel.semester.value.isDeletingOverride)
     }
 
@@ -965,6 +829,35 @@ class SemesterViewModelTest {
         assertTrue(effects.isEmpty())
         assertTrue(sink.published.isEmpty())
         assertFalse(viewModel.semester.value.semester.isSaving)
+    }
+
+    @Test
+    fun failedSaveFromPreviousSessionDoesNotReportOnCurrentSemester() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        val effects = mutableListOf<SemesterEffect>()
+        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+
+        repository.saveGate = CompletableDeferred()
+        viewModel.saveSemester()
+        advanceUntilIdle()
+
+        viewModel.open("2")
+        advanceUntilIdle()
+        repository.saveGate?.completeExceptionally(IllegalStateException("save failed"))
+        advanceUntilIdle()
+
+        // The failure belongs to the semester that is no longer open.
+        assertEquals("Semestr drugi", viewModel.semester.value.semester.name)
+        assertNull(viewModel.semester.value.semester.dateRangeError)
+        assertTrue(sink.published.isEmpty())
+        assertTrue(effects.isEmpty())
     }
 }
 

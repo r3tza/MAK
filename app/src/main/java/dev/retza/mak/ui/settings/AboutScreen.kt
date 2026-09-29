@@ -51,6 +51,11 @@ private val appFeatures = listOf(
     "aktualizacje z GitHub Releases"
 )
 
+// Matches res/xml/data_extraction_rules.xml: plan and settings only, encrypted cloud backup.
+internal const val BACKUP_NOTICE =
+    "Jeśli w telefonie jest włączona kopia zapasowa Google i ustawiona blokada ekranu, Android " +
+        "dołącza plan i ustawienia do zaszyfrowanej kopii i przywraca je po ponownej instalacji aplikacji."
+
 @Composable
 fun AboutScreen(
     installedVersionName: String,
@@ -87,13 +92,14 @@ fun AboutScreen(
 
         AboutGroup("Dane i prywatność", spacing = MakSpacing.md) {
             Text(
-                "Plan i notatki są przechowywane tylko na telefonie. Podstawowe funkcje działają " +
+                "Plan i notatki są przechowywane na telefonie. Podstawowe funkcje działają " +
                     "bez konta i połączenia z siecią.",
                 style = MaterialTheme.typography.bodyMedium
             )
+            Text(BACKUP_NOTICE, style = MaterialTheme.typography.bodyMedium)
             Text(
                 "Sieć służy wyłącznie do sprawdzania i pobierania aktualizacji z GitHuba. " +
-                    "Aplikacja nie wysyła danych planu.",
+                    "Sama aplikacja nie wysyła danych planu.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

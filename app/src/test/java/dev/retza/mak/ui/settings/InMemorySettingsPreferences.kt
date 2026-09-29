@@ -1,7 +1,6 @@
 package dev.retza.mak.ui.settings
 
 import java.time.LocalTime
-import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 
@@ -15,8 +14,6 @@ class InMemorySettingsPreferences(
     private val gapThreshold = MutableStateFlow(initialGapThresholdMinutes)
 
     var failNextWrite = false
-    var writeGate: CompletableDeferred<Unit>? = null
-    var writeCount = 0
 
     override val theme: Flow<ThemeMode> = state
 
@@ -60,11 +57,9 @@ class InMemorySettingsPreferences(
     }
 
     private suspend fun awaitWrite() {
-        writeGate?.await()
         if (failNextWrite) {
             failNextWrite = false
             throw IllegalStateException("settings write failed")
         }
-        writeCount += 1
     }
 }

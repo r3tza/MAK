@@ -14,30 +14,6 @@ class PlanMappingTest {
     private val date = LocalDate.of(2026, 9, 21)
 
     @Test
-    fun mapsBothNotesSeparately() {
-        val ui = occurrence(classNote = "Wspólna", occurrenceBody = "Na dziś").toUi(null)
-
-        assertEquals("Wspólna", ui.classNote)
-        assertEquals("Na dziś", ui.occurrenceNote)
-    }
-
-    @Test
-    fun mapsOnlyClassNote() {
-        val ui = occurrence(classNote = "Wspólna").toUi(null)
-
-        assertEquals("Wspólna", ui.classNote)
-        assertNull(ui.occurrenceNote)
-    }
-
-    @Test
-    fun mapsOnlyOccurrenceNote() {
-        val ui = occurrence(occurrenceBody = "Na dziś").toUi(null)
-
-        assertNull(ui.classNote)
-        assertEquals("Na dziś", ui.occurrenceNote)
-    }
-
-    @Test
     fun blankNotesBecomeNull() {
         val ui = occurrence(classNote = "   ", occurrenceBody = "").toUi(null)
 

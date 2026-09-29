@@ -8,6 +8,7 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
+import dev.retza.mak.ui.feedback.launchUiOperation
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -118,18 +119,15 @@ class StudyProgramsViewModel(
             return
         }
         state.update { it.copy(editor = it.editor.copy(isSaving = true)) }
-        viewModelScope.launch {
-            try {
-                semesterRepository.saveStudyProgram(StudyProgramRecord(id = id, name = name, color = editor.color))
-                state.update { it.copy(editor = StudyProgramEditorUi()) }
-                feedbackSink.publish(UiFeedback("Zapisano kierunek", UiFeedbackKind.Success))
-                effectsChannel.trySend(StudyProgramsEffect.CloseEditor)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                state.update { it.copy(editor = it.editor.copy(isSaving = false)) }
-                feedbackSink.publish(UiFeedback("Nie udało się zapisać kierunku.", UiFeedbackKind.Error))
-            }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać kierunku.",
+            onFinish = { state.update { it.copy(editor = it.editor.copy(isSaving = false)) } }
+        ) {
+            semesterRepository.saveStudyProgram(StudyProgramRecord(id = id, name = name, color = editor.color))
+            state.update { it.copy(editor = StudyProgramEditorUi()) }
+            feedbackSink.publish(UiFeedback("Zapisano kierunek", UiFeedbackKind.Success))
+            effectsChannel.trySend(StudyProgramsEffect.CloseEditor)
         }
     }
 }

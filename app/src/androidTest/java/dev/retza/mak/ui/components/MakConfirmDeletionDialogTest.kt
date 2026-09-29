@@ -1,7 +1,6 @@
 package dev.retza.mak.ui.components
 
 import androidx.compose.ui.test.assertIsDisplayed
-import androidx.compose.ui.test.assertIsEnabled
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
@@ -64,26 +63,10 @@ class MakConfirmDeletionDialogTest {
     }
 
     @Test
-    fun customConfirmLabelReplacesDefault() {
-        setDialog(confirmLabel = "Usuń zajęcia")
-
-        composeTestRule.onNodeWithText("Usuń zajęcia").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Usuń").assertDoesNotExist()
-    }
-
-    @Test
     fun bothActionsAreBlockedWhileDeleting() {
         setDialog(isDeleting = true)
 
         composeTestRule.onNodeWithText("Usuń").assertIsNotEnabled()
         composeTestRule.onNodeWithText("Anuluj").assertIsNotEnabled()
-    }
-
-    @Test
-    fun bothActionsAreEnabledWhenNotDeleting() {
-        setDialog()
-
-        composeTestRule.onNodeWithText("Usuń").assertIsEnabled()
-        composeTestRule.onNodeWithText("Anuluj").assertIsEnabled()
     }
 }

@@ -19,20 +19,14 @@ class CourseColorsTest {
     fun changingHueKeepsLightness() {
         for (lightness in listOf(0.2f, 0.5f, 0.8f)) {
             for (hue in 0 until 360 step 30) {
-                val color = courseColorFrom(hue.toFloat(), lightness)
-                assertEquals("hue $hue lightness $lightness", lightness, hueAndLightnessOf(color).lightness, 0.01f)
+                val parsed = hueAndLightnessOf(courseColorFrom(hue.toFloat(), lightness))
+                assertEquals("lightness of hue $hue lightness $lightness", lightness, parsed.lightness, 0.01f)
+                assertTrue(
+                    "hue $hue lightness $lightness read back as ${parsed.hue}",
+                    hueDistanceForTest(parsed.hue, hue.toFloat()) < 2f
+                )
             }
         }
-    }
-
-    @Test
-    fun hueAndLightnessRoundTrip() {
-        val color = courseColorFrom(210f, 0.4f)
-
-        val parsed = hueAndLightnessOf(color)
-
-        assertEquals(210f, parsed.hue, 2f)
-        assertEquals(0.4f, parsed.lightness, 0.01f)
     }
 
     @Test
@@ -98,13 +92,9 @@ class CourseColorsTest {
     }
 
     @Test
-    fun suggestedColorIsDefaultWithoutUsedColors() {
-        assertEquals(DefaultCourseColor, suggestedCourseColor(emptyList()))
-    }
-
-    @Test
     fun suggestedColorAvoidsHuesAlreadyUsed() {
         val first = suggestedCourseColor(emptyList())
+        assertEquals(DefaultCourseColor, first)
         val second = suggestedCourseColor(listOf(first))
         val third = suggestedCourseColor(listOf(first, second))
 

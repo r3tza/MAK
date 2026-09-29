@@ -28,11 +28,4 @@ class UiFeedbackTest {
             UiFeedback("Uwaga", UiFeedbackKind.Warning).toVisuals().duration
         )
     }
-
-    @Test
-    fun visualsKeepMessageAndKind() {
-        val visuals = UiFeedback("Zapisano", UiFeedbackKind.Success).toVisuals()
-        assertEquals("Zapisano", visuals.message)
-        assertEquals(UiFeedbackKind.Success, visuals.kind)
-    }
 }

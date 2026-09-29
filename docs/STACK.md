@@ -53,6 +53,15 @@
 
 Agenci sprawdzają działanie aplikacji testami, które da się uruchomić lokalnie. Priorytet ma logika domenowa na JVM. Ten sam `ActivePlanProvider` jest źródłem planu dla listy, kalendarza, ekranu „Dzisiaj”, widgetu i powiadomień, więc testy widoków nie powielają reguł planu. Nie piszemy testów rozstrzygających pytania, które nadal są otwarte w `ARCHITECTURE.md`.
 
+Każdy test ma wykrywać błąd, który może realnie wystąpić (decyzja użytkownika z 2026-09-29). Nie piszemy testów, które:
+
+- sprawdzają logikę atrapy zamiast kodu aplikacji, na przykład regułę repozytorium odtworzoną w `FakeRepository`; tę regułę sprawdza test Room;
+- tworzą obiekt i odczytują z powrotem jego pola albo przepisują stałe;
+- powtarzają regułę sprawdzoną już w teście domeny albo w innym teście tego samego komponentu; na wyższym poziomie zostaje jeden test połączenia, jeśli wywołanie może się pomylić;
+- zapisują dokładne wartości projektu, na przykład punkty krzywej animacji, zamiast niezmiennika lub stanu końcowego.
+
+Wartość mają przypadki brzegowe i ścieżki błędów: podwójne kliknięcie, anulowanie w trakcie zapisu, błąd zapisu, dane spoza zakresu, granice progów i odmiany liczebników (na przykład 12 i 22). Powtarzalną logikę, na przykład odmianę liczebników, trzymamy w jednej funkcji z jednym testem.
+
 **JVM.** Czysty Kotlin i `java.time`, bez Compose i Room:
 
 - `WeekCalculator`: semestr od środka tygodnia, A/B, data poza semestrem, `ONE_WEEK`, `FROM_WEEK`, nakładanie korekt;

@@ -48,6 +48,9 @@ class AboutScreenTest {
             composeTestRule.onNodeWithText(title).performScrollTo().assertIsDisplayed()
                 .assert(SemanticsMatcher.keyIsDefined(SemanticsProperties.Heading))
         }
+        // Privacy text states that Android backup may include the plan.
+        composeTestRule.onNodeWithText(BACKUP_NOTICE).performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("tylko na telefonie", substring = true).assertDoesNotExist()
         composeTestRule.onNodeWithText("Ostatnie zmiany").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Wersja 0.1.0").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("19 września 2026").performScrollTo().assertIsDisplayed()

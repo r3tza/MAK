@@ -16,6 +16,7 @@ import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
+import dev.retza.mak.ui.feedback.launchUiOperation
 import java.time.Clock
 import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
@@ -253,33 +254,33 @@ class SetupViewModel(
         val program = programRecordFor(current, id = 0L) ?: return
         state.update { it.copy(isSaving = true, errors = emptyMap()) }
         val token = sessionToken
-        saveJob = viewModelScope.launch {
-            try {
-                val ids = when (current.calendarMode) {
-                    SetupCalendarMode.Shared -> semesterRepository.saveStudyProgramAssignment(
-                        semesterId = semester,
-                        studyProgram = program,
-                        academicCalendarId = calendar
-                    )
-                    SetupCalendarMode.Separate -> semesterRepository.addSeparatedSemesterProgram(
-                        semesterId = semester,
-                        studyProgram = program,
-                        sourceCalendarId = calendar
-                    )
-                }
-                if (token != sessionToken) return@launch
-                semesterProgramColors = semesterProgramColors + program.color
-                state.update { it.copy(isSaving = false) }
-                closeAnotherProgram(savedName = program.name, savedId = ids.studyProgramId)
-                feedbackSink.publish(UiFeedback("Dodano kierunek", UiFeedbackKind.Success))
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
+        saveJob = viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się dodać kierunku.",
+            onFinish = {
                 if (token == sessionToken) {
                     state.update { it.copy(isSaving = false) }
-                    feedbackSink.publish(UiFeedback("Nie udało się dodać kierunku.", UiFeedbackKind.Error))
                 }
+            },
+            isCurrent = { token == sessionToken }
+        ) {
+            val ids = when (current.calendarMode) {
+                SetupCalendarMode.Shared -> semesterRepository.saveStudyProgramAssignment(
+                    semesterId = semester,
+                    studyProgram = program,
+                    academicCalendarId = calendar
+                )
+                SetupCalendarMode.Separate -> semesterRepository.addSeparatedSemesterProgram(
+                    semesterId = semester,
+                    studyProgram = program,
+                    sourceCalendarId = calendar
+                )
             }
+            if (token != sessionToken) return@launchUiOperation
+            semesterProgramColors = semesterProgramColors + program.color
+            state.update { it.copy(isSaving = false) }
+            closeAnotherProgram(savedName = program.name, savedId = ids.studyProgramId)
+            feedbackSink.publish(UiFeedback("Dodano kierunek", UiFeedbackKind.Success))
         }
     }
 
@@ -326,25 +327,20 @@ class SetupViewModel(
         if (state.value.isActivating) return
         state.update { it.copy(isActivating = true) }
         val token = sessionToken
-        viewModelScope.launch {
-            try {
-                semesterRepository.setActiveSemester(id)
-                if (token != sessionToken) return@launch
-                state.update { it.copy(isSemesterActive = true) }
-                effectsChannel.trySend(SetupEffect.OpenNewClassEditor)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                if (token == sessionToken) {
-                    feedbackSink.publish(
-                        UiFeedback("Nie udało się ustawić aktywnego semestru.", UiFeedbackKind.Error)
-                    )
-                }
-            } finally {
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się ustawić aktywnego semestru.",
+            onFinish = {
                 if (token == sessionToken) {
                     state.update { it.copy(isActivating = false) }
                 }
-            }
+            },
+            isCurrent = { token == sessionToken }
+        ) {
+            semesterRepository.setActiveSemester(id)
+            if (token != sessionToken) return@launchUiOperation
+            state.update { it.copy(isSemesterActive = true) }
+            effectsChannel.trySend(SetupEffect.OpenNewClassEditor)
         }
     }
 
@@ -389,64 +385,59 @@ class SetupViewModel(
         val isUpdate = existingSemester != null
         state.update { it.copy(isSaving = true, errors = emptyMap()) }
         val token = sessionToken
-        saveJob = viewModelScope.launch {
-            try {
-                val activate = existingSemester == null && shouldActivateNewSemester(
-                    today = LocalDate.now(clock),
-                    calendarStart = start,
-                    calendarEnd = end,
-                    hasActiveSemester = semesterRepository.observeActiveSemester().first() != null
-                )
-                val ids = semesterRepository.saveSetupConfiguration(
-                    SemesterRecord(
-                        id = existingSemester ?: 0L,
-                        name = current.semesterName.trim(),
-                        isActive = activate
-                    ),
-                    program,
-                    AcademicCalendarRecord(
-                        id = existingCalendar ?: 0L,
-                        semesterId = existingSemester ?: 0L,
-                        startDate = start,
-                        endDate = end,
-                        firstWeekType = WeekType.valueOf(current.firstWeekLabel)
-                    ),
-                    activate = activate
-                )
-                if (token != sessionToken) return@launch
-                semesterId = ids.semesterId
-                courseId = ids.studyProgramId
-                semesterProgramColors = listOf(program.color) + semesterProgramColors.drop(1)
-                calendarId = ids.academicCalendarId
-                state.update {
-                    it.copy(
-                        step = SetupStep.Classes,
-                        errors = emptyMap(),
-                        isProgramChoiceLocked = true,
-                        isSemesterActive = ids.semesterIsActive,
-                        semesterProgramNames = listOf(program.name) + it.semesterProgramNames.drop(1),
-                        semesterProgramIds = listOf(ids.studyProgramId) + it.semesterProgramIds.drop(1)
-                    )
-                }
-                val message = when {
-                    isUpdate -> "Zaktualizowano konfigurację"
-                    ids.semesterIsActive -> "Utworzono semestr i kierunek"
-                    else -> "Utworzono semestr i kierunek. Aktywny semestr się nie zmienił."
-                }
-                feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                if (token == sessionToken) {
-                    feedbackSink.publish(
-                        UiFeedback("Nie udało się zapisać konfiguracji.", UiFeedbackKind.Error)
-                    )
-                }
-            } finally {
+        saveJob = viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać konfiguracji.",
+            onFinish = {
                 if (token == sessionToken) {
                     state.update { it.copy(isSaving = false) }
                 }
+            },
+            isCurrent = { token == sessionToken }
+        ) {
+            val activate = existingSemester == null && shouldActivateNewSemester(
+                today = LocalDate.now(clock),
+                calendarStart = start,
+                calendarEnd = end,
+                hasActiveSemester = semesterRepository.observeActiveSemester().first() != null
+            )
+            val ids = semesterRepository.saveSetupConfiguration(
+                SemesterRecord(
+                    id = existingSemester ?: 0L,
+                    name = current.semesterName.trim(),
+                    isActive = activate
+                ),
+                program,
+                AcademicCalendarRecord(
+                    id = existingCalendar ?: 0L,
+                    semesterId = existingSemester ?: 0L,
+                    startDate = start,
+                    endDate = end,
+                    firstWeekType = WeekType.valueOf(current.firstWeekLabel)
+                ),
+                activate = activate
+            )
+            if (token != sessionToken) return@launchUiOperation
+            semesterId = ids.semesterId
+            courseId = ids.studyProgramId
+            semesterProgramColors = listOf(program.color) + semesterProgramColors.drop(1)
+            calendarId = ids.academicCalendarId
+            state.update {
+                it.copy(
+                    step = SetupStep.Classes,
+                    errors = emptyMap(),
+                    isProgramChoiceLocked = true,
+                    isSemesterActive = ids.semesterIsActive,
+                    semesterProgramNames = listOf(program.name) + it.semesterProgramNames.drop(1),
+                    semesterProgramIds = listOf(ids.studyProgramId) + it.semesterProgramIds.drop(1)
+                )
             }
+            val message = when {
+                isUpdate -> "Zaktualizowano konfigurację"
+                ids.semesterIsActive -> "Utworzono semestr i kierunek"
+                else -> "Utworzono semestr i kierunek. Aktywny semestr się nie zmienił."
+            }
+            feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
         }
     }
 }

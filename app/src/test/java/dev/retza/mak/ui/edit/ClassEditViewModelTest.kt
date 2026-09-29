@@ -534,37 +534,6 @@ class ClassEditViewModelTest {
     }
 
     @Test
-    fun saveErrorPublishesOneErrorAndKeepsForm() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink()
-        val viewModel = recordingViewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.openNew()
-        viewModel.update {
-            it.copy(
-                name = "Analiza",
-                semesterProgramId = "1",
-                type = "Wykład",
-                dayLabel = "Poniedziałek",
-                startTime = "12:00",
-                endTime = "13:30"
-            )
-        }
-        advanceUntilIdle()
-
-        repository.failSaves = true
-        viewModel.save()
-        advanceUntilIdle()
-
-        assertEquals(
-            listOf(UiFeedback("Nie udało się zapisać zajęć.", UiFeedbackKind.Error)),
-            sink.published
-        )
-        assertEquals("Analiza", viewModel.editor.value.name)
-        assertFalse(viewModel.editor.value.isSaving)
-    }
-
-    @Test
     fun validationDoesNotPublishFeedback() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink()

@@ -90,49 +90,17 @@ class SemesterScreenTest {
         composeTestRule.onAllNodesWithText("Pokaż korekty tygodni").assertCountEquals(0)
         composeTestRule.onNodeWithText("1 kierunek").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("1 korekta").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Kierunki").performScrollTo().assertIsDisplayed().performClick()
-        assertEquals("courses", opened)
-        composeTestRule.onNodeWithText("Korekty tygodni").performScrollTo().assertIsDisplayed().performClick()
-        assertEquals("overrides", opened)
-    }
-
-    @Test
-    fun navigationRowsShowCountLabelAreButtonsAndAreNotHeadingsAt320Dp() {
-        composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
-                Box(modifier = Modifier.width(320.dp).height(900.dp)) {
-                    SemesterScreen(
-                        state = SemesterScreenUiState(
-                            semester = SemesterFormUiState(name = "Semestr zimowy"),
-                            courseItems = listOf(course("1", "Informatyka"), course("2", "Matematyka")),
-                            calendars = listOf(calendar("1"), calendar("2", "2026-11-01", "2027-03-15")),
-                            overrideCount = 0
-                        ),
-                        onSemesterNameChanged = {},
-                        onSemesterStartDateChanged = {},
-                        onSemesterEndDateChanged = {},
-                        onSemesterFirstWeekChanged = {},
-                        onSaveSemester = {},
-                        onOpenCourses = {},
-                        onOpenOverrides = {},
-                        onOpenCalendars = {},
-                        onRetry = {}
-                    )
-                }
-            }
-        }
-
-        listOf(
-            "Kierunki" to "2 kierunki",
-            "Korekty tygodni" to "0 korekt",
-            "Kalendarze" to "2 kalendarze"
-        ).forEach { (title, countLabel) ->
-            composeTestRule.onNodeWithText(countLabel).performScrollTo().assertIsDisplayed()
+        // Each row is one button; its title is not a heading inside the button.
+        listOf("Kierunki", "Korekty tygodni").forEach { title ->
             composeTestRule.onNode(hasClickAction() and hasText(title))
                 .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
             composeTestRule.onNodeWithText(title, useUnmergedTree = true)
                 .assert(SemanticsMatcher.keyNotDefined(SemanticsProperties.Heading))
         }
+        composeTestRule.onNodeWithText("Kierunki").performScrollTo().assertIsDisplayed().performClick()
+        assertEquals("courses", opened)
+        composeTestRule.onNodeWithText("Korekty tygodni").performScrollTo().assertIsDisplayed().performClick()
+        assertEquals("overrides", opened)
     }
 
     @Test
@@ -320,8 +288,12 @@ class SemesterScreenTest {
             .fetchSemanticsNode().boundsInRoot.top
         assertTrue(nameTop < calendarTop)
         assertTrue(calendarTop < colorTop)
+        composeTestRule.onNodeWithText("Kierunek dostanie własną kopię dat, rytmu A/B i korekt.")
+            .performScrollTo()
+            .assertIsDisplayed()
         composeTestRule.onNodeWithText("Rozdziel kalendarz").performScrollTo().performClick()
         assertEquals("1", separated)
+        // With one calendar there is nothing to choose, so the picker stays hidden.
         composeTestRule.onNodeWithText("Kalendarz").assertDoesNotExist()
     }
 
@@ -352,38 +324,6 @@ class SemesterScreenTest {
 
         composeTestRule.onNodeWithText("Kalendarz").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Rozdziel kalendarz").assertDoesNotExist()
-    }
-
-    @Test
-    fun courseEditScreenOmitsCalendarPickerWithSingleCalendar() {
-        composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
-                Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
-                    SemesterCourseEditScreen(
-                        state = SemesterScreenUiState(
-                            courseItems = listOf(course("1", "Informatyka", sharesCalendar = true)),
-                            calendars = listOf(calendar("1")),
-                            selectedCalendarId = "1"
-                        ),
-                        editor = StudyProgramEditorUi(id = 1L, name = "Informatyka", color = "#137B71"),
-                        onNameChanged = {},
-                        onColorChanged = {},
-                        onSave = {},
-                        onCancel = {},
-                        onSeparateCourse = {},
-                        onRequestReconnect = { _, _ -> },
-                        onConfirmReconnect = {},
-                        onCancelReconnect = {},
-                    )
-                }
-            }
-        }
-
-        composeTestRule.onNodeWithText("Kalendarz").assertDoesNotExist()
-        composeTestRule.onNodeWithText("Rozdziel kalendarz").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Kierunek dostanie własną kopię dat, rytmu A/B i korekt.")
-            .performScrollTo()
-            .assertIsDisplayed()
     }
 
     @Test

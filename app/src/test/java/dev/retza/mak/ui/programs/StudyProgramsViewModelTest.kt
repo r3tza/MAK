@@ -85,25 +85,6 @@ class StudyProgramsViewModelTest {
     }
 
     @Test
-    fun failedSaveKeepsDraftAndPublishesError() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink()
-        val viewModel = viewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.openEditIfNeeded(repository.studyPrograms.first().id)
-        advanceUntilIdle()
-        viewModel.updateName("Nowa nazwa")
-
-        repository.failSaves = true
-        viewModel.save()
-        advanceUntilIdle()
-
-        assertEquals("Nowa nazwa", viewModel.programs.value.editor.name)
-        assertFalse(viewModel.programs.value.editor.isSaving)
-        assertEquals(UiFeedbackKind.Error, sink.published.single().kind)
-    }
-
-    @Test
     fun doubleSaveWritesOnce() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)

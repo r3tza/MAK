@@ -10,24 +10,17 @@ class SemesterActivationTest {
     private val end = LocalDate.of(2027, 6, 30)
 
     @Test
-    fun activatesWhenTodayIsInsideCalendar() {
-        assertTrue(shouldActivateNewSemester(LocalDate.of(2027, 4, 1), start, end, hasActiveSemester = true))
+    fun activatesFromFirstToLastDayOfCalendar() {
+        listOf(start, LocalDate.of(2027, 4, 1), end).forEach { today ->
+            assertTrue("$today", shouldActivateNewSemester(today, start, end, hasActiveSemester = true))
+        }
     }
 
     @Test
-    fun activatesOnFirstAndLastDayOfCalendar() {
-        assertTrue(shouldActivateNewSemester(start, start, end, hasActiveSemester = true))
-        assertTrue(shouldActivateNewSemester(end, start, end, hasActiveSemester = true))
-    }
-
-    @Test
-    fun keepsCurrentSemesterWhenCalendarStartsLater() {
-        assertFalse(shouldActivateNewSemester(start.minusDays(1), start, end, hasActiveSemester = true))
-    }
-
-    @Test
-    fun keepsCurrentSemesterWhenCalendarHasEnded() {
-        assertFalse(shouldActivateNewSemester(end.plusDays(1), start, end, hasActiveSemester = true))
+    fun keepsCurrentSemesterOutsideCalendar() {
+        listOf(start.minusDays(1), end.plusDays(1)).forEach { today ->
+            assertFalse("$today", shouldActivateNewSemester(today, start, end, hasActiveSemester = true))
+        }
     }
 
     @Test

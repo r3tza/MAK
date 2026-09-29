@@ -48,6 +48,9 @@ abstract class AppDatabase : RoomDatabase() {
     abstract fun occurrenceChangeDao(): OccurrenceChangeDao
 
     companion object {
+        /** Also named in `res/xml/data_extraction_rules.xml`, which allows it into Android backup. */
+        const val DATABASE_NAME = "mak.db"
+
         @Volatile
         private var instance: AppDatabase? = null
 
@@ -56,7 +59,7 @@ abstract class AppDatabase : RoomDatabase() {
                 instance ?: Room.databaseBuilder(
                     context.applicationContext,
                     AppDatabase::class.java,
-                    "mak.db"
+                    DATABASE_NAME
                 ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .build()
                     .also { instance = it }

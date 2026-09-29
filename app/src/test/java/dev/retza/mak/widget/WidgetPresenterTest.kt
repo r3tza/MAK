@@ -128,23 +128,6 @@ class WidgetPresenterTest {
     }
 
     @Test
-    fun presenterCountsThreeUniqueCollisionPairsOnce() {
-        val classes = listOf(
-            classItem("first", LocalTime.of(9, 0), LocalTime.of(11, 0)),
-            classItem("second", LocalTime.of(9, 30), LocalTime.of(10, 30)),
-            classItem("third", LocalTime.of(10, 0), LocalTime.of(11, 30))
-        )
-        val plan = ActivePlanProvider().resolve(
-            ActivePlanData(semester, classes, courses = listOf(course), semesterPrograms = listOf(assignment), calendars = listOf(calendar)),
-            date
-        )
-
-        val state = WidgetPresenter().present(date, semester.name, plan, LocalTime.of(0, 0)) as WidgetUiState.Ready
-
-        assertEquals(3, state.collisionCount)
-    }
-
-    @Test
     fun presenterMarksCurrentNextAndPastPhases() {
         val classes = listOf(
             classItem("first", LocalTime.of(8, 0), LocalTime.of(9, 0)),
@@ -288,13 +271,6 @@ class WidgetPresenterTest {
         assertFalse(widgetShouldShowNotes(item, mediumPolicy))
         assertTrue(widgetShouldShowConflict(item, largePolicy))
         assertTrue(widgetShouldShowNotes(item, largePolicy))
-    }
-
-    @Test
-    fun conflictCountUsesCorrectPolishInflection() {
-        assertEquals("1 kolizja", widgetConflictCountLabel(1))
-        assertEquals("2 kolizje", widgetConflictCountLabel(2))
-        assertEquals("5 kolizji", widgetConflictCountLabel(5))
     }
 
     @Test

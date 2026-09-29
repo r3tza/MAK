@@ -17,9 +17,9 @@ import dev.retza.mak.ui.polishPlural
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
+import dev.retza.mak.ui.feedback.launchUiOperation
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -115,19 +115,13 @@ class SettingsViewModel(
         if (local.value.isSelectingSemester) return
         val semesterId = id.toLongOrNull() ?: return
         local.update { it.copy(isSelectingSemester = true) }
-        viewModelScope.launch {
-            try {
-                semesterRepository.setActiveSemester(semesterId)
-                feedbackSink.publish(UiFeedback("Zmieniono aktywny semestr", UiFeedbackKind.Success))
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                feedbackSink.publish(
-                    UiFeedback("Nie udało się zmienić aktywnego semestru.", UiFeedbackKind.Error)
-                )
-            } finally {
-                local.update { it.copy(isSelectingSemester = false) }
-            }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zmienić aktywnego semestru.",
+            onFinish = { local.update { it.copy(isSelectingSemester = false) } }
+        ) {
+            semesterRepository.setActiveSemester(semesterId)
+            feedbackSink.publish(UiFeedback("Zmieniono aktywny semestr", UiFeedbackKind.Success))
         }
     }
 
@@ -144,18 +138,14 @@ class SettingsViewModel(
         if (local.value.isDeletingSemester) return
         val id = local.value.semesterToDeleteId?.toLongOrNull() ?: return
         local.update { it.copy(isDeletingSemester = true) }
-        viewModelScope.launch {
-            try {
-                semesterRepository.deleteSemesterAndSelectFallback(id)
-                local.update { it.copy(semesterToDeleteId = null) }
-                feedbackSink.publish(UiFeedback("Usunięto semestr", UiFeedbackKind.Success))
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                feedbackSink.publish(UiFeedback("Nie udało się usunąć semestru.", UiFeedbackKind.Error))
-            } finally {
-                local.update { it.copy(isDeletingSemester = false) }
-            }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się usunąć semestru.",
+            onFinish = { local.update { it.copy(isDeletingSemester = false) } }
+        ) {
+            semesterRepository.deleteSemesterAndSelectFallback(id)
+            local.update { it.copy(semesterToDeleteId = null) }
+            feedbackSink.publish(UiFeedback("Usunięto semestr", UiFeedbackKind.Success))
         }
     }
 
@@ -163,37 +153,27 @@ class SettingsViewModel(
         if (local.value.isSavingTheme) return
         val mode = themeModeFromId(id)
         local.update { it.copy(isSavingTheme = true) }
-        viewModelScope.launch {
-            try {
-                preferences.setTheme(mode)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                feedbackSink.publish(UiFeedback("Nie udało się zapisać motywu.", UiFeedbackKind.Error))
-            } finally {
-                local.update { it.copy(isSavingTheme = false) }
-            }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać motywu.",
+            onFinish = { local.update { it.copy(isSavingTheme = false) } }
+        ) {
+            preferences.setTheme(mode)
         }
     }
 
     fun exportJson(onReady: (ByteArray) -> Unit) {
         if (local.value.isExporting) return
         local.update { it.copy(isExporting = true) }
-        viewModelScope.launch {
-            try {
-                val bytes = withContext(backgroundDispatcher) {
-                    planBackupService.exportJson()
-                }
-                onReady(bytes)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                feedbackSink.publish(
-                    UiFeedback("Nie udało się wyeksportować planu.", UiFeedbackKind.Error)
-                )
-            } finally {
-                local.update { it.copy(isExporting = false) }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się wyeksportować planu.",
+            onFinish = { local.update { it.copy(isExporting = false) } }
+        ) {
+            val bytes = withContext(backgroundDispatcher) {
+                planBackupService.exportJson()
             }
+            onReady(bytes)
         }
     }
 
@@ -230,65 +210,52 @@ class SettingsViewModel(
         val minutes = id.toIntOrNull() ?: return
         if (local.value.isSavingGapThreshold) return
         local.update { it.copy(isSavingGapThreshold = true) }
-        viewModelScope.launch {
-            try {
-                preferences.setGapThresholdMinutes(minutes)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                feedbackSink.publish(UiFeedback("Nie udało się zapisać progu okienka.", UiFeedbackKind.Error))
-            } finally {
-                local.update { it.copy(isSavingGapThreshold = false) }
-            }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać progu okienka.",
+            onFinish = { local.update { it.copy(isSavingGapThreshold = false) } }
+        ) {
+            preferences.setGapThresholdMinutes(minutes)
         }
     }
 
     private fun saveNotifications(block: suspend () -> Unit) {
         if (local.value.isSavingNotifications) return
         local.update { it.copy(isSavingNotifications = true) }
-        viewModelScope.launch {
-            try {
-                block()
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                feedbackSink.publish(
-                    UiFeedback("Nie udało się zapisać ustawień powiadomień.", UiFeedbackKind.Error)
-                )
-            } finally {
-                local.update { it.copy(isSavingNotifications = false) }
-            }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać ustawień powiadomień.",
+            onFinish = { local.update { it.copy(isSavingNotifications = false) } }
+        ) {
+            block()
         }
     }
 
     fun prepareImport(bytes: ByteArray) {
         if (local.value.isPreparingImport) return
         local.update { it.copy(isPreparingImport = true, importErrorMessage = null) }
-        viewModelScope.launch {
-            try {
-                val preparation = withContext(backgroundDispatcher) {
-                    planBackupService.prepareImport(bytes)
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = null,
+            onFinish = { local.update { it.copy(isPreparingImport = false) } },
+            onError = { local.update { it.copy(importErrorMessage = "Nie udało się odczytać pliku.") } }
+        ) {
+            val preparation = withContext(backgroundDispatcher) {
+                planBackupService.prepareImport(bytes)
+            }
+            when (preparation) {
+                is ImportPreparation.Invalid -> local.update {
+                    it.copy(
+                        importErrorMessage = preparation.errors.firstOrNull()
+                            ?: "Nieprawidłowy plik kopii."
+                    )
                 }
-                when (preparation) {
-                    is ImportPreparation.Invalid -> local.update {
-                        it.copy(
-                            importErrorMessage = preparation.errors.firstOrNull()
-                                ?: "Nieprawidłowy plik kopii."
-                        )
-                    }
 
-                    is ImportPreparation.Ready -> {
-                        pendingImport = preparation.handle
-                        local.update { it.copy(importPreview = preparation.summary.toImportPreviewUi()) }
-                        effectsChannel.trySend(SettingsEffect.OpenImportPreview)
-                    }
+                is ImportPreparation.Ready -> {
+                    pendingImport = preparation.handle
+                    local.update { it.copy(importPreview = preparation.summary.toImportPreviewUi()) }
+                    effectsChannel.trySend(SettingsEffect.OpenImportPreview)
                 }
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                local.update { it.copy(importErrorMessage = "Nie udało się odczytać pliku.") }
-            } finally {
-                local.update { it.copy(isPreparingImport = false) }
             }
         }
     }
@@ -314,21 +281,17 @@ class SettingsViewModel(
         val handle = pendingImport ?: return
         if (local.value.isReplacingData) return
         local.update { it.copy(isReplacingData = true, importErrorMessage = null) }
-        viewModelScope.launch {
-            try {
-                planBackupService.confirmImport(handle)
-                pendingImport = null
-                local.update { it.copy(importPreview = null) }
-                feedbackSink.publish(UiFeedback("Zaimportowano plan", UiFeedbackKind.Success))
-                effectsChannel.trySend(SettingsEffect.CloseImportPreview)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (_: Exception) {
-                local.update { it.copy(importErrorMessage = "Nie udało się zaimportować planu.") }
-                feedbackSink.publish(UiFeedback("Nie udało się zaimportować planu.", UiFeedbackKind.Error))
-            } finally {
-                local.update { it.copy(isReplacingData = false) }
-            }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zaimportować planu.",
+            onFinish = { local.update { it.copy(isReplacingData = false) } },
+            onError = { local.update { it.copy(importErrorMessage = "Nie udało się zaimportować planu.") } }
+        ) {
+            planBackupService.confirmImport(handle)
+            pendingImport = null
+            local.update { it.copy(importPreview = null) }
+            feedbackSink.publish(UiFeedback("Zaimportowano plan", UiFeedbackKind.Success))
+            effectsChannel.trySend(SettingsEffect.CloseImportPreview)
         }
     }
 }

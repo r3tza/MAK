@@ -16,9 +16,4 @@ class DistinctLabelsTest {
             distinctLabels(listOf("Zima", "Lato", "Zima"))
         )
     }
-
-    @Test
-    fun singleLabelStaysUnchanged() {
-        assertEquals(listOf("Zima"), distinctLabels(listOf("Zima")))
-    }
 }
