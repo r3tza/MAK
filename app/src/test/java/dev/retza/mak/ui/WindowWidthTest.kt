@@ -21,4 +21,15 @@ class WindowWidthTest {
         assertTrue(shouldLockPortrait(599))
         assertFalse(shouldLockPortrait(600))
     }
+
+    @Test
+    fun railReplacesBottomBarFromMediumOnRootScreens() {
+        assertEquals(MakNavigationLayout.BottomBar, makNavigationLayout(MakWidthClass.Compact, isRootRoute = true))
+        assertEquals(MakNavigationLayout.Rail, makNavigationLayout(MakWidthClass.Medium, isRootRoute = true))
+        assertEquals(MakNavigationLayout.Rail, makNavigationLayout(MakWidthClass.Expanded, isRootRoute = true))
+
+        assertEquals(MakNavigationLayout.None, makNavigationLayout(MakWidthClass.Compact, isRootRoute = false))
+        assertEquals(MakNavigationLayout.None, makNavigationLayout(MakWidthClass.Medium, isRootRoute = false))
+        assertEquals(MakNavigationLayout.None, makNavigationLayout(MakWidthClass.Expanded, isRootRoute = false))
+    }
 }

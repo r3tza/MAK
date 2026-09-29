@@ -4,6 +4,10 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
+import androidx.compose.ui.test.assert
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
@@ -12,6 +16,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.components.MakActionMenu
+import dev.retza.mak.ui.components.MakNavRail
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -113,5 +118,43 @@ class MakNavigationChromeTest {
         composeTestRule.onNodeWithContentDescription("Więcej opcji").performClick()
         composeTestRule.onNodeWithText("Usuń zajęcia").assertIsDisplayed().performClick()
         assertEquals(1, deleteClicks)
+    }
+
+    @Test
+    fun navRailKeepsRolesSelectionAndActions() {
+        var todayClicks = 0
+        var planClicks = 0
+        var addClicks = 0
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(700.dp)) {
+                    MakNavRail(
+                        todaySelected = true,
+                        planSelected = false,
+                        onToday = { todayClicks += 1 },
+                        onPlan = { planClicks += 1 },
+                        onAdd = { addClicks += 1 }
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Dzisiaj")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, true))
+            .performClick()
+        assertEquals(1, todayClicks)
+
+        composeTestRule.onNodeWithText("Plan")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Tab))
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Selected, false))
+            .performClick()
+        assertEquals(1, planClicks)
+
+        composeTestRule.onNodeWithText("Dodaj")
+            .assert(SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .performClick()
+        assertEquals(1, addClicks)
     }
 }

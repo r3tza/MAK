@@ -1013,7 +1013,40 @@ fun MakNavBar(
 }
 
 @Composable
-private fun RowScope.MakNavButton(
+fun MakNavRail(
+    todaySelected: Boolean,
+    planSelected: Boolean,
+    onToday: () -> Unit,
+    onPlan: () -> Unit,
+    onAdd: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val outline = MaterialTheme.colorScheme.outlineVariant
+    Column(
+        modifier = modifier
+            .width(88.dp)
+            .fillMaxHeight()
+            .background(MaterialTheme.colorScheme.surface)
+            .drawBehind {
+                drawLine(
+                    color = outline,
+                    start = Offset(size.width, 0f),
+                    end = Offset(size.width, size.height),
+                    strokeWidth = 1.dp.toPx()
+                )
+            }
+            .padding(top = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        MakNavButton("Dzisiaj", Icons.Outlined.Today, todaySelected, onToday, Modifier.width(72.dp))
+        MakNavButton("Plan", Icons.Outlined.CalendarMonth, planSelected, onPlan, Modifier.width(72.dp))
+        MakNavButton("Dodaj", Icons.Outlined.Add, false, onAdd, Modifier.width(72.dp), role = Role.Button)
+    }
+}
+
+@Composable
+private fun MakNavButton(
     label: String,
     icon: ImageVector,
     selected: Boolean,

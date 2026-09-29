@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.safeDrawing
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.CenterAlignedTopAppBar
@@ -31,6 +32,7 @@ import dev.retza.mak.ui.components.MakBrandMark
 import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakIconButton
 import dev.retza.mak.ui.components.MakNavBar
+import dev.retza.mak.ui.components.MakNavRail
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.MakSnackbarHost
 import dev.retza.mak.ui.feedback.UiFeedback
@@ -75,6 +77,7 @@ fun MakApp(
         ?.route
     val isRoot = currentRoute == MakRoutes.Today || currentRoute == MakRoutes.Schedule
     val showBack = currentRoute != null && !isRoot && !isSetupRoute(currentRoute)
+    val navigationLayout = makNavigationLayout(LocalMakWidthClass.current, isRoot)
 
     fun openRoot(route: String) {
         navController.navigate(route) {
@@ -94,6 +97,14 @@ fun MakApp(
         if (state.hasLoadedData) {
             setupViewModel.start(state.setupResume)
             openSetup(navController)
+        }
+    }
+
+    val onAddClass: () -> Unit = {
+        when (addAction(state.hasLoadedData, state.requiresSetup)) {
+            AddAction.None -> Unit
+            AddAction.Setup -> startSetup()
+            AddAction.Editor -> openClassEditor(classEditViewModel, navController)
         }
     }
 
@@ -151,76 +162,87 @@ fun MakApp(
             )
         },
         bottomBar = {
-            if (isRoot) {
+            if (navigationLayout == MakNavigationLayout.BottomBar) {
                 MakNavBar(
                     todaySelected = currentRoute == MakRoutes.Today,
                     planSelected = currentRoute == MakRoutes.Schedule,
                     addSelected = false,
                     onToday = { openRoot(MakRoutes.Today) },
                     onPlan = { openRoot(MakRoutes.Schedule) },
-                    onAdd = {
-                        when (addAction(state.hasLoadedData, state.requiresSetup)) {
-                            AddAction.None -> Unit
-                            AddAction.Setup -> startSetup()
-                            AddAction.Editor -> openClassEditor(classEditViewModel, navController)
-                        }
-                    }
+                    onAdd = onAddClass
                 )
             }
         }
     ) { padding ->
-        NavHost(
-            navController = navController,
-            startDestination = MakRoutes.Today,
+        Row(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
         ) {
-            todayRoute(
-                appState = state,
-                todayViewModel = todayViewModel,
-                updateViewModel = updateViewModel,
+            if (navigationLayout == MakNavigationLayout.Rail) {
+                MakNavRail(
+                    todaySelected = currentRoute == MakRoutes.Today,
+                    planSelected = currentRoute == MakRoutes.Schedule,
+                    onToday = { openRoot(MakRoutes.Today) },
+                    onPlan = { openRoot(MakRoutes.Schedule) },
+                    onAdd = onAddClass
+                )
+            }
+            NavHost(
                 navController = navController,
-                onOpenOccurrence = openOccurrenceById,
-                startSetup = startSetup
-            )
-            scheduleRoute(
-                appState = state,
-                scheduleViewModel = scheduleViewModel,
-                onOpenOccurrence = openOccurrenceById,
-                startSetup = startSetup
-            )
-            classEditRoute(classEditViewModel = classEditViewModel, onBack = ::navigateBack)
-            occurrenceDetailsRoute(occurrenceViewModel = occurrenceViewModel)
-            semesterRoutes(
-                semesterViewModel = semesterViewModel,
-                navController = navController,
-                studyProgramsViewModel = studyProgramsViewModel
-            )
-            settingsRoute(
-                settingsViewModel = settingsViewModel,
-                updateViewModel = updateViewModel,
-                navController = navController,
-                onAddSemester = {
-                    setupViewModel.start()
-                    openSetup(navController)
-                },
-                onConfigureSemester = { id ->
-                    openSemesterConfiguration(semesterViewModel, navController, id)
-                },
-                onExport = onCreateExportDocument,
-                onImport = onImportPlan,
-                notificationsBlocked = notificationsBlocked,
-                onRequestNotificationPermission = onRequestNotificationPermission,
-                onOpenAppSettings = onOpenAppSettings,
-                onGrantInstallPermission = onGrantInstallPermission
-            )
-            studyProgramRoutes(
-                studyProgramsViewModel = studyProgramsViewModel,
-                navController = navController,
-                onBack = ::navigateBack
-            )
-            setupRoute(setupViewModel = setupViewModel, settingsViewModel = settingsViewModel)
+                startDestination = MakRoutes.Today,
+                modifier = if (navigationLayout == MakNavigationLayout.Rail) {
+                    Modifier.weight(1f).fillMaxHeight()
+                } else {
+                    Modifier.fillMaxSize()
+                }
+            ) {
+                todayRoute(
+                    appState = state,
+                    todayViewModel = todayViewModel,
+                    updateViewModel = updateViewModel,
+                    navController = navController,
+                    onOpenOccurrence = openOccurrenceById,
+                    startSetup = startSetup
+                )
+                scheduleRoute(
+                    appState = state,
+                    scheduleViewModel = scheduleViewModel,
+                    onOpenOccurrence = openOccurrenceById,
+                    startSetup = startSetup
+                )
+                classEditRoute(classEditViewModel = classEditViewModel, onBack = ::navigateBack)
+                occurrenceDetailsRoute(occurrenceViewModel = occurrenceViewModel)
+                semesterRoutes(
+                    semesterViewModel = semesterViewModel,
+                    navController = navController,
+                    studyProgramsViewModel = studyProgramsViewModel
+                )
+                settingsRoute(
+                    settingsViewModel = settingsViewModel,
+                    updateViewModel = updateViewModel,
+                    navController = navController,
+                    onAddSemester = {
+                        setupViewModel.start()
+                        openSetup(navController)
+                    },
+                    onConfigureSemester = { id ->
+                        openSemesterConfiguration(semesterViewModel, navController, id)
+                    },
+                    onExport = onCreateExportDocument,
+                    onImport = onImportPlan,
+                    notificationsBlocked = notificationsBlocked,
+                    onRequestNotificationPermission = onRequestNotificationPermission,
+                    onOpenAppSettings = onOpenAppSettings,
+                    onGrantInstallPermission = onGrantInstallPermission
+                )
+                studyProgramRoutes(
+                    studyProgramsViewModel = studyProgramsViewModel,
+                    navController = navController,
+                    onBack = ::navigateBack
+                )
+                setupRoute(setupViewModel = setupViewModel, settingsViewModel = settingsViewModel)
+            }
         }
     }
 }

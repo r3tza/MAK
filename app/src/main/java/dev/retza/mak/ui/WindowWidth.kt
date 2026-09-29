@@ -20,3 +20,11 @@ val LocalMakWidthClass = staticCompositionLocalOf { MakWidthClass.Compact }
 
 internal fun shouldLockPortrait(smallestScreenWidthDp: Int): Boolean =
     smallestScreenWidthDp < TABLET_MIN_SMALLEST_WIDTH_DP
+
+enum class MakNavigationLayout { BottomBar, Rail, None }
+
+internal fun makNavigationLayout(widthClass: MakWidthClass, isRootRoute: Boolean): MakNavigationLayout = when {
+    !isRootRoute -> MakNavigationLayout.None
+    widthClass == MakWidthClass.Compact -> MakNavigationLayout.BottomBar
+    else -> MakNavigationLayout.Rail
+}

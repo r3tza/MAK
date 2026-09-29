@@ -18,6 +18,8 @@ Dolny pasek zawiera trzy pozycje:
 - **Plan** - tygodniowy plan zajęć;
 - **Dodaj** - formularz nowych zajęć.
 
+Od 600 dp szerokości okna te same pozycje są w bocznym pasku po lewej stronie, a dolnego paska nie ma.
+
 Ustawienia są dostępne z menu w prawym górnym rogu. Kliknięcie zajęć na ekranie „Dzisiaj” lub „Plan” otwiera ekran szczegółów i edycji.
 
 Jeśli aplikacja nie ma jeszcze semestru, ekran „Dzisiaj” pokazuje stan pusty z przyciskiem „Skonfiguruj plan”. Kreator otwiera się po tej akcji i tworzy pierwszy semestr, kierunek, kalendarz oraz przypisanie. Ustawienia pozwalają później dodawać, wybierać, konfigurować i usuwać semestry.
