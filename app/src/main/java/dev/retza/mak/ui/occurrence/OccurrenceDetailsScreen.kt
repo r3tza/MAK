@@ -1,6 +1,9 @@
 package dev.retza.mak.ui.occurrence
 
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.widthIn
+import dev.retza.mak.ui.MakContentMaxWidth
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -133,24 +136,28 @@ private fun OccurrenceBottomActions(
 ) {
     val canChange = state.canChangeOccurrence || state.canMoveOccurrence
     if (!state.canRestoreOccurrence && !canChange) return
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = MakSpacing.lg, vertical = MakSpacing.sm),
-        verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
-    ) {
-        if (state.canRestoreOccurrence) {
-            MakPrimaryAction(
-                text = "Przywróć termin",
-                onClick = onRestoreOccurrence,
-                modifier = Modifier.fillMaxWidth()
-            )
-        } else {
-            MakPrimaryAction(
-                text = "Zmień termin",
-                onClick = onOpenOccurrenceEdit,
-                modifier = Modifier.fillMaxWidth()
-            )
+    // The action stands outside the scrolling content, so it gets the same width limit.
+    Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = MakContentMaxWidth)
+                .fillMaxWidth()
+                .padding(horizontal = MakSpacing.lg, vertical = MakSpacing.sm),
+            verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+        ) {
+            if (state.canRestoreOccurrence) {
+                MakPrimaryAction(
+                    text = "Przywróć termin",
+                    onClick = onRestoreOccurrence,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            } else {
+                MakPrimaryAction(
+                    text = "Zmień termin",
+                    onClick = onOpenOccurrenceEdit,
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
         }
     }
 }

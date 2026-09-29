@@ -4,7 +4,7 @@ Ten dokument opisuje docelowe zachowanie ekranów i widgetu. Bieżące braki są
 
 ## Nawigacja
 
-Aplikacja działa w orientacji pionowej; obrót telefonu nie zmienia układu (`ARCHITECTURE.md`, „Praktyczne mobile-first”).
+Telefon działa w orientacji pionowej, a urządzenie o najkrótszym boku od 600 dp w obu orientacjach (`ARCHITECTURE.md`, „Praktyczne mobile-first”).
 
 ### Start aplikacji
 
@@ -18,6 +18,8 @@ Dolny pasek zawiera trzy pozycje:
 - **Plan** - tygodniowy plan zajęć;
 - **Dodaj** - formularz nowych zajęć.
 
+Od 600 dp szerokości okna te same pozycje są w bocznym pasku po lewej stronie, a dolnego paska nie ma.
+
 Ustawienia są dostępne z menu w prawym górnym rogu. Kliknięcie zajęć na ekranie „Dzisiaj” lub „Plan” otwiera ekran szczegółów i edycji.
 
 Jeśli aplikacja nie ma jeszcze semestru, ekran „Dzisiaj” pokazuje stan pusty z przyciskiem „Skonfiguruj plan”. Kreator otwiera się po tej akcji i tworzy pierwszy semestr, kierunek, kalendarz oraz przypisanie. Ustawienia pozwalają później dodawać, wybierać, konfigurować i usuwać semestry.
@@ -30,7 +32,7 @@ Semestr utworzony w kreatorze staje się aktywny tylko wtedy, gdy dzisiejsza dat
 
 ## Ekran „Dzisiaj”
 
-To domyślny ekran otwierany po uruchomieniu aplikacji.
+To domyślny ekran otwierany po uruchomieniu aplikacji. Od 840 dp szerokości okna karta podsumowania stoi po lewej, a lista zajęć po prawej, łącznie najwyżej 1040 dp; bez aktywnego semestru ekran zostaje w jednej kolumnie.
 
 Powinien pokazywać:
 

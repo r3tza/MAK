@@ -4,6 +4,11 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-29: Mniej gałęzi, pull requestów i commitów
+
+- Decyzja użytkownika: małe zadanie dołącza do najbliższego większego na tej samej gałęzi, także gdy nie jest z nim ściśle powiązane (na przykład I-63 z trybem tabletowym). Plan trafia do gałęzi, która go wykonuje. Commit obejmuje logiczną część zadania razem z dokumentami, których dotyczy; drobnych poprawek dokumentów nie commituje się osobno, a pull request ma zwykle od jednego do pięciu commitów (`AGENTS.md`, sekcja „Git”; `WORKFLOW.md`, „Gałąź i pull request”).
+- Powód: od wydania 0.2.2 przybyło około 60 commitów, choć zakres zmieściłby się w 10 do 20; osobne gałęzie i pull requesty na drobne zmiany i same plany zapychają repozytorium i utrudniają przegląd historii.
+
 ## 2026-09-29: Wspólna obsługa błędów zapisu (I-64)
 
 - Decyzja użytkownika: 27 akcji zapisu w sześciu ViewModelach korzysta z jednej funkcji `launchUiOperation`, a testy ViewModeli sprawdzają tylko własną logikę akcji (`ARCHITECTURE.md`, sekcja 5). I-14, przegląd testów i I-64 trafiają do jednego pull requesta na gałęzi `task/backup-tests-and-ui-operation`.
@@ -125,10 +130,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Fakty: Tag `v0.2.0` zbudował szkic w GitHub Actions, a użytkownik go opublikował. `update.json` pod produkcyjnym adresem ma `versionCode` 200, suma SHA-256 zgadza się z APK, a certyfikat jest kluczem wydań. Ręczne sprawdzenie w zainstalowanym `v0.2.0` pokazuje „Masz najnowszą wersję”. Workflow zapisuje w `update.json` puste pole `notes`.
 - Decyzja: Przed tagiem dodano do aplikacji historię zmian 0.2.0, bo ekran „O aplikacji” czyta ją z kodu. `CHANGELOG.md` ma wpis 0.2.0. I-36 ma status `gotowe`, a I-49 `w toku` do sprawdzenia instrukcji u znajomego i wydania `v0.2.1`. Uzupełnienie `notes` w workflow jest krokiem przed `v0.2.1`.
 - Powód: Pierwsza aktualizacja z aplikacji (O-07) wymaga opublikowanego wydania bazowego, a puste notatki pokazałyby użytkownikowi „Brak informacji”.
-
-## 2026-09-27: Lokalny odbiór aktualizacji N do N+1 (I-39)
-
-- Fakty: Wersja release pobiera `update.json` tylko z `releases/latest` na GitHubie i przyjmuje wyłącznie adresy github.com, więc lokalnego artefaktu N+1 nie da się podać aktualizatorowi bez zmiany kodu. Na emulatorze nie było wcześniejszego wydania z `versionCode` 200.
-- Decyzja: I-39 sprawdza lokalnie to, co zagraża danym: podpis tym samym kluczem i zachowanie planu przy instalacji N+1 na N (`adb install -r`). Przebieg przez aplikację przechodzi do O-07 po wydaniu `v0.2.0`. Użytkownik zaakceptował podział i zbudował oba APK lokalnie 2026-09-27; klucz nie opuścił jego komputera.
-- Wynik: 201 i 202 mają ten sam certyfikat, plan przetrwał aktualizację, a instalacja starszej wersji na nowszą jest odrzucana. Testowe wydanie odinstalowano z emulatora, aby nie blokowało `v0.2.0`.
-- Odrzucone: Tagi testowe na GitHubie (zajmują numery wersji i zostawiają ślady w publicznym repozytorium) oraz testowy adres aktualizacji w kodzie wydania.

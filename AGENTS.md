@@ -77,10 +77,10 @@ Po zmianie `WeekCalculator`, `ScheduleResolver`, `CollisionDetector`, eksportu J
 
 ## Git
 
-Każdy zakres pull requesta wykonuj na osobnej gałęzi od aktualnego `origin/main`. Większe zadanie ma własny pull request, a kilka małych, powiązanych zadań łącz w jeden pull request zamiast tworzyć osobny dla każdej drobnej zmiany. Szczegóły są w `docs/WORKFLOW.md`, sekcja „Gałąź i pull request”.
+Każdy zakres pull requesta wykonuj na osobnej gałęzi od aktualnego `origin/main`. Nie mnóż gałęzi, pull requestów ani commitów. Małe zadanie dołącz do najbliższego większego zadania w tej samej gałęzi, także gdy nie jest z nim ściśle powiązane, na przykład drobną poprawkę wyglądu do przebudowy układu. Osobny pull request ma tylko większe zadanie. Plan w `PLAN.md` trafia do gałęzi, która go wykonuje; osobny pull request z samym planem lub samą dokumentacją otwieraj tylko na prośbę użytkownika. Szczegóły są w `docs/WORKFLOW.md`, sekcja „Gałąź i pull request”.
 
 - Nazwa gałęzi i tytuł pull requesta są po angielsku. Nazwa gałęzi: `task/<ID>-<short-description>`, na przykład `task/I-57-calendar-markers`; przy kilku zadaniach użyj wspólnego opisu zakresu, a bez identyfikatora `task/<short-description>`. Tylko małe litery ASCII, cyfry i myślniki.
-- Twórz commity dla logicznych części zadania. Po zielonych kontrolach lokalnych sam wypchnij gałąź i otwórz pull request przez `gh pr create`. Jeśli `gh` nie jest dostępne, podaj użytkownikowi odnośnik `https://github.com/r3tza/MAK/compare/main...<gałąź>?expand=1` i gotowy opis pull requesta.
+- Twórz commit dla logicznej części zadania, nie dla każdej zmiany. Aktualizacje `QUEUE.md`, `LOG.md`, `KNOWN_ISSUES.md`, `PLAN.md` i innych dokumentów idą w commicie ze zmianą, której dotyczą; drobnej poprawki dokumentu nie commituj osobno. Pull request ma zwykle od jednego do pięciu commitów. Po zielonych kontrolach lokalnych sam wypchnij gałąź i otwórz pull request przez `gh pr create`. Jeśli `gh` nie jest dostępne, podaj użytkownikowi odnośnik `https://github.com/r3tza/MAK/compare/main...<gałąź>?expand=1` i gotowy opis pull requesta.
 - Pull request scala wyłącznie użytkownik. Nie scalaj, nie włączaj automatycznego scalania, nie wypychaj na `main` i nie zmieniaj historii wypchniętej gałęzi bez wyraźnego polecenia użytkownika.
 
 Nie dodawaj stopki `Co-authored-by:` przypisującej pracę agentowi.

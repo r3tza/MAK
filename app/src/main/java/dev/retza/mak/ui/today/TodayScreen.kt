@@ -1,6 +1,12 @@
 package dev.retza.mak.ui.today
 
 import androidx.compose.foundation.layout.Arrangement
+import dev.retza.mak.ui.MakTwoColumnMaxWidth
+import dev.retza.mak.ui.MakContentMaxWidth
+import androidx.compose.ui.unit.dp
+import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -45,9 +51,15 @@ fun TodayScreen(
     requiresSetup: Boolean = false,
     availableUpdateVersion: String? = null,
     onViewUpdate: () -> Unit = {},
-    onDismissUpdate: () -> Unit = {}
+    onDismissUpdate: () -> Unit = {},
+    twoColumns: Boolean = false
 ) {
-    MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
+    // Wide windows put the summary beside the classes; without a semester there is no summary.
+    val wide = twoColumns && state.hasActiveSemester
+    MakScreenContent(
+        modifier = modifier.verticalScroll(rememberScrollState()),
+        maxWidth = if (wide) MakTwoColumnMaxWidth else MakContentMaxWidth
+    ) {
         MakSectionHeader(
             title = state.dateLabel,
             subtitle = listOfNotNull(
@@ -68,36 +80,63 @@ fun TodayScreen(
                 )
             }
         }
-        if (state.hasActiveSemester) {
-            MakSummaryCard(
-                title = if (state.classCount == 0) "Dziś bez zajęć" else "Twój plan na dziś",
-                classCount = state.classCount,
-                collisionCount = state.collisionCount,
-                gapCount = state.gapCount,
-                modifier = Modifier.padding(bottom = MakSpacing.xl)
-            )
-        }
-        MakRowTitle(title = "Zajęcia")
-        when (state.status) {
-            ScreenStatus.Ready -> if (state.items.isEmpty()) {
-                Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
-                    MakStateMessage(
-                        status = state.status,
-                        emptyMessage = state.emptyMessage
-                    )
-                    if (requiresSetup) {
-                        MakPrimaryAction(text = "Skonfiguruj plan", onClick = onStartSetup)
-                    }
-                }
-            } else {
-                Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
-                    state.items.forEach { item ->
-                        ClassCard(item = item, onClick = { onOpenClass(item.id) })
-                    }
+        if (wide) {
+            Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.xl)) {
+                TodaySummary(state, Modifier.width(TodaySummaryColumnWidth))
+                Column(modifier = Modifier.weight(1f)) {
+                    TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onRetry)
                 }
             }
-
-            else -> MakStateMessage(status = state.status, onRetry = onRetry)
+        } else {
+            if (state.hasActiveSemester) {
+                TodaySummary(state, Modifier.padding(bottom = MakSpacing.xl))
+            }
+            TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onRetry)
         }
+    }
+}
+
+private val TodaySummaryColumnWidth = 360.dp
+
+@Composable
+private fun TodaySummary(state: TodayUiState, modifier: Modifier) {
+    MakSummaryCard(
+        title = if (state.classCount == 0) "Dziś bez zajęć" else "Twój plan na dziś",
+        classCount = state.classCount,
+        collisionCount = state.collisionCount,
+        gapCount = state.gapCount,
+        modifier = modifier
+    )
+}
+
+@Composable
+private fun ColumnScope.TodayClasses(
+    state: TodayUiState,
+    requiresSetup: Boolean,
+    onOpenClass: (String) -> Unit,
+    onStartSetup: () -> Unit,
+    onRetry: () -> Unit
+) {
+    MakRowTitle(title = "Zajęcia")
+    when (state.status) {
+        ScreenStatus.Ready -> if (state.items.isEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
+                MakStateMessage(
+                    status = state.status,
+                    emptyMessage = state.emptyMessage
+                )
+                if (requiresSetup) {
+                    MakPrimaryAction(text = "Skonfiguruj plan", onClick = onStartSetup)
+                }
+            }
+        } else {
+            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
+                state.items.forEach { item ->
+                    ClassCard(item = item, onClick = { onOpenClass(item.id) })
+                }
+            }
+        }
+
+        else -> MakStateMessage(status = state.status, onRetry = onRetry)
     }
 }

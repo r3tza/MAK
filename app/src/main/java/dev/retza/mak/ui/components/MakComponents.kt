@@ -3,6 +3,10 @@ package dev.retza.mak.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import dev.retza.mak.ui.MakContentMaxWidth
+import dev.retza.mak.ui.MakDialogMaxWidth
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -108,22 +112,30 @@ import dev.retza.mak.ui.theme.MakOnce
 import dev.retza.mak.ui.theme.MakOrangeMark
 import dev.retza.mak.ui.theme.MakInk
 import dev.retza.mak.ui.theme.MakSummaryEnd
+import dev.retza.mak.ui.theme.MakSummaryEndDark
 import dev.retza.mak.ui.theme.MakSummaryStart
+import dev.retza.mak.ui.theme.MakSummaryStartDark
 import dev.retza.mak.ui.theme.MakTeal
 
 @Composable
 fun MakScreenContent(
     modifier: Modifier = Modifier,
+    maxWidth: Dp = MakContentMaxWidth,
     verticalArrangement: Arrangement.Vertical = Arrangement.Top,
     content: @Composable ColumnScope.() -> Unit
 ) {
-    Column(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(start = MakSpacing.lg, end = MakSpacing.lg, top = MakSpacing.xs, bottom = MakSpacing.xl),
-        verticalArrangement = verticalArrangement,
-        content = content
-    )
+    // The caller's modifier (scroll or weight) stays on the full-width box, so a wide window
+    // still scrolls anywhere while the content itself is limited and centered.
+    Box(modifier = modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
+        Column(
+            modifier = Modifier
+                .widthIn(max = maxWidth)
+                .fillMaxWidth()
+                .padding(start = MakSpacing.lg, end = MakSpacing.lg, top = MakSpacing.xs, bottom = MakSpacing.xl),
+            verticalArrangement = verticalArrangement,
+            content = content
+        )
+    }
 }
 
 @Composable
@@ -272,12 +284,22 @@ fun MakSummaryCard(
     gapCount: Int,
     modifier: Modifier = Modifier
 ) {
-    Column(
-        modifier = modifier
+    val dark = isDarkSurface()
+    val shape = RoundedCornerShape(22.dp)
+    val cardModifier = if (dark) {
+        modifier
             .fillMaxWidth()
-            .shadow(11.dp, RoundedCornerShape(22.dp), spotColor = Color(0x332D46A4))
-            .clip(RoundedCornerShape(22.dp))
-            .background(Brush.linearGradient(listOf(MakSummaryStart, MakSummaryEnd)))
+            .clip(shape)
+            .border(1.dp, Color.White.copy(alpha = 0.08f), shape)
+    } else {
+        modifier
+            .fillMaxWidth()
+            .shadow(11.dp, shape, spotColor = Color(0x332D46A4))
+            .clip(shape)
+    }
+    Column(
+        modifier = cardModifier
+            .background(Brush.linearGradient(summaryCardGradient(dark)))
             .padding(horizontal = MakSpacing.lg, vertical = MakSpacing.lg),
         verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
@@ -319,6 +341,9 @@ fun MakSummaryCard(
     }
 }
 
+internal fun summaryCardGradient(dark: Boolean): List<Color> =
+    if (dark) listOf(MakSummaryStartDark, MakSummaryEndDark) else listOf(MakSummaryStart, MakSummaryEnd)
+
 @Composable
 private fun SummaryColumn(
     label: String,
@@ -356,8 +381,8 @@ private fun SummaryDivider() {
     )
 }
 
-private val SummaryAlert = Color(0xFFFFB4AB)
-private val SummaryOk = Color(0xFF7FE0A6)
+internal val SummaryAlert = Color(0xFFFFB4AB)
+internal val SummaryOk = Color(0xFF7FE0A6)
 
 @Composable
 fun MakRowTitle(
@@ -998,7 +1023,40 @@ fun MakNavBar(
 }
 
 @Composable
-private fun RowScope.MakNavButton(
+fun MakNavRail(
+    todaySelected: Boolean,
+    planSelected: Boolean,
+    onToday: () -> Unit,
+    onPlan: () -> Unit,
+    onAdd: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val outline = MaterialTheme.colorScheme.outlineVariant
+    Column(
+        modifier = modifier
+            .width(88.dp)
+            .fillMaxHeight()
+            .background(MaterialTheme.colorScheme.surface)
+            .drawBehind {
+                drawLine(
+                    color = outline,
+                    start = Offset(size.width, 0f),
+                    end = Offset(size.width, size.height),
+                    strokeWidth = 1.dp.toPx()
+                )
+            }
+            .padding(top = 12.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        MakNavButton("Dzisiaj", Icons.Outlined.Today, todaySelected, onToday, Modifier.width(72.dp))
+        MakNavButton("Plan", Icons.Outlined.CalendarMonth, planSelected, onPlan, Modifier.width(72.dp))
+        MakNavButton("Dodaj", Icons.Outlined.Add, false, onAdd, Modifier.width(72.dp), role = Role.Button)
+    }
+}
+
+@Composable
+private fun MakNavButton(
     label: String,
     icon: ImageVector,
     selected: Boolean,
@@ -1307,9 +1365,12 @@ fun MakDialog(
     Dialog(onDismissRequest = onDismiss) {
         Column(
             modifier = Modifier
+                .widthIn(max = MakDialogMaxWidth)
                 .fillMaxWidth()
                 .clip(RoundedCornerShape(22.dp))
                 .background(MaterialTheme.colorScheme.surface)
+                // A low window (landscape tablet, split screen) scrolls instead of cutting off actions.
+                .verticalScroll(rememberScrollState())
                 .padding(MakSpacing.xl)
                 .semantics { paneTitle = title },
             verticalArrangement = Arrangement.spacedBy(MakSpacing.md)

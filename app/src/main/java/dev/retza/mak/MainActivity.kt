@@ -4,6 +4,7 @@ import android.Manifest
 import android.app.UiModeManager
 import android.content.Context
 import android.content.Intent
+import android.content.pm.ActivityInfo
 import android.net.Uri
 import android.os.Build
 import android.os.Bundle
@@ -17,6 +18,7 @@ import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -24,6 +26,8 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.core.app.NotificationManagerCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
@@ -32,11 +36,14 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.retza.mak.export.BackupFileRead
 import dev.retza.mak.export.readBackupFile
 import dev.retza.mak.ui.AppViewModel
+import dev.retza.mak.ui.LocalMakWidthClass
 import dev.retza.mak.ui.MakApp
-import dev.retza.mak.ui.withAppLocale
 import dev.retza.mak.ui.MakLoadingGate
-import dev.retza.mak.ui.areSystemAnimationsOn
 import dev.retza.mak.ui.StartupBloom
+import dev.retza.mak.ui.areSystemAnimationsOn
+import dev.retza.mak.ui.makWidthClassFor
+import dev.retza.mak.ui.shouldLockPortrait
+import dev.retza.mak.ui.withAppLocale
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
@@ -79,6 +86,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        requestedOrientation = if (shouldLockPortrait(resources.configuration.smallestScreenWidthDp)) {
+            ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
+        } else {
+            ActivityInfo.SCREEN_ORIENTATION_UNSPECIFIED
+        }
         enableEdgeToEdge()
         // A recreated activity (theme change, process death) keeps its restored screens; the system
         // may hand back the original intent, so its open request applies to the first start only.
@@ -99,115 +111,118 @@ class MainActivity : ComponentActivity() {
                     ThemeMode.System, null -> systemDark
                 }
             ) {
-                MakLoadingGate(
-                    isReady = appState.hasLoadedData,
-                    playIntro = playIntro,
-                    introMayStart = splashReleased
-                ) {
-                    LaunchedEffect(updateViewModel) { updateViewModel.checkAutomatically() }
-                    var notificationsBlocked by remember {
-                        mutableStateOf(!NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled())
-                    }
-                    val lifecycleOwner = LocalLifecycleOwner.current
-                    DisposableEffect(lifecycleOwner) {
-                        val observer = LifecycleEventObserver { _, event ->
-                            if (event == Lifecycle.Event.ON_RESUME) {
-                                todayViewModel.refreshToday()
-                                scheduleViewModel.refreshToday()
-                                notificationsBlocked =
-                                    !NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled()
-                            }
+                val windowWidth = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.width.toDp() }
+                CompositionLocalProvider(LocalMakWidthClass provides makWidthClassFor(windowWidth)) {
+                    MakLoadingGate(
+                        isReady = appState.hasLoadedData,
+                        playIntro = playIntro,
+                        introMayStart = splashReleased
+                    ) {
+                        LaunchedEffect(updateViewModel) { updateViewModel.checkAutomatically() }
+                        var notificationsBlocked by remember {
+                            mutableStateOf(!NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled())
                         }
-                        lifecycleOwner.lifecycle.addObserver(observer)
-                        onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
-                    }
-                    val notificationPermissionLauncher = rememberLauncherForActivityResult(
-                        ActivityResultContracts.RequestPermission()
-                    ) { granted ->
-                        notificationsBlocked = !granted ||
-                            !NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled()
-                    }
-                    val scope = rememberCoroutineScope()
-                    val exportLauncher = rememberLauncherForActivityResult(
-                        ActivityResultContracts.CreateDocument("application/json")
-                    ) { uri ->
-                        if (uri != null) {
-                            settingsViewModel.exportJson { bytes ->
-                                scope.launch {
-                                    val success = withContext(Dispatchers.IO) {
-                                        runCatching {
-                                            // "wt" truncates an existing document; plain "w" may leave old bytes at the end.
-                                            contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
-                                                ?: error("No output stream")
-                                        }.isSuccess
+                        val lifecycleOwner = LocalLifecycleOwner.current
+                        DisposableEffect(lifecycleOwner) {
+                            val observer = LifecycleEventObserver { _, event ->
+                                if (event == Lifecycle.Event.ON_RESUME) {
+                                    todayViewModel.refreshToday()
+                                    scheduleViewModel.refreshToday()
+                                    notificationsBlocked =
+                                        !NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled()
+                                }
+                            }
+                            lifecycleOwner.lifecycle.addObserver(observer)
+                            onDispose { lifecycleOwner.lifecycle.removeObserver(observer) }
+                        }
+                        val notificationPermissionLauncher = rememberLauncherForActivityResult(
+                            ActivityResultContracts.RequestPermission()
+                        ) { granted ->
+                            notificationsBlocked = !granted ||
+                                !NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled()
+                        }
+                        val scope = rememberCoroutineScope()
+                        val exportLauncher = rememberLauncherForActivityResult(
+                            ActivityResultContracts.CreateDocument("application/json")
+                        ) { uri ->
+                            if (uri != null) {
+                                settingsViewModel.exportJson { bytes ->
+                                    scope.launch {
+                                        val success = withContext(Dispatchers.IO) {
+                                            runCatching {
+                                                // "wt" truncates an existing document; plain "w" may leave old bytes at the end.
+                                                contentResolver.openOutputStream(uri, "wt")?.use { it.write(bytes) }
+                                                    ?: error("No output stream")
+                                            }.isSuccess
+                                        }
+                                        settingsViewModel.reportExportFinished(success)
                                     }
-                                    settingsViewModel.reportExportFinished(success)
                                 }
                             }
                         }
-                    }
-                    val importLauncher = rememberLauncherForActivityResult(
-                        ActivityResultContracts.OpenDocument()
-                    ) { uri ->
-                        if (uri != null) {
-                            scope.launch {
-                                val read = withContext(Dispatchers.IO) {
-                                    runCatching {
-                                        contentResolver.openInputStream(uri)?.use { readBackupFile(it) }
-                                    }.getOrNull()
-                                }
-                                when (read) {
-                                    null -> settingsViewModel.reportImportReadError()
-                                    BackupFileRead.TooLarge -> settingsViewModel.reportImportTooLarge()
-                                    is BackupFileRead.Loaded -> settingsViewModel.prepareImport(read.bytes)
+                        val importLauncher = rememberLauncherForActivityResult(
+                            ActivityResultContracts.OpenDocument()
+                        ) { uri ->
+                            if (uri != null) {
+                                scope.launch {
+                                    val read = withContext(Dispatchers.IO) {
+                                        runCatching {
+                                            contentResolver.openInputStream(uri)?.use { readBackupFile(it) }
+                                        }.getOrNull()
+                                    }
+                                    when (read) {
+                                        null -> settingsViewModel.reportImportReadError()
+                                        BackupFileRead.TooLarge -> settingsViewModel.reportImportTooLarge()
+                                        is BackupFileRead.Loaded -> settingsViewModel.prepareImport(read.bytes)
+                                    }
                                 }
                             }
                         }
-                    }
-                    val installPermissionLauncher = rememberLauncherForActivityResult(
-                        ActivityResultContracts.StartActivityForResult()
-                    ) { updateViewModel.resumeInstallationAfterPermission() }
-                    MakApp(
-                        viewModel = appViewModel,
-                        occurrenceViewModel = occurrenceViewModel,
-                        classEditViewModel = classEditViewModel,
-                        semesterViewModel = semesterViewModel,
-                        setupViewModel = setupViewModel,
-                        settingsViewModel = settingsViewModel,
-                        studyProgramsViewModel = studyProgramsViewModel,
-                        scheduleViewModel = scheduleViewModel,
-                        todayViewModel = todayViewModel,
-                        updateViewModel = updateViewModel,
-                        feedback = feedbackController.feedback,
-                        openTodayRequests = openTodayRequests.receiveAsFlow(),
-                        openPlanRequests = openPlanRequests.receiveAsFlow(),
-                        onCreateExportDocument = { exportLauncher.launch("mak-plan.json") },
-                        onImportPlan = { importLauncher.launch(arrayOf("application/json")) },
-                        notificationsBlocked = notificationsBlocked,
-                        onRequestNotificationPermission = {
-                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                                notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
-                            } else {
-                                // Android 12 has no runtime permission; notifications are switched on
-                                // in the app's system settings, and onResume refreshes the blocked state.
+                        val installPermissionLauncher = rememberLauncherForActivityResult(
+                            ActivityResultContracts.StartActivityForResult()
+                        ) { updateViewModel.resumeInstallationAfterPermission() }
+                        MakApp(
+                            viewModel = appViewModel,
+                            occurrenceViewModel = occurrenceViewModel,
+                            classEditViewModel = classEditViewModel,
+                            semesterViewModel = semesterViewModel,
+                            setupViewModel = setupViewModel,
+                            settingsViewModel = settingsViewModel,
+                            studyProgramsViewModel = studyProgramsViewModel,
+                            scheduleViewModel = scheduleViewModel,
+                            todayViewModel = todayViewModel,
+                            updateViewModel = updateViewModel,
+                            feedback = feedbackController.feedback,
+                            openTodayRequests = openTodayRequests.receiveAsFlow(),
+                            openPlanRequests = openPlanRequests.receiveAsFlow(),
+                            onCreateExportDocument = { exportLauncher.launch("mak-plan.json") },
+                            onImportPlan = { importLauncher.launch(arrayOf("application/json")) },
+                            notificationsBlocked = notificationsBlocked,
+                            onRequestNotificationPermission = {
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                                } else {
+                                    // Android 12 has no runtime permission; notifications are switched on
+                                    // in the app's system settings, and onResume refreshes the blocked state.
+                                    startActivity(
+                                        Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
+                                            .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                                    )
+                                }
+                            },
+                            onOpenAppSettings = {
                                 startActivity(
-                                    Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS)
-                                        .putExtra(Settings.EXTRA_APP_PACKAGE, packageName)
+                                    Intent(
+                                        Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                        Uri.fromParts("package", packageName, null)
+                                    )
                                 )
+                            },
+                            onGrantInstallPermission = {
+                                installPermissionLauncher.launch(updateViewModel.permissionIntent())
                             }
-                        },
-                        onOpenAppSettings = {
-                            startActivity(
-                                Intent(
-                                    Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                    Uri.fromParts("package", packageName, null)
-                                )
-                            )
-                        },
-                        onGrantInstallPermission = {
-                            installPermissionLauncher.launch(updateViewModel.permissionIntent())
-                        }
-                    )
+                        )
+                    }
                 }
             }
         }
