@@ -159,6 +159,8 @@ Warstwa danych udostępnia `SemesterRepository` dla semestrów, aktywnego semest
 
 Operacja obejmująca kilka zależnych zapisów ma jedną granicę transakcji w `data`. Jawny use case albo serwis koordynuje operację wieloetapową, a ViewModel wywołuje ją jako całość. UI otrzymuje jawny stan zapisu i zachowuje wartości formularza po błędzie. Import jest atomowy: zapisuje cały zaakceptowany plik albo nie zmienia bazy.
 
+Akcja zapisu uruchamiana z interfejsu ma w ViewModelu własną blokadę podwójnego wywołania i flagę trwania, a obsługę błędu, anulowania, zmiany sesji i czyszczenia flagi przekazuje do `launchUiOperation` (`ui/feedback/UiOperation.kt`, decyzja z 2026-09-29, I-64). Komunikat sukcesu, efekty nawigacyjne i zmiany stanu po sukcesie akcja wykonuje sama, w swojej kolejności. Test ViewModelu sprawdza własną logikę akcji: walidację, wybór operacji repozytorium, stan i komunikat po sukcesie, stan po błędzie ustawiany przez `onError`, zmianę sesji tam, gdzie akcja jej używa, oraz podwójne wywołanie tylko wtedy, gdy powtórzenie utworzyłoby zduplikowane dane albo drugi efekt nawigacyjny.
+
 ## 6. Skala i model użycia
 
 MAK jest aplikacją do użytku własnego, działającą lokalnie na jednym urządzeniu i dla jednego użytkownika. Minimalna wersja Androida to 31 (Android 12). Nie projektujemy jej pod setki użytkowników, współbieżność, multi-tenancy, rozproszony backend, limity API ani skalowanie serwerowe.

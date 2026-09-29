@@ -4,6 +4,13 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-29: Wspólna obsługa błędów zapisu (I-64)
+
+- Decyzja użytkownika: 27 akcji zapisu w sześciu ViewModelach korzysta z jednej funkcji `launchUiOperation`, a testy ViewModeli sprawdzają tylko własną logikę akcji (`ARCHITECTURE.md`, sekcja 5). I-14, przegląd testów i I-64 trafiają do jednego pull requesta na gałęzi `task/backup-tests-and-ui-operation`.
+- Fakty: próba na `SemesterViewModel.saveSemester` przed resztą przeniesień pokazała, że wszystkie dotychczasowe testy przechodzą bez zmian, a mutacje funkcji i akcji wskazały, które testy pilnują przepływu. Wykryła też błędy planu: test podwójnego zapisu semestru i kierunku chroni przed drugim efektem zamknięcia ekranu, więc został; `finally` z warunkiem sesji trzeba kopiować dosłownie; błąd zapisu z poprzedniej sesji semestru nie miał testu, więc go dodano.
+- Wynik: testy JVM 391 przed zmianą i 373 po niej, pełne testy na urządzeniu 112 z 112.
+- Odrzucone: przeniesienie blokady podwójnego wywołania i komunikatu sukcesu do wspólnej funkcji, bo zmieniało kolejność komunikatu i efektu nawigacji i ukrywało pomyłki w przypisaniu flag; bazowa klasa ViewModelu zamiast funkcji rozszerzającej.
+
 ## 2026-09-29: Testy tylko z realną wartością
 
 - Decyzja użytkownika: każdy test ma wykrywać błąd, który może realnie wystąpić. Kryteria są w `STACK.md`, sekcja 5, „Sposób testowania”.
@@ -125,10 +132,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja: I-39 sprawdza lokalnie to, co zagraża danym: podpis tym samym kluczem i zachowanie planu przy instalacji N+1 na N (`adb install -r`). Przebieg przez aplikację przechodzi do O-07 po wydaniu `v0.2.0`. Użytkownik zaakceptował podział i zbudował oba APK lokalnie 2026-09-27; klucz nie opuścił jego komputera.
 - Wynik: 201 i 202 mają ten sam certyfikat, plan przetrwał aktualizację, a instalacja starszej wersji na nowszą jest odrzucana. Testowe wydanie odinstalowano z emulatora, aby nie blokowało `v0.2.0`.
 - Odrzucone: Tagi testowe na GitHubie (zajmują numery wersji i zostawiają ślady w publicznym repozytorium) oraz testowy adres aktualizacji w kodzie wydania.
-
-## 2026-09-27: Publiczne repozytorium (I-41, I-49)
-
-- Fakty: Użytkownik zmienił widoczność `r3tza/MAK` na publiczną. Strona repozytorium odpowiada bez logowania, a `releases/latest/download/update.json` zwraca 404, bo nie ma opublikowanego wydania. Przegląd historii przed zmianą nie wykazał sekretów ani plików podpisu.
-- Decyzja: I-41 obejmuje tylko upublicznienie i ma status `gotowe`. Wydanie `v0.2.0` i `v0.2.1` przeniesiono do nowego zadania I-49, od którego zależy O-07 (`QUEUE.md`, `PLAN.md`). `STACK.md` i `ARCHITECTURE.md` opisują repozytorium jako publiczne.
-- Powód: Upublicznienie nie wymaga odbioru aktualizacji na urządzeniu, a wydanie znajomym wymaga zakończonego I-39.
-- Uzupełnienie: Użytkownik potwierdził weryfikację dwuetapową konta GitHub 2026-09-27.
