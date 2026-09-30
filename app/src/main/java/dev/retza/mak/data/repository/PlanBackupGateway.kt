@@ -22,9 +22,9 @@ class RoomPlanBackupGateway(
     private val occurrenceNotes = database.occurrenceNoteDao()
     private val occurrenceChanges = database.occurrenceChangeDao()
 
-    override suspend fun snapshot(): BackupData {
+    override suspend fun snapshot(): BackupData = database.withTransaction {
         val all = semesters.getAllWithData()
-        return BackupData(
+        BackupData(
             studyPrograms = studyPrograms.getAll(),
             semesters = all.map { data ->
                 SemesterBackup(

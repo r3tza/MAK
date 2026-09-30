@@ -41,6 +41,7 @@ import dev.retza.mak.ui.schedule.ScheduleViewModel
 import dev.retza.mak.ui.programs.StudyProgramsViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
+import dev.retza.mak.ui.settings.SyncViewModel
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.today.TodayViewModel
 import dev.retza.mak.update.UpdateViewModel
@@ -55,6 +56,7 @@ fun MakApp(
     semesterViewModel: SemesterViewModel,
     setupViewModel: SetupViewModel,
     settingsViewModel: SettingsViewModel,
+    syncViewModel: SyncViewModel,
     studyProgramsViewModel: StudyProgramsViewModel,
     scheduleViewModel: ScheduleViewModel,
     todayViewModel: TodayViewModel,
@@ -203,13 +205,15 @@ fun MakApp(
                     updateViewModel = updateViewModel,
                     navController = navController,
                     onOpenOccurrence = openOccurrenceById,
-                    startSetup = startSetup
+                    startSetup = startSetup,
+                    openSync = { navController.navigate(MakRoutes.SettingsSync) }
                 )
                 scheduleRoute(
                     appState = state,
                     scheduleViewModel = scheduleViewModel,
                     onOpenOccurrence = openOccurrenceById,
-                    startSetup = startSetup
+                    startSetup = startSetup,
+                    openSync = { navController.navigate(MakRoutes.SettingsSync) }
                 )
                 classEditRoute(classEditViewModel = classEditViewModel, onBack = ::navigateBack)
                 occurrenceDetailsRoute(occurrenceViewModel = occurrenceViewModel)
@@ -220,6 +224,7 @@ fun MakApp(
                 )
                 settingsRoute(
                     settingsViewModel = settingsViewModel,
+                    syncViewModel = syncViewModel,
                     updateViewModel = updateViewModel,
                     navController = navController,
                     onAddSemester = {

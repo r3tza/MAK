@@ -54,6 +54,7 @@ internal fun NavGraphBuilder.classEditRoute(
             }
         )
     ) { entry ->
+        TrackPlanEditing()
         val classId = entry.arguments?.getString("classId")
         val date = entry.arguments?.getString("date")
         LaunchedEffect(classId, date) {
@@ -103,6 +104,7 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
             navArgument("date") { type = NavType.StringType }
         )
     ) { entry ->
+        TrackPlanEditing()
         val classId = entry.arguments?.getString("classId")
         val date = entry.arguments?.getString("date")
         LaunchedEffect(classId, date) {

@@ -39,6 +39,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.Semester,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
+        TrackPlanEditing()
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
             semesterId?.let(semesterViewModel::openIfNeeded)
@@ -70,6 +71,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.SemesterCourses,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
+        TrackPlanEditing()
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
             semesterId?.let(semesterViewModel::openIfNeeded)
@@ -104,6 +106,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.SemesterCourseAdd,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
+        TrackPlanEditing()
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
             semesterId?.let(semesterViewModel::openIfNeeded)
@@ -132,6 +135,7 @@ internal fun NavGraphBuilder.semesterRoutes(
             navArgument("assignmentId") { type = NavType.StringType }
         )
     ) { entry ->
+        TrackPlanEditing()
         val semesterId = entry.arguments?.getString("semesterId")
         val assignmentId = entry.arguments?.getString("assignmentId")
         val semesterState = semesterViewModel.semester.collectAsStateWithLifecycle().value
@@ -173,6 +177,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.SemesterOverrides,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
+        TrackPlanEditing()
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
             semesterId?.let(semesterViewModel::openIfNeeded)
@@ -202,6 +207,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.SemesterCalendars,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
+        TrackPlanEditing()
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
             semesterId?.let(semesterViewModel::openIfNeeded)

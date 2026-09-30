@@ -51,6 +51,7 @@ import dev.retza.mak.ui.schedule.ScheduleViewModel
 import dev.retza.mak.ui.programs.StudyProgramsViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
+import dev.retza.mak.ui.settings.SyncViewModel
 import dev.retza.mak.ui.settings.ThemeMode
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.theme.MAKTheme
@@ -71,6 +72,7 @@ class MainActivity : ComponentActivity() {
     private val semesterViewModel: SemesterViewModel by viewModel()
     private val setupViewModel: SetupViewModel by viewModel()
     private val settingsViewModel: SettingsViewModel by viewModel()
+    private val syncViewModel: SyncViewModel by viewModel()
     private val studyProgramsViewModel: StudyProgramsViewModel by viewModel()
     private val scheduleViewModel: ScheduleViewModel by viewModel()
     private val todayViewModel: TodayViewModel by viewModel()
@@ -188,6 +190,7 @@ class MainActivity : ComponentActivity() {
                             semesterViewModel = semesterViewModel,
                             setupViewModel = setupViewModel,
                             settingsViewModel = settingsViewModel,
+                            syncViewModel = syncViewModel,
                             studyProgramsViewModel = studyProgramsViewModel,
                             scheduleViewModel = scheduleViewModel,
                             todayViewModel = todayViewModel,

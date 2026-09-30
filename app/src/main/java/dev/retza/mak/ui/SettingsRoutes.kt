@@ -1,6 +1,14 @@
 package dev.retza.mak.ui
 
+import android.app.Activity
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.IntentSenderRequest
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
@@ -17,6 +25,10 @@ import dev.retza.mak.ui.settings.SettingsNotificationsScreen
 import dev.retza.mak.ui.settings.SettingsScreen
 import dev.retza.mak.ui.settings.SettingsSemestersScreen
 import dev.retza.mak.ui.settings.SettingsViewModel
+import dev.retza.mak.ui.settings.SyncEffect
+import dev.retza.mak.ui.settings.SyncScreen
+import dev.retza.mak.ui.settings.SyncViewModel
+import dev.retza.mak.ui.settings.settingsSummary
 import dev.retza.mak.ui.settings.UpdateScreen
 import dev.retza.mak.ui.settings.toSettingsUi
 import dev.retza.mak.update.UpdateViewModel
@@ -27,6 +39,7 @@ internal fun openSettings(navController: NavController) {
 
 internal fun NavGraphBuilder.settingsRoute(
     settingsViewModel: SettingsViewModel,
+    syncViewModel: SyncViewModel,
     updateViewModel: UpdateViewModel,
     navController: NavController,
     onAddSemester: () -> Unit,
@@ -41,6 +54,7 @@ internal fun NavGraphBuilder.settingsRoute(
     composable(MakRoutes.Settings) {
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
         val updateState by updateViewModel.state.collectAsStateWithLifecycle()
+        val syncState by syncViewModel.sync.collectAsStateWithLifecycle()
         SettingsScreen(
             state = settingsState,
             onOpenSemesters = { navController.navigate(MakRoutes.SettingsSemesters) },
@@ -48,6 +62,8 @@ internal fun NavGraphBuilder.settingsRoute(
             onOpenNotifications = { navController.navigate(MakRoutes.SettingsNotifications) },
             onOpenData = { navController.navigate(MakRoutes.SettingsData) },
             onOpenAbout = { navController.navigate(MakRoutes.SettingsAbout) },
+            syncSummary = syncState.settingsSummary(),
+            onOpenSync = { navController.navigate(MakRoutes.SettingsSync) },
             onSemesterSelected = settingsViewModel::selectSemester,
             onAddSemester = onAddSemester,
             onThemeSelected = settingsViewModel::selectTheme,
@@ -125,6 +141,10 @@ internal fun NavGraphBuilder.settingsRoute(
         )
     }
 
+    composable(MakRoutes.SettingsSync) {
+        SyncRoute(syncViewModel)
+    }
+
     composable(MakRoutes.ImportPreview) {
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
         ImportPreviewScreen(
@@ -153,4 +173,54 @@ internal fun SettingsEffects(
             }
         }
     }
+}
+
+@Composable
+private fun SyncRoute(syncViewModel: SyncViewModel) {
+    val state by syncViewModel.sync.collectAsStateWithLifecycle()
+    val context = LocalContext.current
+    var exportId by rememberSaveable { mutableStateOf<String?>(null) }
+    val authorizationLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.StartIntentSenderForResult()
+    ) { result -> syncViewModel.onAuthorizationResult(result.resultCode == Activity.RESULT_OK, result.data) }
+    val exportLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.CreateDocument("application/json")
+    ) { uri ->
+        val id = exportId
+        exportId = null
+        // Cancelling the file picker is not an error and shows nothing.
+        if (uri == null || id == null) return@rememberLauncherForActivityResult
+        val bytes = syncViewModel.archivedPlan(id)
+        val written = bytes != null && runCatching {
+            context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) } != null
+        }.getOrDefault(false)
+        syncViewModel.reportArchiveExport(written)
+    }
+    LaunchedEffect(syncViewModel) {
+        syncViewModel.effects.collect { effect ->
+            when (effect) {
+                is SyncEffect.Authorize ->
+                    authorizationLauncher.launch(IntentSenderRequest.Builder(effect.pendingIntent).build())
+                is SyncEffect.ExportArchived -> {
+                    exportId = effect.id
+                    exportLauncher.launch(effect.fileName)
+                }
+            }
+        }
+    }
+    SyncScreen(
+        state = state,
+        onConnect = syncViewModel::connect,
+        onReconnect = syncViewModel::reconnect,
+        onSyncNow = syncViewModel::syncNow,
+        onOpenChoice = syncViewModel::openChoice,
+        onChoose = syncViewModel::choose,
+        onDismissChoice = syncViewModel::dismissChoice,
+        onRequestDisconnect = syncViewModel::requestDisconnect,
+        onDisconnect = syncViewModel::disconnect,
+        onDismissDisconnect = syncViewModel::dismissDisconnect,
+        onExportArchived = syncViewModel::exportArchived,
+        onDismissError = syncViewModel::dismissError,
+        modifier = Modifier.fillMaxSize()
+    )
 }

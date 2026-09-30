@@ -2,6 +2,8 @@ package dev.retza.mak
 
 import android.app.Application
 import android.content.pm.ApplicationInfo
+import androidx.work.Configuration
+import androidx.work.WorkerFactory
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
@@ -25,13 +27,19 @@ import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
 import org.koin.core.annotation.KoinApplication
+import org.koin.core.context.GlobalContext
 import org.koin.plugin.module.dsl.startKoin
 
 private const val NOTIFICATION_REFRESH_DEBOUNCE_MILLIS = 1_000L
 
 @OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
 @KoinApplication
-class MakApplication : Application() {
+class MakApplication : Application(), Configuration.Provider {
+    override val workManagerConfiguration: Configuration
+        get() = Configuration.Builder()
+            .setWorkerFactory(GlobalContext.get().get<WorkerFactory>())
+            .build()
+
     private val scheduleRepository: ScheduleRepository by inject()
 
     private val semesterRepository: SemesterRepository by inject()
@@ -42,6 +50,10 @@ class MakApplication : Application() {
 
     private val preferences: SettingsPreferences by inject()
 
+    private val syncWorkScheduler: dev.retza.mak.sync.SyncWorkScheduler by inject()
+
+    private val syncRoomChangeObserver: dev.retza.mak.sync.SyncRoomChangeObserver by inject()
+
     private val initializationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
 
     override fun onCreate() {
@@ -49,6 +61,8 @@ class MakApplication : Application() {
         startKoin<MakApplication> {
             androidContext(this@MakApplication)
         }
+        syncWorkScheduler.scheduleForAppOpen()
+        syncRoomChangeObserver.observe(initializationScope)
         ensureCollisionChannel(this)
         registerMakWidgetRefresh(
             database = database,

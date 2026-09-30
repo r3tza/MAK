@@ -9,6 +9,8 @@ Zacznij od pytania, które rozwiązuje zadanie. Otwórz wskazany dokument i potr
 | Jak obliczać plan? | [DOMAIN.md](DOMAIN.md): semestry i kalendarze, rytm A/B, zajęcia, zmiany wystąpień, okienka i kolizje |
 | Jakie są granice kodu i zasady UI? | [ARCHITECTURE.md](ARCHITECTURE.md): repozytoria, wspólna logika planu, nawigacja, integracje i zasady interfejsu |
 | Jakich narzędzi i testów używać? | [STACK.md](STACK.md): wersje bibliotek, środowisko, rodzaje kontroli i odrzucone alternatywy |
+| Jak przygotować OAuth Google i co sprawdzić na prawdziwym koncie? | [STACK.md](STACK.md): „Konfiguracja synchronizacji Google”; zależność od udziału użytkownika i odbiór I-69 w [QUEUE.md](QUEUE.md) |
+| Jak działa opcjonalna synchronizacja Google? | [SYNC_PROPOSAL.md](SYNC_PROPOSAL.md): jeden plik planu, tabela przypadków, wybór wersji, archiwum, konto, praca w tle i testy. Odbiór rzeczywistego konta to I-69 |
 | Co wykonać teraz? | [PLAN.md](PLAN.md): najwyżej pięć najbliższych kroków z kryteriami zakończenia. [QUEUE.md](QUEUE.md) zawiera pozostałe zadania, zależności i statusy; zakończone są w osobnej tabeli na końcu |
 | Co jest gotowe w kodzie, ale czeka na urządzenie? | [QUEUE.md](QUEUE.md): osobne pozycje odbioru; szczegółowe scenariusze w [FEATURES.md](FEATURES.md) |
 | Jak rozpocząć, sprawdzić i zakończyć zadanie? | [WORKFLOW.md](WORKFLOW.md): kolejność pracy, szablon kroku planu i znaczenie statusów |
@@ -20,6 +22,7 @@ Zacznij od pytania, które rozwiązuje zadanie. Otwórz wskazany dokument i potr
 | Co zostało wydane użytkownikom? | [CHANGELOG.md](CHANGELOG.md): techniczna historia wydań, nie bieżąca kolejka prac. Notatki dla użytkowników są w `app/src/main/assets/release_notes.json` ([STACK.md](STACK.md), sekcja „Wydania i licencja”) |
 | Jakie braki potwierdzono w obecnym kodzie? | [KNOWN_ISSUES.md](KNOWN_ISSUES.md): otwarte problemy i brakujący odbiór, nie docelowa specyfikacja |
 | Jak pisać komunikaty i dokumentację? | [WRITING.md](WRITING.md): język, styl i zasady redakcyjne |
+| Jakie dane obejmuje opcjonalna synchronizacja i co opublikować do konfiguracji Google? | [PRIVACY.md](PRIVACY.md): projekt opisu prywatności; konfiguracja i odbiór konta pozostają w I-69 |
 | Jak recenzować commit albo etap planu? | [mak-code-review](../.cursor/skills/mak-code-review/SKILL.md): kryteria recenzji i podział pracy z Composerem |
 | Czy dokumenty są spójne (linki, limity planu i logu, kolejka)? | `scripts/check_map.py`; testy `scripts/test_check_map.py`. Uruchomienie: [AGENTS.md](../AGENTS.md) i [WORKFLOW.md](WORKFLOW.md) |
 

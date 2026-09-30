@@ -52,7 +52,8 @@ fun TodayScreen(
     availableUpdateVersion: String? = null,
     onViewUpdate: () -> Unit = {},
     onDismissUpdate: () -> Unit = {},
-    twoColumns: Boolean = false
+    twoColumns: Boolean = false,
+    onOpenSync: () -> Unit = {}
 ) {
     // Wide windows put the summary beside the classes; without a semester there is no summary.
     val wide = twoColumns && state.hasActiveSemester
@@ -84,14 +85,14 @@ fun TodayScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.xl)) {
                 TodaySummary(state, Modifier.width(TodaySummaryColumnWidth))
                 Column(modifier = Modifier.weight(1f)) {
-                    TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onRetry)
+                    TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onOpenSync, onRetry)
                 }
             }
         } else {
             if (state.hasActiveSemester) {
                 TodaySummary(state, Modifier.padding(bottom = MakSpacing.xl))
             }
-            TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onRetry)
+            TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onOpenSync, onRetry)
         }
     }
 }
@@ -115,6 +116,7 @@ private fun ColumnScope.TodayClasses(
     requiresSetup: Boolean,
     onOpenClass: (String) -> Unit,
     onStartSetup: () -> Unit,
+    onOpenSync: () -> Unit,
     onRetry: () -> Unit
 ) {
     MakRowTitle(title = "Zajęcia")
@@ -127,6 +129,7 @@ private fun ColumnScope.TodayClasses(
                 )
                 if (requiresSetup) {
                     MakPrimaryAction(text = "Skonfiguruj plan", onClick = onStartSetup)
+                    MakSecondaryAction(text = "Pobierz plan z konta Google", onClick = onOpenSync)
                 }
             }
         } else {

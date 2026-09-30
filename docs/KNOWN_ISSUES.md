@@ -1,10 +1,12 @@
 # Znane problemy
 
-Stan na 2026-09-29. Ten rejestr obejmuje otwarte problemy potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`, a zadania i statusy `QUEUE.md`. Naprawione problemy nie są tu powtarzane; ich historia jest w sekcji „Zakończone” w `QUEUE.md` i w `LOG.md`.
+Stan na 2026-09-30. Ten rejestr obejmuje otwarte problemy potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`, a zadania i statusy `QUEUE.md`. Naprawione problemy nie są tu powtarzane; ich historia jest w sekcji „Zakończone” w `QUEUE.md` i w `LOG.md`.
 
 ## Otwarte problemy
 
 Brak otwartych problemów blokujących wydanie. Pozostałe dwie kwestie z audytu (obramowane przyciski ikon w górnym pasku i trzy style zaznaczenia na „Planie”) użytkownik zamknął bez zmian (`LOG.md`, 2026-09-29).
+
+Synchronizacja Google (I-68) nie należy jeszcze do opublikowanego wydania. Rzeczywiste logowanie i wymiana na dwóch telefonach wymagają projektu Google Cloud, klientów OAuth oraz konta testowego (I-69); bez nich zgoda Google na emulatorze kończy się anulowaniem. Świadome ograniczenie projektu: Drive nie ma warunkowego zapisu, więc przy niemal równoczesnym wysłaniu z dwóch telefonów zostaje późniejsza wersja, a druga trafia do archiwum telefonu przy kolejnej synchronizacji.
 
 ## Wymagają odbioru na urządzeniu
 

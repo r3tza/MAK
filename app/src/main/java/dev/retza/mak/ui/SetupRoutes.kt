@@ -29,6 +29,7 @@ internal fun NavGraphBuilder.setupRoute(
     settingsViewModel: SettingsViewModel
 ) {
     composable(MakRoutes.Setup) {
+        TrackPlanEditing()
         val setupState by setupViewModel.setup.collectAsStateWithLifecycle()
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
         SetupWizard(

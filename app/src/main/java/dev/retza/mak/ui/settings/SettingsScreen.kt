@@ -144,6 +144,8 @@ fun SettingsScreen(
     onOpenUpdate: () -> Unit = {},
     onAutomaticChecksChanged: (Boolean) -> Unit = {},
     onOpenAbout: () -> Unit = {},
+    syncSummary: String = "",
+    onOpenSync: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val active = state.semesters.firstOrNull { it.id == state.activeSemesterId }
@@ -212,6 +214,12 @@ fun SettingsScreen(
                 }
                 SettingsListSection("Dane") {
                     SettingsNavigationRow(
+                        title = "Synchronizacja Google",
+                        value = syncSummary,
+                        onClick = onOpenSync
+                    )
+                    SettingsRowDivider()
+                    SettingsNavigationRow(
                         title = "Kopia zapasowa i import",
                         value = "",
                         onClick = onOpenData
@@ -260,7 +268,7 @@ fun SettingsScreen(
 
 /** Section whose rows reach the card edges, so the pressed state covers the whole row. */
 @Composable
-private fun SettingsListSection(
+internal fun SettingsListSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -283,7 +291,7 @@ private fun SettingsListSection(
 }
 
 @Composable
-private fun SettingsFieldItem(content: @Composable ColumnScope.() -> Unit) {
+internal fun SettingsFieldItem(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -294,7 +302,7 @@ private fun SettingsFieldItem(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun SettingsRowDivider() {
+internal fun SettingsRowDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(horizontal = MakSpacing.lg),
         color = MaterialTheme.colorScheme.outlineVariant
@@ -319,7 +327,7 @@ private fun SettingsRowText(title: String, lines: List<String>, modifier: Modifi
 }
 
 @Composable
-private fun SettingsNavigationRow(
+internal fun SettingsNavigationRow(
     title: String,
     value: String,
     details: String? = null,

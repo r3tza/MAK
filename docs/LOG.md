@@ -4,6 +4,15 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
+## 2026-09-30: Opcjonalna synchronizacja Google jednym plikiem (I-68, I-69)
+
+- Decyzja użytkownika: opcjonalna synchronizacja planu przez konto Google jako rozszerzenie po MVP (`PRODUCT.md`, `STACK.md`, `ARCHITECTURE.md`). Cały plan jest jednym plikiem w formacie eksportu JSON w ukrytym folderze aplikacji na Dysku. Zmiana tylko po jednej stronie jest przyjmowana, a zmiana po obu stronach wymaga wyboru wersji telefonu albo Dysku. Odrzucona wersja trafia do lokalnego archiwum z eksportem. Pobrany plan czeka na zamknięcie otwartego formularza. Szczegóły: `SYNC_PROPOSAL.md`.
+- Odrzucone przez użytkownika jako nadmiar dla tej aplikacji: wcześniejszy projekt agenta ze scalaniem pojedynczych wpisów, historią niezmiennych wersji, stabilnymi identyfikatorami w osobnej tabeli, ręcznym dopasowaniem przy pierwszym połączeniu i ochroną każdego formularza przed zmianą w tle. Dodawał około 11 tys. linii; jego kod jest zachowany lokalnie w gałęzi `backup/google-sync-merge-design`.
+- Koszt: zmiany z dwóch telefonów wprowadzone między synchronizacjami nie łączą się. Drive nie ma warunkowego zapisu, więc przy niemal równoczesnym wysłaniu wygrywa późniejszy zapis, a druga wersja zostaje w archiwum telefonu.
+- Wejście do synchronizacji: wiersz „Synchronizacja Google” w sekcji „Dane” oraz akcja „Pobierz plan z konta Google” w stanie pustym. Propozycja agenta zamiast osobnego kroku kreatora; wymaga akceptacji użytkownika.
+- Decyzja użytkownika o testach: ograniczyć je do przypadków brzegowych i testów wnoszących realną wartość (`STACK.md`, sekcja 5).
+- Ograniczenie: użytkownik potwierdził brak projektu Google Cloud. Rzeczywiste logowanie i dwa telefony to I-69.
+
 ## 2026-09-29: Mniej gałęzi, pull requestów i commitów
 
 - Decyzja użytkownika: małe zadanie dołącza do najbliższego większego na tej samej gałęzi, także gdy nie jest z nim ściśle powiązane (na przykład I-63 z trybem tabletowym). Plan trafia do gałęzi, która go wykonuje. Commit obejmuje logiczną część zadania razem z dokumentami, których dotyczy; drobnych poprawek dokumentów nie commituje się osobno, a pull request ma zwykle od jednego do pięciu commitów (`AGENTS.md`, sekcja „Git”; `WORKFLOW.md`, „Gałąź i pull request”).
@@ -124,9 +133,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Fakty: Kreator tworzył tylko jeden kierunek i przechodził do zajęć. Osoba studiująca dwa kierunki musiała sama znaleźć dodawanie kierunków w ustawieniach semestru, a formularz zajęć pozwala wybrać tylko kierunki przypisane do semestru.
 - Decyzja: Krok „Dodaj zajęcia” ma akcję „Dodaj kolejny kierunek” z wyborem tygodni A/B („Wspólne z pierwszym kierunkiem” albo „Osobne dla tego kierunku”). Zapis używa istniejących operacji `SemesterRepository`, bez nowej reguły domenowej. Kolejny kierunek dostaje kolor o odcieniu odległym od kierunków już dodanych. Użytkownik wybrał wariant z wyborem A/B 2026-09-27.
 - Odrzucone: Samo zdanie z informacją o ustawieniach semestru oraz wariant bez wyboru tygodni A/B.
-
-## 2026-09-27: Wydanie 0.2.0 (I-36, I-49)
-
-- Fakty: Tag `v0.2.0` zbudował szkic w GitHub Actions, a użytkownik go opublikował. `update.json` pod produkcyjnym adresem ma `versionCode` 200, suma SHA-256 zgadza się z APK, a certyfikat jest kluczem wydań. Ręczne sprawdzenie w zainstalowanym `v0.2.0` pokazuje „Masz najnowszą wersję”. Workflow zapisuje w `update.json` puste pole `notes`.
-- Decyzja: Przed tagiem dodano do aplikacji historię zmian 0.2.0, bo ekran „O aplikacji” czyta ją z kodu. `CHANGELOG.md` ma wpis 0.2.0. I-36 ma status `gotowe`, a I-49 `w toku` do sprawdzenia instrukcji u znajomego i wydania `v0.2.1`. Uzupełnienie `notes` w workflow jest krokiem przed `v0.2.1`.
-- Powód: Pierwsza aktualizacja z aplikacji (O-07) wymaga opublikowanego wydania bazowego, a puste notatki pokazałyby użytkownikowi „Brak informacji”.

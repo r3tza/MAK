@@ -98,8 +98,9 @@ fun AboutScreen(
             )
             Text(BACKUP_NOTICE, style = MaterialTheme.typography.bodyMedium)
             Text(
-                "Sieć służy wyłącznie do sprawdzania i pobierania aktualizacji z GitHuba. " +
-                    "Sama aplikacja nie wysyła danych planu.",
+                "Sieć służy do sprawdzania i pobierania aktualizacji z GitHuba. Plan trafia do sieci " +
+                    "tylko po włączeniu synchronizacji Google: aplikacja zapisuje wtedy jego kopię " +
+                    "w ukrytym folderze aplikacji na Twoim Dysku Google.",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

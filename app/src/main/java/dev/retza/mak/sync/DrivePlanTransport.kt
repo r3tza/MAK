@@ -1,0 +1,200 @@
+package dev.retza.mak.sync
+
+import java.io.ByteArrayOutputStream
+import java.net.HttpURLConnection
+import java.net.URL
+import java.net.URLEncoder
+import java.security.MessageDigest
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.Serializable
+import kotlinx.serialization.json.Json
+import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonPrimitive
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.jsonArray
+import kotlinx.serialization.json.jsonObject
+import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
+
+@Serializable
+data class SyncAccount(val subject: String, val email: String, val androidAccountName: String)
+
+/** Metadata of the single plan file; [md5] identifies its content. */
+data class RemotePlanFile(val id: String, val md5: String)
+
+interface PlanFileTransport {
+    suspend fun find(account: SyncAccount): RemotePlanFile?
+    suspend fun download(account: SyncAccount, file: RemotePlanFile): ByteArray
+    suspend fun upload(account: SyncAccount, existing: RemotePlanFile?, bytes: ByteArray): RemotePlanFile
+    suspend fun delete(account: SyncAccount, file: RemotePlanFile)
+}
+
+interface DriveAccessTokenProvider {
+    suspend fun tokenFor(account: SyncAccount): String
+    suspend fun invalidate(token: String)
+}
+
+class DriveHttpException(val statusCode: Int, message: String) : IllegalStateException(message)
+
+data class DriveHttpResponse(val status: Int, val body: ByteArray)
+
+fun interface DriveHttpClient {
+    suspend fun execute(url: String, method: String, headers: Map<String, String>, body: ByteArray?): DriveHttpResponse
+}
+
+/** Drive v3 in `appDataFolder`, which only this app can see. */
+class DrivePlanTransport(
+    private val http: DriveHttpClient,
+    private val tokens: DriveAccessTokenProvider
+) : PlanFileTransport {
+    private val json = Json { ignoreUnknownKeys = true }
+
+    override suspend fun find(account: SyncAccount): RemotePlanFile? {
+        val query = "name = '$FILE_NAME' and 'appDataFolder' in parents and trashed = false"
+        val url = "$API/files?spaces=appDataFolder&orderBy=modifiedTime%20desc&pageSize=10" +
+            "&q=${encode(query)}&fields=${encode("files(id,md5Checksum)")}"
+        val files = json.parseToJsonElement(request(account, url, "GET").decodeToString()).jsonObject["files"]
+            ?.jsonArray.orEmpty()
+        // Two phones creating the file at once leave two copies; the newest one is the plan.
+        val newest = files.firstOrNull()?.jsonObject ?: return null
+        return RemotePlanFile(
+            id = newest.getValue("id").jsonPrimitive.content,
+            md5 = newest.getValue("md5Checksum").jsonPrimitive.content.lowercase()
+        )
+    }
+
+    override suspend fun download(account: SyncAccount, file: RemotePlanFile): ByteArray {
+        val bytes = request(account, "$API/files/${encode(file.id)}?alt=media", "GET")
+        if (md5(bytes) != file.md5) throw DriveHttpException(0, "Drive returned a file that does not match its checksum")
+        return bytes
+    }
+
+    override suspend fun upload(account: SyncAccount, existing: RemotePlanFile?, bytes: ByteArray): RemotePlanFile {
+        val fields = "fields=id,md5Checksum"
+        val response = if (existing == null) {
+            val boundary = "mak-plan-${System.nanoTime()}"
+            val metadata = buildJsonObject {
+                put("name", FILE_NAME)
+                put("parents", JsonArray(listOf(JsonPrimitive("appDataFolder"))))
+            }.toString().toByteArray()
+            request(
+                account, "$UPLOAD/files?uploadType=multipart&$fields", "POST",
+                multipart(boundary, metadata, bytes), mapOf("Content-Type" to "multipart/related; boundary=$boundary")
+            )
+        } else {
+            // HttpURLConnection has no PATCH; Google APIs accept the override header.
+            request(
+                account, "$UPLOAD/files/${encode(existing.id)}?uploadType=media&$fields", "POST", bytes,
+                mapOf("Content-Type" to "application/json", "X-HTTP-Method-Override" to "PATCH")
+            )
+        }
+        val created = json.parseToJsonElement(response.decodeToString()).jsonObject
+        val result = RemotePlanFile(
+            id = created.getValue("id").jsonPrimitive.content,
+            md5 = created.getValue("md5Checksum").jsonPrimitive.content.lowercase()
+        )
+        if (result.md5 != md5(bytes)) throw DriveHttpException(0, "Drive stored different content than sent")
+        return result
+    }
+
+    override suspend fun delete(account: SyncAccount, file: RemotePlanFile) {
+        val response = execute(account, "$API/files/${encode(file.id)}", "DELETE", null, emptyMap())
+        if (response.status != 404) checkStatus(response)
+    }
+
+    private suspend fun request(
+        account: SyncAccount,
+        url: String,
+        method: String,
+        body: ByteArray? = null,
+        headers: Map<String, String> = emptyMap()
+    ): ByteArray = execute(account, url, method, body, headers).also(::checkStatus).body
+
+    /** Retries once with a fresh token after 401, never in a loop. */
+    private suspend fun execute(
+        account: SyncAccount,
+        url: String,
+        method: String,
+        body: ByteArray?,
+        headers: Map<String, String>
+    ): DriveHttpResponse {
+        var token = tokens.tokenFor(account)
+        var response = http.execute(url, method, headers + ("Authorization" to "Bearer $token"), body)
+        if (response.status == 401) {
+            tokens.invalidate(token)
+            token = tokens.tokenFor(account)
+            response = http.execute(url, method, headers + ("Authorization" to "Bearer $token"), body)
+        }
+        return response
+    }
+
+    private fun checkStatus(response: DriveHttpResponse) {
+        if (response.status in 200..299) return
+        throw DriveHttpException(response.status, "Google Drive request failed (${response.status})")
+    }
+
+    private fun multipart(boundary: String, metadata: ByteArray, content: ByteArray): ByteArray =
+        ByteArrayOutputStream().apply {
+            write("--$boundary\r\nContent-Type: application/json; charset=UTF-8\r\n\r\n".toByteArray())
+            write(metadata)
+            write("\r\n--$boundary\r\nContent-Type: application/json\r\n\r\n".toByteArray())
+            write(content)
+            write("\r\n--$boundary--\r\n".toByteArray())
+        }.toByteArray()
+
+    private fun encode(value: String) = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
+
+    companion object {
+        const val FILE_NAME = "mak-plan.json"
+        private const val API = "https://www.googleapis.com/drive/v3"
+        private const val UPLOAD = "https://www.googleapis.com/upload/drive/v3"
+    }
+}
+
+internal fun md5(bytes: ByteArray): String =
+    MessageDigest.getInstance("MD5").digest(bytes).joinToString("") { "%02x".format(it) }
+
+class UrlConnectionDriveHttpClient(
+    private val dispatcher: CoroutineDispatcher,
+    private val timeoutMillis: Int = 20_000,
+    private val maxResponseBytes: Int = SyncPlanFile.MAX_BYTES
+) : DriveHttpClient {
+    override suspend fun execute(
+        url: String,
+        method: String,
+        headers: Map<String, String>,
+        body: ByteArray?
+    ): DriveHttpResponse = withContext(dispatcher) {
+        val connection = URL(url).openConnection() as HttpURLConnection
+        try {
+            connection.instanceFollowRedirects = false
+            connection.connectTimeout = timeoutMillis
+            connection.readTimeout = timeoutMillis
+            connection.requestMethod = method
+            connection.setRequestProperty("Accept", "application/json")
+            headers.forEach(connection::setRequestProperty)
+            if (body != null) {
+                connection.doOutput = true
+                connection.setFixedLengthStreamingMode(body.size)
+                connection.outputStream.use { it.write(body) }
+            }
+            val status = connection.responseCode
+            val stream = if (status >= 400) connection.errorStream else connection.inputStream
+            val bytes = stream?.use { input ->
+                val output = ByteArrayOutputStream()
+                val buffer = ByteArray(8192)
+                while (true) {
+                    val read = input.read(buffer)
+                    if (read < 0) break
+                    output.write(buffer, 0, read)
+                    if (output.size() > maxResponseBytes) throw DriveHttpException(0, "Google response is too large")
+                }
+                output.toByteArray()
+            } ?: ByteArray(0)
+            DriveHttpResponse(status, bytes)
+        } finally {
+            connection.disconnect()
+        }
+    }
+}

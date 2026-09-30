@@ -5,7 +5,7 @@
 - Źródło prawdy dla narzędzi i wersji: ten plik.
 - Język dokumentacji: polski.
 - Język odpowiedzi dla użytkownika: polski.
-- Ostatnia zaakceptowana aktualizacja: 2026-09-28.
+- Ostatnia zaakceptowana aktualizacja: 2026-09-30.
 
 ## 2. Język i środowisko uruchomieniowe
 
@@ -31,7 +31,21 @@
 - SQLite jako lokalna baza danych.
 - Preferences DataStore 1.2.1 do trwałych ustawień, w tym motywu.
 - `kotlinx.serialization` do importu i eksportu JSON.
-- Brak backendu, kont i synchronizacji sieciowej. Jedynym połączeniem sieciowym jest sprawdzanie i pobieranie aktualizacji z GitHub Releases (sekcja 7).
+- Brak własnego backendu. Sieć obsługuje aktualizacje GitHub oraz opcjonalną synchronizację przez Google Drive (decyzja z 2026-09-30): jeden plik planu w formacie eksportu JSON, `HttpsURLConnection`, zgoda przez Google Identity `AuthorizationClient` i praca w tle WorkManager. Stan synchronizacji należy do `noBackupFilesDir`; token pozostaje w pamięci.
+
+### Konfiguracja synchronizacji Google
+
+Synchronizacja używa `play-services-auth` 22.0.0 oraz WorkManager 2.12.0. Wersje sprawdzono 2026-09-30 w [dokumentacji autoryzacji Androida](https://developer.android.com/identity/authorization) i [wykazie wydań WorkManager](https://developer.android.com/jetpack/androidx/releases/work). WorkManager planuje jednorazowe próby i pracę co 60 minut z warunkiem sieci, przez własny `WorkerFactory`; domyślny initializer zastępuje konfiguracja hosta. Testy JVM sprawdzają koordynator z atrapą transportu; rzeczywiste konto i Drive należą do I-69.
+
+Użytkownik potwierdził brak projektu Google Cloud i odłożył czynności wymagające jego udziału. Przed I-69 wykonaj:
+
+1. Utwórz lub wybierz jeden projekt w Google Cloud i włącz Drive API. Oba klienty Android korzystają z tego samego projektu.
+2. Skonfiguruj zgodę, odbiorców i konta testowe w Google Auth Platform. Opublikuj dostępny opis aplikacji oraz politykę danych według `PRIVACY.md`. Aktualny dokument jest projektem dla niewydanej funkcji.
+3. Dodaj klienta OAuth Android dla `dev.retza.mak.debug` z SHA-1 certyfikatu lokalnego APK debug oraz klienta dla `dev.retza.mak` z SHA-1 istniejącego certyfikatu release. Odcisk odczytuje `apksigner verify --print-certs <APK>`. APK z CI lub innego komputera może mieć inny certyfikat debug. Nie twórz nowego klucza release do tego zadania.
+4. Żądaj tylko `https://www.googleapis.com/auth/drive.appdata`, `openid` i `email`. Token przechodzi przez userinfo, a trwałą tożsamością jest `sub`. Adres e-mail służy do etykiety i wyboru konta Androida. W APK nie ma sekretu OAuth ani backendowego kodu wymiany tokenów. Szczegóły: [AuthorizationClient](https://developers.google.com/android/reference/com/google/android/gms/auth/api/identity/AuthorizationClient), [OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect) i [folder danych aplikacji](https://developers.google.com/workspace/drive/api/guides/appdata).
+5. Na dwóch klientach wykonaj I-69: pierwsze połączenie pustego i niepustego telefonu, zmiana po jednej stronie, zmiana po obu stronach z wyborem wersji, praca offline, odnowienie tokenu, cofnięta zgoda, wyłączenie z zachowaniem i z usunięciem kopii oraz ponowne połączenie. Sprawdź, że oba klienty widzą ten sam plik w `appDataFolder` i że Drive zwraca `md5Checksum` po wysłaniu.
+
+Lokalne testy nie wymagają projektu Google ani tokenów. Samo skompilowanie SDK i przejście atrap nie potwierdza konfiguracji OAuth ani zachowania serwera.
 
 ## 5. Testy i jakość
 
@@ -116,7 +130,7 @@ Repozytorium zawiera aplikację Android, konfigurację Gradle, lokalną bazę Ro
 ## 8. Odrzucone alternatywy
 
 - Backend i Firebase: odrzucone, ponieważ plan ma działać w pełni bez sieci.
-- Konta użytkowników i synchronizacja w chmurze: odrzucone, ponieważ zwiększyłyby zakres oraz wymagania dotyczące danych.
+- Obowiązkowe konta i własny backend pozostają odrzucone. Wcześniejsze odrzucenie opcjonalnej synchronizacji Google zastępuje polecenie użytkownika z 2026-09-30 i projekt `SYNC_PROPOSAL.md`.
 - Ciągły serwis w tle i odświeżanie widgetu co minutę: odrzucone z powodu zużycia baterii.
 - Zewnętrzne CDN-y: odrzucone; aplikacja używa lokalnych zasobów.
 - Aktualizacje przez Google Play (Play In-App Updates): odrzucone, bo aplikacja nie jest dystrybuowana w Google Play.

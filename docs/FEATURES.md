@@ -22,7 +22,7 @@ Od 600 dp szerokości okna te same pozycje są w bocznym pasku po lewej stronie,
 
 Ustawienia są dostępne z menu w prawym górnym rogu. Kliknięcie zajęć na ekranie „Dzisiaj” lub „Plan” otwiera ekran szczegółów i edycji.
 
-Jeśli aplikacja nie ma jeszcze semestru, ekran „Dzisiaj” pokazuje stan pusty z przyciskiem „Skonfiguruj plan”. Kreator otwiera się po tej akcji i tworzy pierwszy semestr, kierunek, kalendarz oraz przypisanie. Ustawienia pozwalają później dodawać, wybierać, konfigurować i usuwać semestry.
+Jeśli aplikacja nie ma jeszcze semestru, ekran „Dzisiaj” pokazuje stan pusty z przyciskiem „Skonfiguruj plan” i akcją „Pobierz plan z konta Google”, która otwiera ekran synchronizacji. Kreator otwiera się po tej akcji i tworzy pierwszy semestr, kierunek, kalendarz oraz przypisanie. Ustawienia pozwalają później dodawać, wybierać, konfigurować i usuwać semestry.
 
 Gdy istnieją już globalne kierunki, krok „Dodaj kierunek” w kreatorze pozwala wybrać „Nowy kierunek” albo „Wybierz istniejący”. Wybrany istniejący kierunek zachowuje nazwę i kolor, a kreator nie tworzy jego kopii. Po zapisie kroku wybór kierunku jest zablokowany do końca kreatora, bo zmiana zmieniłaby nazwę współdzielonego kierunku albo zostawiła w semestrze drugie przypisanie; nazwę i kolor kierunku utworzonego w kreatorze nadal można poprawić.
 
@@ -148,6 +148,8 @@ Prowadzący jest opcjonalnym tekstem zapisanym przy zajęciach. Aplikacja nie pr
 
 Jeśli edycja dnia, cyklu, daty albo kierunku sprawia, że zmiany terminów lub notatki do terminów przestaną być widoczne, formularz przed zapisem pokazuje dialog „Część danych przestanie być widoczna” z ich liczbą oraz akcjami „Anuluj” i „Zapisz”. Dane zostają zachowane (`DOMAIN.md`). Zmiana samych godzin, sali ani nazwy nie wywołuje dialogu.
 
+Plan pobrany z Dysku Google nie zastępuje danych, dopóki otwarty jest formularz planu. Aplikacja zastosuje go po zamknięciu formularza (`SYNC_PROPOSAL.md`, „Przebieg synchronizacji”).
+
 Po usunięciu zajęć aplikacja powinna wymagać potwierdzenia. Edycja i usuwanie muszą aktualizować widget.
 
 ## Widget
@@ -258,7 +260,8 @@ Ekran główny dzieli ustawienia na sekcje:
    - drugi wiersz podsumowania pokazuje ustawioną godzinę i wyprzedzenie, np. „20:00 dzień wcześniej, 30 min przed zajęciami”;
    - pozycja prowadzi do osobnego ekranu ustawień powiadomień.
 4. „Dane”:
-   - pozycja „Kopia zapasowa i import” prowadząca do osobnego ekranu danych.
+   - pozycja „Kopia zapasowa i import” prowadząca do osobnego ekranu danych;
+   - pozycja „Synchronizacja Google” z podsumowaniem „Wyłączona”, adresem konta albo „Wymaga działania”, prowadząca do osobnego ekranu. Bez konta ekran wyjaśnia, gdzie trafi plan, i ma akcję „Połącz konto Google”. Po połączeniu pokazuje konto, czas ostatniej synchronizacji, komunikat wymagający działania (z akcją „Połącz ponownie” albo „Wybierz wersję”), akcje „Synchronizuj teraz” i „Wyłącz synchronizację” oraz listę „Poprzednie wersje” z eksportem do JSON. Wybór wersji podaje liczbę semestrów i zajęć po obu stronach. Wyłączenie pyta, czy zachować kopię na Dysku.
 5. „Aktualizacje”:
    - wiersz „Sprawdź aktualizacje” uruchamia ręczne sprawdzenie i przed pierwszym sprawdzeniem nie ma drugiej linii, a potem pokazuje w niej wynik: „Sprawdzanie...”, „Masz najnowszą wersję”, „Dostępna wersja {wersja}”, „Wymaga nowszego Androida” albo „Nie udało się sprawdzić”; w trakcie sprawdzania wiersz jest nieaktywny;
    - gdy jest dostępna wersja albo trwa lub zakończyło się jej pobieranie, pod nim pojawia się wiersz „Aktualizacja do {wersja}” z ikoną przejścia, prowadzący do ekranu „Aktualizacja”; wynik sprawdzenia nie otwiera tego ekranu sam;

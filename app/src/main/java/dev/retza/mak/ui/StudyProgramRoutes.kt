@@ -37,6 +37,7 @@ internal fun NavGraphBuilder.studyProgramRoutes(
         route = MakRoutes.StudyProgramEdit,
         arguments = listOf(navArgument("programId") { type = NavType.LongType })
     ) { entry ->
+        TrackPlanEditing()
         val programId = entry.arguments?.getLong("programId")
         LaunchedEffect(programId) {
             programId?.let(studyProgramsViewModel::openEditIfNeeded)
