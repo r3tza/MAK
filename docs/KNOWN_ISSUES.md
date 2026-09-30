@@ -6,7 +6,7 @@ Stan na 2026-09-30. Ten rejestr obejmuje otwarte problemy potwierdzone przegląd
 
 Brak otwartych problemów blokujących wydanie. Pozostałe dwie kwestie z audytu (obramowane przyciski ikon w górnym pasku i trzy style zaznaczenia na „Planie”) użytkownik zamknął bez zmian (`LOG.md`, 2026-09-29).
 
-Synchronizacja Google (I-68) nie należy jeszcze do opublikowanego wydania. Rzeczywiste logowanie i wymiana na dwóch telefonach wymagają projektu Google Cloud, klientów OAuth oraz konta testowego (I-69); bez nich zgoda Google na emulatorze kończy się anulowaniem. Świadome ograniczenie projektu: Drive nie ma warunkowego zapisu, więc przy niemal równoczesnym wysłaniu z dwóch telefonów zostaje późniejsza wersja, a druga trafia do archiwum telefonu przy kolejnej synchronizacji.
+Synchronizacja Google (I-68) nie należy jeszcze do opublikowanego wydania. Rzeczywiste logowanie i wymiana na dwóch telefonach wymagają projektu Google Cloud, klientów OAuth oraz konta testowego (I-69); bez nich zgoda Google na emulatorze kończy się anulowaniem. Świadome ograniczenie projektu: Drive nie ma warunkowego zapisu, więc przy niemal równoczesnym wysłaniu z dwóch telefonów zostaje późniejsza wersja, a druga trafia do archiwum telefonu przy kolejnej synchronizacji. Szkic zajęć odtworzony po zakończeniu procesu aplikacji nie wstrzymuje pobrania planu; jeśli w tym czasie inny telefon zmienił plan, zapis szkicu może trafić do wpisu o tym samym numerze.
 
 ## Wymagają odbioru na urządzeniu
 

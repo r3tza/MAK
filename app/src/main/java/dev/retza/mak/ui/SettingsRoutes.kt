@@ -132,8 +132,10 @@ internal fun NavGraphBuilder.settingsRoute(
 
     composable(MakRoutes.SettingsData) {
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
+        val syncState by syncViewModel.sync.collectAsStateWithLifecycle()
         SettingsDataScreen(
             state = settingsState,
+            syncConnected = syncState.accountEmail != null,
             onExport = onExport,
             onImport = onImport,
             onDismissImportError = settingsViewModel::dismissImportError,
@@ -147,8 +149,10 @@ internal fun NavGraphBuilder.settingsRoute(
 
     composable(MakRoutes.ImportPreview) {
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
+        val syncState by syncViewModel.sync.collectAsStateWithLifecycle()
         ImportPreviewScreen(
             state = settingsState,
+            syncConnected = syncState.accountEmail != null,
             onConfirm = settingsViewModel::confirmImport,
             onCancel = settingsViewModel::cancelImport,
             modifier = Modifier.fillMaxSize()

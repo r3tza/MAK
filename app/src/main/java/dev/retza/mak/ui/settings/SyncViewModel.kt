@@ -46,6 +46,8 @@ data class SyncUiState(
     val lastSyncLabel: String? = null,
     val issue: String? = null,
     val needsReconnect: Boolean = false,
+    // Text of the banner on Today; set only while an account is connected and something needs the user.
+    val attention: String? = null,
     val choice: SyncChoiceUi? = null,
     val archive: List<SyncArchiveItemUi> = emptyList(),
     val isWorking: Boolean = false,
@@ -182,7 +184,8 @@ class SyncViewModel(
             }
             SyncOutcome.WaitingForEditor -> "Plan z Dysku zostanie pobrany po zamknięciu formularza."
             SyncOutcome.RetryLater -> "Plan zmieniał się w trakcie synchronizacji. Spróbuj ponownie."
-            SyncOutcome.NoAccount, SyncOutcome.InvalidRemotePlan, SyncOutcome.AuthorizationRequired -> null
+            SyncOutcome.NoAccount, SyncOutcome.InvalidRemotePlan, SyncOutcome.AuthorizationRequired,
+            SyncOutcome.Failed -> null
         }
         message?.let { feedbackSink.publish(UiFeedback(it, UiFeedbackKind.Success)) }
     }
@@ -217,16 +220,14 @@ private fun Exception.toMessage(): String = when {
 
 private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemUi>) = SyncUiState(
     accountEmail = account?.email,
+    attention = if (account == null) null else issueText() ?: pendingChoice?.let {
+        "Plan zmienił się na telefonie i na Dysku. Wybierz wersję do zachowania."
+    },
     lastSyncLabel = account?.let {
         lastSyncedAtMillis?.let { millis -> "Ostatnia synchronizacja: ${formatMillis(millis)}" }
             ?: "Jeszcze nie zsynchronizowano"
     },
-    issue = when (issue) {
-        SyncIssue.AUTHORIZATION_REQUIRED -> "Google wymaga ponownego potwierdzenia dostępu do Dysku."
-        SyncIssue.INVALID_REMOTE_PLAN -> issueMessage ?: "Plik planu na Dysku jest niepoprawny."
-        SyncIssue.FAILED -> issueMessage ?: "Nie udało się zsynchronizować planu."
-        null -> null
-    },
+    issue = issueText(),
     needsReconnect = issue == SyncIssue.AUTHORIZATION_REQUIRED,
     choice = pendingChoice?.let { SyncChoiceUi(it.local.label(), it.remote.label()) },
     archive = archive,
@@ -235,6 +236,13 @@ private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemU
     showChoiceDialog = local.showChoiceDialog && pendingChoice != null,
     showDisconnectDialog = local.showDisconnectDialog && account != null
 )
+
+private fun SyncState.issueText(): String? = when (issue) {
+    SyncIssue.AUTHORIZATION_REQUIRED -> "Google wymaga ponownego potwierdzenia dostępu do Dysku."
+    SyncIssue.INVALID_REMOTE_PLAN -> issueMessage ?: "Plik planu na Dysku jest niepoprawny."
+    SyncIssue.FAILED -> issueMessage ?: "Nie udało się zsynchronizować planu."
+    null -> null
+}
 
 private fun PlanSummary.label() = "semestry: $semesterCount, zajęcia: $classCount"
 

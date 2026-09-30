@@ -35,23 +35,25 @@ Pierwsze połączenie (brak zapamiętanego stanu): pusty telefon pobiera plan; p
 
 Zasady:
 
-1. Przed zastąpieniem planu lokalnego albo pliku na Dysku odrzucona wersja trafia do lokalnego archiwum. Archiwum przechowuje 10 ostatnich wersji z datą i źródłem; ekran synchronizacji pozwala wyeksportować każdą z nich przez systemowy wybór pliku. Dzięki temu żaden przebieg nie usuwa planu bez możliwości odzyskania.
-2. Zastosowanie planu z Dysku to jedna transakcja `replaceAll`. Aktywny semestr zostaje, jeśli semestr o tym numerze istnieje w nowym planie; inaczej aktywny staje się pierwszy semestr, jak po usunięciu aktywnego.
-3. Dopóki otwarty jest formularz edycji planu, pobrany plan nie jest stosowany. Aplikacja zastosuje go po zamknięciu formularza. Formularze nie mają osobnych ostrzeżeń o zmianie danych.
+1. Wersja, która mogła przepaść, trafia przed zastąpieniem do lokalnego archiwum: plan odrzucony przy wyborze wersji (z telefonu albo z Dysku) oraz plan telefonu pobierany po jego własnym wysłaniu, bo inny telefon mógł ten plik nadpisać. Plan, który telefon tylko przyjął od drugiego telefonu, nie trafia do archiwum. Archiwum przechowuje 10 ostatnich wersji z datą i źródłem; ekran synchronizacji pozwala wyeksportować każdą z nich przez systemowy wybór pliku.
+2. Zastosowanie planu z Dysku to jedna transakcja `replaceAll`, która najpierw sprawdza, że plan lokalny się nie zmienił. Po pierwszej synchronizacji numery wpisów są wspólne dla telefonów, więc aktywny semestr zostaje, jeśli semestr o tym numerze istnieje. Przy pierwszym pobraniu numery pochodzą z innego telefonu: aktywny staje się semestr, którego kalendarz obejmuje dzisiejszy dzień, a bez takiego semestr o najpóźniejszym początku.
+3. Dopóki otwarty jest formularz edycji planu albo dialog usuwania semestru, pobrany plan nie jest stosowany. Aplikacja zastosuje go po zamknięciu formularza. Formularze nie mają osobnych ostrzeżeń o zmianie danych.
 4. Tuż przed wysłaniem aplikacja ponownie odczytuje metadane pliku. Jeśli MD5 zmieniło się od początku przebiegu, przebieg zaczyna się od nowa.
 5. Drive nie ma warunkowego zapisu pliku. Gdy dwa telefony wyślą plan niemal jednocześnie, zostaje wersja zapisana później. Drugi telefon przy kolejnym przebiegu pobierze ją, a swoją wersję zachowa w archiwum. To świadome ograniczenie.
-6. Ręczny import JSON jest zwykłą zmianą lokalną.
+6. Ręczny import JSON jest zwykłą zmianą lokalną. Przy połączonym koncie ostrzeżenie importu mówi, że plan trafi też na Dysk i na pozostałe telefony.
+7. „Wyłącz i usuń kopię z Dysku” usuwa każdą kopię pliku planu, także duplikat po dwóch równoczesnych pierwszych wysłaniach.
 
 ## Konto i praca w tle
 
 - Google Identity `AuthorizationClient`, bez własnego backendu i bez sekretu OAuth w APK. Zakresy: `drive.appdata`, `openid`, `email`. Trwałą tożsamością konta jest `sub` z endpointu userinfo; adres e-mail jest etykietą. Token pozostaje w pamięci, nigdy w plikach, logach, stanie UI ani kopii Androida. Po odpowiedzi 401 token jest usuwany z pamięci podręcznej Usług Google Play i ponawiany najwyżej raz.
-- WorkManager: jednorazowa praca po zmianie planu i po otwarciu aplikacji, okresowa co 60 minut, wymagana sieć i wykładniczy backoff. Brak zgody, pytanie o wersję i niepoprawny plik wymagają działania w aplikacji; przejściowe błędy sieci są ponawiane.
+- WorkManager: jednorazowa praca po zmianie planu, po otwarciu aplikacji i po zamknięciu formularza, okresowa co 60 minut, wymagana sieć i wykładniczy backoff. Przejściowe błędy sieci (brak połączenia, HTTP 429 i 5xx) są ponawiane bez komunikatu. Brak zgody lub zmiana konta, odmowa dostępu do Dysku (HTTP 403), niepoprawny plik, inny trwały błąd i pytanie o wersję są zapisywane jako stan wymagający działania. Token jest używany ponownie do czasu odrzucenia przez Dysk.
 - Wyłączenie zatrzymuje pracę w tle i zostawia plan na telefonie. Osobny wybór pozwala zachować plik na Dysku albo go usunąć, z ostrzeżeniem, że inny połączony telefon może wysłać plan ponownie.
 
 ## Interfejs
 
 Istniejące komponenty Compose, bez nowego języka wizualnego.
 
+- Gdy synchronizacja wymaga działania, ekran „Dzisiaj” pokazuje pod nagłówkiem ostrzeżenie „Synchronizacja wymaga działania” z opisem i akcją „Otwórz”, prowadzącą do ekranu synchronizacji.
 - W sekcji „Dane” ustawień wiersz „Synchronizacja Google”. Ekran pokazuje konto, stan, czas ostatniej synchronizacji i błąd wymagający działania oraz akcje „Połącz konto Google”, „Synchronizuj teraz” i „Wyłącz synchronizację”.
 - Pytanie o wybór wersji pokazuje dla obu stron liczbę semestrów i zajęć oraz informację, że odrzucona wersja trafi do archiwum.
 - Lista archiwum pokazuje datę i źródło wersji oraz akcję eksportu.
@@ -59,4 +61,4 @@ Istniejące komponenty Compose, bez nowego języka wizualnego.
 
 ## Testy
 
-Testy JVM koordynatora z atrapą transportu i planu: każdy wiersz tabeli, pierwsze połączenie, zmiana pliku między odczytem a wysłaniem, archiwum przed każdym zastąpieniem, zachowanie aktywnego semestru, niepoprawny plik bez zmian lokalnych i wstrzymanie przy otwartym formularzu. Transportu Drive i OAuth nie testuje się atrapą serwera; potwierdza je odbiór na prawdziwym koncie (I-69, `STACK.md`, sekcja „Konfiguracja synchronizacji Google”).
+Testy JVM koordynatora z atrapą transportu i planu: każdy wiersz tabeli, pierwsze połączenie, zmiana pliku między odczytem a wysłaniem, reguła archiwum i jego limit, aktywny semestr przy pierwszym i kolejnym pobraniu, niepoprawny plik bez zmian lokalnych, zapis trwałego błędu, wstrzymanie przy otwartym formularzu. Testy JVM transportu: jeden token na wiele żądań, jedno odświeżenie po 401, usunięcie duplikatów. Na emulatorze: zastąpienie planu w prawdziwej transakcji Room, graf zależności synchronizacji oraz dialogi ekranu przy 320 dp i czcionce 2,0. Transportu Drive i OAuth nie testuje się atrapą serwera; potwierdza je odbiór na prawdziwym koncie (I-69, `STACK.md`, sekcja „Konfiguracja synchronizacji Google”).

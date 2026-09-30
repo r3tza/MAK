@@ -72,6 +72,7 @@ fun MakApp(
     onGrantInstallPermission: () -> Unit = {}
 ) {
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
+    val syncState = syncViewModel.sync.collectAsStateWithLifecycle().value
     val editor = classEditViewModel.editor.collectAsStateWithLifecycle().value
     val navController = rememberNavController()
     val currentRoute = navController.currentBackStackEntryAsState().value
@@ -206,7 +207,8 @@ fun MakApp(
                     navController = navController,
                     onOpenOccurrence = openOccurrenceById,
                     startSetup = startSetup,
-                    openSync = { navController.navigate(MakRoutes.SettingsSync) }
+                    openSync = { navController.navigate(MakRoutes.SettingsSync) },
+                    syncAttention = { syncState.attention }
                 )
                 scheduleRoute(
                     appState = state,

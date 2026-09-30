@@ -53,7 +53,8 @@ fun TodayScreen(
     onViewUpdate: () -> Unit = {},
     onDismissUpdate: () -> Unit = {},
     twoColumns: Boolean = false,
-    onOpenSync: () -> Unit = {}
+    onOpenSync: () -> Unit = {},
+    syncAttention: String? = null
 ) {
     // Wide windows put the summary beside the classes; without a semester there is no summary.
     val wide = twoColumns && state.hasActiveSemester
@@ -68,17 +69,31 @@ fun TodayScreen(
                 state.semesterLabel.takeIf { it.isNotBlank() }
             ).joinToString(", ").ifBlank { null }
         )
-        if (availableUpdateVersion != null) {
-            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
-                MakNoteBanner(
-                    title = "Dostępna aktualizacja",
-                    subtitle = "Wersja $availableUpdateVersion jest gotowa do pobrania.",
-                    role = MakNoteRole.Neutral,
-                    actions = {
-                        MakTextAction("Nie teraz", onDismissUpdate)
-                        MakTextAction("Zobacz", onViewUpdate)
-                    }
-                )
+        if (availableUpdateVersion != null || syncAttention != null) {
+            // Banners are one section, so the summary card keeps the 16 dp section gap below them.
+            Column(
+                modifier = Modifier.padding(bottom = MakSpacing.lg),
+                verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
+            ) {
+                if (syncAttention != null) {
+                    MakNoteBanner(
+                        title = "Synchronizacja wymaga działania",
+                        subtitle = syncAttention,
+                        role = MakNoteRole.Warning,
+                        actions = { MakTextAction("Otwórz", onOpenSync) }
+                    )
+                }
+                if (availableUpdateVersion != null) {
+                    MakNoteBanner(
+                        title = "Dostępna aktualizacja",
+                        subtitle = "Wersja $availableUpdateVersion jest gotowa do pobrania.",
+                        role = MakNoteRole.Neutral,
+                        actions = {
+                            MakTextAction("Nie teraz", onDismissUpdate)
+                            MakTextAction("Zobacz", onViewUpdate)
+                        }
+                    )
+                }
             }
         }
         if (wide) {

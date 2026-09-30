@@ -22,7 +22,7 @@ Od 600 dp szerokości okna te same pozycje są w bocznym pasku po lewej stronie,
 
 Ustawienia są dostępne z menu w prawym górnym rogu. Kliknięcie zajęć na ekranie „Dzisiaj” lub „Plan” otwiera ekran szczegółów i edycji.
 
-Jeśli aplikacja nie ma jeszcze semestru, ekran „Dzisiaj” pokazuje stan pusty z przyciskiem „Skonfiguruj plan” i akcją „Pobierz plan z konta Google”, która otwiera ekran synchronizacji. Kreator otwiera się po tej akcji i tworzy pierwszy semestr, kierunek, kalendarz oraz przypisanie. Ustawienia pozwalają później dodawać, wybierać, konfigurować i usuwać semestry.
+Jeśli aplikacja nie ma jeszcze semestru, ekran „Dzisiaj” pokazuje stan pusty z przyciskiem „Skonfiguruj plan” i akcją „Pobierz plan z konta Google”, która otwiera ekran synchronizacji. Gdy połączona synchronizacja wymaga działania (wybór wersji, ponowna zgoda Google albo trwały błąd), „Dzisiaj” pokazuje pod nagłówkiem ostrzeżenie „Synchronizacja wymaga działania” z opisem i akcją „Otwórz”. Kreator otwiera się po tej akcji i tworzy pierwszy semestr, kierunek, kalendarz oraz przypisanie. Ustawienia pozwalają później dodawać, wybierać, konfigurować i usuwać semestry.
 
 Gdy istnieją już globalne kierunki, krok „Dodaj kierunek” w kreatorze pozwala wybrać „Nowy kierunek” albo „Wybierz istniejący”. Wybrany istniejący kierunek zachowuje nazwę i kolor, a kreator nie tworzy jego kopii. Po zapisie kroku wybór kierunku jest zablokowany do końca kreatora, bo zmiana zmieniłaby nazwę współdzielonego kierunku albo zostawiła w semestrze drugie przypisanie; nazwę i kolor kierunku utworzonego w kreatorze nadal można poprawić.
 
@@ -148,7 +148,7 @@ Prowadzący jest opcjonalnym tekstem zapisanym przy zajęciach. Aplikacja nie pr
 
 Jeśli edycja dnia, cyklu, daty albo kierunku sprawia, że zmiany terminów lub notatki do terminów przestaną być widoczne, formularz przed zapisem pokazuje dialog „Część danych przestanie być widoczna” z ich liczbą oraz akcjami „Anuluj” i „Zapisz”. Dane zostają zachowane (`DOMAIN.md`). Zmiana samych godzin, sali ani nazwy nie wywołuje dialogu.
 
-Plan pobrany z Dysku Google nie zastępuje danych, dopóki otwarty jest formularz planu. Aplikacja zastosuje go po zamknięciu formularza (`SYNC_PROPOSAL.md`, „Przebieg synchronizacji”).
+Plan pobrany z Dysku Google nie zastępuje danych, dopóki otwarty jest formularz planu albo dialog usuwania semestru. Przy połączonym koncie ostrzeżenie importu JSON dodaje, że zaimportowany plan trafi też na Dysk Google i na pozostałe połączone telefony. Aplikacja zastosuje go po zamknięciu formularza (`SYNC_PROPOSAL.md`, „Przebieg synchronizacji”).
 
 Po usunięciu zajęć aplikacja powinna wymagać potwierdzenia. Edycja i usuwanie muszą aktualizować widget.
 

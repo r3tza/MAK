@@ -23,7 +23,8 @@ internal fun NavGraphBuilder.todayRoute(
     navController: NavController,
     onOpenOccurrence: (String) -> Unit,
     startSetup: () -> Unit,
-    openSync: () -> Unit
+    openSync: () -> Unit,
+    syncAttention: () -> String?
 ) {
     composable(MakRoutes.Today) {
         val todayState = todayViewModel.today.collectAsStateWithLifecycle().value
@@ -39,7 +40,8 @@ internal fun NavGraphBuilder.todayRoute(
             onViewUpdate = { navController.navigate(MakRoutes.SettingsUpdate) },
             onDismissUpdate = updateViewModel::dismissAvailableUpdate,
             modifier = Modifier.fillMaxSize(),
-            twoColumns = LocalMakWidthClass.current == MakWidthClass.Expanded
+            twoColumns = LocalMakWidthClass.current == MakWidthClass.Expanded,
+            syncAttention = syncAttention()
         )
     }
 }

@@ -29,6 +29,9 @@ data class SyncState(
     val remoteMd5: String? = null,
     val localFingerprint: String? = null,
     val lastSyncedAtMillis: Long? = null,
+    // The last transfer was an own upload. Another phone may overwrite it, so the local plan is
+    // archived before the next download. Runs without a transfer keep the value.
+    val lastRunUploaded: Boolean = false,
     val issue: SyncIssue? = null,
     val issueMessage: String? = null,
     val pendingChoice: PendingSyncChoice? = null

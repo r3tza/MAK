@@ -39,7 +39,7 @@ class SyncWorker(
     } catch (error: CancellationException) {
         throw error
     } catch (error: DriveHttpException) {
-        if (error.statusCode == 0 || error.statusCode == 429 || error.statusCode in 500..599) Result.retry() else Result.failure()
+        if (error.isTransient()) Result.retry() else Result.failure()
     } catch (_: IOException) {
         Result.retry()
     } catch (_: Exception) {

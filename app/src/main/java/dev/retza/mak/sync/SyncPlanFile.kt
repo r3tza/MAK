@@ -41,14 +41,20 @@ object SyncPlanFile {
     }
 }
 
+fun BackupData.withActiveSemester(activeId: Long?): BackupData =
+    copy(semesters = semesters.map { it.copy(semester = it.semester.copy(isActive = it.semester.id == activeId)) })
+
 /**
- * Keeps the local choice when the semester still exists; otherwise the first semester becomes
- * active, as after deleting the active one.
+ * The semester to activate when local numbers mean nothing in this plan: the one whose calendar
+ * covers [today], otherwise the one that starts last.
  */
-fun BackupData.withActiveSemester(localActiveId: Long?): BackupData {
-    val activeId = semesters.firstOrNull { it.semester.id == localActiveId }?.semester?.id
-        ?: semesters.firstOrNull()?.semester?.id
-    return copy(semesters = semesters.map { it.copy(semester = it.semester.copy(isActive = it.semester.id == activeId)) })
+fun BackupData.semesterCovering(today: java.time.LocalDate): Long? {
+    val withCalendars = semesters.filter { it.calendars.isNotEmpty() }
+    val covering = withCalendars.filter { backup ->
+        backup.calendars.any { !today.isBefore(it.startDate) && !today.isAfter(it.endDate) }
+    }
+    val latest = covering.ifEmpty { withCalendars }.maxByOrNull { backup -> backup.calendars.minOf { it.startDate } }
+    return latest?.semester?.id ?: semesters.firstOrNull()?.semester?.id
 }
 
 class InvalidRemotePlanException(message: String) : IllegalStateException(message)

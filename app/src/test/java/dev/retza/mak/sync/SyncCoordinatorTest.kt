@@ -183,24 +183,109 @@ class SyncCoordinatorTest {
     }
 
     @Test
-    fun appliedPlanKeepsLocalActiveSemesterOrFallsBackToFirst() {
-        val data = plan("A", "B")
+    fun followingTheOtherPhoneDoesNotFillTheArchive() = runTest {
+        phone.data = plan("Wspólny")
+        drive.put(plan("Wspólny"))
+        coordinator.synchronize()
 
-        assertEquals(2L, data.withActiveSemester(2L).activeSemesterId)
-        assertEquals(1L, data.withActiveSemester(7L).activeSemesterId)
+        drive.put(plan("Wspólny", "Z Dysku"))
+        coordinator.synchronize()
+        drive.put(plan("Wspólny", "Z Dysku", "Kolejny"))
+        coordinator.synchronize()
+
+        assertEquals(emptyList<ArchivedPlan>(), archive.list())
+    }
+
+    @Test
+    fun downloadAfterOwnUploadArchivesThePhonePlan() = runTest {
+        phone.data = plan("Wspólny")
+        coordinator.synchronize()
+        phone.data = plan("Wspólny", "Z telefonu")
+        coordinator.synchronize()
+        coordinator.synchronize()
+
+        drive.put(plan("Wspólny", "Z Dysku"))
+        assertEquals(SyncOutcome.Downloaded, coordinator.synchronize())
+
+        val archived = archive.list().single()
+        assertEquals(listOf("Wspólny", "Z telefonu"), SyncPlanFile.decode(archive.read(archived.id)!!).names())
+    }
+
+    @Test
+    fun firstDownloadActivatesTheSemesterOfToday() = runTest {
+        drive.put(
+            plan("Stary", "Bieżący", "Przyszły", starts = listOf(
+                LocalDate.of(2025, 10, 1), LocalDate.of(2026, 9, 1), LocalDate.of(2027, 2, 20)
+            ))
+        )
+
+        coordinator.synchronize()
+
+        assertEquals(2L, phone.data.activeSemesterId)
+    }
+
+    @Test
+    fun laterDownloadKeepsTheLocalActiveSemester() = runTest {
+        phone.data = plan("A", "B", active = 2)
+        coordinator.synchronize()
+        drive.put(plan("A", "B", "C"))
+
+        coordinator.synchronize()
+
+        assertEquals(2L, phone.data.activeSemesterId)
+    }
+
+    @Test
+    fun semesterOfTodayFallsBackToTheLatestStart() {
+        val data = plan("Stary", "Nowszy", starts = listOf(LocalDate.of(2024, 10, 1), LocalDate.of(2025, 10, 1)))
+
+        assertEquals(2L, data.semesterCovering(LocalDate.of(2026, 9, 30)))
+    }
+
+    @Test
+    fun deniedDriveAccessIsRecordedForTheUser() = runTest {
+        phone.data = plan("Telefon")
+        drive.failure = DriveHttpException(403, "quota")
+
+        assertEquals(SyncOutcome.Failed, coordinator.synchronize())
+        assertEquals(SyncIssue.FAILED, coordinator.state.value.issue)
+    }
+
+    @Test
+    fun networkErrorIsLeftForRetryWithoutAnIssue() = runTest {
+        phone.data = plan("Telefon")
+        drive.failure = java.io.IOException("offline")
+
+        val thrown = runCatching { coordinator.synchronize() }.exceptionOrNull()
+
+        assertEquals(java.io.IOException::class, thrown?.let { it::class })
+        assertNull(coordinator.state.value.issue)
+    }
+
+    @Test
+    fun archiveKeepsTheTenNewestPlans() {
+        repeat(11) { index -> archive.add(byteArrayOf(index.toByte()), ArchiveSource.PHONE, 1_000L + index) }
+
+        val kept = archive.list()
+        assertEquals(10, kept.size)
+        assertEquals(1_010L, kept.first().createdAtMillis)
+        assertEquals(1_001L, kept.last().createdAtMillis)
     }
 }
 
 private fun BackupData.names() = semesters.map { it.semester.name }
 
-private fun plan(vararg names: String, active: Long? = null): BackupData = BackupData(
+private fun plan(vararg names: String, active: Long? = null, starts: List<LocalDate> = emptyList()): BackupData = BackupData(
     studyPrograms = listOf(StudyProgramEntity(id = 1, name = "Informatyka", color = "#137B71")),
     semesters = names.mapIndexed { index, name ->
         val id = index + 1L
         SemesterBackup(
             semester = SemesterEntity(id = id, name = name, isActive = id == (active ?: 1L)),
             calendars = listOf(
-                AcademicCalendarEntity(id, id, LocalDate.of(2026, 10, 1), LocalDate.of(2027, 1, 31), WeekType.A)
+                starts.getOrNull(index).let { start ->
+                    val from = start ?: LocalDate.of(2026, 10, 1)
+                    AcademicCalendarEntity(id, id, from, from.plusMonths(4), WeekType.A)
+                }
             ),
             programs = listOf(SemesterProgramEntity(id, id, 1, id)),
             classes = emptyList(),
@@ -219,11 +304,18 @@ private class FakeGateway : PlanSyncGateway {
 
     override suspend fun snapshot() = data
 
-    override suspend fun replaceIfUnchanged(expectedFingerprint: String, data: BackupData): Boolean {
+    override suspend fun replaceIfUnchanged(
+        expectedFingerprint: String,
+        data: BackupData,
+        keepLocalActive: Boolean,
+        fallbackActiveId: Long?
+    ): Boolean {
         beforeReplace()
         beforeReplace = {}
         if (SyncPlanFile.fingerprint(this.data) != expectedFingerprint) return false
-        this.data = data.withActiveSemester(this.data.activeSemesterId)
+        this.data = data.withActiveSemester(
+            activeSemesterAfterReplace(this.data.activeSemesterId, data, keepLocalActive, fallbackActiveId)
+        )
         return true
     }
 }
@@ -233,6 +325,7 @@ private class FakeDrive : PlanFileTransport {
     var uploads = 0
     var finds = 0
     var beforeFind: () -> Unit = {}
+    var failure: Exception? = null
 
     fun put(data: BackupData) = putRaw(SyncPlanFile.encode(data))
 
@@ -244,6 +337,7 @@ private class FakeDrive : PlanFileTransport {
 
     override suspend fun find(account: SyncAccount): RemotePlanFile? {
         finds += 1
+        failure?.let { throw it }
         beforeFind()
         return file?.let { RemotePlanFile("file-1", md5(it)) }
     }
@@ -256,8 +350,8 @@ private class FakeDrive : PlanFileTransport {
         return RemotePlanFile("file-1", md5(bytes))
     }
 
-    override suspend fun delete(account: SyncAccount, file: RemotePlanFile) {
-        this.file = null
+    override suspend fun deleteAll(account: SyncAccount) {
+        file = null
     }
 }
 

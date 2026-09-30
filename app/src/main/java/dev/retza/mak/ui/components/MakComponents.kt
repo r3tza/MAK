@@ -749,7 +749,8 @@ fun MakPrimaryAction(
         ),
         contentPadding = PaddingValues(horizontal = 13.dp)
     ) {
-        Text(text, style = MaterialTheme.typography.labelLarge)
+        // Centered like MakSecondaryAction, so a label wrapped by large fonts keeps the same alignment.
+        Text(text, style = MaterialTheme.typography.labelLarge, textAlign = TextAlign.Center)
     }
 }
 

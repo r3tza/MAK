@@ -27,7 +27,8 @@ interface PlanFileTransport {
     suspend fun find(account: SyncAccount): RemotePlanFile?
     suspend fun download(account: SyncAccount, file: RemotePlanFile): ByteArray
     suspend fun upload(account: SyncAccount, existing: RemotePlanFile?, bytes: ByteArray): RemotePlanFile
-    suspend fun delete(account: SyncAccount, file: RemotePlanFile)
+    /** Deletes every copy of the plan file, including a duplicate left by two first uploads at once. */
+    suspend fun deleteAll(account: SyncAccount)
 }
 
 interface DriveAccessTokenProvider {
@@ -35,7 +36,10 @@ interface DriveAccessTokenProvider {
     suspend fun invalidate(token: String)
 }
 
-class DriveHttpException(val statusCode: Int, message: String) : IllegalStateException(message)
+class DriveHttpException(val statusCode: Int, message: String) : IllegalStateException(message) {
+    /** Network-side failures a later run may pass; 0 marks a response that failed a local check. */
+    fun isTransient(): Boolean = statusCode == 0 || statusCode == 429 || statusCode in 500..599
+}
 
 data class DriveHttpResponse(val status: Int, val body: ByteArray)
 
@@ -50,18 +54,27 @@ class DrivePlanTransport(
 ) : PlanFileTransport {
     private val json = Json { ignoreUnknownKeys = true }
 
-    override suspend fun find(account: SyncAccount): RemotePlanFile? {
+    // Authorization verifies the account on each token request, so a token is reused until Drive rejects it.
+    // It lives only in memory.
+    @Volatile
+    private var cachedToken: Pair<String, String>? = null
+
+    // Two phones creating the file at once leave two copies; the newest one is the plan.
+    override suspend fun find(account: SyncAccount): RemotePlanFile? = list(account).firstOrNull()
+
+    private suspend fun list(account: SyncAccount): List<RemotePlanFile> {
         val query = "name = '$FILE_NAME' and 'appDataFolder' in parents and trashed = false"
-        val url = "$API/files?spaces=appDataFolder&orderBy=modifiedTime%20desc&pageSize=10" +
+        val url = "$API/files?spaces=appDataFolder&orderBy=modifiedTime%20desc&pageSize=100" +
             "&q=${encode(query)}&fields=${encode("files(id,md5Checksum)")}"
         val files = json.parseToJsonElement(request(account, url, "GET").decodeToString()).jsonObject["files"]
             ?.jsonArray.orEmpty()
-        // Two phones creating the file at once leave two copies; the newest one is the plan.
-        val newest = files.firstOrNull()?.jsonObject ?: return null
-        return RemotePlanFile(
-            id = newest.getValue("id").jsonPrimitive.content,
-            md5 = newest.getValue("md5Checksum").jsonPrimitive.content.lowercase()
-        )
+        return files.map { entry ->
+            val file = entry.jsonObject
+            RemotePlanFile(
+                id = file.getValue("id").jsonPrimitive.content,
+                md5 = file.getValue("md5Checksum").jsonPrimitive.content.lowercase()
+            )
+        }
     }
 
     override suspend fun download(account: SyncAccount, file: RemotePlanFile): ByteArray {
@@ -98,9 +111,11 @@ class DrivePlanTransport(
         return result
     }
 
-    override suspend fun delete(account: SyncAccount, file: RemotePlanFile) {
-        val response = execute(account, "$API/files/${encode(file.id)}", "DELETE", null, emptyMap())
-        if (response.status != 404) checkStatus(response)
+    override suspend fun deleteAll(account: SyncAccount) {
+        list(account).forEach { file ->
+            val response = execute(account, "$API/files/${encode(file.id)}", "DELETE", null, emptyMap())
+            if (response.status != 404) checkStatus(response)
+        }
     }
 
     private suspend fun request(
@@ -119,15 +134,20 @@ class DrivePlanTransport(
         body: ByteArray?,
         headers: Map<String, String>
     ): DriveHttpResponse {
-        var token = tokens.tokenFor(account)
+        var token = token(account)
         var response = http.execute(url, method, headers + ("Authorization" to "Bearer $token"), body)
         if (response.status == 401) {
+            cachedToken = null
             tokens.invalidate(token)
-            token = tokens.tokenFor(account)
+            token = token(account)
             response = http.execute(url, method, headers + ("Authorization" to "Bearer $token"), body)
         }
         return response
     }
+
+    private suspend fun token(account: SyncAccount): String =
+        cachedToken?.takeIf { it.first == account.subject }?.second
+            ?: tokens.tokenFor(account).also { cachedToken = account.subject to it }
 
     private fun checkStatus(response: DriveHttpResponse) {
         if (response.status in 200..299) return

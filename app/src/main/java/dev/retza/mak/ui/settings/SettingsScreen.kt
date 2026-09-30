@@ -37,6 +37,7 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import dev.retza.mak.ui.TrackPlanEditing
 import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakEmptyState
@@ -527,6 +528,8 @@ private fun DeleteSemesterDialog(
     onConfirm: () -> Unit,
     onCancel: () -> Unit
 ) {
+    // The dialog holds a local semester number, which a downloaded plan could give to another semester.
+    TrackPlanEditing()
     MakConfirmDeletionDialog(
         title = "Usuń semestr",
         text = "Usunięcie semestru usunie jego plan i dane. Tej operacji nie można cofnąć.",
@@ -624,7 +627,8 @@ fun SettingsDataScreen(
     onExport: () -> Unit,
     onImport: () -> Unit,
     onDismissImportError: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    syncConnected: Boolean = false
 ) {
     MakScreenContent(
         modifier = modifier
@@ -640,7 +644,8 @@ fun SettingsDataScreen(
         )
         MakNoteBanner(
             title = null,
-            subtitle = "Import zastępuje wszystkie lokalne dane. Tej operacji nie można cofnąć.",
+            subtitle = "Import zastępuje wszystkie lokalne dane. Tej operacji nie można cofnąć." +
+                if (syncConnected) " $SYNC_NOTE" else "",
             role = MakNoteRole.Warning
         )
     }
@@ -655,12 +660,15 @@ fun SettingsDataScreen(
     }
 }
 
+private const val SYNC_NOTE = "Zaimportowany plan trafi też na Dysk Google i na pozostałe połączone telefony."
+
 @Composable
 fun ImportPreviewScreen(
     state: SettingsUiState,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    syncConnected: Boolean = false
 ) {
     val preview = state.importPreview
     MakScreenContent(
@@ -674,7 +682,7 @@ fun ImportPreviewScreen(
         } else {
             MakNoteBanner(
                 title = "Zastąpisz wszystkie lokalne dane",
-                subtitle = "Tej operacji nie można cofnąć.",
+                subtitle = "Tej operacji nie można cofnąć." + if (syncConnected) " $SYNC_NOTE" else "",
                 role = MakNoteRole.Warning
             )
             Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
