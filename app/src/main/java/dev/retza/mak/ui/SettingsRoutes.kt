@@ -25,7 +25,6 @@ import dev.retza.mak.ui.settings.SettingsNotificationsScreen
 import dev.retza.mak.ui.settings.SettingsScreen
 import dev.retza.mak.ui.settings.SettingsSemestersScreen
 import dev.retza.mak.ui.settings.SettingsViewModel
-import dev.retza.mak.ui.settings.SyncEffect
 import dev.retza.mak.ui.settings.SyncScreen
 import dev.retza.mak.ui.settings.SyncViewModel
 import dev.retza.mak.ui.settings.settingsSummary
@@ -201,15 +200,8 @@ private fun SyncRoute(syncViewModel: SyncViewModel) {
         syncViewModel.reportArchiveExport(written)
     }
     LaunchedEffect(syncViewModel) {
-        syncViewModel.effects.collect { effect ->
-            when (effect) {
-                is SyncEffect.Authorize ->
-                    authorizationLauncher.launch(IntentSenderRequest.Builder(effect.pendingIntent).build())
-                is SyncEffect.ExportArchived -> {
-                    exportId = effect.id
-                    exportLauncher.launch(effect.fileName)
-                }
-            }
+        syncViewModel.authorizationRequests.collect { pendingIntent ->
+            authorizationLauncher.launch(IntentSenderRequest.Builder(pendingIntent).build())
         }
     }
     SyncScreen(
@@ -223,7 +215,12 @@ private fun SyncRoute(syncViewModel: SyncViewModel) {
         onRequestDisconnect = syncViewModel::requestDisconnect,
         onDisconnect = syncViewModel::disconnect,
         onDismissDisconnect = syncViewModel::dismissDisconnect,
-        onExportArchived = syncViewModel::exportArchived,
+        onExportArchived = { id ->
+            state.archive.firstOrNull { it.id == id }?.let { item ->
+                exportId = item.id
+                exportLauncher.launch(item.fileName)
+            }
+        },
         onDismissError = syncViewModel::dismissError,
         modifier = Modifier.fillMaxSize()
     )

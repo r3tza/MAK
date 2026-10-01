@@ -11,6 +11,7 @@ import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
 import java.time.ZoneOffset
+import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -25,11 +26,11 @@ class SyncCoordinatorTest {
     private val account = SyncAccount("sub-1", "ala@example.com", "ala@example.com")
     private val phone = FakeGateway()
     private val drive = FakeDrive()
-    private val editors = PlanEditTracker()
+    private val editors = PlanEditTracker(kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined))
     private val archive by lazy { SyncArchive(folder.newFolder("archive")) }
     private val coordinator by lazy {
         SyncCoordinator(phone, drive, InMemoryStore(SyncState(account = account)), archive, editors,
-            Clock.fixed(Instant.parse("2026-09-30T10:00:00Z"), ZoneOffset.UTC))
+            Clock.fixed(Instant.parse("2026-09-30T10:00:00Z"), ZoneOffset.UTC), kotlinx.coroutines.Dispatchers.Unconfined)
     }
 
     @Test
@@ -150,7 +151,7 @@ class SyncCoordinatorTest {
         phone.data = plan("Telefon")
         drive.putRaw("""{"schemaVersion": 99}""".toByteArray())
 
-        assertEquals(SyncOutcome.InvalidRemotePlan, coordinator.synchronize())
+        assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
         assertEquals(listOf("Telefon"), phone.names())
         assertEquals(0, drive.uploads)
         assertEquals(SyncIssue.INVALID_REMOTE_PLAN, coordinator.state.value.issue)
@@ -161,12 +162,12 @@ class SyncCoordinatorTest {
         phone.data = plan("Wspólny")
         coordinator.synchronize()
         drive.put(plan("Wspólny", "Z Dysku"))
-        editors.open()
+        editors.set("form", true)
 
         assertEquals(SyncOutcome.WaitingForEditor, coordinator.synchronize())
         assertEquals(listOf("Wspólny"), phone.names())
 
-        editors.close()
+        editors.set("form", false)
         assertEquals(SyncOutcome.Downloaded, coordinator.synchronize())
     }
 
@@ -247,8 +248,28 @@ class SyncCoordinatorTest {
         phone.data = plan("Telefon")
         drive.failure = DriveHttpException(403, "quota")
 
-        assertEquals(SyncOutcome.Failed, coordinator.synchronize())
+        assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
         assertEquals(SyncIssue.FAILED, coordinator.state.value.issue)
+    }
+
+    @Test
+    fun unreadableDriveResponseDoesNotAskToReconnect() = runTest {
+        phone.data = plan("Telefon")
+        drive.failure = DriveHttpException(0, "unreadable")
+
+        runCatching { coordinator.synchronize() }
+
+        assertNull(coordinator.state.value.issue)
+    }
+
+    @Test
+    fun otherGoogleAccountTellsToConnectAgain() = runTest {
+        phone.data = plan("Telefon")
+        drive.failure = AccountMismatchException()
+
+        assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
+        assertEquals(SyncIssue.FAILED, coordinator.state.value.issue)
+        assertEquals(true, coordinator.state.value.issueMessage.orEmpty().contains("Wyłącz synchronizację"))
     }
 
     @Test
@@ -260,6 +281,27 @@ class SyncCoordinatorTest {
 
         assertEquals(java.io.IOException::class, thrown?.let { it::class })
         assertNull(coordinator.state.value.issue)
+    }
+
+    @Test
+    fun stateIsWrittenOnTheInjectedDispatcherNotTheCaller() = runTest {
+        val writes = mutableListOf<String>()
+        val store = object : SyncStateStore {
+            override fun load() = SyncState(account = account)
+            override fun save(state: SyncState) {
+                writes += Thread.currentThread().name
+            }
+        }
+        val io = java.util.concurrent.Executors.newSingleThreadExecutor { Thread(it, "sync-io") }
+        val dispatcher = io.asCoroutineDispatcher()
+        val onIo = SyncCoordinator(phone, drive, store, archive, editors,
+            Clock.fixed(Instant.parse("2026-09-30T10:00:00Z"), ZoneOffset.UTC), dispatcher)
+        phone.data = plan("Telefon")
+
+        onIo.synchronize()
+        io.shutdown()
+
+        assertEquals(listOf("sync-io"), writes.distinct())
     }
 
     @Test

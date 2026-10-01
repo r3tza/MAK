@@ -17,6 +17,7 @@ import dev.retza.mak.ui.semester.SemesterCoursesScreen
 import dev.retza.mak.ui.semester.SemesterEffect
 import dev.retza.mak.ui.semester.SemesterScreen
 import dev.retza.mak.ui.semester.SemesterViewModel
+import dev.retza.mak.ui.semester.hasPlanDraft
 import dev.retza.mak.ui.semester.SemesterWeekOverridesScreen
 import dev.retza.mak.ui.programs.StudyProgramEditorUi
 import dev.retza.mak.ui.programs.StudyProgramsViewModel
@@ -39,7 +40,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.Semester,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
-        TrackPlanEditing()
+        TrackPlanEditing(active = semesterViewModel.semester.collectAsStateWithLifecycle().value.hasPlanDraft())
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
             semesterId?.let(semesterViewModel::openIfNeeded)
@@ -71,7 +72,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.SemesterCourses,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
-        TrackPlanEditing()
+        TrackPlanEditing(active = semesterViewModel.semester.collectAsStateWithLifecycle().value.hasPlanDraft())
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
             semesterId?.let(semesterViewModel::openIfNeeded)
@@ -177,7 +178,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.SemesterOverrides,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
-        TrackPlanEditing()
+        TrackPlanEditing(active = semesterViewModel.semester.collectAsStateWithLifecycle().value.hasPlanDraft())
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
             semesterId?.let(semesterViewModel::openIfNeeded)
@@ -207,7 +208,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.SemesterCalendars,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
-        TrackPlanEditing()
+        TrackPlanEditing(active = semesterViewModel.semester.collectAsStateWithLifecycle().value.hasPlanDraft())
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
             semesterId?.let(semesterViewModel::openIfNeeded)

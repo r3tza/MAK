@@ -4,11 +4,12 @@ import dev.retza.mak.data.repository.BackupData
 import java.io.IOException
 import java.time.Clock
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.withContext
 
 sealed interface SyncOutcome {
     data object NoAccount : SyncOutcome
@@ -17,11 +18,9 @@ sealed interface SyncOutcome {
     data object Downloaded : SyncOutcome
     data object ChoiceRequired : SyncOutcome
     data object WaitingForEditor : SyncOutcome
-    data object InvalidRemotePlan : SyncOutcome
-    data object AuthorizationRequired : SyncOutcome
 
-    /** A lasting error, recorded as [SyncIssue.FAILED]; repeating the run will not help. */
-    data object Failed : SyncOutcome
+    /** A lasting problem recorded in [SyncState.issue]; repeating the run will not help. */
+    data object NeedsAttention : SyncOutcome
 
     /** The plan kept changing on one side during the run; the next run starts over. */
     data object RetryLater : SyncOutcome
@@ -39,25 +38,32 @@ class SyncCoordinator(
     private val store: SyncStateStore,
     private val archive: SyncArchive,
     private val editTracker: PlanEditTracker,
-    private val clock: Clock
+    private val clock: Clock,
+    // Encoding the plan and writing files with fsync must not block the main thread of a screen.
+    private val ioDispatcher: CoroutineDispatcher
 ) {
     private val lock = Mutex()
-    private val current = MutableStateFlow(store.load())
-    val state: StateFlow<SyncState> = current.asStateFlow()
 
-    suspend fun synchronize(): SyncOutcome = lock.withLock { run(choice = null) }
+    // Read on first use, so creating the coordinator during app start does no file access.
+    private val current by lazy { MutableStateFlow(store.load()) }
+    val state: StateFlow<SyncState> get() = current
+
+    suspend fun synchronize(): SyncOutcome = serialized { run(choice = null) }
 
     /** Applies [choice] only to the versions the question described; otherwise the question is asked again. */
-    suspend fun resolveChoice(choice: SyncChoice): SyncOutcome = lock.withLock { run(choice) }
+    suspend fun resolveChoice(choice: SyncChoice): SyncOutcome = serialized { run(choice) }
 
-    suspend fun connect(account: SyncAccount) = lock.withLock { save(SyncState(account = account)) }
+    suspend fun connect(account: SyncAccount) = serialized { save(SyncState(account = account)) }
 
     /** Keeps the local plan. Deleting the Drive file first means a failure leaves the account connected. */
-    suspend fun disconnect(deleteRemote: Boolean) = lock.withLock {
+    suspend fun disconnect(deleteRemote: Boolean) = serialized {
         val account = current.value.account
         if (deleteRemote && account != null) transport.deleteAll(account)
         save(SyncState())
     }
+
+    private suspend fun <T> serialized(block: suspend () -> T): T =
+        withContext(ioDispatcher) { lock.withLock { block() } }
 
     fun archivedPlans(): List<ArchivedPlan> = archive.list()
 
@@ -69,10 +75,11 @@ class SyncCoordinator(
             repeat(MAX_PASSES) { pass(account, choice)?.let { return it } }
             SyncOutcome.RetryLater
         } catch (error: InvalidRemotePlanException) {
-            save(current.value.copy(issue = SyncIssue.INVALID_REMOTE_PLAN, issueMessage = error.message))
-            SyncOutcome.InvalidRemotePlan
+            issue(SyncIssue.INVALID_REMOTE_PLAN, error.message)
         } catch (_: UserActionRequiredException) {
             authorizationRequired()
+        } catch (_: AccountMismatchException) {
+            failed(ACCOUNT_MISMATCH)
         } catch (error: DriveHttpException) {
             when {
                 error.isTransient() -> throw error
@@ -84,22 +91,18 @@ class SyncCoordinator(
             throw error
         } catch (error: IOException) {
             throw error
-        } catch (_: IllegalArgumentException) {
-            // Authorization rejects a different account or missing permissions with require().
-            authorizationRequired()
         } catch (_: Exception) {
             failed(GENERIC_FAILURE)
         }
     }
 
-    private fun authorizationRequired(): SyncOutcome {
-        save(current.value.copy(issue = SyncIssue.AUTHORIZATION_REQUIRED, issueMessage = null))
-        return SyncOutcome.AuthorizationRequired
-    }
+    private fun authorizationRequired() = issue(SyncIssue.AUTHORIZATION_REQUIRED, message = null)
 
-    private fun failed(message: String): SyncOutcome {
-        save(current.value.copy(issue = SyncIssue.FAILED, issueMessage = message))
-        return SyncOutcome.Failed
+    private fun failed(message: String) = issue(SyncIssue.FAILED, message)
+
+    private fun issue(issue: SyncIssue, message: String?): SyncOutcome {
+        save(current.value.copy(issue = issue, issueMessage = message))
+        return SyncOutcome.NeedsAttention
     }
 
     /** One attempt; null means one side changed during the attempt and it has to start over. */
@@ -185,7 +188,6 @@ class SyncCoordinator(
     ): SyncOutcome {
         save(
             current.value.copy(
-                remoteFileId = remote.id,
                 remoteMd5 = remote.md5,
                 localFingerprint = localFingerprint,
                 lastSyncedAtMillis = clock.millis(),
@@ -210,6 +212,8 @@ class SyncCoordinator(
     private companion object {
         const val MAX_PASSES = 3
         const val GENERIC_FAILURE = "Nie udało się zsynchronizować planu."
+        const val ACCOUNT_MISMATCH =
+            "Telefon ma inne konto Google niż połączone. Wyłącz synchronizację i połącz konto ponownie."
     }
 }
 

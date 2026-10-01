@@ -148,7 +148,7 @@ Prowadzący jest opcjonalnym tekstem zapisanym przy zajęciach. Aplikacja nie pr
 
 Jeśli edycja dnia, cyklu, daty albo kierunku sprawia, że zmiany terminów lub notatki do terminów przestaną być widoczne, formularz przed zapisem pokazuje dialog „Część danych przestanie być widoczna” z ich liczbą oraz akcjami „Anuluj” i „Zapisz”. Dane zostają zachowane (`DOMAIN.md`). Zmiana samych godzin, sali ani nazwy nie wywołuje dialogu.
 
-Plan pobrany z Dysku Google nie zastępuje danych, dopóki otwarty jest formularz planu albo dialog usuwania semestru. Przy połączonym koncie ostrzeżenie importu JSON dodaje, że zaimportowany plan trafi też na Dysk Google i na pozostałe połączone telefony. Aplikacja zastosuje go po zamknięciu formularza (`SYNC_PROPOSAL.md`, „Przebieg synchronizacji”).
+Plan pobrany z Dysku Google nie zastępuje danych, dopóki otwarty jest formularz planu, dialog usuwania semestru albo ekran podglądu z niezapisanym szkicem lub otwartym potwierdzeniem. Przy połączonym koncie ostrzeżenie importu JSON dodaje, że zaimportowany plan trafi też na Dysk Google i na pozostałe połączone telefony. Aplikacja zastosuje go po zamknięciu formularza (`SYNC_PROPOSAL.md`, „Przebieg synchronizacji”).
 
 Po usunięciu zajęć aplikacja powinna wymagać potwierdzenia. Edycja i usuwanie muszą aktualizować widget.
 

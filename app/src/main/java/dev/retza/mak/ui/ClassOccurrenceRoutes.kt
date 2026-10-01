@@ -18,6 +18,7 @@ import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.occurrence.OccurrenceDetailsScreen
 import dev.retza.mak.ui.occurrence.OccurrenceEffect
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
+import dev.retza.mak.ui.occurrence.hasPlanDraft
 
 internal fun openOccurrence(
     occurrenceViewModel: OccurrenceViewModel,
@@ -104,7 +105,7 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
             navArgument("date") { type = NavType.StringType }
         )
     ) { entry ->
-        TrackPlanEditing()
+        TrackPlanEditing(active = occurrenceViewModel.details.collectAsStateWithLifecycle().value.hasPlanDraft())
         val classId = entry.arguments?.getString("classId")
         val date = entry.arguments?.getString("date")
         LaunchedEffect(classId, date) {

@@ -14,14 +14,11 @@ import androidx.work.ListenableWorker
 import androidx.work.OneTimeWorkRequestBuilder
 import java.io.IOException
 import java.util.concurrent.TimeUnit
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.Single
 
@@ -30,21 +27,23 @@ class SyncWorker(
     params: WorkerParameters,
     private val coordinator: SyncCoordinator
 ) : CoroutineWorker(appContext, params) {
-    override suspend fun doWork(): Result = try {
-        when (coordinator.synchronize()) {
-            SyncOutcome.RetryLater -> Result.retry()
-            // Choices, invalid files and consent need the app; closing an editor enqueues a new run.
-            else -> Result.success()
-        }
-    } catch (error: CancellationException) {
-        throw error
-    } catch (error: DriveHttpException) {
-        if (error.isTransient()) Result.retry() else Result.failure()
-    } catch (_: IOException) {
-        Result.retry()
-    } catch (_: Exception) {
-        Result.failure()
+    override suspend fun doWork(): Result = syncWorkResult { coordinator.synchronize() }
+}
+
+/**
+ * Only network-side failures are retried; anything the user must act on ends the work as done. The
+ * coordinator records every lasting error itself and lets only transient ones through.
+ */
+internal suspend fun syncWorkResult(run: suspend () -> SyncOutcome): ListenableWorker.Result = try {
+    when (run()) {
+        SyncOutcome.RetryLater -> ListenableWorker.Result.retry()
+        // Choices, invalid files and consent need the app; closing an editor enqueues a new run.
+        else -> ListenableWorker.Result.success()
     }
+} catch (_: DriveHttpException) {
+    ListenableWorker.Result.retry()
+} catch (_: IOException) {
+    ListenableWorker.Result.retry()
 }
 
 @Single
@@ -130,9 +129,7 @@ class SyncRoomChangeObserver(
                 .collect { scheduler.enqueueImmediate() }
         }
         scope.launch {
-            editTracker.editorCount
-                .map { it > 0 }
-                .distinctUntilChanged()
+            editTracker.editing
                 .drop(1)
                 .collect { editing -> if (!editing) scheduler.enqueueImmediate() }
         }

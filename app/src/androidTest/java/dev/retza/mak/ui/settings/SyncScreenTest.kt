@@ -21,7 +21,10 @@ import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
 
-/** Both dialogs end with stacked actions; at 320 dp and font scale 2.0 each must stay reachable. */
+/**
+ * Both dialogs end with stacked actions; at font scale 2.0 each must stay reachable. A dialog takes the
+ * width of the window, not of the 320 dp box, so narrow screens are checked on a device.
+ */
 @RunWith(AndroidJUnit4::class)
 class SyncScreenTest {
     @get:Rule

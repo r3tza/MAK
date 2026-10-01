@@ -34,6 +34,44 @@ class DrivePlanTransportTest {
     }
 
     @Test
+    fun unreadableResponseIsANetworkFailureNotAnAuthorizationOne() = runTest {
+        http.respond { _, _ -> DriveHttpResponse(200, "<html>Zaloguj się do sieci</html>".toByteArray()) }
+
+        val error = runCatching { transport.find(account) }.exceptionOrNull()
+
+        assertEquals(DriveHttpException::class, error?.let { it::class })
+        assertEquals(true, (error as DriveHttpException).isTransient())
+    }
+
+    @Test
+    fun firstUploadCreatesTheFileWithAMultipartRequest() = runTest {
+        val bytes = "{}".toByteArray()
+        http.respond { _, _ -> DriveHttpResponse(200, created(bytes)) }
+
+        transport.upload(account, existing = null, bytes = bytes)
+
+        val sent = http.sent.single()
+        assertEquals("POST", sent.method)
+        assertEquals(true, sent.url.startsWith("https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart"))
+        assertEquals(true, sent.headers["Content-Type"].orEmpty().startsWith("multipart/related; boundary="))
+    }
+
+    @Test
+    fun laterUploadPatchesTheExistingFile() = runTest {
+        val bytes = "{}".toByteArray()
+        http.respond { _, _ -> DriveHttpResponse(200, created(bytes)) }
+
+        transport.upload(account, existing = RemotePlanFile("old", "x"), bytes = bytes)
+
+        val sent = http.sent.single()
+        assertEquals("POST", sent.method)
+        assertEquals(true, sent.url.startsWith("https://www.googleapis.com/upload/drive/v3/files/old?uploadType=media"))
+        assertEquals("PATCH", sent.headers["X-HTTP-Method-Override"])
+    }
+
+    private fun created(bytes: ByteArray) = "{\"id\":\"old\",\"md5Checksum\":\"${md5(bytes)}\"}".toByteArray()
+
+    @Test
     fun deleteAllRemovesDuplicatePlanFiles() = runTest {
         http.respond { request, _ ->
             if (request.startsWith("GET")) DriveHttpResponse(200, LIST_TWO_FILES) else DriveHttpResponse(204, ByteArray(0))
@@ -61,8 +99,11 @@ class DrivePlanTransportTest {
         }
     }
 
+    private data class Sent(val method: String, val url: String, val headers: Map<String, String>)
+
     private class ScriptedHttp : DriveHttpClient {
         val requests = mutableListOf<String>()
+        val sent = mutableListOf<Sent>()
         private var handler: (String, Map<String, String>) -> DriveHttpResponse = { _, _ -> DriveHttpResponse(500, ByteArray(0)) }
 
         fun respond(handler: (String, Map<String, String>) -> DriveHttpResponse) {
@@ -72,6 +113,7 @@ class DrivePlanTransportTest {
         override suspend fun execute(url: String, method: String, headers: Map<String, String>, body: ByteArray?): DriveHttpResponse {
             val request = "$method ${url.substringBefore('?')}"
             requests += request
+            sent += Sent(method, url, headers)
             return handler(request, headers)
         }
     }

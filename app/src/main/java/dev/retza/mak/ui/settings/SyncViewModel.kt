@@ -4,11 +4,10 @@ import android.app.PendingIntent
 import android.content.Intent
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import dev.retza.mak.sync.AccountMismatchException
 import dev.retza.mak.sync.ArchiveSource
 import dev.retza.mak.sync.AuthorizationAttempt
-import dev.retza.mak.sync.AuthorizedGoogleAccount
-import dev.retza.mak.sync.DriveHttpException
-import dev.retza.mak.sync.GoogleAccountAuthorization
+import dev.retza.mak.sync.SyncAuthorization
 import dev.retza.mak.sync.PlanSummary
 import dev.retza.mak.sync.SyncAccount
 import dev.retza.mak.sync.SyncChoice
@@ -58,23 +57,17 @@ data class SyncUiState(
 
 data class SyncChoiceUi(val phone: String, val drive: String)
 
-sealed interface SyncEffect {
-    data class Authorize(val pendingIntent: PendingIntent) : SyncEffect
-    data class ExportArchived(val id: String, val fileName: String) : SyncEffect
-}
-
 private data class SyncLocalState(
     val isWorking: Boolean = false,
     val errorMessage: String? = null,
     val showChoiceDialog: Boolean = false,
-    val showDisconnectDialog: Boolean = false,
-    val archiveVersion: Int = 0
+    val showDisconnectDialog: Boolean = false
 )
 
 @KoinViewModel
 class SyncViewModel(
     private val coordinator: SyncCoordinator,
-    private val authorization: GoogleAccountAuthorization,
+    private val authorization: SyncAuthorization,
     private val scheduler: SyncWorkScheduler,
     private val feedbackSink: FeedbackSink
 ) : ViewModel() {
@@ -84,8 +77,9 @@ class SyncViewModel(
         state.toUi(localState, coordinator.archivedPlans().map { it.toUi() })
     }.flowOn(Dispatchers.IO).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SyncUiState())
 
-    private val effectsChannel = Channel<SyncEffect>(Channel.BUFFERED)
-    val effects = effectsChannel.receiveAsFlow()
+    // Google consent screens the route must launch; the result comes back through onAuthorizationResult.
+    private val consentRequests = Channel<PendingIntent>(Channel.BUFFERED)
+    val authorizationRequests = consentRequests.receiveAsFlow()
 
     // Only the result of the latest consent request is accepted; a late or foreign result is ignored.
     private var pendingAuthorization: PendingAuthorization? = null
@@ -139,11 +133,6 @@ class SyncViewModel(
         }
     }
 
-    fun exportArchived(id: String) {
-        val item = sync.value.archive.firstOrNull { it.id == id } ?: return
-        effectsChannel.trySend(SyncEffect.ExportArchived(id, item.fileName))
-    }
-
     fun archivedPlan(id: String): ByteArray? = coordinator.archivedPlan(id)
 
     fun reportArchiveExport(success: Boolean) {
@@ -162,18 +151,18 @@ class SyncViewModel(
         when (attempt) {
             is AuthorizationAttempt.NeedsResolution -> {
                 pendingAuthorization = PendingAuthorization(pinned)
-                effectsChannel.trySend(SyncEffect.Authorize(attempt.pendingIntent))
+                consentRequests.trySend(attempt.pendingIntent)
             }
             is AuthorizationAttempt.Granted -> {
-                if (pinned == null) coordinator.connect(attempt.account.toSyncAccount())
+                if (pinned == null) coordinator.connect(attempt.account)
                 scheduler.schedulePeriodic()
                 report(coordinator.synchronize())
             }
         }
     }
 
+    // Every archived version comes with a change of the coordinator state, which refreshes the list.
     private fun report(outcome: SyncOutcome) {
-        local.update { it.copy(archiveVersion = it.archiveVersion + 1) }
         val message = when (outcome) {
             SyncOutcome.Downloaded -> "Pobrano plan z Dysku Google"
             SyncOutcome.Uploaded -> "Wysłano plan na Dysk Google"
@@ -184,8 +173,7 @@ class SyncViewModel(
             }
             SyncOutcome.WaitingForEditor -> "Plan z Dysku zostanie pobrany po zamknięciu formularza."
             SyncOutcome.RetryLater -> "Plan zmieniał się w trakcie synchronizacji. Spróbuj ponownie."
-            SyncOutcome.NoAccount, SyncOutcome.InvalidRemotePlan, SyncOutcome.AuthorizationRequired,
-            SyncOutcome.Failed -> null
+            SyncOutcome.NoAccount, SyncOutcome.NeedsAttention -> null
         }
         message?.let { feedbackSink.publish(UiFeedback(it, UiFeedbackKind.Success)) }
     }
@@ -209,12 +197,10 @@ class SyncViewModel(
     private class PendingAuthorization(val pinned: SyncAccount?)
 }
 
-private fun AuthorizedGoogleAccount.toSyncAccount() = SyncAccount(subject, email, androidAccountName)
-
 private fun Exception.toMessage(): String = when {
     this is IOException -> "Brak połączenia z internetem. Aplikacja spróbuje ponownie później."
-    this is DriveHttpException && statusCode == 403 ->
-        "Dysk Google odmówił dostępu. Sprawdź, czy na koncie jest wolne miejsce."
+    this is AccountMismatchException ->
+        "Google zwrócił inne konto niż połączone. Wyłącz synchronizację i połącz konto ponownie."
     else -> "Nie udało się zsynchronizować planu."
 }
 

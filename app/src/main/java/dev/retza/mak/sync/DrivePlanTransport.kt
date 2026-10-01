@@ -66,15 +66,25 @@ class DrivePlanTransport(
         val query = "name = '$FILE_NAME' and 'appDataFolder' in parents and trashed = false"
         val url = "$API/files?spaces=appDataFolder&orderBy=modifiedTime%20desc&pageSize=100" +
             "&q=${encode(query)}&fields=${encode("files(id,md5Checksum)")}"
-        val files = json.parseToJsonElement(request(account, url, "GET").decodeToString()).jsonObject["files"]
-            ?.jsonArray.orEmpty()
-        return files.map { entry ->
-            val file = entry.jsonObject
-            RemotePlanFile(
-                id = file.getValue("id").jsonPrimitive.content,
-                md5 = file.getValue("md5Checksum").jsonPrimitive.content.lowercase()
-            )
+        val body = request(account, url, "GET")
+        return readable {
+            json.parseToJsonElement(body.decodeToString()).jsonObject["files"]?.jsonArray.orEmpty().map { entry ->
+                val file = entry.jsonObject
+                RemotePlanFile(
+                    id = file.getValue("id").jsonPrimitive.content,
+                    md5 = file.getValue("md5Checksum").jsonPrimitive.content.lowercase()
+                )
+            }
         }
+    }
+
+    /** A body that is not the expected JSON (a proxy page, a cut response) is a network-side failure. */
+    private fun <T> readable(parse: () -> T): T = try {
+        parse()
+    } catch (error: IllegalArgumentException) {
+        throw DriveHttpException(0, "Google Drive returned an unreadable response")
+    } catch (error: NoSuchElementException) {
+        throw DriveHttpException(0, "Google Drive response is missing a field")
     }
 
     override suspend fun download(account: SyncAccount, file: RemotePlanFile): ByteArray {
@@ -102,11 +112,13 @@ class DrivePlanTransport(
                 mapOf("Content-Type" to "application/json", "X-HTTP-Method-Override" to "PATCH")
             )
         }
-        val created = json.parseToJsonElement(response.decodeToString()).jsonObject
-        val result = RemotePlanFile(
-            id = created.getValue("id").jsonPrimitive.content,
-            md5 = created.getValue("md5Checksum").jsonPrimitive.content.lowercase()
-        )
+        val result = readable {
+            val created = json.parseToJsonElement(response.decodeToString()).jsonObject
+            RemotePlanFile(
+                id = created.getValue("id").jsonPrimitive.content,
+                md5 = created.getValue("md5Checksum").jsonPrimitive.content.lowercase()
+            )
+        }
         if (result.md5 != md5(bytes)) throw DriveHttpException(0, "Drive stored different content than sent")
         return result
     }

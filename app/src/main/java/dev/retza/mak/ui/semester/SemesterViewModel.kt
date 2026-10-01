@@ -702,13 +702,15 @@ private fun SemesterSnapshot.toSemesterScreenState(selectedCalendarId: Long?): S
             } > 1
         )
     }
+    val form = SemesterFormUiState(
+        name = semester.name,
+        startDate = selected?.startDate?.toString().orEmpty(),
+        endDate = selected?.endDate?.toString().orEmpty(),
+        firstWeek = selected?.let { WeekTypeUi.valueOf(it.firstWeekType.name) } ?: WeekTypeUi.A
+    )
     return SemesterScreenUiState(
-        semester = SemesterFormUiState(
-            name = semester.name,
-            startDate = selected?.startDate?.toString().orEmpty(),
-            endDate = selected?.endDate?.toString().orEmpty(),
-            firstWeek = selected?.let { WeekTypeUi.valueOf(it.firstWeekType.name) } ?: WeekTypeUi.A
-        ),
+        semester = form,
+        loadedSemester = form,
         overrides = overrides
             .filter { it.academicCalendarId == selected?.id }
             .map { override ->

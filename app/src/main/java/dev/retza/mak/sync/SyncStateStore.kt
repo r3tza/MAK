@@ -25,7 +25,6 @@ data class PlanSummary(val semesterCount: Int, val classCount: Int)
 @Serializable
 data class SyncState(
     val account: SyncAccount? = null,
-    val remoteFileId: String? = null,
     val remoteMd5: String? = null,
     val localFingerprint: String? = null,
     val lastSyncedAtMillis: Long? = null,

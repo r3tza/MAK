@@ -4,10 +4,6 @@ import androidx.room.withTransaction
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.PlanBackupGateway
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 import org.koin.core.annotation.Single
 
 interface PlanSyncGateway {
@@ -55,19 +51,3 @@ internal fun activeSemesterAfterReplace(
     fallbackActiveId: Long?
 ): Long? = localActiveId?.takeIf { id -> keepLocalActive && data.semesters.any { it.semester.id == id } }
     ?: fallbackActiveId
-
-/**
- * Counts open plan editors. A downloaded plan waits until none is open, so a form never saves over
- * a plan it did not show.
- */
-@Single
-class PlanEditTracker {
-    private val openEditors = MutableStateFlow(0)
-    val editorCount: StateFlow<Int> = openEditors.asStateFlow()
-
-    val isEditing: Boolean get() = openEditors.value > 0
-
-    fun open() = openEditors.update { it + 1 }
-
-    fun close() = openEditors.update { (it - 1).coerceAtLeast(0) }
-}
