@@ -2,6 +2,18 @@
   "minorChanges": "Pomniejsze poprawki",
   "releases": [
     {
+      "version": "0.3.0",
+      "date": "2026-10-08",
+      "changes": [
+        "Dodano opcjonalną synchronizację planu przez konto Google. Plan trafia do ukrytego folderu aplikacji na Twoim Dysku i jest taki sam na każdym połączonym telefonie.",
+        "Gdy plan zmieni się na dwóch telefonach, aplikacja pokazuje różnice i pozwala zachować jedną wersję albo wybrać zmiany jedna po drugiej.",
+        "Kierunek, którego nie używa żaden semestr, można teraz usunąć.",
+        "Szczegóły terminu od razu pokazują zmiany wprowadzone w planie.",
+        "Gest wstecz w konfiguracji planu cofa o jeden krok zamiast zamykać konfigurację.",
+        "Przyciski „Anuluj”, „Później” i „Wstecz” są mniej wyróżnione niż główna akcja, a komunikaty mają jeden spójny wygląd."
+      ]
+    },
+    {
       "version": "0.2.3",
       "date": "2026-09-29",
       "changes": [
