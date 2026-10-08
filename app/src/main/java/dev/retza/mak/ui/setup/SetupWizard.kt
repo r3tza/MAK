@@ -28,6 +28,7 @@ import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSelectField
+import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.distinctLabels
@@ -177,7 +178,7 @@ private fun SemesterStep(
         )
         MakPrimaryAction(text = "Utwórz semestr", onClick = onNext)
         if (showReturnToSettings) {
-            MakSecondaryAction(text = "Wróć do ustawień", onClick = onReturnToSettings)
+            MakTextAction(text = "Wróć do ustawień", onClick = onReturnToSettings)
         }
     }
 }
@@ -267,7 +268,7 @@ private fun CourseStep(
             CalendarModeChoice(selected = state.calendarMode, onSelected = onCalendarModeChanged)
         }
         MakPrimaryAction(text = "Zapisz kierunek", onClick = onNext, enabled = !state.isSaving)
-        MakSecondaryAction(text = "Wstecz", onClick = onBack, enabled = !state.isSaving)
+        MakTextAction(text = "Wstecz", onClick = onBack, enabled = !state.isSaving)
     }
 }
 
@@ -345,7 +346,7 @@ private fun InactiveSemesterClassesStep(
         )
         MakSecondaryAction(text = "Dodaj kolejny kierunek", onClick = onAddAnotherProgram, enabled = !isActivating)
         MakSecondaryAction(text = "Zakończ", onClick = onFinish, enabled = !isActivating)
-        MakSecondaryAction(text = "Wstecz", onClick = onBack, enabled = !isActivating)
+        MakTextAction(text = "Wstecz", onClick = onBack, enabled = !isActivating)
     }
 }
 
@@ -365,6 +366,6 @@ private fun ClassesStep(
         if (canSkip) {
             MakSecondaryAction(text = "Przejdź do Dzisiaj", onClick = onFinish)
         }
-        MakSecondaryAction(text = "Wstecz", onClick = onBack)
+        MakTextAction(text = "Wstecz", onClick = onBack)
     }
 }

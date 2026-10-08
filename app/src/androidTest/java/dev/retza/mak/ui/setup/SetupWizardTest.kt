@@ -14,10 +14,13 @@ import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.width
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -106,10 +109,47 @@ class SetupWizardTest {
         assertEquals(SetupCalendarMode.Separate, mode)
     }
 
+    @Test
+    fun exitActionIsTextButtonAtStartAt320Dp() {
+        var backClicks = 0
+        showWizard(SetupWizardUiState(step = SetupStep.Classes), onBack = { backClicks += 1 })
+
+        assertTextActionAtStart(exitAction = "Wstecz", primaryAction = "Dodaj zajęcia")
+        composeTestRule.onNode(hasText("Wstecz") and hasClickAction()).performScrollTo().performClick()
+        assertEquals(1, backClicks)
+    }
+
+    @Test
+    fun semesterStepOffersReturnToSettingsAsTextButtonAt320Dp() {
+        var returns = 0
+        showWizard(
+            SetupWizardUiState(),
+            onReturnToSettings = { returns += 1 },
+            showReturnToSettings = true
+        )
+
+        assertTextActionAtStart(exitAction = "Wróć do ustawień", primaryAction = "Utwórz semestr")
+        composeTestRule.onNode(hasText("Wróć do ustawień") and hasClickAction()).performScrollTo().performClick()
+        assertEquals(1, returns)
+    }
+
+    // A text button keeps its content width, so it is narrower than the full-width primary action.
+    private fun assertTextActionAtStart(exitAction: String, primaryAction: String) {
+        val exit = composeTestRule.onNode(hasText(exitAction) and hasClickAction())
+            .performScrollTo()
+            .getUnclippedBoundsInRoot()
+        val primary = composeTestRule.onNode(hasText(primaryAction) and hasClickAction()).getUnclippedBoundsInRoot()
+        assertTrue(exit.left >= primary.left && exit.left - primary.left <= 4.dp)
+        assertTrue(exit.width < primary.width)
+    }
+
     private fun showWizard(
         state: SetupWizardUiState,
         onAddAnotherProgram: () -> Unit = {},
-        onCalendarModeChanged: (SetupCalendarMode) -> Unit = {}
+        onCalendarModeChanged: (SetupCalendarMode) -> Unit = {},
+        onBack: () -> Unit = {},
+        onReturnToSettings: () -> Unit = {},
+        showReturnToSettings: Boolean = false
     ) {
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
@@ -125,10 +165,12 @@ class SetupWizardTest {
                         onProgramModeChanged = {},
                         onProgramSelected = {},
                         onNext = {},
-                        onBack = {},
+                        onBack = onBack,
                         onAddClass = {},
                         onActivateAndAddClass = {},
                         onFinish = {},
+                        onReturnToSettings = onReturnToSettings,
+                        showReturnToSettings = showReturnToSettings,
                         onRetry = {},
                         onAddAnotherProgram = onAddAnotherProgram,
                         onCalendarModeChanged = onCalendarModeChanged

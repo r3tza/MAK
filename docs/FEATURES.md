@@ -30,6 +30,8 @@ Krok „Dodaj zajęcia” pokazuje kierunki zapisane w semestrze („Kierunek w 
 
 Semestr utworzony w kreatorze staje się aktywny tylko wtedy, gdy dzisiejsza data mieści się w jego kalendarzu albo gdy nie ma aktywnego semestru (`DOMAIN.md`). W przeciwnym razie komunikat po zapisie brzmi „Utworzono semestr i kierunek. Aktywny semestr się nie zmienił.”, a krok „Dodaj zajęcia” pokazuje informację „Semestr zapisany” oraz akcje „Ustaw jako aktywny i dodaj zajęcia”, „Zakończ” (powrót do ustawień) i „Wstecz”. Formularz zajęć zapisuje do aktywnego semestru, więc kreator nie otwiera go dla semestru nieaktywnego.
 
+„Wstecz” w krokach kreatora i „Wróć do ustawień” w kroku „Utwórz semestr” są przyciskami tekstowymi po lewej stronie, pod pozostałymi akcjami. Systemowy gest wstecz robi to samo co ta akcja; w kroku „Utwórz semestr” bez akcji „Wróć do ustawień” zamyka kreator (`ARCHITECTURE.md`, sekcja 4).
+
 ## Ekran „Dzisiaj”
 
 To domyślny ekran otwierany po uruchomieniu aplikacji. Od 840 dp szerokości okna karta podsumowania stoi po lewej, a lista zajęć po prawej, łącznie najwyżej 1040 dp; bez aktywnego semestru ekran zostaje w jednej kolumnie.
