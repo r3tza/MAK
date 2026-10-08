@@ -8,8 +8,6 @@ Poprawki z audytu synchronizacji I-70 zostały zakończone i zaakceptowane po re
 
 Synchronizacja Google (I-68) nie należy jeszcze do opublikowanego wydania. Projekt Google Cloud działa w trybie Testing, więc logować mogą się tylko konta z listy testowej; publikacja aplikacji w Google Auth Platform jest osobną decyzją przed wydaniem. Świadome ograniczenie projektu: Drive nie ma warunkowego zapisu, więc przy niemal równoczesnym wysłaniu z dwóch telefonów zostaje późniejsza wersja, a druga trafia do archiwum telefonu przy kolejnej synchronizacji. Szkic zajęć odtworzony po zakończeniu procesu aplikacji nie wstrzymuje pobrania planu; jeśli w tym czasie inny telefon zmienił plan, zapis szkicu może trafić do wpisu o tym samym numerze.
 
-Szczegóły terminu nie odświeżają się po zmianie danych (I-75): po zapisie formularza zajęć otwartego ze szczegółów albo po pobraniu planu przez synchronizację ekran pokazuje stan z chwili otwarcia, bo `OccurrenceViewModel.open` czyta jednorazową migawkę planu. Zgłoszone przez użytkownika 2026-10-08.
-
 ### Sprzeczności dokumentacji i pytania po audycie
 
 - `FEATURES.md`, „Ustawienia i dane”, mówi „sieć wyłącznie do aktualizacji z GitHuba, a sama aplikacja nie wysyła danych planu”. `SYNC_PROPOSAL.md`, „Cel i zakres”, mówi „Plan jest przechowywany w ukrytym folderze danych aplikacji na Dysku Google”. Który zapis ma obowiązywać w opisie prywatności tej wersji? Kod ekranu „O aplikacji” opisuje już opcjonalne wysyłanie. Nie rozstrzygnięto sprzeczności.
