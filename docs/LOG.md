@@ -2,6 +2,11 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-08: Jeden styl komunikatów i dialog wyboru wersji (I-69)
+
+- Decyzja użytkownika: wariant B z porównania trzech wersji. Wszystkie role `MakNoteBanner` mają neutralne tło z ramką; ostrzeżenie i błąd różni tylko kolorowa ikona przy pierwszym wierszu. Akcja komunikatu jest przyciskiem tekstowym w nim, główna akcja ekranu stoi pod nim na pełną szerokość (`ARCHITECTURE.md`, sekcja 4). Odrzucony wariant A zmieniał tylko baner synchronizacji i zostawiał dwa style ostrzeżeń.
+- Odbiór I-69 wykazał, że dialog wyboru wersji nie liczył kierunków, więc telefon z samymi kierunkami wyglądał na pusty. Decyzja użytkownika: dialog pokazuje dwie karty, „Ten telefon” i „Dysk Google”, z liczbą kierunków, semestrów i zajęć; ekran synchronizacji pokazuje kółko postępu przy karcie konta podczas pracy.
+
 ## 2026-10-02: Zasady testów i publikacji oraz poprawki synchronizacji (I-70)
 
 - Fakty: Sześć poprawek zlecił użytkownik; subagenci Luna je zaimplementowali, a rodzic zrecenzował i zaakceptował. Kontrole Task 1/2: `JsonExportCodecTest` 5/5, Room 7/7, `PlanEditingTest` 3/3 i pięć klas edytorów 103/103; Task 3: 48 testów JVM, 10 testów `SyncViewModelTest` i `lintDebug`. Prawdziwe OAuth i Drive nie były testowane; I-69 pozostaje zablokowane do konfiguracji Google Cloud i udziału użytkownika.
@@ -128,9 +133,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 
 - Fakty: Przy przejściu historii wydań na plik okazało się, że Koin compiler plugin zostawia wartości domyślne parametrów konstruktora zamiast wstrzykiwać bindingi, bez błędu kompilacji. `UpdateViewModel` w wydaniu 0.2.0 ma atrapę pobierania, weryfikacji i instalacji, własny `InstallEventStore` i `Clock.systemUTC()`. Sprawdzanie wersji działa, ale pobranie zawsze kończy się błędem. Testy JVM tego nie wykryły, bo same korzystały z wartości domyślnych, a `KoinGraphTest` sprawdzał tylko, że ViewModel się tworzy.
 - Decyzja: Konstruktor `UpdateViewModel` nie ma wartości domyślnych, testy przekazują atrapy jawnie, a `KoinGraphTest` porównuje pola z instancjami z grafu. Zasada braku wartości domyślnych w klasach tworzonych przez Koin jest w `STACK.md` i `ARCHITECTURE.md`. Wydanie 0.2.1 z poprawką instaluje się ręcznie na 0.2.0, a pierwszy odbiór aktualizacji z aplikacji (O-07) obejmuje przejście z 0.2.1 na 0.2.2.
-
-## 2026-09-27: Notatki wydań dla użytkowników (I-51)
-
-- Fakty: Opis zmian jednej wersji był w historii w kodzie aplikacji, w `docs/CHANGELOG.md` i w opisie wydania na GitHubie, a `update.json` miał puste notatki. `CHANGELOG.md` zawiera zmiany techniczne, których użytkownik nie odczuwa.
-- Decyzja: Jedno źródło notatek dla użytkowników w `app/src/main/assets/release_notes.json`. Czyta je aplikacja („O aplikacji”) oraz workflow (`update.json` i opis wydania). Pusta lista zmian oznacza „Pomniejsze poprawki”; brak wpisu dla wersji z tagu przerywa workflow. `CHANGELOG.md` zostaje techniczną historią dla agentów (`STACK.md`, `AGENTS.md`). Użytkownik zaakceptował wariant 2026-09-27.
-- Odrzucone: `CHANGELOG.md` jako źródło (treść techniczna), opis wydania na GitHubie jako źródło (`update.json` powstaje przed jego edycją, historia w aplikacji wymagałaby sieci) oraz generowanie kodu Kotlina z pliku przy budowaniu.

@@ -12,6 +12,7 @@ import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.schedule.ScheduleEffect
 import dev.retza.mak.ui.schedule.ScheduleScreen
 import dev.retza.mak.ui.schedule.ScheduleViewModel
+import dev.retza.mak.ui.settings.SyncAttentionUi
 import dev.retza.mak.ui.today.TodayScreen
 import dev.retza.mak.ui.today.TodayViewModel
 import dev.retza.mak.update.UpdateViewModel
@@ -24,7 +25,7 @@ internal fun NavGraphBuilder.todayRoute(
     onOpenOccurrence: (String) -> Unit,
     startSetup: () -> Unit,
     openSync: () -> Unit,
-    syncAttention: () -> String?
+    syncAttention: () -> SyncAttentionUi?
 ) {
     composable(MakRoutes.Today) {
         val todayState = todayViewModel.today.collectAsStateWithLifecycle().value

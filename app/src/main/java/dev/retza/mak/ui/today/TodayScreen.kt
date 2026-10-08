@@ -27,6 +27,7 @@ import dev.retza.mak.ui.components.MakNoteRole
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.ScreenStatus
+import dev.retza.mak.ui.settings.SyncAttentionUi
 
 data class TodayUiState(
     val dateLabel: String,
@@ -54,7 +55,7 @@ fun TodayScreen(
     onDismissUpdate: () -> Unit = {},
     twoColumns: Boolean = false,
     onOpenSync: () -> Unit = {},
-    syncAttention: String? = null
+    syncAttention: SyncAttentionUi? = null
 ) {
     // Wide windows put the summary beside the classes; without a semester there is no summary.
     val wide = twoColumns && state.hasActiveSemester
@@ -77,10 +78,10 @@ fun TodayScreen(
             ) {
                 if (syncAttention != null) {
                     MakNoteBanner(
-                        title = "Synchronizacja wymaga działania",
-                        subtitle = syncAttention,
+                        title = syncAttention.text,
+                        subtitle = null,
                         role = MakNoteRole.Warning,
-                        actions = { MakTextAction("Otwórz", onOpenSync) }
+                        actions = { MakTextAction(syncAttention.action, onOpenSync) }
                     )
                 }
                 if (availableUpdateVersion != null) {

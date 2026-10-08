@@ -50,8 +50,8 @@ data class SyncUiState(
     val lastSyncLabel: String? = null,
     val issue: String? = null,
     val needsReconnect: Boolean = false,
-    // Text of the banner on Today; set only while an account is connected and something needs the user.
-    val attention: String? = null,
+    // Banner on Today; set only while an account is connected and something needs the user.
+    val attention: SyncAttentionUi? = null,
     val choice: SyncChoiceUi? = null,
     val archive: List<SyncArchiveItemUi> = emptyList(),
     val isWorking: Boolean = false,
@@ -61,6 +61,8 @@ data class SyncUiState(
 )
 
 data class SyncChoiceUi(val phone: List<String>, val drive: List<String>)
+
+data class SyncAttentionUi(val text: String, val action: String)
 
 private data class SyncLocalState(
     val isWorking: Boolean = false,
@@ -237,9 +239,8 @@ private fun Exception.toMessage(): String = when {
 
 private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemUi>) = SyncUiState(
     accountEmail = account?.email,
-    attention = if (account == null) null else issueText() ?: pendingChoice?.let {
-        "Plan zmienił się na telefonie i na Dysku. Wybierz wersję do zachowania."
-    },
+    attention = if (account == null) null else issueText()?.let { SyncAttentionUi(it, "Otwórz") }
+        ?: pendingChoice?.let { SyncAttentionUi(CHOICE_TITLE, "Wybierz wersję") },
     lastSyncLabel = account?.let {
         lastSyncedAtMillis?.let { millis -> "Ostatnia synchronizacja: ${formatMillis(millis)}" }
             ?: "Jeszcze nie zsynchronizowano"
@@ -261,6 +262,8 @@ private fun SyncState.issueText(): String? = when (issue) {
     SyncIssue.FAILED -> issueMessage ?: "Nie udało się zsynchronizować planu."
     null -> null
 }
+
+internal const val CHOICE_TITLE = "Plan różni się na telefonie i na Dysku"
 
 private fun PlanSummary.label() = listOf(
     "Kierunki: $studyProgramCount",

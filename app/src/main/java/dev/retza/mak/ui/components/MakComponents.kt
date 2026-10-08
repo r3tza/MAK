@@ -824,42 +824,37 @@ enum class MakNoteRole {
     Error
 }
 
+/** Every role shares the neutral surface; only the icon carries the role colour. */
 internal data class NoteRoleColors(
     val container: Color,
-    val border: Color?,
+    val border: Color,
     val title: Color,
     val body: Color,
-    val icon: ImageVector?
+    val icon: ImageVector?,
+    val iconTint: Color?
 )
 
-internal fun noteRoleColors(role: MakNoteRole, scheme: ColorScheme): NoteRoleColors = when (role) {
-    MakNoteRole.Neutral -> NoteRoleColors(
+internal fun noteRoleColors(role: MakNoteRole, scheme: ColorScheme): NoteRoleColors {
+    val (icon, tint) = when (role) {
+        MakNoteRole.Neutral -> null to null
+        MakNoteRole.Warning -> Icons.Outlined.WarningAmber to scheme.tertiary
+        MakNoteRole.Error -> Icons.Outlined.ErrorOutline to scheme.error
+    }
+    return NoteRoleColors(
         container = scheme.surfaceContainerLow,
         border = scheme.outlineVariant,
         title = scheme.onSurface,
         body = scheme.onSurfaceVariant,
-        icon = null
-    )
-    MakNoteRole.Warning -> NoteRoleColors(
-        container = scheme.tertiaryContainer,
-        border = null,
-        title = scheme.onTertiaryContainer,
-        body = scheme.onTertiaryContainer,
-        icon = Icons.Outlined.WarningAmber
-    )
-    MakNoteRole.Error -> NoteRoleColors(
-        container = scheme.errorContainer,
-        border = null,
-        title = scheme.onErrorContainer,
-        body = scheme.onErrorContainer,
-        icon = Icons.Outlined.ErrorOutline
+        icon = icon,
+        iconTint = tint
     )
 }
 
+/** Actions inside the banner are [MakTextAction]s; a screen's main action goes below it, full width. */
 @Composable
 fun MakNoteBanner(
     title: String?,
-    subtitle: String,
+    subtitle: String?,
     role: MakNoteRole,
     modifier: Modifier = Modifier,
     actions: (@Composable RowScope.() -> Unit)? = null
@@ -875,28 +870,39 @@ fun MakNoteBanner(
             .fillMaxWidth()
             .clip(RoundedCornerShape(13.dp))
             .background(colors.container)
-            .then(colors.border?.let { Modifier.border(1.dp, it, RoundedCornerShape(13.dp)) } ?: Modifier)
+            .border(1.dp, colors.border, RoundedCornerShape(13.dp))
             .semantics(mergeDescendants = true) {
                 if (prefix != null) {
                     contentDescription = prefix + listOfNotNull(title, subtitle).joinToString(". ")
                 }
             }
             .padding(horizontal = MakSpacing.lg, vertical = MakSpacing.md),
-        verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
     ) {
         Row(
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm),
-            verticalAlignment = Alignment.CenterVertically
+            verticalAlignment = Alignment.Top
         ) {
             colors.icon?.let { icon ->
-                Icon(icon, contentDescription = null, tint = colors.body, modifier = Modifier.size(20.dp))
+                // 20 dp matches the 20 sp line height of the first line, so the icon sits beside it.
+                Icon(icon, contentDescription = null, tint = colors.iconTint ?: colors.body, modifier = Modifier.size(20.dp))
             }
             Column(
                 modifier = Modifier.weight(1f),
                 verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
             ) {
-                title?.let { Text(it, fontSize = 13.sp, fontWeight = FontWeight.Bold, color = colors.title) }
-                Text(subtitle, fontSize = 12.sp, lineHeight = 16.sp, color = colors.body)
+                title?.let {
+                    Text(it, fontSize = 14.sp, lineHeight = 20.sp, fontWeight = FontWeight.SemiBold, color = colors.title)
+                }
+                subtitle?.let {
+                    // Without a title the message is the banner's only line, so it takes the title colour.
+                    Text(
+                        it,
+                        fontSize = if (title == null) 14.sp else 13.sp,
+                        lineHeight = if (title == null) 20.sp else 18.sp,
+                        color = if (title == null) colors.title else colors.body
+                    )
+                }
             }
         }
         actions?.let {

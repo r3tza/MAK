@@ -26,6 +26,7 @@ import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakScreenIntro
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSpacing
+import dev.retza.mak.ui.components.MakTextAction
 
 /** Summary for the row in the main settings screen. */
 fun SyncUiState.settingsSummary(): String = when {
@@ -89,10 +90,10 @@ fun SyncScreen(
             }
             state.choice?.let {
                 MakNoteBanner(
-                    title = "Plan zmienił się na telefonie i na Dysku",
-                    subtitle = "Wybierz, którą wersję zachować.",
+                    title = CHOICE_TITLE,
+                    subtitle = null,
                     role = MakNoteRole.Warning,
-                    actions = { MakSecondaryAction(text = "Wybierz wersję", onClick = onOpenChoice) }
+                    actions = { MakTextAction(text = "Wybierz wersję", onClick = onOpenChoice) }
                 )
             }
             state.issue?.let { issue ->
@@ -101,7 +102,7 @@ fun SyncScreen(
                     subtitle = issue,
                     role = MakNoteRole.Error,
                     actions = if (state.needsReconnect) {
-                        { MakSecondaryAction(text = "Połącz ponownie", onClick = onReconnect, enabled = !state.isWorking) }
+                        { MakTextAction(text = "Połącz ponownie", onClick = onReconnect, enabled = !state.isWorking) }
                     } else null
                 )
             }
@@ -115,7 +116,7 @@ fun SyncScreen(
                 title = null,
                 subtitle = message,
                 role = MakNoteRole.Error,
-                actions = { MakSecondaryAction(text = "Zamknij", onClick = onDismissError) }
+                actions = { MakTextAction(text = "Zamknij", onClick = onDismissError) }
             )
         }
         if (state.archive.isNotEmpty()) {
