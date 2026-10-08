@@ -28,6 +28,16 @@ Poza zakresem semestru aplikacja powinna jasno pokazać, że nie ma aktywnego se
 
 Ustawienia semestrów umożliwiają dodanie, edycję, wybór i usunięcie semestru. Aktywny semestr zmienia tylko jawny wybór w ustawieniach albo kreator; otwarcie konfiguracji semestru go nie zmienia. Usunięcie wymaga potwierdzenia, usuwa plan, powiązania i nieużywane kalendarze, ale zachowuje globalne kierunki. Po usunięciu aktywnego semestru aplikacja wybiera inny istniejący semestr. Jeśli nie ma żadnego, pokazuje stan pusty z przyciskiem „Skonfiguruj plan” i nie otwiera kreatora automatycznie. Semestr utworzony w kreatorze staje się aktywny tylko wtedy, gdy dzisiejsza data mieści się w zakresie jego kalendarza albo gdy nie ma żadnego aktywnego semestru. W pozostałych przypadkach zostaje zapisany jako nieaktywny, a dotychczasowy aktywny semestr się nie zmienia.
 
+## Dni wolne
+
+Decyzja użytkownika z 2026-10-09 (I-81, I-82). Dzień wolny to zakres dat (od i do, włącznie; jeden dzień to zakres jednodniowy) z opcjonalną nazwą, np. „Przerwa świąteczna”, należący do jednego `AcademicCalendar`. Jeden zapis w formularzu może utworzyć ten sam zakres w kilku kalendarzach.
+
+W dniu wolnym kalendarza zajęcia cykliczne kierunków używających tego kalendarza nie odbywają się. Nie są usuwane ani zapisywane jako odwołania, tylko pomijane przez `ScheduleResolver`, więc po usunięciu dnia wolnego wracają razem z notatkami. Terminy jednorazowe i terminy przeniesione na dzień wolny pozostają, bo tak użytkownik zapisuje odrabianie zajęć. Pominięte zajęcia nie tworzą kolizji, okienek ani powiadomień.
+
+Dni wolne nie zmieniają rytmu A/B. Gdy uczelnia po przerwie zaczyna inną literą, służy do tego korekta „Od tego tygodnia”; w kroku I-82 formularz dni wolnych obejmujących cały tydzień może ją utworzyć sam.
+
+Dni wolne są częścią planu: trafiają do eksportu JSON i synchronizacji.
+
 ## Kierunki
 
 Model `StudyProgram`:
@@ -37,6 +47,8 @@ Model `StudyProgram`:
 - `color`.
 
 Aplikacja nie jest ograniczona do dwóch kierunków. Kierunek istnieje niezależnie od semestru i może być użyty ponownie. `SemesterProgram` łączy go z semestrem oraz kalendarzem. Kolor kierunku jest widoczny na liście zajęć, w filtrach i w widgetach.
+
+Kierunek może być wyłączony na telefonie (I-79). Plan widoczny dla użytkownika, kolizje, okienka, widget i powiadomienia pomijają zajęcia wyłączonych kierunków. Dane wyłączonego kierunku pozostają bez zmian i wracają po jego włączeniu. Wyłączenie nie jest częścią planu, więc nie zmienia eksportu ani synchronizacji.
 
 ## Prowadzący
 
@@ -117,7 +129,7 @@ Obliczanie liczby okienek należy do domeny i korzysta z tego samego aktywnego p
 
 ## Kolizje
 
-Kolizja występuje, gdy dwa aktywne zajęcia tego samego dnia mają przedziały czasu, które się nakładają. Dotyczy to także zajęć z dwóch różnych kierunków. Przedziały stykające się końcem i początkiem, np. 10:00–11:00 oraz 11:00–12:00, nie są kolizją.
+Kolizja występuje, gdy dwa aktywne zajęcia tego samego dnia mają przedziały czasu, które się nakładają, albo gdy przerwa między końcem jednych a początkiem drugich nie jest dłuższa niż minimalna przerwa. Dotyczy to także zajęć z dwóch różnych kierunków. Minimalną przerwę użytkownik ustawia globalnie w minutach, tak jak próg okienka; domyślnie wynosi 0, więc przedziały stykające się końcem i początkiem, np. 10:00–11:00 oraz 11:00–12:00, są kolizją, a przerwa 1 minuty już nie. Przy minimalnej przerwie 10 minut kolizją są też zajęcia kończące się o 9:45 i zaczynające o 9:55, ale nie te zaczynające o 9:56. Kolizja bez nakładania jest liczona, oznaczana i zgłaszana dokładnie tak samo jak kolizja z nakładaniem: przy obu zajęciach, w liczbie kolizji, na widgecie i w powiadomieniach (decyzja użytkownika z 2026-10-09, I-80; wcześniej stykające się przedziały nie były kolizją). Uzasadnienie: zajęcia w innych budynkach bez przerwy są takim samym problemem jak nakładające się.
 
 Przykład:
 
@@ -128,4 +140,4 @@ Matematyka     11:00–12:30
 
 Wynik: kolizja trwająca 30 minut.
 
-Kolizję należy oznaczyć przy obu zajęciach i pokazać jej czas trwania po wejściu w szczegóły. Jest to ostrzeżenie i informacja o ograniczeniu planu, a nie komunikat o winie użytkownika. Aplikacja nie proponuje zmiany terminu, nie wybiera rozwiązania za użytkownika i nie modyfikuje planu automatycznie. Użytkownik sam decyduje, czy skontaktować się z uczelnią, opuścić jedno z zajęć albo ręcznie zapisać zmianę wystąpienia.
+Kolizję należy oznaczyć przy obu zajęciach i pokazać jej czas trwania po wejściu w szczegóły; przy kolizji bez nakładania zamiast czasu trwania pokazać długość przerwy (treść ustala plan I-80). Jest to ostrzeżenie i informacja o ograniczeniu planu, a nie komunikat o winie użytkownika. Aplikacja nie proponuje zmiany terminu, nie wybiera rozwiązania za użytkownika i nie modyfikuje planu automatycznie. Użytkownik sam decyduje, czy skontaktować się z uczelnią, opuścić jedno z zajęć albo ręcznie zapisać zmianę wystąpienia.

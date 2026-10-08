@@ -2,6 +2,16 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-09: Włączanie kierunków, zajęcia bez przerwy i dni wolne (I-79 do I-83)
+
+- Decyzja użytkownika: checkbox przy każdym globalnym kierunku na ekranie „Kierunki” w ustawieniach. Wyłączony kierunek znika z „Dzisiaj”, „Planu”, widgetu i powiadomień i nie wchodzi do kolizji ani okienek. Formularz zajęć, ekrany kierunków i eksport nadal widzą wszystkie kierunki.
+- Decyzja użytkownika: wybór jest zapisany lokalnie na telefonie, bez zmiany formatu eksportu. Zapis w planie wymagałby nowej wersji schematu, którą starsza wersja MAK odrzuca, więc telefon bez aktualizacji przestałby się synchronizować.
+- Fakty: filtr „Kierunek” na „Planie” działa tylko na tym ekranie, pozwala wybrać jeden kierunek albo wszystkie i nie zmienia „Dzisiaj”, widgetu ani powiadomień. Zostaje jako osobny, chwilowy wybór.
+- Podgląd cudzego planu trafił do pomysłów do rozważenia w `QUEUE.md`.
+- Decyzja użytkownika: zajęcia bez przerwy są kolizją (I-80), bo zajęcia w innych budynkach bez przerwy są takim samym problemem jak nakładające się. Kolizją jest przerwa nie dłuższa niż globalna minimalna przerwa, ustawiana jak próg okienka, domyślnie 0 minut. Zmienia to regułę z `DOMAIN.md`, według której stykające się przedziały nie były kolizją.
+- Decyzja użytkownika: dni wolne jako zakresy dat w kalendarzu akademickim, w dwóch krokach (I-81, I-82). Zajęcia cykliczne są w nich pomijane, a jednorazowe i przeniesione zostają; rytm A/B się nie zmienia. Dni wolne są częścią planu, więc trafiają do eksportu i synchronizacji; format eksportu dostaje nową wersję. Wydane wersje odrzucą taki plik i zatrzymają synchronizację bez utraty danych, więc przed I-81 wchodzi czytelny komunikat o planie z nowszej wersji MAK (I-83), a notatki wydania z dniami wolnymi wzywają do aktualizacji wszystkich telefonów. Odrzucone: zapis dni wolnych jako odwołań terminów (setki wpisów mieszające się z odwołaniami użytkownika) i osobny plik na Dysku (dwa pliki nie zapisują się razem).
+- Odrzucone przez użytkownika: osobne, łagodniejsze ostrzeżenie „Bez przerwy” poza liczbą kolizji, ostrzeganie zależne od budynku i inne traktowanie takiej kolizji na widgecie i w powiadomieniach.
+
 ## 2026-10-08: Jeden styl komunikatów i dialog wyboru wersji (I-69)
 
 - Decyzja użytkownika: wariant B z porównania trzech wersji. Wszystkie role `MakNoteBanner` mają neutralne tło z ramką; ostrzeżenie i błąd różni tylko kolorowa ikona przy pierwszym wierszu. Akcja komunikatu jest przyciskiem tekstowym w nim, główna akcja ekranu stoi pod nim na pełną szerokość (`ARCHITECTURE.md`, sekcja 4). Odrzucony wariant A zmieniał tylko baner synchronizacji i zostawiał dwa style ostrzeżeń.
@@ -142,8 +152,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Fakty: Karta pokazywała kierunek, stan i etykiety notatek w wypełnionych pillach. Kolor kierunku powtarzał się w pasku i pillu, etykiety notatek wyglądały jak przyciski, a przy skali czcionki 2,0 pille zajmowały pół szerokości karty. Przegląd innych aplikacji: kalendarze oznaczają kategorię paskiem albo kropką przy zwykłym tekście, Todoist używa linii metadanych z ikonami, a Material 3 przeznacza chipy do interakcji.
 - Decyzja: Nazwa kierunku jako tekst w odcieniu kierunku z kontrastem 4,5:1, stan terminu jako ikona pod godzinami (odwołane także z przekreśleniem), notatki jako wiersze z ikoną bez etykiety. Opis zmiany terminu jest w szczegółach terminu. Kolizja zostaje pomarańczowym wierszem. Użytkownik wybrał wariant 2026-09-28 w artefakcie z pięcioma wariantami (`FEATURES.md`, `ARCHITECTURE.md`).
 - Odrzucone: Wspólny blok notatek, jasne bloki dla każdej notatki, tagi obrysowe i podpisy nad notatkami.
-
-## 2026-09-27: Błąd wstrzykiwania w aktualizatorze 0.2.0 (I-52)
-
-- Fakty: Przy przejściu historii wydań na plik okazało się, że Koin compiler plugin zostawia wartości domyślne parametrów konstruktora zamiast wstrzykiwać bindingi, bez błędu kompilacji. `UpdateViewModel` w wydaniu 0.2.0 ma atrapę pobierania, weryfikacji i instalacji, własny `InstallEventStore` i `Clock.systemUTC()`. Sprawdzanie wersji działa, ale pobranie zawsze kończy się błędem. Testy JVM tego nie wykryły, bo same korzystały z wartości domyślnych, a `KoinGraphTest` sprawdzał tylko, że ViewModel się tworzy.
-- Decyzja: Konstruktor `UpdateViewModel` nie ma wartości domyślnych, testy przekazują atrapy jawnie, a `KoinGraphTest` porównuje pola z instancjami z grafu. Zasada braku wartości domyślnych w klasach tworzonych przez Koin jest w `STACK.md` i `ARCHITECTURE.md`. Wydanie 0.2.1 z poprawką instaluje się ręcznie na 0.2.0, a pierwszy odbiór aktualizacji z aplikacji (O-07) obejmuje przejście z 0.2.1 na 0.2.2.

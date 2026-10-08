@@ -111,6 +111,24 @@ Widok kalendarza pokazuje jeden miesiąc i zawiera:
 - wybór dnia i listę jego aktywnych zajęć pod kalendarzem;
 - pole „Pokaż odwołane” pod legendą i obrysowaną akcję z ikoną plusa „Dodaj termin jednorazowy” pod nagłówkiem wybranego dnia, nad listą jego zajęć; obie są widoczne bez rozwijania, a akcja nie znika pod długą listą.
 
+### Dni wolne
+
+Decyzja użytkownika z 2026-10-09, reguły w `DOMAIN.md`, sekcja „Dni wolne”. Wygląd wymaga wariantu do akceptacji przed implementacją.
+
+Krok pierwszy (I-81):
+
+- dialog „Dodaj dni wolne”: zakres dat w `DateRangePicker` z Material 3, opcjonalna nazwa i wybór kalendarzy, domyślnie wszystkie kalendarze semestru;
+- wejście z kalendarza „Planu”: akcja „Oznacz jako wolny” pod nagłówkiem wybranego dnia, obok „Dodaj termin jednorazowy”, otwiera dialog z tym dniem jako zakresem;
+- wejście z konfiguracji semestru: ekran „Dni wolne” obok korekt tygodni i kalendarzy, z listą zakresów (nazwa, daty, kalendarze), edycją i usuwaniem;
+- „Dzisiaj” w dniu wolnym pokazuje „Dzień wolny” i nazwę zamiast „Dziś bez zajęć”, z zajęciami jednorazowymi i przeniesionymi, jeśli są;
+- kalendarz „Planu” wyróżnia dni wolne bez znaczników pominiętych zajęć, a lista pokazuje w takim dniu komunikat z nazwą;
+- widget pokazuje „Wolne” i nazwę.
+
+Krok drugi (I-82):
+
+- akcja „Dodaj święta ustawowe” na ekranie „Dni wolne”: lista polskich świąt ustawowych w zakresie kalendarza, z datami ruchomymi liczonymi lokalnie, z checkboxami przed dodaniem;
+- w dialogu dni wolnych obejmujących cały tydzień pole „Po przerwie zacznij od tygodnia” (A albo B), które tworzy korektę „Od tego tygodnia”.
+
 Kalendarz pokazuje wynik `ScheduleResolver`, dlatego musi być zgodny z ekranem „Dzisiaj”, listą planu i widgetem. Odwołane zajęcia mogą pozostać widoczne jako przekreślone tylko wtedy, gdy użytkownik włączy opcję „Pokaż odwołane”. Lista odwołanych terminów pochodzi z domeny (`cancelledOccurrences`), stosuje ten sam filtr kierunku co plan i pomija odwołania z dni, w które zajęcia po edycji już się nie odbywają. Licznik zajęć dnia liczy tylko zajęcia, które się odbywają. Domyślnie kalendarz pokazuje plan aktywny.
 
 ## Dodawanie i edycja zajęć
@@ -279,6 +297,8 @@ Kolor kierunku wybiera się w kreatorze, na ekranach dodawania i edycji kierunku
 
 Ekran „Kierunki” w ustawieniach pokazuje globalne kierunki: kropkę w kolorze kierunku, nazwę (powtórzone nazwy z numerem) i ikonę przejścia. Wiersz otwiera ekran „Edytuj kierunek” z nazwą, kolorem, „Zapisz kierunek” i „Anuluj”. Zmiana dotyczy wszystkich semestrów, planu i widgetu. Pusta nazwa jest odrzucana. Ekran „Edytuj kierunek” ma osobną akcję „Usuń kierunek” w kolorze błędu (decyzja użytkownika z 2026-10-08, I-73). Kierunek nieprzypisany do żadnego semestru usuwa się po potwierdzeniu w dialogu „Usunąć kierunek?”. Kierunek przypisany ma nieaktywną akcję i wyjaśnienie: „Kierunek jest używany w semestrach: {nazwy}. Aby go usunąć, najpierw usuń go z tych semestrów na ekranie Kierunki semestru.” Kaskadowego usuwania nie ma. Kropka koloru stoi też obok nazwy kierunku w wierszach ekranu „Kierunki” semestru i w opcjach pola „Istniejący kierunek”.
 
+Każdy wiersz ekranu „Kierunki” w ustawieniach ma checkbox włączający i wyłączający kierunek (decyzja użytkownika z 2026-10-09, I-79). Wybór dotyczy kierunku we wszystkich semestrach i jest zapisany lokalnie na telefonie, jak aktywny semestr: nie trafia do eksportu ani synchronizacji. Wyłączony kierunek znika z „Dzisiaj”, „Planu” (także z opcji pola „Kierunek”), widgetu i powiadomień i nie jest liczony w kolizjach ani okienkach. Formularz zajęć, ekrany kierunków, semestry i eksport nadal widzą wszystkie kierunki. Zmiana od razu odświeża widget i przelicza alarmy powiadomień. Filtr „Kierunek” na „Planie” pozostaje osobnym, chwilowym wyborem tego jednego ekranu. Wygląd wiersza z checkboxem wymaga wariantu do akceptacji przed implementacją.
+
 Ekran „Kierunki” semestru (decyzja użytkownika z 2026-09-28) pokazuje nagłówek „Przypisane kierunki”, pod nim obrysowany przycisk z ikoną plusa „Dodaj kierunek” i karty kierunków: kropka koloru, nazwa, kalendarz („wspólny” albo „osobny”) oraz akcje „Edytuj” i „Usuń”. „Dodaj kierunek” otwiera osobny ekran z formularzem: nowy albo istniejący kierunek, nazwa, kolor, wspólne albo osobne daty i tygodnie, akcje „Dodaj kierunek” i „Anuluj”. „Edytuj” otwiera ekran „Edytuj kierunek”, od góry: pole „Nazwa kierunku”; sekcja „Kalendarz w tym semestrze” (wybór kalendarza, gdy jest ich kilka, i „Rozdziel kalendarz” przy kalendarzu wspólnym; zmiana zapisuje się od razu po potwierdzeniu); paleta „Kolor kierunku”; informacja, że nazwa i kolor zmienią się we wszystkich semestrach; akcje „Zapisz kierunek” i „Anuluj”, które dotyczą nazwy i koloru.
 
 Na Androidzie 13 i nowszym włączenie powiadomień przy braku zgody prosi o zgodę systemową. Na Androidzie 12 taka zgoda nie istnieje, więc aplikacja otwiera systemowe ustawienia powiadomień aplikacji, a po powrocie odświeża stan „Zablokowane przez system”.
@@ -287,7 +307,7 @@ Ekran „Powiadomienia” dzieli ustawienia na sekcje w neutralnych kontenerach,
 
 Ekrany podrzędne ustawień rozdzielają komunikaty, pola, wiersze i przyciski odstępem co najmniej 12 dp. Komunikat informacyjny ma 16 dp paddingu poziomego, 12 dp pionowego i tekst co najmniej 12 sp.
 
-Ekran „Dane” zawiera eksport, import oraz opis skutków pełnego zastąpienia danych. Globalny próg długości okienka, domyślnie 30 minut, umieścić w ustawieniach planu. Jeśli przybędzie więcej ustawień planu niezwiązanych z semestrem, wydzielić dla nich osobny ekran zamiast rozbudowywać ekran główny.
+Ekran „Dane” zawiera eksport, import oraz opis skutków pełnego zastąpienia danych. Globalny próg długości okienka, domyślnie 30 minut, umieścić w ustawieniach planu. Obok niego stoi globalna minimalna przerwa między zajęciami, domyślnie 0 minut (decyzja użytkownika z 2026-10-09, I-80, reguła w `DOMAIN.md`, sekcja „Kolizje”). Jeśli przybędzie więcej ustawień planu niezwiązanych z semestrem, wydzielić dla nich osobny ekran zamiast rozbudowywać ekran główny.
 
 Ekran „O aplikacji” zaczyna się nagłówkiem z logo, nazwą „Mój Akademicki Kalendarz”, wierszem „Autor: r3tza”, wierszem z zainstalowaną wersją i krótkim opisem celu aplikacji zgodnym z `README.md`. Dopóki wersja zaczyna się od 0, nagłówek zawiera komunikat „Wersja przed pełnym wydaniem” z uprzedzeniem o możliwych błędach i zachętą do kopii zapasowej. Pod nim są sekcje „Możliwości” (lista funkcji z `README.md`, punktory w kolorze neutralnym), „Dane i prywatność” (dane na telefonie; przy włączonej kopii Google i blokadzie ekranu Android dołącza plan i ustawienia do zaszyfrowanej kopii i przywraca je po ponownej instalacji, I-14; podstawowe funkcje działają bez konta i sieci; sieć służy aktualizacjom z GitHuba, a plan trafia do sieci tylko po włączeniu synchronizacji Google) oraz „Ostatnie zmiany”. Hierarchię budują nagłówki sekcji i odstępy; tylko lista „Ostatnie zmiany” stoi na karcie (I-55). „Ostatnie zmiany” pokazują najwyżej trzy znane wydania od najnowszego, rozdzielone separatorem: nagłówek „Wersja {wersja}”, datę w formie „19 września 2026”, ikonę i słowo „Zainstalowana” przy bieżącej wersji i zmiany jako listę punktowaną. Historia pochodzi z notatek wydań w APK (`STACK.md`, sekcja „Wydania i licencja”); wydanie bez zmian odczuwalnych dla użytkownika pokazuje „Pomniejsze poprawki”. Wersja zainstalowana, której nie ma w historii, nie tworzy pustej pozycji. Przy dopasowaniu wersji aplikacja pomija przyrostek `-debug`. Ekran nie zawiera akcji aktualizacji.
 
@@ -297,9 +317,9 @@ Automatyczne sprawdzanie jest domyślnie wyłączone. Przy wyłączonym przełą
 
 Ekrany podrzędne mają własne trasy w jednym `NavHost`, przewidywalny systemowy powrót i tytuł w topbarze. Stan ekranu głównego po powrocie nie może się resetować ani automatycznie otwierać innej sekcji.
 
-Eksport i import używają lokalnego pliku JSON z polem `schemaVersion`. Eksport zapisuje wersję 3 formatu. Import przyjmuje wersje 2 i 3; w pliku w wersji 2 notatki do przeniesionych terminów są przepinane na datę oryginalną tą samą regułą co migracja bazy. Zgodność z wersją 1 nie jest wymagana.
+Eksport i import używają lokalnego pliku JSON z polem `schemaVersion`. Eksport zapisuje wersję 3 formatu. Import przyjmuje wersje 2 i 3, a plik z wyższą wersją odrzuca komunikatem „Plik pochodzi z nowszej wersji MAK. Zaktualizuj aplikację.” (I-83); w pliku w wersji 2 notatki do przeniesionych terminów są przepinane na datę oryginalną tą samą regułą co migracja bazy. Zgodność z wersją 1 nie jest wymagana.
 
-Użytkownik wybiera plik przez systemowy wybór dokumentu. Format zawiera globalne kierunki, semestry, przypisania, kalendarze akademickie, zajęcia z tekstem prowadzącego, korekty, notatki i zmiany wystąpień.
+Użytkownik wybiera plik przez systemowy wybór dokumentu. Format zawiera globalne kierunki, semestry, przypisania, kalendarze akademickie, zajęcia z tekstem prowadzącego, korekty, notatki i zmiany wystąpień, a od I-81 także dni wolne.
 
 Import powinien:
 
