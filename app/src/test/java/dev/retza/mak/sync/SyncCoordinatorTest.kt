@@ -15,6 +15,7 @@ import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 import org.junit.rules.TemporaryFolder
@@ -26,7 +27,9 @@ class SyncCoordinatorTest {
     private val account = SyncAccount("sub-1", "ala@example.com", "ala@example.com")
     private val phone = FakeGateway()
     private val drive = FakeDrive()
-    private val editors = PlanEditTracker(kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined))
+    private val editors = PlanEditTracker(
+        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), graceMillis = 0
+    )
     private val archive by lazy { SyncArchive(folder.newFolder("archive")) }
     private val coordinator by lazy {
         SyncCoordinator(phone, drive, InMemoryStore(SyncState(account = account)), archive, editors,
@@ -158,16 +161,69 @@ class SyncCoordinatorTest {
     }
 
     @Test
+    fun incompleteRemoteFileAfterFollowingAnotherPhoneIsRecordedAndKeptUnchanged() = runTest {
+        drive.put(plan("Plan przyjęty od drugiego telefonu"))
+        assertEquals(SyncOutcome.Downloaded, coordinator.synchronize())
+        val acceptedPlan = phone.data
+        val acceptedRemote = "{}".toByteArray()
+        drive.putRaw(acceptedRemote)
+
+        assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
+
+        assertEquals(acceptedPlan, phone.data)
+        assertEquals(acceptedRemote.toList(), drive.file!!.toList())
+        assertEquals(SyncIssue.INVALID_REMOTE_PLAN, coordinator.state.value.issue)
+        assertEquals(0, drive.uploads)
+    }
+
+    @Test
+    fun oversizedLocalPlanIsNotUploadedAndGetsItsOwnPersistentIssue() = runTest {
+        phone.data = planWithEncodedSize(SyncPlanFile.MAX_BYTES + 1)
+        val fingerprint = SyncPlanFile.fingerprint(phone.data)
+
+        assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
+
+        assertEquals(SyncIssue.LOCAL_PLAN_TOO_LARGE, coordinator.state.value.issue)
+        assertTrue(coordinator.state.value.issueMessage.orEmpty().lowercase().contains("lokal"))
+        assertNull(drive.file)
+        assertEquals(0, drive.uploads)
+        assertEquals(fingerprint.length, 64)
+    }
+
+    @Test
+    fun localPlanAtTheSizeLimitCanBeUploaded() = runTest {
+        phone.data = planWithEncodedSize(SyncPlanFile.MAX_BYTES)
+
+        assertEquals(SyncOutcome.Uploaded, coordinator.synchronize())
+        assertEquals(SyncPlanFile.MAX_BYTES, drive.file!!.size)
+        assertEquals(1, drive.uploads)
+    }
+
+    @Test
+    fun oversizedPhonePlanIsNotArchivedOrUploadedWhenKeepingPhone() = runTest {
+        phone.data = planWithEncodedSize(SyncPlanFile.MAX_BYTES + 1)
+        drive.put(plan("Dysk"))
+        assertEquals(SyncOutcome.ChoiceRequired, coordinator.synchronize())
+        val remoteBeforeChoice = drive.file!!.toList()
+
+        assertEquals(SyncOutcome.NeedsAttention, coordinator.resolveChoice(SyncChoice.KEEP_PHONE))
+
+        assertEquals(remoteBeforeChoice, drive.file!!.toList())
+        assertEquals(emptyList<ArchivedPlan>(), archive.list())
+        assertEquals(SyncIssue.LOCAL_PLAN_TOO_LARGE, coordinator.state.value.issue)
+    }
+
+    @Test
     fun downloadWaitsWhileAnEditorIsOpen() = runTest {
         phone.data = plan("Wspólny")
         coordinator.synchronize()
         drive.put(plan("Wspólny", "Z Dysku"))
-        editors.set("form", true)
+        editors.beginEdit("form")
 
         assertEquals(SyncOutcome.WaitingForEditor, coordinator.synchronize())
         assertEquals(listOf("Wspólny"), phone.names())
 
-        editors.set("form", false)
+        editors.release("form").join()
         assertEquals(SyncOutcome.Downloaded, coordinator.synchronize())
     }
 
@@ -337,6 +393,17 @@ private fun plan(vararg names: String, active: Long? = null, starts: List<LocalD
         )
     }
 )
+
+private fun planWithEncodedSize(encodedSize: Int): BackupData {
+    val base = plan("Plan")
+    val existingName = base.studyPrograms.single().name
+    val baseSize = SyncPlanFile.encode(base).size
+    return base.copy(
+        studyPrograms = listOf(
+            base.studyPrograms.single().copy(name = "x".repeat(existingName.length + encodedSize - baseSize))
+        )
+    )
+}
 
 private class FakeGateway : PlanSyncGateway {
     var data = BackupData(emptyList(), emptyList())

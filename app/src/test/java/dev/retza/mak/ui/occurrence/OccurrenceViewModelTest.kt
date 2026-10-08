@@ -54,6 +54,33 @@ class OccurrenceViewModelTest {
     }
 
     @Test
+    fun noteWriteRemainsProtectedEvenWhenDraftIsNoLongerDirty() {
+        assertTrue(OccurrenceDetailsUiState(isSavingSharedNote = true).hasPlanDraft())
+        assertTrue(OccurrenceDetailsUiState(isSavingOccurrenceNote = true).hasPlanDraft())
+    }
+
+    @Test
+    fun ongoingSharedNoteWriteKeepsAdmissionAfterDraftReturnsToBaseline() = runTest(mainDispatcher) {
+        val repository = FakeRepository().apply { saveGate = CompletableDeferred() }
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+        val baseline = viewModel.details.value.sharedNote.orEmpty()
+        viewModel.updateSharedNoteDraft("Nowa notatka")
+
+        viewModel.saveSharedNote()
+        assertTrue(viewModel.details.value.isSavingSharedNote)
+        viewModel.updateSharedNoteDraft(baseline)
+
+        assertFalse(viewModel.details.value.canSaveSharedNote)
+        assertTrue(viewModel.details.value.hasPlanDraft())
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+        assertFalse(viewModel.details.value.isSavingSharedNote)
+    }
+
+    @Test
     fun detailsShowCollisionRangeAndPartnerOnEffectiveDate() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         repository.classes += repository.classes.single().copy(
@@ -86,6 +113,22 @@ class OccurrenceViewModelTest {
         assertFalse(state.canCancelOccurrence)
         assertFalse(state.canEditBaseClass)
         assertFalse(state.canDeleteBaseClass)
+        assertEquals(null, viewModel.selectedClassId.value)
+    }
+
+    @Test
+    fun refreshAfterReplacementRejectsActionWhenOccurrenceWasDeleted() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        repository.classes.clear()
+        val refreshed = viewModel.refreshForEdit("1:2026-09-21")
+
+        assertFalse(refreshed)
+        assertTrue(viewModel.details.value.notFound)
         assertEquals(null, viewModel.selectedClassId.value)
     }
 

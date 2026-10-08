@@ -37,7 +37,6 @@ import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import dev.retza.mak.ui.TrackPlanEditing
 import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakEmptyState
@@ -528,8 +527,6 @@ private fun DeleteSemesterDialog(
     onConfirm: () -> Unit,
     onCancel: () -> Unit
 ) {
-    // The dialog holds a local semester number, which a downloaded plan could give to another semester.
-    TrackPlanEditing()
     MakConfirmDeletionDialog(
         title = "Usuń semestr",
         text = "Usunięcie semestru usunie jego plan i dane. Tej operacji nie można cofnąć.",

@@ -1,6 +1,7 @@
 package dev.retza.mak.sync
 
 import java.io.ByteArrayOutputStream
+import java.io.InputStream
 import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
@@ -15,6 +16,7 @@ import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
 import kotlinx.serialization.json.jsonObject
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.contentOrNull
 import kotlinx.serialization.json.put
 
 @Serializable
@@ -36,10 +38,12 @@ interface DriveAccessTokenProvider {
     suspend fun invalidate(token: String)
 }
 
-class DriveHttpException(val statusCode: Int, message: String) : IllegalStateException(message) {
+open class DriveHttpException(val statusCode: Int, message: String) : IllegalStateException(message) {
     /** Network-side failures a later run may pass; 0 marks a response that failed a local check. */
     fun isTransient(): Boolean = statusCode == 0 || statusCode == 429 || statusCode in 500..599
 }
+
+class DriveResponseTooLargeException : DriveHttpException(0, "Google response is too large")
 
 data class DriveHttpResponse(val status: Int, val body: ByteArray)
 
@@ -64,18 +68,34 @@ class DrivePlanTransport(
 
     private suspend fun list(account: SyncAccount): List<RemotePlanFile> {
         val query = "name = '$FILE_NAME' and 'appDataFolder' in parents and trashed = false"
-        val url = "$API/files?spaces=appDataFolder&orderBy=modifiedTime%20desc&pageSize=100" +
-            "&q=${encode(query)}&fields=${encode("files(id,md5Checksum)")}"
-        val body = request(account, url, "GET")
-        return readable {
-            json.parseToJsonElement(body.decodeToString()).jsonObject["files"]?.jsonArray.orEmpty().map { entry ->
-                val file = entry.jsonObject
-                RemotePlanFile(
-                    id = file.getValue("id").jsonPrimitive.content,
-                    md5 = file.getValue("md5Checksum").jsonPrimitive.content.lowercase()
-                )
+        val fields = "nextPageToken,files(id,md5Checksum)"
+        val files = mutableListOf<RemotePlanFile>()
+        val seenPageTokens = mutableSetOf<String>()
+        var pageToken: String? = null
+        do {
+            if (pageToken != null && !seenPageTokens.add(pageToken)) {
+                throw DriveHttpException(0, "Google Drive repeated a page token")
             }
+            val pageParameter = pageToken?.let { "&pageToken=${encode(it)}" }.orEmpty()
+            val url = "$API/files?spaces=appDataFolder&orderBy=modifiedTime%20desc&pageSize=100" +
+                "&q=${encode(query)}&fields=${encode(fields)}$pageParameter"
+            val body = request(account, url, "GET")
+            val page = readable {
+                val root = json.parseToJsonElement(body.decodeToString()).jsonObject
+                val pageFiles = root["files"]?.jsonArray.orEmpty().map { entry ->
+                    val file = entry.jsonObject
+                    RemotePlanFile(
+                        id = file.getValue("id").jsonPrimitive.content,
+                        md5 = file.getValue("md5Checksum").jsonPrimitive.content.lowercase()
+                    )
+                }
+                pageFiles to root["nextPageToken"]?.jsonPrimitive?.contentOrNull?.takeIf(String::isNotEmpty)
+            }
+            files += page.first
+            pageToken = page.second
         }
+        while (pageToken != null)
+        return files
     }
 
     /** A body that is not the expected JSON (a proxy page, a cut response) is a network-side failure. */
@@ -88,7 +108,11 @@ class DrivePlanTransport(
     }
 
     override suspend fun download(account: SyncAccount, file: RemotePlanFile): ByteArray {
-        val bytes = request(account, "$API/files/${encode(file.id)}?alt=media", "GET")
+        val bytes = try {
+            request(account, "$API/files/${encode(file.id)}?alt=media", "GET")
+        } catch (_: DriveResponseTooLargeException) {
+            throw InvalidRemotePlanException("Plik planu na Dysku przekracza limit 8 MiB.")
+        }
         if (md5(bytes) != file.md5) throw DriveHttpException(0, "Drive returned a file that does not match its checksum")
         return bytes
     }
@@ -213,20 +237,27 @@ class UrlConnectionDriveHttpClient(
             }
             val status = connection.responseCode
             val stream = if (status >= 400) connection.errorStream else connection.inputStream
-            val bytes = stream?.use { input ->
-                val output = ByteArrayOutputStream()
-                val buffer = ByteArray(8192)
-                while (true) {
-                    val read = input.read(buffer)
-                    if (read < 0) break
-                    output.write(buffer, 0, read)
-                    if (output.size() > maxResponseBytes) throw DriveHttpException(0, "Google response is too large")
-                }
-                output.toByteArray()
-            } ?: ByteArray(0)
+            val bytes = try {
+                stream?.use { input -> readLimitedResponse(input, maxResponseBytes) } ?: ByteArray(0)
+            } catch (_: DriveResponseTooLargeException) {
+                if (status >= 400) throw DriveHttpException(status, "Google error response is too large")
+                throw DriveResponseTooLargeException()
+            }
             DriveHttpResponse(status, bytes)
         } finally {
             connection.disconnect()
         }
+    }
+}
+
+internal fun readLimitedResponse(input: InputStream, maxBytes: Int): ByteArray {
+    require(maxBytes >= 0)
+    val output = ByteArrayOutputStream()
+    val buffer = ByteArray(minOf(8192, maxBytes.coerceAtLeast(1)))
+    while (true) {
+        val read = input.read(buffer)
+        if (read < 0) return output.toByteArray()
+        if (read > maxBytes - output.size()) throw DriveResponseTooLargeException()
+        output.write(buffer, 0, read)
     }
 }

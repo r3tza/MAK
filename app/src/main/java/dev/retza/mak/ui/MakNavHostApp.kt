@@ -98,8 +98,7 @@ fun MakApp(
 
     val startSetup: () -> Unit = {
         if (state.hasLoadedData) {
-            setupViewModel.start(state.setupResume)
-            openSetup(navController)
+            openSetup(navController, resumeExisting = state.setupResume != null)
         }
     }
 
@@ -107,12 +106,12 @@ fun MakApp(
         when (addAction(state.hasLoadedData, state.requiresSetup)) {
             AddAction.None -> Unit
             AddAction.Setup -> startSetup()
-            AddAction.Editor -> openClassEditor(classEditViewModel, navController)
+            AddAction.Editor -> openClassEditor(navController)
         }
     }
 
     val openOccurrenceById: (String) -> Unit = { id ->
-        openOccurrence(occurrenceViewModel, navController, id)
+        openOccurrence(navController, id)
     }
 
     LaunchedEffect(openTodayRequests, navController) {
@@ -131,12 +130,12 @@ fun MakApp(
     SemesterEffects(semesterViewModel, navController)
     SettingsEffects(settingsViewModel, navController)
     StudyProgramEffects(studyProgramsViewModel, navController)
-    SetupEffects(setupViewModel, classEditViewModel, navController)
-    ScheduleEffects(scheduleViewModel, classEditViewModel, navController)
+    SetupEffects(setupViewModel, navController)
+    ScheduleEffects(scheduleViewModel, navController)
 
     BackHandler(enabled = showBack) { navigateBack() }
 
-    val occurrenceActions = occurrenceTopBarActions(occurrenceViewModel, classEditViewModel, navController)
+    val occurrenceActions = occurrenceTopBarActions(occurrenceViewModel, navController)
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -230,11 +229,10 @@ fun MakApp(
                     updateViewModel = updateViewModel,
                     navController = navController,
                     onAddSemester = {
-                        setupViewModel.start()
                         openSetup(navController)
                     },
                     onConfigureSemester = { id ->
-                        openSemesterConfiguration(semesterViewModel, navController, id)
+                        openSemesterConfiguration(navController, id)
                     },
                     onExport = onCreateExportDocument,
                     onImport = onImportPlan,

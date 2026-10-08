@@ -140,6 +140,19 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun deletionRequestIsRejectedWhenRoomNoLongerHasTheSemester() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        repository.deleteSemesterAndSelectFallback(2L)
+
+        val exists = viewModel.canRequestSemesterDeletion("2")
+
+        assertFalse(exists)
+        assertEquals(null, viewModel.settings.value.semesterToDeleteId)
+    }
+
+    @Test
     fun exportSuccessPublishesSingleMessage() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink()

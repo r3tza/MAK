@@ -63,6 +63,7 @@ class ClassEditViewModel(
             savedState[KEY_EDITING_CLASS_ID] = value
         }
     private var openJob: Job? = null
+    private var editPlanData: ActivePlanData? = null
 
     private val activePlanData = semesterRepository.observeActiveSemester()
         .flatMapLatest { semester ->
@@ -80,10 +81,11 @@ class ClassEditViewModel(
         }
         viewModelScope.launch {
             activePlanData.collect { data ->
+                val optionsData = editPlanData ?: data
                 state.update { current ->
-                    val calendar = data?.calendarForAssignment(current.semesterProgramId)
+                    val calendar = optionsData?.calendarForAssignment(current.semesterProgramId)
                     current.copy(
-                        courseOptions = data?.courseOptions().orEmpty(),
+                        courseOptions = optionsData?.courseOptions().orEmpty(),
                         semesterStartDate = calendar?.startDate?.toString(),
                         semesterEndDate = calendar?.endDate?.toString()
                     )
@@ -95,13 +97,34 @@ class ClassEditViewModel(
     fun openNew(oneOffDate: LocalDate? = null) {
         openJob?.cancel()
         editingClassId = null
+        editPlanData = null
+        val recurrenceId = if (oneOffDate == null) "every_week" else "once"
+        openJob = viewModelScope.launch {
+            val data = freshActivePlanData()
+            editPlanData = data
+            state.value = withActiveOptions(
+                defaultClassEditState().copy(
+                    recurrenceId = recurrenceId,
+                    recurrenceLabel = classEditRecurrenceLabel(recurrenceId),
+                    occurrenceDate = oneOffDate?.toString().orEmpty()
+                ),
+                data
+            )
+        }
+    }
+
+    suspend fun openNewFromFreshPlan(oneOffDate: LocalDate? = null) {
+        openJob?.cancel()
+        editingClassId = null
+        editPlanData = null
         val recurrenceId = if (oneOffDate == null) "every_week" else "once"
         state.value = withActiveOptions(
             defaultClassEditState().copy(
                 recurrenceId = recurrenceId,
                 recurrenceLabel = classEditRecurrenceLabel(recurrenceId),
                 occurrenceDate = oneOffDate?.toString().orEmpty()
-            )
+            ),
+            freshActivePlanData().also { editPlanData = it }
         )
     }
 
@@ -119,42 +142,60 @@ class ClassEditViewModel(
         val classId = occurrenceId.substringBefore(':').toLongOrNull() ?: return
         openJob?.cancel()
         editingClassId = null
+        editPlanData = null
         state.value = withActiveOptions(defaultClassEditState())
         openJob = viewModelScope.launch {
-            val data = activePlanData.first { it != null } ?: return@launch
+            val data = freshActivePlanData() ?: return@launch
             val item = data.classes.firstOrNull { it.id == classId.toString() } ?: return@launch
-            val assignment = data.semesterPrograms.firstOrNull { it.id == item.semesterProgramId }
-            val program = assignment?.let { link ->
-                data.courses.firstOrNull { it.id == link.studyProgramId }
-            }
-            val recurrenceId = when (item.recurrence) {
-                DomainRecurrence.EVERY_WEEK -> "every_week"
-                DomainRecurrence.A_WEEK -> "a_week"
-                DomainRecurrence.B_WEEK -> "b_week"
-                DomainRecurrence.ONCE -> "once"
-            }
+            editPlanData = data
             editingClassId = classId
-            state.value = withActiveOptions(
-                defaultClassEditState().copy(
-                    title = "Edytuj zajęcia",
-                    name = item.name,
-                    courseName = program?.name.orEmpty(),
-                    semesterProgramId = item.semesterProgramId,
-                    type = item.type,
-                    dayLabel = classEditDayNames[item.dayOfWeek].orEmpty(),
-                    startTime = item.startTime.toString(),
-                    endTime = item.endTime.toString(),
-                    recurrenceId = recurrenceId,
-                    recurrenceLabel = classEditRecurrenceLabel(recurrenceId),
-                    occurrenceDate = item.date?.toString().orEmpty(),
-                    room = item.room.orEmpty(),
-                    building = item.building.orEmpty(),
-                    group = item.group.orEmpty(),
-                    teacher = item.teacherName.orEmpty(),
-                    note = item.classNote.orEmpty()
-                )
-            )
+            state.value = classEditState(item, data)
         }
+    }
+
+    suspend fun openEditFromFreshPlan(occurrenceId: String): Boolean {
+        val classId = occurrenceId.substringBefore(':').toLongOrNull() ?: return false
+        openJob?.cancel()
+        editingClassId = null
+        editPlanData = null
+        state.value = withActiveOptions(defaultClassEditState())
+        val data = freshActivePlanData() ?: return false
+        val item = data.classes.firstOrNull { it.id == classId.toString() } ?: return false
+        editPlanData = data
+        editingClassId = classId
+        state.value = classEditState(item, data)
+        return true
+    }
+
+    private fun classEditState(item: dev.retza.mak.domain.ClassItem, data: ActivePlanData): ClassEditUiState {
+        val assignment = data.semesterPrograms.firstOrNull { it.id == item.semesterProgramId }
+        val program = assignment?.let { link -> data.courses.firstOrNull { it.id == link.studyProgramId } }
+        val recurrenceId = when (item.recurrence) {
+            DomainRecurrence.EVERY_WEEK -> "every_week"
+            DomainRecurrence.A_WEEK -> "a_week"
+            DomainRecurrence.B_WEEK -> "b_week"
+            DomainRecurrence.ONCE -> "once"
+        }
+        return withActiveOptions(
+            defaultClassEditState().copy(
+                title = "Edytuj zajęcia",
+                name = item.name,
+                courseName = program?.name.orEmpty(),
+                semesterProgramId = item.semesterProgramId,
+                type = item.type,
+                dayLabel = classEditDayNames[item.dayOfWeek].orEmpty(),
+                startTime = item.startTime.toString(),
+                endTime = item.endTime.toString(),
+                recurrenceId = recurrenceId,
+                recurrenceLabel = classEditRecurrenceLabel(recurrenceId),
+                occurrenceDate = item.date?.toString().orEmpty(),
+                room = item.room.orEmpty(),
+                building = item.building.orEmpty(),
+                group = item.group.orEmpty(),
+                teacher = item.teacherName.orEmpty(),
+                note = item.classNote.orEmpty()
+            ), data
+        )
     }
 
     fun update(transform: (ClassEditUiState) -> ClassEditUiState) {
@@ -162,7 +203,8 @@ class ClassEditViewModel(
     }
 
     fun selectCourse(optionId: String) {
-        val calendar = activePlanData.value?.calendarForAssignment(optionId)
+        val data = editPlanData ?: activePlanData.value
+        val calendar = data?.calendarForAssignment(optionId)
         update {
             it.copy(
                 semesterProgramId = optionId,
@@ -190,7 +232,7 @@ class ClassEditViewModel(
 
     private fun save(confirmedHiddenData: Boolean) {
         if (state.value.isSaving) return
-        val data = activePlanData.value ?: return
+        val data = editPlanData ?: activePlanData.value ?: return
         val editor = state.value
         val start = editor.startTime.toLocalTimeOrNull()
         val end = editor.endTime.toLocalTimeOrNull()
@@ -285,15 +327,23 @@ class ClassEditViewModel(
             onFinish = { state.update { it.copy(isSaving = false) } }
         ) {
             scheduleRepository.saveClass(record)
+            val savedPlanData = freshActivePlanData()
             editingClassId = null
-            state.value = withActiveOptions(defaultClassEditState())
+            state.value = withActiveOptions(defaultClassEditState(), savedPlanData)
             feedbackSink.publish(UiFeedback(successMessage, UiFeedbackKind.Success))
             effectsChannel.trySend(ClassEditEffect.CloseEditor)
         }
     }
 
-    private fun withActiveOptions(value: ClassEditUiState): ClassEditUiState {
-        val data = activePlanData.value
+    private suspend fun freshActivePlanData(): ActivePlanData? =
+        semesterRepository.observeActiveSemester().first()?.let { semester ->
+            scheduleRepository.observeActivePlanData(semester.id).first()
+        }.also { editPlanData = it }
+
+    private fun withActiveOptions(
+        value: ClassEditUiState,
+        data: ActivePlanData? = activePlanData.value
+    ): ClassEditUiState {
         val calendar = data?.calendarForAssignment(value.semesterProgramId)
         return value.copy(
             courseOptions = data?.courseOptions().orEmpty(),

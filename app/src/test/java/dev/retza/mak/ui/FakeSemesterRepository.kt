@@ -10,6 +10,7 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.data.repository.toEntity
 import dev.retza.mak.data.repository.toRecord
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -18,6 +19,8 @@ import kotlinx.coroutines.flow.map
 internal class FakeSemesterRepository(
     private val delegate: FakeRepository
 ) : SemesterRepository {
+    var countClassesGate: CompletableDeferred<Unit>? = null
+
     override fun observeSemesters(): Flow<List<SemesterRecord>> =
         delegate.observeSemesters().map { list -> list.map { it.toRecord() } }
 
@@ -106,8 +109,10 @@ internal class FakeSemesterRepository(
 
     override suspend fun deleteSemesterProgram(id: Long) = delegate.deleteSemesterProgram(id)
 
-    override suspend fun countClassesForAssignment(assignmentId: Long): Int =
-        delegate.classes.count { it.semesterProgramId == assignmentId }
+    override suspend fun countClassesForAssignment(assignmentId: Long): Int {
+        countClassesGate?.await()
+        return delegate.classes.count { it.semesterProgramId == assignmentId }
+    }
 
     override suspend fun saveSetupConfiguration(
         semester: SemesterRecord,

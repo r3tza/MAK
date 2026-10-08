@@ -82,7 +82,6 @@ internal fun NavGraphBuilder.scheduleRoute(
 @Composable
 internal fun ScheduleEffects(
     scheduleViewModel: ScheduleViewModel,
-    classEditViewModel: ClassEditViewModel,
     navController: NavController
 ) {
     LaunchedEffect(scheduleViewModel, navController) {
@@ -90,8 +89,7 @@ internal fun ScheduleEffects(
             when (effect) {
                 is ScheduleEffect.OpenNewClassEditor -> {
                     if (navController.currentBackStackEntry?.destination?.route == MakRoutes.Schedule) {
-                        classEditViewModel.openNew(effect.date)
-                        navController.navigate(MakRoutes.Edit)
+                        openClassEditor(navController, effect.date)
                     }
                 }
             }

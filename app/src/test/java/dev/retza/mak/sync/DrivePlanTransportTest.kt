@@ -1,7 +1,9 @@
 package dev.retza.mak.sync
 
+import java.io.ByteArrayInputStream
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class DrivePlanTransportTest {
@@ -39,8 +41,45 @@ class DrivePlanTransportTest {
 
         val error = runCatching { transport.find(account) }.exceptionOrNull()
 
-        assertEquals(DriveHttpException::class, error?.let { it::class })
+        assertTrue(error is DriveHttpException)
         assertEquals(true, (error as DriveHttpException).isTransient())
+    }
+
+    @Test
+    fun oversizedPlanResponseIsAnInvalidRemotePlan() = runTest {
+        http.respond { _, _ -> throw DriveResponseTooLargeException() }
+
+        val error = runCatching {
+            transport.download(account, RemotePlanFile("plan", "unused"))
+        }.exceptionOrNull()
+
+        assertEquals(InvalidRemotePlanException::class, error?.let { it::class })
+    }
+
+    @Test
+    fun oversizedMetadataResponseRemainsTransient() = runTest {
+        http.respond { _, _ -> throw DriveResponseTooLargeException() }
+
+        val error = runCatching { transport.find(account) }.exceptionOrNull()
+
+        assertTrue(error is DriveHttpException)
+        assertEquals(true, (error as DriveHttpException).isTransient())
+    }
+
+    @Test
+    fun boundedReaderAllowsResponseExactlyAtLimit() {
+        val bytes = byteArrayOf(1, 2, 3, 4)
+
+        assertEquals(bytes.toList(), readLimitedResponse(ByteArrayInputStream(bytes), 4).toList())
+    }
+
+    @Test
+    fun boundedReaderStopsAsSoonAsResponseExceedsLimit() {
+        val error = runCatching {
+            readLimitedResponse(ByteArrayInputStream(byteArrayOf(1, 2, 3, 4, 5)), 4)
+        }.exceptionOrNull()
+
+        assertEquals(DriveResponseTooLargeException::class, error?.let { it::class })
     }
 
     @Test
@@ -85,6 +124,74 @@ class DrivePlanTransportTest {
         )
     }
 
+    @Test
+    fun findReadsTheNextPageBeforeChoosingTheNewestFile() = runTest {
+        http.respond { url, _ ->
+            when {
+                "pageToken=" !in url -> DriveHttpResponse(200, """{"files":[{"id":"new","md5Checksum":"AA"}],"nextPageToken":"next /?"}""".toByteArray())
+                else -> DriveHttpResponse(200, """{"files":[{"id":"older","md5Checksum":"BB"}]}""".toByteArray())
+            }
+        }
+
+        assertEquals(RemotePlanFile("new", "aa"), transport.find(account))
+        assertEquals(true, http.sent[0].url.contains("nextPageToken"))
+        assertEquals(true, http.sent[1].url.contains("pageToken=next%20%2F%3F"))
+    }
+
+    @Test
+    fun findContinuesAfterAnEmptyPageWithANextPageToken() = runTest {
+        http.respond { url, _ ->
+            when {
+                "pageToken=" !in url -> DriveHttpResponse(200, """{"files":[],"nextPageToken":"second"}""".toByteArray())
+                "pageToken=second" in url -> DriveHttpResponse(200, """{"files":[],"nextPageToken":"third"}""".toByteArray())
+                else -> DriveHttpResponse(200, """{"files":[{"id":"last","md5Checksum":"CC"}]}""".toByteArray())
+            }
+        }
+
+        assertEquals(RemotePlanFile("last", "cc"), transport.find(account))
+        assertEquals(3, http.sent.size)
+    }
+
+    @Test
+    fun deleteAllFailsWhenAContinuationPageFails() = runTest {
+        http.respond { url, _ ->
+            if ("pageToken=" !in url) DriveHttpResponse(200, """{"files":[{"id":"new","md5Checksum":"AA"}],"nextPageToken":"next"}""".toByteArray())
+            else DriveHttpResponse(503, ByteArray(0))
+        }
+
+        val error = runCatching { transport.deleteAll(account) }.exceptionOrNull()
+
+        assertEquals(503, (error as DriveHttpException).statusCode)
+        assertEquals(emptyList<String>(), http.requests.filter { it.startsWith("DELETE") })
+    }
+
+    @Test
+    fun repeatedPageTokenFailsAsTransientBeforeDeletingAnything() = runTest {
+        http.respond { url, _ ->
+            when {
+                "pageToken=" !in url -> DriveHttpResponse(200, """{"files":[{"id":"new","md5Checksum":"AA"}],"nextPageToken":"A"}""".toByteArray())
+                "pageToken=A" in url -> DriveHttpResponse(200, """{"files":[{"id":"middle","md5Checksum":"BB"}],"nextPageToken":"B"}""".toByteArray())
+                "pageToken=B" in url -> DriveHttpResponse(200, """{"files":[{"id":"old","md5Checksum":"CC"}],"nextPageToken":"A"}""".toByteArray())
+                else -> throw IllegalStateException("Unexpected repeated page request")
+            }
+        }
+
+        val error = runCatching { transport.deleteAll(account) }.exceptionOrNull()
+
+        assertTrue(error is DriveHttpException)
+        assertEquals(true, (error as DriveHttpException).isTransient())
+        assertEquals(emptyList<String>(), http.requests.filter { it.startsWith("DELETE") })
+        assertEquals(3, http.sent.size)
+    }
+
+    @Test
+    fun nullNextPageTokenEndsTheListing() = runTest {
+        http.respond { _, _ -> DriveHttpResponse(200, """{"files":[],"nextPageToken":null}""".toByteArray()) }
+
+        assertEquals(null, transport.find(account))
+        assertEquals(1, http.sent.size)
+    }
+
     private class CountingTokens : DriveAccessTokenProvider {
         var requested = 0
         val invalidated = mutableListOf<String>()
@@ -114,7 +221,7 @@ class DrivePlanTransportTest {
             val request = "$method ${url.substringBefore('?')}"
             requests += request
             sent += Sent(method, url, headers)
-            return handler(request, headers)
+            return handler("$method $url", headers)
         }
     }
 

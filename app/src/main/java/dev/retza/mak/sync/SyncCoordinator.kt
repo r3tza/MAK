@@ -109,13 +109,15 @@ class SyncCoordinator(
     private suspend fun pass(account: SyncAccount, choice: SyncChoice?): SyncOutcome? {
         val state = current.value
         val local = gateway.snapshot()
-        val localFingerprint = SyncPlanFile.fingerprint(local)
-        val remote = transport.find(account) ?: return upload(account, local, localFingerprint, expected = null)
+        val localBytes = SyncPlanFile.encode(local)
+        val localFingerprint = SyncPlanFile.fingerprint(localBytes)
+        val remote = transport.find(account)
+            ?: return upload(account, localFingerprint, localBytes, expected = null)
         val firstRun = state.localFingerprint == null
         val localChanged = firstRun || localFingerprint != state.localFingerprint
         val remoteChanged = firstRun || remote.md5 != state.remoteMd5
         if (!localChanged && !remoteChanged) return synced(remote, localFingerprint, SyncOutcome.UpToDate)
-        if (!remoteChanged) return upload(account, local, localFingerprint, expected = remote)
+        if (!remoteChanged) return upload(account, localFingerprint, localBytes, expected = remote)
 
         val remoteBytes = transport.download(account, remote)
         val remoteData = SyncPlanFile.decode(remoteBytes)
@@ -123,18 +125,23 @@ class SyncCoordinator(
             return synced(remote, localFingerprint, SyncOutcome.UpToDate)
         }
         if (!localChanged || firstRun && SyncPlanFile.isEmpty(local)) {
-            return download(local, localFingerprint, remote, remoteData, firstRun, rejectsLocal = false)
+            return download(local, localFingerprint, localBytes, remote, remoteData, firstRun, rejectsLocal = false)
         }
-        if (firstRun && SyncPlanFile.isEmpty(remoteData)) return upload(account, local, localFingerprint, remote)
+        if (firstRun && SyncPlanFile.isEmpty(remoteData)) {
+            return upload(account, localFingerprint, localBytes, remote)
+        }
 
         val asked = state.pendingChoice
         if (choice != null && asked?.localFingerprint == localFingerprint && asked.remoteMd5 == remote.md5) {
             return when (choice) {
                 SyncChoice.KEEP_PHONE -> {
+                    localSizeIssue(localBytes)?.let { return it }
                     archive.add(remoteBytes, ArchiveSource.DRIVE, clock.millis())
-                    upload(account, local, localFingerprint, remote)
+                    upload(account, localFingerprint, localBytes, remote)
                 }
-                SyncChoice.KEEP_DRIVE -> download(local, localFingerprint, remote, remoteData, firstRun, rejectsLocal = true)
+                SyncChoice.KEEP_DRIVE -> download(
+                    local, localFingerprint, localBytes, remote, remoteData, firstRun, rejectsLocal = true
+                )
             }
         }
         save(
@@ -149,34 +156,41 @@ class SyncCoordinator(
 
     private suspend fun upload(
         account: SyncAccount,
-        local: BackupData,
         localFingerprint: String,
+        localBytes: ByteArray,
         expected: RemotePlanFile?
     ): SyncOutcome? {
+        localSizeIssue(localBytes)?.let { return it }
         // Drive has no conditional write, so the file is checked again right before replacing it.
         val latest = transport.find(account)
         if (latest?.md5 != expected?.md5) return null
-        val uploaded = transport.upload(account, latest, SyncPlanFile.encode(local))
+        val uploaded = transport.upload(account, latest, localBytes)
         return synced(uploaded, localFingerprint, SyncOutcome.Uploaded)
     }
 
     private suspend fun download(
         local: BackupData,
         localFingerprint: String,
+        localBytes: ByteArray,
         remote: RemotePlanFile,
         remoteData: BackupData,
         firstRun: Boolean,
         rejectsLocal: Boolean
     ): SyncOutcome? {
-        if (editTracker.isEditing) return SyncOutcome.WaitingForEditor
         // A plan this phone only followed was built on by the other phone. Only a rejected plan or one
         // that another upload may have overwritten could be lost, so only those go to the archive.
         val mayBeLost = rejectsLocal || current.value.lastRunUploaded
-        if (mayBeLost && !SyncPlanFile.isEmpty(local)) {
-            archive.add(SyncPlanFile.encode(local), ArchiveSource.PHONE, clock.millis())
-        }
         val fallbackActive = remoteData.semesterCovering(clock.instant().atZone(clock.zone).toLocalDate())
-        val replaced = gateway.replaceIfUnchanged(localFingerprint, remoteData, keepLocalActive = !firstRun, fallbackActive)
+        val replacement = editTracker.withReplacement {
+            if (mayBeLost && !SyncPlanFile.isEmpty(local)) {
+                archive.add(localBytes, ArchiveSource.PHONE, clock.millis())
+            }
+            gateway.replaceIfUnchanged(localFingerprint, remoteData, keepLocalActive = !firstRun, fallbackActive)
+        }
+        val replaced = when (replacement) {
+            PlanReplacementResult.Editing -> return SyncOutcome.WaitingForEditor
+            is PlanReplacementResult.Applied -> replacement.value
+        }
         if (!replaced) return null
         return synced(remote, SyncPlanFile.fingerprint(remoteData), SyncOutcome.Downloaded)
     }
@@ -209,9 +223,17 @@ class SyncCoordinator(
         current.value = state
     }
 
+    private fun localSizeIssue(bytes: ByteArray): SyncOutcome? =
+        if (bytes.size > SyncPlanFile.MAX_BYTES) {
+            issue(SyncIssue.LOCAL_PLAN_TOO_LARGE, LOCAL_PLAN_TOO_LARGE_MESSAGE)
+        } else {
+            null
+        }
+
     private companion object {
         const val MAX_PASSES = 3
         const val GENERIC_FAILURE = "Nie udało się zsynchronizować planu."
+        const val LOCAL_PLAN_TOO_LARGE_MESSAGE = "Lokalny plan przekracza limit 8 MiB i nie może zostać wysłany."
         const val ACCOUNT_MISMATCH =
             "Telefon ma inne konto Google niż połączone. Wyłącz synchronizację i połącz konto ponownie."
     }

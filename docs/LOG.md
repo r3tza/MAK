@@ -2,6 +2,13 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-02: Zasady testów i publikacji oraz poprawki synchronizacji (I-70)
+
+- Fakty: Sześć poprawek zlecił użytkownik; subagenci Luna je zaimplementowali, a rodzic zrecenzował i zaakceptował. Kontrole Task 1/2: `JsonExportCodecTest` 5/5, Room 7/7, `PlanEditingTest` 3/3 i pięć klas edytorów 103/103; Task 3: 48 testów JVM, 10 testów `SyncViewModelTest` i `lintDebug`. Prawdziwe OAuth i Drive nie były testowane; I-69 pozostaje zablokowane do konfiguracji Google Cloud i udziału użytkownika.
+- Decyzja użytkownika: testować tylko zmieniony zakres bez pełnego zestawu aplikacji; uruchamiać najwyżej jeden emulator naraz z 2048 MiB RAM; nie wykonywać push, nie otwierać pull requestów ani nie publikować bez wyraźnego polecenia. Zasady zapisano w `AGENTS.md`, `STACK.md` i `WORKFLOW.md`. PLAN I-69 opisuje telefon fizyczny albo dwa osobne stany klienta na AVD uruchamianych sekwencyjnie, po całkowitym zatrzymaniu poprzedniego emulatora; oba korzystają ze wspólnego stanu Drive. Nie zmieniono klasyfikacji HTTP 403 ani pytań o prywatność.
+- Decyzja agenta na zlecenie użytkownika: zamknąć I-70 po recenzji oraz zachować I-69 jako osobny odbiór rzeczywistego konta. Wyniki i granice weryfikacji zapisano w `QUEUE.md` i `KNOWN_ISSUES.md`.
+
+
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
 
 ## 2026-09-30: Opcjonalna synchronizacja Google jednym plikiem (I-68, I-69)
@@ -127,9 +134,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Fakty: Opis zmian jednej wersji był w historii w kodzie aplikacji, w `docs/CHANGELOG.md` i w opisie wydania na GitHubie, a `update.json` miał puste notatki. `CHANGELOG.md` zawiera zmiany techniczne, których użytkownik nie odczuwa.
 - Decyzja: Jedno źródło notatek dla użytkowników w `app/src/main/assets/release_notes.json`. Czyta je aplikacja („O aplikacji”) oraz workflow (`update.json` i opis wydania). Pusta lista zmian oznacza „Pomniejsze poprawki”; brak wpisu dla wersji z tagu przerywa workflow. `CHANGELOG.md` zostaje techniczną historią dla agentów (`STACK.md`, `AGENTS.md`). Użytkownik zaakceptował wariant 2026-09-27.
 - Odrzucone: `CHANGELOG.md` jako źródło (treść techniczna), opis wydania na GitHubie jako źródło (`update.json` powstaje przed jego edycją, historia w aplikacji wymagałaby sieci) oraz generowanie kodu Kotlina z pliku przy budowaniu.
-
-## 2026-09-27: Kolejne kierunki w kreatorze (I-50)
-
-- Fakty: Kreator tworzył tylko jeden kierunek i przechodził do zajęć. Osoba studiująca dwa kierunki musiała sama znaleźć dodawanie kierunków w ustawieniach semestru, a formularz zajęć pozwala wybrać tylko kierunki przypisane do semestru.
-- Decyzja: Krok „Dodaj zajęcia” ma akcję „Dodaj kolejny kierunek” z wyborem tygodni A/B („Wspólne z pierwszym kierunkiem” albo „Osobne dla tego kierunku”). Zapis używa istniejących operacji `SemesterRepository`, bez nowej reguły domenowej. Kolejny kierunek dostaje kolor o odcieniu odległym od kierunków już dodanych. Użytkownik wybrał wariant z wyborem A/B 2026-09-27.
-- Odrzucone: Samo zdanie z informacją o ustawieniach semestru oraz wariant bez wyboru tygodni A/B.

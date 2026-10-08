@@ -9,43 +9,87 @@ import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
+import java.util.concurrent.ConcurrentHashMap
+import java.util.concurrent.atomic.AtomicLong
 
-/**
- * Screens with an unsaved plan draft or an open confirmation, by key. A downloaded plan waits until
- * none is left, so a form never saves over a plan it did not show.
- *
- * A released key stays for [graceMillis]: recreating the activity (rotation, theme, font) disposes
- * the screen and composes it again with the same saved key, and the edit must not end in between.
- */
+/** Screens with an unsaved plan draft or an open confirmation, tracked by stable key. */
 class PlanEditTracker(
     private val scope: CoroutineScope,
     private val graceMillis: Long = DEFAULT_GRACE_MILLIS
 ) {
     private val keys = MutableStateFlow<Set<String>>(emptySet())
     private val pendingRemovals = mutableMapOf<String, Job>()
+    private val generations = ConcurrentHashMap<String, AtomicLong>()
+    private val gate = Mutex()
 
     val isEditing: Boolean get() = keys.value.isNotEmpty()
 
     val editing: Flow<Boolean> = keys.map { it.isNotEmpty() }.distinctUntilChanged()
 
-    fun set(key: String, active: Boolean) = synchronized(this) {
-        pendingRemovals.remove(key)?.cancel()
-        keys.update { if (active) it + key else it - key }
-    }
-
-    fun release(key: String) = synchronized(this) {
-        if (key !in keys.value) return@synchronized
-        pendingRemovals.remove(key)?.cancel()
-        pendingRemovals[key] = scope.launch {
-            delay(graceMillis)
-            synchronized(this@PlanEditTracker) {
-                pendingRemovals.remove(key)
-                keys.update { it - key }
-            }
+    /** Acquires an edit key before the caller reads or changes plan data. */
+    suspend fun beginEdit(key: String) {
+        gate.withLock {
+            nextGeneration(key)
+            pendingRemovals.remove(key)?.cancel()
+            keys.update { it + key }
         }
     }
+
+    /** Ends a draft or confirmation immediately after its save or cancellation completes. */
+    suspend fun endEdit(key: String) {
+        gate.withLock {
+            nextGeneration(key)
+            pendingRemovals.remove(key)?.cancel()
+            keys.update { it - key }
+        }
+    }
+
+    /** Runs a local replacement only when no editor has a key, serialized with [beginEdit]. */
+    suspend fun <T> withReplacement(block: suspend () -> T): PlanReplacementResult<T> = gate.withLock {
+        if (keys.value.isNotEmpty()) {
+            PlanReplacementResult.Editing
+        } else {
+            PlanReplacementResult.Applied(block())
+        }
+    }
+
+    /** Keeps an edit key for the activity recreation grace period after its screen is disposed. */
+    fun release(key: String): Job {
+        val generation = currentGeneration(key)
+        return scope.launch {
+        val removal = gate.withLock {
+            if (currentGeneration(key) != generation || key !in keys.value) return@withLock null
+            pendingRemovals.remove(key)?.cancel()
+            scope.launch {
+                delay(graceMillis)
+                gate.withLock {
+                    if (currentGeneration(key) == generation &&
+                        pendingRemovals[key] === kotlinx.coroutines.currentCoroutineContext()[Job]
+                    ) {
+                        pendingRemovals.remove(key)
+                        keys.update { it - key }
+                    }
+                }
+            }
+                .also { pendingRemovals[key] = it }
+        }
+        removal?.join()
+        }
+    }
+
+    private fun nextGeneration(key: String): Long =
+        generations.computeIfAbsent(key) { AtomicLong() }.incrementAndGet()
+
+    private fun currentGeneration(key: String): Long = generations[key]?.get() ?: 0
 
     companion object {
         const val DEFAULT_GRACE_MILLIS = 5_000L
     }
+}
+
+sealed interface PlanReplacementResult<out T> {
+    data object Editing : PlanReplacementResult<Nothing>
+    data class Applied<T>(val value: T) : PlanReplacementResult<T>
 }

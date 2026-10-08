@@ -20,6 +20,7 @@ import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import java.io.IOException
+import java.io.OutputStream
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
@@ -27,6 +28,8 @@ import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.currentCoroutineContext
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -36,6 +39,8 @@ import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import kotlinx.coroutines.isActive
 import org.koin.core.annotation.KoinViewModel
 
 data class SyncArchiveItemUi(val id: String, val label: String, val fileName: String)
@@ -106,6 +111,8 @@ class SyncViewModel(
 
     fun syncNow() = work { report(coordinator.synchronize()) }
 
+    fun isWorkingNow(): Boolean = local.value.isWorking
+
     fun openChoice() = local.update { it.copy(showChoiceDialog = true) }
 
     fun dismissChoice() = local.update { it.copy(showChoiceDialog = false) }
@@ -133,11 +140,35 @@ class SyncViewModel(
         }
     }
 
-    fun archivedPlan(id: String): ByteArray? = coordinator.archivedPlan(id)
-
-    fun reportArchiveExport(success: Boolean) {
-        val message = if (success) "Zapisano poprzednią wersję planu" else "Nie udało się zapisać pliku."
-        feedbackSink.publish(UiFeedback(message, if (success) UiFeedbackKind.Success else UiFeedbackKind.Error))
+    fun exportArchivedPlan(
+        id: String,
+        openOutputStream: () -> OutputStream?
+    ): Job? {
+        if (local.value.isWorking) return null
+        local.update { it.copy(isWorking = true, errorMessage = null) }
+        return viewModelScope.launch {
+            var exported = false
+            try {
+                withContext(Dispatchers.IO) {
+                    val bytes = coordinator.archivedPlan(id) ?: throw IOException("Archived plan is unavailable")
+                    val output = openOutputStream() ?: throw IOException("Could not open archive output")
+                    output.use { it.write(bytes) }
+                }
+                exported = true
+            } catch (error: CancellationException) {
+                throw error
+            } catch (_: Exception) {
+                if (!currentCoroutineContext().isActive) {
+                    throw CancellationException("Archive export was cancelled")
+                }
+                // Read, open, write, and close failures all leave the export unsuccessful.
+            } finally {
+                local.update { it.copy(isWorking = false) }
+            }
+            if (!currentCoroutineContext().isActive) return@launch
+            val message = if (exported) "Zapisano poprzednią wersję planu" else "Nie udało się zapisać pliku."
+            feedbackSink.publish(UiFeedback(message, if (exported) UiFeedbackKind.Success else UiFeedbackKind.Error))
+        }
     }
 
     fun dismissError() = local.update { it.copy(errorMessage = null) }
@@ -226,6 +257,7 @@ private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemU
 private fun SyncState.issueText(): String? = when (issue) {
     SyncIssue.AUTHORIZATION_REQUIRED -> "Google wymaga ponownego potwierdzenia dostępu do Dysku."
     SyncIssue.INVALID_REMOTE_PLAN -> issueMessage ?: "Plik planu na Dysku jest niepoprawny."
+    SyncIssue.LOCAL_PLAN_TOO_LARGE -> issueMessage ?: "Lokalny plan przekracza limit 8 MiB i nie może zostać wysłany."
     SyncIssue.FAILED -> issueMessage ?: "Nie udało się zsynchronizować planu."
     null -> null
 }

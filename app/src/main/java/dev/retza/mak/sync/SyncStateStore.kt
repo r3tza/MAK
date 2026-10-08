@@ -4,7 +4,7 @@ import java.io.File
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-enum class SyncIssue { AUTHORIZATION_REQUIRED, INVALID_REMOTE_PLAN, FAILED }
+enum class SyncIssue { AUTHORIZATION_REQUIRED, INVALID_REMOTE_PLAN, LOCAL_PLAN_TOO_LARGE, FAILED }
 
 /** Both versions changed; the user chooses which one to keep. Bound to the versions it described. */
 @Serializable

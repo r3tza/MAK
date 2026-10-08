@@ -22,6 +22,7 @@ object MakRoutes {
     const val StudyProgramEdit = "settings/programs/{programId}"
     const val ImportPreview = "settings/import"
     const val Setup = "setup"
+    const val SetupRoute = "setup?resume={resume}"
 }
 
 fun occurrenceRoute(occurrenceId: String): String {
@@ -47,6 +48,8 @@ fun semesterOverridesRoute(id: String): String = "semester/$id/week-overrides"
 
 fun semesterCalendarsRoute(id: String): String = "semester/$id/calendars"
 
+fun setupRoute(resumeExisting: Boolean): String = "${MakRoutes.Setup}?resume=$resumeExisting"
+
 internal fun shouldCloseOccurrenceDetails(currentRoute: String?): Boolean =
     currentRoute == MakRoutes.Occurrence
 
@@ -60,7 +63,7 @@ internal fun shouldCloseImportPreview(currentRoute: String?): Boolean =
     currentRoute == MakRoutes.ImportPreview
 
 internal fun shouldHandleSetupEffect(currentRoute: String?): Boolean =
-    currentRoute == MakRoutes.Setup
+    currentRoute == MakRoutes.Setup || currentRoute == MakRoutes.SetupRoute
 
 internal enum class AddAction {
     None,
@@ -94,6 +97,6 @@ internal fun titleForRoute(route: String?, editorTitle: String? = null): String 
     MakRoutes.StudyPrograms -> "Kierunki"
     MakRoutes.StudyProgramEdit -> "Edytuj kierunek"
     MakRoutes.ImportPreview -> "Import"
-    MakRoutes.Setup -> "Konfiguracja"
+    MakRoutes.Setup, MakRoutes.SetupRoute -> "Konfiguracja"
     else -> "Dzisiaj"
 }

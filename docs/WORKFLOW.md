@@ -41,11 +41,13 @@ Przy istotnej zmianie wyglądu najpierw opisz wariant i role informacji, najlepi
 
 Zasady ogólne są w `AGENTS.md`, sekcja „Git”. `main` jest chroniona: zmiany trafiają tam tylko przez pull request z zielonym testem `checks` (`.github/workflows/checks.yml`).
 
+Wypchnięcie gałęzi, otwarcie pull requesta, utworzenie taga lub publikacja wydania wymagają wyraźnego polecenia użytkownika. Bez niego praca kończy się lokalnie.
+
 1. Na początku zakresu pobierz zmiany (`git fetch origin`) i utwórz gałąź od `origin/main` z angielskim opisem (`git switch -c task/I-57-calendar-markers origin/main`). Jeśli w katalogu są niezatwierdzone zmiany spoza zakresu, nie przenoś ich do gałęzi i zapytaj użytkownika. Większe zadanie wykonuj w osobnym pull requeście. Małe zadanie dołącz do najbliższego większego albo do innych małych zadań na jednej gałęzi, także gdy nie są ściśle powiązane, o ile całość da się zrecenzować i sprawdzić razem. Plan w `PLAN.md` zapisuj na gałęzi, która go wykonuje; osobny pull request z samym planem lub samą dokumentacją tylko na prośbę użytkownika.
 2. Pracuj i twórz commity na gałęzi: jeden commit na logiczną część zadania, zwykle od jednego do pięciu na pull request. Aktualizacja statusu w `QUEUE.md`, wpis w `LOG.md`, zmiany w `KNOWN_ISSUES.md` i `PLAN.md` należą do commitu ze zmianą, której dotyczą. Drobnej poprawki dokumentu nie commituj osobno; dołącz ją do najbliższego commitu na gałęzi.
 3. Przed pull requestem uruchom kontrole z sekcji „Wykonanie i sprawdzenie”. Jeśli `origin/main` poszła do przodu i są konflikty, scal ją do gałęzi (`git merge origin/main`); nie przepisuj historii wypchniętej gałęzi. W konflikcie w `QUEUE.md`, `LOG.md` albo `KNOWN_ISSUES.md` zachowaj oba wpisy i popraw limity.
-4. Wypchnij gałąź i otwórz pull request do `main`. Tytuł jest po angielsku i ma format tematu commita. Opis może być po polsku i zawiera: identyfikatory zadań oraz kroki `PLAN.md`, jeśli są; listę zmian; uruchomione testy z wynikiem; zrzuty przed zmianą i po niej przy zmianie interfejsu; to, czego nie sprawdzono, na przykład odbiór na urządzeniu.
-5. Po otwarciu poczekaj na wynik `checks`. Jeśli test nie przejdzie, popraw go na tej samej gałęzi.
+4. Dopiero po wyraźnym poleceniu użytkownika wypchnij gałąź i otwórz pull request do `main`. Tytuł jest po angielsku i ma format tematu commita. Opis może być po polsku i zawiera: identyfikatory zadań oraz kroki `PLAN.md`, jeśli są; listę zmian; uruchomione testy z wynikiem; zrzuty przed zmianą i po niej przy zmianie interfejsu; to, czego nie sprawdzono, na przykład odbiór na urządzeniu.
+5. Po otwarciu pull requesta na polecenie użytkownika poczekaj na wynik `checks`. Jeśli test nie przejdzie, popraw go na tej samej gałęzi.
 6. Pull request scala użytkownik przez squash. Po scaleniu przełącz się na `main`, pobierz ją (`git pull --ff-only`) i usuń lokalną gałąź zadania.
 
 ## Zakończenie i status

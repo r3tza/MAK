@@ -31,7 +31,10 @@ object SyncPlanFile {
 
     /** Equal for plans that differ only in the active semester. */
     fun fingerprint(data: BackupData): String =
-        MessageDigest.getInstance("SHA-256").digest(encode(data)).joinToString("") { "%02x".format(it) }
+        fingerprint(encode(data))
+
+    fun fingerprint(bytes: ByteArray): String =
+        MessageDigest.getInstance("SHA-256").digest(bytes).joinToString("") { "%02x".format(it) }
 
     fun isEmpty(data: BackupData): Boolean = data.semesters.isEmpty() && data.studyPrograms.isEmpty()
 

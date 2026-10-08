@@ -173,6 +173,7 @@ data class SemesterScreenUiState(
     val courseNameError: String? = null,
     val isAddingCourse: Boolean = false,
     val isDeletingCourse: Boolean = false,
+    val isPreparingCourseDeletion: Boolean = false,
     val isDeletingOverride: Boolean = false,
     val isDeletingCalendar: Boolean = false,
     val isSeparatingCalendar: Boolean = false,
@@ -187,7 +188,8 @@ data class SemesterScreenUiState(
 
 /** An unsaved draft or open confirmation that a downloaded plan must not replace. */
 fun SemesterScreenUiState.hasPlanDraft(): Boolean =
-    semester.name != loadedSemester.name || semester.startDate != loadedSemester.startDate ||
+    semester.isSaving || isPreparingCourseDeletion ||
+        semester.name != loadedSemester.name || semester.startDate != loadedSemester.startDate ||
         semester.endDate != loadedSemester.endDate || semester.firstWeek != loadedSemester.firstWeek ||
         overrideForm.isOpen || pendingOverrideDeletion != null || pendingCourseDeletion != null ||
         pendingCalendarDeletion != null || pendingReconnect != null

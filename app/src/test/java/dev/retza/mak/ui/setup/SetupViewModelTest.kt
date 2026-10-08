@@ -407,6 +407,50 @@ class SetupViewModelTest {
     }
 
     @Test
+    fun addingSemesterDoesNotResumeAnActiveIncompleteSemester() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val snapshot = repository.snapshot()
+        repository.replaceAll(
+            snapshot.copy(
+                semesters = snapshot.semesters.map { semester ->
+                    if (semester.semester.id == repository.semester.id) {
+                        semester.copy(programs = emptyList(), classes = emptyList())
+                    } else {
+                        semester
+                    }
+                }
+            )
+        )
+        repository.events.clear()
+        val viewModel = viewModel(repository)
+
+        viewModel.startFromRoom(resumeExisting = false)
+
+        val state = viewModel.setup.value
+        assertEquals(SetupStep.Semester, state.step)
+        assertEquals("", state.semesterName)
+        assertEquals("", state.startDate)
+        assertEquals("", state.endDate)
+        assertTrue(repository.events.isEmpty())
+    }
+
+    @Test
+    fun startFromRoomRefreshesProgramOptionsAfterReplacement() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        val snapshot = repository.snapshot()
+        repository.replaceAll(
+            snapshot.copy(
+                studyPrograms = snapshot.studyPrograms.map { it.copy(name = "Zdalny kierunek") }
+            )
+        )
+
+        viewModel.startFromRoom(resumeExisting = false)
+
+        assertEquals(listOf("Zdalny kierunek"), viewModel.setup.value.programOptions.map { it.name })
+    }
+
+    @Test
     fun backMovesThroughStepsInOrder() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)

@@ -77,6 +77,19 @@ class StudyProgramsViewModel(
         loadEditor(id)
     }
 
+    /** Starts a new route edit from the latest Room row after the route has acquired its edit key. */
+    suspend fun openEditFromRoom(id: Long): Boolean {
+        state.update { it.copy(editor = StudyProgramEditorUi()) }
+        val program = semesterRepository.observeStudyPrograms().first()
+            .firstOrNull { it.id == id }
+            ?.let { StudyProgramUi(it.id, it.name, it.color) }
+        if (program == null) return false
+        state.update {
+            it.copy(editor = StudyProgramEditorUi(id = program.id, name = program.name, color = program.color))
+        }
+        return true
+    }
+
     /**
      * Restores the screen after rotation or process death: keeps the current draft when the route
      * is shown again for the same program.
@@ -88,13 +101,16 @@ class StudyProgramsViewModel(
 
     private fun loadEditor(id: Long) {
         viewModelScope.launch {
-            val program = state.value.programs.firstOrNull { it.id == id }
-                ?: semesterRepository.observeStudyPrograms().first()
-                    .firstOrNull { it.id == id }
-                    ?.let { StudyProgramUi(it.id, it.name, it.color) }
-                ?: return@launch
+            val program = semesterRepository.observeStudyPrograms().first()
+                .firstOrNull { it.id == id }
+                ?.let { StudyProgramUi(it.id, it.name, it.color) } ?: return@launch
             state.update {
-                it.copy(editor = StudyProgramEditorUi(id = program.id, name = program.name, color = program.color))
+                val current = it.editor
+                if (current.id == id && (current.name != program.name || current.color != program.color)) {
+                    it
+                } else {
+                    it.copy(editor = StudyProgramEditorUi(id = program.id, name = program.name, color = program.color))
+                }
             }
         }
     }

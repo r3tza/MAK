@@ -31,6 +31,7 @@ import dev.retza.mak.ui.settings.settingsSummary
 import dev.retza.mak.ui.settings.UpdateScreen
 import dev.retza.mak.ui.settings.toSettingsUi
 import dev.retza.mak.update.UpdateViewModel
+import java.io.IOException
 
 internal fun openSettings(navController: NavController) {
     navController.navigate(MakRoutes.Settings)
@@ -101,14 +102,22 @@ internal fun NavGraphBuilder.settingsRoute(
 
     composable(MakRoutes.SettingsSemesters) {
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
+        val editing = TrackPlanEditing(
+            active = settingsState.semesterToDeleteId != null,
+            isActiveNow = { settingsViewModel.settings.value.semesterToDeleteId != null }
+        )
         SettingsSemestersScreen(
             state = settingsState,
             onSemesterSelected = settingsViewModel::selectSemester,
             onAddSemester = onAddSemester,
             onConfigureSemester = onConfigureSemester,
-            onDeleteSemester = settingsViewModel::requestSemesterDeletion,
-            onConfirmDelete = settingsViewModel::confirmSemesterDeletion,
-            onCancelDelete = settingsViewModel::cancelSemesterDeletion,
+            onDeleteSemester = { id ->
+                editing.run(refreshBeforeFirstEdit = { settingsViewModel.canRequestSemesterDeletion(id) }) {
+                    settingsViewModel.requestSemesterDeletion(id)
+                }
+            },
+            onConfirmDelete = editing.callback(action = settingsViewModel::confirmSemesterDeletion),
+            onCancelDelete = editing.callback(action = settingsViewModel::cancelSemesterDeletion),
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -193,11 +202,13 @@ private fun SyncRoute(syncViewModel: SyncViewModel) {
         exportId = null
         // Cancelling the file picker is not an error and shows nothing.
         if (uri == null || id == null) return@rememberLauncherForActivityResult
-        val bytes = syncViewModel.archivedPlan(id)
-        val written = bytes != null && runCatching {
-            context.contentResolver.openOutputStream(uri)?.use { it.write(bytes) } != null
-        }.getOrDefault(false)
-        syncViewModel.reportArchiveExport(written)
+        syncViewModel.exportArchivedPlan(
+            id = id,
+            openOutputStream = {
+                context.contentResolver.openOutputStream(uri, "wt")
+                    ?: throw IOException("Could not open archive output")
+            }
+        )
     }
     LaunchedEffect(syncViewModel) {
         syncViewModel.authorizationRequests.collect { pendingIntent ->
@@ -215,7 +226,8 @@ private fun SyncRoute(syncViewModel: SyncViewModel) {
         onRequestDisconnect = syncViewModel::requestDisconnect,
         onDisconnect = syncViewModel::disconnect,
         onDismissDisconnect = syncViewModel::dismissDisconnect,
-        onExportArchived = { id ->
+        onExportArchived = onExportArchived@{ id ->
+            if (exportId != null || syncViewModel.isWorkingNow()) return@onExportArchived
             state.archive.firstOrNull { it.id == id }?.let { item ->
                 exportId = item.id
                 exportLauncher.launch(item.fileName)

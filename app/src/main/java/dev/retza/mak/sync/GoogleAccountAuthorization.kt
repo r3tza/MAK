@@ -9,7 +9,11 @@ import com.google.android.gms.auth.api.identity.AuthorizationResult
 import com.google.android.gms.auth.api.identity.ClearTokenRequest
 import com.google.android.gms.auth.api.identity.Identity
 import com.google.android.gms.common.api.Scope
+import com.google.android.gms.common.api.ApiException
+import com.google.android.gms.common.api.CommonStatusCodes
+import java.io.IOException
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.suspendCancellableCoroutine
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.Json
@@ -55,12 +59,12 @@ class GoogleAccountAuthorization(
     }
 
     override suspend fun completeAccountSelection(resultIntent: Intent): AuthorizationAttempt = withContext(backgroundDispatcher) {
-        verify(client.getAuthorizationResultFromIntent(resultIntent), pinned = null).toAttempt()
+        verify(authorizationResultFromIntent(resultIntent), pinned = null).toAttempt()
     }
 
     override suspend fun completePinnedAuthorization(resultIntent: Intent, account: SyncAccount): AuthorizationAttempt =
         withContext(backgroundDispatcher) {
-            verify(client.getAuthorizationResultFromIntent(resultIntent), pinned = account).toAttempt()
+            verify(authorizationResultFromIntent(resultIntent), pinned = account).toAttempt()
         }
 
     /** Background runs cannot show consent, so any needed resolution asks the user in the app. */
@@ -135,18 +139,36 @@ class GoogleAccountAuthorization(
             }
             .build()
         return suspendCancellableCoroutine { continuation ->
-            client.authorize(request)
-                .addOnSuccessListener { result -> if (continuation.isActive) continuation.resume(result) }
-                .addOnFailureListener { error -> if (continuation.isActive) continuation.resumeWithException(error) }
+            try {
+                client.authorize(request)
+                    .addOnSuccessListener { result -> if (continuation.isActive) continuation.resume(result) }
+                    .addOnFailureListener { error ->
+                        if (continuation.isActive) continuation.resumeWithException(mapGoogleAuthorizationException(error))
+                    }
+            } catch (error: Exception) {
+                if (continuation.isActive) continuation.resumeWithException(mapGoogleAuthorizationException(error))
+            }
         }
     }
 
     private suspend fun clearToken(token: String) {
         suspendCancellableCoroutine<Unit> { continuation ->
-            client.clearToken(ClearTokenRequest.builder().setToken(token).build())
-                .addOnSuccessListener { if (continuation.isActive) continuation.resume(Unit) }
-                .addOnFailureListener { error -> if (continuation.isActive) continuation.resumeWithException(error) }
+            try {
+                client.clearToken(ClearTokenRequest.builder().setToken(token).build())
+                    .addOnSuccessListener { if (continuation.isActive) continuation.resume(Unit) }
+                    .addOnFailureListener { error ->
+                        if (continuation.isActive) continuation.resumeWithException(mapGoogleAuthorizationException(error))
+                    }
+            } catch (error: Exception) {
+                if (continuation.isActive) continuation.resumeWithException(mapGoogleAuthorizationException(error))
+            }
         }
+    }
+
+    private fun authorizationResultFromIntent(intent: Intent): AuthorizationResult = try {
+        client.getAuthorizationResultFromIntent(intent)
+    } catch (error: Exception) {
+        throw mapGoogleAuthorizationException(error)
     }
 
     private sealed interface Verification {
@@ -162,5 +184,18 @@ class GoogleAccountAuthorization(
     private companion object {
         const val DRIVE_APPDATA = "https://www.googleapis.com/auth/drive.appdata"
         const val USERINFO_URL = "https://openidconnect.googleapis.com/v1/userinfo"
+    }
+}
+
+internal fun mapGoogleAuthorizationException(error: Exception): Exception {
+    if (error is CancellationException) return error
+    val status = (error as? ApiException)?.statusCode ?: return error
+    return when (status) {
+        CommonStatusCodes.NETWORK_ERROR,
+        CommonStatusCodes.INTERNAL_ERROR,
+        CommonStatusCodes.TIMEOUT,
+        CommonStatusCodes.CONNECTION_SUSPENDED_DURING_CALL -> IOException("Temporary Google authorization failure", error)
+        CommonStatusCodes.CANCELED -> CancellationException("Google authorization was cancelled").also { it.initCause(error) }
+        else -> error
     }
 }
