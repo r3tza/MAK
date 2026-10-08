@@ -1,6 +1,6 @@
 # Polityka prywatności MAK
 
-Wersja wstępna z 2026-10-08. Opisuje aplikację razem z opcjonalną synchronizacją Google, która nie należy jeszcze do opublikowanego wydania. Przed publikacją aplikacji w Google Auth Platform ten tekst musi być dostępny pod stałym, publicznym adresem.
+Wersja wstępna z 2026-10-08. Opisuje aplikację razem z opcjonalną synchronizacją Google, która nie należy jeszcze do opublikowanego wydania. Stały adres tej polityki: https://r3tza.github.io/MAK/PRIVACY.html.
 
 ## Najważniejsze
 
