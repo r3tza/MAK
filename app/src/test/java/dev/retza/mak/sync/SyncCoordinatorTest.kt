@@ -424,6 +424,26 @@ class SyncCoordinatorTest {
     }
 
     @Test
+    fun aRequestLimitIsLeftForRetryWithoutAnIssue() = runTest {
+        phone.data = plan("Telefon")
+        drive.failure = DriveHttpException(403, "limit", reason = "userRateLimitExceeded")
+
+        val error = runCatching { coordinator.synchronize() }.exceptionOrNull()
+
+        assertTrue(error is DriveHttpException)
+        assertEquals(null, coordinator.state.value.issue)
+    }
+
+    @Test
+    fun aFullDriveNamesTheMissingSpace() = runTest {
+        phone.data = plan("Telefon")
+        drive.failure = DriveHttpException(403, "full", reason = "storageQuotaExceeded")
+
+        assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
+        assertTrue(coordinator.state.value.issueMessage!!.contains("brakuje miejsca"))
+    }
+
+    @Test
     fun unreadableDriveResponseDoesNotAskToReconnect() = runTest {
         phone.data = plan("Telefon")
         drive.failure = DriveHttpException(0, "unreadable")

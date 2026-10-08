@@ -40,9 +40,24 @@ interface DriveAccessTokenProvider {
     suspend fun invalidate(token: String)
 }
 
-open class DriveHttpException(val statusCode: Int, message: String) : IllegalStateException(message) {
-    /** Network-side failures a later run may pass; 0 marks a response that failed a local check. */
-    fun isTransient(): Boolean = statusCode == 0 || statusCode == 429 || statusCode in 500..599
+/** [reason] is the first `errors[].reason` of a Drive error body, when the body has one. */
+open class DriveHttpException(
+    val statusCode: Int,
+    message: String,
+    val reason: String? = null
+) : IllegalStateException(message) {
+    /**
+     * Network-side failures a later run may pass; 0 marks a response that failed a local check.
+     * Drive also answers 403 when a request limit is exceeded, which passes after a while.
+     */
+    fun isTransient(): Boolean =
+        statusCode == 0 || statusCode == 429 || statusCode in 500..599 || statusCode == 403 && reason in RATE_LIMIT_REASONS
+
+    fun isStorageFull(): Boolean = statusCode == 403 && reason == "storageQuotaExceeded"
+
+    private companion object {
+        val RATE_LIMIT_REASONS = setOf("rateLimitExceeded", "userRateLimitExceeded")
+    }
 }
 
 class DriveResponseTooLargeException : DriveHttpException(0, "Google response is too large")
@@ -191,8 +206,15 @@ class DrivePlanTransport(
 
     private fun checkStatus(response: DriveHttpResponse) {
         if (response.status in 200..299) return
-        throw DriveHttpException(response.status, "Google Drive request failed (${response.status})")
+        throw DriveHttpException(response.status, "Google Drive request failed (${response.status})", errorReason(response.body))
     }
+
+    // An error body that is not Drive JSON leaves the reason unknown; the status still decides.
+    private fun errorReason(body: ByteArray): String? = runCatching {
+        json.parseToJsonElement(body.decodeToString()).jsonObject["error"]?.jsonObject
+            ?.get("errors")?.jsonArray?.firstOrNull()?.jsonObject
+            ?.get("reason")?.jsonPrimitive?.contentOrNull
+    }.getOrNull()
 
     private fun multipart(boundary: String, metadata: ByteArray, content: ByteArray): ByteArray =
         ByteArrayOutputStream().apply {

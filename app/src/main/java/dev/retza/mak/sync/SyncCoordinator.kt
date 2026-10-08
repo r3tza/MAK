@@ -132,7 +132,8 @@ class SyncCoordinator(
             when {
                 error.isTransient() -> throw error
                 error.statusCode == 401 -> authorizationRequired()
-                error.statusCode == 403 -> failed("Dysk Google odmówił dostępu. Sprawdź, czy na koncie jest wolne miejsce.")
+                error.isStorageFull() -> failed("Na Dysku Google brakuje miejsca. Zwolnij miejsce i synchronizuj ponownie.")
+                error.statusCode == 403 -> failed("Dysk Google odmówił dostępu. Jeśli to się powtarza, połącz konto ponownie.")
                 else -> failed(GENERIC_FAILURE)
             }
         } catch (error: CancellationException) {

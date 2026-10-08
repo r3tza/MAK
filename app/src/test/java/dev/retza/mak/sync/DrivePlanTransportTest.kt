@@ -46,6 +46,31 @@ class DrivePlanTransportTest {
     }
 
     @Test
+    fun aForbiddenResponseCarriesItsReason() = runTest {
+        http.respond { _, _ ->
+            DriveHttpResponse(
+                403,
+                """{"error":{"errors":[{"domain":"usageLimits","reason":"rateLimitExceeded"}],"code":403}}""".toByteArray()
+            )
+        }
+
+        val error = runCatching { transport.find(account) }.exceptionOrNull() as DriveHttpException
+
+        assertEquals("rateLimitExceeded", error.reason)
+        assertEquals(true, error.isTransient())
+    }
+
+    @Test
+    fun aForbiddenResponseWithoutDriveJsonHasNoReason() = runTest {
+        http.respond { _, _ -> DriveHttpResponse(403, "Forbidden".toByteArray()) }
+
+        val error = runCatching { transport.find(account) }.exceptionOrNull() as DriveHttpException
+
+        assertEquals(null, error.reason)
+        assertEquals(false, error.isTransient())
+    }
+
+    @Test
     fun oversizedPlanResponseIsAnInvalidRemotePlan() = runTest {
         http.respond { _, _ -> throw DriveResponseTooLargeException() }
 

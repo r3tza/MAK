@@ -10,8 +10,7 @@ Synchronizacja Google (I-68) nie należy jeszcze do opublikowanego wydania. Proj
 
 ### Sprzeczności dokumentacji i pytania po audycie
 
-- `FEATURES.md`, „Ustawienia i dane”, mówi „sieć wyłącznie do aktualizacji z GitHuba, a sama aplikacja nie wysyła danych planu”. `SYNC_PROPOSAL.md`, „Cel i zakres”, mówi „Plan jest przechowywany w ukrytym folderze danych aplikacji na Dysku Google”. Który zapis ma obowiązywać w opisie prywatności tej wersji? Kod ekranu „O aplikacji” opisuje już opcjonalne wysyłanie. Nie rozstrzygnięto sprzeczności.
-- `SYNC_PROPOSAL.md`, „Konto i praca w tle”, klasyfikuje „odmowa dostępu do Dysku (HTTP 403)” jako stan wymagający działania. [Google opisuje również HTTP 403 dla `rateLimitExceeded` i `userRateLimitExceeded`](https://developers.google.com/workspace/drive/api/guides/handle-errors) i zaleca ponawianie z backoffem. Kod realizuje zapisaną regułę, ale dla chwilowego limitu podpowiada sprawdzenie wolnego miejsca. Czy rozróżniać przyczyny 403 i ponawiać błędy limitu? To pytanie o zmianę przyjętego zachowania, nie samodzielnie rozstrzygnięta poprawka.
+Brak otwartych pytań (stan na 2026-10-08).
 
 ## Wymagają odbioru na urządzeniu
 
