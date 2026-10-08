@@ -12,6 +12,7 @@ import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.repository.BackupData
+import dev.retza.mak.sync.ClassField
 import dev.retza.mak.sync.PlanDifference
 import dev.retza.mak.sync.PlanMergeProblem
 import dev.retza.mak.sync.PlanRowKey
@@ -42,6 +43,15 @@ internal class SyncDifferenceLabels(phone: BackupData, drive: BackupData) {
         val row = onPhone ?: onDrive ?: error("A difference has a row on at least one side")
         val side = if (onPhone != null) PlanSide.PHONE else PlanSide.DRIVE
         val title = titleOf(row, side)
+        val field = difference.field
+        if (field != null && onPhone is ClassEntity && onDrive is ClassEntity) {
+            return SyncDifferenceUi(
+                title = title,
+                subtitle = "${fieldLabel(field)}, ${slot(onPhone)}",
+                phone = fieldValue(field, onPhone, PlanSide.PHONE),
+                drive = fieldValue(field, onDrive, PlanSide.DRIVE)
+            )
+        }
         return when (row) {
             is ClassEntity -> classDifference(title, onPhone as ClassEntity?, onDrive as ClassEntity?)
             else -> SyncDifferenceUi(
@@ -131,39 +141,40 @@ internal class SyncDifferenceLabels(phone: BackupData, drive: BackupData) {
         return parts.joinToString(", ").replaceFirstChar { it.uppercase() }.ifEmpty { "Zmienione" }
     }
 
+    /** A class on one side only; a class on both sides differs field by field. */
     private fun classDifference(title: String, onPhone: ClassEntity?, onDrive: ClassEntity?): SyncDifferenceUi {
         val any = onPhone ?: onDrive!!
-        if (onPhone == null || onDrive == null) {
-            return SyncDifferenceUi(
-                title = title,
-                subtitle = "Zajęcia, ${slot(any)}",
-                phone = onPhone?.let(::classSummary) ?: MISSING,
-                drive = onDrive?.let(::classSummary) ?: MISSING
-            )
-        }
-        val fields = classFields(onPhone, PlanSide.PHONE).zip(classFields(onDrive, PlanSide.DRIVE))
-            .filter { (phone, drive) -> phone.second != drive.second }
         return SyncDifferenceUi(
             title = title,
-            subtitle = (fields.map { it.first.first } + slot(onPhone)).joinToString(", "),
-            phone = fields.joinToString("; ") { it.first.second ?: "brak" },
-            drive = fields.joinToString("; ") { it.second.second ?: "brak" }
+            subtitle = "Zajęcia, ${slot(any)}",
+            phone = onPhone?.let(::classSummary) ?: MISSING,
+            drive = onDrive?.let(::classSummary) ?: MISSING
         )
     }
 
-    /** Label and value of every field the user edits, in the order of the class form. */
-    private fun classFields(row: ClassEntity, side: PlanSide): List<Pair<String, String?>> = listOf(
-        "Nazwa" to row.name,
-        "Kierunek" to assignmentProgramName(row.semesterProgramId, side),
-        "Typ" to row.type,
-        "Termin" to slot(row),
-        "Tygodnie" to recurrence(row),
-        "Prowadzący" to row.teacherName,
-        "Sala" to row.room,
-        "Budynek" to row.building,
-        "Grupa" to row.group,
-        "Notatka do zajęć" to row.classNote
-    )
+    private fun fieldLabel(field: ClassField) = when (field) {
+        ClassField.NAME -> "Nazwa"
+        ClassField.PROGRAM -> "Kierunek"
+        ClassField.TYPE -> "Typ"
+        ClassField.SLOT -> "Termin"
+        ClassField.TEACHER -> "Prowadzący"
+        ClassField.ROOM -> "Sala"
+        ClassField.BUILDING -> "Budynek"
+        ClassField.GROUP -> "Grupa"
+        ClassField.NOTE -> "Notatka do zajęć"
+    }
+
+    private fun fieldValue(field: ClassField, row: ClassEntity, side: PlanSide): String = when (field) {
+        ClassField.NAME -> row.name
+        ClassField.PROGRAM -> assignmentProgramName(row.semesterProgramId, side)
+        ClassField.TYPE -> row.type
+        ClassField.SLOT -> "${slot(row)}, ${recurrence(row)}"
+        ClassField.TEACHER -> row.teacherName
+        ClassField.ROOM -> row.room
+        ClassField.BUILDING -> row.building
+        ClassField.GROUP -> row.group
+        ClassField.NOTE -> row.classNote
+    }?.takeIf { it.isNotBlank() } ?: EMPTY_FIELD
 
     private fun classSummary(row: ClassEntity) =
         listOfNotNull(slot(row), recurrence(row), row.room?.let { "sala $it" }).joinToString(", ")
@@ -184,6 +195,7 @@ internal class SyncDifferenceLabels(phone: BackupData, drive: BackupData) {
 
     private companion object {
         const val MISSING = "Brak"
+        const val EMPTY_FIELD = "Puste"
         val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMMM", polishLocale)
         val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
     }

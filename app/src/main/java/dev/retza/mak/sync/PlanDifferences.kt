@@ -26,15 +26,63 @@ enum class PlanSide { PHONE, DRIVE }
 /**
  * One row that differs between the phone plan and the Drive plan. A side's key is null when the
  * row is missing there. [collision] marks two entries added independently under the same number:
- * each becomes its own difference, so one of the keys is always null.
+ * each becomes its own difference, so one of the keys is always null. A class present on both
+ * sides differs field by field: each changed [field] is its own difference, so a room from one
+ * phone and a note from the other can both stay.
  */
 @Serializable
 data class PlanDifference(
     val key: PlanRowKey,
     val phoneKey: PlanRowKey?,
     val driveKey: PlanRowKey?,
-    val collision: Boolean = false
+    val collision: Boolean = false,
+    val field: ClassField? = null
 )
+
+/** Parts of a class the user edits separately; the slot keeps day, times, date and weeks together. */
+@Serializable
+enum class ClassField {
+    NAME,
+    PROGRAM,
+    TYPE,
+    SLOT,
+    TEACHER,
+    ROOM,
+    BUILDING,
+    GROUP,
+    NOTE;
+
+    internal fun read(row: ClassEntity): Any? = when (this) {
+        NAME -> row.name
+        PROGRAM -> row.semesterProgramId
+        TYPE -> row.type
+        SLOT -> listOf(row.dayOfWeek, row.startTime, row.endTime, row.date, row.recurrence)
+        TEACHER -> row.teacherName
+        ROOM -> row.room
+        BUILDING -> row.building
+        GROUP -> row.group
+        NOTE -> row.classNote
+    }
+
+    /** [into] with this field taken from [from]. */
+    internal fun copy(from: ClassEntity, into: ClassEntity): ClassEntity = when (this) {
+        NAME -> into.copy(name = from.name)
+        PROGRAM -> into.copy(semesterProgramId = from.semesterProgramId)
+        TYPE -> into.copy(type = from.type)
+        SLOT -> into.copy(
+            dayOfWeek = from.dayOfWeek,
+            startTime = from.startTime,
+            endTime = from.endTime,
+            date = from.date,
+            recurrence = from.recurrence
+        )
+        TEACHER -> into.copy(teacherName = from.teacherName)
+        ROOM -> into.copy(room = from.room)
+        BUILDING -> into.copy(building = from.building)
+        GROUP -> into.copy(group = from.group)
+        NOTE -> into.copy(classNote = from.classNote)
+    }
+}
 
 /**
  * Rows of [phone] and [drive] compared by number. [base] is the plan both sides had after the
@@ -54,6 +102,9 @@ fun planDifferences(phone: BackupData, drive: BackupData, base: BackupData): Lis
                 differences += PlanDifference(key, phoneKey = key, driveKey = null, collision = true)
                 differences += PlanDifference(key, phoneKey = null, driveKey = key, collision = true)
             }
+            onPhone is ClassEntity && onDrive is ClassEntity -> ClassField.entries
+                .filter { it.read(onPhone) != it.read(onDrive) }
+                .forEach { differences += PlanDifference(key, phoneKey = key, driveKey = key, field = it) }
             else -> differences += PlanDifference(
                 key,
                 phoneKey = key.takeIf { onPhone != null },
@@ -103,4 +154,5 @@ private fun differenceOrder(
         .thenBy { it.key.kind.ordinal }
         .thenBy { it.key.id }
         .thenBy { if (it.phoneKey != null) 0 else 1 }
+        .thenBy { it.field?.ordinal ?: -1 }
 }

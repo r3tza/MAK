@@ -34,6 +34,19 @@ class PlanMergeTest {
     }
 
     @Test
+    fun theRoomFromDriveAndTheClassNoteFromThePhoneBothStay() {
+        val base = basePlan()
+        val phone = basePlan(classes = listOf(classRow(1, "Konsultacje", DayOfWeek.THURSDAY, 16).copy(classNote = "Telefon")))
+        val drive = basePlan(classes = listOf(classRow(1, "Konsultacje", DayOfWeek.THURSDAY, 16, room = "B204")))
+
+        val merged = merge(phone, drive, base) { if (it.field == ClassField.ROOM) PlanSide.DRIVE else PlanSide.PHONE }.data()
+
+        val saved = merged.semesters.single().classes.single()
+        assertEquals("B204", saved.room)
+        assertEquals("Telefon", saved.classNote)
+    }
+
+    @Test
     fun keepingBothCollidingClassesRenumbersTheDriveOneAndItsNote() {
         val base = basePlan()
         val shared = base.semesters[0].classes

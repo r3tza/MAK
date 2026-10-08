@@ -69,6 +69,14 @@ fun mergePlans(
                     origin.remove(key)
                 }
             }
+            difference.field != null -> {
+                // The row keeps the phone's number and references; only the picked field may come from Drive.
+                differenceOf.putIfAbsent(Origin(key, PlanSide.PHONE), difference)
+                if (side == PlanSide.DRIVE) {
+                    val current = result.getValue(key) as ClassEntity
+                    result[key] = difference.field.copy(from = driveRows.getValue(key) as ClassEntity, into = current)
+                }
+            }
             difference.collision -> {
                 differenceOf[Origin(key, PlanSide.DRIVE)] = difference
                 if (side == PlanSide.DRIVE) {

@@ -33,6 +33,18 @@ class PlanDifferencesTest {
     }
 
     @Test
+    fun aClassChangedOnBothSidesDiffersFieldByField() {
+        val base = basePlan()
+        val phone = basePlan(classes = listOf(classRow(1, "Konsultacje", DayOfWeek.THURSDAY, 16).copy(classNote = "Telefon")))
+        val drive = basePlan(classes = listOf(classRow(1, "Konsultacje", DayOfWeek.THURSDAY, 16, room = "B204")))
+
+        val differences = planDifferences(phone, drive, base)
+
+        assertEquals(listOf(ClassField.ROOM, ClassField.NOTE), differences.map { it.field })
+        assertTrue(differences.all { it.phoneKey != null && it.driveKey != null })
+    }
+
+    @Test
     fun classesAddedOnBothSidesUnderOneNumberAreTwoCollisions() {
         val base = basePlan()
         val phone = basePlan(classes = basePlan().semesters[0].classes + classRow(2, "Bazy danych", DayOfWeek.MONDAY, 12))

@@ -4,8 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
@@ -89,8 +92,11 @@ private fun DifferenceChoice(
         verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
         DifferenceHeading(difference)
+        // Both options take the height of the taller one, so the pair reads as one choice.
         Row(
-            modifier = Modifier.selectableGroup(),
+            modifier = Modifier
+                .height(IntrinsicSize.Min)
+                .selectableGroup(),
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
         ) {
             SideOption("Telefon", difference.phone, picked == PlanSide.PHONE, Modifier.weight(1f)) { onPick(PlanSide.PHONE) }
@@ -111,6 +117,7 @@ private fun SideOption(
     val colors = MaterialTheme.colorScheme
     Column(
         modifier = modifier
+            .fillMaxHeight()
             .heightIn(min = 64.dp)
             .clip(shape)
             .background(if (selected) colors.primaryContainer else colors.surface)
