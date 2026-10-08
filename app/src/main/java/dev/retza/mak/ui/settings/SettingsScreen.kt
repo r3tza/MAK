@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDialog
+import dev.retza.mak.ui.components.MakDialogAction
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakNoteBanner
@@ -647,10 +648,9 @@ fun SettingsDataScreen(
         MakDialog(
             title = "Nie udało się zaimportować",
             description = state.importErrorMessage,
-            onDismiss = onDismissImportError
-        ) {
-            MakSecondaryAction(text = "Zamknij", onClick = onDismissImportError)
-        }
+            onDismiss = onDismissImportError,
+            dismissAction = MakDialogAction("Zamknij", onDismissImportError)
+        )
     }
 }
 
