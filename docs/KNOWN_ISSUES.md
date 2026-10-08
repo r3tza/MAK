@@ -1,17 +1,16 @@
 # Znane problemy
 
-Stan na 2026-10-02. Ten rejestr obejmuje otwarte problemy potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`, a zadania i statusy `QUEUE.md`. Naprawione problemy nie są tu powtarzane; ich historia jest w sekcji „Zakończone” w `QUEUE.md` i w `LOG.md`.
+Stan na 2026-10-08. Ten rejestr obejmuje otwarte problemy potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`, a zadania i statusy `QUEUE.md`. Naprawione problemy nie są tu powtarzane; ich historia jest w sekcji „Zakończone” w `QUEUE.md` i w `LOG.md`.
 
 ## Otwarte problemy
 
-Poprawki z audytu synchronizacji I-70 zostały zakończone i zaakceptowane po recenzji 2026-10-02. Rzeczywiste OAuth i Drive przeszły odbiór I-69 na wersji debug 2026-10-08; brakuje sprawdzenia klienta OAuth release. Pozostałe dwie kwestie z audytu interfejsu (obramowane przyciski ikon w górnym pasku i trzy style zaznaczenia na „Planie”) użytkownik zamknął bez zmian (`LOG.md`, 2026-09-29).
+Poprawki z audytu synchronizacji I-70 zostały zakończone i zaakceptowane po recenzji 2026-10-02. Rzeczywiste OAuth i Drive przeszły odbiór I-69 na wersji debug 2026-10-08. Klient OAuth release jest skonfigurowany, ale nie był sprawdzony na podpisanym APK; użytkownik zamknął I-69 bez tego testu, więc pierwsze wydanie z synchronizacją wymaga sprawdzenia logowania. Pozostałe dwie kwestie z audytu interfejsu (obramowane przyciski ikon w górnym pasku i trzy style zaznaczenia na „Planie”) użytkownik zamknął bez zmian (`LOG.md`, 2026-09-29).
 
 Synchronizacja Google (I-68) nie należy jeszcze do opublikowanego wydania. Projekt Google Cloud działa w trybie Testing, więc logować mogą się tylko konta z listy testowej; publikacja aplikacji w Google Auth Platform jest osobną decyzją przed wydaniem. Świadome ograniczenie projektu: Drive nie ma warunkowego zapisu, więc przy niemal równoczesnym wysłaniu z dwóch telefonów zostaje późniejsza wersja, a druga trafia do archiwum telefonu przy kolejnej synchronizacji. Szkic zajęć odtworzony po zakończeniu procesu aplikacji nie wstrzymuje pobrania planu; jeśli w tym czasie inny telefon zmienił plan, zapis szkicu może trafić do wpisu o tym samym numerze.
 
 ### Sprzeczności dokumentacji i pytania po audycie
 
 - `FEATURES.md`, „Ustawienia i dane”, mówi „sieć wyłącznie do aktualizacji z GitHuba, a sama aplikacja nie wysyła danych planu”. `SYNC_PROPOSAL.md`, „Cel i zakres”, mówi „Plan jest przechowywany w ukrytym folderze danych aplikacji na Dysku Google”. Który zapis ma obowiązywać w opisie prywatności tej wersji? Kod ekranu „O aplikacji” opisuje już opcjonalne wysyłanie. Nie rozstrzygnięto sprzeczności.
-- `PRIVACY.md`, „Opcjonalna synchronizacja Google”, mówi „Gdy synchronizacja zastępuje plan na telefonie albo na Dysku, poprzednia wersja trafia do archiwum na telefonie”. `SYNC_PROPOSAL.md`, „Przebieg synchronizacji”, mówi „Plan, który telefon tylko przyjął od drugiego telefonu, nie trafia do archiwum”. Czy opis prywatności ma podawać tę węższą regułę archiwum? Nie zmieniono reguły ani obu opisów.
 - `SYNC_PROPOSAL.md`, „Konto i praca w tle”, klasyfikuje „odmowa dostępu do Dysku (HTTP 403)” jako stan wymagający działania. [Google opisuje również HTTP 403 dla `rateLimitExceeded` i `userRateLimitExceeded`](https://developers.google.com/workspace/drive/api/guides/handle-errors) i zaleca ponawianie z backoffem. Kod realizuje zapisaną regułę, ale dla chwilowego limitu podpowiada sprawdzenie wolnego miejsca. Czy rozróżniać przyczyny 403 i ponawiać błędy limitu? To pytanie o zmianę przyjętego zachowania, nie samodzielnie rozstrzygnięta poprawka.
 
 ## Wymagają odbioru na urządzeniu

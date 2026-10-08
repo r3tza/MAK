@@ -1,27 +1,55 @@
-# Dane i prywatność MAK
+# Polityka prywatności MAK
 
-Projekt opisu dla rozszerzenia synchronizacji, stan na 2026-09-30. Funkcja jest w implementacji i nie należy jeszcze do opublikowanego wydania. Przed uruchomieniem projektu Google opublikuj adres tego opisu razem z działającą wersją funkcji.
+Wersja wstępna z 2026-10-08. Opisuje aplikację razem z opcjonalną synchronizacją Google, która nie należy jeszcze do opublikowanego wydania. Przed publikacją aplikacji w Google Auth Platform ten tekst musi być dostępny pod stałym, publicznym adresem.
 
-MAK zapisuje plan zajęć i ustawienia na urządzeniu. Możesz korzystać z planu i go edytować bez konta oraz bez internetu. Aplikacja nie ma własnego serwera ani kont MAK.
+## Najważniejsze
+
+- MAK działa na telefonie. Plan i ustawienia możesz tworzyć i edytować bez konta i bez internetu.
+- MAK nie ma własnego serwera ani kont MAK. Autor aplikacji nie otrzymuje Twojego planu ani danych konta.
+- Aplikacja nie zawiera reklam, analityki ani narzędzi śledzących.
+- Połączenia z internetem nawiązuje tylko w dwóch przypadkach opisanych niżej: synchronizacja z Google, gdy ją włączysz, i sprawdzanie aktualizacji na GitHubie.
+
+## Dane na telefonie
+
+MAK zapisuje na urządzeniu plan zajęć: kierunki, semestry, kalendarze akademickie, zajęcia, korekty tygodni, zmiany terminów i notatki. Mogą się w nich znaleźć wpisane przez Ciebie nazwy prowadzących, sale i budynki. Na telefonie są też ustawienia: motyw, aktywny semestr, powiadomienia o kolizjach i sprawdzanie aktualizacji.
+
+Powiadomienia o kolizjach i widget powstają na telefonie z tych samych danych i nigdzie ich nie wysyłają.
+
+Ręczny eksport JSON zapisuje plan w miejscu, które sam wybierzesz. Za taki plik odpowiadasz Ty.
 
 ## Opcjonalna synchronizacja Google
 
-Synchronizacja jest domyślnie wyłączona. Po wybraniu „Połącz konto Google” aplikacja prosi o dostęp do własnego, ukrytego folderu danych na Twoim Dysku Google oraz informacje potrzebne do rozpoznania wybranego konta. Nie wymaga dostępu do pozostałych plików na Dysku.
+Synchronizacja jest domyślnie wyłączona. Włączasz ją przyciskiem „Połącz konto Google” w ustawieniach.
 
-Na konto trafiają kierunki, semestry, kalendarze akademickie, zajęcia, korekty tygodni, zmiany terminów i notatki. Dane mogą obejmować wpisane przez Ciebie nazwy prowadzących, sale i budynki. Motyw, aktywny semestr i ustawienia powiadomień pozostają na telefonie.
+**Zakres dostępu.** Aplikacja prosi Google o trzy uprawnienia:
 
-W folderze aplikacji jest jeden plik z aktualnym planem. Folder jest przechowywany przez Google według zasad tej usługi. MAK nie zapewnia dodatkowego szyfrowania od końca do końca dla synchronizacji.
+- dostęp do własnego, ukrytego folderu danych aplikacji na Twoim Dysku Google (`drive.appdata`); MAK nie widzi pozostałych plików na Dysku i nie ma do nich dostępu,
+- identyfikator konta Google (`openid`), żeby rozpoznać, że łączysz to samo konto,
+- adres e-mail (`email`), żeby pokazać, które konto jest połączone.
 
-Aplikacja przechowuje na telefonie informację o wybranym koncie i stan synchronizacji. Krótkotrwały token dostępu jest używany w pamięci, bez zapisywania go w plikach lub kopii Androida. Gdy synchronizacja zastępuje plan na telefonie albo na Dysku, poprzednia wersja trafia do archiwum na telefonie (10 ostatnich wersji), skąd możesz ją wyeksportować. Stan synchronizacji i archiwum pozostają poza systemową kopią zapasową.
+**Co trafia na Dysk.** W folderze aplikacji jest jeden plik z aktualnym planem: kierunki, semestry, kalendarze, zajęcia, korekty tygodni, zmiany terminów i notatki. Ustawienia aplikacji i aktywny semestr zostają na telefonie. Plik przechowuje Google na zasadach swojej usługi. MAK nie dodaje do synchronizacji własnego szyfrowania.
 
-Wyłączenie synchronizacji pozostawia plan na telefonie. Możesz zachować kopię na koncie albo wybrać trwałe usunięcie pliku MAK z Dysku. Inny połączony telefon może później ponownie wysłać swoje dane. Samo wyłączenie nie usuwa archiwum poprzednich wersji; usuwa je wyczyszczenie danych aplikacji lub odinstalowanie. Wersje wyeksportowane do własnego pliku usuń osobno.
+**Co zostaje na telefonie.** Aplikacja zapisuje:
 
-## Pozostałe połączenia i kopie
+- identyfikator i adres e-mail połączonego konta oraz stan synchronizacji, w tym czas ostatniej synchronizacji i czas ostatniej zmiany planu na telefonie,
+- kopię planu z ostatniej udanej synchronizacji; służy do pokazania, co się różni, gdy plan zmieni się na dwóch telefonach,
+- na czas otwartego pytania o wybór wersji kopię planu z Dysku, żeby pokazać różnice bez ponownego pobierania,
+- archiwum do 10 ostatnich wersji planu, które synchronizacja zastąpiła i które mogłyby zostać utracone: wersji odrzuconej przy wyborze, obu poprzednich wersji przy wyborze pojedynczych zmian oraz planu wysłanego wcześniej z tego telefonu, gdy przychodzi nowszy z Dysku. Plan, który telefon tylko przyjął od innego telefonu, do archiwum nie trafia. Wersje z archiwum możesz wyeksportować.
 
-Sprawdzanie aktualizacji łączy się z GitHubem i nie wysyła planu. Automatyczne sprawdzanie jest domyślnie wyłączone.
+Token dostępu Google jest krótkotrwały i aplikacja trzyma go tylko w pamięci. Stan synchronizacji, kopie planu i archiwum są wyłączone z systemowej kopii zapasowej Androida.
 
-Android może wykonywać systemową kopię bazy planu oraz ustawień i odtworzyć ją po reinstalacji lub na nowym telefonie. Kopia w chmurze wymaga szyfrowania obsługiwanego przez urządzenie. Jej ustawieniami zarządzasz w Androidzie. Ręczny eksport JSON zapisuje plan w wybranym przez Ciebie miejscu.
+**Wyłączenie i usunięcie.** Wyłączenie synchronizacji zostawia plan na telefonie i usuwa z telefonu stan synchronizacji oraz kopie planu. Możesz przy tym zachować plik na Dysku albo go trwale usunąć. Inny telefon połączony z tym samym kontem może później wysłać plan ponownie. Archiwum poprzednich wersji znika po wyczyszczeniu danych aplikacji albo jej odinstalowaniu. Dostęp MAK do konta możesz też cofnąć w ustawieniach konta Google, na stronie [Połączenia z aplikacjami innych firm](https://myaccount.google.com/connections).
 
-Po przywróceniu kopii Androida lub ponownej instalacji MAK wymaga ponownego połączenia konta przed synchronizacją. Brak zdalnej kopii sam nie usuwa lokalnego planu.
+## Sprawdzanie aktualizacji
 
-Pytania o dane możesz zgłosić przez [zgłoszenia projektu MAK](https://github.com/r3tza/MAK/issues). Nie umieszczaj w publicznym zgłoszeniu swojego planu ani danych konta.
+MAK może sprawdzać, czy na GitHubie jest nowa wersja aplikacji, i pobrać ją po Twojej decyzji. Ręczne sprawdzenie uruchamiasz w ustawieniach. Automatyczne sprawdzanie jest domyślnie wyłączone; po włączeniu działa przy uruchomieniu aplikacji, raz dziennie.
+
+Zapytanie nie zawiera planu ani identyfikatora użytkownika. Jak przy każdym połączeniu z internetem, GitHub widzi adres IP urządzenia i podstawowe informacje o zapytaniu. Ich przetwarzanie opisuje polityka prywatności GitHuba.
+
+## Systemowa kopia zapasowa Androida
+
+Android może zapisać kopię bazy planu i ustawień aplikacji i odtworzyć ją po ponownej instalacji albo na nowym telefonie. Kopią w chmurze zarządzasz w ustawieniach Androida; jej przechowywanie zależy od dostawcy kopii. Po odtworzeniu kopii albo ponownej instalacji MAK wymaga ponownego połączenia konta Google przed synchronizacją.
+
+## Zmiany i kontakt
+
+O zmianach tej polityki informują notatki wydania aplikacji. Pytania o dane możesz zgłosić przez [zgłoszenia projektu MAK](https://github.com/r3tza/MAK/issues). Nie umieszczaj w publicznym zgłoszeniu swojego planu ani danych konta.

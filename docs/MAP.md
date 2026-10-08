@@ -22,7 +22,7 @@ Zacznij od pytania, które rozwiązuje zadanie. Otwórz wskazany dokument i potr
 | Co zostało wydane użytkownikom? | [CHANGELOG.md](CHANGELOG.md): techniczna historia wydań, nie bieżąca kolejka prac. Notatki dla użytkowników są w `app/src/main/assets/release_notes.json` ([STACK.md](STACK.md), sekcja „Wydania i licencja”) |
 | Jakie braki potwierdzono w obecnym kodzie? | [KNOWN_ISSUES.md](KNOWN_ISSUES.md): otwarte problemy i brakujący odbiór, nie docelowa specyfikacja |
 | Jak pisać komunikaty i dokumentację? | [WRITING.md](WRITING.md): język, styl i zasady redakcyjne |
-| Jakie dane obejmuje opcjonalna synchronizacja i co opublikować do konfiguracji Google? | [PRIVACY.md](PRIVACY.md): projekt opisu prywatności; konfiguracja i odbiór konta pozostają w I-69 |
+| Jakie dane obejmuje opcjonalna synchronizacja i co opublikować do konfiguracji Google? | [PRIVACY.md](PRIVACY.md): wstępna polityka prywatności aplikacji z synchronizacją; konfigurację Google opisuje [STACK.md](STACK.md), „Konfiguracja synchronizacji Google” |
 | Jak recenzować commit albo etap planu? | [mak-code-review](../.cursor/skills/mak-code-review/SKILL.md): kryteria recenzji i podział pracy z Composerem |
 | Czy dokumenty są spójne (linki, limity planu i logu, kolejka)? | `scripts/check_map.py`; testy `scripts/test_check_map.py`. Uruchomienie: [AGENTS.md](../AGENTS.md) i [WORKFLOW.md](WORKFLOW.md) |
 
