@@ -58,6 +58,7 @@ import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.MakCheckbox
 import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakDialog
+import dev.retza.mak.ui.components.MakDialogAction
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakRoundButton
@@ -650,7 +651,9 @@ private fun WeekCorrectionDialog(
     MakDialog(
         title = "Zmień tydzień A/B",
         description = "Wybierz oznaczenie i zakres zmiany. W każdym momencie możesz wrócić do automatycznego planu.",
-        onDismiss = onDismiss
+        onDismiss = onDismiss,
+        dismissAction = MakDialogAction("Anuluj", onDismiss),
+        confirmAction = MakDialogAction("Zapisz", { onSave(type, scope) })
     ) {
         MakSelectField(
             label = "Oznaczenie tygodnia",
@@ -677,9 +680,5 @@ private fun WeekCorrectionDialog(
             onClick = { onClear(scope) },
             enabled = if (scope == WeekOverrideScopeUi.ONE_WEEK) hasOneWeekCorrection else hasFromWeekCorrection
         )
-        Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
-            MakSecondaryAction(text = "Anuluj", onClick = onDismiss, modifier = Modifier.weight(1f))
-            MakPrimaryAction(text = "Zapisz", onClick = { onSave(type, scope) }, modifier = Modifier.weight(1f))
-        }
     }
 }

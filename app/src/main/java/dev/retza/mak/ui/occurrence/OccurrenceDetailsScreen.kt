@@ -35,6 +35,7 @@ import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDialog
+import dev.retza.mak.ui.components.MakDialogAction
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakFactRow
 import dev.retza.mak.ui.components.MakField
@@ -175,7 +176,9 @@ private fun OccurrenceEditDialog(
     MakDialog(
         title = "Edytuj ten termin",
         description = "Zmiany dotyczą tylko tego terminu. Pozostałe wystąpienia zajęć pozostaną bez zmian.",
-        onDismiss = { if (!state.isSaving) onDismiss() }
+        onDismiss = { if (!state.isSaving) onDismiss() },
+        dismissAction = MakDialogAction("Anuluj", onDismiss, enabled = !state.isSaving),
+        confirmAction = MakDialogAction("Zapisz", onSave, enabled = state.canSaveOccurrenceEdit && !state.isSaving)
     ) {
         Column(
             modifier = Modifier
@@ -218,20 +221,6 @@ private fun OccurrenceEditDialog(
             )
         }
         FieldError(state.draftError?.let(::FieldErrorUi))
-        Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm), modifier = Modifier.fillMaxWidth()) {
-            MakSecondaryAction(
-                text = "Anuluj",
-                onClick = onDismiss,
-                modifier = Modifier.weight(1f),
-                enabled = !state.isSaving
-            )
-            MakPrimaryAction(
-                text = "Zapisz",
-                onClick = onSave,
-                modifier = Modifier.weight(1f),
-                enabled = state.canSaveOccurrenceEdit && !state.isSaving
-            )
-        }
     }
 }
 

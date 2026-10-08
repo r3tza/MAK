@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import dev.retza.mak.sync.SyncChoice
 import dev.retza.mak.ui.components.MakBannerAction
 import dev.retza.mak.ui.components.MakDialog
+import dev.retza.mak.ui.components.MakDialogAction
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakNoteBanner
 import dev.retza.mak.ui.components.MakNoteRole
@@ -149,7 +150,10 @@ fun SyncScreen(
         MakDialog(
             title = "Którą wersję zachować?",
             description = "Odrzuconą wersję znajdziesz w „Poprzednie wersje”, skąd możesz ją wyeksportować.",
-            onDismiss = onDismissChoice
+            onDismiss = onDismissChoice,
+            dismissAction = MakDialogAction("Później", onDismissChoice),
+            confirmAction = MakDialogAction("Zachowaj plan z telefonu", { onChoose(SyncChoice.KEEP_PHONE) }),
+            choices = listOf(MakDialogAction("Zachowaj plan z Dysku", { onChoose(SyncChoice.KEEP_DRIVE) }))
         ) {
             // Counts tell little when the content changed, so they give way to the list of differences.
             val withDifferences = choice.differences.isNotEmpty()
@@ -174,9 +178,6 @@ fun SyncScreen(
                 DifferenceList(choice.differences.take(DIALOG_DIFFERENCES))
                 MakTextAction(text = "Wybierz zmiany", onClick = onOpenChanges)
             }
-            MakPrimaryAction(text = "Zachowaj plan z telefonu", onClick = { onChoose(SyncChoice.KEEP_PHONE) })
-            MakSecondaryAction(text = "Zachowaj plan z Dysku", onClick = { onChoose(SyncChoice.KEEP_DRIVE) })
-            MakSecondaryAction(text = "Później", onClick = onDismissChoice)
         }
     }
     if (state.showDisconnectDialog) {
@@ -184,12 +185,11 @@ fun SyncScreen(
             title = "Wyłączyć synchronizację?",
             description = "Plan zostanie na tym telefonie. Jeśli usuniesz kopię z Dysku, inny połączony telefon " +
                 "może ją wysłać ponownie.",
-            onDismiss = onDismissDisconnect
-        ) {
-            MakPrimaryAction(text = "Wyłącz i zachowaj kopię na Dysku", onClick = { onDisconnect(false) })
-            MakSecondaryAction(text = "Wyłącz i usuń kopię z Dysku", onClick = { onDisconnect(true) }, destructive = true)
-            MakSecondaryAction(text = "Anuluj", onClick = onDismissDisconnect)
-        }
+            onDismiss = onDismissDisconnect,
+            dismissAction = MakDialogAction("Anuluj", onDismissDisconnect),
+            confirmAction = MakDialogAction("Wyłącz i zachowaj kopię na Dysku", { onDisconnect(false) }),
+            choices = listOf(MakDialogAction("Wyłącz i usuń kopię z Dysku", { onDisconnect(true) }, destructive = true))
+        )
     }
 }
 

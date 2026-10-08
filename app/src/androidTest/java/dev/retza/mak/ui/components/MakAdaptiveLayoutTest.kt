@@ -71,7 +71,7 @@ class MakAdaptiveLayoutTest {
             // At density 1 the phone screen is over 1000 dp wide, wider than the dialog limit.
             CompositionLocalProvider(LocalDensity provides Density(1f)) {
                 MAKTheme(dynamicColor = false) {
-                    MakDialog(title = "Zmień termin", onDismiss = {}) {
+                    MakDialog(title = "Zmień termin", onDismiss = {}, dismissAction = MakDialogAction("Anuluj", {})) {
                         repeat(60) { Text("Wiersz $it") }
                         Box(Modifier.fillMaxWidth().height(1.dp).testTag("dialog-content"))
                     }

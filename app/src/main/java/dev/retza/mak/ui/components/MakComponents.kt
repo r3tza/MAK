@@ -735,11 +735,12 @@ fun MakPrimaryAction(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
-    enabled: Boolean = true
+    enabled: Boolean = true,
+    fillWidth: Boolean = true
 ) {
     Button(
         onClick = onClick,
-        modifier = modifier.fillMaxWidth().heightIn(min = 48.dp),
+        modifier = modifier.then(if (fillWidth) Modifier.fillMaxWidth() else Modifier).heightIn(min = 48.dp),
         enabled = enabled,
         shape = RoundedCornerShape(12.dp),
         colors = ButtonDefaults.buttonColors(
@@ -1371,12 +1372,28 @@ fun MakCheckbox(
     }
 }
 
+/** An action of [MakDialog]; the dialog decides how it looks. */
+data class MakDialogAction(
+    val text: String,
+    val onClick: () -> Unit,
+    val enabled: Boolean = true,
+    val destructive: Boolean = false
+)
+
+/**
+ * The dialog draws its own actions below [content]. [dismissAction] leaves without a change and is a
+ * text button. With [confirmAction] alone the two share a row at the end, dismissal first. With
+ * [choices] the actions stack: [confirmAction] filled, each choice outlined, dismissal last at the start.
+ */
 @Composable
 fun MakDialog(
     title: String,
     description: String? = null,
     onDismiss: () -> Unit,
-    content: @Composable ColumnScope.() -> Unit
+    dismissAction: MakDialogAction,
+    confirmAction: MakDialogAction? = null,
+    choices: List<MakDialogAction> = emptyList(),
+    content: @Composable ColumnScope.() -> Unit = {}
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Column(
@@ -1400,7 +1417,35 @@ fun MakDialog(
                 )
             }
             content()
+            MakDialogActions(dismissAction, confirmAction, choices)
         }
+    }
+}
+
+@Composable
+private fun MakDialogActions(
+    dismissAction: MakDialogAction,
+    confirmAction: MakDialogAction?,
+    choices: List<MakDialogAction>
+) {
+    val dismiss = @Composable {
+        MakTextAction(dismissAction.text, dismissAction.onClick, enabled = dismissAction.enabled)
+    }
+    if (confirmAction != null && choices.isEmpty()) {
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(MakSpacing.md, Alignment.End),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            dismiss()
+            MakPrimaryAction(confirmAction.text, confirmAction.onClick, enabled = confirmAction.enabled, fillWidth = false)
+        }
+    } else {
+        confirmAction?.let { MakPrimaryAction(it.text, it.onClick, enabled = it.enabled) }
+        choices.forEach {
+            MakSecondaryAction(it.text, it.onClick, enabled = it.enabled, destructive = it.destructive)
+        }
+        dismiss()
     }
 }
 
