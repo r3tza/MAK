@@ -16,6 +16,7 @@ import dev.retza.mak.sync.FileSyncStateStore
 import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.sync.PlanSyncGateway
 import dev.retza.mak.sync.SyncArchive
+import dev.retza.mak.sync.SyncBaseCopy
 import dev.retza.mak.sync.SyncCoordinator
 import dev.retza.mak.sync.UrlConnectionDriveHttpClient
 import java.io.File
@@ -74,7 +75,8 @@ class AppModule {
         archive = SyncArchive(File(context.noBackupFilesDir, "google-sync/archive")),
         editTracker = editTracker,
         clock = clock,
-        ioDispatcher = Dispatchers.IO
+        ioDispatcher = Dispatchers.IO,
+        baseCopy = SyncBaseCopy(File(context.noBackupFilesDir, "google-sync/base.json"))
     )
 
     @Single

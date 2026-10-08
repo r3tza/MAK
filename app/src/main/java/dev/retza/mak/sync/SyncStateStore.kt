@@ -12,7 +12,11 @@ data class PendingSyncChoice(
     val localFingerprint: String,
     val remoteMd5: String,
     val local: PlanSummary,
-    val remote: PlanSummary
+    val remote: PlanSummary,
+    val phoneChangedAtMillis: Long? = null,
+    val driveChangedAtMillis: Long? = null,
+    // Empty without a shared plan from the last run: then only a whole version can be kept.
+    val differences: List<PlanDifference> = emptyList()
 )
 
 @Serializable
@@ -33,7 +37,9 @@ data class SyncState(
     val lastRunUploaded: Boolean = false,
     val issue: SyncIssue? = null,
     val issueMessage: String? = null,
-    val pendingChoice: PendingSyncChoice? = null
+    val pendingChoice: PendingSyncChoice? = null,
+    // The last edit on this phone since the last run; a run clears it.
+    val localChangedAtMillis: Long? = null
 )
 
 interface SyncStateStore {
@@ -75,6 +81,30 @@ class SyncArchive(private val directory: File, private val limit: Int = 10) {
         .sortedByDescending { it.createdAtMillis }
 
     fun read(id: String): ByteArray? = File(directory, "$id.json").takeIf { it.isFile && it.parentFile == directory }?.readBytes()
+}
+
+/**
+ * The plan both sides had after the last successful run, in the Drive file format. It tells a row
+ * changed on one side apart from two new rows that got the same number. Without [file] it lives in memory.
+ */
+class SyncBaseCopy(private val file: File? = null) {
+    @Volatile
+    private var memory: ByteArray? = null
+
+    fun read(): ByteArray? {
+        val target = file ?: return memory
+        return runCatching { target.takeIf { it.isFile }?.readBytes() }.getOrNull()
+    }
+
+    fun write(bytes: ByteArray) {
+        val target = file
+        if (target == null) memory = bytes else writeAtomically(target, bytes)
+    }
+
+    fun delete() {
+        val target = file
+        if (target == null) memory = null else target.delete()
+    }
 }
 
 private fun writeAtomically(target: File, bytes: ByteArray) {

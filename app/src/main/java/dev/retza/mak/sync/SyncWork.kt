@@ -12,11 +12,14 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import androidx.work.ListenableWorker
 import androidx.work.OneTimeWorkRequestBuilder
+import dev.retza.mak.data.database.PLAN_TABLES
 import java.io.IOException
 import java.util.concurrent.TimeUnit
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.launch
@@ -114,19 +117,37 @@ class SyncWorkScheduler(
     }
 }
 
-/** Starts a run after each plan change and after the last open editor closes. */
+/**
+ * Starts a run after each plan change and after the last open editor closes, and records when the
+ * plan last changed, which the version choice shows.
+ */
 @Single
 class SyncRoomChangeObserver(
     private val database: dev.retza.mak.data.database.AppDatabase,
     private val editTracker: PlanEditTracker,
-    private val scheduler: SyncWorkScheduler
+    private val scheduler: SyncWorkScheduler,
+    private val coordinator: SyncCoordinator
 ) {
     @OptIn(kotlinx.coroutines.FlowPreview::class)
     fun observe(scope: CoroutineScope) {
         scope.launch {
-            database.invalidationTracker.createFlow(*SYNC_PLAN_TABLES, emitInitialState = false)
+            database.invalidationTracker.createFlow(*PLAN_TABLES, emitInitialState = false)
                 .debounce(1_000L)
                 .collect { scheduler.enqueueImmediate() }
+        }
+        scope.launch {
+            // Not debounced: the time of the edit, not of the following run.
+            database.invalidationTracker.createFlow(*PLAN_TABLES, emitInitialState = false)
+                .conflate()
+                .collect {
+                    try {
+                        coordinator.recordLocalChange()
+                    } catch (error: CancellationException) {
+                        throw error
+                    } catch (_: Exception) {
+                        // Only a label in the version choice depends on it.
+                    }
+                }
         }
         scope.launch {
             editTracker.editing
@@ -135,8 +156,3 @@ class SyncRoomChangeObserver(
         }
     }
 }
-
-private val SYNC_PLAN_TABLES = arrayOf(
-    "semesters", "study_programs", "academic_calendars", "semester_programs", "classes",
-    "week_overrides", "occurrence_notes", "occurrence_changes"
-)

@@ -6,11 +6,13 @@ import java.net.HttpURLConnection
 import java.net.URL
 import java.net.URLEncoder
 import java.security.MessageDigest
+import java.time.Instant
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
+import kotlinx.serialization.json.JsonObject
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.buildJsonObject
 import kotlinx.serialization.json.jsonArray
@@ -22,8 +24,8 @@ import kotlinx.serialization.json.put
 @Serializable
 data class SyncAccount(val subject: String, val email: String, val androidAccountName: String)
 
-/** Metadata of the single plan file; [md5] identifies its content. */
-data class RemotePlanFile(val id: String, val md5: String)
+/** Metadata of the single plan file; [md5] identifies its content, [modifiedAtMillis] is shown to the user. */
+data class RemotePlanFile(val id: String, val md5: String, val modifiedAtMillis: Long? = null)
 
 interface PlanFileTransport {
     suspend fun find(account: SyncAccount): RemotePlanFile?
@@ -68,7 +70,7 @@ class DrivePlanTransport(
 
     private suspend fun list(account: SyncAccount): List<RemotePlanFile> {
         val query = "name = '$FILE_NAME' and 'appDataFolder' in parents and trashed = false"
-        val fields = "nextPageToken,files(id,md5Checksum)"
+        val fields = "nextPageToken,files(id,md5Checksum,modifiedTime)"
         val files = mutableListOf<RemotePlanFile>()
         val seenPageTokens = mutableSetOf<String>()
         var pageToken: String? = null
@@ -86,7 +88,8 @@ class DrivePlanTransport(
                     val file = entry.jsonObject
                     RemotePlanFile(
                         id = file.getValue("id").jsonPrimitive.content,
-                        md5 = file.getValue("md5Checksum").jsonPrimitive.content.lowercase()
+                        md5 = file.getValue("md5Checksum").jsonPrimitive.content.lowercase(),
+                        modifiedAtMillis = file.modifiedAtMillis()
                     )
                 }
                 pageFiles to root["nextPageToken"]?.jsonPrimitive?.contentOrNull?.takeIf(String::isNotEmpty)
@@ -118,7 +121,7 @@ class DrivePlanTransport(
     }
 
     override suspend fun upload(account: SyncAccount, existing: RemotePlanFile?, bytes: ByteArray): RemotePlanFile {
-        val fields = "fields=id,md5Checksum"
+        val fields = "fields=id,md5Checksum,modifiedTime"
         val response = if (existing == null) {
             val boundary = "mak-plan-${System.nanoTime()}"
             val metadata = buildJsonObject {
@@ -140,7 +143,8 @@ class DrivePlanTransport(
             val created = json.parseToJsonElement(response.decodeToString()).jsonObject
             RemotePlanFile(
                 id = created.getValue("id").jsonPrimitive.content,
-                md5 = created.getValue("md5Checksum").jsonPrimitive.content.lowercase()
+                md5 = created.getValue("md5Checksum").jsonPrimitive.content.lowercase(),
+                modifiedAtMillis = created.modifiedAtMillis()
             )
         }
         if (result.md5 != md5(bytes)) throw DriveHttpException(0, "Drive stored different content than sent")
@@ -200,6 +204,10 @@ class DrivePlanTransport(
         }.toByteArray()
 
     private fun encode(value: String) = URLEncoder.encode(value, "UTF-8").replace("+", "%20")
+
+    // Only shown to the user, so a missing or unreadable time is not an error.
+    private fun JsonObject.modifiedAtMillis(): Long? =
+        this["modifiedTime"]?.jsonPrimitive?.contentOrNull?.let { runCatching { Instant.parse(it).toEpochMilli() }.getOrNull() }
 
     companion object {
         const val FILE_NAME = "mak-plan.json"

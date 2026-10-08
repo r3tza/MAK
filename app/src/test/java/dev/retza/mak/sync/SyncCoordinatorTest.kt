@@ -31,9 +31,64 @@ class SyncCoordinatorTest {
         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.Unconfined), graceMillis = 0
     )
     private val archive by lazy { SyncArchive(folder.newFolder("archive")) }
+    private val base = SyncBaseCopy()
     private val coordinator by lazy {
         SyncCoordinator(phone, drive, InMemoryStore(SyncState(account = account)), archive, editors,
-            Clock.fixed(Instant.parse("2026-09-30T10:00:00Z"), ZoneOffset.UTC), kotlinx.coroutines.Dispatchers.Unconfined)
+            Clock.fixed(Instant.parse("2026-09-30T10:00:00Z"), ZoneOffset.UTC), kotlinx.coroutines.Dispatchers.Unconfined, base)
+    }
+
+    @Test
+    fun theSharedPlanIsKeptAfterUploadAndAfterDownload() = runTest {
+        phone.data = plan("Telefon")
+        coordinator.synchronize()
+        assertEquals(listOf("Telefon"), SyncPlanFile.decode(base.read()!!).names())
+
+        drive.put(plan("Dysk"))
+        coordinator.synchronize()
+        assertEquals(listOf("Dysk"), SyncPlanFile.decode(base.read()!!).names())
+    }
+
+    @Test
+    fun disconnectForgetsTheSharedPlan() = runTest {
+        phone.data = plan("Telefon")
+        coordinator.synchronize()
+
+        coordinator.disconnect(deleteRemote = false)
+
+        assertEquals(null, base.read())
+    }
+
+    @Test
+    fun withoutASharedPlanTheChoiceListsNoDifferences() = runTest {
+        phone.data = plan("Telefon")
+        drive.put(plan("Dysk"))
+
+        assertEquals(SyncOutcome.ChoiceRequired, coordinator.synchronize())
+        assertEquals(emptyList<PlanDifference>(), coordinator.state.value.pendingChoice?.differences)
+    }
+
+    @Test
+    fun aChoiceAfterASyncListsTheDifferences() = runTest {
+        phone.data = plan("Zimowy")
+        coordinator.synchronize()
+        phone.data = plan("Zimowy", "Letni")
+        drive.put(plan("Zimowy", "Wakacje"))
+
+        assertEquals(SyncOutcome.ChoiceRequired, coordinator.synchronize())
+        val differences = coordinator.state.value.pendingChoice!!.differences
+        assertTrue(differences.any { it.key == PlanRowKey(PlanRowKind.SEMESTER, 2) && it.collision })
+    }
+
+    @Test
+    fun localChangesAreRecordedButNotTheEchoOfADownload() = runTest {
+        coordinator.recordLocalChange()
+        assertEquals(Instant.parse("2026-09-30T10:00:00Z").toEpochMilli(), coordinator.state.value.localChangedAtMillis)
+
+        drive.put(plan("Dysk"))
+        coordinator.synchronize()
+        coordinator.recordLocalChange()
+
+        assertEquals(null, coordinator.state.value.localChangedAtMillis)
     }
 
     @Test

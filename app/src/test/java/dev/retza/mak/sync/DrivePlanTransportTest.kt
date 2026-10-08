@@ -125,6 +125,26 @@ class DrivePlanTransportTest {
     }
 
     @Test
+    fun findReadsTheModificationTimeAndToleratesItsAbsence() = runTest {
+        http.respond { _, _ ->
+            DriveHttpResponse(
+                200,
+                """{"files":[{"id":"new","md5Checksum":"AA","modifiedTime":"2026-10-08T12:14:00.000Z"},{"id":"old","md5Checksum":"BB"}]}""".toByteArray()
+            )
+        }
+
+        assertEquals(RemotePlanFile("new", "aa", java.time.Instant.parse("2026-10-08T12:14:00Z").toEpochMilli()), transport.find(account))
+        assertEquals(true, http.sent[0].url.contains("modifiedTime"))
+    }
+
+    @Test
+    fun aFileWithoutModificationTimeHasNone() = runTest {
+        http.respond { _, _ -> DriveHttpResponse(200, """{"files":[{"id":"only","md5Checksum":"CC"}]}""".toByteArray()) }
+
+        assertEquals(null, transport.find(account)?.modifiedAtMillis)
+    }
+
+    @Test
     fun findReadsTheNextPageBeforeChoosingTheNewestFile() = runTest {
         http.respond { url, _ ->
             when {
