@@ -21,6 +21,7 @@ import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.drop
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
@@ -64,10 +65,12 @@ class MakApplication : Application(), Configuration.Provider {
         syncWorkScheduler.scheduleForAppOpen()
         syncRoomChangeObserver.observe(initializationScope)
         ensureCollisionChannel(this)
-        registerMakWidgetRefresh(
-            database = database,
-            requester = GlanceWidgetRefreshRequester(this, initializationScope)
-        )
+        val widgetRefresh = GlanceWidgetRefreshRequester(this, initializationScope)
+        registerMakWidgetRefresh(database = database, requester = widgetRefresh)
+        initializationScope.launch {
+            // The widget follows database changes on its own; a new minimum break changes it too.
+            preferences.planDisplay.drop(1).collect { widgetRefresh.request() }
+        }
         val isDebuggable = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
         if (isDebuggable) {
             initializationScope.launch {
@@ -86,6 +89,7 @@ class MakApplication : Application(), Configuration.Provider {
                     if (semester == null) flowOf(null) else scheduleRepository.observeActivePlanData(semester.id)
                 }
                 .combine(preferences.collisionNotifications) { data, settings -> data to settings }
+                .combine(preferences.planDisplay) { inputs, display -> inputs to display }
                 .debounce(NOTIFICATION_REFRESH_DEBOUNCE_MILLIS)
                 .collect {
                     try {

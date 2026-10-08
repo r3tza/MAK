@@ -7,6 +7,7 @@ import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
+import dev.retza.mak.domain.PlanDisplaySettings
 import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.Recurrence
@@ -30,6 +31,7 @@ import dev.retza.mak.ui.monthFormatter
 import dev.retza.mak.ui.polishLocale
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
+import dev.retza.mak.ui.settings.SettingsPreferences
 import dev.retza.mak.ui.shortDateFormatter
 import dev.retza.mak.ui.shortDayNames
 import dev.retza.mak.ui.toUi
@@ -74,7 +76,8 @@ class ScheduleViewModel(
     private val scheduleRepository: ScheduleRepository,
     private val clock: Clock,
     private val activePlanProvider: ActivePlanProvider,
-    private val feedbackSink: FeedbackSink
+    private val feedbackSink: FeedbackSink,
+    private val preferences: SettingsPreferences
 ) : ViewModel() {
     private val controls = LocalDate.now(clock).let { today ->
         MutableStateFlow(
@@ -97,8 +100,8 @@ class ScheduleViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val schedule: StateFlow<ScheduleUiState> = combine(activePlanData, controls) { data, control ->
-        buildSchedule(data, control)
+    val schedule: StateFlow<ScheduleUiState> = combine(activePlanData, controls, preferences.planDisplay) { data, control, display ->
+        buildSchedule(data, control, display)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -220,12 +223,16 @@ class ScheduleViewModel(
         return data.calendars.firstOrNull { it.id == assignment.academicCalendarId }?.id?.toLongOrNull()
     }
 
-    private fun buildSchedule(data: ActivePlanData?, control: ScheduleControls): ScheduleUiState {
+    private fun buildSchedule(
+        data: ActivePlanData?,
+        control: ScheduleControls,
+        display: PlanDisplaySettings
+    ): ScheduleUiState {
         if (data == null) return emptyScheduleState()
         val activeFilter = control.courseFilterId.takeIf { id ->
             id == "all" || data.semesterPrograms.any { it.id == id }
         } ?: "all"
-        val selectedPlan = activePlan(data, control.scheduleDate)
+        val selectedPlan = activePlan(data, control.scheduleDate, display)
         val selected = selectedPlan.schedule
         val filtered = selected.occurrences.filter {
             activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
@@ -236,7 +243,7 @@ class ScheduleViewModel(
         val monday = control.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val currentWeekMonday = control.today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val calendarDays = calendarDates(control.calendarMonth).map { date ->
-            val occurrences = activePlan(data, date).schedule.occurrences.filter {
+            val occurrences = activePlan(data, date, display).schedule.occurrences.filter {
                 activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
             }
             CalendarDayUi(
@@ -257,7 +264,7 @@ class ScheduleViewModel(
                 hasMoreMarkers = occurrences.size > 5
             )
         }
-        val calendarPlan = activePlan(data, control.calendarDate)
+        val calendarPlan = activePlan(data, control.calendarDate, display)
         val calendarSchedule = calendarPlan.schedule
         val calendarFiltered = calendarSchedule.occurrences.filter {
             activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
@@ -361,8 +368,8 @@ class ScheduleViewModel(
                 )
             }
 
-    private fun activePlan(data: ActivePlanData, date: LocalDate) =
-        activePlanProvider.resolve(data, date)
+    private fun activePlan(data: ActivePlanData, date: LocalDate, display: PlanDisplaySettings) =
+        activePlanProvider.resolve(data, date, display)
 }
 
 private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()

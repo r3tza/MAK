@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.domain.PlanDisplaySettings
 import java.time.LocalTime
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -7,11 +8,13 @@ import kotlinx.coroutines.flow.MutableStateFlow
 class InMemorySettingsPreferences(
     initialTheme: ThemeMode = ThemeMode.System,
     initialNotifications: CollisionNotificationPreferences = CollisionNotificationPreferences(),
-    initialGapThresholdMinutes: Int = 30
+    initialGapThresholdMinutes: Int = 30,
+    initialPlanDisplay: PlanDisplaySettings = PlanDisplaySettings.DEFAULT
 ) : SettingsPreferences {
     private val state = MutableStateFlow(initialTheme)
     private val notifications = MutableStateFlow(initialNotifications)
     private val gapThreshold = MutableStateFlow(initialGapThresholdMinutes)
+    private val display = MutableStateFlow(initialPlanDisplay)
 
     var failNextWrite = false
 
@@ -21,6 +24,8 @@ class InMemorySettingsPreferences(
 
     override val gapThresholdMinutes: Flow<Int> = gapThreshold
 
+    override val planDisplay: Flow<PlanDisplaySettings> = display
+
     override suspend fun setTheme(mode: ThemeMode) {
         awaitWrite()
         state.value = mode
@@ -29,6 +34,11 @@ class InMemorySettingsPreferences(
     override suspend fun setGapThresholdMinutes(minutes: Int) {
         awaitWrite()
         gapThreshold.value = minutes
+    }
+
+    override suspend fun setMinimumBreakMinutes(minutes: Int) {
+        awaitWrite()
+        display.value = display.value.copy(minimumBreakMinutes = minutes)
     }
 
     override suspend fun setCollisionNotificationsEnabled(enabled: Boolean) {

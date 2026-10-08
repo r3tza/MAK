@@ -14,6 +14,7 @@ import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
+import dev.retza.mak.ui.settings.InMemorySettingsPreferences
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -51,7 +52,8 @@ class ScheduleViewModelTest {
             override fun publish(feedback: UiFeedback) {
                 this@ScheduleViewModelTest.feedback += feedback
             }
-        }
+        },
+        preferences = InMemorySettingsPreferences()
     )
 
     @Test

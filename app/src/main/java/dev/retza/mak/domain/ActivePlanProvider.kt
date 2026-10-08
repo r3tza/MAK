@@ -23,7 +23,7 @@ class ActivePlanProvider(
     private val resolver: ScheduleResolver = ScheduleResolver(),
     private val collisionDetector: CollisionDetector = CollisionDetector()
 ) {
-    fun resolve(data: ActivePlanData, date: LocalDate): ActivePlan {
+    fun resolve(data: ActivePlanData, date: LocalDate, display: PlanDisplaySettings): ActivePlan {
         val schedule = resolver.resolve(
             date = date,
             semester = data.semester,
@@ -37,7 +37,7 @@ class ActivePlanProvider(
         )
         return ActivePlan(
             schedule = schedule,
-            collisions = collisionDetector.detect(schedule)
+            collisions = collisionDetector.detect(schedule, display.minimumBreakMinutes)
         )
     }
 }

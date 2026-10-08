@@ -60,6 +60,7 @@ class MakTodayWidget : GlanceAppWidget() {
             semesterRepository = koin.get(),
             scheduleRepository = koin.get(),
             activePlanProvider = koin.get(),
+            preferences = koin.get(),
             clock = koin.get()
         ).load()
 

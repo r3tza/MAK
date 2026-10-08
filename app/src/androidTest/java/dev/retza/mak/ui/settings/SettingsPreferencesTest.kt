@@ -63,6 +63,18 @@ class SettingsPreferencesTest {
     }
 
     @Test
+    fun minimumBreakDefaultsToZeroAndClampsToFifteen() = runBlocking {
+        val preferences = preferences(openDataStore())
+        assertEquals(0, preferences.planDisplay.first().minimumBreakMinutes)
+
+        preferences.setMinimumBreakMinutes(10)
+        assertEquals(10, preferences.planDisplay.first().minimumBreakMinutes)
+
+        preferences.setMinimumBreakMinutes(40)
+        assertEquals(15, preferences.planDisplay.first().minimumBreakMinutes)
+    }
+
+    @Test
     fun readErrorFallsBackToEmptyPreferences() = runBlocking {
         val preferences = DataStoreSettingsPreferences(ThrowingDataStore(IOException("read failed")))
 

@@ -24,8 +24,8 @@ data class CollisionNotificationSettings(
 data class CollisionNotificationGroup(
     val occurrenceIds: List<String>,
     val earliestStart: LocalTime,
-    val overlapStart: LocalTime,
-    val overlapEnd: LocalTime
+    /** „10:00-11:30” for overlapping classes, otherwise „bez przerwy o 09:45” or „przerwa 5 min o 09:45”. */
+    val label: String
 )
 
 data class PlannedCollisionNotification(
@@ -82,7 +82,8 @@ class CollisionNotificationPlanner(
 ) {
     fun plan(
         data: ActivePlanData,
-        settings: CollisionNotificationSettings
+        settings: CollisionNotificationSettings,
+        display: PlanDisplaySettings
     ): List<PlannedCollisionNotification> {
         if (!settings.enabled) return emptyList()
         val today = LocalDate.now(clock)
@@ -90,7 +91,7 @@ class CollisionNotificationPlanner(
         val notifications = mutableListOf<PlannedCollisionNotification>()
         for (offset in 0 until settings.horizonDays) {
             val date = today.plusDays(offset)
-            val groups = collisionNotificationGroups(activePlanProvider.resolve(data, date).collisions)
+            val groups = collisionNotificationGroups(activePlanProvider.resolve(data, date, display).collisions)
             if (groups.isEmpty()) continue
             if (settings.eveningEnabled) {
                 val from = date.minusDays(1).atTime(settings.eveningHour)
@@ -176,8 +177,15 @@ fun collisionNotificationGroups(collisions: List<Collision>): List<CollisionNoti
         CollisionNotificationGroup(
             occurrenceIds = occurrences.map { it.id }.sorted(),
             earliestStart = occurrences.minOf { it.startTime },
-            overlapStart = groupCollisions.minOf { it.overlapStart },
-            overlapEnd = groupCollisions.maxOf { it.overlapEnd }
+            label = groupLabel(groupCollisions)
         )
     }
+}
+
+private fun groupLabel(collisions: List<Collision>): String {
+    val overlaps = collisions.filter { it.kind == CollisionKind.OVERLAP }
+    if (overlaps.isEmpty()) return breakLabel(collisions.minWith(compareBy<Collision> { it.start }.thenBy { it.end }))
+    val start = overlaps.minOf { it.start }.format(collisionTimeFormatter)
+    val end = overlaps.maxOf { it.end }.format(collisionTimeFormatter)
+    return "$start-$end"
 }

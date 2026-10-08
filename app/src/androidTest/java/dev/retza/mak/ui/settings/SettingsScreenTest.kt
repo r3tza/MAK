@@ -50,6 +50,7 @@ class SettingsScreenTest {
                             activeSemesterId = "1",
                             themeOptions = listOf(ThemeOptionUi("system", "Systemowy", true)),
                             gapThresholdOptions = listOf(GapThresholdOptionUi("30", "30 min", true)),
+                            minimumBreakOptions = listOf(MinimumBreakOptionUi("0", "0 min", true)),
                             notifications = NotificationSettingsUi(
                                 enabled = true,
                                 eveningHourOptions = listOf(NotificationOptionUi("20:00", "20:00", true)),
@@ -65,6 +66,7 @@ class SettingsScreenTest {
                         onAddSemester = {},
                         onThemeSelected = {},
                         onGapThresholdSelected = {},
+                        onMinimumBreakSelected = {},
                         notificationsBlocked = false,
                         onRetry = {}
                     )
@@ -82,6 +84,10 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithText("Wersja").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Włączone").assertIsDisplayed()
         composeTestRule.onNodeWithText("20:00 dzień wcześniej, 30 min przed zajęciami")
+            .assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("Minimalna przerwa").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zajęcia z krótszą lub równą przerwą są kolizją.").performScrollTo()
             .assertIsDisplayed()
 
         composeTestRule.onNodeWithText("Zarządzaj semestrami").performScrollTo().performClick()
@@ -164,6 +170,7 @@ class SettingsScreenTest {
                         onAddSemester = {},
                         onThemeSelected = {},
                         onGapThresholdSelected = {},
+                        onMinimumBreakSelected = {},
                         notificationsBlocked = false,
                         onRetry = {},
                         updates = updates,
@@ -193,6 +200,7 @@ class SettingsScreenTest {
                         onAddSemester = {},
                         onThemeSelected = {},
                         onGapThresholdSelected = {},
+                        onMinimumBreakSelected = {},
                         notificationsBlocked = false,
                         onRetry = {}
                     )

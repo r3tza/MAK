@@ -46,7 +46,8 @@ sealed interface SettingsEffect {
 private data class PreferencesSnapshot(
     val theme: ThemeMode,
     val notifications: CollisionNotificationPreferences,
-    val gapThresholdMinutes: Int
+    val gapThresholdMinutes: Int,
+    val minimumBreakMinutes: Int
 )
 
 private data class SettingsLocalState(
@@ -60,7 +61,8 @@ private data class SettingsLocalState(
     val isPreparingImport: Boolean = false,
     val isReplacingData: Boolean = false,
     val isSavingNotifications: Boolean = false,
-    val isSavingGapThreshold: Boolean = false
+    val isSavingGapThreshold: Boolean = false,
+    val isSavingMinimumBreak: Boolean = false
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -94,9 +96,10 @@ class SettingsViewModel(
     private val preferencesSnapshot = combine(
         preferences.theme,
         preferences.collisionNotifications,
-        preferences.gapThresholdMinutes
-    ) { theme, notifications, gapThresholdMinutes ->
-        PreferencesSnapshot(theme, notifications, gapThresholdMinutes)
+        preferences.gapThresholdMinutes,
+        preferences.planDisplay
+    ) { theme, notifications, gapThresholdMinutes, display ->
+        PreferencesSnapshot(theme, notifications, gapThresholdMinutes, display.minimumBreakMinutes)
     }
 
     val settings: StateFlow<SettingsUiState> = combine(
@@ -224,6 +227,19 @@ class SettingsViewModel(
             onFinish = { local.update { it.copy(isSavingGapThreshold = false) } }
         ) {
             preferences.setGapThresholdMinutes(minutes)
+        }
+    }
+
+    fun setMinimumBreakMinutes(id: String) {
+        val minutes = id.toIntOrNull() ?: return
+        if (local.value.isSavingMinimumBreak) return
+        local.update { it.copy(isSavingMinimumBreak = true) }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać minimalnej przerwy.",
+            onFinish = { local.update { it.copy(isSavingMinimumBreak = false) } }
+        ) {
+            preferences.setMinimumBreakMinutes(minutes)
         }
     }
 
@@ -356,6 +372,13 @@ private fun buildSettingsState(
             isSelected = preferences.gapThresholdMinutes == minutes
         )
     },
+    minimumBreakOptions = minimumBreakOptions.map { minutes ->
+        MinimumBreakOptionUi(
+            id = minutes.toString(),
+            label = "$minutes min",
+            isSelected = preferences.minimumBreakMinutes == minutes
+        )
+    },
     semesterToDeleteId = local.semesterToDeleteId,
     isDeletingSemester = local.isDeletingSemester,
     importPreview = local.importPreview,
@@ -383,5 +406,6 @@ private fun buildSettingsState(
 private val notificationHourOptions = listOf(18, 19, 20, 21, 22)
 private val notificationLeadOptions = listOf(15L, 30L, 45L, 60L)
 private val gapThresholdOptions = listOf(15, 20, 30, 45, 60)
+private val minimumBreakOptions = listOf(0, 5, 10, 15)
 
 private val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.forLanguageTag("pl-PL"))

@@ -81,7 +81,7 @@ class CollisionAlarmReceiver : BroadcastReceiver(), KoinComponent {
 
         val semester = semesterRepository.observeActiveSemester().first() ?: return
         val planData = scheduleRepository.observeActivePlanData(semester.id).first() ?: return
-        val plan = activePlanProvider.resolve(planData, date)
+        val plan = activePlanProvider.resolve(planData, date, preferences.planDisplay.first())
         val groups = collisionNotificationGroups(plan.collisions)
         val occurrences = plan.schedule.occurrences.filter { it.id in occurrenceIds }
         if (occurrences.isEmpty()) return
@@ -94,7 +94,7 @@ class CollisionAlarmReceiver : BroadcastReceiver(), KoinComponent {
         if (kind == CollisionNotificationKind.EVENING) {
             title = "Kolizje w planie"
             text = "${groups.size} ${groupLabel(groups.size)}: " +
-                groups.joinToString(", ") { "${it.overlapStart}-${it.overlapEnd}" }
+                groups.joinToString(", ") { it.label }
         } else {
             val group = groups.first { it.occurrenceIds.containsAll(occurrenceIds) }
             title = "Za chwilę kolizja zajęć"

@@ -101,6 +101,44 @@ class TodayViewModelTest {
     }
 
     @Test
+    fun minimumBreakTurnsShortBreakIntoCollision() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.classes += ClassEntity(
+            id = 2L,
+            semesterId = 1L,
+            semesterProgramId = 1L,
+            name = "Analiza",
+            type = "Wykład",
+            teacherName = null,
+            dayOfWeek = DayOfWeek.MONDAY,
+            startTime = LocalTime.of(10, 35),
+            endTime = LocalTime.of(12, 0),
+            room = null,
+            building = null,
+            group = null,
+            recurrence = Recurrence.EVERY_WEEK,
+            date = null,
+            classNote = null
+        )
+        val preferences = InMemorySettingsPreferences()
+        val viewModel = TodayViewModel(
+            FakeSemesterRepository(repository),
+            repository,
+            preferences,
+            Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), zone),
+            ActivePlanProvider()
+        )
+        backgroundScope.launch { viewModel.today.collect {} }
+        advanceUntilIdle()
+        assertEquals(0, viewModel.today.value.collisionCount)
+
+        preferences.setMinimumBreakMinutes(5)
+        advanceUntilIdle()
+
+        assertEquals(1, viewModel.today.value.collisionCount)
+    }
+
+    @Test
     fun startsInLoadingStateInsteadOfEmptyState() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         repository.clearActiveSemester()

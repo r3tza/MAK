@@ -7,6 +7,7 @@ import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
+import dev.retza.mak.domain.PlanDisplaySettings
 import dev.retza.mak.domain.countGaps
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
@@ -52,9 +53,10 @@ class TodayViewModel(
     val today: StateFlow<TodayUiState> = combine(
         activePlanData,
         date,
-        preferences.gapThresholdMinutes
-    ) { loaded, day, thresholdMinutes ->
-        if (loaded == null) loadingTodayState() else buildToday(loaded.data, day, thresholdMinutes)
+        preferences.gapThresholdMinutes,
+        preferences.planDisplay
+    ) { loaded, day, thresholdMinutes, display ->
+        if (loaded == null) loadingTodayState() else buildToday(loaded.data, day, thresholdMinutes, display)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -68,10 +70,11 @@ class TodayViewModel(
     private fun buildToday(
         data: ActivePlanData?,
         day: LocalDate,
-        thresholdMinutes: Int
+        thresholdMinutes: Int,
+        display: PlanDisplaySettings
     ): TodayUiState {
         if (data == null) return emptyTodayState()
-        val plan = activePlanProvider.resolve(data, day)
+        val plan = activePlanProvider.resolve(data, day, display)
         val schedule = plan.schedule
         val labels = collisionLabels(plan.collisions)
         val names = collisionPartnerNames(plan.collisions)

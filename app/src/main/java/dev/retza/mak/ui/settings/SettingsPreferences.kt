@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.domain.PlanDisplaySettings
 import java.time.LocalTime
 import kotlinx.coroutines.flow.Flow
 
@@ -24,9 +25,14 @@ interface SettingsPreferences {
 
     val gapThresholdMinutes: Flow<Int>
 
+    /** Settings every view of the plan, the widget and notifications resolve the plan with. */
+    val planDisplay: Flow<PlanDisplaySettings>
+
     suspend fun setTheme(mode: ThemeMode)
 
     suspend fun setGapThresholdMinutes(minutes: Int)
+
+    suspend fun setMinimumBreakMinutes(minutes: Int)
 
     suspend fun setCollisionNotificationsEnabled(enabled: Boolean)
 

@@ -10,6 +10,7 @@ import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.toRecord
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
+import dev.retza.mak.domain.PlanDisplaySettings
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.OccurrenceChangeKind
@@ -27,6 +28,7 @@ import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
+import dev.retza.mak.ui.settings.SettingsPreferences
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -38,6 +40,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -57,8 +60,12 @@ class OccurrenceViewModel(
     private val semesterRepository: SemesterRepository,
     private val scheduleRepository: ScheduleRepository,
     private val activePlanProvider: ActivePlanProvider,
-    private val feedbackSink: FeedbackSink
+    private val feedbackSink: FeedbackSink,
+    preferences: SettingsPreferences
 ) : ViewModel() {
+    private val planDisplay = preferences.planDisplay
+        .stateIn(viewModelScope, SharingStarted.Eagerly, PlanDisplaySettings.DEFAULT)
+
     private val state = MutableStateFlow(OccurrenceDetailsUiState())
     val details: StateFlow<OccurrenceDetailsUiState> = state.asStateFlow()
 
@@ -100,8 +107,9 @@ class OccurrenceViewModel(
         currentArgs = args
         openJob = viewModelScope.launch {
             var first = true
-            // Later emissions come from a saved class form or a plan downloaded by sync.
-            activePlanData.filterNotNull().collect { data ->
+            // Later emissions come from a saved class form, a plan downloaded by sync or a changed
+            // minimum break.
+            combine(activePlanData.filterNotNull(), planDisplay) { data, _ -> data }.collect { data ->
                 editPlanData = data
                 val shown = currentArgs ?: return@collect
                 val built = buildDetails(data, shown)
@@ -531,7 +539,7 @@ class OccurrenceViewModel(
     }
 
     private fun activePlan(data: ActivePlanData, date: LocalDate) =
-        activePlanProvider.resolve(data, date)
+        activePlanProvider.resolve(data, date, planDisplay.value)
 
     private fun ActivePlanData.studyProgramName(assignmentId: String): String {
         val assignment = semesterPrograms.firstOrNull { it.id == assignmentId } ?: return ""

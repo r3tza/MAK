@@ -6,6 +6,8 @@ Wspólna zasada kroków 1, 2 i 4: każdy widok planu (`TodayViewModel`, `Schedul
 
 ## 1. Wykryj kolizje bez nakładania i opisz je (I-80)
 
+Stan: zrobione razem z krokiem 2 w jednym commicie (decyzja użytkownika z 2026-10-09). Nazwy pól `start` i `end`, `CollisionKind` z wartością domyślną `OVERLAP` oraz opis grupy powiadomień `label` są w kodzie zgodnie z opisem poniżej.
+
 Cel: `CollisionDetector` zgłasza też zajęcia tego samego dnia, między którymi przerwa nie jest dłuższa niż minimalna przerwa, a wspólne funkcje treści opisują je według wariantu B. Ten krok nie dodaje jeszcze ustawienia; wszystkie wywołania przekazują 0.
 
 Pliki: `domain/Models.kt`, `domain/CollisionDetector.kt`, `domain/ActivePlanProvider.kt`, `domain/CollisionRanges.kt`, `domain/CollisionCount.kt`, `domain/CollisionNotificationPlanner.kt`, `notifications/CollisionAlarmReceiver.kt` oraz testy w `app/src/test/java/dev/retza/mak/domain/`.
@@ -36,6 +38,8 @@ Weryfikacja: `gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.ma
 Kryterium zakończenia: testy powyżej przechodzą, kod się kompiluje, przy minimalnej przerwie 0 styk 09:45 i 09:45 daje na karcie treść „Bez przerwy o 09:45”. Commit: `feat: treat back-to-back classes as a collision (I-80)`.
 
 ## 2. Dodaj ustawienie minimalnej przerwy i przekaż je wszystkim widokom (I-80)
+
+Stan: zrobione. Zrzutów w motywie ciemnym nie wykonano; układ przy 320 dp sprawdza `SettingsScreenTest`.
 
 Cel: pole „Minimalna przerwa” pod „Próg okienka” zmienia wynik na „Dzisiaj”, „Planie”, w szczegółach terminu, na widgecie i w powiadomieniach.
 

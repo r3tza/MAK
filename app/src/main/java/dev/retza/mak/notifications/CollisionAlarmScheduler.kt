@@ -49,7 +49,7 @@ class CollisionAlarmScheduler(
             cancelAllLocked()
             return@withLock
         }
-        val planned = planner.plan(planData, settings.toPlannerSettings())
+        val planned = planner.plan(planData, settings.toPlannerSettings(), preferences.planDisplay.first())
         val plannedIds = planned.map { it.id }.toSet()
         storedIds().subtract(plannedIds).forEach { cancelAlarm(it) }
         planned.forEach { schedule(it) }

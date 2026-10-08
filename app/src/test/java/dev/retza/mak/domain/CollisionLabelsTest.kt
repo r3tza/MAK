@@ -55,7 +55,38 @@ class CollisionLabelsTest {
         assertEquals("Alfa, Beta, Wcześniej alfabetycznie", names["first:$date"])
     }
 
-    private fun collisions(vararg items: ClassItem): List<Collision> {
+    @Test
+    fun touchingClassesAreDescribedWithoutBreak() {
+        val collisions = collisions(
+            classItem("first", "Programowanie", 8, 9, startMinute = 15, endMinute = 45),
+            classItem("second", "Statystyka", 9, 11, startMinute = 45, endMinute = 15)
+        )
+        assertEquals("Bez przerwy o 09:45", collisionLabels(collisions)["first:$date"])
+        assertEquals("Bez przerwy o 09:45", collisionLabels(collisions)["second:$date"])
+        assertEquals("Programowanie", collisionPartnerNames(collisions)["second:$date"])
+    }
+
+    @Test
+    fun shortBreakNamesItsLength() {
+        val collisions = collisions(
+            classItem("first", "Programowanie", 8, 9, startMinute = 15, endMinute = 45),
+            classItem("second", "Statystyka", 9, 11, startMinute = 50, endMinute = 15),
+            minimumBreakMinutes = 10
+        )
+        assertEquals("Przerwa 5 min o 09:45", collisionLabels(collisions)["second:$date"])
+    }
+
+    @Test
+    fun overlapComesBeforeBreaksForOneClass() {
+        val collisions = collisions(
+            classItem("main", "Statystyka", 10, 11, endMinute = 15),
+            classItem("overlap", "Analiza", 9, 10, startMinute = 30, endMinute = 30),
+            classItem("after", "Programowanie", 11, 12, startMinute = 15)
+        )
+        assertEquals("Kolizja 10:00-10:30, bez przerwy o 11:15", collisionLabels(collisions)["main:$date"])
+    }
+
+    private fun collisions(vararg items: ClassItem, minimumBreakMinutes: Int = 0): List<Collision> {
         val schedule = ScheduleResolver().resolve(
             date = date,
             semester = semester,
@@ -64,7 +95,7 @@ class CollisionLabelsTest {
             semesterPrograms = listOf(assignment),
             calendars = listOf(calendar)
         ).occurrences
-        return CollisionDetector().detect(schedule)
+        return CollisionDetector().detect(schedule, minimumBreakMinutes)
     }
 
     private fun classItem(

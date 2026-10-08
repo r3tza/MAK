@@ -182,15 +182,32 @@ data class ResolvedSchedule(
         get() = week?.overrideSource
 }
 
+enum class CollisionKind {
+    OVERLAP,
+    NO_BREAK
+}
+
+/**
+ * Two classes of one day that cannot both be attended comfortably. For [CollisionKind.OVERLAP],
+ * [start] and [end] bound the overlap; for [CollisionKind.NO_BREAK], [start] is the end of the earlier
+ * class and [end] the start of the later one.
+ */
 data class Collision(
     val first: PlannedOccurrence,
     val second: PlannedOccurrence,
-    val overlapStart: LocalTime,
-    val overlapEnd: LocalTime
+    val start: LocalTime,
+    val end: LocalTime,
+    val kind: CollisionKind = CollisionKind.OVERLAP
 ) {
     val date: LocalDate
         get() = first.date
 
     val durationMinutes: Long
-        get() = java.time.Duration.between(overlapStart, overlapEnd).toMinutes()
+        get() = java.time.Duration.between(start, end).toMinutes()
+
+    val breakMinutes: Long
+        get() {
+            check(kind == CollisionKind.NO_BREAK) { "Only a no-break collision has a break." }
+            return java.time.Duration.between(start, end).toMinutes()
+        }
 }

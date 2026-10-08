@@ -131,7 +131,6 @@ class CollisionNotificationGuardTest {
     ) = CollisionNotificationGroup(
         occurrenceIds = listOf(first, second),
         earliestStart = earliestStart,
-        overlapStart = overlapStart,
-        overlapEnd = overlapEnd
+        label = "$overlapStart-$overlapEnd"
     )
 }

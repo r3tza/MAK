@@ -186,10 +186,10 @@ class ScheduleResolverTest {
         )
         val schedule = resolve(target, listOf(classItem(day = DayOfWeek.MONDAY)), changes = listOf(change))
 
-        val collision = CollisionDetector().detect(schedule).single()
+        val collision = CollisionDetector().detect(schedule, minimumBreakMinutes = 0).single()
 
-        assertEquals(LocalTime.of(10, 30), collision.overlapStart)
-        assertEquals(LocalTime.of(11, 0), collision.overlapEnd)
+        assertEquals(LocalTime.of(10, 30), collision.start)
+        assertEquals(LocalTime.of(11, 0), collision.end)
     }
 
     @Test

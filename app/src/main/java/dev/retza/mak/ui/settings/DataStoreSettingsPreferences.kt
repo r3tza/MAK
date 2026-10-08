@@ -7,10 +7,12 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import dev.retza.mak.domain.PlanDisplaySettings
 import java.io.IOException
 import java.time.LocalTime
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.retryWhen
 
@@ -21,6 +23,7 @@ private val beforeClassEnabledKey = booleanPreferencesKey("before_class_notifica
 private val eveningHourKey = intPreferencesKey("evening_hour_minutes")
 private val leadMinutesKey = intPreferencesKey("before_class_lead_minutes")
 private val gapThresholdMinutesKey = intPreferencesKey("gap_threshold_minutes")
+private val minimumBreakMinutesKey = intPreferencesKey("minimum_break_minutes")
 
 private const val readRetryDelayMillis = 100L
 private const val defaultEveningHourMinutes = 20 * 60
@@ -28,6 +31,7 @@ private const val defaultLeadMinutes = 30
 private const val defaultGapThresholdMinutes = 30
 private const val minGapThresholdMinutes = 5
 private const val maxGapThresholdMinutes = 180
+private const val maxMinimumBreakMinutes = 15
 
 @org.koin.core.annotation.Single(binds = [SettingsPreferences::class])
 class DataStoreSettingsPreferences(
@@ -52,6 +56,12 @@ class DataStoreSettingsPreferences(
         (stored[gapThresholdMinutesKey] ?: defaultGapThresholdMinutes)
             .coerceIn(minGapThresholdMinutes, maxGapThresholdMinutes)
     }
+
+    override val planDisplay: Flow<PlanDisplaySettings> = preferences.map { stored ->
+        PlanDisplaySettings(
+            minimumBreakMinutes = (stored[minimumBreakMinutesKey] ?: 0).coerceIn(0, maxMinimumBreakMinutes)
+        )
+    }.distinctUntilChanged()
 
     override suspend fun setTheme(mode: ThemeMode) {
         dataStore.edit { preferences -> preferences[themeKey] = mode.name }
@@ -81,6 +91,12 @@ class DataStoreSettingsPreferences(
         dataStore.edit { preferences ->
             preferences[gapThresholdMinutesKey] =
                 minutes.coerceIn(minGapThresholdMinutes, maxGapThresholdMinutes)
+        }
+    }
+
+    override suspend fun setMinimumBreakMinutes(minutes: Int) {
+        dataStore.edit { preferences ->
+            preferences[minimumBreakMinutesKey] = minutes.coerceIn(0, maxMinimumBreakMinutes)
         }
     }
 }
