@@ -1,5 +1,7 @@
 package dev.retza.mak.ui
 
+import java.time.LocalDate
+
 object MakRoutes {
     const val Today = "today"
     const val Schedule = "schedule"
@@ -33,6 +35,10 @@ fun occurrenceRoute(occurrenceId: String): String {
 
 fun editRoute(classId: Long, date: String): String =
     "edit?classId=$classId&date=$date"
+
+/** Never navigate to [MakRoutes.Edit] itself: Navigation would pass its placeholders as argument values. */
+fun newClassRoute(date: LocalDate? = null): String =
+    date?.let { "edit?date=$it" } ?: "edit"
 
 fun semesterRoute(id: String): String = "semester/$id"
 

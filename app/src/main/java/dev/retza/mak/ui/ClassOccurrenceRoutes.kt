@@ -32,7 +32,7 @@ internal fun openClassEditor(
     navController: NavController,
     date: LocalDate? = null
 ) {
-    navController.navigate(date?.let { "edit?date=$it" } ?: MakRoutes.Edit)
+    navController.navigate(newClassRoute(date))
 }
 
 internal fun NavGraphBuilder.classEditRoute(

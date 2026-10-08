@@ -3,6 +3,7 @@ package dev.retza.mak.ui
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
+import java.time.LocalDate
 import org.junit.Test
 
 class MakNavigationTest {
@@ -10,6 +11,8 @@ class MakNavigationTest {
     fun routeArgumentsPreserveOccurrenceAndEditorContext() {
         assertEquals("occurrence/42/2026-09-19", occurrenceRoute("42:2026-09-19"))
         assertEquals("edit?classId=42&date=2026-09-19", editRoute(42, "2026-09-19"))
+        assertEquals("edit", newClassRoute())
+        assertEquals("edit?date=2026-09-19", newClassRoute(LocalDate.of(2026, 9, 19)))
         assertEquals("semester/7", semesterRoute("7"))
         assertEquals("semester/7/courses", semesterCoursesRoute("7"))
         assertEquals("semester/7/week-overrides", semesterOverridesRoute("7"))
