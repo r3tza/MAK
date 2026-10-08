@@ -2,6 +2,13 @@
   "minorChanges": "Pomniejsze poprawki",
   "releases": [
     {
+      "version": "0.3.1",
+      "date": "2026-10-08",
+      "changes": [
+        "Przycisk „Dodaj” znowu otwiera formularz nowych zajęć."
+      ]
+    },
+    {
       "version": "0.3.0",
       "date": "2026-10-08",
       "changes": [
