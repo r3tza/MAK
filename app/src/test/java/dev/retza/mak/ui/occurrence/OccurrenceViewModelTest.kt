@@ -54,6 +54,56 @@ class OccurrenceViewModelTest {
     }
 
     @Test
+    fun classChangedAfterOpeningIsShownInDetails() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        repository.classes[0] = repository.classes[0].copy(room = "B204")
+        repository.notifyDataChanged()
+        advanceUntilIdle()
+
+        assertEquals("B204", viewModel.details.value.room)
+    }
+
+    @Test
+    fun unsavedNoteDraftSurvivesAChangeOfTheClass() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+        viewModel.updateSharedNoteDraft("Niezapisana notatka")
+
+        repository.classes[0] = repository.classes[0].copy(room = "B204")
+        repository.notifyDataChanged()
+        advanceUntilIdle()
+
+        val state = viewModel.details.value
+        assertEquals("B204", state.room)
+        assertEquals("Niezapisana notatka", state.sharedNoteDraft)
+        assertTrue(state.canSaveSharedNote)
+    }
+
+    @Test
+    fun classDeletedAfterOpeningShowsNotFound() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        repository.classes.clear()
+        repository.notifyDataChanged()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.details.value.notFound)
+        assertEquals(null, viewModel.selectedClassId.value)
+    }
+
+    @Test
     fun noteWriteRemainsProtectedEvenWhenDraftIsNoLongerDirty() {
         assertTrue(OccurrenceDetailsUiState(isSavingSharedNote = true).hasPlanDraft())
         assertTrue(OccurrenceDetailsUiState(isSavingOccurrenceNote = true).hasPlanDraft())

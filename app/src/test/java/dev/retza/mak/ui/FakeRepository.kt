@@ -126,7 +126,16 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
     fun observeActiveSemester(): Flow<SemesterEntity?> =
         combine(semesterFlow, activeSemesterFlow) { list, id -> list.firstOrNull { it.id == id } }
     fun observeSemester(id: Long): Flow<SemesterEntity?> = flowOf(semesterById(id))
-    fun observeSemesterData(id: Long): Flow<SemesterWithData?> = flow {
+    private val dataVersion = MutableStateFlow(0)
+
+    /** Emits the semester data again, as Room does after a write; direct list edits do not notify by themselves. */
+    fun notifyDataChanged() {
+        dataVersion.value += 1
+    }
+
+    fun observeSemesterData(id: Long): Flow<SemesterWithData?> = dataVersion.flatMapLatest { semesterDataOnce(id) }
+
+    private fun semesterDataOnce(id: Long): Flow<SemesterWithData?> = flow {
         occurrenceDataGate?.await()
         val target = semesterFlow.value.firstOrNull { it.id == id }
         if (target == null) {
