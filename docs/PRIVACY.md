@@ -1,6 +1,6 @@
 # Polityka prywatności MAK
 
-Wersja wstępna z 2026-10-08. Opisuje aplikację razem z opcjonalną synchronizacją Google, która nie należy jeszcze do opublikowanego wydania. Stały adres tej polityki: https://r3tza.github.io/MAK/PRIVACY.html.
+Obowiązuje od 8 października 2026 r., od wersji 0.3.0, która wprowadza opcjonalną synchronizację Google.
 
 ## Najważniejsze
 
