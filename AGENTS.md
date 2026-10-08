@@ -68,6 +68,11 @@ Nie używaj w nowych dokumentach, tekstach interfejsu ani odpowiedziach znaku `�
 - Używaj istniejących wzorców i bibliotek platformy przed dodaniem nowej abstrakcji lub zależności.
 - Waliduj dane na granicach systemu i chroń dane użytkownika przed utratą.
 - Traktuj dostępność, małe ekrany i stan błędu jako część implementacji.
+- Rozwiązuj zadanie najmniejszą czytelną zmianą. Nie dokładaj do niej niezwiązanego refaktoru.
+- Nie implementuj hipotetycznych wymagań ani elastyczności na zapas. Kiedy abstrakcja jest uzasadniona, opisuje `docs/ARCHITECTURE.md`, sekcja 5.
+- Wspólny kod twórz dla tego samego pojęcia, które ma się zmieniać razem. Mała duplikacja jest lepsza niż przedwczesna abstrakcja.
+- Stan, który naprawdę nie może wystąpić, traktuj jako błąd programisty i zgłaszaj go nazwaną asercją (`require`, `check`, `error` z opisem), zamiast zgadywać naprawę. Rzeczywiste błędy działania i danych użytkownika obsługuj jawnie.
+- Przed zakończeniem usuń kod, który zmiana dodała niepotrzebnie.
 
 ## Testy
 
