@@ -22,10 +22,10 @@ import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakSummaryCard
+import dev.retza.mak.ui.components.MakBannerAction
 import dev.retza.mak.ui.components.MakNoteBanner
 import dev.retza.mak.ui.components.MakNoteRole
 import dev.retza.mak.ui.components.MakSecondaryAction
-import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.settings.SyncAttentionUi
 
@@ -81,7 +81,7 @@ fun TodayScreen(
                         title = syncAttention.text,
                         subtitle = null,
                         role = MakNoteRole.Warning,
-                        actions = { MakTextAction(syncAttention.action, onOpenSync) }
+                        action = MakBannerAction(syncAttention.action, onOpenSync)
                     )
                 }
                 if (availableUpdateVersion != null) {
@@ -89,10 +89,8 @@ fun TodayScreen(
                         title = "Dostępna aktualizacja",
                         subtitle = "Wersja $availableUpdateVersion jest gotowa do pobrania.",
                         role = MakNoteRole.Neutral,
-                        actions = {
-                            MakTextAction("Nie teraz", onDismissUpdate)
-                            MakTextAction("Zobacz", onViewUpdate)
-                        }
+                        action = MakBannerAction("Zobacz", onViewUpdate),
+                        dismissAction = MakBannerAction("Nie teraz", onDismissUpdate)
                     )
                 }
             }

@@ -16,7 +16,6 @@ import androidx.compose.foundation.layout.ColumnScope
 import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -850,14 +849,21 @@ internal fun noteRoleColors(role: MakNoteRole, scheme: ColorScheme): NoteRoleCol
     )
 }
 
-/** Actions inside the banner are [MakTextAction]s; a screen's main action goes below it, full width. */
+/** An action of [MakNoteBanner]; the banner decides how it looks. */
+data class MakBannerAction(val text: String, val onClick: () -> Unit, val enabled: Boolean = true)
+
+/**
+ * The banner draws its own actions as text buttons on the right, [dismissAction] first; a screen's
+ * main action goes below the banner, full width.
+ */
 @Composable
 fun MakNoteBanner(
     title: String?,
     subtitle: String?,
     role: MakNoteRole,
     modifier: Modifier = Modifier,
-    actions: (@Composable RowScope.() -> Unit)? = null
+    action: MakBannerAction? = null,
+    dismissAction: MakBannerAction? = null
 ) {
     val colors = noteRoleColors(role, MaterialTheme.colorScheme)
     val prefix = when (role) {
@@ -905,12 +911,15 @@ fun MakNoteBanner(
                 }
             }
         }
-        actions?.let {
+        if (action != null || dismissAction != null) {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm, Alignment.End),
-                content = it
-            )
+                horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm, Alignment.End)
+            ) {
+                listOfNotNull(dismissAction, action).forEach {
+                    MakTextAction(it.text, it.onClick, enabled = it.enabled)
+                }
+            }
         }
     }
 }

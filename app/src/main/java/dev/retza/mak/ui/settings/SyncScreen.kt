@@ -17,6 +17,7 @@ import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.unit.dp
 import dev.retza.mak.sync.SyncChoice
+import dev.retza.mak.ui.components.MakBannerAction
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakNoteBanner
@@ -26,7 +27,6 @@ import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakScreenIntro
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSpacing
-import dev.retza.mak.ui.components.MakTextAction
 
 /** Summary for the row in the main settings screen. */
 fun SyncUiState.settingsSummary(): String = when {
@@ -93,7 +93,7 @@ fun SyncScreen(
                     title = CHOICE_TITLE,
                     subtitle = null,
                     role = MakNoteRole.Warning,
-                    actions = { MakTextAction(text = "Wybierz wersję", onClick = onOpenChoice) }
+                    action = MakBannerAction("Wybierz wersję", onOpenChoice)
                 )
             }
             state.issue?.let { issue ->
@@ -101,8 +101,8 @@ fun SyncScreen(
                     title = null,
                     subtitle = issue,
                     role = MakNoteRole.Error,
-                    actions = if (state.needsReconnect) {
-                        { MakTextAction(text = "Połącz ponownie", onClick = onReconnect, enabled = !state.isWorking) }
+                    action = if (state.needsReconnect) {
+                        MakBannerAction("Połącz ponownie", onReconnect, enabled = !state.isWorking)
                     } else null
                 )
             }
@@ -116,7 +116,7 @@ fun SyncScreen(
                 title = null,
                 subtitle = message,
                 role = MakNoteRole.Error,
-                actions = { MakTextAction(text = "Zamknij", onClick = onDismissError) }
+                dismissAction = MakBannerAction("Zamknij", onDismissError)
             )
         }
         if (state.archive.isNotEmpty()) {

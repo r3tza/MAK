@@ -6,6 +6,7 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 
 - Decyzja użytkownika: wariant B z porównania trzech wersji. Wszystkie role `MakNoteBanner` mają neutralne tło z ramką; ostrzeżenie i błąd różni tylko kolorowa ikona przy pierwszym wierszu. Akcja komunikatu jest przyciskiem tekstowym w nim, główna akcja ekranu stoi pod nim na pełną szerokość (`ARCHITECTURE.md`, sekcja 4). Odrzucony wariant A zmieniał tylko baner synchronizacji i zostawiał dwa style ostrzeżeń.
 - Odbiór I-69 wykazał, że dialog wyboru wersji nie liczył kierunków, więc telefon z samymi kierunkami wyglądał na pusty. Decyzja użytkownika: dialog pokazuje dwie karty, „Ten telefon” i „Dysk Google”, z liczbą kierunków, semestrów i zajęć; ekran synchronizacji pokazuje kółko postępu przy karcie konta podczas pracy.
+- Decyzja użytkownika: regułę akcji komunikatu wymusza kod (I-71). `MakNoteBanner` przyjmuje tylko akcję główną i akcję zamknięcia i sam rysuje je jako przyciski tekstowe. Hierarchię przycisków w dialogach i kreatorze („Później”, „Anuluj”, „Wstecz” jako przyciski tekstowe) użytkownik przyjął na później jako I-72; formularze zostają bez zmian.
 
 ## 2026-10-02: Zasady testów i publikacji oraz poprawki synchronizacji (I-70)
 
