@@ -121,10 +121,11 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun enabledAutomaticChecksHaveNoDescription() {
+    fun enabledAutomaticChecksNameOnlyTheInterval() {
         showUpdates(UpdateSettingsUi(installedVersion = "0.1.0", automaticChecks = true))
 
         composeTestRule.onNodeWithText("Sprawdzaj przy uruchomieniu").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Sprawdzanie raz dziennie.").assertIsDisplayed()
         composeTestRule.onNodeWithText("Nowe wersje nie pojawią się same.").assertDoesNotExist()
         composeTestRule.onNodeWithText("GitHub", substring = true).assertDoesNotExist()
     }

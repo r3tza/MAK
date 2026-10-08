@@ -244,7 +244,7 @@ fun SettingsScreen(
                     SettingsSwitchRow(
                         title = "Sprawdzaj przy uruchomieniu",
                         // How the check reaches GitHub belongs to the privacy policy, not to this row.
-                        details = if (updates.automaticChecks) null else "Nowe wersje nie pojawią się same.",
+                        details = if (updates.automaticChecks) "Sprawdzanie raz dziennie." else "Nowe wersje nie pojawią się same.",
                         checked = updates.automaticChecks,
                         onCheckedChange = onAutomaticChecksChanged
                     )
