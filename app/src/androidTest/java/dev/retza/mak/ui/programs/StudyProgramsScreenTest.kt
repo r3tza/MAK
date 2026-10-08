@@ -5,10 +5,12 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.theme.MAKTheme
@@ -73,7 +75,10 @@ class StudyProgramsScreenTest {
                         onNameChanged = {},
                         onColorChanged = {},
                         onSave = { saved += 1 },
-                        onCancel = {}
+                        onCancel = {},
+                        onRequestDelete = {},
+                        onConfirmDelete = {},
+                        onCancelDelete = {}
                     )
                 }
             }
@@ -84,5 +89,34 @@ class StudyProgramsScreenTest {
         composeTestRule.onNodeWithText("Zapisz kierunek").performClick()
 
         assertEquals(1, saved)
+    }
+
+    @Test
+    fun assignedProgramHasDisabledDeleteWithExplanationAt320Dp() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(900.dp)) {
+                    StudyProgramEditScreen(
+                        editor = StudyProgramEditorUi(
+                            id = 1L,
+                            name = "Informatyka",
+                            usedInSemesters = listOf("Semestr zimowy", "Semestr letni")
+                        ),
+                        onNameChanged = {},
+                        onColorChanged = {},
+                        onSave = {},
+                        onCancel = {},
+                        onRequestDelete = {},
+                        onConfirmDelete = {},
+                        onCancelDelete = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Usuń kierunek").performScrollTo().assertIsNotEnabled()
+        composeTestRule.onNodeWithText("Semestr zimowy, Semestr letni", substring = true)
+            .performScrollTo()
+            .assertIsDisplayed()
     }
 }

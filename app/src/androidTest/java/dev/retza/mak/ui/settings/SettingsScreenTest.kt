@@ -121,6 +121,15 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun enabledAutomaticChecksHaveNoDescription() {
+        showUpdates(UpdateSettingsUi(installedVersion = "0.1.0", automaticChecks = true))
+
+        composeTestRule.onNodeWithText("Sprawdzaj przy uruchomieniu").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Nowe wersje nie pojawią się same.").assertDoesNotExist()
+        composeTestRule.onNodeWithText("GitHub", substring = true).assertDoesNotExist()
+    }
+
+    @Test
     fun updatesSectionDisablesCheckAndHidesPendingRowWhileChecking() {
         showUpdates(UpdateSettingsUi(installedVersion = "0.1.0", checkSummary = "Sprawdzanie...", canCheck = false))
 

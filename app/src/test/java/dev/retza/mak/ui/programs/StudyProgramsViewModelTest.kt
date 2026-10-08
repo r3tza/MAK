@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.programs
 
+import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
@@ -148,5 +149,43 @@ class StudyProgramsViewModelTest {
         advanceUntilIdle()
 
         assertEquals("Szkic", viewModel.programs.value.editor.name)
+    }
+
+    @Test
+    fun unusedProgramIsDeletedOnlyAfterConfirmation() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink)
+        val effects = mutableListOf<StudyProgramsEffect>()
+        backgroundScope.launch { viewModel.effects.collect { effects += it } }
+        val unusedId = repository.saveStudyProgram(StudyProgramEntity(name = "Ekonomia", color = "#A65724"))
+        viewModel.openEditIfNeeded(unusedId)
+        advanceUntilIdle()
+
+        viewModel.requestDelete()
+        assertFalse("deleteStudyProgram" in repository.events)
+        viewModel.confirmDelete()
+        advanceUntilIdle()
+
+        assertFalse(repository.studyPrograms.any { it.id == unusedId })
+        assertEquals(listOf(StudyProgramsEffect.CloseEditor), effects)
+        assertEquals(UiFeedback("Usunięto kierunek", UiFeedbackKind.Success), sink.published.last())
+    }
+
+    @Test
+    fun assignedProgramCannotBeDeletedAndNamesItsSemesters() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        val assigned = repository.studyPrograms.first()
+        viewModel.openEditIfNeeded(assigned.id)
+        advanceUntilIdle()
+
+        viewModel.requestDelete()
+
+        val editor = viewModel.programs.value.editor
+        assertEquals(listOf(repository.semester.name), editor.usedInSemesters)
+        assertFalse(editor.canDelete)
+        assertFalse(editor.showDeleteConfirmation)
+        assertFalse("deleteStudyProgram" in repository.events)
     }
 }

@@ -289,6 +289,7 @@ class RoomPersistenceTest {
         }
 
         assertEquals(programId, database!!.studyProgramDao().findById(programId)?.id)
+        assertEquals(listOf("Semestr"), repository.observeStudyProgramSemesters(programId).first())
     }
 
     @Test

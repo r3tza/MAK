@@ -70,6 +70,9 @@ internal fun NavGraphBuilder.studyProgramRoutes(
                 studyProgramsViewModel.closeEditor()
                 onBack()
             },
+            onRequestDelete = studyProgramsViewModel::requestDelete,
+            onConfirmDelete = studyProgramsViewModel::confirmDelete,
+            onCancelDelete = studyProgramsViewModel::cancelDelete,
             modifier = Modifier.fillMaxSize()
         )
     }

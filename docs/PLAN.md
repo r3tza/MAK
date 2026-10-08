@@ -1,27 +1,49 @@
 # Plan najbliższych prac
 
-Cel: odebrać opcjonalną synchronizację Google na prawdziwym koncie. Kod i lokalne regresje I-70 są gotowe; I-69 wymaga projektu Google Cloud oraz udziału użytkownika.
+Cel: naprawić ustalenia z odbioru synchronizacji Google (I-69), a potem dodać wybór zmian przy konflikcie wersji. Odbiór I-69 przeszedł na wersji debug; pozostały punkt (klient OAuth release) wymaga udziału użytkownika i jest opisany w `QUEUE.md`.
 
-## 1. Odbierz synchronizację Google na dwóch klientach (I-69)
+## 1. Pozwól usunąć nieużywany kierunek i skróć opis aktualizacji (I-73)
 
-Cel: sprawdzić rzeczywiste OAuth i Drive na dwóch klientach z tym samym kontem testowym. Pliki: `docs/STACK.md` (sekcja „Konfiguracja synchronizacji Google”), `docs/QUEUE.md`, `docs/KNOWN_ISSUES.md`, `docs/PRIVACY.md`; kod tylko przy znalezionym błędzie (`app/src/main/java/dev/retza/mak/sync/`, `ui/settings/SyncViewModel.kt`).
+Cel: na ekranie „Edytuj kierunek” można usunąć kierunek, który nie jest przypisany do żadnego semestru; kierunek przypisany jest chroniony z wyjaśnieniem (decyzja użytkownika z 2026-10-08). W tym samym kroku I-74: przełącznik „Sprawdzaj przy uruchomieniu” w stanie włączonym nie ma opisu. Pliki: `data/database/Daos.kt`, `data/repository/SemesterRepository.kt`, `ui/programs/StudyProgramsViewModel.kt`, `ui/programs/StudyProgramsScreen.kt`, `ui/StudyProgramRoutes.kt`, `ui/settings/SettingsScreen.kt`; testy `app/src/test/.../ui/FakeSemesterRepository.kt`, `FakeRepository.kt`, `data/repository/DemoDataSeederTest.kt`, nowy test w `ui/programs/StudyProgramsViewModelTest.kt`, `androidTest/.../ui/settings/SettingsScreenTest.kt`, `androidTest/.../data/RoomPersistenceTest.kt`; dokumenty `docs/FEATURES.md`, `docs/QUEUE.md`.
 
-1. Użytkownik wykonuje punkty 1 do 4 z `STACK.md`, sekcja „Konfiguracja synchronizacji Google”, i udostępnia konto testowe.
-2. Użyj najwyżej jednego emulatora naraz, skonfigurowanego z 2048 MiB RAM. Drugi klient to telefon fizyczny albo osobny AVD uruchomiony po całkowitym zatrzymaniu pierwszego. Każdy AVD ma własne lokalne dane i 2048 MiB RAM, a oba korzystają ze wspólnego stanu Drive.
-3. Wykonaj scenariusze z punktu 5 tej sekcji w podanej kolejności. Przy każdym zapisz wynik i zrzut ekranu „Synchronizacja Google” w `build/sync-review`.
-4. Po znalezionym błędzie dodaj test JVM odtwarzający go w `SyncCoordinatorTest` albo `DrivePlanTransportTest`, popraw kod i powtórz dotknięty scenariusz.
+1. `StudyProgramDao`: zapytanie `observeSemesterNames(id: Long): Flow<List<String>>` zwracające nazwy semestrów z przypisaniem kierunku (`JOIN semester_programs`), posortowane po nazwie, bez powtórzeń.
+2. `SemesterRepository`: `fun observeStudyProgramSemesters(id: Long): Flow<List<String>>`; implementacje testowe zwracają nazwy z ich list przypisań.
+3. `StudyProgramEditorUi`: pola `usedInSemesters: List<String> = emptyList()`, `showDeleteConfirmation: Boolean = false`, `isDeleting: Boolean = false`. `StudyProgramsViewModel` obserwuje nazwy semestrów edytowanego kierunku. Metody: `requestDelete()` (tylko gdy lista jest pusta), `cancelDelete()`, `confirmDelete()`; ta ostatnia wywołuje `deleteStudyProgram`, publikuje „Usunięto kierunek”, czyści edytor i wysyła `StudyProgramsEffect.CloseEditor`. Błąd z repozytorium (kierunek przypisano w międzyczasie) publikuje „Nie udało się usunąć kierunku.” i zostawia edytor.
+4. `StudyProgramEditScreen`: pod przyciskami formularza osobna sekcja. Gdy `usedInSemesters` jest pusta: `MakSecondaryAction("Usuń kierunek", destructive = true)` otwiera `MakConfirmDeletionDialog` z tytułem „Usunąć kierunek?” i tekstem „Kierunek {nazwa} zniknie z listy kierunków. Tej operacji nie można cofnąć.”. Gdy nie jest pusta: przycisk nieaktywny, a pod nim `MakHelperText` „Kierunek jest używany w semestrach: {nazwy}. Aby go usunąć, najpierw usuń go z tych semestrów na ekranie Kierunki semestru.”.
+5. I-74: w `SettingsScreen.kt` przełącznik „Sprawdzaj przy uruchomieniu” ma `details = null` przy włączonym przełączniku; opis „Nowe wersje nie pojawią się same.” zostaje przy wyłączonym.
+6. `FEATURES.md`: opis ekranu „Kierunki” (usuwanie nieużywanego kierunku i blokada przypisanego) oraz opis przełącznika aktualizacji.
 
-Testy: tylko filtrowane regresje klas zmienionych w odpowiedzi na znaleziony błąd. Nie uruchamiaj pełnego zestawu aplikacji dla tego odbioru.
+Testy: `StudyProgramsViewModelTest`: usunięcie nieużywanego kierunku po potwierdzeniu, brak usunięcia bez potwierdzenia, brak możliwości prośby o usunięcie kierunku przypisanego. `RoomPersistenceTest`: `observeSemesterNames` zwraca nazwę semestru przypisania. `SettingsScreenTest`: po włączeniu przełącznika opisu nie ma.
 
-Przypadki brzegowe: dwa pliki `mak-plan.json` po równoczesnym pierwszym wysłaniu, brak `md5Checksum` w odpowiedzi Drive, aktualizacja pliku przez `X-HTTP-Method-Override: PATCH`, cofnięta zgoda w ustawieniach konta Google, plik usunięty ręcznie z folderu aplikacji.
+Przypadki brzegowe: kierunek przypisany w innym semestrze w czasie otwartego dialogu (błąd repozytorium, komunikat); ostatni kierunek na liście; dwa semestry o tej samej nazwie.
 
-Weryfikacja: odpowiednie filtrowane regresje lokalne oraz scenariusze z punktu 5 w `STACK.md` na obu klientach; zrzuty w `build/sync-review`.
+Weryfikacja: `gradlew.bat :app:testDebugUnitTest --tests "dev.retza.mak.ui.programs.*" --tests "dev.retza.mak.data.repository.DemoDataSeederTest"`, kompilacja testów Android, `SettingsScreenTest` i `RoomPersistenceTest` na emulatorze przez `am instrument`.
 
-Kryterium: wszystkie scenariusze z punktu 5 przeszły na obu klientach; wyniki są w `QUEUE.md`, a I-69 ma status `gotowe`.
+Kryterium: kontrole przechodzą, nieużywany kierunek z danych przykładowych da się usunąć na emulatorze, a I-73 i I-74 mają status `gotowe`.
 
-Kroki 2 do 4 realizują I-76 i I-77 według makiety zaakceptowanej 2026-10-08 (`LOG.md`, wpis z tego dnia). Wykonuj je po kolei; każdy kończy się osobnym commitem.
+## 2. Odświeżaj szczegóły terminu po zmianie danych (I-75)
 
-## 2. Policz różnice i połącz dwie wersje planu (I-77)
+Cel: szczegóły terminu pokazują aktualny stan po zapisie formularza zajęć i po pobraniu planu przez synchronizację, bez utraty niezapisanych notatek i edycji. Pliki: `ui/occurrence/OccurrenceViewModel.kt`, test `ui/occurrence/OccurrenceViewModelTest.kt`, `app/src/test/.../ui/FakeRepository.kt`, `docs/KNOWN_ISSUES.md`, `docs/QUEUE.md`.
+
+1. Dodaj pole `currentArgs: OccurrenceArgs?`, ustawiane w `open` i `reload` (po przeniesieniu terminu argumenty wskazują nową datę).
+2. W `open` zamiast `activePlanData.first { it != null }` zbieraj kolejne niepuste wartości `activePlanData` do końca `openJob`. Pierwsza wartość buduje stan jak dziś. Każda następna buduje świeży stan dla `currentArgs` i łączy go z bieżącym przez nową funkcję `OccurrenceDetailsUiState.withFreshData(fresh)`:
+   - szkic notatki wspólnej i notatki do terminu zostaje, gdy różni się od zapisanej wartości (`noteContentChanged`), a w przeciwnym razie przyjmuje nową wartość;
+   - przy otwartym oknie edycji terminu zostają pola `targetDateDraft`, `startTimeDraft`, `endTimeDraft`, `roomDraft`, a `originalDate` i `noteDate` nie zmieniają się;
+   - flagi zapisu, błędy szkiców, `showEditDialog` i `showDeleteConfirmation` zostają.
+   Brak terminu w nowych danych daje stan „nie znaleziono” tak jak `clearMissingOccurrence`.
+3. `editPlanData` przyjmuje każdą nową wartość.
+
+Testy: w `FakeRepository` dodaj `fun notifyDataChanged()`, które powoduje ponowną emisję `observeSemesterData` (licznik `MutableStateFlow` i `flatMapLatest`), bez zmiany istniejących zachowań. W `OccurrenceViewModelTest`: zmiana sali zajęć po otwarciu szczegółów jest widoczna; niezapisany szkic notatki wspólnej zostaje po zmianie sali; usunięcie zajęć po otwarciu daje „nie znaleziono”.
+
+Przypadki brzegowe: termin przeniesiony w szczegółach, a potem zmiana danych w tle; zmiana danych podczas zapisu notatki; zmiana aktywnego semestru.
+
+Weryfikacja: `gradlew.bat :app:testDebugUnitTest --tests "dev.retza.mak.ui.occurrence.*"`; ręcznie na emulatorze: szczegóły, edycja sali w formularzu zajęć, powrót.
+
+Kryterium: testy przechodzą, scenariusz ręczny pokazuje nową salę, a I-75 ma status `gotowe` i zniknął z `KNOWN_ISSUES.md`.
+
+Kroki 3 do 5 realizują I-76 i I-77 według makiety zaakceptowanej 2026-10-08 (`LOG.md`, wpis z tego dnia). Wykonuj je po kolei; każdy kończy się osobnym commitem.
+
+## 3. Policz różnice i połącz dwie wersje planu (I-77)
 
 Cel: czysta logika Kotlin, bez Androida, która z planu telefonu, planu z Dysku i ostatniego wspólnego planu (bazy) tworzy listę różnic, a z wyborów użytkownika tworzy poprawny połączony plan. Pliki: nowe `app/src/main/java/dev/retza/mak/sync/PlanDifferences.kt` i `sync/PlanMerge.kt`, nowe testy `app/src/test/java/dev/retza/mak/sync/PlanDifferencesTest.kt` i `PlanMergeTest.kt`. Model danych: `BackupData` i encje z `data/entity/Entities.kt`.
 
@@ -55,7 +77,7 @@ Weryfikacja: `gradlew.bat :app:testDebugUnitTest --tests "dev.retza.mak.sync.Pla
 
 Kryterium: oba pliki testów przechodzą, a w `PlanDifferences.kt` i `PlanMerge.kt` nie ma importów Androida.
 
-## 3. Zapamiętuj wspólny plan i daty zmian (I-76)
+## 4. Zapamiętuj wspólny plan i daty zmian (I-76)
 
 Cel: koordynator ma bazę do porównania (potrzebną też w I-77) i daty obu wersji. Pliki: `sync/SyncCoordinator.kt`, `sync/SyncStateStore.kt`, `sync/DrivePlanTransport.kt`, nowy `sync/LocalPlanChangeRecorder.kt`, `widget/MakWidgetRefresh.kt`, `MakApplication.kt`, testy `SyncCoordinatorTest`, `DrivePlanTransportTest`.
 
@@ -73,7 +95,7 @@ Weryfikacja: `gradlew.bat :app:testDebugUnitTest --tests "dev.retza.mak.sync.*"`
 
 Kryterium: testy pakietu `sync` przechodzą; stary `state.json` bez nowych pól wczytuje się bez błędu.
 
-## 4. Pokaż różnice i ekran „Wybierz zmiany” (I-77)
+## 5. Pokaż różnice i ekran „Wybierz zmiany” (I-77)
 
 Cel: interfejs według makiety z 2026-10-08, razem z dialogiem z I-76. Pliki: `sync/SyncCoordinator.kt`, `ui/settings/SyncViewModel.kt`, `ui/settings/SyncScreen.kt`, nowy `ui/settings/SyncChangesScreen.kt`, `ui/SettingsRoutes.kt`, `ui/MakRoutes.kt`, testy `SyncViewModelTest`, `SyncScreenTest`, nowy `SyncChangesScreenTest`; dokumenty `docs/FEATURES.md`, `docs/ARCHITECTURE.md` (sekcja o synchronizacji), `docs/SYNC_PROPOSAL.md`, `docs/QUEUE.md`.
 

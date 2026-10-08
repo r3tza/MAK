@@ -16,6 +16,9 @@ interface SemesterRepository {
 
     fun observeStudyPrograms(): Flow<List<StudyProgramRecord>>
 
+    /** Names of the semesters the study program is assigned to; an assigned program cannot be deleted. */
+    fun observeStudyProgramSemesters(id: Long): Flow<List<String>>
+
     fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramRecord>>
 
     fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarRecord>>
@@ -107,6 +110,9 @@ class RoomSemesterRepository(
 
     override fun observeStudyPrograms(): Flow<List<StudyProgramRecord>> =
         studyPrograms.observeAll().map { list -> list.map { it.toRecord() } }
+
+    override fun observeStudyProgramSemesters(id: Long): Flow<List<String>> =
+        studyPrograms.observeSemesterNames(id)
 
     override fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramRecord>> =
         semesterPrograms.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }

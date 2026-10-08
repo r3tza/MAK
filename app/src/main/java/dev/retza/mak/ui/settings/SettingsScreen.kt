@@ -243,11 +243,8 @@ fun SettingsScreen(
                     SettingsRowDivider()
                     SettingsSwitchRow(
                         title = "Sprawdzaj przy uruchomieniu",
-                        details = if (updates.automaticChecks) {
-                            "Najwyżej raz na 24 godziny. Aplikacja łączy się tylko z GitHubem i nie wysyła planu. GitHub widzi adres IP."
-                        } else {
-                            "Nowe wersje nie pojawią się same."
-                        },
+                        // How the check reaches GitHub belongs to the privacy policy, not to this row.
+                        details = if (updates.automaticChecks) null else "Nowe wersje nie pojawią się same.",
                         checked = updates.automaticChecks,
                         onCheckedChange = onAutomaticChecksChanged
                     )

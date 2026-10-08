@@ -28,8 +28,10 @@ import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.MakCourseColorPicker
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakColorDot
+import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakField
+import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakScreenIntro
@@ -104,6 +106,9 @@ fun StudyProgramEditScreen(
     onColorChanged: (String) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,
+    onRequestDelete: () -> Unit,
+    onConfirmDelete: () -> Unit,
+    onCancelDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
@@ -124,5 +129,32 @@ fun StudyProgramEditScreen(
             MakPrimaryAction(text = "Zapisz kierunek", onClick = onSave, enabled = !editor.isSaving)
             MakSecondaryAction(text = "Anuluj", onClick = onCancel, enabled = !editor.isSaving)
         }
+        // Deletion is a separate section, away from the form actions.
+        Column(
+            modifier = Modifier.padding(top = MakSpacing.xl),
+            verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+        ) {
+            MakSecondaryAction(
+                text = "Usuń kierunek",
+                onClick = onRequestDelete,
+                enabled = editor.canDelete,
+                destructive = true
+            )
+            if (editor.usedInSemesters.isNotEmpty()) {
+                MakHelperText(
+                    "Kierunek jest używany w semestrach: ${editor.usedInSemesters.joinToString(", ")}. " +
+                        "Aby go usunąć, najpierw usuń go z tych semestrów na ekranie Kierunki semestru."
+                )
+            }
+        }
+    }
+    if (editor.showDeleteConfirmation) {
+        MakConfirmDeletionDialog(
+            title = "Usunąć kierunek?",
+            text = "Kierunek ${editor.name.trim()} zniknie z listy kierunków. Tej operacji nie można cofnąć.",
+            isDeleting = editor.isDeleting,
+            onConfirm = onConfirmDelete,
+            onCancel = onCancelDelete
+        )
     }
 }

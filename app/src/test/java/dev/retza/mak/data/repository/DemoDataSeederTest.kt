@@ -54,6 +54,8 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
 
     override fun observeStudyPrograms(): Flow<List<StudyProgramRecord>> = flowOf(studyPrograms)
 
+    override fun observeStudyProgramSemesters(id: Long): Flow<List<String>> = flowOf(emptyList())
+
     override fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramRecord>> =
         flowOf(semesterPrograms.filter { it.semesterId == semesterId })
 

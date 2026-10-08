@@ -35,6 +35,12 @@ internal class FakeSemesterRepository(
     override fun observeStudyPrograms(): Flow<List<StudyProgramRecord>> =
         delegate.observeStudyPrograms().map { list -> list.map { it.toRecord() } }
 
+    override fun observeStudyProgramSemesters(id: Long): Flow<List<String>> =
+        delegate.observeSemesters().map { semesters ->
+            val assigned = delegate.semesterPrograms.filter { it.studyProgramId == id }.map { it.semesterId }.toSet()
+            semesters.filter { it.id in assigned }.map { it.name }.distinct().sorted()
+        }
+
     override fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramRecord>> =
         delegate.observeSemesterPrograms(semesterId).map { list -> list.map { it.toRecord() } }
 
