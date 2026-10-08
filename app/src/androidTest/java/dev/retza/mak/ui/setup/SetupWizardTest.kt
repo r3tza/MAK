@@ -17,6 +17,7 @@ import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.test.getUnclippedBoundsInRoot
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.width
+import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
@@ -131,6 +132,53 @@ class SetupWizardTest {
         assertTextActionAtStart(exitAction = "Wróć do ustawień", primaryAction = "Utwórz semestr")
         composeTestRule.onNode(hasText("Wróć do ustawień") and hasClickAction()).performScrollTo().performClick()
         assertEquals(1, returns)
+    }
+
+    @Test
+    fun backGestureGoesToPreviousStepFromClassesStep() {
+        var backCalls = 0
+        showWizard(SetupWizardUiState(step = SetupStep.Classes), onBack = { backCalls += 1 })
+
+        Espresso.pressBack()
+        assertEquals(1, backCalls)
+    }
+
+    @Test
+    fun backGestureClosesAnotherProgramForm() {
+        var backCalls = 0
+        showWizard(
+            SetupWizardUiState(step = SetupStep.Course, isAddingAnotherProgram = true),
+            onBack = { backCalls += 1 }
+        )
+
+        Espresso.pressBack()
+        assertEquals(1, backCalls)
+    }
+
+    @Test
+    fun backGestureReturnsToSettingsFromSemesterStep() {
+        var backCalls = 0
+        var returns = 0
+        showWizard(
+            SetupWizardUiState(),
+            onBack = { backCalls += 1 },
+            onReturnToSettings = { returns += 1 },
+            showReturnToSettings = true
+        )
+
+        Espresso.pressBack()
+        assertEquals(1, returns)
+        assertEquals(0, backCalls)
+    }
+
+    @Test
+    fun backGestureIsIgnoredWhileSaving() {
+        var backCalls = 0
+        showWizard(SetupWizardUiState(step = SetupStep.Course, isSaving = true), onBack = { backCalls += 1 })
+
+        Espresso.pressBack()
+        composeTestRule.onNodeWithText("Krok 2 z 3. Kierunek oddziela zajęcia w planie.").assertIsDisplayed()
+        assertEquals(0, backCalls)
     }
 
     // A text button keeps its content width, so it is narrower than the full-width primary action.

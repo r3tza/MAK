@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.setup
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -67,6 +68,16 @@ fun SetupWizard(
             "Dodaj zajęcia" to "Krok 3 z 3. Semestr i kierunki są gotowe."
         } else {
             "Dodaj zajęcia" to "Krok 3 z 3. Semestr i kierunek są gotowe."
+        }
+    }
+    // The system back gesture does what the step's visible exit action does. On the first step
+    // without "Wróć do ustawień" it stays with navigation, which closes the wizard.
+    val exitsWizard = state.step == SetupStep.Semester && !state.isAddingAnotherProgram
+    BackHandler(enabled = state.status == ScreenStatus.Ready && (!exitsWizard || showReturnToSettings)) {
+        when {
+            state.isSaving || state.isActivating -> Unit
+            exitsWizard -> onReturnToSettings()
+            else -> onBack()
         }
     }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
