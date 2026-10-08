@@ -80,6 +80,57 @@ class SyncCoordinatorTest {
     }
 
     @Test
+    fun pickedChangesAreSavedSentAndBothVersionsArchived() = runTest {
+        phone.data = basePlan()
+        coordinator.synchronize()
+        phone.data = basePlan(notes = listOf(noteRow(1, classId = 1, body = "Zadania z listy 3")))
+        drive.put(basePlan(classes = listOf(classRow(1, "Konsultacje", java.time.DayOfWeek.THURSDAY, 16, room = "B204"))))
+        assertEquals(SyncOutcome.ChoiceRequired, coordinator.synchronize())
+        val plans = coordinator.pendingPlans()!!
+        assertEquals("B204", plans.drive.semesters.single().classes.single().room)
+        val differences = coordinator.state.value.pendingChoice!!.differences
+
+        val outcome = coordinator.resolveWithPicks(
+            differences.associateWith { if (it.key.kind == PlanRowKind.CLASS) PlanSide.DRIVE else PlanSide.PHONE }
+        )
+
+        assertEquals(SyncOutcome.Uploaded, outcome)
+        val saved = phone.data.semesters.single()
+        assertEquals("B204", saved.classes.single().room)
+        assertEquals("Zadania z listy 3", saved.occurrenceNotes.single().body)
+        assertEquals(saved.classes, drive.plan().semesters.single().classes)
+        assertEquals(setOf(ArchiveSource.PHONE, ArchiveSource.DRIVE), archive.list().map { it.source }.toSet())
+        assertEquals(null, coordinator.pendingPlans())
+    }
+
+    @Test
+    fun picksThatLeaveARowWithoutItsParentChangeNothing() = runTest {
+        val base = basePlan()
+        phone.data = base
+        coordinator.synchronize()
+        phone.data = basePlan(classes = base.semesters[0].classes + classRow(2, "Bazy danych", java.time.DayOfWeek.MONDAY, 12))
+        drive.put(
+            basePlan(
+                programs = base.studyPrograms + dev.retza.mak.data.entity.StudyProgramEntity(id = 2, name = "Ekonometria", color = "#A65724"),
+                assignments = base.semesters[0].programs + dev.retza.mak.data.entity.SemesterProgramEntity(id = 2, semesterId = 1, studyProgramId = 2, academicCalendarId = 1),
+                classes = base.semesters[0].classes + classRow(3, "Statystyka", java.time.DayOfWeek.TUESDAY, 10, semesterProgramId = 2)
+            )
+        )
+        coordinator.synchronize()
+        val differences = coordinator.state.value.pendingChoice!!.differences
+        val before = phone.data
+
+        val outcome = coordinator.resolveWithPicks(
+            differences.associateWith { if (it.key.kind == PlanRowKind.CLASS) PlanSide.DRIVE else PlanSide.PHONE }
+        )
+
+        assertTrue(outcome is SyncOutcome.MergeProblems)
+        assertEquals(before, phone.data)
+        // Only the first synchronization uploaded.
+        assertEquals(1, drive.uploads)
+    }
+
+    @Test
     fun localChangesAreRecordedButNotTheEchoOfADownload() = runTest {
         coordinator.recordLocalChange()
         assertEquals(Instant.parse("2026-09-30T10:00:00Z").toEpochMilli(), coordinator.state.value.localChangedAtMillis)

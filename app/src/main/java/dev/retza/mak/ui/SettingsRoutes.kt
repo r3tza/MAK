@@ -25,6 +25,7 @@ import dev.retza.mak.ui.settings.SettingsNotificationsScreen
 import dev.retza.mak.ui.settings.SettingsScreen
 import dev.retza.mak.ui.settings.SettingsSemestersScreen
 import dev.retza.mak.ui.settings.SettingsViewModel
+import dev.retza.mak.ui.settings.SyncChangesScreen
 import dev.retza.mak.ui.settings.SyncScreen
 import dev.retza.mak.ui.settings.SyncViewModel
 import dev.retza.mak.ui.settings.settingsSummary
@@ -152,7 +153,23 @@ internal fun NavGraphBuilder.settingsRoute(
     }
 
     composable(MakRoutes.SettingsSync) {
-        SyncRoute(syncViewModel)
+        SyncRoute(syncViewModel, onOpenChanges = { navController.navigate(MakRoutes.SettingsSyncChanges) })
+    }
+
+    composable(MakRoutes.SettingsSyncChanges) {
+        val syncState by syncViewModel.sync.collectAsStateWithLifecycle()
+        val changes by syncViewModel.changes.collectAsStateWithLifecycle()
+        // A saved pick, another phone's upload or a disconnect ends the question; the list is then stale.
+        val questionOpen = syncState.choice?.differences?.isNotEmpty() == true
+        LaunchedEffect(questionOpen) {
+            if (!questionOpen) navController.popBackStack(MakRoutes.SettingsSync, inclusive = false)
+        }
+        SyncChangesScreen(
+            state = changes,
+            onPick = syncViewModel::pick,
+            onSave = syncViewModel::savePicks,
+            modifier = Modifier.fillMaxSize()
+        )
     }
 
     composable(MakRoutes.ImportPreview) {
@@ -188,7 +205,7 @@ internal fun SettingsEffects(
 }
 
 @Composable
-private fun SyncRoute(syncViewModel: SyncViewModel) {
+private fun SyncRoute(syncViewModel: SyncViewModel, onOpenChanges: () -> Unit) {
     val state by syncViewModel.sync.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var exportId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -223,6 +240,10 @@ private fun SyncRoute(syncViewModel: SyncViewModel) {
         onOpenChoice = syncViewModel::openChoice,
         onChoose = syncViewModel::choose,
         onDismissChoice = syncViewModel::dismissChoice,
+        onOpenChanges = {
+            syncViewModel.dismissChoice()
+            onOpenChanges()
+        },
         onRequestDisconnect = syncViewModel::requestDisconnect,
         onDisconnect = syncViewModel::disconnect,
         onDismissDisconnect = syncViewModel::dismissDisconnect,

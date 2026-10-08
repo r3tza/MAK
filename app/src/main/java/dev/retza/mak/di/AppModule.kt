@@ -76,7 +76,8 @@ class AppModule {
         editTracker = editTracker,
         clock = clock,
         ioDispatcher = Dispatchers.IO,
-        baseCopy = SyncBaseCopy(File(context.noBackupFilesDir, "google-sync/base.json"))
+        baseCopy = SyncBaseCopy(File(context.noBackupFilesDir, "google-sync/base.json")),
+        pendingCopy = SyncBaseCopy(File(context.noBackupFilesDir, "google-sync/pending.json"))
     )
 
     @Single

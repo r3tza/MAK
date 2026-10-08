@@ -67,6 +67,35 @@ class SyncScreenTest {
         assertEquals(true, dismissed)
     }
 
+    @Test
+    fun choiceWithDifferencesShowsThreeAndOpensTheChanges() {
+        var opened = false
+        val differences = (1..5).map { SyncDifferenceUi("Zajęcia $it", "Sala, czwartek, 16:00-17:00", "A1$it", "B2$it") }
+        show(
+            connected.copy(
+                showChoiceDialog = true,
+                choice = connected.choice!!.copy(phoneChanged = "Zmieniony dziś o 12:20", differences = differences)
+            ),
+            onOpenChanges = { opened = true }
+        )
+
+        composeTestRule.onNodeWithText("Co się różni (5)").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zajęcia 3").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zajęcia 4").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Zmieniony dziś o 12:20").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Semestry: 2").assertDoesNotExist()
+        tap("Wybierz zmiany")
+        assertEquals(true, opened)
+    }
+
+    @Test
+    fun choiceWithoutDifferencesShowsCountsAndNoChangesAction() {
+        show(connected.copy(showChoiceDialog = true))
+
+        composeTestRule.onNodeWithText("Semestry: 2").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Wybierz zmiany").assertDoesNotExist()
+    }
+
     private fun tap(text: String) {
         composeTestRule.onNodeWithText(text).performScrollTo().assertIsDisplayed().performClick()
     }
@@ -75,6 +104,7 @@ class SyncScreenTest {
         state: SyncUiState,
         onChoose: (SyncChoice) -> Unit = {},
         onDismissChoice: () -> Unit = {},
+        onOpenChanges: () -> Unit = {},
         onDisconnect: (Boolean) -> Unit = {},
         onDismissDisconnect: () -> Unit = {}
     ) {
@@ -91,6 +121,7 @@ class SyncScreenTest {
                             onOpenChoice = {},
                             onChoose = onChoose,
                             onDismissChoice = onDismissChoice,
+                            onOpenChanges = onOpenChanges,
                             onRequestDisconnect = {},
                             onDisconnect = onDisconnect,
                             onDismissDisconnect = onDismissDisconnect,

@@ -7,6 +7,8 @@ import androidx.lifecycle.viewModelScope
 import dev.retza.mak.sync.AccountMismatchException
 import dev.retza.mak.sync.ArchiveSource
 import dev.retza.mak.sync.AuthorizationAttempt
+import dev.retza.mak.sync.PendingSyncChoice
+import dev.retza.mak.sync.PlanSide
 import dev.retza.mak.sync.SyncAuthorization
 import dev.retza.mak.sync.PlanSummary
 import dev.retza.mak.sync.SyncAccount
@@ -35,6 +37,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -60,7 +64,29 @@ data class SyncUiState(
     val showDisconnectDialog: Boolean = false
 )
 
-data class SyncChoiceUi(val phone: List<String>, val drive: List<String>)
+/**
+ * The open version choice. [phone] and [drive] are plan counts, shown when there are no
+ * [differences] to list (no shared plan from the last run).
+ */
+data class SyncChoiceUi(
+    val phone: List<String>,
+    val drive: List<String>,
+    val phoneChanged: String = UNKNOWN_CHANGE,
+    val driveChanged: String = UNKNOWN_CHANGE,
+    val differences: List<SyncDifferenceUi> = emptyList()
+)
+
+/** The screen „Wybierz zmiany”: one pick per difference, all required before saving. */
+data class SyncChangesUi(
+    val differences: List<SyncDifferenceUi> = emptyList(),
+    val picks: Map<Int, PlanSide> = emptyMap(),
+    val problem: String? = null,
+    val flagged: Set<Int> = emptySet(),
+    val isSaving: Boolean = false
+) {
+    val chosenCount: Int get() = picks.size
+    val canSave: Boolean get() = differences.isNotEmpty() && picks.size == differences.size && !isSaving
+}
 
 data class SyncAttentionUi(val text: String, val action: String)
 
@@ -68,8 +94,21 @@ private data class SyncLocalState(
     val isWorking: Boolean = false,
     val errorMessage: String? = null,
     val showChoiceDialog: Boolean = false,
-    val showDisconnectDialog: Boolean = false
+    val showDisconnectDialog: Boolean = false,
+    val differences: DescribedDifferences? = null,
+    val picks: Map<Int, PlanSide> = emptyMap(),
+    val problem: String? = null,
+    val flagged: Set<Int> = emptySet()
 )
+
+/** Descriptions of the differences of one question, kept until the question changes. */
+private class DescribedDifferences(
+    val question: PendingSyncChoice,
+    val items: List<SyncDifferenceUi>,
+    val labels: SyncDifferenceLabels?
+)
+
+internal const val UNKNOWN_CHANGE = "Data zmiany nieznana"
 
 @KoinViewModel
 class SyncViewModel(
@@ -83,6 +122,75 @@ class SyncViewModel(
     val sync: StateFlow<SyncUiState> = combine(coordinator.state, local) { state, localState ->
         state.toUi(localState, coordinator.archivedPlans().map { it.toUi() })
     }.flowOn(Dispatchers.IO).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SyncUiState())
+
+    val changes: StateFlow<SyncChangesUi> = local.map { localState ->
+        SyncChangesUi(
+            differences = localState.differences?.items.orEmpty(),
+            picks = localState.picks,
+            problem = localState.problem,
+            flagged = localState.flagged,
+            isSaving = localState.isWorking
+        )
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SyncChangesUi())
+
+    init {
+        // Each new question gets its own descriptions; picks made for an earlier one are dropped.
+        viewModelScope.launch {
+            coordinator.state.map { it.pendingChoice }.distinctUntilChanged().collect { question ->
+                val described = question?.takeIf { it.differences.isNotEmpty() }?.let { describe(it) }
+                local.update {
+                    it.copy(differences = described, picks = emptyMap(), problem = null, flagged = emptySet())
+                }
+            }
+        }
+    }
+
+    private suspend fun describe(question: PendingSyncChoice): DescribedDifferences? = try {
+        withContext(Dispatchers.IO) {
+            val plans = coordinator.pendingPlans() ?: return@withContext null
+            val labels = SyncDifferenceLabels(plans.phone, plans.drive)
+            DescribedDifferences(question, question.differences.map(labels::describe), labels)
+        }
+    } catch (error: CancellationException) {
+        throw error
+    } catch (_: Exception) {
+        // Without descriptions the dialog falls back to keeping a whole version.
+        null
+    }
+
+    fun pick(index: Int, side: PlanSide) = local.update {
+        it.copy(picks = it.picks + (index to side), flagged = it.flagged - index)
+    }
+
+    fun savePicks() {
+        val described = local.value.differences ?: return
+        val picks = local.value.picks
+        if (picks.size != described.items.size) return
+        val byDifference = described.question.differences.withIndex().associate { (index, difference) ->
+            difference to picks.getValue(index)
+        }
+        local.update { it.copy(problem = null, flagged = emptySet()) }
+        work {
+            when (val outcome = coordinator.resolveWithPicks(byDifference)) {
+                is SyncOutcome.MergeProblems -> {
+                    val indexOf = described.question.differences.withIndex().associate { it.value to it.index }
+                    local.update { state ->
+                        state.copy(
+                            problem = outcome.problems.map { described.labels?.describe(it) ?: GENERIC_MERGE_PROBLEM }
+                                .distinct().joinToString("\n"),
+                            flagged = outcome.problems.flatMap {
+                                listOfNotNull(it.childDifference?.let(indexOf::get), it.parentDifference?.let(indexOf::get))
+                            }.toSet()
+                        )
+                    }
+                }
+                is SyncOutcome.MergeInvalid -> local.update {
+                    it.copy(problem = "Tych zmian nie da się połączyć: ${outcome.errors.joinToString(" ")}")
+                }
+                else -> report(outcome)
+            }
+        }
+    }
 
     // Google consent screens the route must launch; the result comes back through onAuthorizationResult.
     private val consentRequests = Channel<PendingIntent>(Channel.BUFFERED)
@@ -207,6 +315,8 @@ class SyncViewModel(
             SyncOutcome.WaitingForEditor -> "Plan z Dysku zostanie pobrany po zamknięciu formularza."
             SyncOutcome.RetryLater -> "Plan zmieniał się w trakcie synchronizacji. Spróbuj ponownie."
             SyncOutcome.NoAccount, SyncOutcome.NeedsAttention -> null
+            // Only picks lead here; savePicks shows them on its screen.
+            is SyncOutcome.MergeProblems, is SyncOutcome.MergeInvalid -> null
         }
         message?.let { feedbackSink.publish(UiFeedback(it, UiFeedbackKind.Success)) }
     }
@@ -247,7 +357,15 @@ private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemU
     },
     issue = issueText(),
     needsReconnect = issue == SyncIssue.AUTHORIZATION_REQUIRED,
-    choice = pendingChoice?.let { SyncChoiceUi(it.local.label(), it.remote.label()) },
+    choice = pendingChoice?.let { question ->
+        SyncChoiceUi(
+            phone = question.local.label(),
+            drive = question.remote.label(),
+            phoneChanged = changeLabel(question.phoneChangedAtMillis),
+            driveChanged = changeLabel(question.driveChangedAtMillis),
+            differences = local.differences?.takeIf { it.question == question }?.items.orEmpty()
+        )
+    },
     archive = archive,
     isWorking = local.isWorking,
     errorMessage = local.errorMessage,
@@ -264,6 +382,23 @@ private fun SyncState.issueText(): String? = when (issue) {
 }
 
 internal const val CHOICE_TITLE = "Plan różni się na telefonie i na Dysku"
+
+private const val GENERIC_MERGE_PROBLEM = "Wybrane zmiany wykluczają się. Wybierz tę samą wersję przy powiązanych pozycjach."
+
+private val changeTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+private val changeDayFormatter = DateTimeFormatter.ofPattern("d MMMM", Locale.forLanguageTag("pl-PL"))
+
+/** „Zmieniony dziś o 12:20”, „Zmieniony wczoraj o 9:05” or „Zmieniony 7 października o 18:05”. */
+internal fun changeLabel(millis: Long?, zone: ZoneId = ZoneId.systemDefault(), today: java.time.LocalDate = java.time.LocalDate.now(zone)): String {
+    if (millis == null) return UNKNOWN_CHANGE
+    val moment = Instant.ofEpochMilli(millis).atZone(zone)
+    val day = when (moment.toLocalDate()) {
+        today -> "dziś"
+        today.minusDays(1) -> "wczoraj"
+        else -> changeDayFormatter.format(moment)
+    }
+    return "Zmieniony $day o ${changeTimeFormatter.format(moment)}"
+}
 
 private fun PlanSummary.label() = listOf(
     "Kierunki: $studyProgramCount",

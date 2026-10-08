@@ -24,9 +24,23 @@ sealed interface SyncOutcome {
 
     /** The plan kept changing on one side during the run; the next run starts over. */
     data object RetryLater : SyncOutcome
+
+    /** Picked changes need rows another pick left out; nothing was changed. */
+    data class MergeProblems(val problems: List<PlanMergeProblem>) : SyncOutcome
+
+    /** Picked changes break a rule of the plan; nothing was changed. */
+    data class MergeInvalid(val errors: List<String>) : SyncOutcome
 }
 
 enum class SyncChoice { KEEP_PHONE, KEEP_DRIVE }
+
+/** Both plans behind an open version choice, for describing its differences. */
+data class PendingPlans(val phone: BackupData, val drive: BackupData)
+
+private sealed interface Resolution {
+    data class Keep(val choice: SyncChoice) : Resolution
+    data class Merge(val picks: Map<PlanDifference, PlanSide>) : Resolution
+}
 
 /**
  * Keeps one plan file on Drive in step with the phone (`SYNC_PROPOSAL.md`, „Przebieg synchronizacji”).
@@ -41,7 +55,9 @@ class SyncCoordinator(
     private val clock: Clock,
     // Encoding the plan and writing files with fsync must not block the main thread of a screen.
     private val ioDispatcher: CoroutineDispatcher,
-    private val baseCopy: SyncBaseCopy = SyncBaseCopy()
+    private val baseCopy: SyncBaseCopy = SyncBaseCopy(),
+    // The Drive plan an open choice describes, so its differences can be shown without a download.
+    private val pendingCopy: SyncBaseCopy = SyncBaseCopy()
 ) {
     private val lock = Mutex()
 
@@ -53,13 +69,28 @@ class SyncCoordinator(
     private val current by lazy { MutableStateFlow(store.load()) }
     val state: StateFlow<SyncState> get() = current
 
-    suspend fun synchronize(): SyncOutcome = serialized { run(choice = null) }
+    suspend fun synchronize(): SyncOutcome = serialized { run(resolution = null) }
 
     /** Applies [choice] only to the versions the question described; otherwise the question is asked again. */
-    suspend fun resolveChoice(choice: SyncChoice): SyncOutcome = serialized { run(choice) }
+    suspend fun resolveChoice(choice: SyncChoice): SyncOutcome = serialized { run(Resolution.Keep(choice)) }
+
+    /**
+     * Keeps, for each difference of the open question, the picked side, then saves and sends the result.
+     * Like [resolveChoice], it applies only to the versions the question described.
+     */
+    suspend fun resolveWithPicks(picks: Map<PlanDifference, PlanSide>): SyncOutcome =
+        serialized { run(Resolution.Merge(picks)) }
+
+    /** The phone plan and the Drive plan of the open question, or null when there is none. */
+    suspend fun pendingPlans(): PendingPlans? = serialized {
+        if (current.value.pendingChoice == null) return@serialized null
+        val drive = pendingCopy.read()?.let { runCatching { SyncPlanFile.decode(it) }.getOrNull() } ?: return@serialized null
+        PendingPlans(gateway.snapshot(), drive)
+    }
 
     suspend fun connect(account: SyncAccount) = serialized {
         baseCopy.delete()
+        pendingCopy.delete()
         save(SyncState(account = account))
     }
 
@@ -68,6 +99,7 @@ class SyncCoordinator(
         val account = current.value.account
         if (deleteRemote && account != null) transport.deleteAll(account)
         baseCopy.delete()
+        pendingCopy.delete()
         save(SyncState())
     }
 
@@ -85,10 +117,10 @@ class SyncCoordinator(
 
     fun archivedPlan(id: String): ByteArray? = archive.read(id)
 
-    private suspend fun run(choice: SyncChoice?): SyncOutcome {
+    private suspend fun run(resolution: Resolution?): SyncOutcome {
         val account = current.value.account ?: return SyncOutcome.NoAccount
         return try {
-            repeat(MAX_PASSES) { pass(account, choice)?.let { return it } }
+            repeat(MAX_PASSES) { pass(account, resolution)?.let { return it } }
             SyncOutcome.RetryLater
         } catch (error: InvalidRemotePlanException) {
             issue(SyncIssue.INVALID_REMOTE_PLAN, error.message)
@@ -122,7 +154,7 @@ class SyncCoordinator(
     }
 
     /** One attempt; null means one side changed during the attempt and it has to start over. */
-    private suspend fun pass(account: SyncAccount, choice: SyncChoice?): SyncOutcome? {
+    private suspend fun pass(account: SyncAccount, resolution: Resolution?): SyncOutcome? {
         val state = current.value
         val local = gateway.snapshot()
         val localBytes = SyncPlanFile.encode(local)
@@ -151,18 +183,24 @@ class SyncCoordinator(
         }
 
         val asked = state.pendingChoice
-        if (choice != null && asked?.localFingerprint == localFingerprint && asked.remoteMd5 == remote.md5) {
-            return when (choice) {
-                SyncChoice.KEEP_PHONE -> {
-                    localSizeIssue(localBytes)?.let { return it }
-                    archive.add(remoteBytes, ArchiveSource.DRIVE, clock.millis())
-                    upload(account, localFingerprint, localBytes, remote)
+        if (resolution != null && asked?.localFingerprint == localFingerprint && asked.remoteMd5 == remote.md5) {
+            return when (resolution) {
+                is Resolution.Keep -> when (resolution.choice) {
+                    SyncChoice.KEEP_PHONE -> {
+                        localSizeIssue(localBytes)?.let { return it }
+                        archive.add(remoteBytes, ArchiveSource.DRIVE, clock.millis())
+                        upload(account, localFingerprint, localBytes, remote)
+                    }
+                    SyncChoice.KEEP_DRIVE -> download(
+                        local, localFingerprint, localBytes, remote, remoteBytes, remoteData, firstRun, rejectsLocal = true
+                    )
                 }
-                SyncChoice.KEEP_DRIVE -> download(
-                    local, localFingerprint, localBytes, remote, remoteBytes, remoteData, firstRun, rejectsLocal = true
+                is Resolution.Merge -> merge(
+                    account, local, localFingerprint, localBytes, remote, remoteBytes, remoteData, asked.differences, resolution.picks
                 )
             }
         }
+        pendingCopy.write(remoteBytes)
         save(
             state.copy(
                 pendingChoice = PendingSyncChoice(
@@ -179,6 +217,43 @@ class SyncCoordinator(
             )
         )
         return SyncOutcome.ChoiceRequired
+    }
+
+    /**
+     * Saves the plan built from the picks on the phone, then sends it. Both earlier versions go to the
+     * archive. If Drive changes before the upload, the next pass asks again about the new versions.
+     */
+    private suspend fun merge(
+        account: SyncAccount,
+        local: BackupData,
+        localFingerprint: String,
+        localBytes: ByteArray,
+        remote: RemotePlanFile,
+        remoteBytes: ByteArray,
+        remoteData: BackupData,
+        differences: List<PlanDifference>,
+        picks: Map<PlanDifference, PlanSide>
+    ): SyncOutcome? {
+        val today = clock.instant().atZone(clock.zone).toLocalDate()
+        val merged = when (val result = mergePlans(local, remoteData, differences, picks, today)) {
+            is PlanMergeResult.Problems -> return SyncOutcome.MergeProblems(result.problems)
+            is PlanMergeResult.Invalid -> return SyncOutcome.MergeInvalid(result.errors)
+            is PlanMergeResult.Ready -> result.data
+        }
+        val mergedBytes = SyncPlanFile.encode(merged)
+        localSizeIssue(mergedBytes)?.let { return it }
+        val replacement = editTracker.withReplacement {
+            archive.add(localBytes, ArchiveSource.PHONE, clock.millis())
+            archive.add(remoteBytes, ArchiveSource.DRIVE, clock.millis())
+            gateway.replaceIfUnchanged(localFingerprint, merged, keepLocalActive = true, merged.semesterCovering(today))
+                .also { lastReplacementMillis = clock.millis() }
+        }
+        val replaced = when (replacement) {
+            PlanReplacementResult.Editing -> return SyncOutcome.WaitingForEditor
+            is PlanReplacementResult.Applied -> replacement.value
+        }
+        if (!replaced) return null
+        return upload(account, SyncPlanFile.fingerprint(mergedBytes), mergedBytes, expected = remote)
     }
 
     /** A damaged or missing copy means the differences cannot be told apart reliably. */
@@ -235,6 +310,7 @@ class SyncCoordinator(
         sharedBytes: ByteArray?
     ): SyncOutcome {
         sharedBytes?.let(baseCopy::write)
+        pendingCopy.delete()
         save(
             current.value.copy(
                 remoteMd5 = remote.md5,

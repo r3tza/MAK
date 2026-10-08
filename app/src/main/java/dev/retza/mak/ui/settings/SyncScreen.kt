@@ -1,20 +1,28 @@
 package dev.retza.mak.ui.settings
 
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.widthIn
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.retza.mak.sync.SyncChoice
 import dev.retza.mak.ui.components.MakBannerAction
@@ -27,6 +35,7 @@ import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakScreenIntro
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSpacing
+import dev.retza.mak.ui.components.MakTextAction
 
 /** Summary for the row in the main settings screen. */
 fun SyncUiState.settingsSummary(): String = when {
@@ -44,6 +53,7 @@ fun SyncScreen(
     onOpenChoice: () -> Unit,
     onChoose: (SyncChoice) -> Unit,
     onDismissChoice: () -> Unit,
+    onOpenChanges: () -> Unit,
     onRequestDisconnect: () -> Unit,
     onDisconnect: (deleteRemote: Boolean) -> Unit,
     onDismissDisconnect: () -> Unit,
@@ -141,8 +151,29 @@ fun SyncScreen(
             description = "Odrzuconą wersję znajdziesz w „Poprzednie wersje”, skąd możesz ją wyeksportować.",
             onDismiss = onDismissChoice
         ) {
-            PlanSummaryCard("Ten telefon", choice.phone)
-            PlanSummaryCard("Dysk Google", choice.drive)
+            // Counts tell little when the content changed, so they give way to the list of differences.
+            val withDifferences = choice.differences.isNotEmpty()
+            Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
+                VersionCard(
+                    title = "Ten telefon",
+                    lines = listOf(choice.phoneChanged) + if (withDifferences) emptyList() else choice.phone,
+                    modifier = Modifier.weight(1f)
+                )
+                VersionCard(
+                    title = "Dysk Google",
+                    lines = listOf(choice.driveChanged) + if (withDifferences) emptyList() else choice.drive,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            if (withDifferences) {
+                Text(
+                    "Co się różni (${choice.differences.size})",
+                    style = MaterialTheme.typography.titleSmall,
+                    fontWeight = FontWeight.SemiBold
+                )
+                DifferenceList(choice.differences.take(DIALOG_DIFFERENCES))
+                MakTextAction(text = "Wybierz zmiany", onClick = onOpenChanges)
+            }
             MakPrimaryAction(text = "Zachowaj plan z telefonu", onClick = { onChoose(SyncChoice.KEEP_PHONE) })
             MakSecondaryAction(text = "Zachowaj plan z Dysku", onClick = { onChoose(SyncChoice.KEEP_DRIVE) })
             MakSecondaryAction(text = "Później", onClick = onDismissChoice)
@@ -162,13 +193,65 @@ fun SyncScreen(
     }
 }
 
+private const val DIALOG_DIFFERENCES = 3
+
 @Composable
-private fun PlanSummaryCard(title: String, lines: List<String>) {
-    SettingsListSection(title) {
-        SettingsFieldItem {
-            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-                lines.forEach { Text(it, style = MaterialTheme.typography.bodyLarge) }
+private fun VersionCard(title: String, lines: List<String>, modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier
+            .clip(RoundedCornerShape(13.dp))
+            .background(MaterialTheme.colorScheme.surfaceContainerLow)
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(13.dp))
+            .padding(horizontal = MakSpacing.md, vertical = MakSpacing.sm),
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+    ) {
+        Text(title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+        lines.forEach {
+            Text(it, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        }
+    }
+}
+
+/** Differences in a bordered list; shared by the dialog and the screen „Wybierz zmiany”. */
+@Composable
+internal fun DifferenceList(differences: List<SyncDifferenceUi>) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(13.dp))
+            .border(1.dp, MaterialTheme.colorScheme.outlineVariant, RoundedCornerShape(13.dp))
+    ) {
+        differences.forEachIndexed { index, difference ->
+            if (index > 0) HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
+            Column(
+                modifier = Modifier.padding(horizontal = MakSpacing.md, vertical = MakSpacing.sm),
+                verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+            ) {
+                DifferenceHeading(difference)
+                SideValue("Telefon", difference.phone)
+                SideValue("Dysk", difference.drive)
             }
         }
+    }
+}
+
+@Composable
+internal fun DifferenceHeading(difference: SyncDifferenceUi) {
+    Column {
+        Text(difference.title, style = MaterialTheme.typography.bodyMedium, fontWeight = FontWeight.SemiBold)
+        Text(difference.subtitle, style = MaterialTheme.typography.bodySmall, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    }
+}
+
+@Composable
+private fun SideValue(side: String, value: String) {
+    Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
+        Text(
+            side,
+            modifier = Modifier.widthIn(min = 56.dp),
+            style = MaterialTheme.typography.bodySmall,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(value, style = MaterialTheme.typography.bodySmall)
     }
 }
