@@ -4,9 +4,11 @@ Stan na 2026-10-02. Ten rejestr obejmuje otwarte problemy potwierdzone przegląd
 
 ## Otwarte problemy
 
-Poprawki z audytu synchronizacji I-70 zostały zakończone i zaakceptowane po recenzji 2026-10-02. Rzeczywiste OAuth i Drive nadal wymagają odbioru I-69. Pozostałe dwie kwestie z audytu interfejsu (obramowane przyciski ikon w górnym pasku i trzy style zaznaczenia na „Planie”) użytkownik zamknął bez zmian (`LOG.md`, 2026-09-29).
+Poprawki z audytu synchronizacji I-70 zostały zakończone i zaakceptowane po recenzji 2026-10-02. Rzeczywiste OAuth i Drive przeszły odbiór I-69 na wersji debug 2026-10-08; brakuje sprawdzenia klienta OAuth release. Pozostałe dwie kwestie z audytu interfejsu (obramowane przyciski ikon w górnym pasku i trzy style zaznaczenia na „Planie”) użytkownik zamknął bez zmian (`LOG.md`, 2026-09-29).
 
-Synchronizacja Google (I-68) nie należy jeszcze do opublikowanego wydania. Rzeczywiste logowanie i wymiana na dwóch telefonach wymagają projektu Google Cloud, klientów OAuth oraz konta testowego (I-69); bez nich zgoda Google na emulatorze kończy się anulowaniem. Świadome ograniczenie projektu: Drive nie ma warunkowego zapisu, więc przy niemal równoczesnym wysłaniu z dwóch telefonów zostaje późniejsza wersja, a druga trafia do archiwum telefonu przy kolejnej synchronizacji. Szkic zajęć odtworzony po zakończeniu procesu aplikacji nie wstrzymuje pobrania planu; jeśli w tym czasie inny telefon zmienił plan, zapis szkicu może trafić do wpisu o tym samym numerze.
+Synchronizacja Google (I-68) nie należy jeszcze do opublikowanego wydania. Projekt Google Cloud działa w trybie Testing, więc logować mogą się tylko konta z listy testowej; publikacja aplikacji w Google Auth Platform jest osobną decyzją przed wydaniem. Świadome ograniczenie projektu: Drive nie ma warunkowego zapisu, więc przy niemal równoczesnym wysłaniu z dwóch telefonów zostaje późniejsza wersja, a druga trafia do archiwum telefonu przy kolejnej synchronizacji. Szkic zajęć odtworzony po zakończeniu procesu aplikacji nie wstrzymuje pobrania planu; jeśli w tym czasie inny telefon zmienił plan, zapis szkicu może trafić do wpisu o tym samym numerze.
+
+Szczegóły terminu nie odświeżają się po zmianie danych (I-75): po zapisie formularza zajęć otwartego ze szczegółów albo po pobraniu planu przez synchronizację ekran pokazuje stan z chwili otwarcia, bo `OccurrenceViewModel.open` czyta jednorazową migawkę planu. Zgłoszone przez użytkownika 2026-10-08.
 
 ### Sprzeczności dokumentacji i pytania po audycie
 
