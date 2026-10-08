@@ -38,6 +38,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -81,6 +82,9 @@ class OccurrenceViewModel(
     private var noteDate: LocalDate? = null
     private var openJob: Job? = null
     private var occurrenceStateOperationRunning = false
+    private var editPlanData: ActivePlanData? = null
+    // The occurrence shown now; a move in the details points it at the new date.
+    private var currentArgs: OccurrenceArgs? = null
 
     fun open(routeId: String) {
         val args = OccurrenceArgs.parse(routeId) ?: return
@@ -93,18 +97,67 @@ class OccurrenceViewModel(
         originalDate = null
         noteDate = null
         state.value = derive(emptyOccurrenceDetails())
+        currentArgs = args
         openJob = viewModelScope.launch {
-            val data = activePlanData.first { it != null } ?: return@launch
-            val built = buildDetails(data, args)
-            if (built == null) {
-                state.value = derive(emptyOccurrenceDetails().copy(notFound = true))
-                return@launch
+            var first = true
+            // Later emissions come from a saved class form or a plan downloaded by sync.
+            activePlanData.filterNotNull().collect { data ->
+                editPlanData = data
+                val shown = currentArgs ?: return@collect
+                val built = buildDetails(data, shown)
+                if (built == null) {
+                    if (first) {
+                        state.value = derive(emptyOccurrenceDetails().copy(notFound = true))
+                    } else {
+                        clearMissingOccurrence()
+                    }
+                } else if (first) {
+                    originalDate = built.baseDate.toLocalDateOrNull()
+                    noteDate = built.baseDate.toLocalDateOrNull()
+                    selectedClassIdState.value = shown.classId
+                    state.value = derive(built)
+                } else {
+                    val current = state.value
+                    if (!current.showEditDialog) {
+                        originalDate = built.baseDate.toLocalDateOrNull()
+                        noteDate = built.baseDate.toLocalDateOrNull()
+                    }
+                    selectedClassIdState.value = shown.classId
+                    state.value = derive(current.withFreshData(built))
+                }
+                first = false
             }
-            originalDate = built.baseDate.toLocalDateOrNull()
-            noteDate = built.baseDate.toLocalDateOrNull()
-            selectedClassIdState.value = args.classId
-            state.value = derive(built)
         }
+    }
+
+    /** Reloads the source data after edit admission, before a preview starts a draft or confirmation. */
+    suspend fun refreshForEdit(routeId: String): Boolean {
+        val args = OccurrenceArgs.parse(routeId) ?: return false
+        val semester = semesterRepository.observeActiveSemester().first()
+        if (semester == null) {
+            clearMissingOccurrence()
+            return false
+        }
+        val data = scheduleRepository.observeActivePlanData(semester.id).first()
+        val built = data?.let { buildDetails(it, args) }
+        if (built == null) {
+            clearMissingOccurrence()
+            return false
+        }
+        editPlanData = data
+        currentArgs = args
+        originalDate = built.baseDate.toLocalDateOrNull()
+        noteDate = built.baseDate.toLocalDateOrNull()
+        selectedClassIdState.value = args.classId
+        state.value = derive(built)
+        return true
+    }
+
+    private fun clearMissingOccurrence() {
+        selectedClassIdState.value = null
+        originalDate = null
+        noteDate = null
+        state.value = derive(emptyOccurrenceDetails().copy(notFound = true))
     }
 
     fun update(transform: (OccurrenceDetailsUiState) -> OccurrenceDetailsUiState) {
@@ -155,14 +208,18 @@ class OccurrenceViewModel(
 
     fun cancelOccurrence() {
         if (occurrenceStateOperationRunning) return
-        val data = activePlanData.value ?: return
+        val data = editPlanData ?: activePlanData.value ?: return
         val classId = selectedClassIdState.value ?: return
         val original = originalDate ?: return
         occurrenceStateOperationRunning = true
+        update { it.copy(isSaving = true, draftError = null) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
             errorMessage = "Nie udało się odwołać terminu.",
-            onFinish = { occurrenceStateOperationRunning = false },
+            onFinish = {
+                occurrenceStateOperationRunning = false
+                update { it.copy(isSaving = false) }
+            },
             onError = { update { it.copy(draftError = "Nie udało się odwołać terminu.") } }
         ) {
             val existing = freshPlanData()?.occurrenceChanges?.firstOrNull {
@@ -191,14 +248,18 @@ class OccurrenceViewModel(
 
     fun restoreOccurrence() {
         if (occurrenceStateOperationRunning) return
-        val data = activePlanData.value ?: return
+        val data = editPlanData ?: activePlanData.value ?: return
         val classId = selectedClassIdState.value ?: return
         val original = originalDate ?: return
         occurrenceStateOperationRunning = true
+        update { it.copy(isSaving = true, draftError = null) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
             errorMessage = "Nie udało się przywrócić terminu.",
-            onFinish = { occurrenceStateOperationRunning = false }
+            onFinish = {
+                occurrenceStateOperationRunning = false
+                update { it.copy(isSaving = false) }
+            }
         ) {
             val change = freshPlanData()?.occurrenceChanges?.firstOrNull {
                 it.classId == classId.toString() && it.originalDate == original
@@ -256,7 +317,7 @@ class OccurrenceViewModel(
 
     fun saveOccurrenceNote() {
         if (state.value.isSavingOccurrenceNote) return
-        val data = activePlanData.value ?: return
+        val data = editPlanData ?: activePlanData.value ?: return
         val classId = selectedClassIdState.value ?: return
         val date = noteDate ?: return
         val draft = state.value
@@ -308,7 +369,7 @@ class OccurrenceViewModel(
 
     fun saveOccurrenceChange() {
         if (state.value.isSaving) return
-        val data = activePlanData.value ?: return
+        val data = editPlanData ?: activePlanData.value ?: return
         val classId = selectedClassIdState.value ?: return
         val original = originalDate ?: return
         val draft = state.value
@@ -385,13 +446,16 @@ class OccurrenceViewModel(
     }
 
     private suspend fun freshPlanData(): ActivePlanData? =
-        activePlanData.value?.semester?.id?.toLong()?.let { semesterId ->
-            scheduleRepository.observeActivePlanData(semesterId).first()
-        }
+        semesterRepository.observeActiveSemester().first()?.let { semester ->
+            scheduleRepository.observeActivePlanData(semester.id).first()
+        }.also { editPlanData = it }
 
     private suspend fun reload(semesterId: Long, classId: Long, occurrenceDate: LocalDate) {
         val fresh = scheduleRepository.observeActivePlanData(semesterId).first() ?: return
-        val built = buildDetails(fresh, OccurrenceArgs(classId, occurrenceDate)) ?: return
+        editPlanData = fresh
+        val args = OccurrenceArgs(classId, occurrenceDate)
+        val built = buildDetails(fresh, args) ?: return
+        currentArgs = args
         originalDate = built.baseDate.toLocalDateOrNull()
         noteDate = built.baseDate.toLocalDateOrNull()
         selectedClassIdState.value = classId
@@ -472,6 +536,32 @@ class OccurrenceViewModel(
     private fun ActivePlanData.studyProgramName(assignmentId: String): String {
         val assignment = semesterPrograms.firstOrNull { it.id == assignmentId } ?: return ""
         return courses.firstOrNull { it.id == assignment.studyProgramId }?.name.orEmpty()
+    }
+
+    /**
+     * Takes the stored values from [fresh] and keeps what the user is doing: a note draft that
+     * differs from its saved note, the drafts of an open edit dialog, and the dialog and saving flags.
+     */
+    private fun OccurrenceDetailsUiState.withFreshData(fresh: OccurrenceDetailsUiState): OccurrenceDetailsUiState {
+        val keepSharedDraft = noteContentChanged(sharedNoteDraft, sharedNote)
+        val keepOccurrenceDraft = noteContentChanged(occurrenceNoteDraft, occurrenceNote)
+        return fresh.copy(
+            sharedNoteDraft = if (keepSharedDraft) sharedNoteDraft else fresh.sharedNote.orEmpty(),
+            sharedNoteError = sharedNoteError,
+            occurrenceNoteDraft = if (keepOccurrenceDraft) occurrenceNoteDraft else fresh.occurrenceNote.orEmpty(),
+            occurrenceNoteError = occurrenceNoteError,
+            targetDateDraft = if (showEditDialog) targetDateDraft else fresh.targetDateDraft,
+            startTimeDraft = if (showEditDialog) startTimeDraft else fresh.startTimeDraft,
+            endTimeDraft = if (showEditDialog) endTimeDraft else fresh.endTimeDraft,
+            roomDraft = if (showEditDialog) roomDraft else fresh.roomDraft,
+            draftErrors = draftErrors,
+            draftError = draftError,
+            showEditDialog = showEditDialog,
+            isSaving = isSaving,
+            isSavingSharedNote = isSavingSharedNote,
+            isSavingOccurrenceNote = isSavingOccurrenceNote,
+            showDeleteConfirmation = showDeleteConfirmation
+        )
     }
 
     private fun derive(value: OccurrenceDetailsUiState): OccurrenceDetailsUiState = value.copy(

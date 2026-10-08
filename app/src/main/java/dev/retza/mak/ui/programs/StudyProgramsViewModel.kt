@@ -10,11 +10,17 @@ import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
@@ -31,8 +37,14 @@ data class StudyProgramEditorUi(
     val name: String = "",
     val color: String = DefaultCourseColor,
     val nameError: String? = null,
-    val isSaving: Boolean = false
-)
+    val isSaving: Boolean = false,
+    // An assigned program is protected; the names explain where it is still used.
+    val usedInSemesters: List<String> = emptyList(),
+    val showDeleteConfirmation: Boolean = false,
+    val isDeleting: Boolean = false
+) {
+    val canDelete: Boolean get() = id != null && usedInSemesters.isEmpty() && !isSaving && !isDeleting
+}
 
 data class StudyProgramsUiState(
     val programs: List<StudyProgramUi> = emptyList(),
@@ -43,7 +55,8 @@ sealed interface StudyProgramsEffect {
     data object CloseEditor : StudyProgramsEffect
 }
 
-/** Global study programs: the list in settings and editing of their name and color. */
+/** Global study programs: the list in settings, editing of their name and color, and deletion of unused ones. */
+@OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class StudyProgramsViewModel(
     private val semesterRepository: SemesterRepository,
@@ -69,12 +82,41 @@ class StudyProgramsViewModel(
                 feedbackSink.publish(UiFeedback("Nie udało się wczytać kierunków.", UiFeedbackKind.Error))
             }
         }
+        viewModelScope.launch {
+            state.map { it.editor.id }
+                .distinctUntilChanged()
+                .flatMapLatest { id ->
+                    if (id == null) flowOf(null) else semesterRepository.observeStudyProgramSemesters(id).map { id to it }
+                }
+                .catch { emit(null) }
+                .collect { usage ->
+                    if (usage == null) return@collect
+                    val (id, names) = usage
+                    state.update { current ->
+                        if (current.editor.id != id) current
+                        else current.copy(editor = current.editor.copy(usedInSemesters = names))
+                    }
+                }
+        }
     }
 
     /** Starts a fresh edit of the program: discards any earlier draft, then loads the saved values. */
     fun openEdit(id: Long) {
         state.update { it.copy(editor = StudyProgramEditorUi()) }
         loadEditor(id)
+    }
+
+    /** Starts a new route edit from the latest Room row after the route has acquired its edit key. */
+    suspend fun openEditFromRoom(id: Long): Boolean {
+        state.update { it.copy(editor = StudyProgramEditorUi()) }
+        val program = semesterRepository.observeStudyPrograms().first()
+            .firstOrNull { it.id == id }
+            ?.let { StudyProgramUi(it.id, it.name, it.color) }
+        if (program == null) return false
+        state.update {
+            it.copy(editor = StudyProgramEditorUi(id = program.id, name = program.name, color = program.color))
+        }
+        return true
     }
 
     /**
@@ -88,13 +130,25 @@ class StudyProgramsViewModel(
 
     private fun loadEditor(id: Long) {
         viewModelScope.launch {
-            val program = state.value.programs.firstOrNull { it.id == id }
-                ?: semesterRepository.observeStudyPrograms().first()
-                    .firstOrNull { it.id == id }
-                    ?.let { StudyProgramUi(it.id, it.name, it.color) }
-                ?: return@launch
+            val program = semesterRepository.observeStudyPrograms().first()
+                .firstOrNull { it.id == id }
+                ?.let { StudyProgramUi(it.id, it.name, it.color) } ?: return@launch
             state.update {
-                it.copy(editor = StudyProgramEditorUi(id = program.id, name = program.name, color = program.color))
+                val current = it.editor
+                if (current.id == id && (current.name != program.name || current.color != program.color)) {
+                    it
+                } else {
+                    // Same program: the usage observer does not emit again, so its names are kept.
+                    val usedIn = if (current.id == id) current.usedInSemesters else emptyList()
+                    it.copy(
+                        editor = StudyProgramEditorUi(
+                            id = program.id,
+                            name = program.name,
+                            color = program.color,
+                            usedInSemesters = usedIn
+                        )
+                    )
+                }
             }
         }
     }
@@ -108,6 +162,37 @@ class StudyProgramsViewModel(
     }
 
     fun closeEditor() = state.update { it.copy(editor = StudyProgramEditorUi()) }
+
+    fun requestDelete() = state.update {
+        if (it.editor.canDelete) it.copy(editor = it.editor.copy(showDeleteConfirmation = true)) else it
+    }
+
+    fun cancelDelete() = state.update {
+        if (it.editor.isDeleting) it else it.copy(editor = it.editor.copy(showDeleteConfirmation = false))
+    }
+
+    fun confirmDelete() {
+        val editor = state.value.editor
+        val id = editor.id ?: return
+        if (!editor.showDeleteConfirmation || editor.isDeleting) return
+        state.update { it.copy(editor = it.editor.copy(isDeleting = true)) }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            // The repository refuses a program that was assigned while the dialog was open.
+            errorMessage = "Nie udało się usunąć kierunku.",
+            onFinish = {
+                state.update {
+                    if (it.editor.id != id) it
+                    else it.copy(editor = it.editor.copy(isDeleting = false, showDeleteConfirmation = false))
+                }
+            }
+        ) {
+            semesterRepository.deleteStudyProgram(id)
+            state.update { it.copy(editor = StudyProgramEditorUi()) }
+            feedbackSink.publish(UiFeedback("Usunięto kierunek", UiFeedbackKind.Success))
+            effectsChannel.trySend(StudyProgramsEffect.CloseEditor)
+        }
+    }
 
     fun save() {
         val editor = state.value.editor

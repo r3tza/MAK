@@ -140,7 +140,8 @@ fun ScheduleScreen(
     onStartSetup: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    requiresSetup: Boolean = false
+    requiresSetup: Boolean = false,
+    onOpenSync: () -> Unit = {}
 ) {
     var showWeekDialog by remember { mutableStateOf(false) }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
@@ -159,6 +160,7 @@ fun ScheduleScreen(
             requiresSetup -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 MakEmptyState("Nie masz jeszcze aktywnego planu. Skonfiguruj semestr i kierunek.")
                 MakPrimaryAction(text = "Skonfiguruj plan", onClick = onStartSetup)
+                MakSecondaryAction(text = "Pobierz plan z konta Google", onClick = onOpenSync)
             }
 
             state.view == ScheduleView.List -> ListView(

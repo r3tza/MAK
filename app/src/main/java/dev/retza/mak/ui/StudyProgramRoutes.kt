@@ -4,6 +4,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -26,7 +29,6 @@ internal fun NavGraphBuilder.studyProgramRoutes(
         StudyProgramsScreen(
             state = state,
             onOpenProgram = { id ->
-                studyProgramsViewModel.openEdit(id)
                 navController.navigate(studyProgramEditRoute(id))
             },
             modifier = Modifier.fillMaxSize()
@@ -37,9 +39,26 @@ internal fun NavGraphBuilder.studyProgramRoutes(
         route = MakRoutes.StudyProgramEdit,
         arguments = listOf(navArgument("programId") { type = NavType.LongType })
     ) { entry ->
+        val editing = TrackPlanEditing()
+        if (!editing.ready) {
+            PlanEditingWait()
+            return@composable
+        }
+        var opened by rememberSaveable(entry.id) { mutableStateOf(false) }
+        var openSucceeded by rememberSaveable(entry.id) { mutableStateOf(false) }
         val programId = entry.arguments?.getLong("programId")
-        LaunchedEffect(programId) {
-            programId?.let(studyProgramsViewModel::openEditIfNeeded)
+        LaunchedEffect(programId, opened) {
+            if (!opened) {
+                openSucceeded = programId?.let { studyProgramsViewModel.openEditFromRoom(it) } ?: false
+                opened = true
+            }
+        }
+        if (!opened || !openSucceeded) {
+            LaunchedEffect(opened, openSucceeded) {
+                if (opened && !openSucceeded) onBack()
+            }
+            PlanEditingWait()
+            return@composable
         }
         val state by studyProgramsViewModel.programs.collectAsStateWithLifecycle()
         StudyProgramEditScreen(
@@ -51,6 +70,9 @@ internal fun NavGraphBuilder.studyProgramRoutes(
                 studyProgramsViewModel.closeEditor()
                 onBack()
             },
+            onRequestDelete = studyProgramsViewModel::requestDelete,
+            onConfirmDelete = studyProgramsViewModel::confirmDelete,
+            onCancelDelete = studyProgramsViewModel::cancelDelete,
             modifier = Modifier.fillMaxSize()
         )
     }

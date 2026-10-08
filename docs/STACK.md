@@ -5,7 +5,7 @@
 - Źródło prawdy dla narzędzi i wersji: ten plik.
 - Język dokumentacji: polski.
 - Język odpowiedzi dla użytkownika: polski.
-- Ostatnia zaakceptowana aktualizacja: 2026-09-28.
+- Ostatnia zaakceptowana aktualizacja: 2026-09-30.
 
 ## 2. Język i środowisko uruchomieniowe
 
@@ -31,7 +31,21 @@
 - SQLite jako lokalna baza danych.
 - Preferences DataStore 1.2.1 do trwałych ustawień, w tym motywu.
 - `kotlinx.serialization` do importu i eksportu JSON.
-- Brak backendu, kont i synchronizacji sieciowej. Jedynym połączeniem sieciowym jest sprawdzanie i pobieranie aktualizacji z GitHub Releases (sekcja 7).
+- Brak własnego backendu. Sieć obsługuje aktualizacje GitHub oraz opcjonalną synchronizację przez Google Drive (decyzja z 2026-09-30): jeden plik planu w formacie eksportu JSON, `HttpsURLConnection`, zgoda przez Google Identity `AuthorizationClient` i praca w tle WorkManager. Stan synchronizacji należy do `noBackupFilesDir`; token pozostaje w pamięci.
+
+### Konfiguracja synchronizacji Google
+
+Synchronizacja używa `play-services-auth` 22.0.0 oraz WorkManager 2.12.0. Wersje sprawdzono 2026-09-30 w [dokumentacji autoryzacji Androida](https://developer.android.com/identity/authorization) i [wykazie wydań WorkManager](https://developer.android.com/jetpack/androidx/releases/work). WorkManager planuje jednorazowe próby i pracę co 60 minut z warunkiem sieci, przez własny `WorkerFactory`; domyślny initializer zastępuje konfiguracja hosta. Testy JVM sprawdzają koordynator z atrapą transportu; rzeczywiste konto i Drive należą do I-69.
+
+Użytkownik potwierdził brak projektu Google Cloud i odłożył czynności wymagające jego udziału. Przed I-69 wykonaj:
+
+1. Utwórz lub wybierz jeden projekt w Google Cloud i włącz Drive API. Oba klienty Android korzystają z tego samego projektu.
+2. Skonfiguruj zgodę, odbiorców i konta testowe w Google Auth Platform. Opublikuj dostępny opis aplikacji oraz politykę danych według `PRIVACY.md` (wersja wstępna z 2026-10-08). Stały adres polityki to https://r3tza.github.io/MAK/PRIVACY.html: GitHub Pages publikuje folder `docs/` z gałęzi `main` tego repozytorium, a `docs/_config.yml` ogranicza stronę do `PRIVACY.md`. W Google Auth Platform podaj ten adres.
+3. Dodaj klienta OAuth Android dla `dev.retza.mak.debug` z SHA-1 certyfikatu lokalnego APK debug oraz klienta dla `dev.retza.mak` z SHA-1 istniejącego certyfikatu release. Odcisk odczytuje `apksigner verify --print-certs <APK>`. APK z CI lub innego komputera może mieć inny certyfikat debug. Nie twórz nowego klucza release do tego zadania.
+4. Żądaj tylko `https://www.googleapis.com/auth/drive.appdata`, `openid` i `email`. Token przechodzi przez userinfo, a trwałą tożsamością jest `sub`. Adres e-mail służy do etykiety i wyboru konta Androida. W APK nie ma sekretu OAuth ani backendowego kodu wymiany tokenów. Szczegóły: [AuthorizationClient](https://developers.google.com/android/reference/com/google/android/gms/auth/api/identity/AuthorizationClient), [OpenID Connect](https://developers.google.com/identity/openid-connect/openid-connect) i [folder danych aplikacji](https://developers.google.com/workspace/drive/api/guides/appdata).
+5. Na dwóch klientach wykonaj I-69: pierwsze połączenie pustego i niepustego telefonu, zmiana po jednej stronie, zmiana po obu stronach z wyborem wersji, praca offline, odnowienie tokenu, cofnięta zgoda, wyłączenie z zachowaniem i z usunięciem kopii oraz ponowne połączenie. Sprawdź, że oba klienty widzą ten sam plik w `appDataFolder` i że Drive zwraca `md5Checksum` po wysłaniu. Używaj najwyżej jednego emulatora naraz z 2048 MiB RAM; drugi klient to telefon fizyczny albo osobny AVD uruchomiony po całkowitym zatrzymaniu pierwszego. Każdy AVD zachowuje własne lokalne dane i ma 2048 MiB RAM, a oba korzystają ze wspólnego stanu Drive.
+
+Lokalne testy nie wymagają projektu Google ani tokenów. Samo skompilowanie SDK i przejście atrap nie potwierdza konfiguracji OAuth ani zachowania serwera.
 
 ## 5. Testy i jakość
 
@@ -51,7 +65,7 @@
 
 ### Sposób testowania
 
-Agenci sprawdzają działanie aplikacji testami, które da się uruchomić lokalnie. Priorytet ma logika domenowa na JVM. Ten sam `ActivePlanProvider` jest źródłem planu dla listy, kalendarza, ekranu „Dzisiaj”, widgetu i powiadomień, więc testy widoków nie powielają reguł planu. Nie piszemy testów rozstrzygających pytania, które nadal są otwarte w `ARCHITECTURE.md`.
+Agenci sprawdzają działanie aplikacji testami, które da się uruchomić lokalnie. Uruchamiaj tylko testy zmienionego zakresu, zwykle przez filtrowanie klas testowych; pełny zestaw aplikacji wymaga osobnego polecenia użytkownika. Przykład JVM: `gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.sync.DrivePlanTransportTest"`. Przykład jednej klasy Android: `gradlew.bat --offline connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.retza.mak.ui.settings.SyncViewModelTest"`. Priorytet ma logika domenowa na JVM. Ten sam `ActivePlanProvider` jest źródłem planu dla listy, kalendarza, ekranu „Dzisiaj”, widgetu i powiadomień, więc testy widoków nie powielają reguł planu. Nie piszemy testów rozstrzygających pytania, które nadal są otwarte w `ARCHITECTURE.md`.
 
 Każdy test ma wykrywać błąd, który może realnie wystąpić (decyzja użytkownika z 2026-09-29). Nie piszemy testów, które:
 
@@ -93,6 +107,7 @@ Kontrast, `reduced motion` i motyw ciemny sprawdzamy w kodzie oraz na emulatorze
 - Duży ekran bez tabletu: na emulatorze telefonu `adb shell wm size 2560x1600` i `adb shell wm density 320` dają najkrótszy bok 800 dp (tablet poziomo), `wm size 1600x2560` tablet pionowo, a `wm size 1400x2000` z tą samą gęstością 700 dp. Po sprawdzeniu przywróć `adb shell wm size reset` i `adb shell wm density reset`. Emulator ma język angielski, więc nadaje się też do sprawdzania polskich tekstów niezależnych od języka telefonu.
 - Gradle wymaga Android SDK: pliku `local.properties` z `sdk.dir` poza repozytorium albo zmiennej `ANDROID_HOME`. Domyślna lokalizacja na Windowsie to `%LOCALAPPDATA%\Android\Sdk`.
 - Testy Compose i Room uruchamia `gradlew.bat connectedDebugAndroidTest` na emulatorze albo urządzeniu. Sama kompilacja (`compileDebugAndroidTestKotlin`) nie zastępuje uruchomienia. Jedną klasę testów uruchamia `gradlew.bat connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.retza.mak.ui.today.TodayScreenTest"`.
+- Uruchamiaj najwyżej jeden emulator naraz i ustawiaj mu 2048 MiB RAM. Dla odbioru dwóch klientów użyj telefonu fizycznego albo dwóch AVD uruchamianych sekwencyjnie po całkowitym zatrzymaniu poprzedniego; każdy AVD ma własne dane lokalne i współdzieli stan Drive.
 - Zrzuty na emulatorze `Medium_Phone` (gęstość 420, `adb` z `%LOCALAPPDATA%\Android\Sdk\platform-tools`): `gradlew.bat installDebug`, potem `adb exec-out screencap -p > plik.png`. Szerokość 320 dp: `adb shell wm size 840x1866`, powrót: `adb shell wm size reset`. Motyw ciemny: `adb shell cmd uimode night yes`, powrót: `night no`. Skala czcionki 2,0: `adb shell settings put system font_scale 2.0`, powrót: `1.0`. Wersja debug ma dane demonstracyjne. Porównuj zrzuty przed zmianą i po niej w tych samych ustawieniach.
 - W Git Bash na Windowsie długi skrypt z polskimi znakami zapisz do pliku i uruchom przez `py plik.py`. Przekazany przez heredoc bywa przekłamany.
 - Wersja release ma wyłączoną minifikację. Przed włączeniem `isMinifyEnabled` trzeba dodać reguły R8 dla `kotlinx.serialization` i klas eksportu JSON, inaczej import i eksport przestaną działać.
@@ -106,6 +121,7 @@ Repozytorium zawiera aplikację Android, konfigurację Gradle, lokalną bazę Ro
 - Repozytorium `r3tza/MAK` jest publiczne od 2026-09-27. Przed zmianą widoczności sprawdzono historię i bieżące pliki pod kątem sekretów i prywatnych danych. Pliki kluczy podpisu są wykluczone w `.gitignore`. Kod ma licencję Apache 2.0 (`LICENSE`), a właścicielem praw w `NOTICE` jest `r3tza`. Licencja nie obejmuje nazwy „MAK” ani ikony. Historia gita zostaje bez zmian, razem z adresem e-mail autora w commitach.
 - Zmiany trafiają na `main` tylko przez pull request (decyzja użytkownika z 2026-09-28). Workflow `.github/workflows/checks.yml` uruchamia na każdym pull requeście kontrolę dokumentacji i testy JVM (`gradlew test`); ochrona gałęzi `main` wymaga jego zielonego wyniku. Testy Compose zostają lokalne, na emulatorze. Osobnej gałęzi `dev` nie ma: stan wydania wyznacza tag.
 - Wydanie budują GitHub Actions po wypchnięciu tagu `v<major>.<minor>.<patch>`. Workflow uruchamia testy i tworzy szkic GitHub Release; użytkownik publikuje go ręcznie po sprawdzeniu plików. Wydaniem jest zawsze wersja release, bo wersja debug wczytuje dane demonstracyjne.
+- Wypchnięcie taga, push, otwarcie pull requesta i publikacja wydania wymagają wyraźnego polecenia użytkownika; zielone kontrole lokalne same nie upoważniają do publikacji.
 - Jeden klucz podpisu release na zawsze. Klucz generuje użytkownik lokalnie; jest przechowywany w sekretach GitHuba i w dwóch kopiach poza nim. Nie trafia do repozytorium ani do rozmowy z agentem. Utrata klucza uniemożliwia aktualizację bez odinstalowania aplikacji i utraty lokalnych danych.
 - `versionCode` rośnie z każdym wydaniem i jest wyliczany z tagu. Wydanie z niższym albo równym `versionCode` jest odrzucane.
 - Wariant debug ma `applicationIdSuffix = ".debug"` i może być zainstalowany obok podpisanego wydania. Dzięki temu testy urządzenia nie wymagają obniżania `versionCode`, zmiany klucza wydania ani usuwania danych użytkownika.
@@ -116,7 +132,7 @@ Repozytorium zawiera aplikację Android, konfigurację Gradle, lokalną bazę Ro
 ## 8. Odrzucone alternatywy
 
 - Backend i Firebase: odrzucone, ponieważ plan ma działać w pełni bez sieci.
-- Konta użytkowników i synchronizacja w chmurze: odrzucone, ponieważ zwiększyłyby zakres oraz wymagania dotyczące danych.
+- Obowiązkowe konta i własny backend pozostają odrzucone. Wcześniejsze odrzucenie opcjonalnej synchronizacji Google zastępuje polecenie użytkownika z 2026-09-30 i projekt `SYNC_PROPOSAL.md`.
 - Ciągły serwis w tle i odświeżanie widgetu co minutę: odrzucone z powodu zużycia baterii.
 - Zewnętrzne CDN-y: odrzucone; aplikacja używa lokalnych zasobów.
 - Aktualizacje przez Google Play (Play In-App Updates): odrzucone, bo aplikacja nie jest dystrybuowana w Google Play.

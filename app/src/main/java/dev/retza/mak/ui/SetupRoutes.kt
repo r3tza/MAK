@@ -4,21 +4,27 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
+import androidx.navigation.NavType
 import androidx.navigation.compose.composable
+import androidx.navigation.navArgument
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.setup.SetupEffect
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.setup.SetupWizard
 
-internal fun isSetupRoute(route: String?): Boolean = route == MakRoutes.Setup
+internal fun isSetupRoute(route: String?): Boolean =
+    route == MakRoutes.Setup || route == MakRoutes.SetupRoute
 
-internal fun openSetup(navController: NavController) {
-    navController.navigate(MakRoutes.Setup) {
+internal fun openSetup(navController: NavController, resumeExisting: Boolean = false) {
+    navController.navigate(setupRoute(resumeExisting)) {
         popUpTo(MakRoutes.Today) { saveState = true }
         launchSingleTop = true
     }
@@ -28,7 +34,30 @@ internal fun NavGraphBuilder.setupRoute(
     setupViewModel: SetupViewModel,
     settingsViewModel: SettingsViewModel
 ) {
-    composable(MakRoutes.Setup) {
+    composable(
+        route = MakRoutes.SetupRoute,
+        arguments = listOf(navArgument("resume") {
+            type = NavType.BoolType
+            defaultValue = false
+        })
+    ) { entry ->
+        val editing = TrackPlanEditing()
+        if (!editing.ready) {
+            PlanEditingWait()
+            return@composable
+        }
+        var opened by rememberSaveable { mutableStateOf(false) }
+        val resumeExisting = entry.arguments?.getBoolean("resume") ?: false
+        LaunchedEffect(editing.ready, opened) {
+            if (!opened) {
+                setupViewModel.startFromRoom(resumeExisting)
+                opened = true
+            }
+        }
+        if (!opened) {
+            PlanEditingWait()
+            return@composable
+        }
         val setupState by setupViewModel.setup.collectAsStateWithLifecycle()
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
         SetupWizard(
@@ -59,7 +88,6 @@ internal fun NavGraphBuilder.setupRoute(
 @Composable
 internal fun SetupEffects(
     setupViewModel: SetupViewModel,
-    classEditViewModel: ClassEditViewModel,
     navController: NavController
 ) {
     LaunchedEffect(setupViewModel, navController) {
@@ -83,7 +111,7 @@ internal fun SetupEffects(
                     }
                 }
 
-                SetupEffect.OpenNewClassEditor -> openClassEditor(classEditViewModel, navController)
+                SetupEffect.OpenNewClassEditor -> openClassEditor(navController)
             }
         }
     }

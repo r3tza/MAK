@@ -4,6 +4,7 @@ import android.content.Context
 import androidx.glance.appwidget.updateAll
 import androidx.room.InvalidationTracker
 import dev.retza.mak.data.database.AppDatabase
+import dev.retza.mak.data.database.PLAN_TABLES
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
@@ -36,21 +37,10 @@ fun registerMakWidgetRefresh(
     requester: WidgetRefreshRequester
 ) {
     database.invalidationTracker.addObserver(
-        object : InvalidationTracker.Observer(MAK_WIDGET_TABLES) {
+        object : InvalidationTracker.Observer(PLAN_TABLES) {
             override fun onInvalidated(tables: Set<String>) {
                 requester.request()
             }
         }
     )
 }
-
-private val MAK_WIDGET_TABLES = arrayOf(
-    "semesters",
-    "study_programs",
-    "academic_calendars",
-    "semester_programs",
-    "classes",
-    "week_overrides",
-    "occurrence_notes",
-    "occurrence_changes"
-)

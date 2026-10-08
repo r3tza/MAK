@@ -69,6 +69,28 @@ class SemesterViewModelTest {
     }
 
     @Test
+    fun semesterWriteRemainsProtectedAfterFieldsReturnToBaseline() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+        val baselineName = viewModel.semester.value.semester.name
+        repository.saveGate = CompletableDeferred()
+        viewModel.update { state -> state.copy(semester = state.semester.copy(name = "Zmieniona nazwa")) }
+
+        viewModel.saveSemester()
+
+        assertTrue(viewModel.semester.value.semester.isSaving)
+        viewModel.update { state -> state.copy(semester = state.semester.copy(name = baselineName)) }
+        assertTrue(viewModel.semester.value.hasPlanDraft())
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.semester.value.semester.isSaving)
+    }
+
+    @Test
     fun openWaitsForFirstDataEmission() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         repository.occurrenceDataGate = CompletableDeferred()
@@ -373,6 +395,30 @@ class SemesterViewModelTest {
         assertEquals(repository.classes.count { it.semesterProgramId == 1L }, pending?.classCount)
         assertFalse("deleteSemesterProgram" in repository.events)
         assertEquals(1, repository.semesterPrograms.size)
+    }
+
+    @Test
+    fun courseDeletionAdmissionRemainsActiveUntilCountAndConfirmationFinish() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val semesterRepository = FakeSemesterRepository(repository).apply {
+            countClassesGate = CompletableDeferred()
+        }
+        val viewModel = SemesterViewModel(semesterRepository, RecordingFeedbackSink())
+        advanceUntilIdle()
+        viewModel.open("1")
+        advanceUntilIdle()
+
+        viewModel.requestCourseDeletion("1")
+
+        assertTrue(viewModel.semester.value.isPreparingCourseDeletion)
+        assertTrue(viewModel.semester.value.hasPlanDraft())
+        assertNull(viewModel.semester.value.pendingCourseDeletion)
+        semesterRepository.countClassesGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertFalse(viewModel.semester.value.isPreparingCourseDeletion)
+        assertNotNull(viewModel.semester.value.pendingCourseDeletion)
+        assertTrue(viewModel.semester.value.hasPlanDraft())
     }
 
     @Test

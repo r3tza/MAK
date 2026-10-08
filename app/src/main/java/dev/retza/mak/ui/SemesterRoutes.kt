@@ -3,6 +3,10 @@ package dev.retza.mak.ui
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -17,16 +21,15 @@ import dev.retza.mak.ui.semester.SemesterCoursesScreen
 import dev.retza.mak.ui.semester.SemesterEffect
 import dev.retza.mak.ui.semester.SemesterScreen
 import dev.retza.mak.ui.semester.SemesterViewModel
+import dev.retza.mak.ui.semester.hasPlanDraft
 import dev.retza.mak.ui.semester.SemesterWeekOverridesScreen
 import dev.retza.mak.ui.programs.StudyProgramEditorUi
 import dev.retza.mak.ui.programs.StudyProgramsViewModel
 
 internal fun openSemesterConfiguration(
-    semesterViewModel: SemesterViewModel,
     navController: NavController,
     id: String
 ) {
-    semesterViewModel.open(id)
     navController.navigate(semesterRoute(id))
 }
 
@@ -39,24 +42,32 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.Semester,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
+        val editing = TrackPlanEditing(
+            active = semesterViewModel.semester.collectAsStateWithLifecycle().value.hasPlanDraft(),
+            isActiveNow = { semesterViewModel.semester.value.hasPlanDraft() }
+        )
         val semesterId = entry.arguments?.getString("semesterId")
-        LaunchedEffect(semesterId) {
-            semesterId?.let(semesterViewModel::openIfNeeded)
+        var opened by rememberSaveable(entry.id) { mutableStateOf(false) }
+        LaunchedEffect(semesterId, opened) {
+            if (!opened && semesterId != null) {
+                semesterViewModel.open(semesterId)
+                opened = true
+            }
         }
         SemesterScreen(
             state = semesterViewModel.semester.collectAsStateWithLifecycle().value,
-            onSemesterNameChanged = { value ->
-                semesterViewModel.update { it.copy(semester = it.semester.copy(name = value)) }
-            },
-            onSemesterStartDateChanged = { value ->
-                semesterViewModel.update { it.copy(semester = it.semester.copy(startDate = value)) }
-            },
-            onSemesterEndDateChanged = { value ->
-                semesterViewModel.update { it.copy(semester = it.semester.copy(endDate = value)) }
-            },
-            onSemesterFirstWeekChanged = { value ->
-                semesterViewModel.update { it.copy(semester = it.semester.copy(firstWeek = value)) }
-            },
+            onSemesterNameChanged = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false }
+            ) { value -> semesterViewModel.update { it.copy(semester = it.semester.copy(name = value)) } },
+            onSemesterStartDateChanged = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false }
+            ) { value -> semesterViewModel.update { it.copy(semester = it.semester.copy(startDate = value)) } },
+            onSemesterEndDateChanged = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false }
+            ) { value -> semesterViewModel.update { it.copy(semester = it.semester.copy(endDate = value)) } },
+            onSemesterFirstWeekChanged = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false }
+            ) { value -> semesterViewModel.update { it.copy(semester = it.semester.copy(firstWeek = value)) } },
             onSaveSemester = semesterViewModel::saveSemester,
             onOpenCourses = { semesterId?.let { navController.navigate(semesterCoursesRoute(it)) } },
             onOpenOverrides = { semesterId?.let { navController.navigate(semesterOverridesRoute(it)) } },
@@ -70,6 +81,10 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.SemesterCourses,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
+        val editing = TrackPlanEditing(
+            active = semesterViewModel.semester.collectAsStateWithLifecycle().value.hasPlanDraft(),
+            isActiveNow = { semesterViewModel.semester.value.hasPlanDraft() }
+        )
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
             semesterId?.let(semesterViewModel::openIfNeeded)
@@ -77,13 +92,22 @@ internal fun NavGraphBuilder.semesterRoutes(
         SemesterCoursesScreen(
             state = semesterViewModel.semester.collectAsStateWithLifecycle().value,
             onAddCourse = {
-                semesterId?.let {
+                editing.run(
+                    refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false },
+                    holdIfInactive = true
+                ) {
+                    semesterId?.let {
                     semesterViewModel.resetCourseDraft()
                     navController.navigate(semesterCourseAddRoute(it))
+                    }
                 }
             },
             onEditCourse = { assignmentId ->
-                semesterId?.let {
+                editing.run(
+                    refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false },
+                    holdIfInactive = true
+                ) {
+                    semesterId?.let {
                     // Explicit entry starts from the saved values, so an abandoned draft does not return.
                     semesterViewModel.semester.value.courseItems
                         .firstOrNull { item -> item.assignmentId == assignmentId }
@@ -91,9 +115,13 @@ internal fun NavGraphBuilder.semesterRoutes(
                         ?.toLongOrNull()
                         ?.let(studyProgramsViewModel::openEdit)
                     navController.navigate(semesterCourseEditRoute(it, assignmentId))
+                    }
                 }
             },
-            onDeleteCourse = semesterViewModel::requestCourseDeletion,
+            onDeleteCourse = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false },
+                action = semesterViewModel::requestCourseDeletion
+            ),
             onConfirmCourseDeletion = semesterViewModel::confirmCourseDeletion,
             onCancelCourseDeletion = semesterViewModel::cancelCourseDeletion,
             modifier = Modifier.fillMaxSize()
@@ -104,9 +132,26 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.SemesterCourseAdd,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
+        val editing = TrackPlanEditing()
+        if (!editing.ready) {
+            PlanEditingWait()
+            return@composable
+        }
         val semesterId = entry.arguments?.getString("semesterId")
-        LaunchedEffect(semesterId) {
-            semesterId?.let(semesterViewModel::openIfNeeded)
+        var opened by rememberSaveable(entry.id) { mutableStateOf(false) }
+        var openSucceeded by rememberSaveable(entry.id) { mutableStateOf(false) }
+        LaunchedEffect(editing.ready, semesterId, opened) {
+            if (!opened) {
+                openSucceeded = semesterId != null && semesterViewModel.refreshForEdit(semesterId)
+                opened = true
+            }
+        }
+        if (!opened || !openSucceeded) {
+            LaunchedEffect(opened, openSucceeded) {
+                if (opened && !openSucceeded) navController.popBackStack()
+            }
+            PlanEditingWait()
+            return@composable
         }
         SemesterCourseAddScreen(
             state = semesterViewModel.semester.collectAsStateWithLifecycle().value,
@@ -132,19 +177,39 @@ internal fun NavGraphBuilder.semesterRoutes(
             navArgument("assignmentId") { type = NavType.StringType }
         )
     ) { entry ->
+        val editing = TrackPlanEditing()
+        if (!editing.ready) {
+            PlanEditingWait()
+            return@composable
+        }
         val semesterId = entry.arguments?.getString("semesterId")
         val assignmentId = entry.arguments?.getString("assignmentId")
+        var opened by rememberSaveable(entry.id) { mutableStateOf(false) }
+        var openSucceeded by rememberSaveable(entry.id) { mutableStateOf(false) }
+        LaunchedEffect(editing.ready, semesterId, assignmentId, opened) {
+            if (!opened) {
+                val semesterLoaded = semesterId != null && semesterViewModel.refreshForEdit(semesterId)
+                val programId = semesterViewModel.semester.value.courseItems
+                    .firstOrNull { it.assignmentId == assignmentId }
+                    ?.programId
+                    ?.toLongOrNull()
+                val programLoaded = programId != null && studyProgramsViewModel.openEditFromRoom(programId)
+                openSucceeded = semesterLoaded && programLoaded
+                opened = true
+            }
+        }
+        if (!opened || !openSucceeded) {
+            LaunchedEffect(opened, openSucceeded) {
+                if (opened && !openSucceeded) navController.popBackStack()
+            }
+            PlanEditingWait()
+            return@composable
+        }
         val semesterState = semesterViewModel.semester.collectAsStateWithLifecycle().value
         val programId = semesterState.courseItems
             .firstOrNull { it.assignmentId == assignmentId }
             ?.programId
             ?.toLongOrNull()
-        LaunchedEffect(semesterId) {
-            semesterId?.let(semesterViewModel::openIfNeeded)
-        }
-        LaunchedEffect(programId) {
-            programId?.let(studyProgramsViewModel::openEditIfNeeded)
-        }
         val programsState = studyProgramsViewModel.programs.collectAsStateWithLifecycle().value
         val editor = if (programId != null && programsState.editor.id == programId) {
             programsState.editor
@@ -161,8 +226,18 @@ internal fun NavGraphBuilder.semesterRoutes(
                 studyProgramsViewModel.closeEditor()
                 navController.popBackStack()
             },
-            onSeparateCourse = semesterViewModel::separateCourseCalendar,
-            onRequestReconnect = semesterViewModel::requestReconnect,
+            onSeparateCourse = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false },
+                action = semesterViewModel::separateCourseCalendar
+            ),
+            onRequestReconnect = { assignmentId, calendarId ->
+                editing.run(
+                    refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false },
+                    holdIfInactive = true
+                ) {
+                    semesterViewModel.requestReconnect(assignmentId, calendarId)
+                }
+            },
             onConfirmReconnect = semesterViewModel::confirmReconnect,
             onCancelReconnect = semesterViewModel::cancelReconnect,
             modifier = Modifier.fillMaxSize()
@@ -173,6 +248,10 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.SemesterOverrides,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
+        val editing = TrackPlanEditing(
+            active = semesterViewModel.semester.collectAsStateWithLifecycle().value.hasPlanDraft(),
+            isActiveNow = { semesterViewModel.semester.value.hasPlanDraft() }
+        )
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
             semesterId?.let(semesterViewModel::openIfNeeded)
@@ -180,17 +259,33 @@ internal fun NavGraphBuilder.semesterRoutes(
         SemesterWeekOverridesScreen(
             state = semesterViewModel.semester.collectAsStateWithLifecycle().value,
             onCalendarSelected = semesterViewModel::selectCalendar,
-            onWeekStartDateChanged = semesterViewModel::updateWeekStartDate,
-            onWeekTypeChanged = { value ->
+            onWeekStartDateChanged = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false },
+                action = semesterViewModel::updateWeekStartDate
+            ),
+            onWeekTypeChanged = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false }
+            ) { value ->
                 semesterViewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekType = value)) }
             },
-            onScopeChanged = { value ->
+            onScopeChanged = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false }
+            ) { value ->
                 semesterViewModel.update { it.copy(overrideForm = it.overrideForm.copy(scope = value)) }
             },
-            onNewOverride = semesterViewModel::newWeekOverride,
-            onEditOverride = semesterViewModel::editWeekOverride,
+            onNewOverride = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false },
+                action = semesterViewModel::newWeekOverride
+            ),
+            onEditOverride = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false },
+                action = semesterViewModel::editWeekOverride
+            ),
             onSaveOverride = semesterViewModel::saveWeekOverride,
-            onDeleteOverride = semesterViewModel::requestWeekOverrideDeletion,
+            onDeleteOverride = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false },
+                action = semesterViewModel::requestWeekOverrideDeletion
+            ),
             onConfirmOverrideDeletion = semesterViewModel::confirmWeekOverrideDeletion,
             onCancelOverrideDeletion = semesterViewModel::cancelWeekOverrideDeletion,
             onCancelOverrideEdit = semesterViewModel::cancelWeekOverrideEdit,
@@ -202,6 +297,10 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.SemesterCalendars,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
+        val editing = TrackPlanEditing(
+            active = semesterViewModel.semester.collectAsStateWithLifecycle().value.hasPlanDraft(),
+            isActiveNow = { semesterViewModel.semester.value.hasPlanDraft() }
+        )
         val semesterId = entry.arguments?.getString("semesterId")
         LaunchedEffect(semesterId) {
             semesterId?.let(semesterViewModel::openIfNeeded)
@@ -209,17 +308,26 @@ internal fun NavGraphBuilder.semesterRoutes(
         SemesterCalendarsScreen(
             state = semesterViewModel.semester.collectAsStateWithLifecycle().value,
             onCalendarSelected = semesterViewModel::selectCalendar,
-            onStartDateChanged = { value ->
+            onStartDateChanged = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false }
+            ) { value ->
                 semesterViewModel.update { it.copy(semester = it.semester.copy(startDate = value)) }
             },
-            onEndDateChanged = { value ->
+            onEndDateChanged = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false }
+            ) { value ->
                 semesterViewModel.update { it.copy(semester = it.semester.copy(endDate = value)) }
             },
-            onFirstWeekChanged = { value ->
+            onFirstWeekChanged = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false }
+            ) { value ->
                 semesterViewModel.update { it.copy(semester = it.semester.copy(firstWeek = value)) }
             },
             onSaveCalendar = semesterViewModel::saveCalendar,
-            onDeleteCalendar = semesterViewModel::requestCalendarDeletion,
+            onDeleteCalendar = editing.callback(
+                refreshBeforeFirstEdit = { if (semesterId != null) semesterViewModel.refreshForEdit(semesterId) else false },
+                action = semesterViewModel::requestCalendarDeletion
+            ),
             onConfirmCalendarDeletion = semesterViewModel::confirmCalendarDeletion,
             onCancelCalendarDeletion = semesterViewModel::cancelCalendarDeletion,
             modifier = Modifier.fillMaxSize()

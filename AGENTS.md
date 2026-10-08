@@ -73,14 +73,14 @@ Nie używaj w nowych dokumentach, tekstach interfejsu ani odpowiedziach znaku `�
 
 Pisz testy razem z logiką, nie jako osobny etap. Jeden test sprawdza jedną regułę z `docs/DOMAIN.md`, `docs/FEATURES.md` albo `docs/ARCHITECTURE.md`. Priorytet ma logika domenowa na JVM. Zakres testów, sposób ich pisania i polecenia są w `docs/STACK.md`, sekcja 5.
 
-Po zmianie `WeekCalculator`, `ScheduleResolver`, `CollisionDetector`, eksportu JSON albo walidacji formularza uruchom `gradlew.bat test`. Nie czekaj na emulator.
+Uruchamiaj tylko testy zmienionego zakresu, filtrując klasy testowe tam, gdzie to możliwe. Nie uruchamiaj pełnego zestawu aplikacji bez wyraźnego polecenia użytkownika. Po zmianie `WeekCalculator`, `ScheduleResolver`, `CollisionDetector`, eksportu JSON albo walidacji formularza uruchom odpowiednie filtrowane testy JVM; nie czekaj na emulator. Uruchamiaj najwyżej jeden emulator naraz i ustawiaj mu 2048 MiB RAM.
 
 ## Git
 
 Każdy zakres pull requesta wykonuj na osobnej gałęzi od aktualnego `origin/main`. Nie mnóż gałęzi, pull requestów ani commitów. Małe zadanie dołącz do najbliższego większego zadania w tej samej gałęzi, także gdy nie jest z nim ściśle powiązane, na przykład drobną poprawkę wyglądu do przebudowy układu. Osobny pull request ma tylko większe zadanie. Plan w `PLAN.md` trafia do gałęzi, która go wykonuje; osobny pull request z samym planem lub samą dokumentacją otwieraj tylko na prośbę użytkownika. Szczegóły są w `docs/WORKFLOW.md`, sekcja „Gałąź i pull request”.
 
 - Nazwa gałęzi i tytuł pull requesta są po angielsku. Nazwa gałęzi: `task/<ID>-<short-description>`, na przykład `task/I-57-calendar-markers`; przy kilku zadaniach użyj wspólnego opisu zakresu, a bez identyfikatora `task/<short-description>`. Tylko małe litery ASCII, cyfry i myślniki.
-- Twórz commit dla logicznej części zadania, nie dla każdej zmiany. Aktualizacje `QUEUE.md`, `LOG.md`, `KNOWN_ISSUES.md`, `PLAN.md` i innych dokumentów idą w commicie ze zmianą, której dotyczą; drobnej poprawki dokumentu nie commituj osobno. Pull request ma zwykle od jednego do pięciu commitów. Po zielonych kontrolach lokalnych sam wypchnij gałąź i otwórz pull request przez `gh pr create`. Jeśli `gh` nie jest dostępne, podaj użytkownikowi odnośnik `https://github.com/r3tza/MAK/compare/main...<gałąź>?expand=1` i gotowy opis pull requesta.
+- Twórz commit dla logicznej części zadania, nie dla każdej zmiany. Aktualizacje `QUEUE.md`, `LOG.md`, `KNOWN_ISSUES.md`, `PLAN.md` i innych dokumentów idą w commicie ze zmianą, której dotyczą; drobnej poprawki dokumentu nie commituj osobno. Pull request ma zwykle od jednego do pięciu commitów. Push, pull request i publikacja wymagają wcześniejszego, wyraźnego polecenia użytkownika. Po takim poleceniu wykonaj uzgodnione działanie; bez niego zakończ pracę lokalnie.
 - Pull request scala wyłącznie użytkownik. Nie scalaj, nie włączaj automatycznego scalania, nie wypychaj na `main` i nie zmieniaj historii wypchniętej gałęzi bez wyraźnego polecenia użytkownika.
 
 Nie dodawaj stopki `Co-authored-by:` przypisującej pracę agentowi.

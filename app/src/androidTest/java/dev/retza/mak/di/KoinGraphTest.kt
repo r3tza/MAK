@@ -26,10 +26,16 @@ import dev.retza.mak.update.ApkDownloader
 import dev.retza.mak.update.ApkVerifier
 import dev.retza.mak.update.ReleaseNotesProvider
 import dev.retza.mak.update.UpdateInstaller
+import androidx.work.WorkerFactory
+import dev.retza.mak.sync.PlanEditTracker
+import dev.retza.mak.sync.SyncCoordinator
+import dev.retza.mak.sync.SyncWorkerFactory
+import dev.retza.mak.ui.settings.SyncViewModel
 import java.time.Clock
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertSame
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import org.junit.runner.RunWith
 import org.koin.core.context.GlobalContext
@@ -67,6 +73,20 @@ class KoinGraphTest {
         assertNotNull(koin.get<ScheduleViewModel>())
         assertNotNull(koin.get<TodayViewModel>())
         assertNotNull(koin.get<UpdateViewModel>())
+        assertNotNull(koin.get<SyncViewModel>())
+    }
+
+    @Test
+    fun backgroundWorkAndScreenShareOneSyncCoordinator() {
+        val koin = GlobalContext.get()
+        val coordinator = koin.get<SyncCoordinator>()
+
+        // WorkManager gets its factory from Koin; a missing binding would fail only in the background.
+        val factory = koin.get<WorkerFactory>()
+        assertTrue(factory is SyncWorkerFactory)
+        assertSame(coordinator, factory.field("coordinator"))
+        assertSame(coordinator, koin.get<SyncViewModel>().field("coordinator"))
+        assertSame(koin.get<PlanEditTracker>(), coordinator.field("editTracker"))
     }
 
     @Test

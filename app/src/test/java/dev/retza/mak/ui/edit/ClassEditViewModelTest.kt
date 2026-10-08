@@ -79,6 +79,46 @@ class ClassEditViewModelTest {
         assertEquals("Programowanie obiektowe", restored.editor.value.name)
     }
 
+    @Test
+    fun freshRouteOpenDoesNotExposePreviousDraftWhenClassWasDeleted() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openEdit("1:2026-09-21")
+        advanceUntilIdle()
+        viewModel.update { it.copy(name = "Nieaktualny szkic") }
+        repository.classes.clear()
+
+        val opened = viewModel.openEditFromFreshPlan("1:2026-09-21")
+
+        assertFalse(opened)
+        assertEquals("Dodaj zajęcia", viewModel.editor.value.title)
+        assertEquals("", viewModel.editor.value.name)
+    }
+
+    @Test
+    fun freshRouteOpenUsesRoomDataForTheSubsequentSave() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        repository.classes[0] = repository.classes[0].copy(name = "Zmienione w Room")
+        repository.saveStudyProgram(
+            repository.studyPrograms.single().copy(name = "Kierunek świeży")
+        )
+        repository.saveCalendar(
+            repository.calendars.first { it.id == 1L }.copy(startDate = LocalDate.of(2026, 10, 1))
+        )
+
+        assertTrue(viewModel.openEditFromFreshPlan("1:2026-09-21"))
+        assertEquals("Kierunek świeży", viewModel.editor.value.courseOptions.single().label)
+        assertEquals("2026-10-01", viewModel.editor.value.semesterStartDate)
+        viewModel.update { it.copy(name = "Zapis po odświeżeniu") }
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals("Zapis po odświeżeniu", repository.classes.single().name)
+    }
+
     private fun repositoryWithNoteOnMonday(): FakeRepository = FakeRepository().apply {
         occurrenceNotes += OccurrenceNoteEntity(
             id = 1L,

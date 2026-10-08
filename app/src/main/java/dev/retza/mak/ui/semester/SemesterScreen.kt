@@ -155,6 +155,8 @@ data class ReconnectCalendarUi(
 
 data class SemesterScreenUiState(
     val semester: SemesterFormUiState = SemesterFormUiState(),
+    // The form as last read from Room; a difference is an unsaved draft.
+    val loadedSemester: SemesterFormUiState = SemesterFormUiState(),
     val overrides: List<WeekOverrideUi> = emptyList(),
     val overrideForm: WeekOverrideFormUiState = WeekOverrideFormUiState(),
     val overrideCount: Int = 0,
@@ -171,6 +173,7 @@ data class SemesterScreenUiState(
     val courseNameError: String? = null,
     val isAddingCourse: Boolean = false,
     val isDeletingCourse: Boolean = false,
+    val isPreparingCourseDeletion: Boolean = false,
     val isDeletingOverride: Boolean = false,
     val isDeletingCalendar: Boolean = false,
     val isSeparatingCalendar: Boolean = false,
@@ -182,6 +185,14 @@ data class SemesterScreenUiState(
     val reconnectError: String? = null,
     val status: ScreenStatus = ScreenStatus.Ready
 )
+
+/** An unsaved draft or open confirmation that a downloaded plan must not replace. */
+fun SemesterScreenUiState.hasPlanDraft(): Boolean =
+    semester.isSaving || isPreparingCourseDeletion ||
+        semester.name != loadedSemester.name || semester.startDate != loadedSemester.startDate ||
+        semester.endDate != loadedSemester.endDate || semester.firstWeek != loadedSemester.firstWeek ||
+        overrideForm.isOpen || pendingOverrideDeletion != null || pendingCourseDeletion != null ||
+        pendingCalendarDeletion != null || pendingReconnect != null
 
 @Composable
 fun SemesterScreen(

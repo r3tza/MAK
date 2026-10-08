@@ -29,6 +29,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
@@ -127,6 +128,13 @@ class SettingsViewModel(
 
     fun requestSemesterDeletion(id: String) {
         local.update { it.copy(semesterToDeleteId = id) }
+    }
+
+    suspend fun canRequestSemesterDeletion(id: String): Boolean {
+        val semesterId = id.toLongOrNull() ?: return false
+        val exists = semesterRepository.observeSemesters().first().any { it.id == semesterId }
+        if (!exists) local.update { it.copy(semesterToDeleteId = null) }
+        return exists
     }
 
     fun cancelSemesterDeletion() {

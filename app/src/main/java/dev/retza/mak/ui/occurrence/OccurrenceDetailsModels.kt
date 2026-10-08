@@ -77,6 +77,11 @@ data class OccurrenceDetailsUiState(
     val canRestoreOccurrence: Boolean = false
 )
 
+/** Details block a downloaded plan only while the user has typed or opened something to confirm. */
+fun OccurrenceDetailsUiState.hasPlanDraft(): Boolean =
+    canSaveSharedNote || canSaveOccurrenceNote || isSaving || isSavingSharedNote ||
+        isSavingOccurrenceNote || showEditDialog || showDeleteConfirmation
+
 /** The status word shown with its icon on the details screen. */
 fun OccurrenceStatusUi.label(): String = when (this) {
     OccurrenceStatusUi.Scheduled -> "Zaplanowane"

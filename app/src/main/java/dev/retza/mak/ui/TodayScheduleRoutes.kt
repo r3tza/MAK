@@ -12,6 +12,7 @@ import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.schedule.ScheduleEffect
 import dev.retza.mak.ui.schedule.ScheduleScreen
 import dev.retza.mak.ui.schedule.ScheduleViewModel
+import dev.retza.mak.ui.settings.SyncAttentionUi
 import dev.retza.mak.ui.today.TodayScreen
 import dev.retza.mak.ui.today.TodayViewModel
 import dev.retza.mak.update.UpdateViewModel
@@ -22,7 +23,9 @@ internal fun NavGraphBuilder.todayRoute(
     updateViewModel: UpdateViewModel,
     navController: NavController,
     onOpenOccurrence: (String) -> Unit,
-    startSetup: () -> Unit
+    startSetup: () -> Unit,
+    openSync: () -> Unit,
+    syncAttention: () -> SyncAttentionUi?
 ) {
     composable(MakRoutes.Today) {
         val todayState = todayViewModel.today.collectAsStateWithLifecycle().value
@@ -31,13 +34,15 @@ internal fun NavGraphBuilder.todayRoute(
             state = todayState,
             onOpenClass = onOpenOccurrence,
             onStartSetup = startSetup,
+            onOpenSync = openSync,
             onRetry = {},
             requiresSetup = appState.requiresSetup,
             availableUpdateVersion = updateState.availableUpdate?.versionName.takeIf { updateState.showUpdateBanner },
             onViewUpdate = { navController.navigate(MakRoutes.SettingsUpdate) },
             onDismissUpdate = updateViewModel::dismissAvailableUpdate,
             modifier = Modifier.fillMaxSize(),
-            twoColumns = LocalMakWidthClass.current == MakWidthClass.Expanded
+            twoColumns = LocalMakWidthClass.current == MakWidthClass.Expanded,
+            syncAttention = syncAttention()
         )
     }
 }
@@ -46,7 +51,8 @@ internal fun NavGraphBuilder.scheduleRoute(
     appState: AppUiState,
     scheduleViewModel: ScheduleViewModel,
     onOpenOccurrence: (String) -> Unit,
-    startSetup: () -> Unit
+    startSetup: () -> Unit,
+    openSync: () -> Unit
 ) {
     composable(MakRoutes.Schedule) {
         val scheduleState = scheduleViewModel.schedule.collectAsStateWithLifecycle().value
@@ -66,6 +72,7 @@ internal fun NavGraphBuilder.scheduleRoute(
             onSaveWeekCorrection = scheduleViewModel::saveVisibleWeekOverride,
             onClearWeekCorrection = scheduleViewModel::clearVisibleWeekOverride,
             onStartSetup = startSetup,
+            onOpenSync = openSync,
             onRetry = {},
             requiresSetup = appState.requiresSetup,
             modifier = Modifier.fillMaxSize()
@@ -76,7 +83,6 @@ internal fun NavGraphBuilder.scheduleRoute(
 @Composable
 internal fun ScheduleEffects(
     scheduleViewModel: ScheduleViewModel,
-    classEditViewModel: ClassEditViewModel,
     navController: NavController
 ) {
     LaunchedEffect(scheduleViewModel, navController) {
@@ -84,8 +90,7 @@ internal fun ScheduleEffects(
             when (effect) {
                 is ScheduleEffect.OpenNewClassEditor -> {
                     if (navController.currentBackStackEntry?.destination?.route == MakRoutes.Schedule) {
-                        classEditViewModel.openNew(effect.date)
-                        navController.navigate(MakRoutes.Edit)
+                        openClassEditor(navController, effect.date)
                     }
                 }
             }

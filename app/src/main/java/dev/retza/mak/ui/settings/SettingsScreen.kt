@@ -144,6 +144,8 @@ fun SettingsScreen(
     onOpenUpdate: () -> Unit = {},
     onAutomaticChecksChanged: (Boolean) -> Unit = {},
     onOpenAbout: () -> Unit = {},
+    syncSummary: String = "",
+    onOpenSync: () -> Unit = {},
     modifier: Modifier = Modifier
 ) {
     val active = state.semesters.firstOrNull { it.id == state.activeSemesterId }
@@ -212,6 +214,12 @@ fun SettingsScreen(
                 }
                 SettingsListSection("Dane") {
                     SettingsNavigationRow(
+                        title = "Synchronizacja Google",
+                        value = syncSummary,
+                        onClick = onOpenSync
+                    )
+                    SettingsRowDivider()
+                    SettingsNavigationRow(
                         title = "Kopia zapasowa i import",
                         value = "",
                         onClick = onOpenData
@@ -235,11 +243,8 @@ fun SettingsScreen(
                     SettingsRowDivider()
                     SettingsSwitchRow(
                         title = "Sprawdzaj przy uruchomieniu",
-                        details = if (updates.automaticChecks) {
-                            "Najwyżej raz na 24 godziny. Aplikacja łączy się tylko z GitHubem i nie wysyła planu. GitHub widzi adres IP."
-                        } else {
-                            "Nowe wersje nie pojawią się same."
-                        },
+                        // How the check reaches GitHub belongs to the privacy policy, not to this row.
+                        details = if (updates.automaticChecks) "Sprawdzanie raz dziennie." else "Nowe wersje nie pojawią się same.",
                         checked = updates.automaticChecks,
                         onCheckedChange = onAutomaticChecksChanged
                     )
@@ -260,7 +265,7 @@ fun SettingsScreen(
 
 /** Section whose rows reach the card edges, so the pressed state covers the whole row. */
 @Composable
-private fun SettingsListSection(
+internal fun SettingsListSection(
     title: String,
     content: @Composable ColumnScope.() -> Unit
 ) {
@@ -283,7 +288,7 @@ private fun SettingsListSection(
 }
 
 @Composable
-private fun SettingsFieldItem(content: @Composable ColumnScope.() -> Unit) {
+internal fun SettingsFieldItem(content: @Composable ColumnScope.() -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -294,7 +299,7 @@ private fun SettingsFieldItem(content: @Composable ColumnScope.() -> Unit) {
 }
 
 @Composable
-private fun SettingsRowDivider() {
+internal fun SettingsRowDivider() {
     HorizontalDivider(
         modifier = Modifier.padding(horizontal = MakSpacing.lg),
         color = MaterialTheme.colorScheme.outlineVariant
@@ -319,7 +324,7 @@ private fun SettingsRowText(title: String, lines: List<String>, modifier: Modifi
 }
 
 @Composable
-private fun SettingsNavigationRow(
+internal fun SettingsNavigationRow(
     title: String,
     value: String,
     details: String? = null,
@@ -616,7 +621,8 @@ fun SettingsDataScreen(
     onExport: () -> Unit,
     onImport: () -> Unit,
     onDismissImportError: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    syncConnected: Boolean = false
 ) {
     MakScreenContent(
         modifier = modifier
@@ -632,7 +638,8 @@ fun SettingsDataScreen(
         )
         MakNoteBanner(
             title = null,
-            subtitle = "Import zastępuje wszystkie lokalne dane. Tej operacji nie można cofnąć.",
+            subtitle = "Import zastępuje wszystkie lokalne dane. Tej operacji nie można cofnąć." +
+                if (syncConnected) " $SYNC_NOTE" else "",
             role = MakNoteRole.Warning
         )
     }
@@ -647,12 +654,15 @@ fun SettingsDataScreen(
     }
 }
 
+private const val SYNC_NOTE = "Zaimportowany plan trafi też na Dysk Google i na pozostałe połączone telefony."
+
 @Composable
 fun ImportPreviewScreen(
     state: SettingsUiState,
     onConfirm: () -> Unit,
     onCancel: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    syncConnected: Boolean = false
 ) {
     val preview = state.importPreview
     MakScreenContent(
@@ -666,7 +676,7 @@ fun ImportPreviewScreen(
         } else {
             MakNoteBanner(
                 title = "Zastąpisz wszystkie lokalne dane",
-                subtitle = "Tej operacji nie można cofnąć.",
+                subtitle = "Tej operacji nie można cofnąć." + if (syncConnected) " $SYNC_NOTE" else "",
                 role = MakNoteRole.Warning
             )
             Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {

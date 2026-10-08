@@ -2,7 +2,36 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-08: Jeden styl komunikatów i dialog wyboru wersji (I-69)
+
+- Decyzja użytkownika: wariant B z porównania trzech wersji. Wszystkie role `MakNoteBanner` mają neutralne tło z ramką; ostrzeżenie i błąd różni tylko kolorowa ikona przy pierwszym wierszu. Akcja komunikatu jest przyciskiem tekstowym w nim, główna akcja ekranu stoi pod nim na pełną szerokość (`ARCHITECTURE.md`, sekcja 4). Odrzucony wariant A zmieniał tylko baner synchronizacji i zostawiał dwa style ostrzeżeń.
+- Odbiór I-69 wykazał, że dialog wyboru wersji nie liczył kierunków, więc telefon z samymi kierunkami wyglądał na pusty. Decyzja użytkownika: dialog pokazuje dwie karty, „Ten telefon” i „Dysk Google”, z liczbą kierunków, semestrów i zajęć; ekran synchronizacji pokazuje kółko postępu przy karcie konta podczas pracy.
+- Decyzja użytkownika: regułę akcji komunikatu wymusza kod (I-71). `MakNoteBanner` przyjmuje tylko akcję główną i akcję zamknięcia i sam rysuje je jako przyciski tekstowe. Hierarchię przycisków w dialogach i kreatorze („Później”, „Anuluj”, „Wstecz” jako przyciski tekstowe) użytkownik przyjął na później jako I-72; formularze zostają bez zmian.
+- Decyzja użytkownika: usuwanie globalnych kierunków wchodzi do zakresu jako I-73 (dotąd poza zakresem w `FEATURES.md`). Brak tej funkcji wyszedł przy odbiorze I-69, gdy kierunki z danych przykładowych nie dały się usunąć. Kierunek przypisany do semestru jest chroniony z wyjaśnieniem, bez kaskadowego usuwania (decyzja użytkownika z tego samego dnia).
+- Decyzja użytkownika: przy konflikcie wersji dialog pokazuje daty i różnice (I-76), a ekran „Wybierz zmiany” pozwala przy każdej różnicy wybrać wersję z telefonu albo z Dysku (I-77). Domyślnie nic nie jest wybrane; zapis wymaga wyboru przy wszystkich różnicach. Zmienia to decyzję z 2026-09-30 tylko w zakresie ręcznego wyboru; automatyczne scalanie, historia wersji i projekt z gałęzi `backup/google-sync-merge-design` pozostają odrzucone. Język bez potocznych uproszczeń. Użytkownik zaakceptował też ustalenia planu (`PLAN.md`, kroki 1 do 3): bez zapisanej bazy wspólnego planu dialog oferuje tylko wybór całej wersji; dwa niezależnie dodane wpisy o tym samym numerze są osobnymi pozycjami, a zachowany wpis z Dysku dostaje nowy numer; wykluczające się wybory blokują zapis z wyjaśnieniem, bez automatycznej poprawki.
+- Decyzja użytkownika po odbiorze: zajęcia zmienione na obu telefonach mają wybór przy każdym zmienionym polu (wariant A), bo sala z jednego telefonu i notatka do zajęć z drugiego tworzyły jedną różnicę. Termin (dzień, godziny, data, tygodnie) jest jednym polem. Odbiór I-76 i I-77 na dwóch klientach przeszedł; użytkownik potwierdził plan z obiema zmianami na obu telefonach.
+- Decyzja użytkownika: MAK nie stawia prywatności ponad wszystko; to zwykła aplikacja, która będzie zyskiwać funkcje, a podstawowe funkcje mają działać bez internetu (`PRODUCT.md`). `FEATURES.md` opisuje teraz sieć zgodnie z synchronizacją. Druga decyzja: rozróżniać przyczyny HTTP 403 z Dysku; limit zapytań jest ponawiany, brak miejsca ma własny komunikat (`SYNC_PROPOSAL.md`). Oba pytania z `KNOWN_ISSUES.md` zamknięte.
+- Decyzja użytkownika: zamknąć I-69 jako działające na podstawie odbioru debug i skonfigurowanego klienta OAuth release, bez testu na podpisanym APK release; sprawdzenie przechodzi na pierwsze wydanie z synchronizacją (`KNOWN_ISSUES.md`). Na prośbę użytkownika `PRIVACY.md` stał się wstępną polityką prywatności zgodną z obecnym kodem, w tym z kopią wspólnego planu, kopią planu z Dysku na czas pytania i węższą regułą archiwum, co zamyka pytanie z `KNOWN_ISSUES.md`.
+- Decyzja użytkownika: politykę prywatności publikuje GitHub Pages z folderu `docs/` gałęzi `main` repozytorium MAK, bez osobnego repozytorium; stały adres to https://r3tza.github.io/MAK/PRIVACY.html. Odrzucone: zwykły link do pliku na github.com (domeny nie da się potwierdzić w Google) i osobny folder strony wdrażany przez GitHub Actions (więcej konfiguracji). Decyzja użytkownika: reszta `docs/` nie jest stroną; `docs/_config.yml` wyklucza z Pages wszystkie pliki Markdown i archiwum logu oprócz `PRIVACY.md`.
+- Decyzja użytkownika: opis przełącznika automatycznego sprawdzania aktualizacji w stanie włączonym brzmi tylko „Sprawdzanie raz dziennie.” (I-74), bo informacje o połączeniu z GitHubem należą do polityki prywatności.
+
+## 2026-10-02: Zasady testów i publikacji oraz poprawki synchronizacji (I-70)
+
+- Fakty: Sześć poprawek zlecił użytkownik; subagenci Luna je zaimplementowali, a rodzic zrecenzował i zaakceptował. Kontrole Task 1/2: `JsonExportCodecTest` 5/5, Room 7/7, `PlanEditingTest` 3/3 i pięć klas edytorów 103/103; Task 3: 48 testów JVM, 10 testów `SyncViewModelTest` i `lintDebug`. Prawdziwe OAuth i Drive nie były testowane; I-69 pozostaje zablokowane do konfiguracji Google Cloud i udziału użytkownika.
+- Decyzja użytkownika: testować tylko zmieniony zakres bez pełnego zestawu aplikacji; uruchamiać najwyżej jeden emulator naraz z 2048 MiB RAM; nie wykonywać push, nie otwierać pull requestów ani nie publikować bez wyraźnego polecenia. Zasady zapisano w `AGENTS.md`, `STACK.md` i `WORKFLOW.md`. PLAN I-69 opisuje telefon fizyczny albo dwa osobne stany klienta na AVD uruchamianych sekwencyjnie, po całkowitym zatrzymaniu poprzedniego emulatora; oba korzystają ze wspólnego stanu Drive. Nie zmieniono klasyfikacji HTTP 403 ani pytań o prywatność.
+- Decyzja agenta na zlecenie użytkownika: zamknąć I-70 po recenzji oraz zachować I-69 jako osobny odbiór rzeczywistego konta. Wyniki i granice weryfikacji zapisano w `QUEUE.md` i `KNOWN_ISSUES.md`.
+
+
 Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `log_archive/<rok>.md` w tym samym commicie. Zachowaj treść i kolejność archiwizowanych wpisów.
+
+## 2026-09-30: Opcjonalna synchronizacja Google jednym plikiem (I-68, I-69)
+
+- Decyzja użytkownika: opcjonalna synchronizacja planu przez konto Google jako rozszerzenie po MVP (`PRODUCT.md`, `STACK.md`, `ARCHITECTURE.md`). Cały plan jest jednym plikiem w formacie eksportu JSON w ukrytym folderze aplikacji na Dysku. Zmiana tylko po jednej stronie jest przyjmowana, a zmiana po obu stronach wymaga wyboru wersji telefonu albo Dysku. Odrzucona wersja trafia do lokalnego archiwum z eksportem. Pobrany plan czeka na zamknięcie otwartego formularza. Szczegóły: `SYNC_PROPOSAL.md`.
+- Odrzucone przez użytkownika jako nadmiar dla tej aplikacji: wcześniejszy projekt agenta ze scalaniem pojedynczych wpisów, historią niezmiennych wersji, stabilnymi identyfikatorami w osobnej tabeli, ręcznym dopasowaniem przy pierwszym połączeniu i ochroną każdego formularza przed zmianą w tle. Dodawał około 11 tys. linii; jego kod jest zachowany lokalnie w gałęzi `backup/google-sync-merge-design`.
+- Koszt: zmiany z dwóch telefonów wprowadzone między synchronizacjami nie łączą się. Drive nie ma warunkowego zapisu, więc przy niemal równoczesnym wysłaniu wygrywa późniejszy zapis, a druga wersja zostaje w archiwum telefonu.
+- Wejście do synchronizacji: wiersz „Synchronizacja Google” w sekcji „Dane” oraz akcja „Pobierz plan z konta Google” w stanie pustym. Propozycja agenta zamiast osobnego kroku kreatora, zaakceptowana przez użytkownika 2026-10-01.
+- Decyzja użytkownika o testach: ograniczyć je do przypadków brzegowych i testów wnoszących realną wartość (`STACK.md`, sekcja 5).
+- Ograniczenie: użytkownik potwierdził brak projektu Google Cloud. Rzeczywiste logowanie i dwa telefony to I-69.
 
 ## 2026-09-29: Mniej gałęzi, pull requestów i commitów
 
@@ -112,21 +141,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 
 - Fakty: Przy przejściu historii wydań na plik okazało się, że Koin compiler plugin zostawia wartości domyślne parametrów konstruktora zamiast wstrzykiwać bindingi, bez błędu kompilacji. `UpdateViewModel` w wydaniu 0.2.0 ma atrapę pobierania, weryfikacji i instalacji, własny `InstallEventStore` i `Clock.systemUTC()`. Sprawdzanie wersji działa, ale pobranie zawsze kończy się błędem. Testy JVM tego nie wykryły, bo same korzystały z wartości domyślnych, a `KoinGraphTest` sprawdzał tylko, że ViewModel się tworzy.
 - Decyzja: Konstruktor `UpdateViewModel` nie ma wartości domyślnych, testy przekazują atrapy jawnie, a `KoinGraphTest` porównuje pola z instancjami z grafu. Zasada braku wartości domyślnych w klasach tworzonych przez Koin jest w `STACK.md` i `ARCHITECTURE.md`. Wydanie 0.2.1 z poprawką instaluje się ręcznie na 0.2.0, a pierwszy odbiór aktualizacji z aplikacji (O-07) obejmuje przejście z 0.2.1 na 0.2.2.
-
-## 2026-09-27: Notatki wydań dla użytkowników (I-51)
-
-- Fakty: Opis zmian jednej wersji był w historii w kodzie aplikacji, w `docs/CHANGELOG.md` i w opisie wydania na GitHubie, a `update.json` miał puste notatki. `CHANGELOG.md` zawiera zmiany techniczne, których użytkownik nie odczuwa.
-- Decyzja: Jedno źródło notatek dla użytkowników w `app/src/main/assets/release_notes.json`. Czyta je aplikacja („O aplikacji”) oraz workflow (`update.json` i opis wydania). Pusta lista zmian oznacza „Pomniejsze poprawki”; brak wpisu dla wersji z tagu przerywa workflow. `CHANGELOG.md` zostaje techniczną historią dla agentów (`STACK.md`, `AGENTS.md`). Użytkownik zaakceptował wariant 2026-09-27.
-- Odrzucone: `CHANGELOG.md` jako źródło (treść techniczna), opis wydania na GitHubie jako źródło (`update.json` powstaje przed jego edycją, historia w aplikacji wymagałaby sieci) oraz generowanie kodu Kotlina z pliku przy budowaniu.
-
-## 2026-09-27: Kolejne kierunki w kreatorze (I-50)
-
-- Fakty: Kreator tworzył tylko jeden kierunek i przechodził do zajęć. Osoba studiująca dwa kierunki musiała sama znaleźć dodawanie kierunków w ustawieniach semestru, a formularz zajęć pozwala wybrać tylko kierunki przypisane do semestru.
-- Decyzja: Krok „Dodaj zajęcia” ma akcję „Dodaj kolejny kierunek” z wyborem tygodni A/B („Wspólne z pierwszym kierunkiem” albo „Osobne dla tego kierunku”). Zapis używa istniejących operacji `SemesterRepository`, bez nowej reguły domenowej. Kolejny kierunek dostaje kolor o odcieniu odległym od kierunków już dodanych. Użytkownik wybrał wariant z wyborem A/B 2026-09-27.
-- Odrzucone: Samo zdanie z informacją o ustawieniach semestru oraz wariant bez wyboru tygodni A/B.
-
-## 2026-09-27: Wydanie 0.2.0 (I-36, I-49)
-
-- Fakty: Tag `v0.2.0` zbudował szkic w GitHub Actions, a użytkownik go opublikował. `update.json` pod produkcyjnym adresem ma `versionCode` 200, suma SHA-256 zgadza się z APK, a certyfikat jest kluczem wydań. Ręczne sprawdzenie w zainstalowanym `v0.2.0` pokazuje „Masz najnowszą wersję”. Workflow zapisuje w `update.json` puste pole `notes`.
-- Decyzja: Przed tagiem dodano do aplikacji historię zmian 0.2.0, bo ekran „O aplikacji” czyta ją z kodu. `CHANGELOG.md` ma wpis 0.2.0. I-36 ma status `gotowe`, a I-49 `w toku` do sprawdzenia instrukcji u znajomego i wydania `v0.2.1`. Uzupełnienie `notes` w workflow jest krokiem przed `v0.2.1`.
-- Powód: Pierwsza aktualizacja z aplikacji (O-07) wymaga opublikowanego wydania bazowego, a puste notatki pokazałyby użytkownikowi „Brak informacji”.

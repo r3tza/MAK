@@ -13,6 +13,8 @@ class MakNavigationTest {
         assertEquals("semester/7", semesterRoute("7"))
         assertEquals("semester/7/courses", semesterCoursesRoute("7"))
         assertEquals("semester/7/week-overrides", semesterOverridesRoute("7"))
+        assertEquals("setup?resume=true", setupRoute(resumeExisting = true))
+        assertEquals("setup?resume=false", setupRoute(resumeExisting = false))
     }
 
     @Test
@@ -48,7 +50,9 @@ class MakNavigationTest {
 
     @Test
     fun setupEffectAppliesOnlyOnWizardRoute() {
-        assertTrue(shouldHandleSetupEffect(MakRoutes.Setup))
+        assertTrue(shouldHandleSetupEffect(MakRoutes.SetupRoute))
+        assertTrue(isSetupRoute(MakRoutes.SetupRoute))
+        assertEquals("Konfiguracja", titleForRoute(MakRoutes.SetupRoute))
         assertFalse(shouldHandleSetupEffect(MakRoutes.Today))
         assertFalse(shouldHandleSetupEffect(MakRoutes.Settings))
         assertFalse(shouldHandleSetupEffect(null))

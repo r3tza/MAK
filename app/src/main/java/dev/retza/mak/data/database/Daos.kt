@@ -95,6 +95,13 @@ interface StudyProgramDao {
 
     @Query("SELECT COUNT(*) FROM semester_programs WHERE study_program_id = :id")
     suspend fun countAssignments(id: Long): Int
+
+    @Query(
+        "SELECT DISTINCT semesters.name FROM semesters " +
+            "JOIN semester_programs ON semester_programs.semester_id = semesters.id " +
+            "WHERE semester_programs.study_program_id = :id ORDER BY semesters.name"
+    )
+    fun observeSemesterNames(id: Long): Flow<List<String>>
 }
 
 @Dao

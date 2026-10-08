@@ -22,11 +22,12 @@ import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakSummaryCard
+import dev.retza.mak.ui.components.MakBannerAction
 import dev.retza.mak.ui.components.MakNoteBanner
 import dev.retza.mak.ui.components.MakNoteRole
 import dev.retza.mak.ui.components.MakSecondaryAction
-import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.ScreenStatus
+import dev.retza.mak.ui.settings.SyncAttentionUi
 
 data class TodayUiState(
     val dateLabel: String,
@@ -52,7 +53,9 @@ fun TodayScreen(
     availableUpdateVersion: String? = null,
     onViewUpdate: () -> Unit = {},
     onDismissUpdate: () -> Unit = {},
-    twoColumns: Boolean = false
+    twoColumns: Boolean = false,
+    onOpenSync: () -> Unit = {},
+    syncAttention: SyncAttentionUi? = null
 ) {
     // Wide windows put the summary beside the classes; without a semester there is no summary.
     val wide = twoColumns && state.hasActiveSemester
@@ -67,31 +70,43 @@ fun TodayScreen(
                 state.semesterLabel.takeIf { it.isNotBlank() }
             ).joinToString(", ").ifBlank { null }
         )
-        if (availableUpdateVersion != null) {
-            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
-                MakNoteBanner(
-                    title = "Dostępna aktualizacja",
-                    subtitle = "Wersja $availableUpdateVersion jest gotowa do pobrania.",
-                    role = MakNoteRole.Neutral,
-                    actions = {
-                        MakTextAction("Nie teraz", onDismissUpdate)
-                        MakTextAction("Zobacz", onViewUpdate)
-                    }
-                )
+        if (availableUpdateVersion != null || syncAttention != null) {
+            // Banners are one section, so the summary card keeps the 16 dp section gap below them.
+            Column(
+                modifier = Modifier.padding(bottom = MakSpacing.lg),
+                verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
+            ) {
+                if (syncAttention != null) {
+                    MakNoteBanner(
+                        title = syncAttention.text,
+                        subtitle = null,
+                        role = MakNoteRole.Warning,
+                        action = MakBannerAction(syncAttention.action, onOpenSync)
+                    )
+                }
+                if (availableUpdateVersion != null) {
+                    MakNoteBanner(
+                        title = "Dostępna aktualizacja",
+                        subtitle = "Wersja $availableUpdateVersion jest gotowa do pobrania.",
+                        role = MakNoteRole.Neutral,
+                        action = MakBannerAction("Zobacz", onViewUpdate),
+                        dismissAction = MakBannerAction("Nie teraz", onDismissUpdate)
+                    )
+                }
             }
         }
         if (wide) {
             Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.xl)) {
                 TodaySummary(state, Modifier.width(TodaySummaryColumnWidth))
                 Column(modifier = Modifier.weight(1f)) {
-                    TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onRetry)
+                    TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onOpenSync, onRetry)
                 }
             }
         } else {
             if (state.hasActiveSemester) {
                 TodaySummary(state, Modifier.padding(bottom = MakSpacing.xl))
             }
-            TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onRetry)
+            TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onOpenSync, onRetry)
         }
     }
 }
@@ -115,6 +130,7 @@ private fun ColumnScope.TodayClasses(
     requiresSetup: Boolean,
     onOpenClass: (String) -> Unit,
     onStartSetup: () -> Unit,
+    onOpenSync: () -> Unit,
     onRetry: () -> Unit
 ) {
     MakRowTitle(title = "Zajęcia")
@@ -127,6 +143,7 @@ private fun ColumnScope.TodayClasses(
                 )
                 if (requiresSetup) {
                     MakPrimaryAction(text = "Skonfiguruj plan", onClick = onStartSetup)
+                    MakSecondaryAction(text = "Pobierz plan z konta Google", onClick = onOpenSync)
                 }
             }
         } else {

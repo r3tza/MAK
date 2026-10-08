@@ -86,6 +86,28 @@ class SemesterViewModel(
         }
     }
 
+    /** Refreshes a neutral preview from Room after edit admission, preserving a valid calendar choice. */
+    suspend fun refreshForEdit(id: String): Boolean {
+        val parsed = id.toLongOrNull() ?: return false
+        val snapshot = loadSnapshot(parsed) ?: run {
+            sessionToken += 1
+            openJob?.cancel()
+            semesterIdState.value = null
+            selectedCalendarId = null
+            state.value = SemesterScreenUiState()
+            return false
+        }
+        val selected = selectedCalendarId?.takeIf { calendarId ->
+            snapshot.calendars.any { it.id == calendarId }
+        } ?: snapshot.sharedCalendar()?.id
+        sessionToken += 1
+        openJob?.cancel()
+        semesterIdState.value = parsed
+        selectedCalendarId = selected
+        state.value = snapshot.toSemesterScreenState(selected)
+        return true
+    }
+
     private fun isCurrentSession(token: Long): Boolean = token == sessionToken
 
     fun update(transform: (SemesterScreenUiState) -> SemesterScreenUiState) {
@@ -471,13 +493,16 @@ class SemesterViewModel(
     fun requestCourseDeletion(id: String) {
         val assignmentId = id.toLongOrNull() ?: return
         val course = state.value.courseItems.firstOrNull { it.assignmentId == id } ?: return
+        if (state.value.isPreparingCourseDeletion) return
         val token = sessionToken
+        update { it.copy(isPreparingCourseDeletion = true) }
         viewModelScope.launch {
             try {
                 val classCount = semesterRepository.countClassesForAssignment(assignmentId)
                 if (!isCurrentSession(token)) return@launch
                 update {
                     it.copy(
+                        isPreparingCourseDeletion = false,
                         pendingCourseDeletion = CourseDeletionUi(
                             assignmentId = id,
                             programName = course.name,
@@ -489,6 +514,7 @@ class SemesterViewModel(
                 throw error
             } catch (error: Exception) {
                 if (!isCurrentSession(token)) return@launch
+                update { it.copy(isPreparingCourseDeletion = false) }
                 feedbackSink.publish(UiFeedback("Nie udało się usunąć kierunku.", UiFeedbackKind.Error))
             }
         }
@@ -702,13 +728,15 @@ private fun SemesterSnapshot.toSemesterScreenState(selectedCalendarId: Long?): S
             } > 1
         )
     }
+    val form = SemesterFormUiState(
+        name = semester.name,
+        startDate = selected?.startDate?.toString().orEmpty(),
+        endDate = selected?.endDate?.toString().orEmpty(),
+        firstWeek = selected?.let { WeekTypeUi.valueOf(it.firstWeekType.name) } ?: WeekTypeUi.A
+    )
     return SemesterScreenUiState(
-        semester = SemesterFormUiState(
-            name = semester.name,
-            startDate = selected?.startDate?.toString().orEmpty(),
-            endDate = selected?.endDate?.toString().orEmpty(),
-            firstWeek = selected?.let { WeekTypeUi.valueOf(it.firstWeekType.name) } ?: WeekTypeUi.A
-        ),
+        semester = form,
+        loadedSemester = form,
         overrides = overrides
             .filter { it.academicCalendarId == selected?.id }
             .map { override ->

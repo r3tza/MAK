@@ -164,6 +164,10 @@ class SetupViewModel(
     }
 
     fun start(resume: SetupSemesterResume? = null) {
+        start(resume, state.value.programOptions)
+    }
+
+    private fun start(resume: SetupSemesterResume?, programOptions: List<SetupProgramOptionUi>) {
         sessionToken += 1
         saveJob?.cancel()
         firstProgramDraft = null
@@ -172,7 +176,7 @@ class SetupViewModel(
             semesterId = null
             courseId = null
             calendarId = null
-            state.value = SetupWizardUiState().withProgramOptions(state.value.programOptions)
+            state.value = SetupWizardUiState().withProgramOptions(programOptions)
         } else {
             semesterId = resume.semesterId
             courseId = null
@@ -183,8 +187,34 @@ class SetupViewModel(
                 startDate = resume.startDate,
                 endDate = resume.endDate,
                 firstWeekLabel = resume.firstWeekLabel
-            ).withProgramOptions(state.value.programOptions)
+            ).withProgramOptions(programOptions)
         }
+    }
+
+    suspend fun startFromRoom(resumeExisting: Boolean) {
+        val programOptions = semesterRepository.observeStudyPrograms().first().map {
+            SetupProgramOptionUi(it.id, it.name, it.color)
+        }
+        if (!resumeExisting) {
+            start(resume = null, programOptions = programOptions)
+            return
+        }
+        val active = semesterRepository.observeActiveSemester().first()
+        val resume = active?.let { semester ->
+            val assignments = semesterRepository.observeSemesterPrograms(semester.id).first()
+            if (assignments.isNotEmpty()) return@let null
+            val calendar = semesterRepository.observeCalendars(semester.id).first()
+                .minByOrNull { it.id }
+            SetupSemesterResume(
+                semesterId = semester.id,
+                calendarId = calendar?.id ?: 0L,
+                name = semester.name,
+                startDate = calendar?.startDate?.toString().orEmpty(),
+                endDate = calendar?.endDate?.toString().orEmpty(),
+                firstWeekLabel = calendar?.firstWeekType?.name ?: "A"
+            )
+        }
+        start(resume, programOptions)
     }
 
     fun update(transform: (SetupWizardUiState) -> SetupWizardUiState) {

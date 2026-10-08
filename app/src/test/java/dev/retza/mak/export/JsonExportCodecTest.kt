@@ -18,6 +18,7 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Assert.assertEquals
+import org.junit.Assert.fail
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -29,6 +30,41 @@ class JsonExportCodecTest {
 
         assertTrue(json.contains("\"schemaVersion\":${ExportSchema.VERSION}"))
         assertEquals(ExportSchema.VERSION, JsonExportCodec.decode(bytes).schemaVersion)
+    }
+
+    @Test
+    fun decodeRequiresAllTopLevelFieldsAndTheirTypes() {
+        val invalid = listOf(
+            "{}",
+            "{\"studyPrograms\":[],\"semesters\":[]}",
+            "{\"schemaVersion\":3,\"semesters\":[]}",
+            "{\"schemaVersion\":null,\"studyPrograms\":[],\"semesters\":[]}",
+            "{\"schemaVersion\":\"3\",\"studyPrograms\":[],\"semesters\":[]}",
+            "{\"schemaVersion\":3,\"studyPrograms\":null,\"semesters\":[]}",
+            "{\"schemaVersion\":3,\"studyPrograms\":{},\"semesters\":[]}",
+            "{\"schemaVersion\":3,\"studyPrograms\":[],\"semesters\":null}",
+            "{\"schemaVersion\":3,\"studyPrograms\":[],\"semesters\":{}}"
+        )
+
+        invalid.forEach { json ->
+            try {
+                JsonExportCodec.decode(json.toByteArray())
+                fail("Expected invalid export to be rejected: $json")
+            } catch (_: IllegalArgumentException) {
+                // Expected: incomplete or wrongly typed top-level export data is not an export.
+            }
+        }
+    }
+
+    @Test
+    fun decodeAcceptsEmptyExportAndSupportedSchemaVersions() {
+        val emptyV2 = "{\"schemaVersion\":2,\"studyPrograms\":[],\"semesters\":[]}"
+        val emptyV3 = "{\"schemaVersion\":3,\"studyPrograms\":[],\"semesters\":[]}"
+
+        assertEquals(2, JsonExportCodec.decode(emptyV2.toByteArray()).schemaVersion)
+        assertEquals(3, JsonExportCodec.decode(emptyV3.toByteArray()).schemaVersion)
+        assertTrue(ExportImporter.prepare(JsonExportCodec.decode(emptyV2.toByteArray())) is ImportSnapshotResult.Ready)
+        assertTrue(ExportImporter.prepare(JsonExportCodec.decode(emptyV3.toByteArray())) is ImportSnapshotResult.Ready)
     }
 
     @Test

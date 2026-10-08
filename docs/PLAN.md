@@ -1,7 +1,11 @@
 # Plan najbliższych prac
 
-Ten plik zawiera najwyżej pięć najbliższych kroków wykonawczych. Pełna lista i oddzielny status odbioru są w `QUEUE.md`. Repozytorium jest publiczne, a `v0.2.0` opublikowano 2026-09-27.
+Cel: brak zaplanowanych kroków. Wybór zmian przy konflikcie wersji (I-76, I-77) przeszedł odbiór 2026-10-08.
 
-Ciemniejsza karta podsumowania (I-63) i tryb tabletowy w wariancie A (I-45 do I-47) są wykonane i czekają na odbiór (O-05, O-08). Odbiór na telefonie i tablecie (O-05 do O-09, I-40, I-49) wykonuje użytkownik; listy kontrolne są w odpowiednich wierszach `QUEUE.md`.
+Otwarte zadanie w `QUEUE.md` czeka na udział użytkownika:
 
-Nie ma rozpisanych kroków. Kolejne zadanie wybiera użytkownik; otwarte pozycje są w `QUEUE.md`.
+- I-72: hierarchia przycisków w dialogach i kreatorze; najpierw makieta kreatora z akcją „Wstecz” po lewej stronie do akceptacji.
+
+Przed pierwszym wydaniem z synchronizacją: sprawdzić logowanie Google na podpisanym APK release (`KNOWN_ISSUES.md`), włączyć GitHub Pages dla folderu `docs/` z gałęzi `main` (Settings, Pages), sprawdzić, że https://r3tza.github.io/MAK/PRIVACY.html pokazuje aktualną politykę, i wpisać ten adres w Google Auth Platform i przygotować wpis w `release_notes.json` do akceptacji użytkownika.
+
+Kolejny krok zapisz według szablonu z `WORKFLOW.md`, sekcja „Planowanie”, po decyzji użytkownika.

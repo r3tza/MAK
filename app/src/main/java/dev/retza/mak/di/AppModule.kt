@@ -4,13 +4,27 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
+import androidx.work.WorkManager
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.update.InstalledAppInfoProvider
 import dev.retza.mak.update.UpdateCheckService
 import dev.retza.mak.update.UpdateChecker
+import dev.retza.mak.sync.DriveAccessTokenProvider
+import dev.retza.mak.sync.DriveHttpClient
+import dev.retza.mak.sync.DrivePlanTransport
+import dev.retza.mak.sync.FileSyncStateStore
+import dev.retza.mak.sync.PlanEditTracker
+import dev.retza.mak.sync.PlanSyncGateway
+import dev.retza.mak.sync.SyncArchive
+import dev.retza.mak.sync.SyncBaseCopy
+import dev.retza.mak.sync.SyncCoordinator
+import dev.retza.mak.sync.UrlConnectionDriveHttpClient
+import java.io.File
 import java.time.Clock
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Configuration
 import org.koin.core.annotation.Module
@@ -29,6 +43,9 @@ class AppModule {
     fun provideDatabase(context: Context): AppDatabase = AppDatabase.getInstance(context)
 
     @Single
+    fun provideWorkManager(context: Context): WorkManager = WorkManager.getInstance(context)
+
+    @Single
     fun provideSettingsDataStore(context: Context): DataStore<Preferences> = context.settingsDataStore
 
     @Single
@@ -36,6 +53,32 @@ class AppModule {
 
     @Single
     fun provideBackgroundDispatcher(): CoroutineDispatcher = Dispatchers.Default
+
+    @Single
+    fun providePlanEditTracker(): PlanEditTracker = PlanEditTracker(CoroutineScope(SupervisorJob() + Dispatchers.Default))
+
+    @Single
+    fun provideDriveHttpClient(): DriveHttpClient = UrlConnectionDriveHttpClient(Dispatchers.IO)
+
+    @Single
+    fun provideSyncCoordinator(
+        context: Context,
+        gateway: PlanSyncGateway,
+        http: DriveHttpClient,
+        tokens: DriveAccessTokenProvider,
+        editTracker: PlanEditTracker,
+        clock: Clock
+    ): SyncCoordinator = SyncCoordinator(
+        gateway = gateway,
+        transport = DrivePlanTransport(http, tokens),
+        store = FileSyncStateStore(File(context.noBackupFilesDir, "google-sync/state.json")),
+        archive = SyncArchive(File(context.noBackupFilesDir, "google-sync/archive")),
+        editTracker = editTracker,
+        clock = clock,
+        ioDispatcher = Dispatchers.IO,
+        baseCopy = SyncBaseCopy(File(context.noBackupFilesDir, "google-sync/base.json")),
+        pendingCopy = SyncBaseCopy(File(context.noBackupFilesDir, "google-sync/pending.json"))
+    )
 
     @Single
     fun provideUpdateChecker(appInfoProvider: InstalledAppInfoProvider): UpdateCheckService {
