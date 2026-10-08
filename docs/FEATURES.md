@@ -150,7 +150,7 @@ Prowadzący jest opcjonalnym tekstem zapisanym przy zajęciach. Aplikacja nie pr
 
 Jeśli edycja dnia, cyklu, daty albo kierunku sprawia, że zmiany terminów lub notatki do terminów przestaną być widoczne, formularz przed zapisem pokazuje dialog „Część danych przestanie być widoczna” z ich liczbą oraz akcjami „Anuluj” i „Zapisz”. Dane zostają zachowane (`DOMAIN.md`). Zmiana samych godzin, sali ani nazwy nie wywołuje dialogu.
 
-Plan pobrany z Dysku Google nie zastępuje danych, dopóki otwarty jest formularz planu, dialog usuwania semestru albo ekran podglądu z niezapisanym szkicem lub otwartym potwierdzeniem. Przy połączonym koncie ostrzeżenie importu JSON dodaje, że zaimportowany plan trafi też na Dysk Google i na pozostałe połączone telefony. Aplikacja zastosuje go po zamknięciu formularza (`SYNC_PROPOSAL.md`, „Przebieg synchronizacji”).
+Plan pobrany z Dysku Google nie zastępuje danych, dopóki otwarty jest formularz planu, dialog usuwania semestru albo ekran podglądu z niezapisanym szkicem lub otwartym potwierdzeniem. Przy połączonym koncie ostrzeżenie importu JSON dodaje, że zaimportowany plan trafi też na Dysk Google i na pozostałe połączone telefony. Aplikacja zastosuje go po zamknięciu formularza (`SYNC.md`, „Przebieg synchronizacji”).
 
 Po usunięciu zajęć aplikacja powinna wymagać potwierdzenia. Edycja i usuwanie muszą aktualizować widget.
 
@@ -321,4 +321,3 @@ Odbiór na urządzeniu jest odrębnym kryterium od kompilacji testów Android.
 - Sprawdzić tablet (O-08) w pionie, w poziomie i w podzielonym ekranie: boczny pasek nawigacji od 600 dp, dolny pasek poniżej, treść nie szersza niż 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp, wybór daty i godziny w całości i po polsku, zachowanie bieżącego ekranu i wpisanych danych po obrocie.
 - Sprawdzić nawigację i powrót systemowy, insety, TalkBack, klawiaturę, focus, motyw ciemny, długie treści i szerokość 320 dp. Potwierdzić, że po błędzie formularz zachowuje dane i pokazuje bezpieczny komunikat.
 - Sprawdzić widget na launcherze w małym, pośrednim i dużym rozmiarze, w obu motywach, po zmianie danych i po kliknięciu. Zweryfikować jego stany puste, kolizje i długie nazwy.
-- O-07: po upublicznieniu repozytorium zainstalować podpisane `v0.2.0` na telefonie, utworzyć plan, notatki i ustawienia, ręcznie opublikować `v0.2.1`, sprawdzić ręczne i automatyczne wykrycie, pobranie, zgodę na instalowanie nieznanych aplikacji, instalację systemową oraz zachowanie wszystkich danych. Sprawdzić też odmowę zgody, anulowanie pobierania, brak sieci i ukrycie banera przez „Nie teraz”.

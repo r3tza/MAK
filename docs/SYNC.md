@@ -1,10 +1,10 @@
 # Synchronizacja planu przez Google Drive
 
-Status: projekt uproszczony, decyzja użytkownika z 2026-09-30. Zastępuje wcześniejszy projekt ze scalaniem pojedynczych wpisów, historią wersji, stabilnymi identyfikatorami i ochroną każdego formularza. Użytkownik uznał go za nadmiarowy dla tej aplikacji. Poprzedni kod jest zachowany lokalnie w gałęzi `backup/google-sync-merge-design`, a opis decyzji w `LOG.md`.
+Opis działającej synchronizacji (I-68, odbiór na prawdziwym koncie w I-69, wybór zmian w I-76 i I-77). Uproszczony projekt jednym plikiem przyjął użytkownik 2026-09-30 zamiast wcześniejszego ze scalaniem pojedynczych wpisów, historią wersji, stabilnymi identyfikatorami i ochroną każdego formularza; tamten kod jest zachowany lokalnie w gałęzi `backup/google-sync-merge-design`, a uzasadnienie w `LOG.md`. Zmiana zachowania synchronizacji wymaga aktualizacji tego pliku.
 
 ## Cel i zakres
 
-Jeden plan na kilku telefonach tej samej osoby przez jej konto Google. Plan pozostaje dostępny i edytowalny bez internetu. Synchronizacja jest domyślnie wyłączona. Użytkownik może ją wybrać w kreatorze albo później w ustawieniach; brak sieci lub błąd logowania nie przerywa lokalnej konfiguracji.
+Jeden plan na kilku telefonach tej samej osoby przez jej konto Google. Plan pozostaje dostępny i edytowalny bez internetu. Synchronizacja jest domyślnie wyłączona. Użytkownik włącza ją w ustawieniach, a bez planu także akcją „Pobierz plan z konta Google” w stanie pustym ekranu „Dzisiaj”. Kreator jej nie oferuje; brak sieci lub błąd logowania nie przerywa lokalnej konfiguracji.
 
 Synchronizacja obejmuje cały plan: globalne kierunki, semestry, przypisania kierunków, kalendarze, zajęcia, korekty tygodni, zmiany wystąpień i oba rodzaje notatek. Aktywny semestr, motyw, powiadomienia i pozostałe ustawienia telefonu pozostają lokalne.
 

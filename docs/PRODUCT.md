@@ -18,7 +18,7 @@ Główne założenia:
 - plan działa w pełni bez połączenia z internetem;
 - sieć służy aktualizacjom z GitHuba oraz opcjonalnej synchronizacji po połączeniu konta Google (rozszerzenie zlecone 2026-09-30);
 - małe zużycie baterii;
-- brak własnego backendu i obowiązkowego konta. Opcjonalna synchronizacja Google jest rozszerzeniem po MVP, zleconym przez użytkownika 2026-09-30; projekt opisuje `SYNC_PROPOSAL.md`.
+- brak własnego backendu i obowiązkowego konta. Opcjonalna synchronizacja Google jest rozszerzeniem po MVP, zleconym przez użytkownika 2026-09-30; jej działanie opisuje `SYNC.md`.
 
 Zasada produktu (decyzja użytkownika z 2026-10-08): MAK nie jest aplikacją, która stawia prywatność ponad wszystko. To zwykła aplikacja, która będzie zyskiwać kolejne funkcje, także korzystające z sieci. Podstawowe funkcje (plan, ekran „Dzisiaj”, widget, powiadomienia i edycja planu) muszą działać bez internetu. Dokumentacja i teksty aplikacji opisują połączenia rzeczowo, bez przedstawiania braku sieci jako głównej cechy.
 

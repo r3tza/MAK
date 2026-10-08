@@ -108,7 +108,7 @@ Kontrast, `reduced motion` i motyw ciemny sprawdzamy w kodzie oraz na emulatorze
 - Gradle wymaga Android SDK: pliku `local.properties` z `sdk.dir` poza repozytorium albo zmiennej `ANDROID_HOME`. Domyślna lokalizacja na Windowsie to `%LOCALAPPDATA%\Android\Sdk`.
 - Testy Compose i Room uruchamia `gradlew.bat connectedDebugAndroidTest` na emulatorze albo urządzeniu. Sama kompilacja (`compileDebugAndroidTestKotlin`) nie zastępuje uruchomienia. Jedną klasę testów uruchamia `gradlew.bat connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.retza.mak.ui.today.TodayScreenTest"`.
 - Uruchamiaj najwyżej jeden emulator naraz i ustawiaj mu 2048 MiB RAM. Dla odbioru dwóch klientów użyj telefonu fizycznego albo dwóch AVD uruchamianych sekwencyjnie po całkowitym zatrzymaniu poprzedniego; każdy AVD ma własne dane lokalne i współdzieli stan Drive.
-- Zrzuty na emulatorze `Medium_Phone` (gęstość 420, `adb` z `%LOCALAPPDATA%\Android\Sdk\platform-tools`): `gradlew.bat installDebug`, potem `adb exec-out screencap -p > plik.png`. Szerokość 320 dp: `adb shell wm size 840x1866`, powrót: `adb shell wm size reset`. Motyw ciemny: `adb shell cmd uimode night yes`, powrót: `night no`. Skala czcionki 2,0: `adb shell settings put system font_scale 2.0`, powrót: `1.0`. Wersja debug ma dane demonstracyjne. Porównuj zrzuty przed zmianą i po niej w tych samych ustawieniach.
+- Zrzuty i testy Compose na emulatorze `Medium_Phone_A12` (decyzja użytkownika z 2026-10-08, bo na `Medium_Phone` brakuje miejsca na APK debug; gęstość 420, `adb` z `%LOCALAPPDATA%\Android\Sdk\platform-tools`): `gradlew.bat installDebug`, potem `adb shell screencap -p /sdcard/s.png` i `adb pull /sdcard/s.png plik.png`. Na tym obrazie `adb exec-out screencap` daje czarny ekran. `Medium_Phone` ma dane z odbioru synchronizacji; nie czyść go bez zgody użytkownika. Szerokość 320 dp: `adb shell wm size 840x1866`, powrót: `adb shell wm size reset`. Motyw ciemny: `adb shell cmd uimode night yes`, powrót: `night no`. Skala czcionki 2,0: `adb shell settings put system font_scale 2.0`, powrót: `1.0`. Wersja debug ma dane demonstracyjne. Porównuj zrzuty przed zmianą i po niej w tych samych ustawieniach.
 - W Git Bash na Windowsie długi skrypt z polskimi znakami zapisz do pliku i uruchom przez `py plik.py`. Przekazany przez heredoc bywa przekłamany.
 - Wersja release ma wyłączoną minifikację. Przed włączeniem `isMinifyEnabled` trzeba dodać reguły R8 dla `kotlinx.serialization` i klas eksportu JSON, inaczej import i eksport przestaną działać.
 
@@ -132,7 +132,7 @@ Repozytorium zawiera aplikację Android, konfigurację Gradle, lokalną bazę Ro
 ## 8. Odrzucone alternatywy
 
 - Backend i Firebase: odrzucone, ponieważ plan ma działać w pełni bez sieci.
-- Obowiązkowe konta i własny backend pozostają odrzucone. Wcześniejsze odrzucenie opcjonalnej synchronizacji Google zastępuje polecenie użytkownika z 2026-09-30 i projekt `SYNC_PROPOSAL.md`.
+- Obowiązkowe konta i własny backend pozostają odrzucone. Wcześniejsze odrzucenie opcjonalnej synchronizacji Google zastępuje polecenie użytkownika z 2026-09-30; działanie opisuje `SYNC.md`.
 - Ciągły serwis w tle i odświeżanie widgetu co minutę: odrzucone z powodu zużycia baterii.
 - Zewnętrzne CDN-y: odrzucone; aplikacja używa lokalnych zasobów.
 - Aktualizacje przez Google Play (Play In-App Updates): odrzucone, bo aplikacja nie jest dystrybuowana w Google Play.
