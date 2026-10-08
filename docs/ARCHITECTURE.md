@@ -99,7 +99,7 @@ Interfejs nie pokazuje akcji, która zakończy się przewidywalnym błędem. Dat
 
 ### Kolizja nie jest winą użytkownika
 
-Kolizja godzin jest informacją o tym, że zajęcia z dwóch kierunków nakładają się w planie. Nie jest błędem użytkownika ani sugestią, że powinien zmienić własne dane. Aplikacja ma ostrzec, pokazać zakres nakładania i wskazać drugie zajęcia wszędzie, gdzie jest na to miejsce; widget pokazuje co najmniej zakres. Nie proponuje zmiany terminu i nie zmienia go automatycznie. Decyzja o kontakcie z uczelnią, opuszczeniu zajęć albo ręcznym przeniesieniu terminu należy do użytkownika.
+Kolizja godzin jest informacją o tym, że zajęcia z dwóch kierunków nakładają się w planie. Nie jest błędem użytkownika ani sugestią, że powinien zmienić własne dane. Aplikacja ma ostrzec, pokazać zakres nakładania i wskazać drugie zajęcia wszędzie, gdzie jest na to miejsce; widget pokazuje co najmniej zakres. Kolizja bez nakładania (zajęcia bez wystarczającej przerwy, `DOMAIN.md`, sekcja „Kolizje”) zamiast zakresu pokazuje przerwę i godzinę, np. „Bez przerwy o 09:45”. Nie proponuje zmiany terminu i nie zmienia go automatycznie. Decyzja o kontakcie z uczelnią, opuszczeniu zajęć albo ręcznym przeniesieniu terminu należy do użytkownika.
 
 Na karcie zajęć kolizja używa neutralnego stylu ostrzegawczego i pokazuje dokładny zakres nakładania oraz nazwę drugich zajęć. Szczegóły terminu pokazują tę samą informację. Widget pokazuje tylko zakres, bo ma mało miejsca. Zapis zakresu i nazwy drugich zajęć pochodzą z funkcji domenowych wspólnych dla aplikacji i widgetu. Nie używa komunikatu sugerującego winę użytkownika.
 
