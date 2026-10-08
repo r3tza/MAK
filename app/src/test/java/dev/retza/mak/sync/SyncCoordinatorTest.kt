@@ -56,6 +56,15 @@ class SyncCoordinatorTest {
     }
 
     @Test
+    fun phoneWithOnlyStudyProgramsAsksAndCountsThem() = runTest {
+        phone.data = plan()
+        drive.put(plan("Dysk"))
+
+        assertEquals(SyncOutcome.ChoiceRequired, coordinator.synchronize())
+        assertEquals(PlanSummary(0, 0, 1), coordinator.state.value.pendingChoice?.local)
+    }
+
+    @Test
     fun keepingDriveArchivesThePhonePlanBeforeReplacingIt() = runTest {
         phone.data = plan("Telefon")
         drive.put(plan("Dysk"))

@@ -16,7 +16,7 @@ data class PendingSyncChoice(
 )
 
 @Serializable
-data class PlanSummary(val semesterCount: Int, val classCount: Int)
+data class PlanSummary(val semesterCount: Int, val classCount: Int, val studyProgramCount: Int = 0)
 
 /**
  * Lives in `noBackupFilesDir`: after restoring an Android backup the account must be connected again.

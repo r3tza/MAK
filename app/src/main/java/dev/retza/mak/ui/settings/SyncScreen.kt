@@ -2,13 +2,20 @@ package dev.retza.mak.ui.settings
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.unit.dp
 import dev.retza.mak.sync.SyncChoice
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakHelperText
@@ -58,10 +65,24 @@ fun SyncScreen(
         } else {
             SettingsListSection("Konto") {
                 SettingsFieldItem {
-                    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-                        Text(state.accountEmail, style = MaterialTheme.typography.bodyLarge)
-                        state.lastSyncLabel?.let {
-                            Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+                        ) {
+                            Text(state.accountEmail, style = MaterialTheme.typography.bodyLarge)
+                            state.lastSyncLabel?.let {
+                                Text(it, style = MaterialTheme.typography.bodyMedium, color = MaterialTheme.colorScheme.onSurfaceVariant)
+                            }
+                        }
+                        if (state.isWorking) {
+                            CircularProgressIndicator(
+                                modifier = Modifier
+                                    .padding(start = MakSpacing.md)
+                                    .size(24.dp)
+                                    .semantics { contentDescription = "Synchronizowanie" },
+                                strokeWidth = 2.5.dp
+                            )
                         }
                     }
                 }
@@ -116,10 +137,11 @@ fun SyncScreen(
     if (state.showChoiceDialog && choice != null) {
         MakDialog(
             title = "Którą wersję zachować?",
-            description = "Na tym telefonie: ${choice.phone}. Na Dysku Google: ${choice.drive}. " +
-                "Odrzucona wersja trafi do poprzednich wersji, skąd możesz ją wyeksportować.",
+            description = "Odrzuconą wersję znajdziesz w „Poprzednie wersje”, skąd możesz ją wyeksportować.",
             onDismiss = onDismissChoice
         ) {
+            PlanSummaryCard("Ten telefon", choice.phone)
+            PlanSummaryCard("Dysk Google", choice.drive)
             MakPrimaryAction(text = "Zachowaj plan z telefonu", onClick = { onChoose(SyncChoice.KEEP_PHONE) })
             MakSecondaryAction(text = "Zachowaj plan z Dysku", onClick = { onChoose(SyncChoice.KEEP_DRIVE) })
             MakSecondaryAction(text = "Później", onClick = onDismissChoice)
@@ -135,6 +157,17 @@ fun SyncScreen(
             MakPrimaryAction(text = "Wyłącz i zachowaj kopię na Dysku", onClick = { onDisconnect(false) })
             MakSecondaryAction(text = "Wyłącz i usuń kopię z Dysku", onClick = { onDisconnect(true) }, destructive = true)
             MakSecondaryAction(text = "Anuluj", onClick = onDismissDisconnect)
+        }
+    }
+}
+
+@Composable
+private fun PlanSummaryCard(title: String, lines: List<String>) {
+    SettingsListSection(title) {
+        SettingsFieldItem {
+            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                lines.forEach { Text(it, style = MaterialTheme.typography.bodyLarge) }
+            }
         }
     }
 }

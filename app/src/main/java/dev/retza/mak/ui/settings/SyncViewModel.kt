@@ -60,7 +60,7 @@ data class SyncUiState(
     val showDisconnectDialog: Boolean = false
 )
 
-data class SyncChoiceUi(val phone: String, val drive: String)
+data class SyncChoiceUi(val phone: List<String>, val drive: List<String>)
 
 private data class SyncLocalState(
     val isWorking: Boolean = false,
@@ -262,7 +262,11 @@ private fun SyncState.issueText(): String? = when (issue) {
     null -> null
 }
 
-private fun PlanSummary.label() = "semestry: $semesterCount, zajęcia: $classCount"
+private fun PlanSummary.label() = listOf(
+    "Kierunki: $studyProgramCount",
+    "Semestry: $semesterCount",
+    "Zajęcia: $classCount"
+)
 
 private fun dev.retza.mak.sync.ArchivedPlan.toUi() = SyncArchiveItemUi(
     id = id,

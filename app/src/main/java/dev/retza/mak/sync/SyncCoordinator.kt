@@ -239,4 +239,4 @@ class SyncCoordinator(
     }
 }
 
-private fun BackupData.summary() = PlanSummary(semesters.size, semesters.sumOf { it.classes.size })
+private fun BackupData.summary() = PlanSummary(semesters.size, semesters.sumOf { it.classes.size }, studyPrograms.size)

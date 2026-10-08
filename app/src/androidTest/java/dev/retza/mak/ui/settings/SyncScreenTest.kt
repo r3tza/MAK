@@ -33,7 +33,10 @@ class SyncScreenTest {
     private val connected = SyncUiState(
         accountEmail = "ala@example.com",
         lastSyncLabel = "Ostatnia synchronizacja: 1 października 2026, 10:00",
-        choice = SyncChoiceUi(phone = "semestry: 2, zajęcia: 34", drive = "semestry: 1, zajęcia: 12")
+        choice = SyncChoiceUi(
+            phone = listOf("Kierunki: 2", "Semestry: 2", "Zajęcia: 34"),
+            drive = listOf("Kierunki: 1", "Semestry: 1", "Zajęcia: 12")
+        )
     )
 
     @Test
