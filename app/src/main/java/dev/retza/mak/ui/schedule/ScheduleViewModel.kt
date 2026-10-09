@@ -15,6 +15,9 @@ import dev.retza.mak.domain.WeekType
 import dev.retza.mak.domain.cancelledOccurrences
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
+import dev.retza.mak.domain.SemesterProgram
+import dev.retza.mak.domain.allProgramsHidden
+import dev.retza.mak.domain.hiddenAssignments
 import dev.retza.mak.domain.visibleTo
 import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.classCountLabel
@@ -216,10 +219,11 @@ class ScheduleViewModel(
         control: ScheduleControls
     ): ScheduleUiState {
         if (inputs == null) return emptyScheduleState()
-        // Hidden study programs are neither filter options, cancelled classes nor calendar markers.
+        // Hidden study programs are neither filter options, legend entries, cancelled classes nor markers.
         val data = inputs.data.visibleTo(inputs.display)
+        val programs = data.semesterPrograms - data.hiddenAssignments(inputs.display).toSet()
         val activeFilter = control.courseFilterId.takeIf { id ->
-            id == "all" || data.semesterPrograms.any { it.id == id }
+            id == "all" || programs.any { it.id == id }
         } ?: "all"
         val selectedPlan = activePlanProvider.resolve(inputs, control.scheduleDate)
         val selected = selectedPlan.schedule
@@ -305,7 +309,7 @@ class ScheduleViewModel(
                 )
             },
             filters = listOf(ScheduleFilterUi("all", "Wszystkie", activeFilter == "all")) +
-                data.semesterPrograms.map { assignment ->
+                programs.map { assignment ->
                     val program = data.courses.firstOrNull { it.id == assignment.studyProgramId }
                     ScheduleFilterUi(
                         assignment.id,
@@ -319,7 +323,8 @@ class ScheduleViewModel(
             items = filtered.map { it.toUi(labels[it.id], names[it.id]) } + cancelled,
             calendarMonthLabel = control.calendarMonth.format(monthFormatter),
             calendarDays = calendarDays,
-            calendarLegend = calendarLegend(data, activeFilter),
+            calendarLegend = calendarLegend(data, programs, activeFilter),
+            allProgramsHidden = inputs.data.allProgramsHidden(inputs.display),
             // Capitalized like the list heading; fullDateFormatter stays lowercase for screen readers.
             calendarSelectedDayLabel = control.calendarDate.format(fullDateFormatter)
                 .replaceFirstChar { it.titlecase(polishLocale) },
@@ -373,8 +378,12 @@ private fun emptyScheduleState() = ScheduleUiState(
     status = ScreenStatus.Ready
 )
 
-private fun calendarLegend(data: ActivePlanData, activeFilter: String): List<CalendarLegendUi> {
-    val courses = data.semesterPrograms
+private fun calendarLegend(
+    data: ActivePlanData,
+    programs: List<SemesterProgram>,
+    activeFilter: String
+): List<CalendarLegendUi> {
+    val courses = programs
         .filter { activeFilter == "all" || it.id == activeFilter }
         .mapNotNull { assignment -> data.courses.firstOrNull { it.id == assignment.studyProgramId } }
         .distinctBy { it.id }

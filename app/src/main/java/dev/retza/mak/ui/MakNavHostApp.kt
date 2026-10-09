@@ -214,7 +214,8 @@ fun MakApp(
                     scheduleViewModel = scheduleViewModel,
                     onOpenOccurrence = openOccurrenceById,
                     startSetup = startSetup,
-                    openSync = { navController.navigate(MakRoutes.SettingsSync) }
+                    openSync = { navController.navigate(MakRoutes.SettingsSync) },
+                    openPrograms = { navController.navigate(MakRoutes.StudyPrograms) }
                 )
                 classEditRoute(classEditViewModel = classEditViewModel, onBack = ::navigateBack)
                 occurrenceDetailsRoute(occurrenceViewModel = occurrenceViewModel)

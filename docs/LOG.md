@@ -2,6 +2,12 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-09: Wykonanie I-79 (ukrywanie kierunków)
+
+- Decyzja użytkownika: gdy na telefonie są ukryte wszystkie kierunki aktywnego semestru, widget pokazuje datę i tekst „Wszystkie kierunki są ukryte na tym telefonie.”, tak jak „Dzisiaj”. Odrzucone: widget jak w dniu bez zajęć, bo sugerowałby wolny dzień.
+- Wykonanie (agent na zlecenie użytkownika): filtr ukrytych kierunków usuwa tylko ich zajęcia, a przypisania zostawia, aby przy wszystkich ukrytych „Dzisiaj” dalej pokazywało tydzień semestru, jak na makiecie D7. Opcje pola „Kierunek” i legenda kalendarza w „Planie” pomijają ukryte kierunki osobno.
+- Naprawa przy odbiorze I-79 (agent na zlecenie użytkownika): widget nie odświeżał się po zmianie danych albo ustawień w ciągu około 45 sekund od poprzedniego odświeżenia, bo aktualizacja działającej sesji Glance tylko przerysowuje treść, a dane były wczytywane raz przed `provideContent`. Widget obserwuje teraz dane w sesji przez `WidgetPlanLoader.states()`.
+
 ## 2026-10-09: Włączanie kierunków, zajęcia bez przerwy i dni wolne (I-79 do I-83)
 
 - Decyzja użytkownika: checkbox przy każdym globalnym kierunku na ekranie „Kierunki” w ustawieniach. Wyłączony kierunek znika z „Dzisiaj”, „Planu”, widgetu i powiadomień i nie wchodzi do kolizji ani okienek. Formularz zajęć, ekrany kierunków i eksport nadal widzą wszystkie kierunki.
@@ -151,9 +157,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 
 - Fakty: Opis zmian w szczegółach terminu używał strzałek („Sala: L205 → C12”), a `WRITING.md` sam opisywał wzór ostrzeżeń strzałkami. Poza kartą zajęć pille zostały przy aktywnym semestrze, w kalendarzach i korektach tygodni oraz w „O aplikacji”.
 - Decyzja: `AGENTS.md` i `WRITING.md` zakazują strzałek obok `·` i em dash. `AGENTS.md` i `ARCHITECTURE.md` zakazują pilli i chipów jako statycznych etykiet; stan, kategorię i wersję pokazuje tekst, ikona z tekstem albo kropka koloru. Opis zmian terminu to zwykłe zdania („Sala zmieniona z L205 na C12”). „Aktywny” i „Zainstalowana” mają ikonę i tekst, korekta tygodnia ma tydzień w tytule, powtórzony tag tygodnia w kalendarzu zniknął, a wersja w „O aplikacji” jest tekstem. `MakTag` i nieużywane kolory pilli usunięto. Widget zostaje do osobnej decyzji. Użytkownik zlecił zmianę 2026-09-28.
-
-## 2026-09-28: Karta zajęć bez pilli (I-53)
-
-- Fakty: Karta pokazywała kierunek, stan i etykiety notatek w wypełnionych pillach. Kolor kierunku powtarzał się w pasku i pillu, etykiety notatek wyglądały jak przyciski, a przy skali czcionki 2,0 pille zajmowały pół szerokości karty. Przegląd innych aplikacji: kalendarze oznaczają kategorię paskiem albo kropką przy zwykłym tekście, Todoist używa linii metadanych z ikonami, a Material 3 przeznacza chipy do interakcji.
-- Decyzja: Nazwa kierunku jako tekst w odcieniu kierunku z kontrastem 4,5:1, stan terminu jako ikona pod godzinami (odwołane także z przekreśleniem), notatki jako wiersze z ikoną bez etykiety. Opis zmiany terminu jest w szczegółach terminu. Kolizja zostaje pomarańczowym wierszem. Użytkownik wybrał wariant 2026-09-28 w artefakcie z pięcioma wariantami (`FEATURES.md`, `ARCHITECTURE.md`).
-- Odrzucone: Wspólny blok notatek, jasne bloki dla każdej notatki, tagi obrysowe i podpisy nad notatkami.

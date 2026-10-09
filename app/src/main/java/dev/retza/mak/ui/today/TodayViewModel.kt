@@ -3,8 +3,12 @@ package dev.retza.mak.ui.today
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
+import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanInputs
 import dev.retza.mak.domain.ActivePlanProvider
+import dev.retza.mak.domain.PlanDisplaySettings
+import dev.retza.mak.domain.allProgramsHidden
+import dev.retza.mak.domain.hiddenAssignments
 import dev.retza.mak.domain.countGaps
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
@@ -79,7 +83,9 @@ class TodayViewModel(
             classCount = schedule.occurrences.size,
             collisionCount = uniqueCollisionCount(plan.collisions),
             gapCount = countGaps(schedule.occurrences, thresholdMinutes.toLong()),
-            items = schedule.occurrences.map { it.toUi(labels[it.id], names[it.id]) }
+            items = schedule.occurrences.map { it.toUi(labels[it.id], names[it.id]) },
+            hiddenProgramNames = hiddenProgramNames(data, inputs.display),
+            allProgramsHidden = data.allProgramsHidden(inputs.display)
         )
     }
 }
@@ -101,3 +107,9 @@ private fun emptyTodayState() = TodayUiState(
     gapCount = 0,
     emptyMessage = "Nie masz jeszcze aktywnego semestru."
 )
+
+/** Names of the hidden study programs assigned to the active semester, in assignment order. */
+private fun hiddenProgramNames(data: ActivePlanData, display: PlanDisplaySettings): List<String> =
+    data.hiddenAssignments(display)
+        .mapNotNull { assignment -> data.courses.firstOrNull { it.id == assignment.studyProgramId }?.name }
+        .distinct()

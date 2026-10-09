@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.today
 
+import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.MainDispatcherRule
@@ -99,6 +100,45 @@ class TodayViewModelTest {
         advanceUntilIdle()
 
         assertEquals(1, viewModel.today.value.collisionCount)
+    }
+
+    @Test
+    fun hiddenProgramIsNamedInTheHintAndItsClassesAreLeftOut() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val management = repository.saveStudyProgramAssignment(1L, StudyProgramEntity(name = "Zarządzanie", color = "#334FCE"), 1L)
+        repository.classes += repository.classes.single().copy(
+            id = 2L,
+            semesterProgramId = management.semesterProgramId,
+            name = "Marketing",
+            startTime = LocalTime.of(12, 0),
+            endTime = LocalTime.of(13, 0)
+        )
+        val preferences = InMemorySettingsPreferences()
+        preferences.setStudyProgramHidden(management.studyProgramId.toString(), hidden = true)
+        val viewModel = todayViewModel(repository, preferences = preferences)
+        backgroundScope.launch { viewModel.today.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.today.value
+        assertEquals(listOf("Zarządzanie"), state.hiddenProgramNames)
+        assertFalse(state.allProgramsHidden)
+        assertEquals(listOf("Programowanie"), state.items.map { it.name })
+    }
+
+    @Test
+    fun hidingEveryProgramKeepsTheWeekAndMarksAllHidden() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val preferences = InMemorySettingsPreferences()
+        preferences.setStudyProgramHidden("1", hidden = true)
+        val viewModel = todayViewModel(repository, preferences = preferences)
+        backgroundScope.launch { viewModel.today.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.today.value
+        assertTrue(state.allProgramsHidden)
+        assertTrue(state.weekLabel.startsWith("Tydzień"))
+        assertEquals(0, state.classCount)
+        assertTrue(state.items.isEmpty())
     }
 
     @Test

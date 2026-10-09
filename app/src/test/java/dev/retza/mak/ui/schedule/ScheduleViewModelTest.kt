@@ -122,6 +122,8 @@ class ScheduleViewModelTest {
         assertEquals(listOf("all"), state.filters.map { it.id })
         assertTrue(state.items.isEmpty())
         assertTrue(state.calendarDays.single { it.id == "2026-09-21" }.markers.isEmpty())
+        assertTrue(state.allProgramsHidden)
+        assertTrue(state.weekTypeLabel.isNotBlank())
     }
 
     @Test

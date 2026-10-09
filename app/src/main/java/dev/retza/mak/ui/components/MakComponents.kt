@@ -141,7 +141,9 @@ fun MakScreenContent(
 fun MakSectionHeader(
     title: String,
     modifier: Modifier = Modifier,
-    subtitle: String? = null
+    subtitle: String? = null,
+    // A short line under the subtitle, such as the study programs hidden on this phone.
+    supportingContent: (@Composable () -> Unit)? = null
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Spacer(modifier = Modifier.height(MakSpacing.sm))
@@ -156,11 +158,15 @@ fun MakSectionHeader(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = MakSpacing.xs, end = MakSpacing.xs, top = MakSpacing.sm, bottom = MakSpacing.lg)
+                modifier = Modifier.padding(start = MakSpacing.xs, end = MakSpacing.xs, top = MakSpacing.sm)
             )
-        } else {
-            Spacer(modifier = Modifier.height(MakSpacing.lg))
         }
+        if (supportingContent != null) {
+            Box(modifier = Modifier.padding(start = MakSpacing.xs, end = MakSpacing.xs, top = MakSpacing.sm)) {
+                supportingContent()
+            }
+        }
+        Spacer(modifier = Modifier.height(MakSpacing.lg))
     }
 }
 
@@ -1243,7 +1249,8 @@ fun <T> MakSelectField(
     modifier: Modifier = Modifier,
     isError: Boolean = false,
     optionLabel: (T) -> String = { it.toString() },
-    optionLeading: (@Composable (T) -> Unit)? = null
+    optionLeading: (@Composable (T) -> Unit)? = null,
+    optionTrailing: (@Composable (T) -> Unit)? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(
@@ -1268,6 +1275,7 @@ fun <T> MakSelectField(
                 DropdownMenuItem(
                     text = { Text(optionLabel(option), style = MaterialTheme.typography.bodyLarge) },
                     leadingIcon = optionLeading?.let { leading -> { leading(option) } },
+                    trailingIcon = optionTrailing?.let { trailing -> { trailing(option) } },
                     onClick = {
                         onSelected(option)
                         expanded = false
@@ -1477,10 +1485,27 @@ fun MakConfirmDeletionDialog(
 }
 
 @Composable
-fun MakHelperText(text: String, modifier: Modifier = Modifier) {
+fun MakHelperText(text: String, modifier: Modifier = Modifier, icon: ImageVector? = null) {
+    if (icon == null) {
+        HelperText(text, modifier.fillMaxWidth())
+        return
+    }
+    Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+            modifier = Modifier.size(16.dp)
+        )
+        HelperText(text, Modifier.weight(1f))
+    }
+}
+
+@Composable
+private fun HelperText(text: String, modifier: Modifier) {
     Text(
         text = text,
-        modifier = modifier.fillMaxWidth(),
+        modifier = modifier,
         fontSize = 12.sp,
         color = MaterialTheme.colorScheme.onSurfaceVariant,
         lineHeight = 16.sp

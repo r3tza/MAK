@@ -50,6 +50,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.retza.mak.ui.AllProgramsHiddenNote
 import dev.retza.mak.ui.shortDayNames
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
@@ -119,6 +120,8 @@ data class ScheduleUiState(
     // False when the filter shows several calendars, so a week correction would have no target.
     val canCorrectWeek: Boolean = true,
     val status: ScreenStatus = ScreenStatus.Ready,
+    // Every study program of the semester is hidden on this phone; the list gives way to a note.
+    val allProgramsHidden: Boolean = false,
     val emptyMessage: String = "Brak zajęć w tym dniu dla wybranego kierunku."
 )
 
@@ -142,7 +145,8 @@ fun ScheduleScreen(
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     requiresSetup: Boolean = false,
-    onOpenSync: () -> Unit = {}
+    onOpenSync: () -> Unit = {},
+    onOpenPrograms: () -> Unit = {}
 ) {
     var showWeekDialog by remember { mutableStateOf(false) }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
@@ -163,6 +167,11 @@ fun ScheduleScreen(
                 MakPrimaryAction(text = "Skonfiguruj plan", onClick = onStartSetup)
                 MakSecondaryAction(text = "Pobierz plan z konta Google", onClick = onOpenSync)
             }
+
+            state.allProgramsHidden -> AllProgramsHiddenNote(
+                onOpenPrograms = onOpenPrograms,
+                modifier = Modifier.padding(top = MakSpacing.md)
+            )
 
             state.view == ScheduleView.List -> ListView(
                 state = state,

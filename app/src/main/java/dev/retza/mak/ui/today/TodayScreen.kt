@@ -1,6 +1,8 @@
 package dev.retza.mak.ui.today
 
 import androidx.compose.foundation.layout.Arrangement
+import dev.retza.mak.ui.AllProgramsHiddenNote
+import dev.retza.mak.ui.HiddenProgramsHint
 import dev.retza.mak.ui.MakTwoColumnMaxWidth
 import dev.retza.mak.ui.MakContentMaxWidth
 import androidx.compose.ui.unit.dp
@@ -40,7 +42,10 @@ data class TodayUiState(
     val gapCount: Int = 0,
     val items: List<ClassItemUi> = emptyList(),
     val status: ScreenStatus = ScreenStatus.Ready,
-    val emptyMessage: String = "Nie masz dziś zajęć."
+    val emptyMessage: String = "Nie masz dziś zajęć.",
+    // Study programs of the active semester hidden on this phone; the hint explains the shorter plan.
+    val hiddenProgramNames: List<String> = emptyList(),
+    val allProgramsHidden: Boolean = false
 )
 
 @Composable
@@ -56,7 +61,8 @@ fun TodayScreen(
     onDismissUpdate: () -> Unit = {},
     twoColumns: Boolean = false,
     onOpenSync: () -> Unit = {},
-    syncAttention: SyncAttentionUi? = null
+    syncAttention: SyncAttentionUi? = null,
+    onOpenPrograms: () -> Unit = {}
 ) {
     // Wide windows put the summary beside the classes; without a semester there is no summary.
     val wide = twoColumns && state.hasActiveSemester
@@ -69,7 +75,12 @@ fun TodayScreen(
             subtitle = listOfNotNull(
                 state.weekLabel.takeIf { it.isNotBlank() },
                 state.semesterLabel.takeIf { it.isNotBlank() }
-            ).joinToString(", ").ifBlank { null }
+            ).joinToString(", ").ifBlank { null },
+            supportingContent = if (state.hiddenProgramNames.isNotEmpty() && !state.allProgramsHidden) {
+                { HiddenProgramsHint(state.hiddenProgramNames) }
+            } else {
+                null
+            }
         )
         if (availableUpdateVersion != null || syncAttention != null) {
             // Banners are one section, so the summary card keeps the 16 dp section gap below them.
@@ -103,14 +114,14 @@ fun TodayScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.xl)) {
                 TodaySummary(state, Modifier.width(TodaySummaryColumnWidth))
                 Column(modifier = Modifier.weight(1f)) {
-                    TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onOpenSync, onRetry)
+                    TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onOpenSync, onOpenPrograms, onRetry)
                 }
             }
         } else {
             if (state.hasActiveSemester) {
                 TodaySummary(state, Modifier.padding(bottom = MakSpacing.xl))
             }
-            TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onOpenSync, onRetry)
+            TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onOpenSync, onOpenPrograms, onRetry)
         }
     }
 }
@@ -135,11 +146,14 @@ private fun ColumnScope.TodayClasses(
     onOpenClass: (String) -> Unit,
     onStartSetup: () -> Unit,
     onOpenSync: () -> Unit,
+    onOpenPrograms: () -> Unit,
     onRetry: () -> Unit
 ) {
     MakRowTitle(title = "Zajęcia")
     when (state.status) {
-        ScreenStatus.Ready -> if (state.items.isEmpty()) {
+        ScreenStatus.Ready -> if (state.allProgramsHidden) {
+            AllProgramsHiddenNote(onOpenPrograms)
+        } else if (state.items.isEmpty()) {
             Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 MakStateMessage(
                     status = state.status,

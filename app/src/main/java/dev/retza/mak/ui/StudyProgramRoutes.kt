@@ -31,6 +31,7 @@ internal fun NavGraphBuilder.studyProgramRoutes(
             onOpenProgram = { id ->
                 navController.navigate(studyProgramEditRoute(id))
             },
+            onVisibleChange = studyProgramsViewModel::setVisible,
             modifier = Modifier.fillMaxSize()
         )
     }

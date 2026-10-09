@@ -304,6 +304,7 @@ Szczegóły przyjęte przez użytkownika 2026-10-09 (makiety w artefakcie „MAK
 - wiersz ma checkbox po lewej z obszarem dotyku 48 dp, a reszta wiersza (kropka koloru, nazwa, strzałka) dalej otwiera „Edytuj kierunek”; ukryty kierunek ma pod nazwą tekst „Ukryty na tym telefonie”; opis ekranu brzmi „Odznacz kierunek, aby ukryć jego zajęcia na tym telefonie. Nazwa i kolor są wspólne dla wszystkich semestrów.”;
 - formularz zajęć pozwala wybrać ukryty kierunek; opcja ma dopisek „ukryty”, a po jej wyborze pod polem stoi „Ten kierunek jest ukryty na tym telefonie. Zajęcia zapiszą się, ale nie pojawią się w planie, dopóki go nie włączysz.”;
 - gdy wszystkie kierunki aktywnego semestru są ukryte, „Dzisiaj” i „Plan” pokazują zamiast listy zajęć neutralny komunikat „Wszystkie kierunki są ukryte na tym telefonie.” z akcją „Kierunki” prowadzącą do ekranu „Kierunki”;
+- gdy wszystkie kierunki aktywnego semestru są ukryte, widget pokazuje datę i tekst „Wszystkie kierunki są ukryte na tym telefonie.” (decyzja użytkownika z 2026-10-09); „Dzisiaj” nadal pokazuje tydzień semestru;
 - gdy ukryta jest część kierunków aktywnego semestru, „Dzisiaj” pokazuje pod nazwą semestru wiersz z ikoną „Ukryty kierunek: {nazwa}” albo „Ukryte kierunki: {nazwy}”;
 - przy pierwszym pobraniu planu z Dysku i przy ręcznym imporcie wybór ukrytych kierunków jest czyszczony, bo numery kierunków pochodzą wtedy z innego planu; przy kolejnych synchronizacjach zostają tylko numery kierunków, które nadal istnieją.
 

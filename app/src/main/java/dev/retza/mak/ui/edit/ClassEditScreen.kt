@@ -6,6 +6,9 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.AlertDialog
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.outlined.Info
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -20,6 +23,7 @@ import dev.retza.mak.ui.polishPlural
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakDatePickerField
+import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakExpandableSection
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakFieldPair
@@ -51,7 +55,9 @@ data class RecurrenceOptionUi(
 
 data class ClassCourseOptionUi(
     val id: String,
-    val label: String
+    val label: String,
+    // Hidden on this phone: it can be chosen, but its classes stay out of the plan.
+    val isHidden: Boolean = false
 )
 
 data class HiddenDataWarningUi(
@@ -146,9 +152,25 @@ fun ClassEditScreen(
                                 options = state.courseOptions,
                                 onSelected = { option -> onCourseChanged(option.id) },
                                 optionLabel = { it.label },
+                                optionTrailing = { option ->
+                                    if (option.isHidden) {
+                                        Text(
+                                            text = "ukryty",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                },
                                 isError = state.errors.containsKey(ClassEditField.Course)
                             )
                             FieldError(state.errors[ClassEditField.Course])
+                            if (state.courseOptions.any { it.id == state.semesterProgramId && it.isHidden }) {
+                                MakHelperText(
+                                    text = "Ten kierunek jest ukryty na tym telefonie. Zajęcia zapiszą się, " +
+                                        "ale nie pojawią się w planie, dopóki go nie włączysz.",
+                                    icon = Icons.Outlined.Info
+                                )
+                            }
                         }
                     },
                     second = {

@@ -9,6 +9,7 @@ import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
+import dev.retza.mak.ui.settings.InMemorySettingsPreferences
 import java.time.LocalDate
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
@@ -29,11 +30,26 @@ class ClassEditViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
+    private val preferences = InMemorySettingsPreferences()
+
     private fun viewModel(repository: FakeRepository, savedState: SavedStateHandle = SavedStateHandle()) =
-        ClassEditViewModel(FakeSemesterRepository(repository), repository, FeedbackController(), savedState)
+        ClassEditViewModel(FakeSemesterRepository(repository), repository, FeedbackController(), savedState, preferences)
 
     private fun recordingViewModel(repository: FakeRepository, sink: RecordingFeedbackSink) =
-        ClassEditViewModel(FakeSemesterRepository(repository), repository, sink, SavedStateHandle())
+        ClassEditViewModel(FakeSemesterRepository(repository), repository, sink, SavedStateHandle(), preferences)
+
+    @Test
+    fun hiddenStudyProgramStaysAnOptionMarkedAsHidden() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        preferences.setStudyProgramHidden("1", hidden = true)
+        val viewModel = viewModel(repository)
+        viewModel.openNew()
+        advanceUntilIdle()
+
+        val option = viewModel.editor.value.courseOptions.single()
+        assertEquals("Informatyka", option.label)
+        assertTrue(option.isHidden)
+    }
 
     @Test
     fun newClassDraftSurvivesRecreationFromSavedState() = runTest(mainDispatcher) {

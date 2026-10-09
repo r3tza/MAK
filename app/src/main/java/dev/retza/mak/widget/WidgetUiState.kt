@@ -7,6 +7,11 @@ sealed interface WidgetUiState {
         override val dateLabel: String
     ) : WidgetUiState
 
+    /** Every study program of the semester is hidden on this phone (decision of 2026-10-09, I-79). */
+    data class AllProgramsHidden(
+        override val dateLabel: String
+    ) : WidgetUiState
+
     data class OutsideSemester(
         override val dateLabel: String,
         val semesterName: String

@@ -16,6 +16,7 @@ import dev.retza.mak.domain.Recurrence as DomainRecurrence
 import dev.retza.mak.ui.calendarForAssignment
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.feedback.FeedbackSink
+import dev.retza.mak.ui.settings.SettingsPreferences
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
@@ -28,9 +29,11 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -47,7 +50,8 @@ class ClassEditViewModel(
     private val semesterRepository: SemesterRepository,
     private val scheduleRepository: ScheduleRepository,
     private val feedbackSink: FeedbackSink,
-    private val savedState: SavedStateHandle
+    private val savedState: SavedStateHandle,
+    preferences: SettingsPreferences
 ) : ViewModel() {
     // The draft survives process death: Android may stop the app while the user copies
     // the timetable from another app, and returning must not clear the form.
@@ -75,17 +79,22 @@ class ClassEditViewModel(
         }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    // Only marks options; the form still offers every study program (`FEATURES.md`, I-79).
+    private val hiddenProgramIds = preferences.planDisplay
+        .map { it.hiddenProgramIds }
+        .stateIn(viewModelScope, SharingStarted.Eagerly, emptySet())
+
     init {
         viewModelScope.launch {
             state.collect { savedState.storeClassEditDraft(it) }
         }
         viewModelScope.launch {
-            activePlanData.collect { data ->
+            combine(activePlanData, hiddenProgramIds) { data, hidden -> data to hidden }.collect { (data, hidden) ->
                 val optionsData = editPlanData ?: data
                 state.update { current ->
                     val calendar = optionsData?.calendarForAssignment(current.semesterProgramId)
                     current.copy(
-                        courseOptions = optionsData?.courseOptions().orEmpty(),
+                        courseOptions = optionsData?.courseOptions(hidden).orEmpty(),
                         semesterStartDate = calendar?.startDate?.toString(),
                         semesterEndDate = calendar?.endDate?.toString()
                     )
@@ -346,7 +355,7 @@ class ClassEditViewModel(
     ): ClassEditUiState {
         val calendar = data?.calendarForAssignment(value.semesterProgramId)
         return value.copy(
-            courseOptions = data?.courseOptions().orEmpty(),
+            courseOptions = data?.courseOptions(hiddenProgramIds.value).orEmpty(),
             semesterStartDate = calendar?.startDate?.toString(),
             semesterEndDate = calendar?.endDate?.toString()
         )
@@ -374,11 +383,11 @@ private fun ActivePlanData.classEditImpact(classId: String, record: ClassRecord)
     )
 }
 
-private fun ActivePlanData.courseOptions(): List<ClassCourseOptionUi> =
+private fun ActivePlanData.courseOptions(hiddenProgramIds: Set<String>): List<ClassCourseOptionUi> =
     semesterPrograms.mapNotNull { assignment ->
         val program = courses.firstOrNull { it.id == assignment.studyProgramId }
             ?: return@mapNotNull null
-        ClassCourseOptionUi(assignment.id, program.name)
+        ClassCourseOptionUi(assignment.id, program.name, isHidden = program.id in hiddenProgramIds)
     }
 
 private fun defaultClassEditState() = ClassEditUiState(

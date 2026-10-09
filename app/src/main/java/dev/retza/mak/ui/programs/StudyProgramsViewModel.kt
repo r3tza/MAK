@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -30,7 +31,9 @@ import org.koin.core.annotation.KoinViewModel
 data class StudyProgramUi(
     val id: Long,
     val name: String,
-    val color: String
+    val color: String,
+    // Hidden on this phone only (`DOMAIN.md`, „Kierunki”); the program and its classes stay in the plan.
+    val isHidden: Boolean = false
 )
 
 data class StudyProgramEditorUi(
@@ -73,10 +76,10 @@ class StudyProgramsViewModel(
     init {
         viewModelScope.launch {
             try {
-                semesterRepository.observeStudyPrograms().collect { records ->
-                    state.update { current ->
-                        current.copy(programs = records.map { StudyProgramUi(it.id, it.name, it.color) })
-                    }
+                combine(semesterRepository.observeStudyPrograms(), preferences.planDisplay) { records, display ->
+                    records.map { StudyProgramUi(it.id, it.name, it.color, isHidden = it.id.toString() in display.hiddenProgramIds) }
+                }.collect { programs ->
+                    state.update { current -> current.copy(programs = programs) }
                 }
             } catch (error: CancellationException) {
                 throw error
@@ -99,6 +102,17 @@ class StudyProgramsViewModel(
                         else current.copy(editor = current.editor.copy(usedInSemesters = names))
                     }
                 }
+        }
+    }
+
+    /** Shows or hides the program's classes on this phone; the stored choice updates the list. */
+    fun setVisible(id: Long, visible: Boolean) {
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać wyboru kierunku.",
+            onFinish = {}
+        ) {
+            preferences.setStudyProgramHidden(id.toString(), hidden = !visible)
         }
     }
 

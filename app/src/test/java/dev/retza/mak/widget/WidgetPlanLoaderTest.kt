@@ -85,6 +85,16 @@ class WidgetPlanLoaderTest {
     }
 
     @Test
+    fun loaderSaysWhenEveryStudyProgramIsHidden() = runTest {
+        val state = loader(
+            repositoryReturning(semester, planData(programming)),
+            InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings(minimumBreakMinutes = 0, hiddenProgramIds = setOf("2", "3")))
+        ).load()
+
+        assertTrue(state is WidgetUiState.AllProgramsHidden)
+    }
+
+    @Test
     fun loaderReturnsNoActiveSemesterState() = runTest {
         val state = loader(repositoryReturning(null, null)).load()
 

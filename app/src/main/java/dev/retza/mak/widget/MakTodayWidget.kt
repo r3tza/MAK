@@ -3,6 +3,9 @@ package dev.retza.mak.widget
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
@@ -56,14 +59,18 @@ class MakTodayWidget : GlanceAppWidget() {
 
     override suspend fun provideGlance(context: Context, id: GlanceId) {
         val koin = GlobalContext.get()
-        val state = WidgetPlanLoader(
+        val loader = WidgetPlanLoader(
             semesterRepository = koin.get(),
             activePlanSource = koin.get(),
             activePlanProvider = koin.get(),
             clock = koin.get()
-        ).load()
+        )
+        val initial = loader.load()
 
         provideContent {
+            // An update during a running session only recomposes, so changes come from the data itself.
+            val states = remember { loader.states() }
+            val state by states.collectAsState(initial)
             GlanceTheme {
                 MakTodayWidgetContent(context, state)
             }
@@ -100,6 +107,7 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
         when (state) {
             is WidgetUiState.NoActiveSemester -> WidgetMessage("Brak aktywnego semestru")
             is WidgetUiState.OutsideSemester -> WidgetMessage("Poza zakresem semestru")
+            is WidgetUiState.AllProgramsHidden -> WidgetMessage("Wszystkie kierunki są ukryte na tym telefonie.")
             is WidgetUiState.EmptyDay -> {
                 WidgetMessage("Brak zajęć na dziś")
             }

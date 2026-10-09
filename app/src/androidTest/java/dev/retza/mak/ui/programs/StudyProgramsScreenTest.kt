@@ -6,6 +6,8 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
+import androidx.compose.ui.test.assertIsOff
+import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
@@ -38,7 +40,8 @@ class StudyProgramsScreenTest {
                                 StudyProgramUi(3L, "Bardzo długa nazwa kierunku Zarządzanie i inżynieria produkcji", "#A65724")
                             )
                         ),
-                        onOpenProgram = { opened = it }
+                        onOpenProgram = { opened = it },
+                        onVisibleChange = { _, _ -> }
                     )
                 }
             }
@@ -54,10 +57,42 @@ class StudyProgramsScreenTest {
     }
 
     @Test
+    fun checkboxAndEditAreSeparateTargetsAndHiddenProgramIsMarkedAt320Dp() {
+        var visibility: Pair<Long, Boolean>? = null
+        var opened: Long? = null
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(700.dp)) {
+                    StudyProgramsScreen(
+                        state = StudyProgramsUiState(
+                            programs = listOf(
+                                StudyProgramUi(1L, "Informatyka", "#137B71"),
+                                StudyProgramUi(2L, "Zarządzanie", "#334FCE", isHidden = true)
+                            )
+                        ),
+                        onOpenProgram = { opened = it },
+                        onVisibleChange = { id, visible -> visibility = id to visible }
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Odznacz kierunek, aby ukryć jego zajęcia na tym telefonie.", substring = true)
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Pokazuj Informatyka").assertIsOn()
+        composeTestRule.onNodeWithContentDescription("Pokazuj Zarządzanie").assertIsOff().performClick()
+        assertEquals(2L to true, visibility)
+        assertEquals(null, opened)
+
+        composeTestRule.onNodeWithContentDescription("Zarządzanie, ukryty na tym telefonie, edytuj").performClick()
+        assertEquals(2L, opened)
+    }
+
+    @Test
     fun emptyListExplainsWhereProgramsComeFrom() {
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
-                StudyProgramsScreen(state = StudyProgramsUiState(), onOpenProgram = {})
+                StudyProgramsScreen(state = StudyProgramsUiState(), onOpenProgram = {}, onVisibleChange = { _, _ -> })
             }
         }
 

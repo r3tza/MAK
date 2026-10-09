@@ -55,13 +55,20 @@ class ActivePlanProvider(
         )
 }
 
-/** The plan without study programs hidden on this phone: their assignments and classes are left out. */
+/**
+ * The plan without the classes of study programs hidden on this phone. Their assignments stay, so the
+ * week of the semester is still known when every program is hidden.
+ */
 fun ActivePlanData.visibleTo(display: PlanDisplaySettings): ActivePlanData {
     if (display.hiddenProgramIds.isEmpty()) return this
-    val visiblePrograms = semesterPrograms.filterNot { it.studyProgramId in display.hiddenProgramIds }
-    val visibleAssignmentIds = visiblePrograms.mapTo(mutableSetOf()) { it.id }
-    return copy(
-        semesterPrograms = visiblePrograms,
-        classes = classes.filter { it.semesterProgramId in visibleAssignmentIds }
-    )
+    val hiddenAssignmentIds = hiddenAssignments(display).mapTo(mutableSetOf()) { it.id }
+    return copy(classes = classes.filterNot { it.semesterProgramId in hiddenAssignmentIds })
 }
+
+/** Assignments of the active semester whose study program is hidden on this phone. */
+fun ActivePlanData.hiddenAssignments(display: PlanDisplaySettings): List<SemesterProgram> =
+    semesterPrograms.filter { it.studyProgramId in display.hiddenProgramIds }
+
+/** True when the semester has study programs and every one of them is hidden on this phone. */
+fun ActivePlanData.allProgramsHidden(display: PlanDisplaySettings): Boolean =
+    semesterPrograms.isNotEmpty() && hiddenAssignments(display).size == semesterPrograms.size

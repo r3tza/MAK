@@ -6,7 +6,7 @@ Wspólna zasada: każdy widok planu (`TodayViewModel`, `ScheduleViewModel`, `Occ
 
 ## 1. Filtruj plan według ukrytych kierunków (I-79)
 
-Stan: zrobione. Testy JVM i na emulatorze `RoomPlanSyncGatewayTest`, `SettingsPreferencesTest`, `KoinGraphTest` i `CollisionAlarmSchedulerTest` przechodzą; ręczne sprawdzenie zapisanego wyboru przeniesione do kroku 2, bo bez checkboxa nie da się go zapisać na emulatorze bez roota. `PlanBackupServiceTest` i `StudyProgramsViewModelTest` sprawdzają czyszczenie wyboru po imporcie i usunięciu kierunku. Otwarte pytanie: gdy ukryte są wszystkie kierunki aktywnego semestru, resolver nie ma przypisań i widget pokazuje stan „poza semestrem”; zachowania widgetu w tym stanie dokumentacja nie opisuje.
+Stan: zrobione. Testy JVM i na emulatorze `RoomPlanSyncGatewayTest`, `SettingsPreferencesTest`, `KoinGraphTest` i `CollisionAlarmSchedulerTest` przechodzą; ręczne sprawdzenie zapisanego wyboru przeniesione do kroku 2, bo bez checkboxa nie da się go zapisać na emulatorze bez roota. `PlanBackupServiceTest` i `StudyProgramsViewModelTest` sprawdzają czyszczenie wyboru po imporcie i usunięciu kierunku. Po decyzji użytkownika widget przy wszystkich ukrytych kierunkach pokazuje „Wszystkie kierunki są ukryte na tym telefonie.”, a `visibleTo` usuwa tylko zajęcia, nie przypisania (krok 2, `LOG.md`).
 
 Cel: lokalny wybór ukrytych kierunków usuwa ich zajęcia ze wszystkich widoków, widgetu, kolizji, okienek i powiadomień, a synchronizacja i import nie przenoszą go na złe kierunki.
 
@@ -35,6 +35,8 @@ Weryfikacja: filtrowane testy JVM wymienionych klas; kompilacja testów Android;
 Kryterium zakończenia: testy przechodzą, a ręcznie zapisany wybór w preferencjach ukrywa zajęcia na „Dzisiaj”, w „Planie” i na widgecie. Commit: `feat: hide study programs from the plan on this phone (I-79)`.
 
 ## 2. Dodaj checkboxy kierunków i stany ukrycia w interfejsie (I-79)
+
+Stan: zrobione. Zamiast pól `hiddenProgramNames` w `ScheduleUiState` „Plan” ma tylko `allProgramsHidden`, bo podpowiedź z nazwami jest wyłącznie na „Dzisiaj”. Wspólne elementy są w `ui/HiddenPrograms.kt`; `MakSectionHeader` ma `supportingContent`, a `MakHelperText` opcjonalną ikonę.
 
 Cel: użytkownik ukrywa kierunek checkboxem, formularz zajęć ostrzega przed wyborem ukrytego kierunku, a „Dzisiaj” i „Plan” wyjaśniają, dlaczego zajęć jest mniej.
 

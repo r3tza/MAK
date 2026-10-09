@@ -42,7 +42,8 @@ internal fun NavGraphBuilder.todayRoute(
             onDismissUpdate = updateViewModel::dismissAvailableUpdate,
             modifier = Modifier.fillMaxSize(),
             twoColumns = LocalMakWidthClass.current == MakWidthClass.Expanded,
-            syncAttention = syncAttention()
+            syncAttention = syncAttention(),
+            onOpenPrograms = { navController.navigate(MakRoutes.StudyPrograms) }
         )
     }
 }
@@ -52,7 +53,8 @@ internal fun NavGraphBuilder.scheduleRoute(
     scheduleViewModel: ScheduleViewModel,
     onOpenOccurrence: (String) -> Unit,
     startSetup: () -> Unit,
-    openSync: () -> Unit
+    openSync: () -> Unit,
+    openPrograms: () -> Unit
 ) {
     composable(MakRoutes.Schedule) {
         val scheduleState = scheduleViewModel.schedule.collectAsStateWithLifecycle().value
@@ -73,6 +75,7 @@ internal fun NavGraphBuilder.scheduleRoute(
             onClearWeekCorrection = scheduleViewModel::clearVisibleWeekOverride,
             onStartSetup = startSetup,
             onOpenSync = openSync,
+            onOpenPrograms = openPrograms,
             onRetry = {},
             requiresSetup = appState.requiresSetup,
             modifier = Modifier.fillMaxSize()
