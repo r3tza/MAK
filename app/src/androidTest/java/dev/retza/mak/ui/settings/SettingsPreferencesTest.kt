@@ -4,7 +4,9 @@ import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
+import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.File
@@ -63,7 +65,7 @@ class SettingsPreferencesTest {
     }
 
     @Test
-    fun minimumBreakDefaultsToZeroAndClampsToFifteen() = runBlocking {
+    fun minimumBreakDefaultsToZeroAndClampsToTwenty() = runBlocking {
         val preferences = preferences(openDataStore())
         assertEquals(0, preferences.planDisplay.first().minimumBreakMinutes)
 
@@ -71,7 +73,15 @@ class SettingsPreferencesTest {
         assertEquals(10, preferences.planDisplay.first().minimumBreakMinutes)
 
         preferences.setMinimumBreakMinutes(40)
-        assertEquals(15, preferences.planDisplay.first().minimumBreakMinutes)
+        assertEquals(20, preferences.planDisplay.first().minimumBreakMinutes)
+    }
+
+    @Test
+    fun storedGapThresholdBelowTwentyIsReadAsTwenty() = runBlocking {
+        val dataStore = openDataStore()
+        dataStore.edit { it[intPreferencesKey("gap_threshold_minutes")] = 15 }
+
+        assertEquals(20, preferences(dataStore).gapThresholdMinutes.first())
     }
 
     @Test

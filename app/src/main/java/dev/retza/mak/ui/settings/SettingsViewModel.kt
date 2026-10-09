@@ -405,7 +405,7 @@ private fun buildSettingsState(
 
 private val notificationHourOptions = listOf(18, 19, 20, 21, 22)
 private val notificationLeadOptions = listOf(15L, 30L, 45L, 60L)
-private val gapThresholdOptions = listOf(15, 20, 30, 45, 60)
-private val minimumBreakOptions = listOf(0, 5, 10, 15)
+private val gapThresholdOptions = listOf(20, 30, 45, 60)
+private val minimumBreakOptions = listOf(0, 5, 10, 15, 20)
 
 private val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.forLanguageTag("pl-PL"))

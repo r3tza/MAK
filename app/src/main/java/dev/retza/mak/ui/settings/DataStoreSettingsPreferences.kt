@@ -29,9 +29,12 @@ private const val readRetryDelayMillis = 100L
 private const val defaultEveningHourMinutes = 20 * 60
 private const val defaultLeadMinutes = 30
 private const val defaultGapThresholdMinutes = 30
-private const val minGapThresholdMinutes = 5
+// A gap is longer than the threshold and a collision break is not longer than the minimum break, so
+// keeping the smallest threshold at least the largest minimum break means no break is both
+// (decision of 2026-10-09). A stored threshold of 15 minutes is read as 20.
+private const val minGapThresholdMinutes = 20
 private const val maxGapThresholdMinutes = 180
-private const val maxMinimumBreakMinutes = 15
+private const val maxMinimumBreakMinutes = 20
 
 @org.koin.core.annotation.Single(binds = [SettingsPreferences::class])
 class DataStoreSettingsPreferences(

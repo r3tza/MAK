@@ -123,7 +123,7 @@ Wystąpienie identyfikują zajęcia i data oryginalna terminu, a nie data, w kt�
 
 ## Okienka
 
-Okienko jest przerwą dłuższą niż ustawiony próg między końcem jednego bloku zajęć a początkiem następnego. Liczyć je ze wspólnego planu wszystkich kierunków aktywnego semestru, także gdy kierunki używają różnych kalendarzy akademickich. Domyślny próg wynosi 30 minut, więc przerwa trwająca dokładnie 30 minut nie jest okienkiem. Nie liczyć czasu przed pierwszymi ani po ostatnich zajęciach dnia. Odwołane zajęcia pominąć, a zmiany i przeniesienia uwzględnić. Nakładające się zajęcia najpierw połączyć w blok czasu, aby kolizja nie tworzyła fałszywego okienka.
+Okienko jest przerwą dłuższą niż ustawiony próg między końcem jednego bloku zajęć a początkiem następnego. Liczyć je ze wspólnego planu wszystkich kierunków aktywnego semestru, także gdy kierunki używają różnych kalendarzy akademickich. Domyślny próg wynosi 30 minut, więc przerwa trwająca dokładnie 30 minut nie jest okienkiem. Próg wynosi co najmniej 20 minut, a minimalna przerwa (sekcja „Kolizje”) najwyżej 20 minut, więc przerwa nigdy nie jest jednocześnie okienkiem i kolizją. Nie liczyć czasu przed pierwszymi ani po ostatnich zajęciach dnia. Odwołane zajęcia pominąć, a zmiany i przeniesienia uwzględnić. Nakładające się zajęcia najpierw połączyć w blok czasu, aby kolizja nie tworzyła fałszywego okienka.
 
 Obliczanie liczby okienek należy do domeny i korzysta z tego samego aktywnego planu co wykrywanie kolizji.
 

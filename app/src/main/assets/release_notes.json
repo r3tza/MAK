@@ -2,6 +2,15 @@
   "minorChanges": "Pomniejsze poprawki",
   "releases": [
     {
+      "version": "0.3.2",
+      "date": "2026-10-09",
+      "changes": [
+        "Zajęcia bez przerwy między nimi są teraz kolizją. W ustawieniach można ustawić minimalną przerwę: 0, 5, 10, 15 albo 20 minut.",
+        "Najmniejszy próg okienka to teraz 20 minut. Ustawione wcześniej 15 minut zmienia się na 20.",
+        "Gdy plan na Dysku albo importowany plik pochodzi z nowszej wersji MAK, aplikacja prosi o aktualizację zamiast pokazywać ogólny błąd."
+      ]
+    },
+    {
       "version": "0.3.1",
       "date": "2026-10-08",
       "changes": [
