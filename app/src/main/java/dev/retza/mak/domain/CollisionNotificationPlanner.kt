@@ -81,9 +81,8 @@ class CollisionNotificationPlanner(
     private val clock: Clock
 ) {
     fun plan(
-        data: ActivePlanData,
-        settings: CollisionNotificationSettings,
-        display: PlanDisplaySettings
+        inputs: ActivePlanInputs,
+        settings: CollisionNotificationSettings
     ): List<PlannedCollisionNotification> {
         if (!settings.enabled) return emptyList()
         val today = LocalDate.now(clock)
@@ -91,7 +90,7 @@ class CollisionNotificationPlanner(
         val notifications = mutableListOf<PlannedCollisionNotification>()
         for (offset in 0 until settings.horizonDays) {
             val date = today.plusDays(offset)
-            val groups = collisionNotificationGroups(activePlanProvider.resolve(data, date, display).collisions)
+            val groups = collisionNotificationGroups(activePlanProvider.resolve(inputs, date).collisions)
             if (groups.isEmpty()) continue
             if (settings.eveningEnabled) {
                 val from = date.minusDays(1).atTime(settings.eveningHour)
@@ -183,9 +182,9 @@ fun collisionNotificationGroups(collisions: List<Collision>): List<CollisionNoti
 }
 
 private fun groupLabel(collisions: List<Collision>): String {
-    val overlaps = collisions.filter { it.kind == CollisionKind.OVERLAP }
-    if (overlaps.isEmpty()) return breakLabel(collisions.minWith(compareBy<Collision> { it.start }.thenBy { it.end }))
-    val start = overlaps.minOf { it.start }.format(collisionTimeFormatter)
-    val end = overlaps.maxOf { it.end }.format(collisionTimeFormatter)
-    return "$start-$end"
+    val overlaps = collisions.filterIsInstance<Collision.Overlap>()
+    if (overlaps.isEmpty()) {
+        return breakLabel(collisions.filterIsInstance<Collision.NoBreak>().minWith(compareBy<Collision> { it.start }.thenBy { it.end }))
+    }
+    return rangeLabel(overlaps.minOf { it.start }, overlaps.maxOf { it.end })
 }

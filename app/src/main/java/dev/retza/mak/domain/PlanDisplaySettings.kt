@@ -4,10 +4,6 @@ package dev.retza.mak.domain
 data class PlanDisplaySettings(
     val minimumBreakMinutes: Int
 ) {
-    init {
-        require(minimumBreakMinutes >= 0) { "The minimum break cannot be negative." }
-    }
-
     companion object {
         val DEFAULT = PlanDisplaySettings(minimumBreakMinutes = 0)
     }

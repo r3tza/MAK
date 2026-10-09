@@ -361,19 +361,19 @@ private fun buildSettingsState(
     },
     activeSemesterId = activeData?.semester?.id,
     themeOptions = listOf(
-        ThemeOptionUi("system", "Systemowy", preferences.theme == ThemeMode.System),
-        ThemeOptionUi("light", "Jasny", preferences.theme == ThemeMode.Light),
-        ThemeOptionUi("dark", "Ciemny", preferences.theme == ThemeMode.Dark)
+        SettingsOptionUi("system", "Systemowy", preferences.theme == ThemeMode.System),
+        SettingsOptionUi("light", "Jasny", preferences.theme == ThemeMode.Light),
+        SettingsOptionUi("dark", "Ciemny", preferences.theme == ThemeMode.Dark)
     ),
     gapThresholdOptions = gapThresholdOptions.map { minutes ->
-        GapThresholdOptionUi(
+        SettingsOptionUi(
             id = minutes.toString(),
             label = "$minutes min",
             isSelected = preferences.gapThresholdMinutes == minutes
         )
     },
     minimumBreakOptions = minimumBreakOptions.map { minutes ->
-        MinimumBreakOptionUi(
+        SettingsOptionUi(
             id = minutes.toString(),
             label = "$minutes min",
             isSelected = preferences.minimumBreakMinutes == minutes
@@ -391,10 +391,10 @@ private fun buildSettingsState(
         beforeClassEnabled = preferences.notifications.beforeClassEnabled,
         eveningHourOptions = notificationHourOptions.map { hour ->
             val id = "%02d:00".format(hour)
-            NotificationOptionUi(id, id, preferences.notifications.eveningHour.hour == hour)
+            SettingsOptionUi(id, id, preferences.notifications.eveningHour.hour == hour)
         },
         leadOptions = notificationLeadOptions.map { minutes ->
-            NotificationOptionUi(
+            SettingsOptionUi(
                 id = minutes.toString(),
                 label = "$minutes min",
                 isSelected = preferences.notifications.leadMinutes == minutes

@@ -5,11 +5,10 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.edit
-import dev.retza.mak.data.repository.ScheduleRepository
-import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.CollisionNotificationPlanner
 import dev.retza.mak.domain.PlannedCollisionNotification
 import dev.retza.mak.domain.toAlarmPayload
+import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.settings.SettingsPreferences
 import java.time.Clock
 import java.time.temporal.ChronoUnit
@@ -24,8 +23,7 @@ private const val MAINTENANCE_REQUEST_CODE = 0x4d414b01
 @org.koin.core.annotation.Single
 class CollisionAlarmScheduler(
     private val context: Context,
-    private val semesterRepository: SemesterRepository,
-    private val scheduleRepository: ScheduleRepository,
+    private val activePlanSource: ActivePlanSource,
     private val planner: CollisionNotificationPlanner,
     private val preferences: SettingsPreferences,
     private val clock: Clock
@@ -43,13 +41,12 @@ class CollisionAlarmScheduler(
             cancelAllLocked()
             return@withLock
         }
-        val semester = semesterRepository.observeActiveSemester().first()
-        val planData = semester?.let { scheduleRepository.observeActivePlanData(it.id).first() }
-        if (planData == null) {
+        val inputs = activePlanSource.observeActive().first()
+        if (inputs == null) {
             cancelAllLocked()
             return@withLock
         }
-        val planned = planner.plan(planData, settings.toPlannerSettings(), preferences.planDisplay.first())
+        val planned = planner.plan(inputs, settings.toPlannerSettings())
         val plannedIds = planned.map { it.id }.toSet()
         storedIds().subtract(plannedIds).forEach { cancelAlarm(it) }
         planned.forEach { schedule(it) }

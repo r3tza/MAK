@@ -53,9 +53,7 @@ data class SyncUiState(
     val accountEmail: String? = null,
     val lastSyncLabel: String? = null,
     val issue: String? = null,
-    val needsReconnect: Boolean = false,
-    // The Drive plan comes from a newer MAK; only an update of the app helps.
-    val needsUpdate: Boolean = false,
+    val issueFix: SyncIssueFix? = null,
     // Banner on Today; set only while an account is connected and something needs the user.
     val attention: SyncAttentionUi? = null,
     val choice: SyncChoiceUi? = null,
@@ -90,8 +88,10 @@ data class SyncChangesUi(
     val canSave: Boolean get() = differences.isNotEmpty() && picks.size == differences.size && !isSaving
 }
 
-/** [opensUpdate]: the action leads to the update screen instead of the sync screen. */
-data class SyncAttentionUi(val text: String, val action: String, val opensUpdate: Boolean = false)
+/** What clears a lasting sync problem when opening the sync screen is not enough. */
+enum class SyncIssueFix { RECONNECT, UPDATE }
+
+data class SyncAttentionUi(val text: String, val action: String, val fix: SyncIssueFix? = null)
 
 private data class SyncLocalState(
     val isWorking: Boolean = false,
@@ -353,7 +353,8 @@ private fun Exception.toMessage(): String = when {
 private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemUi>) = SyncUiState(
     accountEmail = account?.email,
     attention = if (account == null) null else issueText()?.let { text ->
-        if (issue == SyncIssue.NEWER_REMOTE_PLAN) SyncAttentionUi(text, "Zaktualizuj", opensUpdate = true) else SyncAttentionUi(text, "Otwórz")
+        val fix = issueFix()
+        SyncAttentionUi(text, if (fix == SyncIssueFix.UPDATE) "Zaktualizuj" else "Otwórz", fix)
     }
         ?: pendingChoice?.let { SyncAttentionUi(CHOICE_TITLE, "Wybierz wersję") },
     lastSyncLabel = account?.let {
@@ -361,8 +362,7 @@ private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemU
             ?: "Jeszcze nie zsynchronizowano"
     },
     issue = issueText(),
-    needsReconnect = issue == SyncIssue.AUTHORIZATION_REQUIRED,
-    needsUpdate = issue == SyncIssue.NEWER_REMOTE_PLAN,
+    issueFix = issueFix(),
     choice = pendingChoice?.let { question ->
         SyncChoiceUi(
             phone = question.local.label(),
@@ -378,6 +378,12 @@ private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemU
     showChoiceDialog = local.showChoiceDialog && pendingChoice != null,
     showDisconnectDialog = local.showDisconnectDialog && account != null
 )
+
+private fun SyncState.issueFix(): SyncIssueFix? = when (issue) {
+    SyncIssue.AUTHORIZATION_REQUIRED -> SyncIssueFix.RECONNECT
+    SyncIssue.NEWER_REMOTE_PLAN -> SyncIssueFix.UPDATE
+    else -> null
+}
 
 private fun SyncState.issueText(): String? = when (issue) {
     SyncIssue.AUTHORIZATION_REQUIRED -> "Google wymaga ponownego potwierdzenia dostępu do Dysku."

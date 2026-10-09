@@ -33,27 +33,14 @@ class CollisionDetector {
     fun detect(schedule: ResolvedSchedule, minimumBreakMinutes: Int): List<Collision> =
         detect(schedule.occurrences, minimumBreakMinutes)
 
-    fun hasCollision(occurrences: Collection<PlannedOccurrence>, minimumBreakMinutes: Int): Boolean =
-        detect(occurrences, minimumBreakMinutes).isNotEmpty()
-
+    /** [first] starts no later than [second], so without an overlap it is the earlier class. */
     private fun collision(first: PlannedOccurrence, second: PlannedOccurrence, minimumBreakMinutes: Int): Collision? {
         val overlapStart = maxOf(first.startTime, second.startTime)
         val overlapEnd = minOf(first.endTime, second.endTime)
-        if (overlapStart.isBefore(overlapEnd)) {
-            return Collision(first = first, second = second, start = overlapStart, end = overlapEnd)
-        }
-        val earlier = if (first.endTime <= second.startTime) first else second
-        val later = if (earlier === first) second else first
-        if (earlier.endTime.isAfter(later.startTime)) return null
-        val breakMinutes = Duration.between(earlier.endTime, later.startTime).toMinutes()
-        if (breakMinutes > minimumBreakMinutes) return null
-        return Collision(
-            first = first,
-            second = second,
-            start = earlier.endTime,
-            end = later.startTime,
-            kind = CollisionKind.NO_BREAK
-        )
+        if (overlapStart.isBefore(overlapEnd)) return Collision.Overlap(first, second, overlapStart, overlapEnd)
+        val breakMinutes = Duration.between(first.endTime, second.startTime).toMinutes()
+        if (breakMinutes !in 0..minimumBreakMinutes) return null
+        return Collision.NoBreak(first, second, start = first.endTime, end = second.startTime)
     }
 
     private fun maxOf(first: LocalTime, second: LocalTime): LocalTime =

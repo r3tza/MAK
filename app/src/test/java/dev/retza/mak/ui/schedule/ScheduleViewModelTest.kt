@@ -14,7 +14,7 @@ import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
-import dev.retza.mak.ui.settings.InMemorySettingsPreferences
+import dev.retza.mak.ui.activePlanSource
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -45,15 +45,14 @@ class ScheduleViewModelTest {
 
     private fun viewModel(repository: FakeRepository, clock: Clock = this.clock) = ScheduleViewModel(
         FakeSemesterRepository(repository),
-        repository,
+        activePlanSource(repository),
         clock,
         ActivePlanProvider(),
         feedbackSink = object : FeedbackSink {
             override fun publish(feedback: UiFeedback) {
                 this@ScheduleViewModelTest.feedback += feedback
             }
-        },
-        preferences = InMemorySettingsPreferences()
+        }
     )
 
     @Test

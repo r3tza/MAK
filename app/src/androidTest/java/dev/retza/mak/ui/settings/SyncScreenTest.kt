@@ -103,7 +103,7 @@ class SyncScreenTest {
             connected.copy(
                 choice = null,
                 issue = "Plan na Dysku pochodzi z nowszej wersji MAK. Zaktualizuj aplikację.",
-                needsUpdate = true
+                issueFix = SyncIssueFix.UPDATE
             ),
             onOpenUpdate = { opened = true }
         )

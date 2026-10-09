@@ -8,7 +8,7 @@ import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
-import dev.retza.mak.ui.settings.InMemorySettingsPreferences
+import dev.retza.mak.ui.activePlanSource
 import java.time.LocalDate
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
@@ -30,12 +30,12 @@ class OccurrenceViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
     private fun occurrenceViewModel(repository: FakeRepository) =
-        OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = FeedbackController(), preferences = InMemorySettingsPreferences())
+        OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = FeedbackController(), activePlanSource = activePlanSource(repository))
 
     private fun recordingViewModel(
         repository: FakeRepository,
         sink: RecordingFeedbackSink
-    ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = sink, preferences = InMemorySettingsPreferences())
+    ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = sink, activePlanSource = activePlanSource(repository))
 
     @Test
     fun openValidOccurrenceBuildsDetails() = runTest(mainDispatcher) {

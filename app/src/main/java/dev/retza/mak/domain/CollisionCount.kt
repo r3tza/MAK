@@ -10,6 +10,6 @@ fun collisionKey(collision: Collision): String {
         occurrenceIds[1],
         collision.start,
         collision.end,
-        collision.kind
+        collision::class.simpleName
     ).joinToString("|")
 }

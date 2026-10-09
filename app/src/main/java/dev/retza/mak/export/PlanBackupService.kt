@@ -32,7 +32,7 @@ class PlanBackupService(
         val snapshot = try {
             JsonExportCodec.decode(bytes)
         } catch (_: NewerExportVersionException) {
-            return ImportPreparation.Invalid(listOf(NEWER_FILE_MESSAGE))
+            return ImportPreparation.Invalid(listOf("Plik pochodzi z nowszej wersji MAK. Zaktualizuj aplikację."))
         } catch (_: Exception) {
             return ImportPreparation.Invalid(listOf("Nie udało się odczytać pliku."))
         }
@@ -44,10 +44,6 @@ class PlanBackupService(
     }
 
     suspend fun confirmImport(handle: ImportHandle): Long? = gateway.replaceAll(handle.data)
-
-    companion object {
-        const val NEWER_FILE_MESSAGE = "Plik pochodzi z nowszej wersji MAK. Zaktualizuj aplikację."
-    }
 }
 
 private fun BackupData.toSummary(): ImportSummary = ImportSummary(

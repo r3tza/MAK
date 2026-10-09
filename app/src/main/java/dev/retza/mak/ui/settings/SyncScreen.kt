@@ -113,10 +113,10 @@ fun SyncScreen(
                     title = null,
                     subtitle = issue,
                     role = MakNoteRole.Error,
-                    action = when {
-                        state.needsReconnect -> MakBannerAction("Połącz ponownie", onReconnect, enabled = !state.isWorking)
-                        state.needsUpdate -> MakBannerAction("Zaktualizuj", onOpenUpdate)
-                        else -> null
+                    action = when (state.issueFix) {
+                        SyncIssueFix.RECONNECT -> MakBannerAction("Połącz ponownie", onReconnect, enabled = !state.isWorking)
+                        SyncIssueFix.UPDATE -> MakBannerAction("Zaktualizuj", onOpenUpdate)
+                        null -> null
                     }
                 )
             }

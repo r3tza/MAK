@@ -20,7 +20,8 @@ object SyncPlanFile {
         val snapshot = try {
             JsonExportCodec.decode(bytes)
         } catch (error: NewerExportVersionException) {
-            throw NewerRemotePlanException(error.version)
+            // Not an invalid plan: only an update of the app lets this phone read it.
+            throw error
         } catch (_: Exception) {
             throw InvalidRemotePlanException("Nie udało się odczytać pliku planu z Dysku.")
         }
@@ -64,6 +65,3 @@ fun BackupData.semesterCovering(today: java.time.LocalDate): Long? {
 }
 
 class InvalidRemotePlanException(message: String) : IllegalStateException(message)
-
-/** The Drive plan was written by a newer MAK; only updating the app lets this phone read it. */
-class NewerRemotePlanException(val version: Int) : IllegalStateException("Drive plan schema version $version is newer.")

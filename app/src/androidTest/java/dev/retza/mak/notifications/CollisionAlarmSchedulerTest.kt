@@ -22,6 +22,7 @@ import dev.retza.mak.domain.PlanDisplaySettings
 import dev.retza.mak.ui.settings.CollisionNotificationPreferences
 import dev.retza.mak.ui.settings.SettingsPreferences
 import dev.retza.mak.ui.settings.ThemeMode
+import dev.retza.mak.ui.ActivePlanSource
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.Instant
@@ -73,10 +74,10 @@ class CollisionAlarmSchedulerTest {
         val scheduleRepository = RoomScheduleRepository(database)
         val planner = CollisionNotificationPlanner(ActivePlanProvider(), clock)
         val preferences = EnabledNotifications()
+        val activePlanSource = ActivePlanSource(semesterRepository, scheduleRepository, preferences)
         val scheduler = CollisionAlarmScheduler(
             context,
-            semesterRepository,
-            scheduleRepository,
+            activePlanSource,
             planner,
             preferences,
             clock
@@ -88,11 +89,9 @@ class CollisionAlarmSchedulerTest {
                 async(Dispatchers.Default) { scheduler.refresh() }
             ).awaitAll()
 
-            val planData = scheduleRepository.observeActivePlanData(semesterId).first()!!
             val expected = planner.plan(
-                planData,
-                preferences.collisionNotifications.first().toPlannerSettings(),
-                preferences.planDisplay.first()
+                activePlanSource.observe(semesterId).first()!!,
+                preferences.collisionNotifications.first().toPlannerSettings()
             )
                 .map { it.id.toString() }
                 .toSet()

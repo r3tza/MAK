@@ -54,8 +54,9 @@ class CollisionDetectorTest {
             minimumBreakMinutes = 0
         )
 
-        assertEquals(CollisionKind.OVERLAP, collisions.single().kind)
-        assertEquals(30L, collisions.single().durationMinutes)
+        val overlap = collisions.single() as Collision.Overlap
+        assertEquals(LocalTime.of(11, 0), overlap.start)
+        assertEquals(LocalTime.of(11, 30), overlap.end)
     }
 
     @Test
@@ -68,9 +69,8 @@ class CollisionDetectorTest {
                 )
             ),
             minimumBreakMinutes = 0
-        ).single()
+        ).single() as Collision.NoBreak
 
-        assertEquals(CollisionKind.NO_BREAK, collision.kind)
         assertEquals(LocalTime.of(9, 45), collision.start)
         assertEquals(0L, collision.breakMinutes)
     }
@@ -96,7 +96,8 @@ class CollisionDetectorTest {
             item("second", LocalTime.of(9, 56), LocalTime.of(11, 15))
         )
 
-        assertEquals(10L, detector.detect(occurrences(tenMinutes), minimumBreakMinutes = 10).single().breakMinutes)
+        val tenMinuteBreak = detector.detect(occurrences(tenMinutes), minimumBreakMinutes = 10).single() as Collision.NoBreak
+        assertEquals(10L, tenMinuteBreak.breakMinutes)
         assertTrue(detector.detect(occurrences(elevenMinutes), minimumBreakMinutes = 10).isEmpty())
     }
 
@@ -113,9 +114,9 @@ class CollisionDetectorTest {
             minimumBreakMinutes = 0
         )
 
-        val noBreak = collisions.single { it.kind == CollisionKind.NO_BREAK }
+        val noBreak = collisions.filterIsInstance<Collision.NoBreak>().single()
         assertEquals(setOf("short", "after"), setOf(noBreak.first.name, noBreak.second.name))
-        assertEquals(2, collisions.count { it.kind == CollisionKind.OVERLAP })
+        assertEquals(2, collisions.count { it is Collision.Overlap })
     }
 
     @Test

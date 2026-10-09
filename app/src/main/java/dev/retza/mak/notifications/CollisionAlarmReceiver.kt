@@ -11,12 +11,11 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import dev.retza.mak.MainActivity
 import dev.retza.mak.R
-import dev.retza.mak.data.repository.ScheduleRepository
-import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.CollisionNotificationKind
 import dev.retza.mak.domain.collisionNotificationGroups
 import dev.retza.mak.domain.shouldShowCollisionNotification
+import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.polishPlural
 import dev.retza.mak.ui.settings.SettingsPreferences
 import java.time.Clock
@@ -33,8 +32,7 @@ import org.koin.core.component.inject
 
 class CollisionAlarmReceiver : BroadcastReceiver(), KoinComponent {
     private val scheduler: CollisionAlarmScheduler by inject()
-    private val semesterRepository: SemesterRepository by inject()
-    private val scheduleRepository: ScheduleRepository by inject()
+    private val activePlanSource: ActivePlanSource by inject()
     private val activePlanProvider: ActivePlanProvider by inject()
     private val preferences: SettingsPreferences by inject()
     private val clock: Clock by inject()
@@ -79,9 +77,8 @@ class CollisionAlarmReceiver : BroadcastReceiver(), KoinComponent {
         if (kind == CollisionNotificationKind.EVENING && !settings.eveningEnabled) return
         if (kind == CollisionNotificationKind.BEFORE_CLASS && !settings.beforeClassEnabled) return
 
-        val semester = semesterRepository.observeActiveSemester().first() ?: return
-        val planData = scheduleRepository.observeActivePlanData(semester.id).first() ?: return
-        val plan = activePlanProvider.resolve(planData, date, preferences.planDisplay.first())
+        val inputs = activePlanSource.observeActive().first() ?: return
+        val plan = activePlanProvider.resolve(inputs, date)
         val groups = collisionNotificationGroups(plan.collisions)
         val occurrences = plan.schedule.occurrences.filter { it.id in occurrenceIds }
         if (occurrences.isEmpty()) return

@@ -10,20 +10,17 @@ import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.seedDemoDataIfEmpty
 import dev.retza.mak.notifications.CollisionAlarmScheduler
 import dev.retza.mak.notifications.ensureCollisionChannel
+import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.settings.SettingsPreferences
 import dev.retza.mak.widget.GlanceWidgetRefreshRequester
 import dev.retza.mak.widget.registerMakWidgetRefresh
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
-import kotlinx.coroutines.flow.drop
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
@@ -33,7 +30,7 @@ import org.koin.plugin.module.dsl.startKoin
 
 private const val NOTIFICATION_REFRESH_DEBOUNCE_MILLIS = 1_000L
 
-@OptIn(ExperimentalCoroutinesApi::class, FlowPreview::class)
+@OptIn(FlowPreview::class)
 @KoinApplication
 class MakApplication : Application(), Configuration.Provider {
     override val workManagerConfiguration: Configuration
@@ -51,6 +48,8 @@ class MakApplication : Application(), Configuration.Provider {
 
     private val preferences: SettingsPreferences by inject()
 
+    private val activePlanSource: ActivePlanSource by inject()
+
     private val syncWorkScheduler: dev.retza.mak.sync.SyncWorkScheduler by inject()
 
     private val syncRoomChangeObserver: dev.retza.mak.sync.SyncRoomChangeObserver by inject()
@@ -65,12 +64,12 @@ class MakApplication : Application(), Configuration.Provider {
         syncWorkScheduler.scheduleForAppOpen()
         syncRoomChangeObserver.observe(initializationScope)
         ensureCollisionChannel(this)
-        val widgetRefresh = GlanceWidgetRefreshRequester(this, initializationScope)
-        registerMakWidgetRefresh(database = database, requester = widgetRefresh)
-        initializationScope.launch {
-            // The widget follows database changes on its own; a new minimum break changes it too.
-            preferences.planDisplay.drop(1).collect { widgetRefresh.request() }
-        }
+        registerMakWidgetRefresh(
+            database = database,
+            planDisplay = preferences.planDisplay,
+            scope = initializationScope,
+            requester = GlanceWidgetRefreshRequester(this, initializationScope)
+        )
         val isDebuggable = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
         if (isDebuggable) {
             initializationScope.launch {
@@ -84,12 +83,7 @@ class MakApplication : Application(), Configuration.Provider {
             }
         }
         initializationScope.launch {
-            semesterRepository.observeActiveSemester()
-                .flatMapLatest { semester ->
-                    if (semester == null) flowOf(null) else scheduleRepository.observeActivePlanData(semester.id)
-                }
-                .combine(preferences.collisionNotifications) { data, settings -> data to settings }
-                .combine(preferences.planDisplay) { inputs, display -> inputs to display }
+            combine(activePlanSource.observeActive(), preferences.collisionNotifications) { _, _ -> }
                 .debounce(NOTIFICATION_REFRESH_DEBOUNCE_MILLIS)
                 .collect {
                     try {

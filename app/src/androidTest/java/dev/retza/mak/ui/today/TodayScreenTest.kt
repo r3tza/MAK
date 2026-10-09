@@ -29,6 +29,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.settings.SyncAttentionUi
+import dev.retza.mak.ui.settings.SyncIssueFix
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -104,7 +105,7 @@ class TodayScreenTest {
                         syncAttention = SyncAttentionUi(
                             text = "Plan na Dysku pochodzi z nowszej wersji MAK. Zaktualizuj aplikację.",
                             action = "Zaktualizuj",
-                            opensUpdate = true
+                            fix = SyncIssueFix.UPDATE
                         )
                     )
                 }

@@ -74,8 +74,8 @@ class JsonExportCodecTest {
         try {
             JsonExportCodec.decode(newer.toByteArray())
             fail("Expected a newer export to be rejected")
-        } catch (error: NewerExportVersionException) {
-            assertEquals(4, error.version)
+        } catch (_: NewerExportVersionException) {
+            // Expected: the version is checked before the unknown "daysOff" field is read.
         }
     }
 

@@ -11,7 +11,7 @@ data class CollisionRange(
 /** Overlap ranges per occurrence; collisions without an overlap have no range. */
 fun collisionRanges(collisions: Collection<Collision>): Map<String, List<CollisionRange>> {
     val rangesByOccurrence = linkedMapOf<String, MutableSet<CollisionRange>>()
-    collisions.filter { it.kind == CollisionKind.OVERLAP }.forEach { collision ->
+    collisions.filterIsInstance<Collision.Overlap>().forEach { collision ->
         val range = CollisionRange(collision.start, collision.end)
         rangesByOccurrence.getOrPut(collision.first.id) { linkedSetOf() }.add(range)
         rangesByOccurrence.getOrPut(collision.second.id) { linkedSetOf() }.add(range)
@@ -27,20 +27,18 @@ fun collisionRanges(collisions: Collection<Collision>): Map<String, List<Collisi
  */
 fun collisionLabels(collisions: Collection<Collision>): Map<String, String> {
     val ranges = collisionRanges(collisions)
-    val breaks = linkedMapOf<String, MutableList<Collision>>()
-    collisions.filter { it.kind == CollisionKind.NO_BREAK }.forEach { collision ->
+    val breaks = linkedMapOf<String, MutableList<Collision.NoBreak>>()
+    collisions.filterIsInstance<Collision.NoBreak>().forEach { collision ->
         breaks.getOrPut(collision.first.id) { mutableListOf() }.add(collision)
         breaks.getOrPut(collision.second.id) { mutableListOf() }.add(collision)
     }
     return (ranges.keys + breaks.keys).associateWith { id ->
         val overlapLabel = ranges[id]?.let { occurrenceRanges ->
-            val labels = occurrenceRanges.joinToString(", ") {
-                "${it.start.format(collisionTimeFormatter)}-${it.end.format(collisionTimeFormatter)}"
-            }
+            val labels = occurrenceRanges.joinToString(", ") { rangeLabel(it.start, it.end) }
             if (occurrenceRanges.size == 1) "Kolizja $labels" else "Kolizje: $labels"
         }
         val breakLabels = breaks[id].orEmpty()
-            .sortedWith(compareBy<Collision> { it.start }.thenBy { it.end })
+            .sortedWith(compareBy<Collision.NoBreak> { it.start }.thenBy { it.end })
             .map(::breakLabel)
             .distinct()
         when {
@@ -52,7 +50,7 @@ fun collisionLabels(collisions: Collection<Collision>): Map<String, String> {
 }
 
 /** „bez przerwy o 09:45” or „przerwa 5 min o 09:45”, starting with a small letter. */
-fun breakLabel(collision: Collision): String {
+fun breakLabel(collision: Collision.NoBreak): String {
     val time = collision.start.format(collisionTimeFormatter)
     val minutes = collision.breakMinutes
     return if (minutes == 0L) "bez przerwy o $time" else "przerwa $minutes min o $time"
@@ -74,4 +72,8 @@ fun collisionPartnerNames(collisions: Collection<Collision>): Map<String, String
     }
 }
 
-internal val collisionTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+/** „10:00-11:30”. */
+fun rangeLabel(start: LocalTime, end: LocalTime): String =
+    "${start.format(collisionTimeFormatter)}-${end.format(collisionTimeFormatter)}"
+
+private val collisionTimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")

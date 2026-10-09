@@ -228,3 +228,9 @@ class CollisionNotificationPlannerTest {
         date = date
     )
 }
+
+private fun CollisionNotificationPlanner.plan(
+    data: ActivePlanData,
+    settings: CollisionNotificationSettings,
+    display: PlanDisplaySettings
+) = plan(ActivePlanInputs(data, display), settings)
