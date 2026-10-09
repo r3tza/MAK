@@ -2,6 +2,7 @@ package dev.retza.mak.export
 
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.PlanBackupGateway
+import dev.retza.mak.ui.settings.SettingsPreferences
 
 class ImportHandle internal constructor(internal val data: BackupData)
 
@@ -23,7 +24,8 @@ sealed interface ImportPreparation {
 
 @org.koin.core.annotation.Single
 class PlanBackupService(
-    private val gateway: PlanBackupGateway
+    private val gateway: PlanBackupGateway,
+    private val preferences: SettingsPreferences
 ) {
     suspend fun exportJson(): ByteArray =
         JsonExportCodec.encode(ExportSnapshot.from(gateway.snapshot()))
@@ -43,7 +45,9 @@ class PlanBackupService(
         }
     }
 
-    suspend fun confirmImport(handle: ImportHandle): Long? = gateway.replaceAll(handle.data)
+    /** The imported plan has its own program numbers, so the programs hidden on this phone are shown again. */
+    suspend fun confirmImport(handle: ImportHandle): Long? =
+        gateway.replaceAll(handle.data).also { preferences.clearHiddenStudyPrograms() }
 }
 
 private fun BackupData.toSummary(): ImportSummary = ImportSummary(

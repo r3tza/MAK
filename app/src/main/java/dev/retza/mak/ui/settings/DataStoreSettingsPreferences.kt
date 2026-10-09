@@ -7,6 +7,7 @@ import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
+import androidx.datastore.preferences.core.stringSetPreferencesKey
 import dev.retza.mak.domain.PlanDisplaySettings
 import java.io.IOException
 import java.time.LocalTime
@@ -24,6 +25,7 @@ private val eveningHourKey = intPreferencesKey("evening_hour_minutes")
 private val leadMinutesKey = intPreferencesKey("before_class_lead_minutes")
 private val gapThresholdMinutesKey = intPreferencesKey("gap_threshold_minutes")
 private val minimumBreakMinutesKey = intPreferencesKey("minimum_break_minutes")
+private val hiddenStudyProgramIdsKey = stringSetPreferencesKey("hidden_study_program_ids")
 
 private const val readRetryDelayMillis = 100L
 private const val defaultEveningHourMinutes = 20 * 60
@@ -62,7 +64,8 @@ class DataStoreSettingsPreferences(
 
     override val planDisplay: Flow<PlanDisplaySettings> = preferences.map { stored ->
         PlanDisplaySettings(
-            minimumBreakMinutes = (stored[minimumBreakMinutesKey] ?: 0).coerceIn(0, maxMinimumBreakMinutes)
+            minimumBreakMinutes = (stored[minimumBreakMinutesKey] ?: 0).coerceIn(0, maxMinimumBreakMinutes),
+            hiddenProgramIds = stored[hiddenStudyProgramIdsKey].orEmpty()
         )
     }.distinctUntilChanged()
 
@@ -100,6 +103,24 @@ class DataStoreSettingsPreferences(
     override suspend fun setMinimumBreakMinutes(minutes: Int) {
         dataStore.edit { preferences ->
             preferences[minimumBreakMinutesKey] = minutes.coerceIn(0, maxMinimumBreakMinutes)
+        }
+    }
+
+    override suspend fun setStudyProgramHidden(id: String, hidden: Boolean) {
+        dataStore.edit { preferences ->
+            val current = preferences[hiddenStudyProgramIdsKey].orEmpty()
+            preferences[hiddenStudyProgramIdsKey] = if (hidden) current + id else current - id
+        }
+    }
+
+    override suspend fun clearHiddenStudyPrograms() {
+        dataStore.edit { preferences -> preferences.remove(hiddenStudyProgramIdsKey) }
+    }
+
+    override suspend fun retainHiddenStudyPrograms(existingIds: Set<String>) {
+        dataStore.edit { preferences ->
+            val current = preferences[hiddenStudyProgramIdsKey] ?: return@edit
+            preferences[hiddenStudyProgramIdsKey] = current intersect existingIds
         }
     }
 }

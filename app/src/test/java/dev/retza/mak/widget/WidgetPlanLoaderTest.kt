@@ -73,6 +73,18 @@ class WidgetPlanLoaderTest {
     }
 
     @Test
+    fun loaderLeavesOutHiddenStudyPrograms() = runTest {
+        val management = programming.copy(id = 4, semesterProgramId = 2, name = "Zarządzanie projektami")
+
+        val state = loader(
+            repositoryReturning(semester, planData(programming, management)),
+            InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings(minimumBreakMinutes = 0, hiddenProgramIds = setOf("2")))
+        ).load()
+
+        assertEquals(listOf("Zarządzanie projektami"), (state as WidgetUiState.Ready).items.map { it.name })
+    }
+
+    @Test
     fun loaderReturnsNoActiveSemesterState() = runTest {
         val state = loader(repositoryReturning(null, null)).load()
 
@@ -110,19 +122,16 @@ class WidgetPlanLoaderTest {
             endDate = date.plusDays(7),
             firstWeekType = WeekType.A
         )
-        val studyProgram = StudyProgramEntity(id = 2, name = "Informatyka", color = "#137B71")
+        val informatics = StudyProgramEntity(id = 2, name = "Informatyka", color = "#137B71")
+        val management = StudyProgramEntity(id = 3, name = "Zarządzanie", color = "#7B1371")
         return SemesterWithData(
             semester = semester,
             semesterPrograms = listOf(
-                SemesterProgramEntity(
-                    id = 1,
-                    semesterId = semester.id,
-                    studyProgramId = studyProgram.id,
-                    academicCalendarId = calendar.id
-                )
+                SemesterProgramEntity(id = 1, semesterId = semester.id, studyProgramId = informatics.id, academicCalendarId = calendar.id),
+                SemesterProgramEntity(id = 2, semesterId = semester.id, studyProgramId = management.id, academicCalendarId = calendar.id)
             ),
             academicCalendars = listOf(calendar),
-            studyPrograms = listOf(studyProgram),
+            studyPrograms = listOf(informatics, management),
             classes = classes.toList(),
             weekOverrides = emptyList(),
             occurrenceNotes = emptyList(),

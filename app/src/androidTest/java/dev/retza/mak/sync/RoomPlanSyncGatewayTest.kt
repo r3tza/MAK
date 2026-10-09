@@ -1,6 +1,7 @@
 package dev.retza.mak.sync
 
 import android.content.Context
+import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -16,6 +17,8 @@ import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.RoomPlanBackupGateway
 import dev.retza.mak.data.repository.PlanBackupGateway
 import dev.retza.mak.data.repository.SemesterBackup
+import dev.retza.mak.ui.settings.DataStoreSettingsPreferences
+import dev.retza.mak.ui.settings.SettingsPreferences
 import java.time.LocalDate
 import java.time.Clock
 import java.time.Instant
@@ -23,7 +26,11 @@ import java.time.ZoneOffset
 import java.io.File
 import java.time.DayOfWeek
 import java.time.LocalTime
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.cancel
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
@@ -42,17 +49,55 @@ class RoomPlanSyncGatewayTest {
     private lateinit var database: AppDatabase
     private lateinit var backup: RoomPlanBackupGateway
     private lateinit var gateway: RoomPlanSyncGateway
+    private lateinit var preferences: SettingsPreferences
+    private val preferencesScope = CoroutineScope(Dispatchers.IO + Job())
+    private val preferencesFile = File(
+        ApplicationProvider.getApplicationContext<Context>().cacheDir,
+        "room-sync-gateway-${System.nanoTime()}.preferences_pb"
+    )
 
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
         backup = RoomPlanBackupGateway(database)
-        gateway = RoomPlanSyncGateway(database, backup)
+        preferences = DataStoreSettingsPreferences(
+            PreferenceDataStoreFactory.create(scope = preferencesScope, produceFile = { preferencesFile })
+        )
+        gateway = RoomPlanSyncGateway(database, backup, preferences)
     }
 
     @After
-    fun tearDown() = database.close()
+    fun tearDown() {
+        database.close()
+        preferencesScope.cancel()
+        preferencesFile.delete()
+    }
+
+    @Test
+    fun firstDownloadShowsTheHiddenProgramsAgain() = runBlocking {
+        backup.replaceAll(plan("A", active = 1))
+        preferences.setStudyProgramHidden("1", hidden = true)
+
+        gateway.replaceIfUnchanged(
+            SyncPlanFile.fingerprint(gateway.snapshot()), plan("X"), keepLocalActive = false, fallbackActiveId = 1
+        )
+
+        assertTrue(preferences.planDisplay.first().hiddenProgramIds.isEmpty())
+    }
+
+    @Test
+    fun laterDownloadKeepsOnlyHiddenProgramsThatStillExist() = runBlocking {
+        backup.replaceAll(plan("A", active = 1))
+        preferences.setStudyProgramHidden("1", hidden = true)
+        preferences.setStudyProgramHidden("9", hidden = true)
+
+        gateway.replaceIfUnchanged(
+            SyncPlanFile.fingerprint(gateway.snapshot()), plan("A", "B"), keepLocalActive = true, fallbackActiveId = 1
+        )
+
+        assertEquals(setOf("1"), preferences.planDisplay.first().hiddenProgramIds)
+    }
 
     @Test
     fun planChangedSinceTheReadIsNotReplaced() = runBlocking {
@@ -83,7 +128,7 @@ class RoomPlanSyncGatewayTest {
                 return backup.replaceAll(data)
             }
         }
-        val blockingGateway = RoomPlanSyncGateway(database, blockingBackup)
+        val blockingGateway = RoomPlanSyncGateway(database, blockingBackup, preferences)
         val tracker = PlanEditTracker(kotlinx.coroutines.CoroutineScope(Dispatchers.Default))
 
         val replacement = async(Dispatchers.IO) {
@@ -133,7 +178,7 @@ class RoomPlanSyncGatewayTest {
         val tracker = PlanEditTracker(kotlinx.coroutines.CoroutineScope(Dispatchers.Default))
         val replacement = async(Dispatchers.IO) {
             tracker.withReplacement {
-                RoomPlanSyncGateway(database, blockingBackup).replaceIfUnchanged(
+                RoomPlanSyncGateway(database, blockingBackup, preferences).replaceIfUnchanged(
                     expected,
                     replacementPlan,
                     keepLocalActive = true,

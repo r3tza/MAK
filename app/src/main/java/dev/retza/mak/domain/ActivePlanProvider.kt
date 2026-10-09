@@ -33,14 +33,14 @@ class ActivePlanProvider(
         resolve(inputs.data, date, inputs.display)
 
     fun resolve(data: ActivePlanData, date: LocalDate, display: PlanDisplaySettings): ActivePlan {
-        val schedule = schedule(data, date)
+        val schedule = schedule(data.visibleTo(display), date)
         return ActivePlan(
             schedule = schedule,
             collisions = collisionDetector.detect(schedule, display.minimumBreakMinutes)
         )
     }
 
-    /** The classes of [date] without collisions, for views that only mark days. */
+    /** The classes of [date] without collisions, for views that only mark days; [data] is already filtered. */
     fun schedule(data: ActivePlanData, date: LocalDate): ResolvedSchedule =
         resolver.resolve(
             date = date,
@@ -53,4 +53,15 @@ class ActivePlanProvider(
             occurrenceChanges = data.occurrenceChanges,
             occurrenceNotes = data.occurrenceNotes
         )
+}
+
+/** The plan without study programs hidden on this phone: their assignments and classes are left out. */
+fun ActivePlanData.visibleTo(display: PlanDisplaySettings): ActivePlanData {
+    if (display.hiddenProgramIds.isEmpty()) return this
+    val visiblePrograms = semesterPrograms.filterNot { it.studyProgramId in display.hiddenProgramIds }
+    val visibleAssignmentIds = visiblePrograms.mapTo(mutableSetOf()) { it.id }
+    return copy(
+        semesterPrograms = visiblePrograms,
+        classes = classes.filter { it.semesterProgramId in visibleAssignmentIds }
+    )
 }

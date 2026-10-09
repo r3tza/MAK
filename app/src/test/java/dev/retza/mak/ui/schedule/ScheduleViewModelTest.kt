@@ -15,6 +15,7 @@ import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.activePlanSource
+import dev.retza.mak.ui.settings.InMemorySettingsPreferences
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -43,9 +44,13 @@ class ScheduleViewModelTest {
 
     private val feedback = mutableListOf<UiFeedback>()
 
-    private fun viewModel(repository: FakeRepository, clock: Clock = this.clock) = ScheduleViewModel(
+    private fun viewModel(
+        repository: FakeRepository,
+        clock: Clock = this.clock,
+        preferences: InMemorySettingsPreferences = InMemorySettingsPreferences()
+    ) = ScheduleViewModel(
         FakeSemesterRepository(repository),
-        activePlanSource(repository),
+        activePlanSource(repository, preferences),
         clock,
         ActivePlanProvider(),
         feedbackSink = object : FeedbackSink {
@@ -102,6 +107,21 @@ class ScheduleViewModelTest {
         assertEquals(7, state.days.size)
         assertEquals("1 zajęcie", state.selectedDayCountLabel)
         assertEquals("Programowanie", state.items.single().name)
+    }
+
+    @Test
+    fun hiddenStudyProgramIsNeitherFilterOptionNorClassNorMarker() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val preferences = InMemorySettingsPreferences()
+        preferences.setStudyProgramHidden("1", hidden = true)
+        val viewModel = viewModel(repository, preferences = preferences)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.schedule.value
+        assertEquals(listOf("all"), state.filters.map { it.id })
+        assertTrue(state.items.isEmpty())
+        assertTrue(state.calendarDays.single { it.id == "2026-09-21" }.markers.isEmpty())
     }
 
     @Test

@@ -15,6 +15,7 @@ import dev.retza.mak.domain.WeekType
 import dev.retza.mak.domain.cancelledOccurrences
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
+import dev.retza.mak.domain.visibleTo
 import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.components.CalendarDayUi
@@ -215,7 +216,8 @@ class ScheduleViewModel(
         control: ScheduleControls
     ): ScheduleUiState {
         if (inputs == null) return emptyScheduleState()
-        val data = inputs.data
+        // Hidden study programs are neither filter options, cancelled classes nor calendar markers.
+        val data = inputs.data.visibleTo(inputs.display)
         val activeFilter = control.courseFilterId.takeIf { id ->
             id == "all" || data.semesterPrograms.any { it.id == id }
         } ?: "all"

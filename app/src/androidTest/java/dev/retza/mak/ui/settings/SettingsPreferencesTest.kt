@@ -77,6 +77,24 @@ class SettingsPreferencesTest {
     }
 
     @Test
+    fun hiddenStudyProgramsAreSavedClearedAndPrunedToExistingOnes() = runBlocking {
+        val preferences = preferences(openDataStore())
+        assertEquals(emptySet<String>(), preferences.planDisplay.first().hiddenProgramIds)
+
+        preferences.setStudyProgramHidden("1", hidden = true)
+        preferences.setStudyProgramHidden("2", hidden = true)
+        preferences.setStudyProgramHidden("2", hidden = false)
+        preferences.setStudyProgramHidden("3", hidden = true)
+        assertEquals(setOf("1", "3"), preferences.planDisplay.first().hiddenProgramIds)
+
+        preferences.retainHiddenStudyPrograms(setOf("1", "2"))
+        assertEquals(setOf("1"), preferences.planDisplay.first().hiddenProgramIds)
+
+        preferences.clearHiddenStudyPrograms()
+        assertEquals(emptySet<String>(), preferences.planDisplay.first().hiddenProgramIds)
+    }
+
+    @Test
     fun storedGapThresholdBelowTwentyIsReadAsTwenty() = runBlocking {
         val dataStore = openDataStore()
         dataStore.edit { it[intPreferencesKey("gap_threshold_minutes")] = 15 }

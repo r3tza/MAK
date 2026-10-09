@@ -1,20 +1,12 @@
 # Plan najbliższych prac
 
-Cel: I-80 (zajęcia bez przerwy jako kolizja), I-83 (komunikat o planie z nowszej wersji MAK) i I-79 (ukrywanie kierunków) na jednej gałęzi `task/collisions-version-notice-course-toggles`, w kolejności kroków poniżej. Decyzje użytkownika z 2026-10-09 są w `DOMAIN.md` (sekcje „Kolizje” i „Kierunki”), `FEATURES.md` (sekcja „Ustawienia i dane”), `SYNC.md` (sekcja „Plik na Dysku”) i `LOG.md`; makiety na stronie „Decyzje” artefaktu „MAK: dni wolne” (https://claude.ai/artifact/8vbdCFuK7duXsocfhzE7ap).
+Cel: I-79 (ukrywanie kierunków na telefonie) na gałęzi `task/I-79-course-toggles`, w kolejności kroków poniżej. Decyzje użytkownika z 2026-10-09 są w `DOMAIN.md` (sekcja „Kierunki”), `FEATURES.md` (sekcja „Ustawienia i dane”) i `LOG.md`; makiety D4 do D7 na stronie „Decyzje” artefaktu „MAK: dni wolne” (https://claude.ai/artifact/8vbdCFuK7duXsocfhzE7ap).
 
 Wspólna zasada: każdy widok planu (`TodayViewModel`, `ScheduleViewModel`, `OccurrenceViewModel`), widget (`WidgetPlanLoader`) i powiadomienia (`CollisionNotificationPlanner`, `CollisionAlarmScheduler`, `CollisionAlarmReceiver`) biorą dane planu z `ActivePlanSource` jako `ActivePlanInputs` (dane razem z `PlanDisplaySettings`) i liczą plan przez `ActivePlanProvider.resolve(inputs, date)`. Ustawienie wpływające na wynik (minimalna przerwa, ukryte kierunki) trafia do `PlanDisplaySettings` i `SettingsPreferences.planDisplay`, a nie do osobnych parametrów w każdym miejscu.
 
-## 1. Uporządkuj kod I-80 i I-83 po przeglądzie (I-80)
+## 1. Filtruj plan według ukrytych kierunków (I-79)
 
-Stan: zrobione. I-80 (kroki „wykryj kolizje bez nakładania” i „ustawienie minimalnej przerwy”) i I-83 są w kodzie; ich opis jest w `QUEUE.md` i `LOG.md`. Przegląd kodu z 2026-10-09 i decyzja użytkownika zmieniły część tamtych ustaleń:
-
-- `Collision` jest typem zamkniętym `Collision.Overlap` i `Collision.NoBreak` (z `breakMinutes`) zamiast pola `kind`; zakres godzin formatuje jedna funkcja `rangeLabel`; `hasCollision` usunięte.
-- `ActivePlanSource` (`ui/ActivePlanSource.kt`) łączy `observeActivePlanData` z `SettingsPreferences.planDisplay`; `CollisionNotificationPlanner.plan(inputs, settings)`. Siatka kalendarza w „Planie” używa `ActivePlanProvider.schedule(data, date)` bez liczenia kolizji.
-- `registerMakWidgetRefresh` odświeża widget po zmianie Room i `planDisplay`.
-- Synchronizacja: jedno pole `SyncIssueFix` (`RECONNECT`, `UPDATE`) w `SyncUiState.issueFix` i `SyncAttentionUi.fix` zamiast `needsReconnect`, `needsUpdate` i `opensUpdate`; `SyncCoordinator` łapie `NewerExportVersionException` bez osobnego `NewerRemotePlanException`.
-- Ustawienia mają jeden typ opcji `SettingsOptionUi`.
-
-## 2. Filtruj plan według ukrytych kierunków (I-79)
+Stan: zrobione. Testy JVM i na emulatorze `RoomPlanSyncGatewayTest`, `SettingsPreferencesTest`, `KoinGraphTest` i `CollisionAlarmSchedulerTest` przechodzą; ręczne sprawdzenie zapisanego wyboru przeniesione do kroku 2, bo bez checkboxa nie da się go zapisać na emulatorze bez roota. `PlanBackupServiceTest` i `StudyProgramsViewModelTest` sprawdzają czyszczenie wyboru po imporcie i usunięciu kierunku. Otwarte pytanie: gdy ukryte są wszystkie kierunki aktywnego semestru, resolver nie ma przypisań i widget pokazuje stan „poza semestrem”; zachowania widgetu w tym stanie dokumentacja nie opisuje.
 
 Cel: lokalny wybór ukrytych kierunków usuwa ich zajęcia ze wszystkich widoków, widgetu, kolizji, okienek i powiadomień, a synchronizacja i import nie przenoszą go na złe kierunki.
 
@@ -42,7 +34,7 @@ Weryfikacja: filtrowane testy JVM wymienionych klas; kompilacja testów Android;
 
 Kryterium zakończenia: testy przechodzą, a ręcznie zapisany wybór w preferencjach ukrywa zajęcia na „Dzisiaj”, w „Planie” i na widgecie. Commit: `feat: hide study programs from the plan on this phone (I-79)`.
 
-## 3. Dodaj checkboxy kierunków i stany ukrycia w interfejsie (I-79)
+## 2. Dodaj checkboxy kierunków i stany ukrycia w interfejsie (I-79)
 
 Cel: użytkownik ukrywa kierunek checkboxem, formularz zajęć ostrzega przed wyborem ukrytego kierunku, a „Dzisiaj” i „Plan” wyjaśniają, dlaczego zajęć jest mniej.
 

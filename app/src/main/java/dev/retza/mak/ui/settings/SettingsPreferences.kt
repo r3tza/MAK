@@ -34,6 +34,14 @@ interface SettingsPreferences {
 
     suspend fun setMinimumBreakMinutes(minutes: Int)
 
+    suspend fun setStudyProgramHidden(id: String, hidden: Boolean)
+
+    /** After a plan from elsewhere replaced this one, the stored numbers name other programs. */
+    suspend fun clearHiddenStudyPrograms()
+
+    /** Forgets hidden programs that no longer exist, so a reused number is not hidden by accident. */
+    suspend fun retainHiddenStudyPrograms(existingIds: Set<String>)
+
     suspend fun setCollisionNotificationsEnabled(enabled: Boolean)
 
     suspend fun setEveningNotificationsEnabled(enabled: Boolean)

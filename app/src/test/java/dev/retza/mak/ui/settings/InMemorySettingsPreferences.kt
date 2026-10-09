@@ -41,6 +41,22 @@ class InMemorySettingsPreferences(
         display.value = display.value.copy(minimumBreakMinutes = minutes)
     }
 
+    override suspend fun setStudyProgramHidden(id: String, hidden: Boolean) {
+        awaitWrite()
+        val current = display.value.hiddenProgramIds
+        display.value = display.value.copy(hiddenProgramIds = if (hidden) current + id else current - id)
+    }
+
+    override suspend fun clearHiddenStudyPrograms() {
+        awaitWrite()
+        display.value = display.value.copy(hiddenProgramIds = emptySet())
+    }
+
+    override suspend fun retainHiddenStudyPrograms(existingIds: Set<String>) {
+        awaitWrite()
+        display.value = display.value.copy(hiddenProgramIds = display.value.hiddenProgramIds intersect existingIds)
+    }
+
     override suspend fun setCollisionNotificationsEnabled(enabled: Boolean) {
         awaitWrite()
         notifications.value = notifications.value.copy(enabled = enabled)

@@ -7,7 +7,9 @@ import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
+import dev.retza.mak.ui.settings.InMemorySettingsPreferences
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -15,6 +17,7 @@ import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -32,8 +35,10 @@ class StudyProgramsViewModelTest {
         }
     }
 
+    private val preferences = InMemorySettingsPreferences()
+
     private fun viewModel(repository: FakeRepository, sink: FeedbackSink = RecordingFeedbackSink()) =
-        StudyProgramsViewModel(FakeSemesterRepository(repository), sink)
+        StudyProgramsViewModel(FakeSemesterRepository(repository), sink, preferences)
 
     @Test
     fun listsGlobalPrograms() = runTest(mainDispatcher) {
@@ -159,6 +164,7 @@ class StudyProgramsViewModelTest {
         val effects = mutableListOf<StudyProgramsEffect>()
         backgroundScope.launch { viewModel.effects.collect { effects += it } }
         val unusedId = repository.saveStudyProgram(StudyProgramEntity(name = "Ekonomia", color = "#A65724"))
+        preferences.setStudyProgramHidden(unusedId.toString(), hidden = true)
         viewModel.openEditIfNeeded(unusedId)
         advanceUntilIdle()
 
@@ -168,6 +174,8 @@ class StudyProgramsViewModelTest {
         advanceUntilIdle()
 
         assertFalse(repository.studyPrograms.any { it.id == unusedId })
+        // A later program with the same number must not start hidden.
+        assertTrue(preferences.planDisplay.first().hiddenProgramIds.isEmpty())
         assertEquals(listOf(StudyProgramsEffect.CloseEditor), effects)
         assertEquals(UiFeedback("Usunięto kierunek", UiFeedbackKind.Success), sink.published.last())
     }

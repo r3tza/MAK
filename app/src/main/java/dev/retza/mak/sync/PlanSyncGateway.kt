@@ -4,6 +4,7 @@ import androidx.room.withTransaction
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.PlanBackupGateway
+import dev.retza.mak.ui.settings.SettingsPreferences
 import org.koin.core.annotation.Single
 
 interface PlanSyncGateway {
@@ -25,7 +26,8 @@ interface PlanSyncGateway {
 @Single(binds = [PlanSyncGateway::class])
 class RoomPlanSyncGateway(
     private val database: AppDatabase,
-    private val backup: PlanBackupGateway
+    private val backup: PlanBackupGateway,
+    private val preferences: SettingsPreferences
 ) : PlanSyncGateway {
     override suspend fun snapshot(): BackupData = backup.snapshot()
 
@@ -34,12 +36,23 @@ class RoomPlanSyncGateway(
         data: BackupData,
         keepLocalActive: Boolean,
         fallbackActiveId: Long?
-    ): Boolean = database.withTransaction {
-        val current = backup.snapshot()
-        if (SyncPlanFile.fingerprint(current) != expectedFingerprint) return@withTransaction false
-        val activeId = activeSemesterAfterReplace(current.activeSemesterId, data, keepLocalActive, fallbackActiveId)
-        backup.replaceAll(data.withActiveSemester(activeId))
-        true
+    ): Boolean {
+        val replaced = database.withTransaction {
+            val current = backup.snapshot()
+            if (SyncPlanFile.fingerprint(current) != expectedFingerprint) return@withTransaction false
+            val activeId = activeSemesterAfterReplace(current.activeSemesterId, data, keepLocalActive, fallbackActiveId)
+            backup.replaceAll(data.withActiveSemester(activeId))
+            true
+        }
+        if (replaced) {
+            // Like the active semester: program numbers mean the same programs only after the first download.
+            if (keepLocalActive) {
+                preferences.retainHiddenStudyPrograms(data.studyPrograms.mapTo(mutableSetOf()) { it.id.toString() })
+            } else {
+                preferences.clearHiddenStudyPrograms()
+            }
+        }
+        return replaced
     }
 }
 

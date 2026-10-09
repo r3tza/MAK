@@ -2,6 +2,12 @@
 
 Techniczna historia wydań dla agentów. Notatki dla użytkowników są w `app/src/main/assets/release_notes.json`.
 
+## 0.3.2, 2026-10-09
+
+- Zajęcia tego samego dnia z przerwą nie dłuższą niż minimalna przerwa (0 do 20 min, domyślnie 0) są kolizją `Collision.NoBreak` z opisem „Bez przerwy o 09:45” albo „Przerwa 5 min o 09:45” (I-80). Próg okienka ma opcje od 20 min, więc przerwa nie jest jednocześnie kolizją i okienkiem; zapisane 15 min jest odczytywane jako 20.
+- Dane planu i `PlanDisplaySettings` płyną razem z `ActivePlanSource` do widoków, widgetu i powiadomień; widget odświeża się też po zmianie ustawienia.
+- Plik eksportu albo plan na Dysku z wyższą `schemaVersion` daje komunikat o nowszej wersji MAK; synchronizacja zatrzymuje się z problemem `NEWER_REMOTE_PLAN` i akcją „Zaktualizuj” (I-83).
+
 ## 0.3.1, 2026-10-08
 
 - Naprawiono „Dodaj” w pasku nawigacji i w kreatorze: `openClassEditor` przechodził do wzorca `MakRoutes.Edit`, więc Navigation przekazywała `{classId}` i `{date}` jako wartości, a edytor wracał po nieudanym otwarciu zajęć. Trasę buduje teraz `newClassRoute` (I-78).

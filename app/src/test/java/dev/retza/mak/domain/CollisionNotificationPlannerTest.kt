@@ -65,6 +65,20 @@ class CollisionNotificationPlannerTest {
     }
 
     @Test
+    fun hiddenStudyProgramProducesNoNotification() {
+        val plan = planner().plan(
+            data(
+                item("a", tuesday, LocalTime.of(9, 0), LocalTime.of(10, 0)),
+                item("b", tuesday, LocalTime.of(9, 30), LocalTime.of(10, 30))
+            ),
+            settings,
+            PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf(course.id))
+        )
+
+        assertTrue(plan.isEmpty())
+    }
+
+    @Test
     fun classesWithoutBreakGetNotificationDescribingTheBreak() {
         val plan = planner().plan(
             data(

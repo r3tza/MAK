@@ -9,6 +9,7 @@ import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
+import dev.retza.mak.ui.settings.SettingsPreferences
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -60,7 +61,8 @@ sealed interface StudyProgramsEffect {
 @KoinViewModel
 class StudyProgramsViewModel(
     private val semesterRepository: SemesterRepository,
-    private val feedbackSink: FeedbackSink
+    private val feedbackSink: FeedbackSink,
+    private val preferences: SettingsPreferences
 ) : ViewModel() {
     private val state = MutableStateFlow(StudyProgramsUiState())
     val programs: StateFlow<StudyProgramsUiState> = state.asStateFlow()
@@ -188,6 +190,8 @@ class StudyProgramsViewModel(
             }
         ) {
             semesterRepository.deleteStudyProgram(id)
+            // A later program could get the same number and must not start hidden.
+            preferences.setStudyProgramHidden(id.toString(), hidden = false)
             state.update { it.copy(editor = StudyProgramEditorUi()) }
             feedbackSink.publish(UiFeedback("Usunięto kierunek", UiFeedbackKind.Success))
             effectsChannel.trySend(StudyProgramsEffect.CloseEditor)

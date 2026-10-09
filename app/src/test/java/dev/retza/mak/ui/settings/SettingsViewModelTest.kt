@@ -40,7 +40,7 @@ class SettingsViewModelTest {
     ) = SettingsViewModel(
         FakeSemesterRepository(repository),
         repository,
-        PlanBackupService(repository),
+        PlanBackupService(repository, preferences),
         preferences,
         sink,
         mainDispatcher
