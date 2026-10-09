@@ -48,12 +48,13 @@ class SettingsScreenTest {
                         state = SettingsUiState(
                             semesters = listOf(semester),
                             activeSemesterId = "1",
-                            themeOptions = listOf(ThemeOptionUi("system", "Systemowy", true)),
-                            gapThresholdOptions = listOf(GapThresholdOptionUi("30", "30 min", true)),
+                            themeOptions = listOf(SettingsOptionUi("system", "Systemowy", true)),
+                            gapThresholdOptions = listOf(SettingsOptionUi("30", "30 min", true)),
+                            minimumBreakOptions = listOf(SettingsOptionUi("0", "0 min", true)),
                             notifications = NotificationSettingsUi(
                                 enabled = true,
-                                eveningHourOptions = listOf(NotificationOptionUi("20:00", "20:00", true)),
-                                leadOptions = listOf(NotificationOptionUi("30", "30 min", true))
+                                eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
+                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
                             )
                         ),
                         onOpenSemesters = { opened = "semesters" },
@@ -65,6 +66,7 @@ class SettingsScreenTest {
                         onAddSemester = {},
                         onThemeSelected = {},
                         onGapThresholdSelected = {},
+                        onMinimumBreakSelected = {},
                         notificationsBlocked = false,
                         onRetry = {}
                     )
@@ -82,6 +84,10 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithText("Wersja").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Włączone").assertIsDisplayed()
         composeTestRule.onNodeWithText("20:00 dzień wcześniej, 30 min przed zajęciami")
+            .assertIsDisplayed()
+
+        composeTestRule.onNodeWithText("Minimalna przerwa").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zajęcia z krótszą lub równą przerwą są kolizją.").performScrollTo()
             .assertIsDisplayed()
 
         composeTestRule.onNodeWithText("Zarządzaj semestrami").performScrollTo().performClick()
@@ -153,8 +159,8 @@ class SettingsScreenTest {
                         state = SettingsUiState(
                             semesters = listOf(semester),
                             activeSemesterId = "1",
-                            themeOptions = listOf(ThemeOptionUi("system", "Systemowy", true)),
-                            gapThresholdOptions = listOf(GapThresholdOptionUi("30", "30 min", true))
+                            themeOptions = listOf(SettingsOptionUi("system", "Systemowy", true)),
+                            gapThresholdOptions = listOf(SettingsOptionUi("30", "30 min", true))
                         ),
                         onOpenSemesters = {},
                         onOpenPrograms = {},
@@ -164,6 +170,7 @@ class SettingsScreenTest {
                         onAddSemester = {},
                         onThemeSelected = {},
                         onGapThresholdSelected = {},
+                        onMinimumBreakSelected = {},
                         notificationsBlocked = false,
                         onRetry = {},
                         updates = updates,
@@ -183,7 +190,7 @@ class SettingsScreenTest {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SettingsScreen(
                         state = SettingsUiState(
-                            gapThresholdOptions = listOf(GapThresholdOptionUi("30", "30 min", true))
+                            gapThresholdOptions = listOf(SettingsOptionUi("30", "30 min", true))
                         ),
                         onOpenSemesters = {},
                         onOpenPrograms = {},
@@ -193,6 +200,7 @@ class SettingsScreenTest {
                         onAddSemester = {},
                         onThemeSelected = {},
                         onGapThresholdSelected = {},
+                        onMinimumBreakSelected = {},
                         notificationsBlocked = false,
                         onRetry = {}
                     )
@@ -298,8 +306,8 @@ class SettingsScreenTest {
                         state = SettingsUiState(
                             notifications = NotificationSettingsUi(
                                 enabled = true,
-                                eveningHourOptions = listOf(NotificationOptionUi("20:00", "20:00", true)),
-                                leadOptions = listOf(NotificationOptionUi("30", "30 min", true))
+                                eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
+                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
                             )
                         ),
                         notificationsBlocked = true,
@@ -341,8 +349,8 @@ class SettingsScreenTest {
                                 enabled = true,
                                 eveningEnabled = false,
                                 beforeClassEnabled = true,
-                                eveningHourOptions = listOf(NotificationOptionUi("20:00", "20:00", true)),
-                                leadOptions = listOf(NotificationOptionUi("30", "30 min", true))
+                                eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
+                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
                             )
                         ),
                         notificationsBlocked = false,

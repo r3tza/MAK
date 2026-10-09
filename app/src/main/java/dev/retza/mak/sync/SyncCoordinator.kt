@@ -1,6 +1,7 @@
 package dev.retza.mak.sync
 
 import dev.retza.mak.data.repository.BackupData
+import dev.retza.mak.export.NewerExportVersionException
 import java.io.IOException
 import java.time.Clock
 import kotlinx.coroutines.CancellationException
@@ -122,6 +123,8 @@ class SyncCoordinator(
         return try {
             repeat(MAX_PASSES) { pass(account, resolution)?.let { return it } }
             SyncOutcome.RetryLater
+        } catch (_: NewerExportVersionException) {
+            issue(SyncIssue.NEWER_REMOTE_PLAN, message = null)
         } catch (error: InvalidRemotePlanException) {
             issue(SyncIssue.INVALID_REMOTE_PLAN, error.message)
         } catch (_: UserActionRequiredException) {

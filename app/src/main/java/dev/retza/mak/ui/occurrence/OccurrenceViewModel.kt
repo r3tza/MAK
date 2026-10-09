@@ -9,6 +9,7 @@ import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.toRecord
 import dev.retza.mak.domain.ActivePlanData
+import dev.retza.mak.domain.ActivePlanInputs
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
@@ -21,6 +22,7 @@ import dev.retza.mak.domain.decideOccurrenceEdit
 import dev.retza.mak.domain.noteContentChanged
 import dev.retza.mak.domain.occurrenceId
 import dev.retza.mak.domain.occurrenceRoomOverride
+import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.calendarForAssignment
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.feedback.FeedbackSink
@@ -31,7 +33,6 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -40,8 +41,6 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -51,13 +50,13 @@ sealed interface OccurrenceEffect {
     data object CloseDetails : OccurrenceEffect
 }
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class OccurrenceViewModel(
     private val semesterRepository: SemesterRepository,
     private val scheduleRepository: ScheduleRepository,
     private val activePlanProvider: ActivePlanProvider,
-    private val feedbackSink: FeedbackSink
+    private val feedbackSink: FeedbackSink,
+    private val activePlanSource: ActivePlanSource
 ) : ViewModel() {
     private val state = MutableStateFlow(OccurrenceDetailsUiState())
     val details: StateFlow<OccurrenceDetailsUiState> = state.asStateFlow()
@@ -68,14 +67,7 @@ class OccurrenceViewModel(
     private val effectsChannel = Channel<OccurrenceEffect>(Channel.BUFFERED)
     val effects = effectsChannel.receiveAsFlow()
 
-    private val activePlanData = semesterRepository.observeActiveSemester()
-        .flatMapLatest { semester ->
-            if (semester == null) {
-                flowOf(null)
-            } else {
-                scheduleRepository.observeActivePlanData(semester.id)
-            }
-        }
+    private val activePlan = activePlanSource.observeActive()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private var originalDate: LocalDate? = null
@@ -100,11 +92,12 @@ class OccurrenceViewModel(
         currentArgs = args
         openJob = viewModelScope.launch {
             var first = true
-            // Later emissions come from a saved class form or a plan downloaded by sync.
-            activePlanData.filterNotNull().collect { data ->
-                editPlanData = data
+            // Later emissions come from a saved class form, a plan downloaded by sync or a changed
+            // minimum break.
+            activePlan.filterNotNull().collect { inputs ->
+                editPlanData = inputs.data
                 val shown = currentArgs ?: return@collect
-                val built = buildDetails(data, shown)
+                val built = buildDetails(inputs, shown)
                 if (built == null) {
                     if (first) {
                         state.value = derive(emptyOccurrenceDetails().copy(notFound = true))
@@ -133,18 +126,13 @@ class OccurrenceViewModel(
     /** Reloads the source data after edit admission, before a preview starts a draft or confirmation. */
     suspend fun refreshForEdit(routeId: String): Boolean {
         val args = OccurrenceArgs.parse(routeId) ?: return false
-        val semester = semesterRepository.observeActiveSemester().first()
-        if (semester == null) {
+        val inputs = activePlanSource.observeActive().first()
+        val built = inputs?.let { buildDetails(it, args) }
+        if (inputs == null || built == null) {
             clearMissingOccurrence()
             return false
         }
-        val data = scheduleRepository.observeActivePlanData(semester.id).first()
-        val built = data?.let { buildDetails(it, args) }
-        if (built == null) {
-            clearMissingOccurrence()
-            return false
-        }
-        editPlanData = data
+        editPlanData = inputs.data
         currentArgs = args
         originalDate = built.baseDate.toLocalDateOrNull()
         noteDate = built.baseDate.toLocalDateOrNull()
@@ -208,7 +196,7 @@ class OccurrenceViewModel(
 
     fun cancelOccurrence() {
         if (occurrenceStateOperationRunning) return
-        val data = editPlanData ?: activePlanData.value ?: return
+        val data = editPlanData ?: activePlan.value?.data ?: return
         val classId = selectedClassIdState.value ?: return
         val original = originalDate ?: return
         occurrenceStateOperationRunning = true
@@ -248,7 +236,7 @@ class OccurrenceViewModel(
 
     fun restoreOccurrence() {
         if (occurrenceStateOperationRunning) return
-        val data = editPlanData ?: activePlanData.value ?: return
+        val data = editPlanData ?: activePlan.value?.data ?: return
         val classId = selectedClassIdState.value ?: return
         val original = originalDate ?: return
         occurrenceStateOperationRunning = true
@@ -317,7 +305,7 @@ class OccurrenceViewModel(
 
     fun saveOccurrenceNote() {
         if (state.value.isSavingOccurrenceNote) return
-        val data = editPlanData ?: activePlanData.value ?: return
+        val data = editPlanData ?: activePlan.value?.data ?: return
         val classId = selectedClassIdState.value ?: return
         val date = noteDate ?: return
         val draft = state.value
@@ -369,7 +357,7 @@ class OccurrenceViewModel(
 
     fun saveOccurrenceChange() {
         if (state.value.isSaving) return
-        val data = editPlanData ?: activePlanData.value ?: return
+        val data = editPlanData ?: activePlan.value?.data ?: return
         val classId = selectedClassIdState.value ?: return
         val original = originalDate ?: return
         val draft = state.value
@@ -451,8 +439,8 @@ class OccurrenceViewModel(
         }.also { editPlanData = it }
 
     private suspend fun reload(semesterId: Long, classId: Long, occurrenceDate: LocalDate) {
-        val fresh = scheduleRepository.observeActivePlanData(semesterId).first() ?: return
-        editPlanData = fresh
+        val fresh = activePlanSource.observe(semesterId).first() ?: return
+        editPlanData = fresh.data
         val args = OccurrenceArgs(classId, occurrenceDate)
         val built = buildDetails(fresh, args) ?: return
         currentArgs = args
@@ -463,9 +451,10 @@ class OccurrenceViewModel(
     }
 
     private fun buildDetails(
-        data: ActivePlanData,
+        inputs: ActivePlanInputs,
         args: OccurrenceArgs
     ): OccurrenceDetailsUiState? {
+        val data = inputs.data
         val classId = args.classId
         val originalDate = args.originalDate
         val base = data.classes.firstOrNull { it.id == classId.toString() } ?: return null
@@ -473,7 +462,7 @@ class OccurrenceViewModel(
             it.classId == classId.toString() && it.originalDate == originalDate
         }
         val effectiveDate = change?.targetDate ?: originalDate
-        val plan = activePlan(data, effectiveDate)
+        val plan = activePlanProvider.resolve(inputs, effectiveDate)
         val id = occurrenceId(classId.toString(), originalDate)
         val effectiveStart = change?.startTime ?: base.startTime
         val effectiveEnd = change?.endTime ?: base.endTime
@@ -529,9 +518,6 @@ class OccurrenceViewModel(
             canRestoreOccurrence = change != null
         )
     }
-
-    private fun activePlan(data: ActivePlanData, date: LocalDate) =
-        activePlanProvider.resolve(data, date)
 
     private fun ActivePlanData.studyProgramName(assignmentId: String): String {
         val assignment = semesterPrograms.firstOrNull { it.id == assignmentId } ?: return ""

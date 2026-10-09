@@ -46,7 +46,8 @@ sealed interface SettingsEffect {
 private data class PreferencesSnapshot(
     val theme: ThemeMode,
     val notifications: CollisionNotificationPreferences,
-    val gapThresholdMinutes: Int
+    val gapThresholdMinutes: Int,
+    val minimumBreakMinutes: Int
 )
 
 private data class SettingsLocalState(
@@ -60,7 +61,8 @@ private data class SettingsLocalState(
     val isPreparingImport: Boolean = false,
     val isReplacingData: Boolean = false,
     val isSavingNotifications: Boolean = false,
-    val isSavingGapThreshold: Boolean = false
+    val isSavingGapThreshold: Boolean = false,
+    val isSavingMinimumBreak: Boolean = false
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -94,9 +96,10 @@ class SettingsViewModel(
     private val preferencesSnapshot = combine(
         preferences.theme,
         preferences.collisionNotifications,
-        preferences.gapThresholdMinutes
-    ) { theme, notifications, gapThresholdMinutes ->
-        PreferencesSnapshot(theme, notifications, gapThresholdMinutes)
+        preferences.gapThresholdMinutes,
+        preferences.planDisplay
+    ) { theme, notifications, gapThresholdMinutes, display ->
+        PreferencesSnapshot(theme, notifications, gapThresholdMinutes, display.minimumBreakMinutes)
     }
 
     val settings: StateFlow<SettingsUiState> = combine(
@@ -227,6 +230,19 @@ class SettingsViewModel(
         }
     }
 
+    fun setMinimumBreakMinutes(id: String) {
+        val minutes = id.toIntOrNull() ?: return
+        if (local.value.isSavingMinimumBreak) return
+        local.update { it.copy(isSavingMinimumBreak = true) }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać minimalnej przerwy.",
+            onFinish = { local.update { it.copy(isSavingMinimumBreak = false) } }
+        ) {
+            preferences.setMinimumBreakMinutes(minutes)
+        }
+    }
+
     private fun saveNotifications(block: suspend () -> Unit) {
         if (local.value.isSavingNotifications) return
         local.update { it.copy(isSavingNotifications = true) }
@@ -345,15 +361,22 @@ private fun buildSettingsState(
     },
     activeSemesterId = activeData?.semester?.id,
     themeOptions = listOf(
-        ThemeOptionUi("system", "Systemowy", preferences.theme == ThemeMode.System),
-        ThemeOptionUi("light", "Jasny", preferences.theme == ThemeMode.Light),
-        ThemeOptionUi("dark", "Ciemny", preferences.theme == ThemeMode.Dark)
+        SettingsOptionUi("system", "Systemowy", preferences.theme == ThemeMode.System),
+        SettingsOptionUi("light", "Jasny", preferences.theme == ThemeMode.Light),
+        SettingsOptionUi("dark", "Ciemny", preferences.theme == ThemeMode.Dark)
     ),
     gapThresholdOptions = gapThresholdOptions.map { minutes ->
-        GapThresholdOptionUi(
+        SettingsOptionUi(
             id = minutes.toString(),
             label = "$minutes min",
             isSelected = preferences.gapThresholdMinutes == minutes
+        )
+    },
+    minimumBreakOptions = minimumBreakOptions.map { minutes ->
+        SettingsOptionUi(
+            id = minutes.toString(),
+            label = "$minutes min",
+            isSelected = preferences.minimumBreakMinutes == minutes
         )
     },
     semesterToDeleteId = local.semesterToDeleteId,
@@ -368,10 +391,10 @@ private fun buildSettingsState(
         beforeClassEnabled = preferences.notifications.beforeClassEnabled,
         eveningHourOptions = notificationHourOptions.map { hour ->
             val id = "%02d:00".format(hour)
-            NotificationOptionUi(id, id, preferences.notifications.eveningHour.hour == hour)
+            SettingsOptionUi(id, id, preferences.notifications.eveningHour.hour == hour)
         },
         leadOptions = notificationLeadOptions.map { minutes ->
-            NotificationOptionUi(
+            SettingsOptionUi(
                 id = minutes.toString(),
                 label = "$minutes min",
                 isSelected = preferences.notifications.leadMinutes == minutes
@@ -382,6 +405,7 @@ private fun buildSettingsState(
 
 private val notificationHourOptions = listOf(18, 19, 20, 21, 22)
 private val notificationLeadOptions = listOf(15L, 30L, 45L, 60L)
-private val gapThresholdOptions = listOf(15, 20, 30, 45, 60)
+private val gapThresholdOptions = listOf(20, 30, 45, 60)
+private val minimumBreakOptions = listOf(0, 5, 10, 15, 20)
 
 private val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.forLanguageTag("pl-PL"))

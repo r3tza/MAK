@@ -50,25 +50,73 @@ class CollisionDetectorTest {
                     item("first", LocalTime.of(10, 0), LocalTime.of(11, 30)),
                     item("second", LocalTime.of(11, 0), LocalTime.of(12, 30))
                 )
-            )
+            ),
+            minimumBreakMinutes = 0
         )
 
-        assertEquals(1, collisions.size)
-        assertEquals(30L, collisions.single().durationMinutes)
+        val overlap = collisions.single() as Collision.Overlap
+        assertEquals(LocalTime.of(11, 0), overlap.start)
+        assertEquals(LocalTime.of(11, 30), overlap.end)
     }
 
     @Test
-    fun TouchingIntervalsAreNotCollision() {
+    fun touchingIntervalsAreCollisionWithoutBreak() {
+        val collision = detector.detect(
+            occurrences(
+                listOf(
+                    item("first", LocalTime.of(8, 15), LocalTime.of(9, 45)),
+                    item("second", LocalTime.of(9, 45), LocalTime.of(11, 15))
+                )
+            ),
+            minimumBreakMinutes = 0
+        ).single() as Collision.NoBreak
+
+        assertEquals(LocalTime.of(9, 45), collision.start)
+        assertEquals(0L, collision.breakMinutes)
+    }
+
+    @Test
+    fun breakLongerThanMinimumIsNotCollision() {
+        val classes = listOf(
+            item("first", LocalTime.of(8, 15), LocalTime.of(9, 45)),
+            item("second", LocalTime.of(9, 46), LocalTime.of(11, 15))
+        )
+
+        assertTrue(detector.detect(occurrences(classes), minimumBreakMinutes = 0).isEmpty())
+    }
+
+    @Test
+    fun breakEqualToMinimumIsCollisionAndLongerIsNot() {
+        val tenMinutes = listOf(
+            item("first", LocalTime.of(8, 15), LocalTime.of(9, 45)),
+            item("second", LocalTime.of(9, 55), LocalTime.of(11, 15))
+        )
+        val elevenMinutes = listOf(
+            item("first", LocalTime.of(8, 15), LocalTime.of(9, 45)),
+            item("second", LocalTime.of(9, 56), LocalTime.of(11, 15))
+        )
+
+        val tenMinuteBreak = detector.detect(occurrences(tenMinutes), minimumBreakMinutes = 10).single() as Collision.NoBreak
+        assertEquals(10L, tenMinuteBreak.breakMinutes)
+        assertTrue(detector.detect(occurrences(elevenMinutes), minimumBreakMinutes = 10).isEmpty())
+    }
+
+    @Test
+    fun shortClassIsComparedWithEveryLaterClassThatFollowsIt() {
         val collisions = detector.detect(
             occurrences(
                 listOf(
-                    item("first", LocalTime.of(10, 0), LocalTime.of(11, 0)),
-                    item("second", LocalTime.of(11, 0), LocalTime.of(12, 0))
+                    item("long", LocalTime.of(8, 0), LocalTime.of(12, 0)),
+                    item("short", LocalTime.of(8, 30), LocalTime.of(9, 0)),
+                    item("after", LocalTime.of(9, 0), LocalTime.of(10, 0))
                 )
-            )
+            ),
+            minimumBreakMinutes = 0
         )
 
-        assertTrue(collisions.isEmpty())
+        val noBreak = collisions.filterIsInstance<Collision.NoBreak>().single()
+        assertEquals(setOf("short", "after"), setOf(noBreak.first.name, noBreak.second.name))
+        assertEquals(2, collisions.count { it is Collision.Overlap })
     }
 
     @Test
@@ -91,8 +139,32 @@ class CollisionDetectorTest {
                         item("second", LocalTime.of(12, 0), LocalTime.of(13, 0))
                     ),
                     changes = listOf(change)
-                )
+                ),
+                minimumBreakMinutes = 0
             ).size
         )
+    }
+
+    @Test
+    fun cancelledOccurrenceDoesNotCollideWithoutBreak() {
+        val cancel = OccurrenceChange(
+            id = "cancel",
+            classId = "second",
+            originalDate = LocalDate.of(2026, 1, 5),
+            kind = OccurrenceChangeKind.CANCELLED
+        )
+
+        val collisions = detector.detect(
+            occurrences(
+                listOf(
+                    item("first", LocalTime.of(8, 15), LocalTime.of(9, 45)),
+                    item("second", LocalTime.of(9, 45), LocalTime.of(11, 15))
+                ),
+                changes = listOf(cancel)
+            ),
+            minimumBreakMinutes = 0
+        )
+
+        assertTrue(collisions.isEmpty())
     }
 }

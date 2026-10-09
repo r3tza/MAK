@@ -1,6 +1,6 @@
 # Znane problemy
 
-Stan na 2026-10-08. Ten rejestr obejmuje otwarte problemy potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`, a zadania i statusy `QUEUE.md`. Naprawione problemy nie są tu powtarzane; ich historia jest w sekcji „Zakończone” w `QUEUE.md` i w `LOG.md`.
+Stan na 2026-10-09. Ten rejestr obejmuje otwarte problemy potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`, a zadania i statusy `QUEUE.md`. Naprawione problemy nie są tu powtarzane; ich historia jest w sekcji „Zakończone” w `QUEUE.md` i w `LOG.md`.
 
 ## Otwarte problemy
 
@@ -18,7 +18,8 @@ Poniższe pozycje mają gotowy kod; brakuje potwierdzenia na urządzeniu. Szczeg
 
 1. **Systemowa kopia zapasowa (I-14).** Kod istnieje: lista dozwolonych plików w `data_extraction_rules.xml` (baza i ustawienia), kopia w chmurze tylko z szyfrowaniem, tekst w „Dane i prywatność”. Na emulatorze z lokalnym transportem kopii przywracanie po reinstalacji z APK działa, a bez szyfrowania nic nie trafia do kopii. Do potwierdzenia (O-09): kopia Google na telefonie z kontem i blokadą ekranu, reinstalacja z APK oraz przeniesienie na nowy telefon.
 2. **Tryb tabletowy (I-45 do I-47).** Kod istnieje: klasy szerokości okna z progami 600 i 840 dp, obrót na urządzeniach o najkrótszym boku od 600 dp, boczny pasek nawigacji od 600 dp, treść najwyżej 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp i dialogi najwyżej 560 dp z przewijaniem. Na emulatorze z symulowanym dużym ekranem układ jest zgodny z wariantem A, a układ telefonu przy 411 i 320 dp jest identyczny jak przed zmianą. Do potwierdzenia (O-08): prawdziwy tablet albo telefon składany w pionie, w poziomie i w podzielonym ekranie, zachowanie ekranu i wpisanych danych po obrocie oraz układ poziomy wyboru godziny z I-44.
-3. **Powiadomienia (O-04).** Do potwierdzenia: zgoda, alarmy, zachowanie po restarcie telefonu i otwarcie zajęć z powiadomienia.
+3. **Kolizje bez przerwy (I-80).** Kod istnieje: minimalna przerwa w ustawieniach, kolizja bez nakładania w planie, widgecie i powiadomieniach. Na emulatorze działają: opisy na kartach i w szczegółach, odświeżenie po zmianie ustawienia, widget na ekranie głównym (także odświeżony samą zmianą ustawienia) oraz powiadomienie przed zajęciami o kolizji bez przerwy, które otwiera szczegóły terminu. Do potwierdzenia: powiadomienie wieczorne z opisem przerwy (razem z O-04).
+4. **Powiadomienia (O-04).** Do potwierdzenia: zgoda, alarmy, zachowanie po restarcie telefonu i otwarcie zajęć z powiadomienia.
 
 ## Zamknięte w kodzie, bez odbioru urządzeniowego
 

@@ -58,7 +58,7 @@ class MakTodayWidget : GlanceAppWidget() {
         val koin = GlobalContext.get()
         val state = WidgetPlanLoader(
             semesterRepository = koin.get(),
-            scheduleRepository = koin.get(),
+            activePlanSource = koin.get(),
             activePlanProvider = koin.get(),
             clock = koin.get()
         ).load()

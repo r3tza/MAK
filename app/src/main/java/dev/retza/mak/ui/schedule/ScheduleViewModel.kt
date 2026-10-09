@@ -2,10 +2,10 @@ package dev.retza.mak.ui.schedule
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.domain.ActivePlanData
+import dev.retza.mak.domain.ActivePlanInputs
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.PlannedOccurrence
@@ -15,6 +15,7 @@ import dev.retza.mak.domain.WeekType
 import dev.retza.mak.domain.cancelledOccurrences
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
+import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
@@ -39,14 +40,11 @@ import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.TemporalAdjusters
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -67,11 +65,10 @@ private data class ScheduleControls(
     val showCancelled: Boolean = false
 )
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class ScheduleViewModel(
     private val semesterRepository: SemesterRepository,
-    private val scheduleRepository: ScheduleRepository,
+    activePlanSource: ActivePlanSource,
     private val clock: Clock,
     private val activePlanProvider: ActivePlanProvider,
     private val feedbackSink: FeedbackSink
@@ -87,18 +84,11 @@ class ScheduleViewModel(
         )
     }
 
-    private val activePlanData = semesterRepository.observeActiveSemester()
-        .flatMapLatest { semester ->
-            if (semester == null) {
-                flowOf(null)
-            } else {
-                scheduleRepository.observeActivePlanData(semester.id)
-            }
-        }
+    private val activePlan = activePlanSource.observeActive()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val schedule: StateFlow<ScheduleUiState> = combine(activePlanData, controls) { data, control ->
-        buildSchedule(data, control)
+    val schedule: StateFlow<ScheduleUiState> = combine(activePlan, controls) { inputs, control ->
+        buildSchedule(inputs, control)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -161,7 +151,7 @@ class ScheduleViewModel(
     }
 
     fun saveVisibleWeekOverride(weekType: WeekTypeUi, scope: WeekOverrideScopeUi) {
-        val data = activePlanData.value ?: return
+        val data = activePlan.value?.data ?: return
         val calendarId = visibleWeekCalendarId(data) ?: return
         val monday = controls.value.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val entityScope = WeekOverrideScope.valueOf(scope.name)
@@ -186,7 +176,7 @@ class ScheduleViewModel(
     }
 
     fun clearVisibleWeekOverride(scope: WeekOverrideScopeUi) {
-        val data = activePlanData.value ?: return
+        val data = activePlan.value?.data ?: return
         val calendarId = visibleWeekCalendarId(data) ?: return
         val monday = controls.value.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val entityScope = WeekOverrideScope.valueOf(scope.name)
@@ -220,12 +210,16 @@ class ScheduleViewModel(
         return data.calendars.firstOrNull { it.id == assignment.academicCalendarId }?.id?.toLongOrNull()
     }
 
-    private fun buildSchedule(data: ActivePlanData?, control: ScheduleControls): ScheduleUiState {
-        if (data == null) return emptyScheduleState()
+    private fun buildSchedule(
+        inputs: ActivePlanInputs?,
+        control: ScheduleControls
+    ): ScheduleUiState {
+        if (inputs == null) return emptyScheduleState()
+        val data = inputs.data
         val activeFilter = control.courseFilterId.takeIf { id ->
             id == "all" || data.semesterPrograms.any { it.id == id }
         } ?: "all"
-        val selectedPlan = activePlan(data, control.scheduleDate)
+        val selectedPlan = activePlanProvider.resolve(inputs, control.scheduleDate)
         val selected = selectedPlan.schedule
         val filtered = selected.occurrences.filter {
             activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
@@ -236,7 +230,8 @@ class ScheduleViewModel(
         val monday = control.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val currentWeekMonday = control.today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val calendarDays = calendarDates(control.calendarMonth).map { date ->
-            val occurrences = activePlan(data, date).schedule.occurrences.filter {
+            // Days of the grid show only markers, so their collisions are not needed.
+            val occurrences = activePlanProvider.schedule(data, date).occurrences.filter {
                 activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
             }
             CalendarDayUi(
@@ -257,7 +252,11 @@ class ScheduleViewModel(
                 hasMoreMarkers = occurrences.size > 5
             )
         }
-        val calendarPlan = activePlan(data, control.calendarDate)
+        val calendarPlan = if (control.calendarDate == control.scheduleDate) {
+            selectedPlan
+        } else {
+            activePlanProvider.resolve(inputs, control.calendarDate)
+        }
         val calendarSchedule = calendarPlan.schedule
         val calendarFiltered = calendarSchedule.occurrences.filter {
             activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
@@ -360,9 +359,6 @@ class ScheduleViewModel(
                     isCancelled = true
                 )
             }
-
-    private fun activePlan(data: ActivePlanData, date: LocalDate) =
-        activePlanProvider.resolve(data, date)
 }
 
 private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()

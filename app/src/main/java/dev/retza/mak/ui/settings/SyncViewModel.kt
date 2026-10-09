@@ -53,7 +53,7 @@ data class SyncUiState(
     val accountEmail: String? = null,
     val lastSyncLabel: String? = null,
     val issue: String? = null,
-    val needsReconnect: Boolean = false,
+    val issueFix: SyncIssueFix? = null,
     // Banner on Today; set only while an account is connected and something needs the user.
     val attention: SyncAttentionUi? = null,
     val choice: SyncChoiceUi? = null,
@@ -88,7 +88,10 @@ data class SyncChangesUi(
     val canSave: Boolean get() = differences.isNotEmpty() && picks.size == differences.size && !isSaving
 }
 
-data class SyncAttentionUi(val text: String, val action: String)
+/** What clears a lasting sync problem when opening the sync screen is not enough. */
+enum class SyncIssueFix { RECONNECT, UPDATE }
+
+data class SyncAttentionUi(val text: String, val action: String, val fix: SyncIssueFix? = null)
 
 private data class SyncLocalState(
     val isWorking: Boolean = false,
@@ -349,14 +352,17 @@ private fun Exception.toMessage(): String = when {
 
 private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemUi>) = SyncUiState(
     accountEmail = account?.email,
-    attention = if (account == null) null else issueText()?.let { SyncAttentionUi(it, "Otwórz") }
+    attention = if (account == null) null else issueText()?.let { text ->
+        val fix = issueFix()
+        SyncAttentionUi(text, if (fix == SyncIssueFix.UPDATE) "Zaktualizuj" else "Otwórz", fix)
+    }
         ?: pendingChoice?.let { SyncAttentionUi(CHOICE_TITLE, "Wybierz wersję") },
     lastSyncLabel = account?.let {
         lastSyncedAtMillis?.let { millis -> "Ostatnia synchronizacja: ${formatMillis(millis)}" }
             ?: "Jeszcze nie zsynchronizowano"
     },
     issue = issueText(),
-    needsReconnect = issue == SyncIssue.AUTHORIZATION_REQUIRED,
+    issueFix = issueFix(),
     choice = pendingChoice?.let { question ->
         SyncChoiceUi(
             phone = question.local.label(),
@@ -373,9 +379,16 @@ private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemU
     showDisconnectDialog = local.showDisconnectDialog && account != null
 )
 
+private fun SyncState.issueFix(): SyncIssueFix? = when (issue) {
+    SyncIssue.AUTHORIZATION_REQUIRED -> SyncIssueFix.RECONNECT
+    SyncIssue.NEWER_REMOTE_PLAN -> SyncIssueFix.UPDATE
+    else -> null
+}
+
 private fun SyncState.issueText(): String? = when (issue) {
     SyncIssue.AUTHORIZATION_REQUIRED -> "Google wymaga ponownego potwierdzenia dostępu do Dysku."
     SyncIssue.INVALID_REMOTE_PLAN -> issueMessage ?: "Plik planu na Dysku jest niepoprawny."
+    SyncIssue.NEWER_REMOTE_PLAN -> "Plan na Dysku pochodzi z nowszej wersji MAK. Zaktualizuj aplikację."
     SyncIssue.LOCAL_PLAN_TOO_LARGE -> issueMessage ?: "Lokalny plan przekracza limit 8 MiB i nie może zostać wysłany."
     SyncIssue.FAILED -> issueMessage ?: "Nie udało się zsynchronizować planu."
     null -> null

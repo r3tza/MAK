@@ -3,6 +3,7 @@ package dev.retza.mak.widget
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.ClassItem
+import dev.retza.mak.domain.PlanDisplaySettings
 import dev.retza.mak.domain.StudyProgram
 import androidx.compose.ui.unit.dp
 import java.time.DayOfWeek
@@ -38,12 +39,14 @@ class WidgetPresenterTest {
         val presenter = WidgetPresenter()
         val emptyPlan = provider.resolve(
             ActivePlanData(semester = semester, classes = emptyList(), courses = listOf(course), semesterPrograms = listOf(assignment), calendars = listOf(calendar)),
-            date
+            date,
+            PlanDisplaySettings.DEFAULT
         )
         val outsideDate = date.minusDays(1)
         val outsidePlan = provider.resolve(
             ActivePlanData(semester = semester, classes = emptyList(), courses = listOf(course), semesterPrograms = listOf(assignment), calendars = listOf(calendar)),
-            outsideDate
+            outsideDate,
+            PlanDisplaySettings.DEFAULT
         )
 
         assertTrue(presenter.present(date, semester.name, emptyPlan, LocalTime.of(0, 0)) is WidgetUiState.EmptyDay)
@@ -83,7 +86,8 @@ class WidgetPresenterTest {
                 semesterPrograms = programs,
                 calendars = listOf(calendarA, calendarB)
             ),
-            date
+            date,
+            PlanDisplaySettings.DEFAULT
         )
         assertTrue(plan.schedule.hasMixedWeekTypes)
 
@@ -102,7 +106,8 @@ class WidgetPresenterTest {
         )
         val resolved = ActivePlanProvider().resolve(
             ActivePlanData(semester, classes, courses = listOf(course), semesterPrograms = listOf(assignment), calendars = listOf(calendar)),
-            date
+            date,
+            PlanDisplaySettings.DEFAULT
         )
         val duplicatedPlan = resolved.copy(
             collisions = resolved.collisions + resolved.collisions.first()
@@ -136,7 +141,8 @@ class WidgetPresenterTest {
         )
         val plan = ActivePlanProvider().resolve(
             ActivePlanData(semester, classes, courses = listOf(course), semesterPrograms = listOf(assignment), calendars = listOf(calendar)),
-            date
+            date,
+            PlanDisplaySettings.DEFAULT
         )
 
         val state = WidgetPresenter().present(

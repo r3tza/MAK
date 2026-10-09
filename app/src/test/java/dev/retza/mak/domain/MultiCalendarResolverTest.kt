@@ -63,7 +63,7 @@ class MultiCalendarResolverTest {
         val first = classItem("a", "assignment-a", Recurrence.A_WEEK, LocalTime.of(9, 0), LocalTime.of(10, 0))
         val second = classItem("b", "assignment-b", Recurrence.A_WEEK, LocalTime.of(9, 0), LocalTime.of(10, 0))
 
-        val plan = provider.resolve(data(listOf(first, second)), monday)
+        val plan = provider.resolve(data(listOf(first, second)), monday, PlanDisplaySettings.DEFAULT)
 
         assertEquals(listOf("a"), plan.schedule.occurrences.map { it.classId })
     }
@@ -74,14 +74,14 @@ class MultiCalendarResolverTest {
         val once = classItem("once", "assignment-a", Recurrence.ONCE, LocalTime.of(9, 0), LocalTime.of(10, 0))
             .copy(date = outside)
 
-        val plan = provider.resolve(data(listOf(once)), outside)
+        val plan = provider.resolve(data(listOf(once)), outside, PlanDisplaySettings.DEFAULT)
 
         assertTrue(plan.schedule.occurrences.isEmpty())
     }
 
     @Test
     fun mixedWeekTypesAreReportedInsteadOfOneLabel() {
-        val plan = provider.resolve(data(emptyList()), monday)
+        val plan = provider.resolve(data(emptyList()), monday, PlanDisplaySettings.DEFAULT)
 
         assertTrue(plan.schedule.hasMixedWeekTypes)
         assertNull(plan.schedule.week)
@@ -97,7 +97,7 @@ class MultiCalendarResolverTest {
             calendars = listOf(calendarA)
         )
 
-        val plan = provider.resolve(singleData, monday)
+        val plan = provider.resolve(singleData, monday, PlanDisplaySettings.DEFAULT)
 
         assertFalse(plan.schedule.hasMixedWeekTypes)
         assertEquals(WeekType.A, plan.schedule.weekType)
@@ -108,11 +108,11 @@ class MultiCalendarResolverTest {
         val first = classItem("a", "assignment-a", Recurrence.EVERY_WEEK, LocalTime.of(9, 0), LocalTime.of(10, 0))
         val second = classItem("b", "assignment-b", Recurrence.EVERY_WEEK, LocalTime.of(9, 30), LocalTime.of(10, 30))
 
-        val plan = provider.resolve(data(listOf(first, second)), monday)
+        val plan = provider.resolve(data(listOf(first, second)), monday, PlanDisplaySettings.DEFAULT)
 
         assertEquals(listOf("a", "b"), plan.schedule.occurrences.map { it.classId })
         assertEquals(1, plan.collisions.size)
-        assertEquals(LocalTime.of(9, 30), plan.collisions.single().overlapStart)
-        assertEquals(LocalTime.of(10, 0), plan.collisions.single().overlapEnd)
+        assertEquals(LocalTime.of(9, 30), plan.collisions.single().start)
+        assertEquals(LocalTime.of(10, 0), plan.collisions.single().end)
     }
 }

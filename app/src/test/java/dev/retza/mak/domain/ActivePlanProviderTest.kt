@@ -30,7 +30,8 @@ class ActivePlanProviderTest {
                 semesterPrograms = listOf(assignment),
                 calendars = listOf(calendar)
             ),
-            date = date
+            date = date,
+            display = PlanDisplaySettings.DEFAULT
         )
 
         assertEquals(2, plan.schedule.occurrences.size)

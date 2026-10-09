@@ -5,6 +5,7 @@ import kotlinx.serialization.json.Json
 import kotlinx.serialization.json.JsonArray
 import kotlinx.serialization.json.JsonPrimitive
 import kotlinx.serialization.json.decodeFromJsonElement
+import kotlinx.serialization.json.int
 import kotlinx.serialization.json.intOrNull
 import kotlinx.serialization.json.jsonObject
 
@@ -26,6 +27,8 @@ object JsonExportCodec {
         require(version != null && !version.isString && version.intOrNull != null) {
             "Export is missing a valid schemaVersion."
         }
+        // Checked before the rest: a newer file may have fields this version cannot decode.
+        if (version.int > ExportSchema.VERSION) throw NewerExportVersionException(version.int)
         require(root["studyPrograms"] is JsonArray) { "Export is missing studyPrograms." }
         require(root["semesters"] is JsonArray) { "Export is missing semesters." }
         return json.decodeFromJsonElement(ExportSnapshot.serializer(), root)

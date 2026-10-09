@@ -50,6 +50,7 @@ fun SyncScreen(
     state: SyncUiState,
     onConnect: () -> Unit,
     onReconnect: () -> Unit,
+    onOpenUpdate: () -> Unit,
     onSyncNow: () -> Unit,
     onOpenChoice: () -> Unit,
     onChoose: (SyncChoice) -> Unit,
@@ -112,9 +113,11 @@ fun SyncScreen(
                     title = null,
                     subtitle = issue,
                     role = MakNoteRole.Error,
-                    action = if (state.needsReconnect) {
-                        MakBannerAction("Połącz ponownie", onReconnect, enabled = !state.isWorking)
-                    } else null
+                    action = when (state.issueFix) {
+                        SyncIssueFix.RECONNECT -> MakBannerAction("Połącz ponownie", onReconnect, enabled = !state.isWorking)
+                        SyncIssueFix.UPDATE -> MakBannerAction("Zaktualizuj", onOpenUpdate)
+                        null -> null
+                    }
                 )
             }
             Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {

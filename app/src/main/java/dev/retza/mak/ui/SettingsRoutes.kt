@@ -69,6 +69,7 @@ internal fun NavGraphBuilder.settingsRoute(
             onAddSemester = onAddSemester,
             onThemeSelected = settingsViewModel::selectTheme,
             onGapThresholdSelected = settingsViewModel::setGapThresholdMinutes,
+            onMinimumBreakSelected = settingsViewModel::setMinimumBreakMinutes,
             notificationsBlocked = notificationsBlocked,
             onRetry = {},
             updates = updateState.toSettingsUi(),
@@ -153,7 +154,11 @@ internal fun NavGraphBuilder.settingsRoute(
     }
 
     composable(MakRoutes.SettingsSync) {
-        SyncRoute(syncViewModel, onOpenChanges = { navController.navigate(MakRoutes.SettingsSyncChanges) })
+        SyncRoute(
+            syncViewModel,
+            onOpenChanges = { navController.navigate(MakRoutes.SettingsSyncChanges) },
+            onOpenUpdate = { navController.navigate(MakRoutes.SettingsUpdate) }
+        )
     }
 
     composable(MakRoutes.SettingsSyncChanges) {
@@ -205,7 +210,7 @@ internal fun SettingsEffects(
 }
 
 @Composable
-private fun SyncRoute(syncViewModel: SyncViewModel, onOpenChanges: () -> Unit) {
+private fun SyncRoute(syncViewModel: SyncViewModel, onOpenChanges: () -> Unit, onOpenUpdate: () -> Unit) {
     val state by syncViewModel.sync.collectAsStateWithLifecycle()
     val context = LocalContext.current
     var exportId by rememberSaveable { mutableStateOf<String?>(null) }
@@ -236,6 +241,7 @@ private fun SyncRoute(syncViewModel: SyncViewModel, onOpenChanges: () -> Unit) {
         state = state,
         onConnect = syncViewModel::connect,
         onReconnect = syncViewModel::reconnect,
+        onOpenUpdate = onOpenUpdate,
         onSyncNow = syncViewModel::syncNow,
         onOpenChoice = syncViewModel::openChoice,
         onChoose = syncViewModel::choose,

@@ -10,6 +10,8 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.data.repository.toEntity
 import dev.retza.mak.data.repository.toRecord
+import dev.retza.mak.ui.settings.InMemorySettingsPreferences
+import dev.retza.mak.ui.settings.SettingsPreferences
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
@@ -137,3 +139,9 @@ internal class FakeSemesterRepository(
 
     override suspend fun deleteWeekOverride(id: Long) = delegate.deleteWeekOverride(id)
 }
+
+/** The plan source the app builds from [repository] and [preferences]. */
+internal fun activePlanSource(
+    repository: FakeRepository,
+    preferences: SettingsPreferences = InMemorySettingsPreferences()
+) = ActivePlanSource(FakeSemesterRepository(repository), repository, preferences)

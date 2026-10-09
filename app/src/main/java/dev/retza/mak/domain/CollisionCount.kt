@@ -8,7 +8,8 @@ fun collisionKey(collision: Collision): String {
     return listOf(
         occurrenceIds[0],
         occurrenceIds[1],
-        collision.overlapStart,
-        collision.overlapEnd
+        collision.start,
+        collision.end,
+        collision::class.simpleName
     ).joinToString("|")
 }

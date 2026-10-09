@@ -14,8 +14,8 @@ class CollisionCountTest {
         val first = occurrence("a", LocalTime.of(9, 0), LocalTime.of(10, 0))
         val second = occurrence("b", LocalTime.of(9, 30), LocalTime.of(10, 30))
         val collisions = listOf(
-            Collision(first, second, LocalTime.of(9, 30), LocalTime.of(10, 0)),
-            Collision(second, first, LocalTime.of(9, 30), LocalTime.of(10, 0))
+            Collision.Overlap(first, second, LocalTime.of(9, 30), LocalTime.of(10, 0)),
+            Collision.Overlap(second, first, LocalTime.of(9, 30), LocalTime.of(10, 0))
         )
 
         assertEquals(1, uniqueCollisionCount(collisions))
@@ -28,8 +28,8 @@ class CollisionCountTest {
         val third = occurrence("c", LocalTime.of(12, 0), LocalTime.of(13, 0))
         val fourth = occurrence("d", LocalTime.of(12, 30), LocalTime.of(13, 30))
         val collisions = listOf(
-            Collision(first, second, LocalTime.of(9, 30), LocalTime.of(10, 0)),
-            Collision(third, fourth, LocalTime.of(12, 30), LocalTime.of(13, 0))
+            Collision.Overlap(first, second, LocalTime.of(9, 30), LocalTime.of(10, 0)),
+            Collision.Overlap(third, fourth, LocalTime.of(12, 30), LocalTime.of(13, 0))
         )
 
         assertEquals(2, uniqueCollisionCount(collisions))

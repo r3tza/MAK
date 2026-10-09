@@ -18,9 +18,11 @@ import dev.retza.mak.data.repository.RoomScheduleRepository
 import dev.retza.mak.data.repository.RoomSemesterRepository
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.CollisionNotificationPlanner
+import dev.retza.mak.domain.PlanDisplaySettings
 import dev.retza.mak.ui.settings.CollisionNotificationPreferences
 import dev.retza.mak.ui.settings.SettingsPreferences
 import dev.retza.mak.ui.settings.ThemeMode
+import dev.retza.mak.ui.ActivePlanSource
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.Instant
@@ -72,10 +74,10 @@ class CollisionAlarmSchedulerTest {
         val scheduleRepository = RoomScheduleRepository(database)
         val planner = CollisionNotificationPlanner(ActivePlanProvider(), clock)
         val preferences = EnabledNotifications()
+        val activePlanSource = ActivePlanSource(semesterRepository, scheduleRepository, preferences)
         val scheduler = CollisionAlarmScheduler(
             context,
-            semesterRepository,
-            scheduleRepository,
+            activePlanSource,
             planner,
             preferences,
             clock
@@ -87,8 +89,10 @@ class CollisionAlarmSchedulerTest {
                 async(Dispatchers.Default) { scheduler.refresh() }
             ).awaitAll()
 
-            val planData = scheduleRepository.observeActivePlanData(semesterId).first()!!
-            val expected = planner.plan(planData, preferences.collisionNotifications.first().toPlannerSettings())
+            val expected = planner.plan(
+                activePlanSource.observe(semesterId).first()!!,
+                preferences.collisionNotifications.first().toPlannerSettings()
+            )
                 .map { it.id.toString() }
                 .toSet()
             val stored = context.getSharedPreferences(ALARMS, Context.MODE_PRIVATE)
@@ -143,8 +147,10 @@ class CollisionAlarmSchedulerTest {
         override val collisionNotifications: Flow<CollisionNotificationPreferences> =
             flowOf(CollisionNotificationPreferences(enabled = true))
         override val gapThresholdMinutes: Flow<Int> = flowOf(30)
+        override val planDisplay: Flow<PlanDisplaySettings> = flowOf(PlanDisplaySettings.DEFAULT)
         override suspend fun setTheme(mode: ThemeMode) = Unit
         override suspend fun setGapThresholdMinutes(minutes: Int) = Unit
+        override suspend fun setMinimumBreakMinutes(minutes: Int) = Unit
         override suspend fun setCollisionNotificationsEnabled(enabled: Boolean) = Unit
         override suspend fun setEveningNotificationsEnabled(enabled: Boolean) = Unit
         override suspend fun setBeforeClassNotificationsEnabled(enabled: Boolean) = Unit

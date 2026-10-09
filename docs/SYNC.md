@@ -13,7 +13,7 @@ Plan jest przechowywany w ukrytym folderze danych aplikacji na Dysku Google (zak
 ## Plik na Dysku
 
 - Jeden plik `mak-plan.json` w `appDataFolder` w formacie ręcznego eksportu JSON (`ExportSnapshot`, bieżąca wersja schematu). Wszystkie semestry mają w nim `isActive = false`, bo wybór aktywnego semestru jest lokalny.
-- Pobrany plik przechodzi walidację `ExportImporter`, tę samą co ręczny import. Plik uszkodzony, za duży (ponad 8 MiB) albo w nieznanym formacie zatrzymuje synchronizację z komunikatem; plan lokalny zostaje bez zmian.
+- Pobrany plik przechodzi walidację `ExportImporter`, tę samą co ręczny import. Plik uszkodzony, za duży (ponad 8 MiB) albo w nieznanym formacie zatrzymuje synchronizację z komunikatem; plan lokalny zostaje bez zmian. Numer wersji jest sprawdzany przed odczytem reszty pliku, bo nowsza wersja może mieć pola, których starsza aplikacja nie zna. Plik z wyższą wersją schematu niż obsługiwana dostaje osobny komunikat „Plan na Dysku pochodzi z nowszej wersji MAK. Zaktualizuj aplikację.” z akcją „Zaktualizuj”, która otwiera ekran „Aktualizacja” (I-83, decyzja użytkownika z 2026-10-09). To samo ostrzeżenie z tą samą akcją stoi na „Dzisiaj” i na ekranie synchronizacji.
 
 ## Stan na telefonie
 

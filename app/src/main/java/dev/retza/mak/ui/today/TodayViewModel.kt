@@ -3,14 +3,13 @@ package dev.retza.mak.ui.today
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
-import dev.retza.mak.data.repository.ScheduleRepository
-import dev.retza.mak.data.repository.SemesterRepository
-import dev.retza.mak.domain.ActivePlanData
+import dev.retza.mak.domain.ActivePlanInputs
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.countGaps
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.uniqueCollisionCount
+import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.polishLocale
 import dev.retza.mak.ui.settings.SettingsPreferences
@@ -18,43 +17,35 @@ import dev.retza.mak.ui.toUi
 import dev.retza.mak.ui.todayTitleFormatter
 import java.time.Clock
 import java.time.LocalDate
-import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
-import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.stateIn
 
 // Wraps the loaded value so "not loaded yet" (null state) differs from "no active semester".
-private data class LoadedPlan(val data: ActivePlanData?)
+private data class LoadedPlan(val inputs: ActivePlanInputs?)
 
-@OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class TodayViewModel(
-    private val semesterRepository: SemesterRepository,
-    private val scheduleRepository: ScheduleRepository,
+    activePlanSource: ActivePlanSource,
     private val preferences: SettingsPreferences,
     private val clock: Clock,
     private val activePlanProvider: ActivePlanProvider
 ) : ViewModel() {
     private val date = MutableStateFlow(LocalDate.now(clock))
 
-    private val activePlanData = semesterRepository.observeActiveSemester()
-        .flatMapLatest { semester ->
-            if (semester == null) flowOf(null) else scheduleRepository.observeActivePlanData(semester.id)
-        }
+    private val activePlan = activePlanSource.observeActive()
         .map { LoadedPlan(it) }
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     val today: StateFlow<TodayUiState> = combine(
-        activePlanData,
+        activePlan,
         date,
         preferences.gapThresholdMinutes
     ) { loaded, day, thresholdMinutes ->
-        if (loaded == null) loadingTodayState() else buildToday(loaded.data, day, thresholdMinutes)
+        if (loaded == null) loadingTodayState() else buildToday(loaded.inputs, day, thresholdMinutes)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -66,12 +57,13 @@ class TodayViewModel(
     }
 
     private fun buildToday(
-        data: ActivePlanData?,
+        inputs: ActivePlanInputs?,
         day: LocalDate,
         thresholdMinutes: Int
     ): TodayUiState {
-        if (data == null) return emptyTodayState()
-        val plan = activePlanProvider.resolve(data, day)
+        if (inputs == null) return emptyTodayState()
+        val data = inputs.data
+        val plan = activePlanProvider.resolve(inputs, day)
         val schedule = plan.schedule
         val labels = collisionLabels(plan.collisions)
         val names = collisionPartnerNames(plan.collisions)

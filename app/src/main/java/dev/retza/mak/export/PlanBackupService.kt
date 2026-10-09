@@ -31,6 +31,8 @@ class PlanBackupService(
     fun prepareImport(bytes: ByteArray): ImportPreparation {
         val snapshot = try {
             JsonExportCodec.decode(bytes)
+        } catch (_: NewerExportVersionException) {
+            return ImportPreparation.Invalid(listOf("Plik pochodzi z nowszej wersji MAK. Zaktualizuj aplikację."))
         } catch (_: Exception) {
             return ImportPreparation.Invalid(listOf("Nie udało się odczytać pliku."))
         }

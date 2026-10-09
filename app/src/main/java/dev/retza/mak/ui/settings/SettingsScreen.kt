@@ -74,19 +74,8 @@ private fun ActiveSemesterField(
     )
 }
 
-data class ThemeOptionUi(
-    val id: String,
-    val label: String,
-    val isSelected: Boolean = false
-)
-
-data class NotificationOptionUi(
-    val id: String,
-    val label: String,
-    val isSelected: Boolean = false
-)
-
-data class GapThresholdOptionUi(
+/** One choice of a settings select field: theme, gap threshold, minimum break or notification time. */
+data class SettingsOptionUi(
     val id: String,
     val label: String,
     val isSelected: Boolean = false
@@ -96,8 +85,8 @@ data class NotificationSettingsUi(
     val enabled: Boolean = false,
     val eveningEnabled: Boolean = true,
     val beforeClassEnabled: Boolean = true,
-    val eveningHourOptions: List<NotificationOptionUi> = emptyList(),
-    val leadOptions: List<NotificationOptionUi> = emptyList()
+    val eveningHourOptions: List<SettingsOptionUi> = emptyList(),
+    val leadOptions: List<SettingsOptionUi> = emptyList()
 )
 
 data class ImportPreviewUi(
@@ -113,8 +102,9 @@ data class ImportPreviewUi(
 data class SettingsUiState(
     val semesters: List<SemesterUi> = emptyList(),
     val activeSemesterId: String? = null,
-    val themeOptions: List<ThemeOptionUi> = emptyList(),
-    val gapThresholdOptions: List<GapThresholdOptionUi> = emptyList(),
+    val themeOptions: List<SettingsOptionUi> = emptyList(),
+    val gapThresholdOptions: List<SettingsOptionUi> = emptyList(),
+    val minimumBreakOptions: List<SettingsOptionUi> = emptyList(),
     val notificationsDetails: String =
         "Android może opóźnić powiadomienie o kilkanaście minut, aby oszczędzać baterię.",
     val semesterToDeleteId: String? = null,
@@ -138,6 +128,7 @@ fun SettingsScreen(
     onAddSemester: () -> Unit,
     onThemeSelected: (String) -> Unit,
     onGapThresholdSelected: (String) -> Unit,
+    onMinimumBreakSelected: (String) -> Unit,
     notificationsBlocked: Boolean,
     onRetry: () -> Unit,
     updates: UpdateSettingsUi = UpdateSettingsUi(),
@@ -190,6 +181,18 @@ fun SettingsScreen(
                             onSelected = { onGapThresholdSelected(it.id) },
                             optionLabel = { it.label }
                         )
+                    }
+                    SettingsFieldItem {
+                        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                            MakSelectField(
+                                label = "Minimalna przerwa",
+                                value = state.minimumBreakOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
+                                options = state.minimumBreakOptions,
+                                onSelected = { onMinimumBreakSelected(it.id) },
+                                optionLabel = { it.label }
+                            )
+                            MakHelperText("Zajęcia z krótszą lub równą przerwą są kolizją.")
+                        }
                     }
                 }
                 SettingsListSection("Wygląd") {

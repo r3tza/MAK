@@ -96,6 +96,24 @@ class SyncScreenTest {
         composeTestRule.onNodeWithText("Wybierz zmiany").assertDoesNotExist()
     }
 
+    @Test
+    fun newerDrivePlanOffersTheUpdateWithLargeFont() {
+        var opened = false
+        show(
+            connected.copy(
+                choice = null,
+                issue = "Plan na Dysku pochodzi z nowszej wersji MAK. Zaktualizuj aplikację.",
+                issueFix = SyncIssueFix.UPDATE
+            ),
+            onOpenUpdate = { opened = true }
+        )
+
+        composeTestRule.onNodeWithText("Plan na Dysku pochodzi z nowszej wersji MAK. Zaktualizuj aplikację.")
+            .performScrollTo().assertIsDisplayed()
+        tap("Zaktualizuj")
+        assertEquals(true, opened)
+    }
+
     private fun tap(text: String) {
         composeTestRule.onNodeWithText(text).performScrollTo().assertIsDisplayed().performClick()
     }
@@ -104,6 +122,7 @@ class SyncScreenTest {
         state: SyncUiState,
         onChoose: (SyncChoice) -> Unit = {},
         onDismissChoice: () -> Unit = {},
+        onOpenUpdate: () -> Unit = {},
         onOpenChanges: () -> Unit = {},
         onDisconnect: (Boolean) -> Unit = {},
         onDismissDisconnect: () -> Unit = {}
@@ -117,6 +136,7 @@ class SyncScreenTest {
                             state = state,
                             onConnect = {},
                             onReconnect = {},
+                            onOpenUpdate = onOpenUpdate,
                             onSyncNow = {},
                             onOpenChoice = {},
                             onChoose = onChoose,

@@ -28,6 +28,7 @@ import dev.retza.mak.ui.components.MakNoteRole
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.settings.SyncAttentionUi
+import dev.retza.mak.ui.settings.SyncIssueFix
 
 data class TodayUiState(
     val dateLabel: String,
@@ -81,7 +82,10 @@ fun TodayScreen(
                         title = syncAttention.text,
                         subtitle = null,
                         role = MakNoteRole.Warning,
-                        action = MakBannerAction(syncAttention.action, onOpenSync)
+                        action = MakBannerAction(
+                            syncAttention.action,
+                            if (syncAttention.fix == SyncIssueFix.UPDATE) onViewUpdate else onOpenSync
+                        )
                     )
                 }
                 if (availableUpdateVersion != null) {

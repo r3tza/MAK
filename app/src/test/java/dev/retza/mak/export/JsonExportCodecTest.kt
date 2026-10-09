@@ -68,6 +68,28 @@ class JsonExportCodecTest {
     }
 
     @Test
+    fun newerSchemaVersionIsRejectedBeforeItsUnknownFieldsAreRead() {
+        val newer = "{\"schemaVersion\":4,\"studyPrograms\":[],\"semesters\":[],\"daysOff\":[]}"
+
+        try {
+            JsonExportCodec.decode(newer.toByteArray())
+            fail("Expected a newer export to be rejected")
+        } catch (_: NewerExportVersionException) {
+            // Expected: the version is checked before the unknown "daysOff" field is read.
+        }
+    }
+
+    @Test
+    fun olderUnsupportedSchemaVersionStillReachesTheImporter() {
+        val older = "{\"schemaVersion\":1,\"studyPrograms\":[],\"semesters\":[]}"
+
+        val result = ExportImporter.prepare(JsonExportCodec.decode(older.toByteArray()))
+
+        assertTrue(result is ImportSnapshotResult.Invalid)
+        assertTrue((result as ImportSnapshotResult.Invalid).errors.single().contains("Nieobsługiwana wersja pliku"))
+    }
+
+    @Test
     fun snapshotKeepsStudyProgramsWithoutAssignments() {
         val program = StudyProgramEntity(id = 9, name = "Fizyka", color = "#ABCDEF")
 

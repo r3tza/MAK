@@ -182,15 +182,32 @@ data class ResolvedSchedule(
         get() = week?.overrideSource
 }
 
-data class Collision(
-    val first: PlannedOccurrence,
-    val second: PlannedOccurrence,
-    val overlapStart: LocalTime,
-    val overlapEnd: LocalTime
-) {
+/** Two classes of one day that cannot both be attended comfortably (`DOMAIN.md`, „Kolizje”). */
+sealed interface Collision {
+    val first: PlannedOccurrence
+    val second: PlannedOccurrence
+    val start: LocalTime
+    val end: LocalTime
+
     val date: LocalDate
         get() = first.date
 
-    val durationMinutes: Long
-        get() = java.time.Duration.between(overlapStart, overlapEnd).toMinutes()
+    /** The classes overlap from [start] to [end]. */
+    data class Overlap(
+        override val first: PlannedOccurrence,
+        override val second: PlannedOccurrence,
+        override val start: LocalTime,
+        override val end: LocalTime
+    ) : Collision
+
+    /** The earlier class ends at [start] and the later one starts at [end]. */
+    data class NoBreak(
+        override val first: PlannedOccurrence,
+        override val second: PlannedOccurrence,
+        override val start: LocalTime,
+        override val end: LocalTime
+    ) : Collision {
+        val breakMinutes: Long
+            get() = java.time.Duration.between(start, end).toMinutes()
+    }
 }

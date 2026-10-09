@@ -111,6 +111,24 @@ Widok kalendarza pokazuje jeden miesiąc i zawiera:
 - wybór dnia i listę jego aktywnych zajęć pod kalendarzem;
 - pole „Pokaż odwołane” pod legendą i obrysowaną akcję z ikoną plusa „Dodaj termin jednorazowy” pod nagłówkiem wybranego dnia, nad listą jego zajęć; obie są widoczne bez rozwijania, a akcja nie znika pod długą listą.
 
+### Dni wolne
+
+Decyzja użytkownika z 2026-10-09, reguły w `DOMAIN.md`, sekcja „Dni wolne”. Wygląd wymaga wariantu do akceptacji przed implementacją.
+
+Krok pierwszy (I-81):
+
+- dialog „Dodaj dni wolne”: zakres dat w `DateRangePicker` z Material 3, opcjonalna nazwa i wybór kalendarzy, domyślnie wszystkie kalendarze semestru;
+- wejście z kalendarza „Planu”: akcja „Oznacz jako wolny” pod nagłówkiem wybranego dnia, obok „Dodaj termin jednorazowy”, otwiera dialog z tym dniem jako zakresem;
+- wejście z konfiguracji semestru: ekran „Dni wolne” obok korekt tygodni i kalendarzy, z listą zakresów (nazwa, daty, kalendarze), edycją i usuwaniem;
+- „Dzisiaj” w dniu wolnym pokazuje „Dzień wolny” i nazwę zamiast „Dziś bez zajęć”, z zajęciami jednorazowymi i przeniesionymi, jeśli są;
+- kalendarz „Planu” wyróżnia dni wolne bez znaczników pominiętych zajęć, a lista pokazuje w takim dniu komunikat z nazwą;
+- widget pokazuje „Wolne” i nazwę.
+
+Krok drugi (I-82):
+
+- akcja „Dodaj święta ustawowe” na ekranie „Dni wolne”: lista polskich świąt ustawowych w zakresie kalendarza, z datami ruchomymi liczonymi lokalnie, z checkboxami przed dodaniem;
+- w dialogu dni wolnych obejmujących cały tydzień pole „Po przerwie zacznij od tygodnia” (A albo B), które tworzy korektę „Od tego tygodnia”.
+
 Kalendarz pokazuje wynik `ScheduleResolver`, dlatego musi być zgodny z ekranem „Dzisiaj”, listą planu i widgetem. Odwołane zajęcia mogą pozostać widoczne jako przekreślone tylko wtedy, gdy użytkownik włączy opcję „Pokaż odwołane”. Lista odwołanych terminów pochodzi z domeny (`cancelledOccurrences`), stosuje ten sam filtr kierunku co plan i pomija odwołania z dni, w które zajęcia po edycji już się nie odbywają. Licznik zajęć dnia liczy tylko zajęcia, które się odbywają. Domyślnie kalendarz pokazuje plan aktywny.
 
 ## Dodawanie i edycja zajęć
@@ -235,7 +253,7 @@ Zmiana ma poprawić hierarchię i atrakcyjność widgetu bez zwiększania liczby
 3. Połączyć pionowy pasek kierunku z wizualną linią czasu. Dopuszczalna jest mała kropka przy początku przedziału i cienka linia w pełnym kolorze kierunku. Czas pozostaje w stałej kolumnie i nie może być ucinany.
 4. Nazwę kierunku oznaczyć jego kolorem, jako krótki kolorowy tekst. Nazwa zawsze towarzyszy kolorowi.
 5. Rozdzielić kierunek od lokalizacji. W pierwszym wierszu metadanych pokazać kierunek, w następnym najważniejszą lokalizację. Prowadzącego pokazywać tylko w wariantach, w których mieści się bez wypierania czasu, nazwy, kierunku, sali lub kolizji.
-6. Zmniejszyć wizualny ciężar kolizji przy zajęciach. Zamiast dużego bloku użyć jasnego pomarańczowego tła ostrzegawczego z cienkim pomarańczowym paskiem, w tych samych kolorach co wiersz kolizji na karcie w aplikacji, i jednej linii „Kolizja {zakres}” albo „Kolizje: {zakresy}”. Kolor błędu nie występuje, bo kolizja nie jest winą użytkownika (`ARCHITECTURE.md`). Widget nie pokazuje nazwy drugich zajęć, bo ma mało miejsca; nazwę pokazują karta i szczegóły terminu w aplikacji (decyzja użytkownika z 2026-09-28). Zakres musi pozostać dostępny bez polegania na kolorze.
+6. Zmniejszyć wizualny ciężar kolizji przy zajęciach. Zamiast dużego bloku użyć jasnego pomarańczowego tła ostrzegawczego z cienkim pomarańczowym paskiem, w tych samych kolorach co wiersz kolizji na karcie w aplikacji, i jednej linii „Kolizja {zakres}” albo „Kolizje: {zakresy}”, a przy kolizji bez nakładania „Bez przerwy o {godzina}” albo „Przerwa {N} min o {godzina}” (I-80). Kolor błędu nie występuje, bo kolizja nie jest winą użytkownika (`ARCHITECTURE.md`). Widget nie pokazuje nazwy drugich zajęć, bo ma mało miejsca; nazwę pokazują karta i szczegóły terminu w aplikacji (decyzja użytkownika z 2026-09-28). Zakres musi pozostać dostępny bez polegania na kolorze.
 7. Separator renderować wyłącznie między zajęciami. Wewnątrz wpisu budować hierarchię przez odstępy, wagę tekstu i role kolorów.
 8. Dodać prezentacyjne stany „Teraz” i „Następne” jako pogrubiony tekst w kolorze akcentu, bez tła, tylko wtedy, gdy mieszczą się w danym progu rozmiaru. Zakończone zajęcia można lekko przygasić. Stan wynika z czasu odczytanego przez wstrzyknięty `Clock` podczas odświeżenia i nie może sugerować aktualizacji co minutę.
 9. Zachować role kolorów: kolor kierunku (pasek dopasowany do kontrastu 3:1 z tłem) dla osi czasu i nazwy kierunku, pomarańczowy kolor ostrzeżenia dla alertu kolizji, taki sam jak na karcie zajęć w aplikacji, i czerwony dla liczby kolizji w nagłówku (decyzja użytkownika z 2026-09-28, `ARCHITECTURE.md`), niebieski lub indygo dla tygodnia A/B oraz neutralny dla godzin, lokalizacji, prowadzącego i zakończonych zajęć. Kolor akcentu w wierszu mają tylko „Teraz” i „Następne”.
@@ -279,6 +297,16 @@ Kolor kierunku wybiera się w kreatorze, na ekranach dodawania i edycji kierunku
 
 Ekran „Kierunki” w ustawieniach pokazuje globalne kierunki: kropkę w kolorze kierunku, nazwę (powtórzone nazwy z numerem) i ikonę przejścia. Wiersz otwiera ekran „Edytuj kierunek” z nazwą, kolorem, „Zapisz kierunek” i „Anuluj”. Zmiana dotyczy wszystkich semestrów, planu i widgetu. Pusta nazwa jest odrzucana. Ekran „Edytuj kierunek” ma osobną akcję „Usuń kierunek” w kolorze błędu (decyzja użytkownika z 2026-10-08, I-73). Kierunek nieprzypisany do żadnego semestru usuwa się po potwierdzeniu w dialogu „Usunąć kierunek?”. Kierunek przypisany ma nieaktywną akcję i wyjaśnienie: „Kierunek jest używany w semestrach: {nazwy}. Aby go usunąć, najpierw usuń go z tych semestrów na ekranie Kierunki semestru.” Kaskadowego usuwania nie ma. Kropka koloru stoi też obok nazwy kierunku w wierszach ekranu „Kierunki” semestru i w opcjach pola „Istniejący kierunek”.
 
+Każdy wiersz ekranu „Kierunki” w ustawieniach ma checkbox włączający i wyłączający kierunek (decyzja użytkownika z 2026-10-09, I-79). Wybór dotyczy kierunku we wszystkich semestrach i jest zapisany lokalnie na telefonie, jak aktywny semestr: nie trafia do eksportu ani synchronizacji. Wyłączony kierunek znika z „Dzisiaj”, „Planu” (także z opcji pola „Kierunek”), widgetu i powiadomień i nie jest liczony w kolizjach ani okienkach. Formularz zajęć, ekrany kierunków, semestry i eksport nadal widzą wszystkie kierunki. Zmiana od razu odświeża widget i przelicza alarmy powiadomień. Filtr „Kierunek” na „Planie” pozostaje osobnym, chwilowym wyborem tego jednego ekranu.
+
+Szczegóły przyjęte przez użytkownika 2026-10-09 (makiety w artefakcie „MAK: dni wolne”, strona „Decyzje”):
+
+- wiersz ma checkbox po lewej z obszarem dotyku 48 dp, a reszta wiersza (kropka koloru, nazwa, strzałka) dalej otwiera „Edytuj kierunek”; ukryty kierunek ma pod nazwą tekst „Ukryty na tym telefonie”; opis ekranu brzmi „Odznacz kierunek, aby ukryć jego zajęcia na tym telefonie. Nazwa i kolor są wspólne dla wszystkich semestrów.”;
+- formularz zajęć pozwala wybrać ukryty kierunek; opcja ma dopisek „ukryty”, a po jej wyborze pod polem stoi „Ten kierunek jest ukryty na tym telefonie. Zajęcia zapiszą się, ale nie pojawią się w planie, dopóki go nie włączysz.”;
+- gdy wszystkie kierunki aktywnego semestru są ukryte, „Dzisiaj” i „Plan” pokazują zamiast listy zajęć neutralny komunikat „Wszystkie kierunki są ukryte na tym telefonie.” z akcją „Kierunki” prowadzącą do ekranu „Kierunki”;
+- gdy ukryta jest część kierunków aktywnego semestru, „Dzisiaj” pokazuje pod nazwą semestru wiersz z ikoną „Ukryty kierunek: {nazwa}” albo „Ukryte kierunki: {nazwy}”;
+- przy pierwszym pobraniu planu z Dysku i przy ręcznym imporcie wybór ukrytych kierunków jest czyszczony, bo numery kierunków pochodzą wtedy z innego planu; przy kolejnych synchronizacjach zostają tylko numery kierunków, które nadal istnieją.
+
 Ekran „Kierunki” semestru (decyzja użytkownika z 2026-09-28) pokazuje nagłówek „Przypisane kierunki”, pod nim obrysowany przycisk z ikoną plusa „Dodaj kierunek” i karty kierunków: kropka koloru, nazwa, kalendarz („wspólny” albo „osobny”) oraz akcje „Edytuj” i „Usuń”. „Dodaj kierunek” otwiera osobny ekran z formularzem: nowy albo istniejący kierunek, nazwa, kolor, wspólne albo osobne daty i tygodnie, akcje „Dodaj kierunek” i „Anuluj”. „Edytuj” otwiera ekran „Edytuj kierunek”, od góry: pole „Nazwa kierunku”; sekcja „Kalendarz w tym semestrze” (wybór kalendarza, gdy jest ich kilka, i „Rozdziel kalendarz” przy kalendarzu wspólnym; zmiana zapisuje się od razu po potwierdzeniu); paleta „Kolor kierunku”; informacja, że nazwa i kolor zmienią się we wszystkich semestrach; akcje „Zapisz kierunek” i „Anuluj”, które dotyczą nazwy i koloru.
 
 Na Androidzie 13 i nowszym włączenie powiadomień przy braku zgody prosi o zgodę systemową. Na Androidzie 12 taka zgoda nie istnieje, więc aplikacja otwiera systemowe ustawienia powiadomień aplikacji, a po powrocie odświeża stan „Zablokowane przez system”.
@@ -287,7 +315,7 @@ Ekran „Powiadomienia” dzieli ustawienia na sekcje w neutralnych kontenerach,
 
 Ekrany podrzędne ustawień rozdzielają komunikaty, pola, wiersze i przyciski odstępem co najmniej 12 dp. Komunikat informacyjny ma 16 dp paddingu poziomego, 12 dp pionowego i tekst co najmniej 12 sp.
 
-Ekran „Dane” zawiera eksport, import oraz opis skutków pełnego zastąpienia danych. Globalny próg długości okienka, domyślnie 30 minut, umieścić w ustawieniach planu. Jeśli przybędzie więcej ustawień planu niezwiązanych z semestrem, wydzielić dla nich osobny ekran zamiast rozbudowywać ekran główny.
+Ekran „Dane” zawiera eksport, import oraz opis skutków pełnego zastąpienia danych. Globalny próg długości okienka z opcjami 20, 30, 45 i 60 min, domyślnie 30 minut, umieścić w ustawieniach planu. Pod nim stoi pole wyboru „Minimalna przerwa” z opcjami 0, 5, 10, 15 i 20 min, domyślnie 0 min, i opisem „Zajęcia z krótszą lub równą przerwą są kolizją.” (decyzja użytkownika z 2026-10-09, I-80, reguła w `DOMAIN.md`, sekcja „Kolizje”). Najmniejszy próg okienka nie jest mniejszy od największej minimalnej przerwy, więc żadna przerwa nie jest jednocześnie kolizją i okienkiem; zapisany wcześniej próg 15 min aplikacja odczytuje jako 20 min (decyzja użytkownika z 2026-10-09). Oba ustawienia zostają na ekranie głównym ustawień, bez osobnego ekranu. Jeśli przybędzie więcej ustawień planu niezwiązanych z semestrem, wydzielić dla nich osobny ekran zamiast rozbudowywać ekran główny.
 
 Ekran „O aplikacji” zaczyna się nagłówkiem z logo, nazwą „Mój Akademicki Kalendarz”, wierszem „Autor: r3tza”, wierszem z zainstalowaną wersją i krótkim opisem celu aplikacji zgodnym z `README.md`. Dopóki wersja zaczyna się od 0, nagłówek zawiera komunikat „Wersja przed pełnym wydaniem” z uprzedzeniem o możliwych błędach i zachętą do kopii zapasowej. Pod nim są sekcje „Możliwości” (lista funkcji z `README.md`, punktory w kolorze neutralnym), „Dane i prywatność” (dane na telefonie; przy włączonej kopii Google i blokadzie ekranu Android dołącza plan i ustawienia do zaszyfrowanej kopii i przywraca je po ponownej instalacji, I-14; podstawowe funkcje działają bez konta i sieci; sieć służy aktualizacjom z GitHuba, a plan trafia do sieci tylko po włączeniu synchronizacji Google) oraz „Ostatnie zmiany”. Hierarchię budują nagłówki sekcji i odstępy; tylko lista „Ostatnie zmiany” stoi na karcie (I-55). „Ostatnie zmiany” pokazują najwyżej trzy znane wydania od najnowszego, rozdzielone separatorem: nagłówek „Wersja {wersja}”, datę w formie „19 września 2026”, ikonę i słowo „Zainstalowana” przy bieżącej wersji i zmiany jako listę punktowaną. Historia pochodzi z notatek wydań w APK (`STACK.md`, sekcja „Wydania i licencja”); wydanie bez zmian odczuwalnych dla użytkownika pokazuje „Pomniejsze poprawki”. Wersja zainstalowana, której nie ma w historii, nie tworzy pustej pozycji. Przy dopasowaniu wersji aplikacja pomija przyrostek `-debug`. Ekran nie zawiera akcji aktualizacji.
 
@@ -297,9 +325,9 @@ Automatyczne sprawdzanie jest domyślnie wyłączone. Przy wyłączonym przełą
 
 Ekrany podrzędne mają własne trasy w jednym `NavHost`, przewidywalny systemowy powrót i tytuł w topbarze. Stan ekranu głównego po powrocie nie może się resetować ani automatycznie otwierać innej sekcji.
 
-Eksport i import używają lokalnego pliku JSON z polem `schemaVersion`. Eksport zapisuje wersję 3 formatu. Import przyjmuje wersje 2 i 3; w pliku w wersji 2 notatki do przeniesionych terminów są przepinane na datę oryginalną tą samą regułą co migracja bazy. Zgodność z wersją 1 nie jest wymagana.
+Eksport i import używają lokalnego pliku JSON z polem `schemaVersion`. Eksport zapisuje wersję 3 formatu. Import przyjmuje wersje 2 i 3, a plik z wyższą wersją odrzuca komunikatem „Plik pochodzi z nowszej wersji MAK. Zaktualizuj aplikację.” (I-83); w pliku w wersji 2 notatki do przeniesionych terminów są przepinane na datę oryginalną tą samą regułą co migracja bazy. Zgodność z wersją 1 nie jest wymagana.
 
-Użytkownik wybiera plik przez systemowy wybór dokumentu. Format zawiera globalne kierunki, semestry, przypisania, kalendarze akademickie, zajęcia z tekstem prowadzącego, korekty, notatki i zmiany wystąpień.
+Użytkownik wybiera plik przez systemowy wybór dokumentu. Format zawiera globalne kierunki, semestry, przypisania, kalendarze akademickie, zajęcia z tekstem prowadzącego, korekty, notatki i zmiany wystąpień, a od I-81 także dni wolne.
 
 Import powinien:
 
@@ -317,6 +345,7 @@ Odbiór na urządzeniu jest odrębnym kryterium od kompilacji testów Android.
 - Sprawdzić rozdzielanie i ponowne łączenie kalendarzy, wybór kalendarza korekty oraz plan dwóch kierunków z różnych uczelni.
 - Sprawdzić import poprawnego i błędnego pliku, anulowanie oraz rollback po błędzie zapisu.
 - Sprawdzić zgodę na powiadomienia, alarm wieczorny i przed zajęciami, restart, zmianę czasu, anulowanie kolizji i kliknięcie powiadomienia.
+- Sprawdzić kolizję bez przerwy (I-80): zajęcia stykające się przy minimalnej przerwie 0 min i z przerwą 5 min przy 10 min, opis na karcie, w szczegółach i na widgecie na ekranie głównym, odświeżenie widgetu po zmianie ustawienia oraz powiadomienie wieczorne z opisem przerwy.
 - Sprawdzić zimny start w motywie jasnym, ciemnym i systemowym, także gdy motyw aplikacji różni się od systemowego: ekran startowy i ekran ładowania mają kolor motywu aplikacji, a „Dzisiaj” nie pokazuje stanu pustego przed danymi.
 - Sprawdzić tablet (O-08) w pionie, w poziomie i w podzielonym ekranie: boczny pasek nawigacji od 600 dp, dolny pasek poniżej, treść nie szersza niż 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp, wybór daty i godziny w całości i po polsku, zachowanie bieżącego ekranu i wpisanych danych po obrocie.
 - Sprawdzić nawigację i powrót systemowy, insety, TalkBack, klawiaturę, focus, motyw ciemny, długie treści i szerokość 320 dp. Potwierdzić, że po błędzie formularz zachowuje dane i pokazuje bezpieczny komunikat.
