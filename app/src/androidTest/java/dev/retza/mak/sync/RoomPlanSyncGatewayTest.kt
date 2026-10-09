@@ -1,7 +1,6 @@
 package dev.retza.mak.sync
 
 import android.content.Context
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -19,6 +18,7 @@ import dev.retza.mak.data.repository.PlanBackupGateway
 import dev.retza.mak.data.repository.SemesterBackup
 import dev.retza.mak.ui.settings.DataStoreSettingsPreferences
 import dev.retza.mak.ui.settings.SettingsPreferences
+import dev.retza.mak.ui.settings.TestPreferencesFile
 import java.time.LocalDate
 import java.time.Clock
 import java.time.Instant
@@ -28,8 +28,6 @@ import java.time.DayOfWeek
 import java.time.LocalTime
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
@@ -50,27 +48,20 @@ class RoomPlanSyncGatewayTest {
     private lateinit var backup: RoomPlanBackupGateway
     private lateinit var gateway: RoomPlanSyncGateway
     private lateinit var preferences: SettingsPreferences
-    private val preferencesScope = CoroutineScope(Dispatchers.IO + Job())
-    private val preferencesFile = File(
-        ApplicationProvider.getApplicationContext<Context>().cacheDir,
-        "room-sync-gateway-${System.nanoTime()}.preferences_pb"
-    )
+    private val preferencesFile = TestPreferencesFile(ApplicationProvider.getApplicationContext<Context>())
 
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
         backup = RoomPlanBackupGateway(database)
-        preferences = DataStoreSettingsPreferences(
-            PreferenceDataStoreFactory.create(scope = preferencesScope, produceFile = { preferencesFile })
-        )
+        preferences = DataStoreSettingsPreferences(preferencesFile.open())
         gateway = RoomPlanSyncGateway(database, backup, preferences)
     }
 
     @After
     fun tearDown() {
         database.close()
-        preferencesScope.cancel()
         preferencesFile.delete()
     }
 
@@ -87,10 +78,9 @@ class RoomPlanSyncGatewayTest {
     }
 
     @Test
-    fun laterDownloadKeepsOnlyHiddenProgramsThatStillExist() = runBlocking {
+    fun laterDownloadKeepsTheHiddenPrograms() = runBlocking {
         backup.replaceAll(plan("A", active = 1))
         preferences.setStudyProgramHidden("1", hidden = true)
-        preferences.setStudyProgramHidden("9", hidden = true)
 
         gateway.replaceIfUnchanged(
             SyncPlanFile.fingerprint(gateway.snapshot()), plan("A", "B"), keepLocalActive = true, fallbackActiveId = 1
@@ -129,7 +119,7 @@ class RoomPlanSyncGatewayTest {
             }
         }
         val blockingGateway = RoomPlanSyncGateway(database, blockingBackup, preferences)
-        val tracker = PlanEditTracker(kotlinx.coroutines.CoroutineScope(Dispatchers.Default))
+        val tracker = PlanEditTracker(CoroutineScope(Dispatchers.Default))
 
         val replacement = async(Dispatchers.IO) {
             tracker.withReplacement {
@@ -175,7 +165,7 @@ class RoomPlanSyncGatewayTest {
                 return backup.replaceAll(data)
             }
         }
-        val tracker = PlanEditTracker(kotlinx.coroutines.CoroutineScope(Dispatchers.Default))
+        val tracker = PlanEditTracker(CoroutineScope(Dispatchers.Default))
         val replacement = async(Dispatchers.IO) {
             tracker.withReplacement {
                 RoomPlanSyncGateway(database, blockingBackup, preferences).replaceIfUnchanged(
@@ -228,7 +218,7 @@ class RoomPlanSyncGatewayTest {
             "room-edit-first-${System.nanoTime()}"
         )
         val archive = SyncArchive(archiveDirectory)
-        val tracker = PlanEditTracker(kotlinx.coroutines.CoroutineScope(Dispatchers.Unconfined))
+        val tracker = PlanEditTracker(CoroutineScope(Dispatchers.Unconfined))
         val coordinator = SyncCoordinator(
             gateway = gateway,
             transport = transport,
@@ -284,7 +274,7 @@ class RoomPlanSyncGatewayTest {
             transport = transport,
             store = TestStore(SyncState(account = account)),
             archive = SyncArchive(ApplicationProvider.getApplicationContext<Context>().cacheDir.resolve("room-sync-archive")),
-            editTracker = PlanEditTracker(kotlinx.coroutines.CoroutineScope(Dispatchers.Unconfined)),
+            editTracker = PlanEditTracker(CoroutineScope(Dispatchers.Unconfined)),
             clock = Clock.fixed(Instant.parse("2026-10-02T10:00:00Z"), ZoneOffset.UTC),
             ioDispatcher = Dispatchers.Unconfined
         )

@@ -134,7 +134,8 @@ class TodayScreenTest {
                             semesterLabel = "Semestr zimowy",
                             weekLabel = "Tydzień B",
                             hasActiveSemester = true,
-                            hiddenProgramNames = listOf("Zarządzanie i inżynieria produkcji", "Ekonomia"),
+                            // The view model leaves the names out once every program is hidden.
+                            hiddenProgramNames = if (allHidden) emptyList() else listOf("Zarządzanie i inżynieria produkcji", "Ekonomia"),
                             allProgramsHidden = allHidden
                         ),
                         onOpenClass = {},

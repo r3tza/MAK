@@ -12,6 +12,7 @@ import dev.retza.mak.notifications.CollisionAlarmScheduler
 import dev.retza.mak.notifications.ensureCollisionChannel
 import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.settings.SettingsPreferences
+import dev.retza.mak.ui.settings.retainExistingHiddenPrograms
 import dev.retza.mak.widget.GlanceWidgetRefreshRequester
 import dev.retza.mak.widget.registerMakWidgetRefresh
 import kotlinx.coroutines.CancellationException
@@ -70,6 +71,15 @@ class MakApplication : Application(), Configuration.Provider {
             scope = initializationScope,
             requester = GlanceWidgetRefreshRequester(this, initializationScope)
         )
+        initializationScope.launch {
+            try {
+                retainExistingHiddenPrograms(semesterRepository.observeStudyPrograms(), preferences)
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                // A stale hidden number only hides a program that does not exist; the next start retries.
+            }
+        }
         val isDebuggable = applicationInfo.flags and ApplicationInfo.FLAG_DEBUGGABLE != 0
         if (isDebuggable) {
             initializationScope.launch {

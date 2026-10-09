@@ -5,6 +5,7 @@ import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
+import dev.retza.mak.ui.activePlanSource
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
@@ -33,10 +34,10 @@ class ClassEditViewModelTest {
     private val preferences = InMemorySettingsPreferences()
 
     private fun viewModel(repository: FakeRepository, savedState: SavedStateHandle = SavedStateHandle()) =
-        ClassEditViewModel(FakeSemesterRepository(repository), repository, FeedbackController(), savedState, preferences)
+        ClassEditViewModel(FakeSemesterRepository(repository), repository, FeedbackController(), savedState, activePlanSource(repository, preferences))
 
     private fun recordingViewModel(repository: FakeRepository, sink: RecordingFeedbackSink) =
-        ClassEditViewModel(FakeSemesterRepository(repository), repository, sink, SavedStateHandle(), preferences)
+        ClassEditViewModel(FakeSemesterRepository(repository), repository, sink, SavedStateHandle(), activePlanSource(repository, preferences))
 
     @Test
     fun hiddenStudyProgramStaysAnOptionMarkedAsHidden() = runTest(mainDispatcher) {

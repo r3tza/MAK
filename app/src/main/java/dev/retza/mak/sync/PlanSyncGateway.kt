@@ -44,14 +44,9 @@ class RoomPlanSyncGateway(
             backup.replaceAll(data.withActiveSemester(activeId))
             true
         }
-        if (replaced) {
-            // Like the active semester: program numbers mean the same programs only after the first download.
-            if (keepLocalActive) {
-                preferences.retainHiddenStudyPrograms(data.studyPrograms.mapTo(mutableSetOf()) { it.id.toString() })
-            } else {
-                preferences.clearHiddenStudyPrograms()
-            }
-        }
+        // Like the active semester: program numbers mean the same programs only after the first download.
+        // Later downloads keep the choice; programs they removed are forgotten by `retainExistingHiddenPrograms`.
+        if (replaced && !keepLocalActive) preferences.clearHiddenStudyPrograms()
         return replaced
     }
 }

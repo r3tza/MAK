@@ -76,8 +76,9 @@ class StudyProgramsViewModel(
     init {
         viewModelScope.launch {
             try {
-                combine(semesterRepository.observeStudyPrograms(), preferences.planDisplay) { records, display ->
-                    records.map { StudyProgramUi(it.id, it.name, it.color, isHidden = it.id.toString() in display.hiddenProgramIds) }
+                val hiddenIds = preferences.planDisplay.map { it.hiddenProgramIds }.distinctUntilChanged()
+                combine(semesterRepository.observeStudyPrograms(), hiddenIds) { records, hidden ->
+                    records.map { StudyProgramUi(it.id, it.name, it.color, isHidden = it.id.toString() in hidden) }
                 }.collect { programs ->
                     state.update { current -> current.copy(programs = programs) }
                 }
@@ -204,8 +205,6 @@ class StudyProgramsViewModel(
             }
         ) {
             semesterRepository.deleteStudyProgram(id)
-            // A later program could get the same number and must not start hidden.
-            preferences.setStudyProgramHidden(id.toString(), hidden = false)
             state.update { it.copy(editor = StudyProgramEditorUi()) }
             feedbackSink.publish(UiFeedback("Usunięto kierunek", UiFeedbackKind.Success))
             effectsChannel.trySend(StudyProgramsEffect.CloseEditor)

@@ -11,7 +11,6 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
-import androidx.compose.material3.Checkbox
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -23,12 +22,12 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.clearAndSetSemantics
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.role
-import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.MakCourseColorPicker
 import dev.retza.mak.ui.components.FieldErrorUi
+import dev.retza.mak.ui.components.MakCheckbox
 import dev.retza.mak.ui.components.MakColorDot
 import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakEmptyState
@@ -86,11 +85,10 @@ private fun StudyProgramRow(
         modifier = Modifier.fillMaxWidth(),
         verticalAlignment = Alignment.CenterVertically
     ) {
-        // The default checkbox already has a 48 dp touch target.
-        Checkbox(
+        MakCheckbox(
             checked = !isHidden,
             onCheckedChange = onVisibleChange,
-            modifier = Modifier.semantics { contentDescription = "Pokazuj $label" }
+            contentDescription = "Pokazuj $label"
         )
         Row(
             modifier = Modifier

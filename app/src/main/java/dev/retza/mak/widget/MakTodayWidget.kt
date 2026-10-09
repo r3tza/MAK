@@ -5,7 +5,6 @@ import android.content.Intent
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
@@ -52,25 +51,26 @@ import dev.retza.mak.ui.theme.MakOrange
 import dev.retza.mak.ui.theme.MakOrangeDark
 import dev.retza.mak.ui.theme.MakOrangeSoft
 import dev.retza.mak.ui.theme.MakOrangeSoftDark
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.stateIn
 import org.koin.core.context.GlobalContext
 
 class MakTodayWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Responsive(MakWidgetSizes.responsiveSizes)
 
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
+    override suspend fun provideGlance(context: Context, id: GlanceId) = coroutineScope {
         val koin = GlobalContext.get()
-        val loader = WidgetPlanLoader(
+        // An update during a running session only recomposes, so the session follows the data itself.
+        // The first state is read before the content, so the widget never draws an empty frame.
+        val states = WidgetPlanLoader(
             semesterRepository = koin.get(),
             activePlanSource = koin.get(),
             activePlanProvider = koin.get(),
             clock = koin.get()
-        )
-        val initial = loader.load()
+        ).states().stateIn(this)
 
         provideContent {
-            // An update during a running session only recomposes, so changes come from the data itself.
-            val states = remember { loader.states() }
-            val state by states.collectAsState(initial)
+            val state by states.collectAsState()
             GlanceTheme {
                 MakTodayWidgetContent(context, state)
             }

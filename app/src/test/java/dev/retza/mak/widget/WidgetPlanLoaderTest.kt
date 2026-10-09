@@ -24,6 +24,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.test.runTest
@@ -54,7 +55,7 @@ class WidgetPlanLoaderTest {
 
     @Test
     fun loaderUsesProviderAndReturnsTheSameOccurrenceIdsAsActivePlan() = runTest {
-        val state = loader(repositoryReturning(semester, planData(programming))).load()
+        val state = loader(repositoryReturning(semester, planData(programming))).states().first()
 
         assertTrue(state is WidgetUiState.Ready)
         assertEquals(listOf("3:2026-09-21"), (state as WidgetUiState.Ready).items.map { it.id })
@@ -67,7 +68,7 @@ class WidgetPlanLoaderTest {
         val state = loader(
             repositoryReturning(semester, planData(programming, analysis)),
             InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings(minimumBreakMinutes = 5))
-        ).load()
+        ).states().first()
 
         assertEquals(1, (state as WidgetUiState.Ready).collisionCount)
     }
@@ -78,8 +79,8 @@ class WidgetPlanLoaderTest {
 
         val state = loader(
             repositoryReturning(semester, planData(programming, management)),
-            InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings(minimumBreakMinutes = 0, hiddenProgramIds = setOf("2")))
-        ).load()
+            InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf("2")))
+        ).states().first()
 
         assertEquals(listOf("Zarządzanie projektami"), (state as WidgetUiState.Ready).items.map { it.name })
     }
@@ -88,15 +89,15 @@ class WidgetPlanLoaderTest {
     fun loaderSaysWhenEveryStudyProgramIsHidden() = runTest {
         val state = loader(
             repositoryReturning(semester, planData(programming)),
-            InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings(minimumBreakMinutes = 0, hiddenProgramIds = setOf("2", "3")))
-        ).load()
+            InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf("2", "3")))
+        ).states().first()
 
         assertTrue(state is WidgetUiState.AllProgramsHidden)
     }
 
     @Test
     fun loaderReturnsNoActiveSemesterState() = runTest {
-        val state = loader(repositoryReturning(null, null)).load()
+        val state = loader(repositoryReturning(null, null)).states().first()
 
         assertTrue(state is WidgetUiState.NoActiveSemester)
     }
@@ -105,7 +106,7 @@ class WidgetPlanLoaderTest {
     fun loaderMapsReadFailureToErrorState() = runTest {
         val repository = repositoryFailingWith(IllegalStateException("database closed"))
 
-        val state = loader(repository).load()
+        val state = loader(repository).states().first()
 
         assertTrue(state is WidgetUiState.Error)
     }
@@ -115,7 +116,7 @@ class WidgetPlanLoaderTest {
         val repository = repositoryFailingWith(CancellationException("widget update cancelled"))
 
         val cancelled = try {
-            loader(repository).load()
+            loader(repository).states().first()
             false
         } catch (error: CancellationException) {
             true

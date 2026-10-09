@@ -30,6 +30,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -88,6 +89,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
@@ -1354,29 +1356,58 @@ fun MakCheckbox(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
-        val shape = RoundedCornerShape(4.dp)
-        Box(
-            modifier = Modifier
-                .size(20.dp)
-                .clip(shape)
-                .border(
-                    1.dp,
-                    if (focused || checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                    shape
-                )
-                .background(if (checked) MaterialTheme.colorScheme.primary else Color.Transparent),
-            contentAlignment = Alignment.Center
-        ) {
-            if (checked) {
-                Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
+        MakCheckboxBox(checked = checked, focused = focused)
         Text(label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+/** The checkbox alone in a 48 dp target, for a row whose other part has its own action. */
+@Composable
+fun MakCheckbox(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    contentDescription: String,
+    modifier: Modifier = Modifier
+) {
+    var focused by remember { mutableStateOf(false) }
+    Box(
+        modifier = modifier
+            .size(48.dp)
+            .onFocusChanged { focused = it.isFocused }
+            .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange)
+            .semantics {
+                this.contentDescription = contentDescription
+                stateDescription = if (checked) "Zaznaczone" else "Niezaznaczone"
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        MakCheckboxBox(checked = checked, focused = focused)
+    }
+}
+
+@Composable
+private fun MakCheckboxBox(checked: Boolean, focused: Boolean) {
+    val shape = RoundedCornerShape(4.dp)
+    Box(
+        modifier = Modifier
+            .size(20.dp)
+            .clip(shape)
+            .border(
+                1.dp,
+                if (focused || checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                shape
+            )
+            .background(if (checked) MaterialTheme.colorScheme.primary else Color.Transparent),
+        contentAlignment = Alignment.Center
+    ) {
+        if (checked) {
+            Icon(
+                imageVector = Icons.Filled.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(16.dp)
+            )
+        }
     }
 }
 
@@ -1485,32 +1516,33 @@ fun MakConfirmDeletionDialog(
 }
 
 @Composable
-fun MakHelperText(text: String, modifier: Modifier = Modifier, icon: ImageVector? = null) {
-    if (icon == null) {
-        HelperText(text, modifier.fillMaxWidth())
-        return
-    }
+fun MakHelperText(
+    text: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    style: TextStyle = MakHelperTextStyle
+) {
     Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-        Icon(
-            imageVector = icon,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant,
-            modifier = Modifier.size(16.dp)
+        if (icon != null) {
+            // Centered on the first line of the text.
+            val lineHeight = with(LocalDensity.current) { style.lineHeight.toDp() }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = ((lineHeight - 16.dp) / 2).coerceAtLeast(0.dp)).size(16.dp)
+            )
+        }
+        Text(
+            text = text,
+            modifier = Modifier.weight(1f),
+            style = style,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-        HelperText(text, Modifier.weight(1f))
     }
 }
 
-@Composable
-private fun HelperText(text: String, modifier: Modifier) {
-    Text(
-        text = text,
-        modifier = modifier,
-        fontSize = 12.sp,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        lineHeight = 16.sp
-    )
-}
+private val MakHelperTextStyle = TextStyle(fontSize = 12.sp, lineHeight = 16.sp)
 
 @Composable
 fun FieldError(

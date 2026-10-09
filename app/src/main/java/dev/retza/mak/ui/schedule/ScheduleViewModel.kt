@@ -17,7 +17,7 @@ import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.SemesterProgram
 import dev.retza.mak.domain.allProgramsHidden
-import dev.retza.mak.domain.hiddenAssignments
+import dev.retza.mak.domain.visibleAssignments
 import dev.retza.mak.domain.visibleTo
 import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.classCountLabel
@@ -220,12 +220,14 @@ class ScheduleViewModel(
     ): ScheduleUiState {
         if (inputs == null) return emptyScheduleState()
         // Hidden study programs are neither filter options, legend entries, cancelled classes nor markers.
-        val data = inputs.data.visibleTo(inputs.display)
-        val programs = data.semesterPrograms - data.hiddenAssignments(inputs.display).toSet()
+        val visible = inputs.data.visibleTo(inputs.display)
+        val data = visible.data
+        val minimumBreak = inputs.display.minimumBreakMinutes
+        val programs = data.visibleAssignments(inputs.display)
         val activeFilter = control.courseFilterId.takeIf { id ->
             id == "all" || programs.any { it.id == id }
         } ?: "all"
-        val selectedPlan = activePlanProvider.resolve(inputs, control.scheduleDate)
+        val selectedPlan = activePlanProvider.resolve(visible, control.scheduleDate, minimumBreak)
         val selected = selectedPlan.schedule
         val filtered = selected.occurrences.filter {
             activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
@@ -237,7 +239,7 @@ class ScheduleViewModel(
         val currentWeekMonday = control.today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val calendarDays = calendarDates(control.calendarMonth).map { date ->
             // Days of the grid show only markers, so their collisions are not needed.
-            val occurrences = activePlanProvider.schedule(data, date).occurrences.filter {
+            val occurrences = activePlanProvider.schedule(visible, date).occurrences.filter {
                 activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
             }
             CalendarDayUi(
@@ -261,7 +263,7 @@ class ScheduleViewModel(
         val calendarPlan = if (control.calendarDate == control.scheduleDate) {
             selectedPlan
         } else {
-            activePlanProvider.resolve(inputs, control.calendarDate)
+            activePlanProvider.resolve(visible, control.calendarDate, minimumBreak)
         }
         val calendarSchedule = calendarPlan.schedule
         val calendarFiltered = calendarSchedule.occurrences.filter {
@@ -382,14 +384,13 @@ private fun calendarLegend(
     data: ActivePlanData,
     programs: List<SemesterProgram>,
     activeFilter: String
-): List<CalendarLegendUi> {
-    val courses = programs
+): List<CalendarLegendUi> =
+    programs
         .filter { activeFilter == "all" || it.id == activeFilter }
         .mapNotNull { assignment -> data.courses.firstOrNull { it.id == assignment.studyProgramId } }
         .distinctBy { it.id }
-        .map { CalendarLegendUi(label = it.name, colorHex = it.color) }
-    return courses + CalendarLegendUi(label = "Zmieniony termin", isChange = true)
-}
+        .map { CalendarLegendUi(label = it.name, colorHex = it.color) } +
+        CalendarLegendUi(label = "Zmieniony termin", isChange = true)
 
 private fun calendarAccessibilityLabel(
     date: LocalDate,

@@ -76,10 +76,8 @@ fun TodayScreen(
                 state.weekLabel.takeIf { it.isNotBlank() },
                 state.semesterLabel.takeIf { it.isNotBlank() }
             ).joinToString(", ").ifBlank { null },
-            supportingContent = if (state.hiddenProgramNames.isNotEmpty() && !state.allProgramsHidden) {
-                { HiddenProgramsHint(state.hiddenProgramNames) }
-            } else {
-                null
+            supportingContent = state.hiddenProgramNames.takeIf { it.isNotEmpty() }?.let { names ->
+                { HiddenProgramsHint(names) }
             }
         )
         if (availableUpdateVersion != null || syncAttention != null) {

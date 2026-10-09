@@ -30,19 +30,24 @@ class ActivePlanProvider(
     private val collisionDetector: CollisionDetector = CollisionDetector()
 ) {
     fun resolve(inputs: ActivePlanInputs, date: LocalDate): ActivePlan =
-        resolve(inputs.data, date, inputs.display)
+        resolve(inputs.data.visibleTo(inputs.display), date, inputs.display.minimumBreakMinutes)
 
-    fun resolve(data: ActivePlanData, date: LocalDate, display: PlanDisplaySettings): ActivePlan {
-        val schedule = schedule(data.visibleTo(display), date)
+    fun resolve(data: ActivePlanData, date: LocalDate, display: PlanDisplaySettings): ActivePlan =
+        resolve(data.visibleTo(display), date, display.minimumBreakMinutes)
+
+    /** For a caller that resolves many days of one plan and filters it once. */
+    fun resolve(visible: VisiblePlanData, date: LocalDate, minimumBreakMinutes: Int): ActivePlan {
+        val schedule = schedule(visible, date)
         return ActivePlan(
             schedule = schedule,
-            collisions = collisionDetector.detect(schedule, display.minimumBreakMinutes)
+            collisions = collisionDetector.detect(schedule, minimumBreakMinutes)
         )
     }
 
-    /** The classes of [date] without collisions, for views that only mark days; [data] is already filtered. */
-    fun schedule(data: ActivePlanData, date: LocalDate): ResolvedSchedule =
-        resolver.resolve(
+    /** The classes of [date] without collisions, for views that only mark days. */
+    fun schedule(visible: VisiblePlanData, date: LocalDate): ResolvedSchedule {
+        val data = visible.data
+        return resolver.resolve(
             date = date,
             semester = data.semester,
             classes = data.classes,
@@ -53,22 +58,31 @@ class ActivePlanProvider(
             occurrenceChanges = data.occurrenceChanges,
             occurrenceNotes = data.occurrenceNotes
         )
+    }
 }
+
+/** Plan data without the classes of study programs hidden on this phone; only [visibleTo] makes one. */
+@JvmInline
+value class VisiblePlanData internal constructor(val data: ActivePlanData)
 
 /**
  * The plan without the classes of study programs hidden on this phone. Their assignments stay, so the
  * week of the semester is still known when every program is hidden.
  */
-fun ActivePlanData.visibleTo(display: PlanDisplaySettings): ActivePlanData {
-    if (display.hiddenProgramIds.isEmpty()) return this
+fun ActivePlanData.visibleTo(display: PlanDisplaySettings): VisiblePlanData {
+    if (display.hiddenProgramIds.isEmpty()) return VisiblePlanData(this)
     val hiddenAssignmentIds = hiddenAssignments(display).mapTo(mutableSetOf()) { it.id }
-    return copy(classes = classes.filterNot { it.semesterProgramId in hiddenAssignmentIds })
+    return VisiblePlanData(copy(classes = classes.filterNot { it.semesterProgramId in hiddenAssignmentIds }))
 }
 
 /** Assignments of the active semester whose study program is hidden on this phone. */
 fun ActivePlanData.hiddenAssignments(display: PlanDisplaySettings): List<SemesterProgram> =
     semesterPrograms.filter { it.studyProgramId in display.hiddenProgramIds }
 
+/** Assignments shown on this phone: filter options and the calendar legend leave out hidden ones. */
+fun ActivePlanData.visibleAssignments(display: PlanDisplaySettings): List<SemesterProgram> =
+    semesterPrograms.filterNot { it.studyProgramId in display.hiddenProgramIds }
+
 /** True when the semester has study programs and every one of them is hidden on this phone. */
 fun ActivePlanData.allProgramsHidden(display: PlanDisplaySettings): Boolean =
-    semesterPrograms.isNotEmpty() && hiddenAssignments(display).size == semesterPrograms.size
+    semesterPrograms.isNotEmpty() && semesterPrograms.all { it.studyProgramId in display.hiddenProgramIds }

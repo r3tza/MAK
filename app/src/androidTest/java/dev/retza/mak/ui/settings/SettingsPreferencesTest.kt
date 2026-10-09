@@ -2,21 +2,15 @@ package dev.retza.mak.ui.settings
 
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import java.io.File
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -30,27 +24,15 @@ import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class SettingsPreferencesTest {
-    private lateinit var context: Context
-    private lateinit var file: File
-    private var scope: CoroutineScope? = null
-
-    @Before
-    fun setUp() {
-        context = ApplicationProvider.getApplicationContext()
-        file = File(context.filesDir, "settings-${System.nanoTime()}.preferences_pb")
-    }
+    private val preferencesFile = TestPreferencesFile(ApplicationProvider.getApplicationContext<Context>())
 
     @After
-    fun tearDown() {
-        scope?.cancel()
-        file.delete()
-    }
+    fun tearDown() = preferencesFile.delete()
 
     @Test
     fun themeRoundTripsAcrossInstances() = runBlocking {
@@ -58,8 +40,7 @@ class SettingsPreferencesTest {
         first.setTheme(ThemeMode.Dark)
         assertEquals(ThemeMode.Dark, first.theme.first())
 
-        // DataStore releases the file only after its scope completes, so wait for it.
-        scope?.coroutineContext?.job?.cancelAndJoin()
+        preferencesFile.close()
         val second = preferences(openDataStore())
         assertEquals(ThemeMode.Dark, second.theme.first())
     }
@@ -140,11 +121,7 @@ class SettingsPreferencesTest {
     private fun preferences(dataStore: DataStore<Preferences>): SettingsPreferences =
         DataStoreSettingsPreferences(dataStore)
 
-    private fun openDataStore(): DataStore<Preferences> {
-        val dataStoreScope = CoroutineScope(Dispatchers.IO + Job())
-        scope = dataStoreScope
-        return PreferenceDataStoreFactory.create(scope = dataStoreScope, produceFile = { file })
-    }
+    private fun openDataStore(): DataStore<Preferences> = preferencesFile.open()
 }
 
 private class ThrowingDataStore(private val error: Throwable) : DataStore<Preferences> {

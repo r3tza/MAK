@@ -12,7 +12,6 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
-import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -24,8 +23,6 @@ class WidgetPlanLoader(
     private val clock: Clock,
     private val presenter: WidgetPresenter = WidgetPresenter()
 ) {
-    suspend fun load(): WidgetUiState = states().first()
-
     /**
      * The widget state again after every change of the plan or of its settings. A running Glance session
      * only recomposes on update, so it has to follow the data itself.
@@ -46,10 +43,9 @@ class WidgetPlanLoader(
             }
 
     private fun present(inputs: ActivePlanInputs?): WidgetUiState {
+        if (inputs == null) return WidgetUiState.Error(dateLabel())
+        if (inputs.data.allProgramsHidden(inputs.display)) return WidgetUiState.AllProgramsHidden(dateLabel())
         val date = LocalDate.now(clock)
-        val dateLabel = widgetDateLabel(date)
-        if (inputs == null) return WidgetUiState.Error(dateLabel)
-        if (inputs.data.allProgramsHidden(inputs.display)) return WidgetUiState.AllProgramsHidden(dateLabel)
         val plan = activePlanProvider.resolve(inputs, date)
         return presenter.present(date, inputs.data.semester.name, plan, LocalTime.now(clock))
     }

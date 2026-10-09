@@ -68,6 +68,7 @@ class TodayViewModel(
         if (inputs == null) return emptyTodayState()
         val data = inputs.data
         val plan = activePlanProvider.resolve(inputs, day)
+        val allHidden = data.allProgramsHidden(inputs.display)
         val schedule = plan.schedule
         val labels = collisionLabels(plan.collisions)
         val names = collisionPartnerNames(plan.collisions)
@@ -84,8 +85,9 @@ class TodayViewModel(
             collisionCount = uniqueCollisionCount(plan.collisions),
             gapCount = countGaps(schedule.occurrences, thresholdMinutes.toLong()),
             items = schedule.occurrences.map { it.toUi(labels[it.id], names[it.id]) },
-            hiddenProgramNames = hiddenProgramNames(data, inputs.display),
-            allProgramsHidden = data.allProgramsHidden(inputs.display)
+            // With every program hidden the note on the list says it all; the hint would repeat it.
+            hiddenProgramNames = if (allHidden) emptyList() else hiddenProgramNames(data, inputs.display),
+            allProgramsHidden = allHidden
         )
     }
 }
