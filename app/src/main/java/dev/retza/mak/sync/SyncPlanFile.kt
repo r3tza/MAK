@@ -5,6 +5,7 @@ import dev.retza.mak.export.ExportImporter
 import dev.retza.mak.export.ExportSnapshot
 import dev.retza.mak.export.ImportSnapshotResult
 import dev.retza.mak.export.JsonExportCodec
+import dev.retza.mak.export.NewerExportVersionException
 import java.security.MessageDigest
 
 /** The plan file on Drive: the manual JSON export with the local active semester removed. */
@@ -18,6 +19,8 @@ object SyncPlanFile {
         if (bytes.size > MAX_BYTES) throw InvalidRemotePlanException("Plik planu na Dysku jest za duży.")
         val snapshot = try {
             JsonExportCodec.decode(bytes)
+        } catch (error: NewerExportVersionException) {
+            throw NewerRemotePlanException(error.version)
         } catch (_: Exception) {
             throw InvalidRemotePlanException("Nie udało się odczytać pliku planu z Dysku.")
         }
@@ -61,3 +64,6 @@ fun BackupData.semesterCovering(today: java.time.LocalDate): Long? {
 }
 
 class InvalidRemotePlanException(message: String) : IllegalStateException(message)
+
+/** The Drive plan was written by a newer MAK; only updating the app lets this phone read it. */
+class NewerRemotePlanException(val version: Int) : IllegalStateException("Drive plan schema version $version is newer.")

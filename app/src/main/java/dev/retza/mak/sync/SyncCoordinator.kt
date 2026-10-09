@@ -122,6 +122,8 @@ class SyncCoordinator(
         return try {
             repeat(MAX_PASSES) { pass(account, resolution)?.let { return it } }
             SyncOutcome.RetryLater
+        } catch (_: NewerRemotePlanException) {
+            issue(SyncIssue.NEWER_REMOTE_PLAN, message = null)
         } catch (error: InvalidRemotePlanException) {
             issue(SyncIssue.INVALID_REMOTE_PLAN, error.message)
         } catch (_: UserActionRequiredException) {

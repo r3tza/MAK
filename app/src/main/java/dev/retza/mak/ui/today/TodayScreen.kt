@@ -81,7 +81,10 @@ fun TodayScreen(
                         title = syncAttention.text,
                         subtitle = null,
                         role = MakNoteRole.Warning,
-                        action = MakBannerAction(syncAttention.action, onOpenSync)
+                        action = MakBannerAction(
+                            syncAttention.action,
+                            if (syncAttention.opensUpdate) onViewUpdate else onOpenSync
+                        )
                     )
                 }
                 if (availableUpdateVersion != null) {

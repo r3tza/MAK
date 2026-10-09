@@ -54,6 +54,8 @@ data class SyncUiState(
     val lastSyncLabel: String? = null,
     val issue: String? = null,
     val needsReconnect: Boolean = false,
+    // The Drive plan comes from a newer MAK; only an update of the app helps.
+    val needsUpdate: Boolean = false,
     // Banner on Today; set only while an account is connected and something needs the user.
     val attention: SyncAttentionUi? = null,
     val choice: SyncChoiceUi? = null,
@@ -88,7 +90,8 @@ data class SyncChangesUi(
     val canSave: Boolean get() = differences.isNotEmpty() && picks.size == differences.size && !isSaving
 }
 
-data class SyncAttentionUi(val text: String, val action: String)
+/** [opensUpdate]: the action leads to the update screen instead of the sync screen. */
+data class SyncAttentionUi(val text: String, val action: String, val opensUpdate: Boolean = false)
 
 private data class SyncLocalState(
     val isWorking: Boolean = false,
@@ -349,7 +352,9 @@ private fun Exception.toMessage(): String = when {
 
 private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemUi>) = SyncUiState(
     accountEmail = account?.email,
-    attention = if (account == null) null else issueText()?.let { SyncAttentionUi(it, "Otwórz") }
+    attention = if (account == null) null else issueText()?.let { text ->
+        if (issue == SyncIssue.NEWER_REMOTE_PLAN) SyncAttentionUi(text, "Zaktualizuj", opensUpdate = true) else SyncAttentionUi(text, "Otwórz")
+    }
         ?: pendingChoice?.let { SyncAttentionUi(CHOICE_TITLE, "Wybierz wersję") },
     lastSyncLabel = account?.let {
         lastSyncedAtMillis?.let { millis -> "Ostatnia synchronizacja: ${formatMillis(millis)}" }
@@ -357,6 +362,7 @@ private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemU
     },
     issue = issueText(),
     needsReconnect = issue == SyncIssue.AUTHORIZATION_REQUIRED,
+    needsUpdate = issue == SyncIssue.NEWER_REMOTE_PLAN,
     choice = pendingChoice?.let { question ->
         SyncChoiceUi(
             phone = question.local.label(),
@@ -376,6 +382,7 @@ private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemU
 private fun SyncState.issueText(): String? = when (issue) {
     SyncIssue.AUTHORIZATION_REQUIRED -> "Google wymaga ponownego potwierdzenia dostępu do Dysku."
     SyncIssue.INVALID_REMOTE_PLAN -> issueMessage ?: "Plik planu na Dysku jest niepoprawny."
+    SyncIssue.NEWER_REMOTE_PLAN -> "Plan na Dysku pochodzi z nowszej wersji MAK. Zaktualizuj aplikację."
     SyncIssue.LOCAL_PLAN_TOO_LARGE -> issueMessage ?: "Lokalny plan przekracza limit 8 MiB i nie może zostać wysłany."
     SyncIssue.FAILED -> issueMessage ?: "Nie udało się zsynchronizować planu."
     null -> null

@@ -74,6 +74,8 @@ Kryterium zakończenia: na emulatorze zmiana „Minimalna przerwa” z 0 na 15 d
 
 ## 3. Pokaż komunikat o planie z nowszej wersji MAK (I-83)
 
+Stan: zrobione. Dodatkowo test Compose `SyncScreenTest` sprawdza akcję „Zaktualizuj” na ekranie synchronizacji.
+
 Cel: plik eksportu albo plan na Dysku z wyższą wersją schematu nie daje ogólnego błędu odczytu, tylko komunikat z akcją aktualizacji.
 
 Pliki: `export/JsonExportCodec.kt`, nowy `export/NewerExportVersionException.kt`, `export/PlanBackupService.kt`, `sync/SyncPlanFile.kt`, `sync/SyncCoordinator.kt`, `sync/SyncStateStore.kt`, `ui/settings/SyncViewModel.kt`, `ui/settings/SyncScreen.kt`, `ui/SettingsRoutes.kt`, `ui/today/TodayScreen.kt` i testy.

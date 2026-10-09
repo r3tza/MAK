@@ -28,6 +28,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.components.ClassItemUi
+import dev.retza.mak.ui.settings.SyncAttentionUi
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -79,6 +80,41 @@ class TodayScreenTest {
         composeTestRule.onNodeWithText("Nie teraz").assertIsDisplayed().performClick()
         assertTrue(viewed)
         assertTrue(dismissed)
+    }
+
+    @Test
+    fun newerDrivePlanBannerOpensTheUpdateScreenAt320Dp() {
+        var viewedUpdate = false
+        var openedSync = false
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(1400.dp)) {
+                    TodayScreen(
+                        state = TodayUiState(
+                            dateLabel = "Poniedziałek, 12 października",
+                            semesterLabel = "Semestr zimowy",
+                            weekLabel = "Tydzień A",
+                            hasActiveSemester = true
+                        ),
+                        onOpenClass = {},
+                        onStartSetup = {},
+                        onRetry = {},
+                        onViewUpdate = { viewedUpdate = true },
+                        onOpenSync = { openedSync = true },
+                        syncAttention = SyncAttentionUi(
+                            text = "Plan na Dysku pochodzi z nowszej wersji MAK. Zaktualizuj aplikację.",
+                            action = "Zaktualizuj",
+                            opensUpdate = true
+                        )
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Plan na Dysku pochodzi z nowszej wersji MAK. Zaktualizuj aplikację.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zaktualizuj").assertIsDisplayed().performClick()
+        assertTrue(viewedUpdate)
+        assertFalse(openedSync)
     }
 
     @Test

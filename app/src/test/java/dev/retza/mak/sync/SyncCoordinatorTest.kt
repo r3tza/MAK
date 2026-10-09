@@ -267,12 +267,30 @@ class SyncCoordinatorTest {
     @Test
     fun invalidDriveFileLeavesBothSidesUnchanged() = runTest {
         phone.data = plan("Telefon")
-        drive.putRaw("""{"schemaVersion": 99}""".toByteArray())
+        drive.putRaw("""{"schemaVersion": 3}""".toByteArray())
 
         assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
         assertEquals(listOf("Telefon"), phone.names())
         assertEquals(0, drive.uploads)
         assertEquals(SyncIssue.INVALID_REMOTE_PLAN, coordinator.state.value.issue)
+    }
+
+    @Test
+    fun driveFileFromANewerVersionLeavesBothSidesUnchangedUntilItCanBeRead() = runTest {
+        phone.data = plan("Telefon")
+        val newer = """{"schemaVersion": 4, "studyPrograms": [], "semesters": [], "daysOff": []}""".toByteArray()
+        drive.putRaw(newer)
+
+        assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
+        assertEquals(listOf("Telefon"), phone.names())
+        assertEquals(newer.toList(), drive.file!!.toList())
+        assertEquals(0, drive.uploads)
+        assertEquals(SyncIssue.NEWER_REMOTE_PLAN, coordinator.state.value.issue)
+        assertNull(coordinator.state.value.issueMessage)
+
+        drive.put(plan("Telefon"))
+        assertEquals(SyncOutcome.UpToDate, coordinator.synchronize())
+        assertNull(coordinator.state.value.issue)
     }
 
     @Test
