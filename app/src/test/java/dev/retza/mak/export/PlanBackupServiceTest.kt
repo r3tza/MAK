@@ -25,7 +25,7 @@ class PlanBackupServiceTest {
 
     @Test
     fun importShowsTheProgramsHiddenOnThisPhoneAgain() = runTest {
-        preferences.setStudyProgramHidden("1", hidden = true)
+        preferences.setStudyProgramHidden(1L, hidden = true)
         val ready = service.prepareImport("""{"schemaVersion":3,"studyPrograms":[],"semesters":[]}""".toByteArray())
 
         service.confirmImport((ready as ImportPreparation.Ready).handle)

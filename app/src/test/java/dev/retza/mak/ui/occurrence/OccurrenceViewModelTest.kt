@@ -890,7 +890,7 @@ class OccurrenceViewModelTest {
     fun detailsOfHiddenProgramAreNotFound() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val preferences = InMemorySettingsPreferences()
-        preferences.setStudyProgramHidden("1", hidden = true)
+        preferences.setStudyProgramHidden(1L, hidden = true)
         val viewModel = occurrenceViewModel(repository, preferences)
         advanceUntilIdle()
 

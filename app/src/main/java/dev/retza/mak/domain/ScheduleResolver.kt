@@ -81,9 +81,9 @@ class ScheduleResolver(
         date: LocalDate,
         weekOverrides: Collection<WeekOverride>,
         changesByDate: Map<LocalDate, OccurrenceChange>,
-        studyPrograms: Map<String, StudyProgram>,
-        assignments: Map<String, SemesterProgram>,
-        notesByOccurrence: Map<Pair<String, LocalDate>, OccurrenceNote>
+        studyPrograms: Map<Long, StudyProgram>,
+        assignments: Map<Long, SemesterProgram>,
+        notesByOccurrence: Map<Pair<Long, LocalDate>, OccurrenceNote>
     ): List<PlannedOccurrence> {
         if (classItem.recurrence == Recurrence.ONCE) {
             if (!classItem.hasBaseOccurrenceOn(date, calendar, weekOverrides, weekCalculator)) return emptyList()
@@ -131,9 +131,9 @@ class ScheduleResolver(
         actualDate: LocalDate,
         originalDate: LocalDate,
         change: OccurrenceChange?,
-        studyPrograms: Map<String, StudyProgram>,
-        assignments: Map<String, SemesterProgram>,
-        notesByOccurrence: Map<Pair<String, LocalDate>, OccurrenceNote>
+        studyPrograms: Map<Long, StudyProgram>,
+        assignments: Map<Long, SemesterProgram>,
+        notesByOccurrence: Map<Pair<Long, LocalDate>, OccurrenceNote>
     ): PlannedOccurrence {
         // Occurrence notes belong to the occurrence, so they follow it when it is moved.
         val occurrenceNote = notesByOccurrence[classItem.id to originalDate]

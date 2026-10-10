@@ -11,30 +11,30 @@ import org.junit.Test
 
 class MultiCalendarResolverTest {
     private val provider = ActivePlanProvider()
-    private val semester = Semester(id = "semester", name = "Winter")
+    private val semester = Semester(id = 1L, name = "Winter")
     private val calendarA = AcademicCalendar(
-        id = "calendar-a",
+        id = 1L,
         startDate = LocalDate.of(2026, 10, 5),
         endDate = LocalDate.of(2027, 2, 28),
         firstWeekType = WeekType.A
     )
     private val calendarB = AcademicCalendar(
-        id = "calendar-b",
+        id = 2L,
         startDate = LocalDate.of(2026, 10, 5),
         endDate = LocalDate.of(2027, 2, 28),
         firstWeekType = WeekType.B
     )
-    private val programA = StudyProgram("program-a", "Informatyka", "#111111")
-    private val programB = StudyProgram("program-b", "Matematyka", "#222222")
+    private val programA = StudyProgram(1L, "Informatyka", "#111111")
+    private val programB = StudyProgram(2L, "Matematyka", "#222222")
     private val programs = listOf(
-        SemesterProgram("assignment-a", semester.id, programA.id, calendarA.id),
-        SemesterProgram("assignment-b", semester.id, programB.id, calendarB.id)
+        SemesterProgram(1L, semester.id, programA.id, calendarA.id),
+        SemesterProgram(2L, semester.id, programB.id, calendarB.id)
     )
     private val monday = LocalDate.of(2026, 10, 5)
 
     private fun classItem(
-        id: String,
-        programId: String,
+        id: Long,
+        programId: Long,
         recurrence: Recurrence,
         startTime: LocalTime,
         endTime: LocalTime
@@ -60,18 +60,18 @@ class MultiCalendarResolverTest {
 
     @Test
     fun programsWithOppositeCalendarsFollowTheirOwnWeekType() {
-        val first = classItem("a", "assignment-a", Recurrence.A_WEEK, LocalTime.of(9, 0), LocalTime.of(10, 0))
-        val second = classItem("b", "assignment-b", Recurrence.A_WEEK, LocalTime.of(9, 0), LocalTime.of(10, 0))
+        val first = classItem(1L, 1L, Recurrence.A_WEEK, LocalTime.of(9, 0), LocalTime.of(10, 0))
+        val second = classItem(2L, 2L, Recurrence.A_WEEK, LocalTime.of(9, 0), LocalTime.of(10, 0))
 
         val plan = provider.resolve(data(listOf(first, second)), monday, PlanDisplaySettings.DEFAULT)
 
-        assertEquals(listOf("a"), plan.schedule.occurrences.map { it.classId })
+        assertEquals(listOf(1L), plan.schedule.occurrences.map { it.classId })
     }
 
     @Test
     fun oneOffOutsideProgramCalendarIsNotShown() {
         val outside = LocalDate.of(2026, 9, 28)
-        val once = classItem("once", "assignment-a", Recurrence.ONCE, LocalTime.of(9, 0), LocalTime.of(10, 0))
+        val once = classItem(3L, 1L, Recurrence.ONCE, LocalTime.of(9, 0), LocalTime.of(10, 0))
             .copy(date = outside)
 
         val plan = provider.resolve(data(listOf(once)), outside, PlanDisplaySettings.DEFAULT)
@@ -105,12 +105,12 @@ class MultiCalendarResolverTest {
 
     @Test
     fun programsWithDifferentCalendarsShareCollisions() {
-        val first = classItem("a", "assignment-a", Recurrence.EVERY_WEEK, LocalTime.of(9, 0), LocalTime.of(10, 0))
-        val second = classItem("b", "assignment-b", Recurrence.EVERY_WEEK, LocalTime.of(9, 30), LocalTime.of(10, 30))
+        val first = classItem(1L, 1L, Recurrence.EVERY_WEEK, LocalTime.of(9, 0), LocalTime.of(10, 0))
+        val second = classItem(2L, 2L, Recurrence.EVERY_WEEK, LocalTime.of(9, 30), LocalTime.of(10, 30))
 
         val plan = provider.resolve(data(listOf(first, second)), monday, PlanDisplaySettings.DEFAULT)
 
-        assertEquals(listOf("a", "b"), plan.schedule.occurrences.map { it.classId })
+        assertEquals(listOf(1L, 2L), plan.schedule.occurrences.map { it.classId })
         assertEquals(1, plan.collisions.size)
         assertEquals(LocalTime.of(9, 30), plan.collisions.single().start)
         assertEquals(LocalTime.of(10, 0), plan.collisions.single().end)

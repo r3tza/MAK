@@ -50,6 +50,8 @@ Kryterium zakończenia: testy przechodzą; `rg "import dev.retza.mak.ui" app/src
 
 ## 2. Używaj identyfikatorów Long w modelach domenowych (I-90)
 
+Stan: zrobione. Kompilator wymagał też `ResolvedSchedule.weeksByCalendarId` jako `Map<Long, ...>`, `ClassForm.semesterProgramId: Long?` i `PlanDisplaySettings.hiddenProgramIds: Set<Long>` (DataStore zapisuje dalej napisy, odczyt pomija wartości nie będące liczbą). `SemesterViewModel.saveWeekOverride` bez identyfikatora formularza tworzy nową korektę, a niepoprawny identyfikator przerywa zapis. 40 miejsc oznaczonych `// I-90 step 3`. Ręcznie: szczegóły terminu, formularz edycji z kierunkiem, filtr kierunku w „Planie”, ukrycie i przywrócenie kierunku.
+
 Cel: modele domenowe i rekordy repozytorium używają tego samego typu identyfikatora `Long` (K2, decyzja użytkownika z 2026-10-10). Mapowanie w `data` przestaje zamieniać liczby na napisy, a ViewModele przestają zamieniać napisy domeny na liczby przed zapisem. Interfejs, trasy nawigacji i format pliku JSON się nie zmieniają.
 
 Pliki: `domain/Models.kt` i pliki domeny, które porównują identyfikatory (`ScheduleResolver.kt`, `CollisionDetector.kt`, `ActivePlanProvider.kt`, `ClassEditImpact` i inne wskazane przez kompilator), `data/repository/DomainMappers.kt`, `ui/SemesterCalendar.kt`, `ui/PlanMapping.kt`, ViewModele w `ui`, `widget/*`, `notifications/*`; testy domeny i ViewModeli oraz atrapy.

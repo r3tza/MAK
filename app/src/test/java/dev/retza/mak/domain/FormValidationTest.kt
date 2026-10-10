@@ -49,7 +49,7 @@ class FormValidationTest {
     @Test
     fun dateOnCalendarBoundsIsAccepted() {
         val calendar = AcademicCalendar(
-            id = "1",
+            id = 1L,
             startDate = LocalDate.of(2026, 2, 1),
             endDate = LocalDate.of(2026, 6, 30),
             firstWeekType = WeekType.A

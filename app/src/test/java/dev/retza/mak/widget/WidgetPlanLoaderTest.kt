@@ -80,7 +80,7 @@ class WidgetPlanLoaderTest {
 
         val state = loader(
             repositoryReturning(semester, planData(programming, management)),
-            InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf("2")))
+            InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf(2L)))
         ).states().first()
 
         assertEquals(listOf("Zarządzanie projektami"), (state as WidgetUiState.Ready).items.map { it.name })
@@ -90,7 +90,7 @@ class WidgetPlanLoaderTest {
     fun loaderSaysWhenEveryStudyProgramIsHidden() = runTest {
         val state = loader(
             repositoryReturning(semester, planData(programming)),
-            InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf("2", "3")))
+            InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf(2L, 3L)))
         ).states().first()
 
         assertTrue(state is WidgetUiState.AllProgramsHidden)

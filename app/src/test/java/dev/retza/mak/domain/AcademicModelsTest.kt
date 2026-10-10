@@ -10,7 +10,7 @@ class AcademicModelsTest {
     @Test
     fun academicCalendarContainsBothEndsAndNothingOutside() {
         val calendar = AcademicCalendar(
-            id = "calendar",
+            id = 1L,
             startDate = LocalDate.of(2027, 2, 1),
             endDate = LocalDate.of(2027, 6, 30),
             firstWeekType = WeekType.A
@@ -26,7 +26,7 @@ class AcademicModelsTest {
     fun academicCalendarRejectsReversedDates() {
         assertThrows(IllegalArgumentException::class.java) {
             AcademicCalendar(
-                id = "calendar-bad",
+                id = 2L,
                 startDate = LocalDate.of(2027, 2, 1),
                 endDate = LocalDate.of(2027, 1, 1),
                 firstWeekType = WeekType.A

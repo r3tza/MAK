@@ -45,7 +45,7 @@ class ClassEditViewModelTest {
     @Test
     fun hiddenStudyProgramStaysAnOptionMarkedAsHidden() = runTest(mainDispatcher) {
         val repository = FakeRepository()
-        preferences.setStudyProgramHidden("1", hidden = true)
+        preferences.setStudyProgramHidden(1L, hidden = true)
         val viewModel = viewModel(repository)
         viewModel.openNewFromFreshPlan()
         advanceUntilIdle()
@@ -405,6 +405,31 @@ class ClassEditViewModelTest {
         advanceUntilIdle()
 
         assertNotNull(viewModel.editor.value.errors[ClassEditField.Date])
+        assertEquals(1, repository.classes.size)
+    }
+
+    @Test
+    fun invalidCourseSelectionDoesNotInsert() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan()
+        viewModel.update {
+            it.copy(
+                name = "Analiza",
+                type = "Wykład",
+                dayLabel = "Poniedziałek",
+                startTime = "10:00",
+                endTime = "11:30"
+            )
+        }
+        viewModel.selectCourse("999")
+        advanceUntilIdle()
+
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertFalse("saveClass" in repository.events)
         assertEquals(1, repository.classes.size)
     }
 

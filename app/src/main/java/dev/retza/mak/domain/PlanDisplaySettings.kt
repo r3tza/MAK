@@ -5,7 +5,7 @@ data class PlanDisplaySettings(
     val minimumBreakMinutes: Int,
     val gapThresholdMinutes: Int = PlanDisplayLimits.DEFAULT_GAP_THRESHOLD_MINUTES,
     // Study programs hidden on this phone (`DOMAIN.md`, „Kierunki”); their classes are left out of the plan.
-    val hiddenProgramIds: Set<String> = emptySet()
+    val hiddenProgramIds: Set<Long> = emptySet()
 ) {
     companion object {
         val DEFAULT = PlanDisplaySettings(minimumBreakMinutes = 0)

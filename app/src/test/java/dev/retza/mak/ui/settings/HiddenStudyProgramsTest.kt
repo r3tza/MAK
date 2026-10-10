@@ -14,15 +14,15 @@ class HiddenStudyProgramsTest {
     @Test
     fun deletedProgramIsNoLongerHidden() = runTest(UnconfinedTestDispatcher()) {
         val preferences = InMemorySettingsPreferences()
-        preferences.setStudyProgramHidden("1", hidden = true)
-        preferences.setStudyProgramHidden("2", hidden = true)
+        preferences.setStudyProgramHidden(1L, hidden = true)
+        preferences.setStudyProgramHidden(2L, hidden = true)
         val programs = MutableStateFlow(listOf(program(1), program(2)))
         backgroundScope.launch { retainExistingHiddenPrograms(programs, preferences) }
-        assertEquals(setOf("1", "2"), preferences.planDisplay.first().hiddenProgramIds)
+        assertEquals(setOf(1L, 2L), preferences.planDisplay.first().hiddenProgramIds)
 
         programs.value = listOf(program(1))
 
-        assertEquals(setOf("1"), preferences.planDisplay.first().hiddenProgramIds)
+        assertEquals(setOf(1L), preferences.planDisplay.first().hiddenProgramIds)
     }
 
     private fun program(id: Long) = StudyProgramRecord(id = id, name = "Kierunek $id", color = "#137B71")

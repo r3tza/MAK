@@ -12,7 +12,7 @@ import kotlinx.coroutines.flow.map
  */
 suspend fun retainExistingHiddenPrograms(programs: Flow<List<StudyProgramRecord>>, preferences: SettingsPreferences) {
     programs
-        .map { records -> records.mapTo(mutableSetOf()) { it.id.toString() } }
+        .map { records -> records.mapTo(mutableSetOf()) { it.id } }
         .distinctUntilChanged()
         .collect { ids -> preferences.retainHiddenStudyPrograms(ids) }
 }

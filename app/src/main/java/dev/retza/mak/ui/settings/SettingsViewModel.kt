@@ -138,7 +138,7 @@ class SettingsViewModel(
 
     fun selectSemester(id: String) {
         if (local.value.isSelectingSemester) return
-        val semesterId = id.toLongOrNull() ?: return
+        val semesterId = id.toLongOrNull() ?: return // I-90 step 3
         local.update { it.copy(isSelectingSemester = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -156,7 +156,7 @@ class SettingsViewModel(
     }
 
     suspend fun canRequestSemesterDeletion(id: String): Boolean {
-        val semesterId = id.toLongOrNull() ?: return false
+        val semesterId = id.toLongOrNull() ?: return false // I-90 step 3
         val exists = semesterRepository.observeSemesters().first().any { it.id == semesterId }
         if (!exists) local.update { it.copy(semesterToDeleteId = null) }
         return exists
@@ -169,7 +169,7 @@ class SettingsViewModel(
 
     fun confirmSemesterDeletion() = editSession.run {
         if (local.value.isDeletingSemester) return@run
-        val id = local.value.semesterToDeleteId?.toLongOrNull() ?: return@run
+        val id = local.value.semesterToDeleteId?.toLongOrNull() ?: return@run // I-90 step 3
         local.update { it.copy(isDeletingSemester = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -348,10 +348,10 @@ private fun buildSettingsState(
     local: SettingsLocalState
 ): SettingsUiState = SettingsUiState(
     semesters = semesterList.map { semester ->
-        val isActive = semester.id.toString() == activeData?.semester?.id
+        val isActive = semester.id == activeData?.semester?.id
         val calendar = activeData?.sharedCalendar()
         SemesterUi(
-            id = semester.id.toString(),
+            id = semester.id.toString(), // I-90 step 3
             name = semester.name,
             dateRangeLabel = if (isActive && calendar != null) {
                 "${calendar.startDate.format(shortDateFormatter)} - " +
@@ -370,7 +370,7 @@ private fun buildSettingsState(
             isActive = isActive
         )
     },
-    activeSemesterId = activeData?.semester?.id,
+    activeSemesterId = activeData?.semester?.id?.toString(), // I-90 step 3
     theme = preferences.theme,
     gapThresholdOptions = PlanDisplayLimits.gapThresholdOptions.map { minutes ->
         SettingsOptionUi(

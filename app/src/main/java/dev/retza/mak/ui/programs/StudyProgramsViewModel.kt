@@ -95,7 +95,7 @@ class StudyProgramsViewModel(
             try {
                 val hiddenIds = preferences.planDisplay.map { it.hiddenProgramIds }.distinctUntilChanged()
                 combine(semesterRepository.observeStudyPrograms(), hiddenIds) { records, hidden ->
-                    records.map { StudyProgramUi(it.id, it.name, it.color, isHidden = it.id.toString() in hidden) }
+                    records.map { StudyProgramUi(it.id, it.name, it.color, isHidden = it.id in hidden) }
                 }.collect { programs ->
                     state.update { current -> current.copy(programs = programs) }
                 }
@@ -130,7 +130,7 @@ class StudyProgramsViewModel(
             errorMessage = "Nie udało się zapisać wyboru kierunku.",
             onFinish = {}
         ) {
-            preferences.setStudyProgramHidden(id.toString(), hidden = !visible)
+            preferences.setStudyProgramHidden(id, hidden = !visible)
         }
     }
 

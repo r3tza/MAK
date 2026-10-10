@@ -11,17 +11,17 @@ class ActivePlanProviderTest {
     @Test
     fun providerReturnsResolvedScheduleAndCollisionsFromTheSamePlan() {
         val date = LocalDate.of(2026, 9, 21)
-        val semester = Semester(id = "semester", name = "Semestr")
+        val semester = Semester(id = 1L, name = "Semestr")
         val calendar = AcademicCalendar(
-            id = "calendar",
+            id = 1L,
             startDate = date,
             endDate = date.plusDays(7),
             firstWeekType = WeekType.A
         )
-        val course = StudyProgram("course", "Informatyka", "#137B71")
-        val assignment = SemesterProgram("assignment", semester.id, course.id, calendar.id)
-        val first = classItem("first", semester.id, assignment.id, LocalTime.of(9, 0), LocalTime.of(10, 0))
-        val second = classItem("second", semester.id, assignment.id, LocalTime.of(9, 30), LocalTime.of(10, 30))
+        val course = StudyProgram(1L, "Informatyka", "#137B71")
+        val assignment = SemesterProgram(1L, semester.id, course.id, calendar.id)
+        val first = classItem(1L, "first", semester.id, assignment.id, LocalTime.of(9, 0), LocalTime.of(10, 0))
+        val second = classItem(2L, "second", semester.id, assignment.id, LocalTime.of(9, 30), LocalTime.of(10, 30))
 
         val plan = ActivePlanProvider().resolve(
             data = ActivePlanData(
@@ -46,7 +46,7 @@ class ActivePlanProviderTest {
     @Test
     fun hiddenStudyProgramLeavesNoClassesCollisionsOrGaps() {
         val shown = twoProgramPlan(PlanDisplaySettings.DEFAULT)
-        val hidden = twoProgramPlan(PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf("management")))
+        val hidden = twoProgramPlan(PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf(3L)))
 
         assertEquals(3, shown.schedule.occurrences.size)
         assertEquals(1, shown.collisions.size)
@@ -58,7 +58,7 @@ class ActivePlanProviderTest {
 
     @Test
     fun hidingEveryStudyProgramLeavesAnEmptyPlan() {
-        val plan = twoProgramPlan(PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf("informatics", "management")))
+        val plan = twoProgramPlan(PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf(2L, 3L)))
 
         assertTrue(plan.schedule.occurrences.isEmpty())
     }
@@ -66,15 +66,15 @@ class ActivePlanProviderTest {
     @Test
     fun gapCountUsesThresholdFromDisplaySettings() {
         val date = LocalDate.of(2026, 9, 21)
-        val semester = Semester(id = "semester", name = "Semestr")
-        val calendar = AcademicCalendar(id = "calendar", startDate = date, endDate = date.plusDays(7), firstWeekType = WeekType.A)
-        val course = StudyProgram("course", "Informatyka", "#137B71")
-        val assignment = SemesterProgram("assignment", semester.id, course.id, calendar.id)
+        val semester = Semester(id = 1L, name = "Semestr")
+        val calendar = AcademicCalendar(id = 1L, startDate = date, endDate = date.plusDays(7), firstWeekType = WeekType.A)
+        val course = StudyProgram(1L, "Informatyka", "#137B71")
+        val assignment = SemesterProgram(1L, semester.id, course.id, calendar.id)
         val data = ActivePlanData(
             semester = semester,
             classes = listOf(
-                classItem("first", semester.id, assignment.id, LocalTime.of(9, 0), LocalTime.of(10, 0)),
-                classItem("second", semester.id, assignment.id, LocalTime.of(10, 40), LocalTime.of(11, 40))
+                classItem(1L, "first", semester.id, assignment.id, LocalTime.of(9, 0), LocalTime.of(10, 0)),
+                classItem(2L, "second", semester.id, assignment.id, LocalTime.of(10, 40), LocalTime.of(11, 40))
             ),
             courses = listOf(course),
             semesterPrograms = listOf(assignment),
@@ -91,19 +91,19 @@ class ActivePlanProviderTest {
 
     private fun twoProgramPlan(display: PlanDisplaySettings): ActivePlan {
         val date = LocalDate.of(2026, 9, 21)
-        val semester = Semester(id = "semester", name = "Semestr")
-        val calendar = AcademicCalendar(id = "calendar", startDate = date, endDate = date.plusDays(7), firstWeekType = WeekType.A)
-        val informatics = StudyProgram("informatics", "Informatyka", "#137B71")
-        val management = StudyProgram("management", "Zarządzanie", "#7B1371")
-        val first = SemesterProgram("first-assignment", semester.id, informatics.id, calendar.id)
-        val second = SemesterProgram("second-assignment", semester.id, management.id, calendar.id)
+        val semester = Semester(id = 1L, name = "Semestr")
+        val calendar = AcademicCalendar(id = 1L, startDate = date, endDate = date.plusDays(7), firstWeekType = WeekType.A)
+        val informatics = StudyProgram(2L, "Informatyka", "#137B71")
+        val management = StudyProgram(3L, "Zarządzanie", "#7B1371")
+        val first = SemesterProgram(2L, semester.id, informatics.id, calendar.id)
+        val second = SemesterProgram(3L, semester.id, management.id, calendar.id)
         return ActivePlanProvider().resolve(
             data = ActivePlanData(
                 semester = semester,
                 classes = listOf(
-                    classItem("first", semester.id, first.id, LocalTime.of(9, 0), LocalTime.of(10, 0)),
-                    classItem("overlapping", semester.id, second.id, LocalTime.of(9, 30), LocalTime.of(10, 30)),
-                    classItem("after-gap", semester.id, second.id, LocalTime.of(12, 0), LocalTime.of(13, 0))
+                    classItem(1L, "first", semester.id, first.id, LocalTime.of(9, 0), LocalTime.of(10, 0)),
+                    classItem(3L, "overlapping", semester.id, second.id, LocalTime.of(9, 30), LocalTime.of(10, 30)),
+                    classItem(4L, "after-gap", semester.id, second.id, LocalTime.of(12, 0), LocalTime.of(13, 0))
                 ),
                 courses = listOf(informatics, management),
                 semesterPrograms = listOf(first, second),
@@ -115,16 +115,17 @@ class ActivePlanProviderTest {
     }
 
     private fun classItem(
-        id: String,
-        semesterId: String,
-        semesterProgramId: String,
+        id: Long,
+        name: String,
+        semesterId: Long,
+        semesterProgramId: Long,
         startTime: LocalTime,
         endTime: LocalTime
     ) = ClassItem(
         id = id,
         semesterId = semesterId,
         semesterProgramId = semesterProgramId,
-        name = id,
+        name = name,
         type = "Wykład",
         dayOfWeek = DayOfWeek.MONDAY,
         startTime = startTime,

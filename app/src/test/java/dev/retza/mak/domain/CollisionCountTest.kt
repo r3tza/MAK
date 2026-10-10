@@ -11,8 +11,8 @@ class CollisionCountTest {
 
     @Test
     fun sameCollisionCountsOnceRegardlessOfOrder() {
-        val first = occurrence("a", LocalTime.of(9, 0), LocalTime.of(10, 0))
-        val second = occurrence("b", LocalTime.of(9, 30), LocalTime.of(10, 30))
+        val first = occurrence(1L, "a", LocalTime.of(9, 0), LocalTime.of(10, 0))
+        val second = occurrence(2L, "b", LocalTime.of(9, 30), LocalTime.of(10, 30))
         val collisions = listOf(
             Collision.Overlap(first, second, LocalTime.of(9, 30), LocalTime.of(10, 0)),
             Collision.Overlap(second, first, LocalTime.of(9, 30), LocalTime.of(10, 0))
@@ -23,10 +23,10 @@ class CollisionCountTest {
 
     @Test
     fun distinctCollisionsCountSeparately() {
-        val first = occurrence("a", LocalTime.of(9, 0), LocalTime.of(10, 0))
-        val second = occurrence("b", LocalTime.of(9, 30), LocalTime.of(10, 30))
-        val third = occurrence("c", LocalTime.of(12, 0), LocalTime.of(13, 0))
-        val fourth = occurrence("d", LocalTime.of(12, 30), LocalTime.of(13, 30))
+        val first = occurrence(1L, "a", LocalTime.of(9, 0), LocalTime.of(10, 0))
+        val second = occurrence(2L, "b", LocalTime.of(9, 30), LocalTime.of(10, 30))
+        val third = occurrence(3L, "c", LocalTime.of(12, 0), LocalTime.of(13, 0))
+        val fourth = occurrence(4L, "d", LocalTime.of(12, 30), LocalTime.of(13, 30))
         val collisions = listOf(
             Collision.Overlap(first, second, LocalTime.of(9, 30), LocalTime.of(10, 0)),
             Collision.Overlap(third, fourth, LocalTime.of(12, 30), LocalTime.of(13, 0))
@@ -35,12 +35,12 @@ class CollisionCountTest {
         assertEquals(2, uniqueCollisionCount(collisions))
     }
 
-    private fun occurrence(id: String, start: LocalTime, end: LocalTime) = PlannedOccurrence(
+    private fun occurrence(id: Long, name: String, start: LocalTime, end: LocalTime) = PlannedOccurrence(
         classItem = ClassItem(
             id = id,
-            semesterId = "semester",
-            semesterProgramId = "assignment",
-            name = id,
+            semesterId = 1L,
+            semesterProgramId = 1L,
+            name = name,
             type = "Wykład",
             dayOfWeek = DayOfWeek.MONDAY,
             startTime = start,

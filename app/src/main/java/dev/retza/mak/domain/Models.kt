@@ -37,7 +37,7 @@ sealed interface WeekStatus {
 }
 
 data class Semester(
-    val id: String,
+    val id: Long,
     val name: String
 ) {
     init {
@@ -46,13 +46,13 @@ data class Semester(
 }
 
 data class StudyProgram(
-    val id: String,
+    val id: Long,
     val name: String,
     val color: String
 )
 
 data class AcademicCalendar(
-    val id: String,
+    val id: Long,
     val startDate: LocalDate,
     val endDate: LocalDate,
     val firstWeekType: WeekType
@@ -68,16 +68,16 @@ data class AcademicCalendar(
 }
 
 data class SemesterProgram(
-    val id: String,
-    val semesterId: String,
-    val studyProgramId: String,
-    val academicCalendarId: String
+    val id: Long,
+    val semesterId: Long,
+    val studyProgramId: Long,
+    val academicCalendarId: Long
 )
 
 data class ClassItem(
-    val id: String,
-    val semesterId: String,
-    val semesterProgramId: String,
+    val id: Long,
+    val semesterId: Long,
+    val semesterProgramId: Long,
     val name: String,
     val type: String,
     val teacherName: String? = null,
@@ -99,8 +99,8 @@ data class ClassItem(
 }
 
 data class WeekOverride(
-    val id: String,
-    val academicCalendarId: String,
+    val id: Long,
+    val academicCalendarId: Long,
     val weekStartDate: LocalDate,
     val weekType: WeekType,
     val scope: WeekOverrideScope
@@ -113,15 +113,15 @@ data class WeekOverride(
 }
 
 data class OccurrenceNote(
-    val id: String,
-    val classId: String,
+    val id: Long,
+    val classId: Long,
     val occurrenceDate: LocalDate,
     val body: String
 )
 
 data class OccurrenceChange(
-    val id: String,
-    val classId: String,
+    val id: Long,
+    val classId: Long,
     val originalDate: LocalDate,
     val kind: OccurrenceChangeKind,
     val targetDate: LocalDate? = null,
@@ -170,10 +170,10 @@ data class PlannedOccurrence(
     val id: String
         get() = occurrenceId(classItem.id, originalDate)
 
-    val classId: String
+    val classId: Long
         get() = classItem.id
 
-    val semesterId: String
+    val semesterId: Long
         get() = classItem.semesterId
 
     val name: String
@@ -186,16 +186,16 @@ data class PlannedOccurrence(
         get() = occurrenceNote?.body
 }
 
-fun occurrenceId(classId: String, originalDate: LocalDate): String = "$classId:$originalDate"
+fun occurrenceId(classId: Long, originalDate: LocalDate): String = "$classId:$originalDate"
 
 data class ResolvedSchedule(
     val date: LocalDate,
-    val semesterId: String,
+    val semesterId: Long,
     val week: WeekCalculation?,
     val occurrences: List<PlannedOccurrence>,
     val hasMixedWeekTypes: Boolean = false,
     val cancelled: List<PlannedOccurrence> = emptyList(),
-    val weeksByCalendarId: Map<String, WeekCalculation> = emptyMap()
+    val weeksByCalendarId: Map<Long, WeekCalculation> = emptyMap()
 ) {
     val items: List<PlannedOccurrence>
         get() = occurrences

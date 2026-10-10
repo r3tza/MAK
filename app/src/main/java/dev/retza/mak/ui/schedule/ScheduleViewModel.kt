@@ -186,7 +186,7 @@ class ScheduleViewModel(
             semesterRepository.saveWeekOverride(
                 WeekOverrideRecord(
                     id = 0,
-                    semesterId = data.semester.id.toLong(),
+                    semesterId = data.semester.id,
                     academicCalendarId = calendarId,
                     weekStartDate = monday,
                     weekType = WeekType.valueOf(weekType.name),
@@ -214,26 +214,27 @@ class ScheduleViewModel(
 
     private fun visibleWeekCalendarId(
         data: ActivePlanData,
-        filterId: String = controls.value.courseFilterId
+        // I-90 step 3: the selection is read once here; "all" and an unknown id both give null.
+        filterId: Long? = controls.value.courseFilterId.toLongOrNull()
     ): Long? {
-        if (filterId == "all") return data.calendars.singleOrNull()?.id?.toLongOrNull()
+        if (filterId == null) return data.calendars.singleOrNull()?.id
         val assignment = data.semesterPrograms.firstOrNull { it.id == filterId } ?: return null
-        return data.calendars.firstOrNull { it.id == assignment.academicCalendarId }?.id?.toLongOrNull()
+        return data.calendars.firstOrNull { it.id == assignment.academicCalendarId }?.id
     }
 
-    private fun matchesFilter(occurrence: PlannedOccurrence, activeFilter: String): Boolean =
-        activeFilter == "all" || occurrence.classItem.semesterProgramId == activeFilter
+    private fun matchesFilter(occurrence: PlannedOccurrence, activeFilter: Long?): Boolean =
+        activeFilter == null || occurrence.classItem.semesterProgramId == activeFilter
 
-    private fun activeFilter(inputs: ActivePlanInputs, requested: String): String {
+    private fun activeFilter(inputs: ActivePlanInputs, requested: String): Long? {
         val visible = inputs.data.visibleTo(inputs.display)
         val programs = visible.data.visibleAssignments(inputs.display)
-        return requested.takeIf { id -> id == "all" || programs.any { it.id == id } } ?: "all"
+        return requested.toLongOrNull()?.takeIf { id -> programs.any { it.id == id } } // I-90 step 3
     }
 
     private fun calendarGrid(
         visible: VisiblePlanData,
         month: YearMonth,
-        activeFilter: String,
+        activeFilter: Long?,
         today: LocalDate
     ): List<CalendarDayUi> = calendarDates(month).map { date ->
         // Days of the grid show only markers, so their collisions are not needed.
@@ -288,7 +289,7 @@ class ScheduleViewModel(
         val calendarFiltered = calendarPlan?.schedule?.occurrences?.filter { matchesFilter(it, activeFilter) }.orEmpty()
         val calendarLabels = calendarPlan?.let { collisionLabels(it.collisions) }.orEmpty()
         val calendarNames = calendarPlan?.let { collisionPartnerNames(it.collisions) }.orEmpty()
-        val relevantCalendarIds = if (activeFilter == "all") {
+        val relevantCalendarIds = if (activeFilter == null) {
             data.calendars.mapTo(mutableSetOf()) { it.id }
         } else {
             setOfNotNull(
@@ -323,11 +324,11 @@ class ScheduleViewModel(
                     }
                 )
             },
-            filters = listOf(ScheduleFilterUi("all", "Wszystkie", activeFilter == "all")) +
+            filters = listOf(ScheduleFilterUi("all", "Wszystkie", activeFilter == null)) +
                 programs.map { assignment ->
                     val program = data.courses.firstOrNull { it.id == assignment.studyProgramId }
                     ScheduleFilterUi(
-                        assignment.id,
+                        assignment.id.toString(), // I-90 step 3
                         program?.name.orEmpty(),
                         activeFilter == assignment.id
                     )
@@ -363,7 +364,7 @@ class ScheduleViewModel(
         )
     }
 
-    private fun cancelledItems(cancelled: List<PlannedOccurrence>, activeFilter: String): List<ClassItemUi> =
+    private fun cancelledItems(cancelled: List<PlannedOccurrence>, activeFilter: Long?): List<ClassItemUi> =
         cancelled
             .filter { matchesFilter(it, activeFilter) }
             .map { it.toUi(conflictLabel = null) }
@@ -380,10 +381,10 @@ private fun emptyScheduleState() = ScheduleUiState(
 private fun calendarLegend(
     data: ActivePlanData,
     programs: List<SemesterProgram>,
-    activeFilter: String
+    activeFilter: Long?
 ): List<CalendarLegendUi> =
     programs
-        .filter { activeFilter == "all" || it.id == activeFilter }
+        .filter { activeFilter == null || it.id == activeFilter }
         .mapNotNull { assignment -> data.courses.firstOrNull { it.id == assignment.studyProgramId } }
         .distinctBy { it.id }
         .map { CalendarLegendUi(label = it.name, colorHex = it.color) } +

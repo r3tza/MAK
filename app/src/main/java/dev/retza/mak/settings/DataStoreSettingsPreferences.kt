@@ -47,7 +47,7 @@ class DataStoreSettingsPreferences(
                 .coerceIn(0, PlanDisplayLimits.maxMinimumBreakMinutes),
             gapThresholdMinutes = (stored[gapThresholdMinutesKey] ?: PlanDisplayLimits.DEFAULT_GAP_THRESHOLD_MINUTES)
                 .coerceIn(PlanDisplayLimits.minGapThresholdMinutes, PlanDisplayLimits.MAX_GAP_THRESHOLD_MINUTES),
-            hiddenProgramIds = stored[hiddenStudyProgramIdsKey].orEmpty()
+            hiddenProgramIds = storedHiddenProgramIds(stored[hiddenStudyProgramIdsKey])
         )
     }.distinctUntilChanged()
 
@@ -90,10 +90,11 @@ class DataStoreSettingsPreferences(
         }
     }
 
-    override suspend fun setStudyProgramHidden(id: String, hidden: Boolean) {
+    override suspend fun setStudyProgramHidden(id: Long, hidden: Boolean) {
         dataStore.edit { preferences ->
             val current = preferences[hiddenStudyProgramIdsKey].orEmpty()
-            preferences[hiddenStudyProgramIdsKey] = if (hidden) current + id else current - id
+            val stored = id.toString()
+            preferences[hiddenStudyProgramIdsKey] = if (hidden) current + stored else current - stored
         }
     }
 
@@ -101,10 +102,11 @@ class DataStoreSettingsPreferences(
         dataStore.edit { preferences -> preferences.remove(hiddenStudyProgramIdsKey) }
     }
 
-    override suspend fun retainHiddenStudyPrograms(existingIds: Set<String>) {
+    override suspend fun retainHiddenStudyPrograms(existingIds: Set<Long>) {
         dataStore.edit { preferences ->
             val current = preferences[hiddenStudyProgramIdsKey] ?: return@edit
-            preferences[hiddenStudyProgramIdsKey] = current intersect existingIds
+            preferences[hiddenStudyProgramIdsKey] = current
+                .filterTo(mutableSetOf()) { stored -> stored.toLongOrNull()?.let { it in existingIds } == true }
         }
     }
 }
@@ -120,3 +122,7 @@ private fun Preferences.toNotificationPreferences(): CollisionNotificationPrefer
         leadMinutes = (this[leadMinutesKey] ?: defaultLeadMinutes).coerceIn(5, 120).toLong()
     )
 }
+
+/** Hidden program ids are stored as text; a stored value that is not a number is ignored, never read as 0. */
+private fun storedHiddenProgramIds(stored: Set<String>?): Set<Long> =
+    stored.orEmpty().mapNotNullTo(mutableSetOf()) { it.toLongOrNull() }

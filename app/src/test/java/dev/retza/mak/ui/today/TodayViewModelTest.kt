@@ -116,7 +116,7 @@ class TodayViewModelTest {
             endTime = LocalTime.of(13, 0)
         )
         val preferences = InMemorySettingsPreferences()
-        preferences.setStudyProgramHidden(management.studyProgramId.toString(), hidden = true)
+        preferences.setStudyProgramHidden(management.studyProgramId, hidden = true)
         val viewModel = todayViewModel(repository, preferences = preferences)
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
@@ -131,7 +131,7 @@ class TodayViewModelTest {
     fun hidingEveryProgramKeepsTheWeekAndMarksAllHidden() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val preferences = InMemorySettingsPreferences()
-        preferences.setStudyProgramHidden("1", hidden = true)
+        preferences.setStudyProgramHidden(1L, hidden = true)
         val viewModel = todayViewModel(repository, preferences = preferences)
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()

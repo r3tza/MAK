@@ -58,9 +58,9 @@ class PlanMappingTest {
         occurrenceBody: String? = null
     ) = PlannedOccurrence(
         classItem = ClassItem(
-            id = "class",
-            semesterId = "semester",
-            semesterProgramId = "assignment",
+            id = 1L,
+            semesterId = 1L,
+            semesterProgramId = 1L,
             name = "Programowanie",
             type = "Wykład",
             dayOfWeek = DayOfWeek.MONDAY,
@@ -78,7 +78,7 @@ class PlanMappingTest {
         studyProgram = null,
         classNote = classNote,
         occurrenceNote = occurrenceBody?.let {
-            OccurrenceNote(id = "note", classId = "class", occurrenceDate = date, body = it)
+            OccurrenceNote(id = 1L, classId = 1L, occurrenceDate = date, body = it)
         }
     )
 }

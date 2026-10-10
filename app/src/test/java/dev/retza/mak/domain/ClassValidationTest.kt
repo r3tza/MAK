@@ -8,7 +8,7 @@ import org.junit.Test
 class ClassValidationTest {
     private fun form(
         name: String = "Programming",
-        semesterProgramId: String? = "assignment",
+        semesterProgramId: Long? = 1L,
         start: LocalTime? = LocalTime.of(10, 0),
         end: LocalTime? = LocalTime.of(11, 0),
         recurrence: Recurrence = Recurrence.EVERY_WEEK
@@ -16,7 +16,7 @@ class ClassValidationTest {
 
     @Test
     fun nameAndCourseAreRequired() {
-        val result = validateClassForm(form(name = " ", semesterProgramId = ""))
+        val result = validateClassForm(form(name = " ", semesterProgramId = null))
 
         assertTrue(result.has(ClassValidationError.NAME_REQUIRED))
         assertTrue(result.has(ClassValidationError.PROGRAM_REQUIRED))

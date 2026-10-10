@@ -76,19 +76,19 @@ class SettingsPreferencesTest {
     @Test
     fun hiddenStudyProgramsAreSavedClearedAndPrunedToExistingOnes() = runBlocking {
         val preferences = preferences(openDataStore())
-        assertEquals(emptySet<String>(), preferences.planDisplay.first().hiddenProgramIds)
+        assertEquals(emptySet<Long>(), preferences.planDisplay.first().hiddenProgramIds)
 
-        preferences.setStudyProgramHidden("1", hidden = true)
-        preferences.setStudyProgramHidden("2", hidden = true)
-        preferences.setStudyProgramHidden("2", hidden = false)
-        preferences.setStudyProgramHidden("3", hidden = true)
-        assertEquals(setOf("1", "3"), preferences.planDisplay.first().hiddenProgramIds)
+        preferences.setStudyProgramHidden(1L, hidden = true)
+        preferences.setStudyProgramHidden(2L, hidden = true)
+        preferences.setStudyProgramHidden(2L, hidden = false)
+        preferences.setStudyProgramHidden(3L, hidden = true)
+        assertEquals(setOf(1L, 3L), preferences.planDisplay.first().hiddenProgramIds)
 
-        preferences.retainHiddenStudyPrograms(setOf("1", "2"))
-        assertEquals(setOf("1"), preferences.planDisplay.first().hiddenProgramIds)
+        preferences.retainHiddenStudyPrograms(setOf(1L, 2L))
+        assertEquals(setOf(1L), preferences.planDisplay.first().hiddenProgramIds)
 
         preferences.clearHiddenStudyPrograms()
-        assertEquals(emptySet<String>(), preferences.planDisplay.first().hiddenProgramIds)
+        assertEquals(emptySet<Long>(), preferences.planDisplay.first().hiddenProgramIds)
     }
 
     @Test

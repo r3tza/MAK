@@ -12,8 +12,8 @@ class GapCounterTest {
     @Test
     fun gapEqualToThresholdIsNotCounted() {
         val occurrences = listOf(
-            occurrence("a", LocalTime.of(9, 0), LocalTime.of(10, 0)),
-            occurrence("b", LocalTime.of(10, 30), LocalTime.of(11, 0))
+            occurrence(1L, "a", LocalTime.of(9, 0), LocalTime.of(10, 0)),
+            occurrence(2L, "b", LocalTime.of(10, 30), LocalTime.of(11, 0))
         )
 
         assertEquals(0, countGaps(occurrences, 30))
@@ -23,8 +23,8 @@ class GapCounterTest {
     @Test
     fun overlappingClassesFormOneBlock() {
         val occurrences = listOf(
-            occurrence("a", LocalTime.of(9, 0), LocalTime.of(10, 0)),
-            occurrence("b", LocalTime.of(9, 30), LocalTime.of(10, 30))
+            occurrence(1L, "a", LocalTime.of(9, 0), LocalTime.of(10, 0)),
+            occurrence(2L, "b", LocalTime.of(9, 30), LocalTime.of(10, 30))
         )
 
         assertEquals(0, countGaps(occurrences, 30))
@@ -33,9 +33,9 @@ class GapCounterTest {
     @Test
     fun countsEveryGapBetweenBlocks() {
         val occurrences = listOf(
-            occurrence("a", LocalTime.of(9, 0), LocalTime.of(10, 0)),
-            occurrence("b", LocalTime.of(10, 31), LocalTime.of(11, 0)),
-            occurrence("c", LocalTime.of(12, 0), LocalTime.of(13, 0))
+            occurrence(1L, "a", LocalTime.of(9, 0), LocalTime.of(10, 0)),
+            occurrence(2L, "b", LocalTime.of(10, 31), LocalTime.of(11, 0)),
+            occurrence(3L, "c", LocalTime.of(12, 0), LocalTime.of(13, 0))
         )
 
         assertEquals(2, countGaps(occurrences, 30))
@@ -44,15 +44,15 @@ class GapCounterTest {
     @Test
     fun fewerThanTwoOccurrencesHaveNoGaps() {
         assertEquals(0, countGaps(emptyList(), 30))
-        assertEquals(0, countGaps(listOf(occurrence("a", LocalTime.of(9, 0), LocalTime.of(10, 0))), 30))
+        assertEquals(0, countGaps(listOf(occurrence(1L, "a", LocalTime.of(9, 0), LocalTime.of(10, 0))), 30))
     }
 
-    private fun occurrence(id: String, start: LocalTime, end: LocalTime) = PlannedOccurrence(
+    private fun occurrence(id: Long, name: String, start: LocalTime, end: LocalTime) = PlannedOccurrence(
         classItem = ClassItem(
             id = id,
-            semesterId = "semester",
-            semesterProgramId = "assignment",
-            name = id,
+            semesterId = 1L,
+            semesterProgramId = 1L,
+            name = name,
             type = "Wykład",
             dayOfWeek = DayOfWeek.MONDAY,
             startTime = start,

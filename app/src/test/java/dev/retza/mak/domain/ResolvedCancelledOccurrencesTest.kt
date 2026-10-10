@@ -9,12 +9,12 @@ import org.junit.Test
 
 class ResolvedCancelledOccurrencesTest {
     private val monday = LocalDate.of(2026, 9, 21)
-    private val semester = Semester(id = "s", name = "Semestr")
-    private val calendar = AcademicCalendar("c", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 12, 31), WeekType.A)
-    private val program = StudyProgram("p", "Informatyka", "#137B71")
-    private val assignment = SemesterProgram("a", semester.id, program.id, calendar.id)
+    private val semester = Semester(id = 1L, name = "Semestr")
+    private val calendar = AcademicCalendar(1L, LocalDate.of(2026, 9, 1), LocalDate.of(2026, 12, 31), WeekType.A)
+    private val program = StudyProgram(1L, "Informatyka", "#137B71")
+    private val assignment = SemesterProgram(1L, semester.id, program.id, calendar.id)
     private val lecture = ClassItem(
-        id = "1",
+        id = 1L,
         semesterId = semester.id,
         semesterProgramId = assignment.id,
         name = "Analiza",
@@ -25,7 +25,7 @@ class ResolvedCancelledOccurrencesTest {
     )
 
     private fun cancellation(date: LocalDate) = OccurrenceChange(
-        id = "x$date",
+        id = date.toEpochDay(),
         classId = lecture.id,
         originalDate = date,
         kind = OccurrenceChangeKind.CANCELLED
@@ -50,7 +50,7 @@ class ResolvedCancelledOccurrencesTest {
 
     @Test
     fun cancellationOfExistingTermIsReturnedWithItsNote() {
-        val note = OccurrenceNote("n", lecture.id, monday, "Przynieś kartkę")
+        val note = OccurrenceNote(1L, lecture.id, monday, "Przynieś kartkę")
 
         val result = cancelled(data(changes = listOf(cancellation(monday)), notes = listOf(note)), monday)
 

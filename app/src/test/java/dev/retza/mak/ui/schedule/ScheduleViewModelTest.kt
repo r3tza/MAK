@@ -114,7 +114,7 @@ class ScheduleViewModelTest {
     fun hiddenStudyProgramIsNeitherFilterOptionNorClassNorMarker() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val preferences = InMemorySettingsPreferences()
-        preferences.setStudyProgramHidden("1", hidden = true)
+        preferences.setStudyProgramHidden(1L, hidden = true)
         val viewModel = viewModel(repository, preferences = preferences)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
@@ -148,7 +148,7 @@ class ScheduleViewModelTest {
             newNote = null
         )
         val preferences = InMemorySettingsPreferences()
-        preferences.setStudyProgramHidden("1", hidden = true)
+        preferences.setStudyProgramHidden(1L, hidden = true)
         val viewModel = viewModel(repository, preferences = preferences)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()

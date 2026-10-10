@@ -142,7 +142,7 @@ internal fun NavGraphBuilder.semesterRoutes(navController: NavController) {
                 val programId = semesterViewModel.semester.value.courseItems
                     .firstOrNull { it.assignmentId == assignmentId }
                     ?.programId
-                    ?.toLongOrNull()
+                    ?.toLongOrNull() // I-90 step 3
                 programId?.let { studyProgramsViewModel.openOnce(it) }
                 val programLoaded = programId != null &&
                     studyProgramsViewModel.opened.value == StudyProgramEditOpenState.Open
@@ -160,7 +160,7 @@ internal fun NavGraphBuilder.semesterRoutes(navController: NavController) {
             val programId = semesterState.courseItems
                 .firstOrNull { it.assignmentId == assignmentId }
                 ?.programId
-                ?.toLongOrNull()
+                ?.toLongOrNull() // I-90 step 3
             val programsState = studyProgramsViewModel.programs.collectAsStateWithLifecycle().value
             val editor = if (programId != null && programsState.editor.id == programId) {
                 programsState.editor

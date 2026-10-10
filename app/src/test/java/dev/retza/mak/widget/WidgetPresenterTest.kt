@@ -19,16 +19,16 @@ import org.junit.Test
 
 class WidgetPresenterTest {
     private val date = LocalDate.of(2026, 9, 21)
-    private val semester = dev.retza.mak.domain.Semester(id = "semester", name = "Semestr")
+    private val semester = dev.retza.mak.domain.Semester(id = 1L, name = "Semestr")
     private val calendar = dev.retza.mak.domain.AcademicCalendar(
-        id = "calendar",
+        id = 1L,
         startDate = date,
         endDate = date.plusDays(7),
         firstWeekType = dev.retza.mak.domain.WeekType.A
     )
-    private val course = StudyProgram("course", "Informatyka", "#137B71")
+    private val course = StudyProgram(1L, "Informatyka", "#137B71")
     private val assignment = dev.retza.mak.domain.SemesterProgram(
-        "assignment",
+        1L,
         semester.id,
         course.id,
         calendar.id
@@ -59,25 +59,25 @@ class WidgetPresenterTest {
     @Test
     fun presenterShowsPlanWhenActiveCalendarsHaveMixedWeekTypes() {
         val calendarA = dev.retza.mak.domain.AcademicCalendar(
-            id = "calendar-a",
+            id = 1L,
             startDate = date,
             endDate = date.plusDays(7),
             firstWeekType = dev.retza.mak.domain.WeekType.A
         )
         val calendarB = dev.retza.mak.domain.AcademicCalendar(
-            id = "calendar-b",
+            id = 2L,
             startDate = date,
             endDate = date.plusDays(7),
             firstWeekType = dev.retza.mak.domain.WeekType.B
         )
-        val secondCourse = StudyProgram("course-2", "Matematyka", "#2244AA")
+        val secondCourse = StudyProgram(2L, "Matematyka", "#2244AA")
         val programs = listOf(
-            dev.retza.mak.domain.SemesterProgram("assignment-a", semester.id, course.id, calendarA.id),
-            dev.retza.mak.domain.SemesterProgram("assignment-b", semester.id, secondCourse.id, calendarB.id)
+            dev.retza.mak.domain.SemesterProgram(1L, semester.id, course.id, calendarA.id),
+            dev.retza.mak.domain.SemesterProgram(2L, semester.id, secondCourse.id, calendarB.id)
         )
         val classes = listOf(
-            classItem("first", LocalTime.of(9, 0), LocalTime.of(10, 0), semesterProgramId = "assignment-a"),
-            classItem("second", LocalTime.of(9, 30), LocalTime.of(10, 30), semesterProgramId = "assignment-b")
+            classItem(1L, "first", LocalTime.of(9, 0), LocalTime.of(10, 0), semesterProgramId = 1L),
+            classItem(2L, "second", LocalTime.of(9, 30), LocalTime.of(10, 30), semesterProgramId = 2L)
         )
         val plan = ActivePlanProvider().resolve(
             ActivePlanData(
@@ -101,9 +101,9 @@ class WidgetPresenterTest {
     @Test
     fun presenterMapsSortedDeduplicatedConflictsToBothOccurrences() {
         val classes = listOf(
-            classItem("first", LocalTime.of(9, 0), LocalTime.of(11, 0), "Stała notatka"),
-            classItem("second", LocalTime.of(9, 30), LocalTime.of(10, 0)),
-            classItem("third", LocalTime.of(10, 15), LocalTime.of(10, 45))
+            classItem(1L, "first", LocalTime.of(9, 0), LocalTime.of(11, 0), "Stała notatka"),
+            classItem(2L, "second", LocalTime.of(9, 30), LocalTime.of(10, 0)),
+            classItem(3L, "third", LocalTime.of(10, 15), LocalTime.of(10, 45))
         )
         val resolved = ActivePlanProvider().resolve(
             ActivePlanData(semester, classes, courses = listOf(course), semesterPrograms = listOf(assignment), calendars = listOf(calendar)),
@@ -120,7 +120,7 @@ class WidgetPresenterTest {
             LocalTime.of(0, 0)
         ) as WidgetUiState.Ready
 
-        assertEquals(listOf("first:$date", "second:$date", "third:$date"), state.items.map { it.id })
+        assertEquals(listOf("1:$date", "2:$date", "3:$date"), state.items.map { it.id })
         assertEquals(2, state.collisionCount)
         assertEquals(
             "Kolizje: 09:30-10:00, 10:15-10:45",
@@ -136,9 +136,9 @@ class WidgetPresenterTest {
     @Test
     fun presenterMarksCurrentNextAndPastPhases() {
         val classes = listOf(
-            classItem("first", LocalTime.of(8, 0), LocalTime.of(9, 0)),
-            classItem("second", LocalTime.of(9, 30), LocalTime.of(10, 30)),
-            classItem("third", LocalTime.of(11, 0), LocalTime.of(12, 0))
+            classItem(1L, "first", LocalTime.of(8, 0), LocalTime.of(9, 0)),
+            classItem(2L, "second", LocalTime.of(9, 30), LocalTime.of(10, 30)),
+            classItem(3L, "third", LocalTime.of(11, 0), LocalTime.of(12, 0))
         )
         val plan = ActivePlanProvider().resolve(
             ActivePlanData(semester, classes, courses = listOf(course), semesterPrograms = listOf(assignment), calendars = listOf(calendar)),
@@ -153,9 +153,9 @@ class WidgetPresenterTest {
             LocalTime.of(9, 45)
         ) as WidgetUiState.Ready
 
-        assertEquals(WidgetOccurrencePhase.Past, state.items.first { it.id == "first:$date" }.phase)
-        assertEquals(WidgetOccurrencePhase.Current, state.items.first { it.id == "second:$date" }.phase)
-        assertEquals(WidgetOccurrencePhase.Next, state.items.first { it.id == "third:$date" }.phase)
+        assertEquals(WidgetOccurrencePhase.Past, state.items.first { it.id == "1:$date" }.phase)
+        assertEquals(WidgetOccurrencePhase.Current, state.items.first { it.id == "2:$date" }.phase)
+        assertEquals(WidgetOccurrencePhase.Next, state.items.first { it.id == "3:$date" }.phase)
     }
 
     @Test
@@ -296,15 +296,16 @@ class WidgetPresenterTest {
     }
 
     private fun classItem(
-        id: String,
+        id: Long,
+        name: String,
         start: LocalTime,
         end: LocalTime,
         note: String? = null,
-        semesterProgramId: String = assignment.id
+        semesterProgramId: Long = assignment.id
     ) = ClassItem(
         id = id,
         semesterId = semester.id,
-        name = id,
+        name = name,
         type = "Wykład",
         semesterProgramId = semesterProgramId,
         dayOfWeek = DayOfWeek.MONDAY,

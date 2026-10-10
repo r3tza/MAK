@@ -71,7 +71,7 @@ class RoomPlanSyncGatewayTest {
     @Test
     fun firstDownloadShowsTheHiddenProgramsAgain() = runBlocking {
         backup.replaceAll(plan("A", active = 1))
-        preferences.setStudyProgramHidden("1", hidden = true)
+        preferences.setStudyProgramHidden(1L, hidden = true)
 
         gateway.replaceIfUnchanged(
             SyncPlanFile.fingerprint(gateway.snapshot()), plan("X"), keepLocalActive = false, fallbackActiveId = 1
@@ -83,13 +83,13 @@ class RoomPlanSyncGatewayTest {
     @Test
     fun laterDownloadKeepsTheHiddenPrograms() = runBlocking {
         backup.replaceAll(plan("A", active = 1))
-        preferences.setStudyProgramHidden("1", hidden = true)
+        preferences.setStudyProgramHidden(1L, hidden = true)
 
         gateway.replaceIfUnchanged(
             SyncPlanFile.fingerprint(gateway.snapshot()), plan("A", "B"), keepLocalActive = true, fallbackActiveId = 1
         )
 
-        assertEquals(setOf("1"), preferences.planDisplay.first().hiddenProgramIds)
+        assertEquals(setOf(1L), preferences.planDisplay.first().hiddenProgramIds)
     }
 
     @Test

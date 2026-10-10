@@ -146,7 +146,7 @@ class ClassEditViewModel(
         editPlanData = null
         state.value = withActiveOptions(defaultClassEditState())
         val data = freshActivePlanData() ?: return false
-        val item = data.classes.firstOrNull { it.id == classId.toString() } ?: return false
+        val item = data.classes.firstOrNull { it.id == classId } ?: return false
         editPlanData = data
         editingClassId = classId
         state.value = classEditState(item, data)
@@ -160,7 +160,7 @@ class ClassEditViewModel(
                 title = "Edytuj zajęcia",
                 name = item.name,
                 courseName = program?.name.orEmpty(),
-                semesterProgramId = item.semesterProgramId,
+                semesterProgramId = item.semesterProgramId.toString(), // I-90 step 3
                 type = item.type,
                 dayLabel = dayNames[item.dayOfWeek].orEmpty(),
                 startTime = item.startTime.toString(),
@@ -182,7 +182,7 @@ class ClassEditViewModel(
 
     fun selectCourse(optionId: String) {
         val data = editPlanData ?: activePlan.value?.data
-        val calendar = data?.calendarForAssignment(optionId)
+        val calendar = data?.calendarForAssignment(optionId.toLongOrNull()) // I-90 step 3
         update {
             it.copy(
                 semesterProgramId = optionId,
@@ -216,7 +216,7 @@ class ClassEditViewModel(
         val end = editor.endTime.toLocalTimeOrNull()
         val recurrence = editor.recurrence
         val date = editor.occurrenceDate.toLocalDateOrNull()
-        val assignmentId = editor.semesterProgramId
+        val assignmentId = editor.semesterProgramId?.toLongOrNull() // I-90 step 3
         val assignment = assignmentId?.let { id ->
             data.semesterPrograms.firstOrNull { it.id == id }
         }
@@ -271,8 +271,8 @@ class ClassEditViewModel(
         val classId = editingClassId
         val record = ClassRecord(
             id = classId ?: 0,
-            semesterId = data.semester.id.toLong(),
-            semesterProgramId = assignment.id.toLong(),
+            semesterId = data.semester.id,
+            semesterProgramId = assignment.id,
             name = editor.name.trim(),
             type = editor.type,
             teacherName = editor.teacher.trim().ifEmpty { null },
@@ -287,7 +287,7 @@ class ClassEditViewModel(
             classNote = editor.note.trim().ifEmpty { null }
         )
         if (classId != null && !confirmedHiddenData) {
-            val impact = data.classEditImpact(classId.toString(), record)
+            val impact = data.classEditImpact(classId, record)
             if (impact != null && !impact.isEmpty) {
                 state.update {
                     it.copy(pendingHiddenData = HiddenDataWarningUi(impact.changeCount, impact.noteCount))
@@ -320,7 +320,7 @@ class ClassEditViewModel(
         value: ClassEditUiState,
         data: ActivePlanData? = activePlan.value?.data
     ): ClassEditUiState {
-        val calendar = data?.calendarForAssignment(value.semesterProgramId)
+        val calendar = data?.calendarForAssignment(value.semesterProgramId?.toLongOrNull()) // I-90 step 3
         return value.copy(
             courseOptions = data?.courseOptions(activePlan.value?.display?.hiddenProgramIds.orEmpty()).orEmpty(),
             semesterStartDate = calendar?.startDate?.toString(),
@@ -329,10 +329,10 @@ class ClassEditViewModel(
     }
 }
 
-private fun ActivePlanData.classEditImpact(classId: String, record: ClassRecord): ClassEditImpact? {
+private fun ActivePlanData.classEditImpact(classId: Long, record: ClassRecord): ClassEditImpact? {
     val before = classes.firstOrNull { it.id == classId } ?: return null
     val after = before.copy(
-        semesterProgramId = record.semesterProgramId.toString(),
+        semesterProgramId = record.semesterProgramId,
         dayOfWeek = record.dayOfWeek,
         startTime = record.startTime,
         endTime = record.endTime,
@@ -350,11 +350,11 @@ private fun ActivePlanData.classEditImpact(classId: String, record: ClassRecord)
     )
 }
 
-private fun ActivePlanData.courseOptions(hiddenProgramIds: Set<String>): List<ClassCourseOptionUi> =
+private fun ActivePlanData.courseOptions(hiddenProgramIds: Set<Long>): List<ClassCourseOptionUi> =
     semesterPrograms.mapNotNull { assignment ->
         val program = courses.firstOrNull { it.id == assignment.studyProgramId }
             ?: return@mapNotNull null
-        ClassCourseOptionUi(assignment.id, program.name, isHidden = program.id in hiddenProgramIds)
+        ClassCourseOptionUi(assignment.id.toString(), program.name, isHidden = program.id in hiddenProgramIds) // I-90 step 3
     }
 
 private fun defaultClassEditState() = ClassEditUiState()
