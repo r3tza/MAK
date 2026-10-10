@@ -93,7 +93,7 @@ class JsonExportCodecTest {
     fun snapshotKeepsStudyProgramsWithoutAssignments() {
         val program = StudyProgramEntity(id = 9, name = "Fizyka", color = "#ABCDEF")
 
-        val snapshot = ExportSnapshot.from(emptyList(), listOf(program))
+        val snapshot = exportSnapshotOf(emptyList(), listOf(program))
 
         assertEquals(1, snapshot.studyPrograms.size)
         assertEquals(9L, snapshot.studyPrograms.single().id)
@@ -166,7 +166,7 @@ class JsonExportCodecTest {
             newTeacherName = "Jan Kowalski",
             newNote = "Zajęcia przeniesione"
         )
-        val source = ExportSnapshot.from(
+        val source = exportSnapshotOf(
             semesters = listOf(
                 SemesterWithData(
                     semester = semester,

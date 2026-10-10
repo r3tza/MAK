@@ -51,7 +51,6 @@ class ClassEditScreenTest {
                         onConfirmHiddenData = {},
                         onDismissHiddenData = {},
                         onCancel = {},
-                        onRetry = {}
                     )
                 }
             }

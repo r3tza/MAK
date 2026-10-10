@@ -2,6 +2,17 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-10: Decyzje po audycie jakości kodu (I-84 do I-90)
+
+- Fakty: Audyt z 2026-10-09 (`docs/audit_09102026.md`) wskazał reguły planu liczone poza `ScheduleResolver`, wszystkie ViewModele w zakresie `MainActivity`, encje Room w kontrakcie kopii zapasowej, nadmiarowe uruchomienia synchronizacji, martwy kod i kilka odstępstw od zapisanych zasad.
+- Decyzje użytkownika:
+  - Reguły planu przechodzą do `ScheduleResolver` przed I-81. `ResolvedSchedule` zwraca odwołane terminy, status terminu i stan tygodnia, a szczegóły terminu, „Plan”, „Dzisiaj” i widget biorą je z wyniku resolvera (I-85).
+  - Próg okienek trafia do `PlanDisplaySettings`, a liczbę okienek zwraca `ActivePlan`, aby widget i powiadomienia mogły je kiedyś pokazać bez osobnego strumienia ustawień. Granice „minimalna przerwa do 20 minut” i „próg okienka od 20 minut” są w jednym obiekcie domenowym (I-85).
+  - Zakres ViewModeli: `AppViewModel`, `SettingsViewModel`, `UpdateViewModel` i `SyncViewModel` zostają w `MainActivity`, bo obsługują powłokę aplikacji. `TodayViewModel`, `ScheduleViewModel`, `OccurrenceViewModel`, `ClassEditViewModel`, `SetupViewModel` i `StudyProgramsViewModel` są pobierane w celu nawigacji przez `koinViewModel()`. `SemesterViewModel` żyje w zakresie podgrafu semestru, bo ekran semestru i jego podekrany dzielą szkic (I-86).
+  - Kontrakt kopii zapasowej i synchronizacji używa zwykłego modelu zamiast encji Room, a sprawdzenie i zastąpienie planu przy synchronizacji są jedną transakcją w `data` (I-87, przed I-81).
+  - Wyzwalacze synchronizacji są węższe: próba „po otwarciu aplikacji” startuje z `MainActivity`, a nie przy każdym starcie procesu; po zamknięciu formularza tylko wtedy, gdy poprzednia próba czekała na formularz. Własny zapis pobranego planu rozpoznaje skrót planu zamiast okna 2 sekund (I-88).
+  - Pozostałe propozycje audytu są zaakceptowane i rozpisane w I-84, I-88, I-89 i I-90. Zmniejszenie liczby rozmiarów widgetu (G1) wymaga osobnego wariantu, bo progi opisuje `FEATURES.md`.
+
 ## 2026-10-09: Wykonanie I-79 (ukrywanie kierunków)
 
 - Decyzja użytkownika: gdy na telefonie są ukryte wszystkie kierunki aktywnego semestru, widget pokazuje datę i tekst „Wszystkie kierunki są ukryte na tym telefonie.”, tak jak „Dzisiaj”. Odrzucone: widget jak w dniu bez zajęć, bo sugerowałby wolny dzień.
@@ -153,8 +164,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Fakty: Rozszerzony widget pokazywał przy metadanych tylko ikonę, że zajęcia mają notatkę. Nie pokazywał treści ani nie rozróżniał notatki do zajęć od notatki do terminu, mimo wolnego miejsca w dużych rozmiarach.
 - Decyzja: W rozszerzonym widgetcie każda notatka ma osobny wiersz z ikoną i treścią, jak na karcie w aplikacji. Notatka do zajęć używa ikony notatki, a notatka do terminu ikony kalendarza. Wariant kompaktowy pomija notatki, aby zachować czas i nazwę zajęć. Użytkownik zlecił wariant 2026-09-28.
 - Weryfikacja: Test prezentera sprawdza treść notatki, a test kompozycji Glance oba rodzaje, ikony i treść. Odbiór rozmiarów i motywów na launcherze należy do O-06.
-
-## 2026-09-28: Bez strzałek i pilli (I-53)
-
-- Fakty: Opis zmian w szczegółach terminu używał strzałek („Sala: L205 → C12”), a `WRITING.md` sam opisywał wzór ostrzeżeń strzałkami. Poza kartą zajęć pille zostały przy aktywnym semestrze, w kalendarzach i korektach tygodni oraz w „O aplikacji”.
-- Decyzja: `AGENTS.md` i `WRITING.md` zakazują strzałek obok `·` i em dash. `AGENTS.md` i `ARCHITECTURE.md` zakazują pilli i chipów jako statycznych etykiet; stan, kategorię i wersję pokazuje tekst, ikona z tekstem albo kropka koloru. Opis zmian terminu to zwykłe zdania („Sala zmieniona z L205 na C12”). „Aktywny” i „Zainstalowana” mają ikonę i tekst, korekta tygodnia ma tydzień w tytule, powtórzony tag tygodnia w kalendarzu zniknął, a wersja w „O aplikacji” jest tekstem. `MakTag` i nieużywane kolory pilli usunięto. Widget zostaje do osobnej decyzji. Użytkownik zlecił zmianę 2026-09-28.

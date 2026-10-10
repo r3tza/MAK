@@ -68,7 +68,6 @@ class TodayScreenTest {
                             ),
                             onOpenClass = {},
                             onStartSetup = {},
-                            onRetry = {},
                             availableUpdateVersion = "0.2.1",
                             onViewUpdate = { viewed = true },
                             onDismissUpdate = { dismissed = true }
@@ -102,7 +101,6 @@ class TodayScreenTest {
                         ),
                         onOpenClass = {},
                         onStartSetup = {},
-                        onRetry = {},
                         onViewUpdate = { viewedUpdate = true },
                         onOpenSync = { openedSync = true },
                         syncAttention = SyncAttentionUi(
@@ -140,7 +138,6 @@ class TodayScreenTest {
                         ),
                         onOpenClass = {},
                         onStartSetup = {},
-                        onRetry = {},
                         onOpenPrograms = { openedPrograms = true }
                     )
                 }
@@ -183,7 +180,6 @@ class TodayScreenTest {
                             ),
                             onOpenClass = {},
                             onStartSetup = {},
-                            onRetry = {}
                         )
                     }
                 }
@@ -243,7 +239,6 @@ class TodayScreenTest {
                         ),
                         onOpenClass = { openedClassId = it },
                         onStartSetup = {},
-                        onRetry = {}
                     )
                 }
             }
@@ -284,7 +279,6 @@ class TodayScreenTest {
                         ),
                         onOpenClass = {},
                         onStartSetup = {},
-                        onRetry = {}
                     )
                 }
             }
@@ -313,7 +307,6 @@ class TodayScreenTest {
                         ),
                         onOpenClass = {},
                         onStartSetup = {},
-                        onRetry = {},
                         requiresSetup = true
                     )
                 }
@@ -349,7 +342,6 @@ class TodayScreenTest {
                         ),
                         onOpenClass = {},
                         onStartSetup = {},
-                        onRetry = {},
                         twoColumns = true
                     )
                 }
@@ -380,7 +372,6 @@ class TodayScreenTest {
                         ),
                         onOpenClass = {},
                         onStartSetup = {},
-                        onRetry = {},
                         requiresSetup = true,
                         twoColumns = true
                     )

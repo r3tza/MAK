@@ -14,7 +14,6 @@ import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.uniqueCollisionCount
 import dev.retza.mak.ui.ActivePlanSource
-import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.polishLocale
 import dev.retza.mak.ui.settings.SettingsPreferences
 import dev.retza.mak.ui.toUi
@@ -97,7 +96,7 @@ private fun loadingTodayState() = TodayUiState(
     dateLabel = "",
     semesterLabel = "",
     weekLabel = "",
-    status = ScreenStatus.Loading
+    isLoading = true
 )
 
 private fun emptyTodayState() = TodayUiState(

@@ -72,28 +72,6 @@ class ScheduleResolver(
         )
     }
 
-    fun resolveOccurrences(
-        date: LocalDate,
-        semester: Semester,
-        classes: Collection<ClassItem>,
-        courses: Collection<StudyProgram> = emptyList(),
-        semesterPrograms: Collection<SemesterProgram> = emptyList(),
-        calendars: Collection<AcademicCalendar> = emptyList(),
-        weekOverrides: Collection<WeekOverride> = emptyList(),
-        occurrenceChanges: Collection<OccurrenceChange> = emptyList(),
-        occurrenceNotes: Collection<OccurrenceNote> = emptyList()
-    ): List<PlannedOccurrence> = resolve(
-        date,
-        semester,
-        classes,
-        courses,
-        semesterPrograms,
-        calendars,
-        weekOverrides,
-        occurrenceChanges,
-        occurrenceNotes
-    ).occurrences
-
     private fun resolveClass(
         classItem: ClassItem,
         calendar: AcademicCalendar,

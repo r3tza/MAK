@@ -30,8 +30,6 @@ import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.MakTextAction
-import dev.retza.mak.ui.components.MakStateMessage
-import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.distinctLabels
 
 @Composable
@@ -53,7 +51,6 @@ fun SetupWizard(
     modifier: Modifier = Modifier,
     onReturnToSettings: () -> Unit = {},
     showReturnToSettings: Boolean = false,
-    onRetry: () -> Unit,
     onAddAnotherProgram: () -> Unit = {},
     onCalendarModeChanged: (SetupCalendarMode) -> Unit = {}
 ) {
@@ -73,7 +70,7 @@ fun SetupWizard(
     // The system back gesture does what the step's visible exit action does. On the first step
     // without "Wróć do ustawień" it stays with navigation, which closes the wizard.
     val exitsWizard = state.step == SetupStep.Semester && !state.isAddingAnotherProgram
-    BackHandler(enabled = state.status == ScreenStatus.Ready && (!exitsWizard || showReturnToSettings)) {
+    BackHandler(enabled = (!exitsWizard || showReturnToSettings)) {
         when {
             state.isSaving || state.isActivating -> Unit
             exitsWizard -> onReturnToSettings()
@@ -85,52 +82,48 @@ fun SetupWizard(
             title = title,
             subtitle = subtitle
         )
-        when (state.status) {
-            ScreenStatus.Ready -> when (state.step) {
-                SetupStep.Semester -> SemesterStep(
-                    state = state,
-                    onSemesterNameChanged = onSemesterNameChanged,
-                    onStartDateChanged = onStartDateChanged,
-                    onEndDateChanged = onEndDateChanged,
-                    onFirstWeekChanged = onFirstWeekChanged,
-                    onNext = onNext,
-                    onReturnToSettings = onReturnToSettings,
-                    showReturnToSettings = showReturnToSettings
-                )
+        when (state.step) {
+            SetupStep.Semester -> SemesterStep(
+                state = state,
+                onSemesterNameChanged = onSemesterNameChanged,
+                onStartDateChanged = onStartDateChanged,
+                onEndDateChanged = onEndDateChanged,
+                onFirstWeekChanged = onFirstWeekChanged,
+                onNext = onNext,
+                onReturnToSettings = onReturnToSettings,
+                showReturnToSettings = showReturnToSettings
+            )
 
-                SetupStep.Course -> CourseStep(
-                    state = state,
-                    onCourseNameChanged = onCourseNameChanged,
-                    onCourseColorChanged = onCourseColorChanged,
-                    onProgramModeChanged = onProgramModeChanged,
-                    onProgramSelected = onProgramSelected,
-                    onCalendarModeChanged = onCalendarModeChanged,
-                    onNext = onNext,
+            SetupStep.Course -> CourseStep(
+                state = state,
+                onCourseNameChanged = onCourseNameChanged,
+                onCourseColorChanged = onCourseColorChanged,
+                onProgramModeChanged = onProgramModeChanged,
+                onProgramSelected = onProgramSelected,
+                onCalendarModeChanged = onCalendarModeChanged,
+                onNext = onNext,
+                onBack = onBack
+            )
+
+            SetupStep.Classes -> if (state.isSemesterActive) {
+                ClassesStep(
+                    programNames = state.semesterProgramNames,
+                    canSkip = state.canSkipClasses,
+                    onAddClass = onAddClass,
+                    onAddAnotherProgram = onAddAnotherProgram,
+                    onFinish = onFinish,
                     onBack = onBack
                 )
-
-                SetupStep.Classes -> if (state.isSemesterActive) {
-                    ClassesStep(
-                        programNames = state.semesterProgramNames,
-                        canSkip = state.canSkipClasses,
-                        onAddClass = onAddClass,
-                        onAddAnotherProgram = onAddAnotherProgram,
-                        onFinish = onFinish,
-                        onBack = onBack
-                    )
-                } else {
-                    InactiveSemesterClassesStep(
-                        programNames = state.semesterProgramNames,
-                        isActivating = state.isActivating,
-                        onActivateAndAddClass = onActivateAndAddClass,
-                        onAddAnotherProgram = onAddAnotherProgram,
-                        onFinish = onReturnToSettings,
-                        onBack = onBack
-                    )
-                }
+            } else {
+                InactiveSemesterClassesStep(
+                    programNames = state.semesterProgramNames,
+                    isActivating = state.isActivating,
+                    onActivateAndAddClass = onActivateAndAddClass,
+                    onAddAnotherProgram = onAddAnotherProgram,
+                    onFinish = onReturnToSettings,
+                    onBack = onBack
+                )
             }
-
-            else -> MakStateMessage(status = state.status, onRetry = onRetry)
         }
     }
 }

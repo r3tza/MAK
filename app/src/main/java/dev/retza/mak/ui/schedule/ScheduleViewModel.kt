@@ -25,7 +25,6 @@ import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
 import dev.retza.mak.ui.components.CalendarMarkerUi
 import dev.retza.mak.ui.components.ClassItemUi
-import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.dayNames
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
@@ -376,8 +375,7 @@ private fun emptyScheduleState() = ScheduleUiState(
     weekRangeLabel = "",
     weekSubtitle = "",
     weekTypeLabel = "",
-    weekSourceLabel = "",
-    status = ScreenStatus.Ready
+    weekSourceLabel = ""
 )
 
 private fun calendarLegend(

@@ -33,8 +33,6 @@ import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakScreenIntro
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.MakSpacing
-import dev.retza.mak.ui.components.MakStateMessage
-import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.MakTimePickerField
 
 enum class ClassEditField {
@@ -89,7 +87,6 @@ data class ClassEditUiState(
     val dayOptions: List<String> = emptyList(),
     val recurrenceOptions: List<RecurrenceOptionUi> = emptyList(),
     val errors: Map<ClassEditField, FieldErrorUi> = emptyMap(),
-    val status: ScreenStatus = ScreenStatus.Ready,
     val isSaving: Boolean = false,
     val pendingHiddenData: HiddenDataWarningUi? = null
 )
@@ -114,7 +111,6 @@ fun ClassEditScreen(
     onConfirmHiddenData: () -> Unit,
     onDismissHiddenData: () -> Unit,
     onCancel: () -> Unit,
-    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     state.pendingHiddenData?.let { warning ->
@@ -133,154 +129,150 @@ fun ClassEditScreen(
     var showMoreOptions by remember { mutableStateOf(false) }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
         MakScreenIntro("Najpierw termin i przedmiot. Resztę możesz uzupełnić później.")
-        when (state.status) {
-            ScreenStatus.Ready -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
-                MakField(
-                    label = "Nazwa przedmiotu",
-                    value = state.name,
-                    onValueChange = onNameChanged,
-                    placeholder = "np. Projektowanie interfejsów",
-                    isError = state.errors.containsKey(ClassEditField.Name)
-                )
-                FieldError(state.errors[ClassEditField.Name])
-                MakFieldPair(
-                    first = {
-                        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-                            MakSelectField(
-                                label = "Kierunek",
-                                value = state.courseName,
-                                options = state.courseOptions,
-                                onSelected = { option -> onCourseChanged(option.id) },
-                                optionLabel = { it.label },
-                                optionTrailing = { option ->
-                                    if (option.isHidden) {
-                                        Text(
-                                            text = "ukryty",
-                                            style = MaterialTheme.typography.bodyMedium,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                },
-                                isError = state.errors.containsKey(ClassEditField.Course)
+        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
+            MakField(
+                label = "Nazwa przedmiotu",
+                value = state.name,
+                onValueChange = onNameChanged,
+                placeholder = "np. Projektowanie interfejsów",
+                isError = state.errors.containsKey(ClassEditField.Name)
+            )
+            FieldError(state.errors[ClassEditField.Name])
+            MakFieldPair(
+                first = {
+                    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                        MakSelectField(
+                            label = "Kierunek",
+                            value = state.courseName,
+                            options = state.courseOptions,
+                            onSelected = { option -> onCourseChanged(option.id) },
+                            optionLabel = { it.label },
+                            optionTrailing = { option ->
+                                if (option.isHidden) {
+                                    Text(
+                                        text = "ukryty",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            },
+                            isError = state.errors.containsKey(ClassEditField.Course)
+                        )
+                        FieldError(state.errors[ClassEditField.Course])
+                        if (state.courseOptions.any { it.id == state.semesterProgramId && it.isHidden }) {
+                            MakHelperText(
+                                text = "Ten kierunek jest ukryty na tym telefonie. Zajęcia zapiszą się, " +
+                                    "ale nie pojawią się w planie, dopóki go nie włączysz.",
+                                icon = Icons.Outlined.Info
                             )
-                            FieldError(state.errors[ClassEditField.Course])
-                            if (state.courseOptions.any { it.id == state.semesterProgramId && it.isHidden }) {
-                                MakHelperText(
-                                    text = "Ten kierunek jest ukryty na tym telefonie. Zajęcia zapiszą się, " +
-                                        "ale nie pojawią się w planie, dopóki go nie włączysz.",
-                                    icon = Icons.Outlined.Info
-                                )
-                            }
-                        }
-                    },
-                    second = {
-                        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-                            MakSelectField(
-                                label = "Typ",
-                                value = state.type,
-                                options = state.typeOptions,
-                                onSelected = onTypeChanged,
-                                isError = state.errors.containsKey(ClassEditField.Type)
-                            )
-                            FieldError(state.errors[ClassEditField.Type])
                         }
                     }
-                )
-                MakSelectField(
-                    label = "Dzień tygodnia",
-                    value = state.dayLabel,
-                    options = state.dayOptions,
-                    onSelected = onDayChanged,
-                    isError = state.errors.containsKey(ClassEditField.Day)
-                )
-                FieldError(state.errors[ClassEditField.Day])
-                MakFieldPair(
-                    first = {
-                        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-                            MakTimePickerField(
-                                label = "Od",
-                                value = state.startTime,
-                                onValueChange = onStartTimeChanged,
-                                isError = state.errors.containsKey(ClassEditField.StartTime)
-                            )
-                            FieldError(state.errors[ClassEditField.StartTime])
-                        }
-                    },
-                    second = {
-                        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-                            MakTimePickerField(
-                                label = "Do",
-                                value = state.endTime,
-                                onValueChange = onEndTimeChanged,
-                                isError = state.errors.containsKey(ClassEditField.EndTime)
-                            )
-                            FieldError(state.errors[ClassEditField.EndTime])
-                        }
+                },
+                second = {
+                    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                        MakSelectField(
+                            label = "Typ",
+                            value = state.type,
+                            options = state.typeOptions,
+                            onSelected = onTypeChanged,
+                            isError = state.errors.containsKey(ClassEditField.Type)
+                        )
+                        FieldError(state.errors[ClassEditField.Type])
                     }
-                )
-                MakSelectField(
-                    label = "Powtarzanie",
-                    value = state.recurrenceLabel,
-                    options = state.recurrenceOptions.map { it.label },
-                    onSelected = { label ->
-                        state.recurrenceOptions.firstOrNull { it.label == label }?.id?.let(onRecurrenceChanged)
-                    },
-                    isError = state.errors.containsKey(ClassEditField.Recurrence)
-                )
-                if (state.recurrenceId == "once") {
-                    MakDatePickerField(
-                        label = "Data zajęć",
-                        value = state.occurrenceDate,
-                        onValueChange = onOccurrenceDateChanged,
-                        minDate = state.semesterStartDate?.toLocalDateOrNull(),
-                        maxDate = state.semesterEndDate?.toLocalDateOrNull(),
-                        isError = state.errors.containsKey(ClassEditField.Date)
-                    )
-                    FieldError(state.errors[ClassEditField.Date])
                 }
-                MakExpandableSection(
-                    label = "więcej opcji",
-                    expanded = showMoreOptions,
-                    onExpandedChange = { showMoreOptions = it }
-                ) {
-                    MakField(
-                        label = "Sala",
-                        value = state.room,
-                        onValueChange = onRoomChanged,
-                        placeholder = "np. L204"
-                    )
-                    MakField(
-                        label = "Prowadzący",
-                        value = state.teacher,
-                        onValueChange = onTeacherChanged
-                    )
-                    MakField(
-                        label = "Budynek",
-                        value = state.building,
-                        onValueChange = onBuildingChanged
-                    )
-                    MakField(
-                        label = "Grupa",
-                        value = state.group,
-                        onValueChange = onGroupChanged
-                    )
-                    MakField(
-                        label = "Notatka do zajęć",
-                        value = state.note,
-                        onValueChange = onNoteChanged,
-                        singleLine = false,
-                        minLines = 3
-                    )
+            )
+            MakSelectField(
+                label = "Dzień tygodnia",
+                value = state.dayLabel,
+                options = state.dayOptions,
+                onSelected = onDayChanged,
+                isError = state.errors.containsKey(ClassEditField.Day)
+            )
+            FieldError(state.errors[ClassEditField.Day])
+            MakFieldPair(
+                first = {
+                    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                        MakTimePickerField(
+                            label = "Od",
+                            value = state.startTime,
+                            onValueChange = onStartTimeChanged,
+                            isError = state.errors.containsKey(ClassEditField.StartTime)
+                        )
+                        FieldError(state.errors[ClassEditField.StartTime])
+                    }
+                },
+                second = {
+                    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                        MakTimePickerField(
+                            label = "Do",
+                            value = state.endTime,
+                            onValueChange = onEndTimeChanged,
+                            isError = state.errors.containsKey(ClassEditField.EndTime)
+                        )
+                        FieldError(state.errors[ClassEditField.EndTime])
+                    }
                 }
-                MakPrimaryAction(
-                    text = if (state.title.startsWith("Edytuj")) "Zapisz zajęcia" else "Dodaj do planu",
-                    onClick = onSave,
-                    enabled = !state.isSaving
+            )
+            MakSelectField(
+                label = "Powtarzanie",
+                value = state.recurrenceLabel,
+                options = state.recurrenceOptions.map { it.label },
+                onSelected = { label ->
+                    state.recurrenceOptions.firstOrNull { it.label == label }?.id?.let(onRecurrenceChanged)
+                },
+                isError = state.errors.containsKey(ClassEditField.Recurrence)
+            )
+            if (state.recurrenceId == "once") {
+                MakDatePickerField(
+                    label = "Data zajęć",
+                    value = state.occurrenceDate,
+                    onValueChange = onOccurrenceDateChanged,
+                    minDate = state.semesterStartDate?.toLocalDateOrNull(),
+                    maxDate = state.semesterEndDate?.toLocalDateOrNull(),
+                    isError = state.errors.containsKey(ClassEditField.Date)
                 )
-                MakSecondaryAction(text = "Anuluj", onClick = onCancel)
+                FieldError(state.errors[ClassEditField.Date])
             }
-
-            else -> MakStateMessage(status = state.status, onRetry = onRetry)
+            MakExpandableSection(
+                label = "więcej opcji",
+                expanded = showMoreOptions,
+                onExpandedChange = { showMoreOptions = it }
+            ) {
+                MakField(
+                    label = "Sala",
+                    value = state.room,
+                    onValueChange = onRoomChanged,
+                    placeholder = "np. L204"
+                )
+                MakField(
+                    label = "Prowadzący",
+                    value = state.teacher,
+                    onValueChange = onTeacherChanged
+                )
+                MakField(
+                    label = "Budynek",
+                    value = state.building,
+                    onValueChange = onBuildingChanged
+                )
+                MakField(
+                    label = "Grupa",
+                    value = state.group,
+                    onValueChange = onGroupChanged
+                )
+                MakField(
+                    label = "Notatka do zajęć",
+                    value = state.note,
+                    onValueChange = onNoteChanged,
+                    singleLine = false,
+                    minLines = 3
+                )
+            }
+            MakPrimaryAction(
+                text = if (state.title.startsWith("Edytuj")) "Zapisz zajęcia" else "Dodaj do planu",
+                onClick = onSave,
+                enabled = !state.isSaving
+            )
+            MakSecondaryAction(text = "Anuluj", onClick = onCancel)
         }
     }
 }

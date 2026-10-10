@@ -22,6 +22,7 @@ import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.RoomPlanBackupGateway
+import dev.retza.mak.data.repository.RoomScheduleRepository
 import dev.retza.mak.data.repository.RoomSemesterRepository
 import dev.retza.mak.data.repository.SemesterBackup
 import java.time.DayOfWeek
@@ -352,7 +353,7 @@ class RoomPersistenceTest {
         assertNull(database!!.semesterDao().findById(oldSemesterId))
         assertEquals(listOf(500L), repository.observeSemesters().first().map { it.id })
         assertEquals(listOf(500L), repository.observeStudyPrograms().first().map { it.id })
-        assertEquals(1, database!!.classDao().observeForSemester(500).first().size)
+        assertEquals(1, RoomScheduleRepository(database!!).observeActivePlanData(500).first()!!.classes.size)
     }
 
     @Test

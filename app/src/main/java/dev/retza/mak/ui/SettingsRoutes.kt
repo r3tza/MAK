@@ -71,7 +71,6 @@ internal fun NavGraphBuilder.settingsRoute(
             onGapThresholdSelected = settingsViewModel::setGapThresholdMinutes,
             onMinimumBreakSelected = settingsViewModel::setMinimumBreakMinutes,
             notificationsBlocked = notificationsBlocked,
-            onRetry = {},
             updates = updateState.toSettingsUi(),
             onCheckUpdates = updateViewModel::checkNow,
             onOpenUpdate = { navController.navigate(MakRoutes.SettingsUpdate) },

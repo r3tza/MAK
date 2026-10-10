@@ -442,7 +442,6 @@ class ScheduleScreenTest {
                             onSaveWeekCorrection = { _, _ -> },
                             onClearWeekCorrection = {},
                             onStartSetup = {},
-                            onRetry = {}
                         )
                     }
                 }

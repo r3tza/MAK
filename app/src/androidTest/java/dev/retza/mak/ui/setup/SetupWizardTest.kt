@@ -58,7 +58,6 @@ class SetupWizardTest {
                         onAddClass = {},
                         onActivateAndAddClass = {},
                         onFinish = {},
-                        onRetry = {}
                     )
                 }
             }
@@ -219,7 +218,6 @@ class SetupWizardTest {
                         onFinish = {},
                         onReturnToSettings = onReturnToSettings,
                         showReturnToSettings = showReturnToSettings,
-                        onRetry = {},
                         onAddAnotherProgram = onAddAnotherProgram,
                         onCalendarModeChanged = onCalendarModeChanged
                     )
@@ -255,7 +253,6 @@ class SetupWizardTest {
                         onAddClass = { addClicks += 1 },
                         onActivateAndAddClass = { activations += 1 },
                         onFinish = {},
-                        onRetry = {}
                     )
                 }
             }
@@ -303,7 +300,6 @@ class SetupWizardTest {
                         onAddClass = {},
                         onActivateAndAddClass = {},
                         onFinish = {},
-                        onRetry = {}
                     )
                 }
             }

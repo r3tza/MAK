@@ -72,7 +72,6 @@ internal fun NavGraphBuilder.semesterRoutes(
             onOpenCourses = { semesterId?.let { navController.navigate(semesterCoursesRoute(it)) } },
             onOpenOverrides = { semesterId?.let { navController.navigate(semesterOverridesRoute(it)) } },
             onOpenCalendars = { semesterId?.let { navController.navigate(semesterCalendarsRoute(it)) } },
-            onRetry = {},
             modifier = Modifier.fillMaxSize()
         )
     }

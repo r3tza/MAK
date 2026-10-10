@@ -1,63 +1,95 @@
 # Plan najbliższych prac
 
-Cel: I-79 (ukrywanie kierunków na telefonie) na gałęzi `task/I-79-course-toggles`, w kolejności kroków poniżej. Decyzje użytkownika z 2026-10-09 są w `DOMAIN.md` (sekcja „Kierunki”), `FEATURES.md` (sekcja „Ustawienia i dane”) i `LOG.md`; makiety D4 do D7 na stronie „Decyzje” artefaktu „MAK: dni wolne” (https://claude.ai/artifact/8vbdCFuK7duXsocfhzE7ap).
+Cel: I-84 (porządki po audycie kodu z 2026-10-09) na gałęzi `task/I-79-hide-study-programs` (decyzja użytkownika z 2026-10-10), w kolejności kroków poniżej. Raport: `docs/audit_09102026.md`; oznaczenia w nawiasach (I1, E1 i podobne) to punkty raportu. Decyzje użytkownika z 2026-10-10 są w `LOG.md`. Porządki trafią do tego samego pull requesta co I-79, bo zmieniają te same pliki.
 
-Wspólna zasada: każdy widok planu (`TodayViewModel`, `ScheduleViewModel`, `OccurrenceViewModel`), widget (`WidgetPlanLoader`) i powiadomienia (`CollisionNotificationPlanner`, `CollisionAlarmScheduler`, `CollisionAlarmReceiver`) biorą dane planu z `ActivePlanSource` jako `ActivePlanInputs` (dane razem z `PlanDisplaySettings`) i liczą plan przez `ActivePlanProvider.resolve(inputs, date)`. Ustawienie wpływające na wynik (minimalna przerwa, ukryte kierunki) trafia do `PlanDisplaySettings` i `SettingsPreferences.planDisplay`, a nie do osobnych parametrów w każdym miejscu.
+Wspólna zasada: kroki nie zmieniają zachowania ani wyglądu, poza blokadą podwójnego dotknięcia w kroku 3. Ścieżki plików są względne wobec `app/src/main/java/dev/retza/mak/`, a testów wobec `app/src/test/java/dev/retza/mak/` albo `app/src/androidTest/java/dev/retza/mak/`. Testy JVM uruchamiaj filtrowane, na przykład `gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.today.TodayViewModelTest"`. Kolejne zadania z audytu (I-85 do I-90) są w `QUEUE.md`; ich plan powstanie po I-84.
 
-## 1. Filtruj plan według ukrytych kierunków (I-79)
+## 1. Usuń martwy kod i ścieżki używane tylko w testach (I-84)
 
-Stan: zrobione. Testy JVM i na emulatorze `RoomPlanSyncGatewayTest`, `SettingsPreferencesTest`, `KoinGraphTest` i `CollisionAlarmSchedulerTest` przechodzą; ręczne sprawdzenie zapisanego wyboru przeniesione do kroku 2, bo bez checkboxa nie da się go zapisać na emulatorze bez roota. `PlanBackupServiceTest` i `StudyProgramsViewModelTest` sprawdzają czyszczenie wyboru po imporcie i usunięciu kierunku. Po decyzji użytkownika widget przy wszystkich ukrytych kierunkach pokazuje „Wszystkie kierunki są ukryte na tym telefonie.”, a `visibleTo` usuwa tylko zajęcia, nie przypisania (krok 2, `LOG.md`).
+Stan: zrobione. Usunięte też zapytania DAO `observeForSemester` notatek i zmian terminów, nieużywane po usunięciu metod repozytorium. Testy eksportu budują snapshot przez `exportSnapshotOf` w `BackupDataFixtures.kt`, który przechodzi przez produkcyjne `ExportSnapshot.from(BackupData)`. Test `lastOpenEditWinsWhenDataArrivesLate` usunięty, bo sprawdzał anulowanie przez `openJob`; anulowanie zapewnia `LaunchedEffect` trasy. `openEditIfNeeded` w `StudyProgramsViewModel` jest używane w produkcji i zostaje. Filtrowane testy JVM (`ui`, `export`, `update`, `data`, `ScheduleResolverTest`) przechodzą; testy Android kompilują się, nie były uruchamiane.
 
-Cel: lokalny wybór ukrytych kierunków usuwa ich zajęcia ze wszystkich widoków, widgetu, kolizji, okienek i powiadomień, a synchronizacja i import nie przenoszą go na złe kierunki.
+Cel: kod, którego produkcja nie woła, znika, a testy sprawdzają ścieżki produkcyjne (I1 do I4).
 
-Pliki: `domain/PlanDisplaySettings.kt`, `domain/ActivePlanProvider.kt`, `ui/settings/SettingsPreferences.kt`, `ui/settings/DataStoreSettingsPreferences.kt`, `ui/schedule/ScheduleViewModel.kt`, `sync/PlanSyncGateway.kt`, `export/PlanBackupService.kt`, `ui/programs/StudyProgramsViewModel.kt` i testy.
-
-Zmiany:
-
-1. `PlanDisplaySettings` dostaje `hiddenProgramIds: Set<String>` (domyślnie pusty w `DEFAULT`).
-2. Funkcja `ActivePlanData.visibleTo(display: PlanDisplaySettings): ActivePlanData` w `ActivePlanProvider.kt`: usuwa `semesterPrograms` z `studyProgramId` w `hiddenProgramIds` i `classes` z `semesterProgramId` usuniętych przypisań; pozostałe pola bez zmian. `ActivePlanProvider.resolve` wywołuje ją przed rozwiązaniem planu.
-3. `SettingsPreferences`: `planDisplay` łączy minimalną przerwę z `stringSetPreferencesKey("hidden_study_program_ids")`; nowe funkcje `setStudyProgramHidden(id: String, hidden: Boolean)`, `clearHiddenStudyPrograms()` i `retainHiddenStudyPrograms(existingIds: Set<String>)`.
-4. `ScheduleViewModel` buduje cały stan (opcje pola „Kierunek”, odwołane terminy, kalendarze filtra i znaczniki siatki kalendarza z `ActivePlanProvider.schedule`) z `inputs.data.visibleTo(inputs.display)`, aby ukryty kierunek nie był opcją filtra ani znacznikiem dnia.
-5. `RoomPlanSyncGateway.replaceIfUnchanged` przyjmuje `SettingsPreferences`; po udanej podmianie wywołuje `clearHiddenStudyPrograms()`, gdy `keepLocalActive == false` (pierwsze pobranie), a w przeciwnym razie `retainHiddenStudyPrograms(data.studyPrograms.map { it.id.toString() }.toSet())`. `PlanBackupService.confirmImport` po imporcie wywołuje `clearHiddenStudyPrograms()`. Po udanym usunięciu kierunku `StudyProgramsViewModel.confirmDelete` wywołuje `setStudyProgramHidden(id, false)`. Po przeglądzie kodu (`LOG.md`) usunięte kierunki zapomina jeden obserwator `retainExistingHiddenPrograms`, a bramka czyści wybór tylko przy pierwszym pobraniu.
-
-Testy:
-
-- `ActivePlanProviderTest`: ukryty kierunek nie ma zajęć w planie, nie tworzy kolizji ani okienek; pusty zbiór niczego nie zmienia; ukrycie wszystkich daje pusty plan.
-- `ScheduleViewModelTest`: ukryty kierunek nie jest opcją filtra.
-- `SettingsPreferencesTest`: zapis, czyszczenie i zachowanie tylko istniejących numerów.
-- `RoomPlanSyncGatewayTest`: pierwsze pobranie czyści wybór, kolejne zachowuje istniejące numery.
-- `WidgetPlanLoaderTest` i `CollisionNotificationPlannerTest`: ukryty kierunek pominięty.
-
-Przypadki brzegowe: zajęcia ukrytego kierunku przeniesione na inny dzień też znikają; formularz zajęć i eksport nadal widzą wszystkie kierunki, bo czytają `observeActivePlanData` bez `visibleTo`.
-
-Weryfikacja: filtrowane testy JVM wymienionych klas; kompilacja testów Android; `RoomPlanSyncGatewayTest` i `SettingsPreferencesTest` na emulatorze.
-
-Kryterium zakończenia: testy przechodzą, a ręcznie zapisany wybór w preferencjach ukrywa zajęcia na „Dzisiaj”, w „Planie” i na widgecie. Commit: `feat: hide study programs from the plan on this phone (I-79)`.
-
-## 2. Dodaj checkboxy kierunków i stany ukrycia w interfejsie (I-79)
-
-Stan: zrobione. Zamiast pól `hiddenProgramNames` w `ScheduleUiState` „Plan” ma tylko `allProgramsHidden`, bo podpowiedź z nazwami jest wyłącznie na „Dzisiaj”. Wspólne elementy są w `ui/HiddenPrograms.kt`; `MakSectionHeader` ma `supportingContent`, a `MakHelperText` opcjonalną ikonę.
-
-Cel: użytkownik ukrywa kierunek checkboxem, formularz zajęć ostrzega przed wyborem ukrytego kierunku, a „Dzisiaj” i „Plan” wyjaśniają, dlaczego zajęć jest mniej.
-
-Pliki: `ui/programs/StudyProgramsViewModel.kt`, `ui/programs/StudyProgramsScreen.kt`, `ui/StudyProgramRoutes.kt`, `ui/components/MakComponents.kt`, `ui/edit/ClassEditViewModel.kt`, `ui/edit/ClassEditScreen.kt`, `ui/today/TodayViewModel.kt`, `ui/today/TodayScreen.kt`, `ui/schedule/ScheduleViewModel.kt`, `ui/schedule/ScheduleScreen.kt`, `ui/MakNavHostApp.kt` i testy.
+Pliki: `ui/components/PresentationModels.kt`, `ui/components/MakComponents.kt`, `ui/today/TodayScreen.kt`, `ui/today/TodayViewModel.kt`, `ui/schedule/ScheduleScreen.kt`, `ui/schedule/ScheduleViewModel.kt`, `ui/edit/ClassEditScreen.kt`, `ui/edit/ClassEditViewModel.kt`, `ui/semester/SemesterScreen.kt`, `ui/settings/SettingsScreen.kt`, `ui/settings/SettingsViewModel.kt`, `ui/settings/SettingsPreferences.kt`, `ui/setup/SetupWizard.kt`, `ui/setup/SetupViewModel.kt`, `ui/*Routes.kt`, `data/repository/ScheduleRepository.kt`, `data/repository/SemesterRepository.kt`, `data/database/Daos.kt`, `data/database/Relations.kt`, `domain/ScheduleResolver.kt`, `widget/WidgetLayoutPolicy.kt`, `export/ExportSnapshot.kt`, `update/UpdateViewModel.kt` i testy.
 
 Zmiany:
 
-1. `StudyProgramUi` dostaje `isHidden`; `StudyProgramsViewModel` łączy listę kierunków z `preferences.planDisplay` i ma `setVisible(id: Long, visible: Boolean)`.
-2. `StudyProgramsScreen`: tekst wstępu „Odznacz kierunek, aby ukryć jego zajęcia na tym telefonie. Nazwa i kolor są wspólne dla wszystkich semestrów.”; `StudyProgramRow` ma na początku `Checkbox` w polu 48 dp z opisem „Pokazuj {nazwa}” i rolą pola wyboru; reszta wiersza (kropka, nazwa, strzałka) pozostaje jednym przyciskiem „{nazwa}, edytuj”; ukryty kierunek ma pod nazwą tekst „Ukryty na tym telefonie” w kolorze `onSurfaceVariant`.
-3. `MakSelectField` dostaje opcjonalny `optionTrailing: (@Composable (T) -> Unit)? = null` na wzór `optionLeading`. `ClassCourseOptionUi` dostaje `isHidden`; `ClassEditViewModel.courseOptions` oznacza przypisania ukrytych kierunków; `ClassEditScreen` pokazuje przy takiej opcji „ukryty” w kolorze `onSurfaceVariant`, a pod polem przy wybranym ukrytym kierunku `MakHelperText` z ikoną: „Ten kierunek jest ukryty na tym telefonie. Zajęcia zapiszą się, ale nie pojawią się w planie, dopóki go nie włączysz.”
-4. `TodayUiState` i `ScheduleUiState` dostają `hiddenProgramNames: List<String>` i `allProgramsHidden: Boolean`, liczone z danych przed `visibleTo` dla przypisań aktywnego semestru. `TodayScreen`: pod nazwą semestru wiersz z ikoną ukrycia „Ukryty kierunek: {nazwa}” albo „Ukryte kierunki: {nazwy}”, gdy lista nie jest pusta i nie wszystkie są ukryte. Przy `allProgramsHidden` „Dzisiaj” i „Plan” pokazują zamiast listy `MakNoteBanner` z rolą neutralną, tekstem „Wszystkie kierunki są ukryte na tym telefonie.” i akcją „Kierunki”, która otwiera `MakRoutes.StudyPrograms`.
+1. `ScreenStatus` (I1): usuń całą klasę z `PresentationModels.kt` i `MakStateMessage` z `MakComponents.kt`. Gałąź ładowania przenieś do nowego `MakLoadingMessage(modifier)` z tym samym wyglądem (`CircularProgressIndicator` i „Ładowanie”). `TodayUiState.status` zastąp polem `isLoading: Boolean = false`; `TodayViewModel` zaczyna od `isLoading = true` (obecne `ScreenStatus.Loading` w wierszu około 100). `TodayClasses` pokazuje `MakLoadingMessage` przy `isLoading`, a pusty stan przez `MakEmptyState(state.emptyMessage)`. Usuń pola `status` z `ClassEditUiState`, `ScheduleUiState`, `SemesterUiState`, `SettingsUiState` i `SetupWizardUiState`, gałęzie `when (state.status)` zamień na treść gałęzi `Ready`, usuń parametry `onRetry` ekranów `TodayScreen`, `ScheduleScreen`, `ClassEditScreen`, `SemesterScreen`, `SettingsScreen` i `SetupWizard` oraz `onRetry = {}` w trasach. `UpdateScreen.DownloadError` ma własne `onRetry` i zostaje.
+2. Repozytoria (I2): usuń z interfejsu i implementacji `ScheduleRepository` metody `observeClasses`, `observeOccurrenceNotes`, `observeOccurrenceChanges`, `observeOccurrenceNotesForClass` i `observeOccurrenceChangesForClass`, a z `SemesterRepository` metody `updateSemester`, `clearActiveSemester`, `deleteSemester` i `deleteCalendarIfUnused`. Usuń z `Daos.kt` zapytania używane tylko przez nie (dwa `observeForClass`) oraz zapytania bez wywołań (I3): `AcademicCalendarDao.getForSemester`, `ClassDao.observeWithDetailsForSemester`, `ClassDao.observeWithDetails`, `WeekOverrideDao.observeForCalendar`, a potem relację `ClassWithDetails` z `Relations.kt`. Usuń te metody z atrap (`FakeRepository.kt`, `FakeSemesterRepository.kt` i innych, które wskaże kompilator). Testy, które sprawdzały tylko usunięte metody, usuń; testy, które ich używały do przygotowania danych, przepnij na `saveSemester`, `deleteSemesterAndSelectFallback` albo bezpośredni stan atrapy.
+3. Kod bez wywołań (I3): usuń `MakReadOnlyField`, `resolveOccurrences` w `ScheduleResolver.kt`, `ThemeMode.toId()` i `widgetNameCharacterLimit`.
+4. Ścieżki tylko dla testów (I4): w `ClassEditViewModel` usuń `openNew`, `openEdit`, `openEditIfNeeded` i pole `openJob`; zostają `openNewFromFreshPlan` i `openEditFromFreshPlan`. Testy `ClassEditViewModelTest` przepnij na te funkcje w `runTest`. Test odtworzenia szkicu (obecnie `restored.openEditIfNeeded`) sprawdza, że ViewModel utworzony z tym samym `SavedStateHandle` ma szkic bez wywołania otwarcia, bo trasa nie otwiera edytora drugi raz (`opened` w `ClassOccurrenceRoutes.kt`). W `ExportSnapshot.kt` usuń przeciążenia `from(SemesterWithData)` i przepnij testy na przeciążenie `BackupData`. W `SettingsViewModel` usuń `themeMode`; testy czytają `loadedThemeMode`. W `UpdateViewModel` parametr `preferences: UpdatePreferences?` zmień na niepusty i usuń gałęzie `if (preferences != null)`; `UpdateViewModelTest` przekazuje atrapę `UpdatePreferences`.
 
-Testy:
+Testy: brak nowych reguł. Poprawione: `TodayViewModelTest` (stan ładowania przez `isLoading`), `ClassEditViewModelTest`, `SettingsViewModelTest`, `UpdateViewModelTest`, testy eksportu; testy Compose ekranów bez `onRetry`.
 
-- `StudyProgramsViewModelTest`: `isHidden` i `setVisible`.
-- Test Compose `StudyProgramsScreen` przy 320 dp: checkbox i przejście do edycji to osobne cele, opis dla czytnika ekranu, tekst „Ukryty na tym telefonie”.
-- `ClassEditViewModelTest`: ukryte przypisanie ma `isHidden`; nowa klasa Compose `ClassEditScreenTest`: dopisek „ukryty” i wyjaśnienie pod polem przy 320 dp.
-- `TodayViewModelTest`: podpowiedź z nazwami i stan wszystkich ukrytych; test Compose `TodayScreen`: akcja „Kierunki”.
+Przypadki brzegowe: `TodayScreen` przy `isLoading` nie pokazuje pustego stanu ani akcji „Skonfiguruj plan”; `ClassEditViewModel` nie potrzebuje `openJob`, bo funkcje otwarcia są `suspend` i działają w `LaunchedEffect` trasy, który anuluje je przy zamknięciu ekranu.
 
-Przypadki brzegowe: długie nazwy kierunków w podpowiedzi zawijają się; kierunek ukryty, ale nieprzypisany do aktywnego semestru, nie trafia do podpowiedzi; brak kierunków w semestrze to nadal stan konfiguracji, nie „wszystkie ukryte”.
+Weryfikacja: `gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.*" --tests "dev.retza.mak.export.*" --tests "dev.retza.mak.update.*"`; `gradlew.bat --offline :app:compileDebugAndroidTestKotlin`; `rg "ScreenStatus|MakStateMessage|onRetry = \{\}|openEditIfNeeded|ClassWithDetails" app/src` zwraca tylko `DownloadError` w `UpdateScreen.kt`.
 
-Weryfikacja: filtrowane testy JVM; testy Compose wymienionych ekranów na emulatorze (2048 MiB); zrzuty „Kierunki”, formularza i „Dzisiaj” przy 320 dp w obu motywach porównane z makietami D4 do D7.
+Kryterium zakończenia: kod i testy kompilują się, filtrowane testy JVM przechodzą, polecenie `rg` z weryfikacji nie znajduje usuniętych nazw. Commit: `chore: remove dead code found by the code audit (I-84)`, razem z `LOG.md`, `QUEUE.md` i tym planem.
 
-Kryterium zakończenia: na emulatorze odznaczenie kierunku od razu ukrywa jego zajęcia na „Dzisiaj”, w „Planie” i na widgecie, pokazuje podpowiedź, a ponowne zaznaczenie przywraca zajęcia. Commit: `feat: add study program checkboxes and hidden states (I-79)`. Potem I-79 przechodzi w `QUEUE.md` na `odbiór otwarty` z listą do sprawdzenia na telefonie.
+## 2. Zastąp stałe pola stanu i kopie funkcji (I-84)
+
+Cel: stan ekranów nie przechowuje wartości stałych ani wynikających z innych pól, a widget i formularz używają wspólnych funkcji z `ui` (I5, G2, G3, H1, H3, B4 dla `AppViewModel`).
+
+Pliki: `ui/AppViewModel.kt`, `ui/MakNavHostApp.kt`, `ui/setup/SetupViewModel.kt`, `ui/setup/SetupWizard.kt`, `ui/occurrence/OccurrenceViewModel.kt`, `ui/occurrence/OccurrenceDetailsModels.kt`, `ui/occurrence/OccurrenceDetailsScreen.kt`, `ui/edit/ClassEditViewModel.kt`, `ui/settings/SettingsViewModel.kt`, `ui/settings/SettingsScreen.kt`, `ui/schedule/ScheduleViewModel.kt`, `ui/ClassOccurrenceRoutes.kt`, `update/UpdateViewModel.kt`, `widget/WidgetLayoutPolicy.kt`, `widget/MakTodayWidget.kt`, `widget/WidgetPresenter.kt` i testy.
+
+Zmiany:
+
+1. `AppViewModel` (I5, B4): `AppUiState.setupResume` zastąp `canResumeSetup: Boolean`. Zamiast `observeActivePlanData` zbieraj `semesterRepository.observeSemesterPrograms(semester.id).map { it.isEmpty() }`: `requiresSetup` jest prawdą bez aktywnego semestru albo bez przypisań, `canResumeSetup` przy aktywnym semestrze bez przypisań. Usuń `SetupCheck`. `MakNavHostApp` woła `openSetup(navController, resumeExisting = state.canResumeSetup)`. Efekt uboczny `setActiveSemester` w `init` zostaje do I-89 (E4).
+2. `SetupViewModel` (I5): usuń `canSkipClasses` i parametr `canSkip` w `SetupWizard` (zawsze `true`). Trzy równoległe listy nazw, identyfikatorów i kolorów kierunków (wiersze 89-90 i 138 według raportu) zastąp jedną listą rekordów `SetupProgramDraftUi(name, id, color)`.
+3. `OccurrenceViewModel` i `OccurrenceDetailsUiState` (I5): usuń `noteDate` (zawsze równe `originalDate`) i warunek, który go porównuje; `canChangeOccurrence` i `canMoveOccurrence` połącz w jedno `canChangeOccurrence`; usuń nieustawiane `statusLabel` i `title`; `canSaveSharedNote`, `canSaveOccurrenceNote` i trzecią flagę `canSave*` zamień na właściwości obliczane w `OccurrenceDetailsUiState` i usuń ich liczenie w `derive()`.
+4. `ClassEditViewModel` (I5, H1, H3): kolektor w `init` woła `withActiveOptions` zamiast powtarzać jego ciało; `typeOptions`, `dayOptions` i `recurrenceOptions` przenieś ze stanu do stałych czytanych przez `ClassEditScreen`; `classEditDayNames` zastąp `dayNames` z `ui/PlanMapping.kt` (te same etykiety, ten sam porządek); identyfikator terminu parsuj przez `OccurrenceArgs.parse` zamiast `substringBefore(':')`. `title` zostaje w stanie, bo trafia do `SavedStateHandle` (zmiana w I-86).
+5. Identyfikator terminu (H1): w `ClassOccurrenceRoutes.kt` i `ScheduleViewModel.kt` składaj go przez `OccurrenceArgs(classId, date).toRouteId()` zamiast `"$classId:$date"`. `recurrenceLabelForUi` w `ClassOccurrenceRoutes.kt` zastąp `classEditRecurrenceLabel`.
+6. `UpdateViewModel` (I5): usuń blok `try { checker.check() } catch (c: CancellationException) { throw c }`; `showUpdateBanner` licz w jednej prywatnej funkcji.
+7. Stałe teksty w stanie (I5): `SettingsUiState.notificationsDetails` i `ScheduleUiState.emptyMessage` zastąp stałymi w plikach ekranów. `ImportPreviewUi` zastąp bezpośrednio `ImportSummary`, jeśli ekran czyta te same pola; jeśli potrzebuje innych typów, zostaw i opisz powód w commicie.
+8. Widget (G2, G3): `widgetShouldShowConflict` zwraca `item.conflictLabel != null` bez `when`; `headerSpacing` jest stałą 6.dp poza polityką; `includeTeacher` liczone z `wide`; gałęzie `Large` i `ExtraLarge` w jednym `WidgetHeightMode.Large, WidgetHeightMode.ExtraLarge ->`. `parseWidgetColor` zastąp `parseHexColor`, `widgetCountLabel` zastąp `classCountLabel`, a `widgetDateFormatter` zastąp `todayTitleFormatter`, jeśli wzorzec i wielkość liter są te same; inaczej zostaw i opisz różnicę w commicie.
+
+Testy: `AppViewModelTest` (bez semestru: konfiguracja bez wznowienia; semestr bez przypisań: wznowienie; z przypisaniem: brak konfiguracji); poprawione `SetupViewModelTest`, `OccurrenceDetailsModelsTest`, `OccurrenceViewModelTest`, `ClassEditViewModelTest`, `UpdateViewModelTest`, `WidgetPresenterTest`, `MakTodayWidgetCompositionTest`.
+
+Przypadki brzegowe: formularz zajęć odczytuje dzień zapisanego szkicu z `SavedStateHandle` po etykiecie, więc etykiety `dayNames` muszą być identyczne z dotychczasowymi; widget z nieprawidłowym kolorem kierunku nadal rysuje kolor zastępczy.
+
+Weryfikacja: `gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.*" --tests "dev.retza.mak.widget.*" --tests "dev.retza.mak.update.*"`; `gradlew.bat --offline :app:compileDebugAndroidTestKotlin`.
+
+Kryterium zakończenia: testy przechodzą, `rg "setupResume|canSkipClasses|noteDate|classEditDayNames|parseWidgetColor|widgetCountLabel" app/src` nic nie znajduje. Commit: `chore: derive constant state and reuse ui helpers (I-84)`.
+
+## 3. Przenieś akcje zapisu na launchUiOperation i usuń koinInject z TrackPlanEditing (I-84)
+
+Cel: każda akcja zapisu z interfejsu ma blokadę podwójnego wywołania i flagę trwania przez `launchUiOperation` (E1, `ARCHITECTURE.md`, sekcja 5), zależność `PlanEditTracker` przychodzi jawnie z granicy hosta (D3, `STACK.md`), a dialogi rysuje `MakDialog` (H7, `LOG.md`, I-72).
+
+Pliki: `ui/schedule/ScheduleViewModel.kt`, `ui/schedule/ScheduleScreen.kt`, `ui/occurrence/OccurrenceViewModel.kt`, `ui/occurrence/OccurrenceDetailsModels.kt`, `ui/occurrence/OccurrenceDetailsScreen.kt`, `ui/semester/SemesterViewModel.kt`, `ui/PlanEditing.kt`, `MainActivity.kt`, `ui/MakNavHostApp.kt`, `ui/*Routes.kt`, `ui/edit/ClassEditScreen.kt`, `ui/semester/SemesterScreen.kt` i testy.
+
+Zmiany:
+
+1. `ScheduleViewModel`: dodaj prywatne `weekOverrideSaving = MutableStateFlow(false)` i pole `ScheduleUiState.isSavingWeekOverride`, dołączone w `combine` stanu. `saveVisibleWeekOverride` i `clearVisibleWeekOverride` wracają od razu, gdy flaga jest prawdą, ustawiają ją i wołają `viewModelScope.launchUiOperation(feedbackSink, errorMessage = "Nie udało się zapisać korekty tygodnia." albo "Nie udało się usunąć korekty tygodnia.", onFinish = { weekOverrideSaving.value = false })`. Usuń `runReportingFailure`. `WeekCorrectionDialog` dostaje `isSaving` i wyłącza „Zapisz”, „Usuń korektę” i „Anuluj” w czasie zapisu.
+2. `OccurrenceViewModel.deleteSelectedClass`: pole `OccurrenceDetailsUiState.isDeletingClass`; funkcja wraca, gdy jest prawdą, i używa `launchUiOperation` z `errorMessage = "Nie udało się usunąć zajęć."`, `onError = { update { it.copy(showDeleteConfirmation = false) } }` i `onFinish` czyszczącym flagę; `CloseDetails` wysyła po sukcesie wewnątrz bloku. `OccurrenceDetailsScreen` przekazuje `isDeleting = state.isDeletingClass` do `ConfirmDeletionDialog` zamiast `false`.
+3. `SemesterViewModel` (wiersze około 499-520 według raportu): jeśli akcja ma własny `try/catch` zamiast `launchUiOperation`, przenieś ją tak samo; jeśli kształt różni się celowo (na przykład kilka komunikatów), zostaw i opisz w commicie.
+4. `TrackPlanEditing`: parametr `tracker: PlanEditTracker` bez wartości domyślnej, usuń import `koinInject`. `MainActivity` pobiera `private val planEditTracker: PlanEditTracker by inject()` i przekazuje go do `MakApp(planEditTracker = ...)`. `MakApp` przekazuje go do `classEditRoute`, `occurrenceDetailsRoute`, `occurrenceTopBarActions`, `semesterRoutes`, `settingsRoute`, `setupRoute` i `studyProgramRoutes`, a te do każdego `TrackPlanEditing(tracker = planEditTracker, ...)`. `PlanEditingTest` tworzy `PlanEditTracker` jawnie.
+5. Dialogi (H7): `AlertDialog` ukrytych danych w `ClassEditScreen` i `ReconnectCalendarDialog` w `SemesterScreen` zamień na `MakDialog` z `dismissAction = MakDialogAction("Anuluj", ..., enabled = !isSaving)` i `confirmAction = MakDialogAction("Zapisz" albo "Połącz", ..., enabled = !isSaving)`; treść i błąd w `content`.
+
+Testy: `ScheduleViewModelTest` (drugie wywołanie zapisu korekty w trakcie pierwszego nie wysyła drugiego zapisu; błąd publikuje komunikat i czyści flagę); `OccurrenceViewModelTest` (podwójne `deleteSelectedClass` daje jedno usunięcie i jeden `CloseDetails`; błąd zamyka potwierdzenie). Poprawione `PlanEditingTest`, `ClassEditScreenTest` i `SemesterScreenTest`, jeśli szukają przycisków dialogu po innym drzewie.
+
+Przypadki brzegowe: zamknięcie dialogu korekty w trakcie zapisu nie zostawia flagi ustawionej; anulowanie korutyny przy zamknięciu ekranu nie publikuje błędu.
+
+Weryfikacja: `gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.schedule.ScheduleViewModelTest" --tests "dev.retza.mak.ui.occurrence.OccurrenceViewModelTest" --tests "dev.retza.mak.ui.semester.SemesterViewModelTest"`; na emulatorze (2048 MiB) `PlanEditingTest`, `ClassEditScreenTest`, `SemesterScreenTest` i `KoinGraphTest`; zrzut obu dialogów przy 320 dp.
+
+Kryterium zakończenia: testy przechodzą, `rg "koinInject|runReportingFailure" app/src/main` nic nie znajduje, a `rg "AlertDialog\(" app/src/main` znajduje tylko `MakComponents.kt`. Commit: `fix: guard week override and class deletion writes (I-84)`.
+
+## 4. Ogranicz zbędne odświeżanie powiadomień i preferencji (I-84)
+
+Cel: zmiana motywu, zapis czasu sprawdzenia aktualizacji albo ukrycie banera nie przelicza planu, a kolektor powiadomień nie trzyma subskrypcji planu przy wyłączonych powiadomieniach (B3, B5).
+
+Pliki: `ui/settings/DataStoreSettingsPreferences.kt`, `MakApplication.kt`, `notifications/CollisionAlarmScheduler.kt` i testy.
+
+Zmiany:
+
+1. `DataStoreSettingsPreferences`: dodaj `.distinctUntilChanged()` do `theme`, `collisionNotifications` i `gapThresholdMinutes`, tak jak ma `planDisplay`.
+2. `CollisionAlarmScheduler`: wydziel `refresh(settings: CollisionNotificationPreferences, inputs: ActivePlanInputs?)` pod tym samym `mutex`; obecne `refresh()` czyta obie wartości przez `first()` i woła nową funkcję (odbiornik restartu i alarm podtrzymania dalej wołają `refresh()`). Zapis `store(plannedIds)` pomija, gdy `storedIds() == plannedIds`.
+3. `MakApplication`: kolektor powiadomień ma postać `preferences.collisionNotifications.flatMapLatest { settings -> if (!settings.enabled) flowOf(settings to null) else activePlanSource.observeActive().map { settings to it } }`, z dotychczasowym `debounce`, i woła `scheduler.refresh(settings, inputs)`. Wyłączone powiadomienia nadal wywołują `cancelAll` przez `refresh` z `enabled == false`.
+
+Testy: `CollisionAlarmSchedulerTest` na emulatorze (wyłączone powiadomienia anulują alarmy; dwa wywołania z tymi samymi danymi nie zmieniają zapisanych identyfikatorów); `SettingsPreferencesTest` na emulatorze (zapis innego klucza nie emituje ponownie `theme`).
+
+Przypadki brzegowe: włączenie powiadomień po starcie z wyłączonymi zaczyna subskrypcję planu i planuje alarmy bez ponownego uruchomienia aplikacji.
+
+Weryfikacja: `gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.domain.CollisionNotificationPlannerTest"`; na emulatorze `CollisionAlarmSchedulerTest`, `SettingsPreferencesTest` i `KoinGraphTest`; ręcznie: włączenie powiadomień w ustawieniach planuje alarm (`adb shell dumpsys alarm | findstr dev.retza.mak`).
+
+Kryterium zakończenia: testy przechodzą, a ręczne sprawdzenie pokazuje alarm po włączeniu i brak alarmów po wyłączeniu. Commit: `fix: skip plan refreshes when nothing changed (I-84)`. Potem I-84 przechodzi w `QUEUE.md` na `gotowe` (zmiany bez wpływu na wygląd poza dialogami sprawdzonymi zrzutami), a `PLAN.md` dostaje kroki I-85.

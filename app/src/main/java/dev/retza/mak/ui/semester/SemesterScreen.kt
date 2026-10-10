@@ -54,11 +54,9 @@ import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.MakSpacing
-import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.makRowFocus
 import dev.retza.mak.ui.polishPlural
-import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.parseHexColor
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -183,7 +181,6 @@ data class SemesterScreenUiState(
     val pendingOverrideDeletion: WeekOverrideUi? = null,
     val pendingCalendarDeletion: SemesterCalendarUi? = null,
     val reconnectError: String? = null,
-    val status: ScreenStatus = ScreenStatus.Ready
 )
 
 /** An unsaved draft or open confirmation that a downloaded plan must not replace. */
@@ -205,7 +202,6 @@ fun SemesterScreen(
     onOpenCourses: () -> Unit,
     onOpenOverrides: () -> Unit,
     onOpenCalendars: () -> Unit,
-    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     MakScreenContent(
@@ -213,59 +209,53 @@ fun SemesterScreen(
     ) {
         MakScreenIntro("Zakres dat, pierwszy tydzień A/B, kierunki i ręczne korekty tygodni.")
 
-        when (state.status) {
-            ScreenStatus.Ready -> {
-                SemesterForm(
-                    state = state.semester,
-                    showDates = state.calendars.size <= 1,
-                    onNameChanged = onSemesterNameChanged,
-                    onStartDateChanged = onSemesterStartDateChanged,
-                    onEndDateChanged = onSemesterEndDateChanged,
-                    onFirstWeekChanged = onSemesterFirstWeekChanged,
-                    onSave = onSaveSemester
-                )
-                if (state.calendars.size > 1) {
-                    MakNoteBanner(
-                        title = "Różne kalendarze",
-                        subtitle = "Kierunki używają różnych zakresów dat i rytmów A/B. " +
-                            "Zmień daty na ekranie Kalendarze.",
-                        role = MakNoteRole.Neutral
-                    )
-                }
-                SemesterNavigationRow(
-                    title = "Kierunki",
-                    countLabel = state.courseItems.size.let {
-                        "$it ${polishPlural(it, "kierunek", "kierunki", "kierunków")}"
-                    },
-                    onClick = onOpenCourses
-                )
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = MakSpacing.md),
-                    color = MaterialTheme.colorScheme.outlineVariant
-                )
-                SemesterNavigationRow(
-                    title = "Korekty tygodni",
-                    countLabel = state.overrideCount.let {
-                        "$it ${polishPlural(it, "korekta", "korekty", "korekt")}"
-                    },
-                    onClick = onOpenOverrides
-                )
-                if (state.calendars.size > 1) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = MakSpacing.md),
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    )
-                    SemesterNavigationRow(
-                        title = "Kalendarze",
-                        countLabel = state.calendars.size.let {
-                            "$it ${polishPlural(it, "kalendarz", "kalendarze", "kalendarzy")}"
-                        },
-                        onClick = onOpenCalendars
-                    )
-                }
-            }
-
-            else -> MakStateMessage(status = state.status, onRetry = onRetry)
+        SemesterForm(
+            state = state.semester,
+            showDates = state.calendars.size <= 1,
+            onNameChanged = onSemesterNameChanged,
+            onStartDateChanged = onSemesterStartDateChanged,
+            onEndDateChanged = onSemesterEndDateChanged,
+            onFirstWeekChanged = onSemesterFirstWeekChanged,
+            onSave = onSaveSemester
+        )
+        if (state.calendars.size > 1) {
+            MakNoteBanner(
+                title = "Różne kalendarze",
+                subtitle = "Kierunki używają różnych zakresów dat i rytmów A/B. " +
+                    "Zmień daty na ekranie Kalendarze.",
+                role = MakNoteRole.Neutral
+            )
+        }
+        SemesterNavigationRow(
+            title = "Kierunki",
+            countLabel = state.courseItems.size.let {
+                "$it ${polishPlural(it, "kierunek", "kierunki", "kierunków")}"
+            },
+            onClick = onOpenCourses
+        )
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = MakSpacing.md),
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+        SemesterNavigationRow(
+            title = "Korekty tygodni",
+            countLabel = state.overrideCount.let {
+                "$it ${polishPlural(it, "korekta", "korekty", "korekt")}"
+            },
+            onClick = onOpenOverrides
+        )
+        if (state.calendars.size > 1) {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = MakSpacing.md),
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+            SemesterNavigationRow(
+                title = "Kalendarze",
+                countLabel = state.calendars.size.let {
+                    "$it ${polishPlural(it, "kalendarz", "kalendarze", "kalendarzy")}"
+                },
+                onClick = onOpenCalendars
+            )
         }
     }
 }

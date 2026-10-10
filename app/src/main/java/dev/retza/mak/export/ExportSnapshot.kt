@@ -1,6 +1,5 @@
 package dev.retza.mak.export
 
-import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterBackup
@@ -27,18 +26,6 @@ data class ExportSnapshot(
     val semesters: List<SemesterSnapshot> = emptyList()
 ) {
     companion object {
-        fun from(
-            semesters: Collection<SemesterWithData>,
-            studyPrograms: Collection<StudyProgramEntity>
-        ): ExportSnapshot =
-            ExportSnapshot(
-                studyPrograms = studyPrograms
-                    .distinctBy { it.id }
-                    .sortedBy { it.id }
-                    .map(StudyProgramSnapshot::from),
-                semesters = semesters.sortedBy { it.semester.id }.map(SemesterSnapshot::from)
-            )
-
         fun from(data: BackupData): ExportSnapshot =
             ExportSnapshot(
                 studyPrograms = data.studyPrograms
@@ -79,19 +66,6 @@ data class SemesterSnapshot(
     val occurrenceChanges: List<OccurrenceChangeSnapshot>
 ) {
     companion object {
-        fun from(data: SemesterWithData): SemesterSnapshot =
-            SemesterSnapshot(
-                id = data.semester.id,
-                name = data.semester.name,
-                isActive = data.semester.isActive,
-                calendars = data.academicCalendars.sortedBy { it.id }.map(AcademicCalendarSnapshot::from),
-                programs = data.semesterPrograms.sortedBy { it.id }.map(SemesterProgramSnapshot::from),
-                classes = data.classes.sortedBy { it.id }.map(ClassSnapshot::from),
-                weekOverrides = data.weekOverrides.sortedBy { it.id }.map(WeekOverrideSnapshot::from),
-                occurrenceNotes = data.occurrenceNotes.sortedBy { it.id }.map(OccurrenceNoteSnapshot::from),
-                occurrenceChanges = data.occurrenceChanges.sortedBy { it.id }.map(OccurrenceChangeSnapshot::from)
-            )
-
         fun from(backup: SemesterBackup): SemesterSnapshot =
             SemesterSnapshot(
                 id = backup.semester.id,

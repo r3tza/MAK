@@ -17,18 +17,18 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import dev.retza.mak.ui.components.ClassCard
 import dev.retza.mak.ui.components.ClassItemUi
+import dev.retza.mak.ui.components.MakEmptyState
+import dev.retza.mak.ui.components.MakLoadingMessage
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakRowTitle
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSpacing
-import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakSummaryCard
 import dev.retza.mak.ui.components.MakBannerAction
 import dev.retza.mak.ui.components.MakNoteBanner
 import dev.retza.mak.ui.components.MakNoteRole
 import dev.retza.mak.ui.components.MakSecondaryAction
-import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.settings.SyncAttentionUi
 import dev.retza.mak.ui.settings.SyncIssueFix
 
@@ -41,7 +41,7 @@ data class TodayUiState(
     val collisionCount: Int = 0,
     val gapCount: Int = 0,
     val items: List<ClassItemUi> = emptyList(),
-    val status: ScreenStatus = ScreenStatus.Ready,
+    val isLoading: Boolean = false,
     val emptyMessage: String = "Nie masz dziś zajęć.",
     // Study programs of the active semester hidden on this phone; the hint explains the shorter plan.
     val hiddenProgramNames: List<String> = emptyList(),
@@ -53,7 +53,6 @@ fun TodayScreen(
     state: TodayUiState,
     onOpenClass: (String) -> Unit,
     onStartSetup: () -> Unit,
-    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     requiresSetup: Boolean = false,
     availableUpdateVersion: String? = null,
@@ -112,14 +111,14 @@ fun TodayScreen(
             Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.xl)) {
                 TodaySummary(state, Modifier.width(TodaySummaryColumnWidth))
                 Column(modifier = Modifier.weight(1f)) {
-                    TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onOpenSync, onOpenPrograms, onRetry)
+                    TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onOpenSync, onOpenPrograms)
                 }
             }
         } else {
             if (state.hasActiveSemester) {
                 TodaySummary(state, Modifier.padding(bottom = MakSpacing.xl))
             }
-            TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onOpenSync, onOpenPrograms, onRetry)
+            TodayClasses(state, requiresSetup, onOpenClass, onStartSetup, onOpenSync, onOpenPrograms)
         }
     }
 }
@@ -145,31 +144,22 @@ private fun ColumnScope.TodayClasses(
     onStartSetup: () -> Unit,
     onOpenSync: () -> Unit,
     onOpenPrograms: () -> Unit,
-    onRetry: () -> Unit
 ) {
     MakRowTitle(title = "Zajęcia")
-    when (state.status) {
-        ScreenStatus.Ready -> if (state.allProgramsHidden) {
-            AllProgramsHiddenNote(onOpenPrograms)
-        } else if (state.items.isEmpty()) {
-            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
-                MakStateMessage(
-                    status = state.status,
-                    emptyMessage = state.emptyMessage
-                )
-                if (requiresSetup) {
-                    MakPrimaryAction(text = "Skonfiguruj plan", onClick = onStartSetup)
-                    MakSecondaryAction(text = "Pobierz plan z konta Google", onClick = onOpenSync)
-                }
-            }
-        } else {
-            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
-                state.items.forEach { item ->
-                    ClassCard(item = item, onClick = { onOpenClass(item.id) })
-                }
+    when {
+        state.isLoading -> MakLoadingMessage()
+        state.allProgramsHidden -> AllProgramsHiddenNote(onOpenPrograms)
+        state.items.isEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
+            MakEmptyState(state.emptyMessage)
+            if (requiresSetup) {
+                MakPrimaryAction(text = "Skonfiguruj plan", onClick = onStartSetup)
+                MakSecondaryAction(text = "Pobierz plan z konta Google", onClick = onOpenSync)
             }
         }
-
-        else -> MakStateMessage(status = state.status, onRetry = onRetry)
+        else -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
+            state.items.forEach { item ->
+                ClassCard(item = item, onClick = { onOpenClass(item.id) })
+            }
+        }
     }
 }

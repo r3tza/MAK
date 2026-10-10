@@ -12,7 +12,6 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.domain.WeekType
 import dev.retza.mak.domain.shouldActivateNewSemester
 import dev.retza.mak.ui.components.FieldErrorUi
-import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
@@ -79,7 +78,6 @@ data class SetupWizardUiState(
     val isSemesterActive: Boolean = true,
     val isActivating: Boolean = false,
     val errors: Map<SetupField, FieldErrorUi> = emptyMap(),
-    val status: ScreenStatus = ScreenStatus.Ready,
     val canSkipClasses: Boolean = true,
     val isSaving: Boolean = false,
     // True while the course step adds a further program to the already saved semester.

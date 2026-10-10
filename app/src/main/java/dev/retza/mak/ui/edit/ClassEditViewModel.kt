@@ -22,7 +22,6 @@ import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
 import java.time.DayOfWeek
 import java.time.LocalDate
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -60,7 +59,6 @@ class ClassEditViewModel(
             field = value
             savedState[KEY_EDITING_CLASS_ID] = value
         }
-    private var openJob: Job? = null
     private var editPlanData: ActivePlanData? = null
 
     // Unfiltered: the form offers every study program and only marks the hidden ones (`FEATURES.md`, I-79).
@@ -87,27 +85,7 @@ class ClassEditViewModel(
         }
     }
 
-    fun openNew(oneOffDate: LocalDate? = null) {
-        openJob?.cancel()
-        editingClassId = null
-        editPlanData = null
-        val recurrenceId = if (oneOffDate == null) "every_week" else "once"
-        openJob = viewModelScope.launch {
-            val data = freshActivePlanData()
-            editPlanData = data
-            state.value = withActiveOptions(
-                defaultClassEditState().copy(
-                    recurrenceId = recurrenceId,
-                    recurrenceLabel = classEditRecurrenceLabel(recurrenceId),
-                    occurrenceDate = oneOffDate?.toString().orEmpty()
-                ),
-                data
-            )
-        }
-    }
-
     suspend fun openNewFromFreshPlan(oneOffDate: LocalDate? = null) {
-        openJob?.cancel()
         editingClassId = null
         editPlanData = null
         val recurrenceId = if (oneOffDate == null) "every_week" else "once"
@@ -121,34 +99,8 @@ class ClassEditViewModel(
         )
     }
 
-    /**
-     * Opens the editor from its route. Keeps the current draft when it already belongs to this
-     * class, so recreating the screen (rotation, process death) does not reload stored data.
-     */
-    fun openEditIfNeeded(occurrenceId: String) {
-        val classId = occurrenceId.substringBefore(':').toLongOrNull() ?: return
-        if (editingClassId == classId) return
-        openEdit(occurrenceId)
-    }
-
-    fun openEdit(occurrenceId: String) {
-        val classId = occurrenceId.substringBefore(':').toLongOrNull() ?: return
-        openJob?.cancel()
-        editingClassId = null
-        editPlanData = null
-        state.value = withActiveOptions(defaultClassEditState())
-        openJob = viewModelScope.launch {
-            val data = freshActivePlanData() ?: return@launch
-            val item = data.classes.firstOrNull { it.id == classId.toString() } ?: return@launch
-            editPlanData = data
-            editingClassId = classId
-            state.value = classEditState(item, data)
-        }
-    }
-
     suspend fun openEditFromFreshPlan(occurrenceId: String): Boolean {
         val classId = occurrenceId.substringBefore(':').toLongOrNull() ?: return false
-        openJob?.cancel()
         editingClassId = null
         editPlanData = null
         state.value = withActiveOptions(defaultClassEditState())

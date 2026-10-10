@@ -2,6 +2,8 @@ package dev.retza.mak.update
 
 import dev.retza.mak.ui.MainDispatcherRule
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
@@ -95,10 +97,18 @@ private fun testUpdateViewModel(
         override fun install(file: java.io.File) = Unit
     },
     installEvents = InstallEventStore(),
-    preferences = null,
+    preferences = InMemoryUpdatePreferences(),
     clock = java.time.Clock.systemUTC(),
     releaseNotes = releaseNotes
 )
+
+private class InMemoryUpdatePreferences : UpdatePreferences {
+    override val state = MutableStateFlow(UpdatePreferenceState())
+    override suspend fun setAutomaticChecks(enabled: Boolean) = state.update { it.copy(automaticChecks = enabled) }
+    override suspend fun recordAutomaticCheck(timeMillis: Long) =
+        state.update { it.copy(lastAutomaticCheckMillis = timeMillis) }
+    override suspend fun dismiss(versionCode: Long) = state.update { it.copy(dismissedVersionCode = versionCode) }
+}
 
 private fun appInfo(versionName: String) = InstalledAppInfoProvider {
     InstalledAppInfo(versionName, 100, "dev.retza.mak", 36)

@@ -85,7 +85,7 @@ class SettingsViewModelTest {
         viewModel.selectTheme("dark")
         advanceUntilIdle()
 
-        assertEquals(ThemeMode.Dark, viewModel.themeMode.value)
+        assertEquals(ThemeMode.Dark, viewModel.loadedThemeMode.value)
         assertEquals("dark", viewModel.settings.value.themeOptions.first { it.isSelected }.id)
     }
 
@@ -97,7 +97,7 @@ class SettingsViewModelTest {
         viewModel.selectTheme("neon")
         advanceUntilIdle()
 
-        assertEquals(ThemeMode.System, viewModel.themeMode.value)
+        assertEquals(ThemeMode.System, viewModel.loadedThemeMode.value)
     }
 
     @Test

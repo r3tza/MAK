@@ -27,13 +27,7 @@ interface SemesterRepository {
 
     suspend fun saveSemester(record: SemesterRecord): Long
 
-    suspend fun updateSemester(record: SemesterRecord): Long
-
     suspend fun setActiveSemester(id: Long)
-
-    suspend fun clearActiveSemester()
-
-    suspend fun deleteSemester(id: Long)
 
     suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult
 
@@ -56,8 +50,6 @@ interface SemesterRepository {
     suspend fun saveCalendar(record: AcademicCalendarRecord): Long
 
     suspend fun updateSemesterWithCalendar(semester: SemesterRecord, calendar: AcademicCalendarRecord)
-
-    suspend fun deleteCalendarIfUnused(id: Long)
 
     suspend fun deleteCalendar(id: Long)
 
@@ -140,17 +132,6 @@ class RoomSemesterRepository(
         }
     }
 
-    override suspend fun updateSemester(record: SemesterRecord): Long {
-        val entity = record.toEntity()
-        require(entity.name.isNotBlank()) { "Semester name cannot be blank" }
-        require(entity.id != 0L) { "Use saveSemester to create a semester" }
-        return database.withTransaction {
-            val existing = semesters.findById(entity.id) ?: error("Semester does not exist")
-            semesters.update(entity.copy(isActive = existing.isActive))
-            entity.id
-        }
-    }
-
     override suspend fun setActiveSemester(id: Long) {
         database.withTransaction {
             require(semesters.findById(id) != null) { "Semester does not exist" }
@@ -158,10 +139,6 @@ class RoomSemesterRepository(
             semesters.markActive(id)
         }
     }
-
-    override suspend fun clearActiveSemester() = semesters.clearActive()
-
-    override suspend fun deleteSemester(id: Long) = semesters.deleteById(id)
 
     override suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult =
         database.withTransaction {
@@ -325,14 +302,6 @@ class RoomSemesterRepository(
                 "Calendar must belong to the semester"
             }
             calendars.update(calendarEntity)
-        }
-    }
-
-    override suspend fun deleteCalendarIfUnused(id: Long) {
-        database.withTransaction {
-            if (calendars.countAssignments(id) == 0) {
-                calendars.deleteById(id)
-            }
         }
     }
 

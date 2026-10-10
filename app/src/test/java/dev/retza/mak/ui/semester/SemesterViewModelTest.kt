@@ -203,7 +203,7 @@ class SemesterViewModelTest {
         assertNotNull(viewModel.semester.value.semester.dateRangeError)
 
         assertTrue(sink.published.isEmpty())
-        assertTrue(repository.events.none { it == "updateSemester" })
+        assertTrue(repository.events.none { it == "updateSemesterWithCalendar" })
     }
 
     @Test

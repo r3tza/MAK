@@ -35,7 +35,6 @@ internal fun NavGraphBuilder.todayRoute(
             onOpenClass = onOpenOccurrence,
             onStartSetup = startSetup,
             onOpenSync = openSync,
-            onRetry = {},
             requiresSetup = appState.requiresSetup,
             availableUpdateVersion = updateState.availableUpdate?.versionName.takeIf { updateState.showUpdateBanner },
             onViewUpdate = { navController.navigate(MakRoutes.SettingsUpdate) },
@@ -76,7 +75,6 @@ internal fun NavGraphBuilder.scheduleRoute(
             onStartSetup = startSetup,
             onOpenSync = openSync,
             onOpenPrograms = openPrograms,
-            onRetry = {},
             requiresSetup = appState.requiresSetup,
             modifier = Modifier.fillMaxSize()
         )

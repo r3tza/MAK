@@ -69,9 +69,7 @@ import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.MakSpacing
-import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakViewSwitch
-import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.courseShapeColor
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
@@ -119,7 +117,6 @@ data class ScheduleUiState(
     val hasFromWeekCorrection: Boolean = false,
     // False when the filter shows several calendars, so a week correction would have no target.
     val canCorrectWeek: Boolean = true,
-    val status: ScreenStatus = ScreenStatus.Ready,
     // Every study program of the semester is hidden on this phone; the list gives way to a note.
     val allProgramsHidden: Boolean = false,
     val emptyMessage: String = "Brak zajęć w tym dniu dla wybranego kierunku."
@@ -142,7 +139,6 @@ fun ScheduleScreen(
     onSaveWeekCorrection: (WeekTypeUi, WeekOverrideScopeUi) -> Unit,
     onClearWeekCorrection: (WeekOverrideScopeUi) -> Unit,
     onStartSetup: () -> Unit,
-    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     requiresSetup: Boolean = false,
     onOpenSync: () -> Unit = {},
@@ -159,9 +155,6 @@ fun ScheduleScreen(
             modifier = Modifier.padding(top = MakSpacing.sm, bottom = MakSpacing.xs)
         )
         when {
-            state.status != ScreenStatus.Ready ->
-                MakStateMessage(status = state.status, onRetry = onRetry)
-
             requiresSetup -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 MakEmptyState("Nie masz jeszcze aktywnego planu. Skonfiguruj semestr i kierunek.")
                 MakPrimaryAction(text = "Skonfiguruj plan", onClick = onStartSetup)

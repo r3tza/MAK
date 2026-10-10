@@ -71,13 +71,7 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
         return id
     }
 
-    override suspend fun updateSemester(record: SemesterRecord): Long = record.id
-
     override suspend fun setActiveSemester(id: Long) = Unit
-
-    override suspend fun clearActiveSemester() = Unit
-
-    override suspend fun deleteSemester(id: Long) = Unit
 
     override suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult =
         SemesterDeletionResult(null)
@@ -112,8 +106,6 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
         semester: SemesterRecord,
         calendar: AcademicCalendarRecord
     ) = Unit
-
-    override suspend fun deleteCalendarIfUnused(id: Long) = Unit
 
     override suspend fun deleteCalendar(id: Long) = Unit
 
@@ -151,21 +143,6 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
 
     override fun observeActivePlanData(semesterId: Long): Flow<dev.retza.mak.domain.ActivePlanData?> =
         flowOf(null)
-
-    override fun observeClasses(semesterId: Long): Flow<List<ClassRecord>> =
-        flowOf(classes.filter { it.semesterId == semesterId })
-
-    override fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteRecord>> =
-        flowOf(occurrenceNotes.filter { it.semesterId == semesterId })
-
-    override fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeRecord>> =
-        flowOf(occurrenceChanges.filter { it.semesterId == semesterId })
-
-    override fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteRecord>> =
-        flowOf(occurrenceNotes.filter { it.classId == classId })
-
-    override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeRecord>> =
-        flowOf(occurrenceChanges.filter { it.classId == classId })
 
     override suspend fun saveClass(record: ClassRecord): Long {
         val id = record.id.takeIf { it != 0L } ?: nextId++

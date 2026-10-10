@@ -105,7 +105,6 @@ internal fun NavGraphBuilder.classEditRoute(
             onConfirmHiddenData = classEditViewModel::confirmSaveWithHiddenData,
             onDismissHiddenData = classEditViewModel::dismissHiddenData,
             onCancel = onBack,
-            onRetry = {},
             modifier = Modifier.fillMaxSize()
         )
     }

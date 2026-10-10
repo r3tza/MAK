@@ -61,9 +61,3 @@ fun themeModeFromId(id: String): ThemeMode = when (id) {
     "dark" -> ThemeMode.Dark
     else -> ThemeMode.System
 }
-
-fun ThemeMode.toId(): String = when (this) {
-    ThemeMode.System -> "system"
-    ThemeMode.Light -> "light"
-    ThemeMode.Dark -> "dark"
-}

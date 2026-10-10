@@ -38,12 +38,3 @@ data class SemesterWithData(
     @Relation(parentColumn = "id", entityColumn = "semester_id")
     val occurrenceChanges: List<OccurrenceChangeEntity>
 )
-
-data class ClassWithDetails(
-    @Embedded
-    val classEntity: ClassEntity,
-    @Relation(parentColumn = "id", entityColumn = "class_id")
-    val occurrenceNotes: List<OccurrenceNoteEntity>,
-    @Relation(parentColumn = "id", entityColumn = "class_id")
-    val occurrenceChanges: List<OccurrenceChangeEntity>
-)

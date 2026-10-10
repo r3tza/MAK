@@ -86,9 +86,6 @@ class SettingsViewModel(
         if (semester == null) flowOf(null) else scheduleRepository.observeActivePlanData(semester.id)
     }
 
-    val themeMode: StateFlow<ThemeMode> = preferences.theme
-        .stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.System)
-
     /** Null until the stored theme is read, so the first frame never uses a guessed theme. */
     val loadedThemeMode: StateFlow<ThemeMode?> = preferences.theme
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)

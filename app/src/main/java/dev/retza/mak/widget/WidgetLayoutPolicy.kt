@@ -76,9 +76,6 @@ internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
 internal fun widgetNameMaxLines(mode: WidgetLayoutMode): Int =
     widgetLayoutPolicy(mode).nameMaxLines
 
-internal fun widgetNameCharacterLimit(mode: WidgetLayoutMode): Int =
-    widgetLayoutPolicy(mode).nameCharacterLimit
-
 internal fun widgetCountLabel(count: Int): String =
     "$count ${polishPlural(count, "zajęcie", "zajęcia", "zajęć")}"
 

@@ -169,16 +169,6 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         flowOf(calendars.filter { it.semesterId == semesterId })
     fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>> =
         flowOf(weekOverrides.filter { it.semesterId == semesterId })
-    override fun observeClasses(semesterId: Long): Flow<List<ClassRecord>> =
-        flowOf(classes.map { it.toRecord() })
-    override fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteRecord>> =
-        flowOf(occurrenceNotes.map { it.toRecord() })
-    override fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeRecord>> =
-        flowOf(occurrenceChanges.map { it.toRecord() })
-    override fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteRecord>> =
-        flowOf(occurrenceNotes.filter { it.classId == classId }.map { it.toRecord() })
-    override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeRecord>> =
-        flowOf(occurrenceChanges.filter { it.classId == classId }.map { it.toRecord() })
     override suspend fun snapshot(): BackupData {
         return BackupData(
             studyPrograms = studyPrograms,
@@ -203,12 +193,6 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         return entity.id
     }
 
-    suspend fun updateSemester(entity: SemesterEntity): Long {
-        awaitSave()
-        events += "updateSemester"
-        return entity.id
-    }
-
     suspend fun setActiveSemester(id: Long) {
         setActiveCount += 1
         if (semesterById(id) != null) activeSemesterFlow.value = id
@@ -216,12 +200,6 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
 
     suspend fun clearActiveSemester() {
         activeSemesterFlow.value = 0L
-    }
-
-    suspend fun deleteSemester(id: Long) {
-        awaitSave()
-        events += "deleteSemester"
-        semesterFlow.value = semesterFlow.value.filterNot { it.id == id }
     }
 
     suspend fun deleteSemesterAndSelectFallback(
@@ -360,14 +338,6 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         events += "updateSemesterWithCalendar"
         semesterFlow.value = semesterFlow.value.map { if (it.id == semester.id) semester else it }
         calendarState.value = calendars.map { if (it.id == calendar.id) calendar else it }
-    }
-
-    suspend fun deleteCalendarIfUnused(id: Long) {
-        awaitSave()
-        events += "deleteCalendarIfUnused"
-        if (semesterPrograms.none { it.academicCalendarId == id }) {
-            calendarState.value = calendars.filterNot { it.id == id }
-        }
     }
 
     suspend fun saveSemesterProgram(entity: SemesterProgramEntity): Long {

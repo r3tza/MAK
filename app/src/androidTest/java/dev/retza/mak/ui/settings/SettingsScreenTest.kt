@@ -68,7 +68,6 @@ class SettingsScreenTest {
                         onGapThresholdSelected = {},
                         onMinimumBreakSelected = {},
                         notificationsBlocked = false,
-                        onRetry = {}
                     )
                 }
             }
@@ -172,7 +171,6 @@ class SettingsScreenTest {
                         onGapThresholdSelected = {},
                         onMinimumBreakSelected = {},
                         notificationsBlocked = false,
-                        onRetry = {},
                         updates = updates,
                         onCheckUpdates = onCheck,
                         onOpenUpdate = onOpenUpdate,
@@ -202,7 +200,6 @@ class SettingsScreenTest {
                         onGapThresholdSelected = {},
                         onMinimumBreakSelected = {},
                         notificationsBlocked = false,
-                        onRetry = {}
                     )
                 }
             }

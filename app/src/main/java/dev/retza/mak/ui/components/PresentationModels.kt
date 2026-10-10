@@ -69,8 +69,3 @@ data class FieldErrorUi(
     val message: String
 )
 
-sealed interface ScreenStatus {
-    data object Ready : ScreenStatus
-    data object Loading : ScreenStatus
-    data class Error(val message: String) : ScreenStatus
-}

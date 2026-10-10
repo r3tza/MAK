@@ -80,7 +80,6 @@ class SemesterScreenTest {
                         onOpenCourses = { opened = "courses" },
                         onOpenOverrides = { opened = "overrides" },
                         onOpenCalendars = { opened = "calendars" },
-                        onRetry = {}
                     )
                 }
             }
@@ -123,7 +122,6 @@ class SemesterScreenTest {
                         onOpenCourses = {},
                         onOpenOverrides = {},
                         onOpenCalendars = { opened = "calendars" },
-                        onRetry = {}
                     )
                 }
             }

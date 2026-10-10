@@ -8,16 +8,6 @@ import kotlinx.coroutines.flow.map
 interface ScheduleRepository {
     fun observeActivePlanData(semesterId: Long): Flow<ActivePlanData?>
 
-    fun observeClasses(semesterId: Long): Flow<List<ClassRecord>>
-
-    fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteRecord>>
-
-    fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeRecord>>
-
-    fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteRecord>>
-
-    fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeRecord>>
-
     suspend fun saveClass(record: ClassRecord): Long
 
     suspend fun deleteClass(id: Long)
@@ -43,21 +33,6 @@ class RoomScheduleRepository(
 
     override fun observeActivePlanData(semesterId: Long): Flow<ActivePlanData?> =
         semesters.observeWithData(semesterId).map { it?.toActivePlanData() }
-
-    override fun observeClasses(semesterId: Long): Flow<List<ClassRecord>> =
-        classes.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }
-
-    override fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteRecord>> =
-        occurrenceNotes.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }
-
-    override fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeRecord>> =
-        occurrenceChanges.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }
-
-    override fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteRecord>> =
-        occurrenceNotes.observeForClass(classId).map { list -> list.map { it.toRecord() } }
-
-    override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeRecord>> =
-        occurrenceChanges.observeForClass(classId).map { list -> list.map { it.toRecord() } }
 
     override suspend fun saveClass(record: ClassRecord): Long {
         val entity = record.toEntity()

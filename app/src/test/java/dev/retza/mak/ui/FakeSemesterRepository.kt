@@ -55,14 +55,7 @@ internal class FakeSemesterRepository(
     override suspend fun saveSemester(record: SemesterRecord): Long =
         delegate.saveSemester(record.toEntity())
 
-    override suspend fun updateSemester(record: SemesterRecord): Long =
-        delegate.updateSemester(record.toEntity())
-
     override suspend fun setActiveSemester(id: Long) = delegate.setActiveSemester(id)
-
-    override suspend fun clearActiveSemester() = delegate.clearActiveSemester()
-
-    override suspend fun deleteSemester(id: Long) = delegate.deleteSemester(id)
 
     override suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult =
         delegate.deleteSemesterAndSelectFallback(id)
@@ -99,8 +92,6 @@ internal class FakeSemesterRepository(
         semester: SemesterRecord,
         calendar: AcademicCalendarRecord
     ) = delegate.updateSemesterWithCalendar(semester.toEntity(), calendar.toEntity())
-
-    override suspend fun deleteCalendarIfUnused(id: Long) = delegate.deleteCalendarIfUnused(id)
 
     override suspend fun deleteCalendar(id: Long) = delegate.deleteCalendar(id)
 

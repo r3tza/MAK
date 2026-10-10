@@ -108,7 +108,7 @@ class ExportImporterTest {
 
     @Test
     fun prepareRejectsTwoActiveSemesters() {
-        val snapshot = ExportSnapshot.from(
+        val snapshot = exportSnapshotOf(
             semesters = listOf(
                 semesterData(1, active = true),
                 semesterData(2, active = true)
@@ -239,7 +239,7 @@ class ExportImporterTest {
 
     @Test
     fun prepareRejectsDuplicateCalendarIdsAcrossSemesters() {
-        val snapshot = ExportSnapshot.from(
+        val snapshot = exportSnapshotOf(
             semesters = listOf(
                 semesterData(1, active = true),
                 semesterData(2, active = false)
@@ -327,7 +327,7 @@ class ExportImporterTest {
                 )
             )
         )
-        val snapshot = ExportSnapshot.from(listOf(semester), listOf(program()))
+        val snapshot = exportSnapshotOf(listOf(semester), listOf(program()))
 
         val result = ExportImporter.prepare(snapshot)
 
@@ -341,7 +341,7 @@ class ExportImporterTest {
 
     private fun snapshotWithChange(change: OccurrenceChangeEntity): ExportSnapshot {
         val base = semesterData(1, active = true).copy(occurrenceChanges = listOf(change))
-        return ExportSnapshot.from(listOf(base), listOf(program()))
+        return exportSnapshotOf(listOf(base), listOf(program()))
     }
 
     private fun snapshotWithMovedOccurrenceNote(): ExportSnapshot {
@@ -370,7 +370,7 @@ class ExportImporterTest {
             occurrenceChanges = listOf(moved),
             occurrenceNotes = listOf(note)
         )
-        return ExportSnapshot.from(listOf(base), listOf(program()))
+        return exportSnapshotOf(listOf(base), listOf(program()))
     }
 
     private fun program() = StudyProgramEntity(id = 3, name = "Informatyka", color = "#3366FF")
@@ -419,7 +419,7 @@ class ExportImporterTest {
     }
 
     private fun validSnapshot(): ExportSnapshot =
-        ExportSnapshot.from(
+        exportSnapshotOf(
             semesters = listOf(semesterData(1, active = true)),
             studyPrograms = listOf(program())
         )

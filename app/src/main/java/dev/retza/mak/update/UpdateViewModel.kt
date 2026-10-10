@@ -52,7 +52,7 @@ class UpdateViewModel(
     private val verifier: ApkVerifier,
     private val installer: UpdateInstaller,
     installEvents: InstallEventStore,
-    private val preferences: UpdatePreferences?,
+    private val preferences: UpdatePreferences,
     private val clock: Clock,
     releaseNotes: ReleaseNotesProvider
 ) : ViewModel() {
@@ -70,7 +70,7 @@ class UpdateViewModel(
     private var verifiedFile: File? = null
 
     init {
-        if (preferences != null) viewModelScope.launch {
+        viewModelScope.launch {
             preferences.state.collect { preferenceState ->
                 mutableState.update { current ->
                     current.copy(
@@ -97,13 +97,12 @@ class UpdateViewModel(
     }
 
     fun checkAutomatically() {
-        val updatePreferences = preferences ?: return
         if (checkJob?.isActive == true) return
         checkJob = viewModelScope.launch {
-            val pref = updatePreferences.state.first()
+            val pref = preferences.state.first()
             val now = clock.millis()
             if (!shouldCheckAutomatically(pref, now)) return@launch
-            updatePreferences.recordAutomaticCheck(now)
+            preferences.recordAutomaticCheck(now)
             val result = checker.check()
             mutableState.update { current ->
                 val checked = current.withCheckResult(result, hideAutomaticError = true)
@@ -116,12 +115,12 @@ class UpdateViewModel(
     }
 
     fun setAutomaticChecks(enabled: Boolean) {
-        preferences?.let { viewModelScope.launch { it.setAutomaticChecks(enabled) } }
+        viewModelScope.launch { preferences.setAutomaticChecks(enabled) }
     }
 
     fun dismissAvailableUpdate() {
         val code = mutableState.value.availableUpdate?.versionCode?.toLong() ?: return
-        preferences?.let { viewModelScope.launch { it.dismiss(code) } }
+        viewModelScope.launch { preferences.dismiss(code) }
     }
 
     fun checkNow() {

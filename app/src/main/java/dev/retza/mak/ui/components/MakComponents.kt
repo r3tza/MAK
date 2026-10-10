@@ -701,40 +701,14 @@ fun MakEmptyState(message: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun MakStateMessage(
-    status: ScreenStatus,
-    modifier: Modifier = Modifier,
-    emptyMessage: String? = null,
-    onRetry: (() -> Unit)? = null
-) {
-    when (status) {
-        ScreenStatus.Loading -> Column(
-            modifier = modifier.fillMaxWidth().padding(MakSpacing.xl),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
-        ) {
-            CircularProgressIndicator()
-            Text("Ładowanie", style = MaterialTheme.typography.bodyMedium)
-        }
-
-        is ScreenStatus.Error -> Column(
-            modifier = modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.errorContainer)
-                .padding(MakSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
-        ) {
-            Text("Nie udało się wczytać danych", fontWeight = FontWeight.SemiBold)
-            Text(status.message, color = MaterialTheme.colorScheme.onErrorContainer)
-            if (onRetry != null) {
-                MakSecondaryAction(text = "Spróbuj ponownie", onClick = onRetry)
-            }
-        }
-
-        ScreenStatus.Ready -> if (emptyMessage != null) {
-            MakEmptyState(emptyMessage, modifier)
-        }
+fun MakLoadingMessage(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth().padding(MakSpacing.xl),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
+    ) {
+        CircularProgressIndicator()
+        Text("Ładowanie", style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -1146,34 +1120,6 @@ fun MakField(
         keyboardOptions = keyboardOptions,
         label = { Text(label) },
         placeholder = placeholder?.let { { Text(it) } }
-    )
-}
-
-@Composable
-fun MakReadOnlyField(
-    label: String,
-    value: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    isError: Boolean = false
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = {},
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp)
-            .clickable(role = Role.Button, onClick = onClick),
-        readOnly = true,
-        isError = isError,
-        label = { Text(label) },
-        trailingIcon = {
-            Icon(
-                imageVector = Icons.Filled.ArrowDropDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
     )
 }
 
