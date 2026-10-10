@@ -17,6 +17,7 @@ import dev.retza.mak.domain.SemesterProgram
 import dev.retza.mak.domain.allProgramsHidden
 import dev.retza.mak.domain.visibleAssignments
 import dev.retza.mak.domain.visibleTo
+import dev.retza.mak.domain.VisiblePlanData
 import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.components.CalendarDayUi
@@ -47,6 +48,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -65,6 +68,8 @@ private data class ScheduleControls(
     val courseFilterId: String = "all",
     val showCancelled: Boolean = false
 )
+
+private data class GridKey(val month: YearMonth, val filter: String, val today: LocalDate, val view: ScheduleView)
 
 @KoinViewModel
 class ScheduleViewModel(
@@ -90,8 +95,21 @@ class ScheduleViewModel(
     private val activePlan = activePlanSource.observeActive()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val schedule: StateFlow<ScheduleUiState> = combine(activePlan, controls) { inputs, control ->
-        buildSchedule(inputs, control)
+    // The grid resolves 42 days, so it is rebuilt only when what it shows changes, and only in the calendar view.
+    private val calendarGrid: StateFlow<List<CalendarDayUi>> = combine(
+        activePlan,
+        controls.map { GridKey(it.calendarMonth, it.courseFilterId, it.today, it.scheduleView) }.distinctUntilChanged()
+    ) { inputs, key ->
+        if (inputs == null || key.view != ScheduleView.Calendar) {
+            emptyList()
+        } else {
+            val visible = inputs.data.visibleTo(inputs.display)
+            calendarGrid(visible, key.month, activeFilter(inputs, key.filter), key.today)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val schedule: StateFlow<ScheduleUiState> = combine(activePlan, controls, calendarGrid) { inputs, control, grid ->
+        buildSchedule(inputs, control, grid)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -211,62 +229,73 @@ class ScheduleViewModel(
         return data.calendars.firstOrNull { it.id == assignment.academicCalendarId }?.id?.toLongOrNull()
     }
 
+    private fun matchesFilter(occurrence: PlannedOccurrence, activeFilter: String): Boolean =
+        activeFilter == "all" || occurrence.classItem.semesterProgramId == activeFilter
+
+    private fun activeFilter(inputs: ActivePlanInputs, requested: String): String {
+        val visible = inputs.data.visibleTo(inputs.display)
+        val programs = visible.data.visibleAssignments(inputs.display)
+        return requested.takeIf { id -> id == "all" || programs.any { it.id == id } } ?: "all"
+    }
+
+    private fun calendarGrid(
+        visible: VisiblePlanData,
+        month: YearMonth,
+        activeFilter: String,
+        today: LocalDate
+    ): List<CalendarDayUi> = calendarDates(month).map { date ->
+        // Days of the grid show only markers, so their collisions are not needed.
+        val occurrences = activePlanProvider.schedule(visible, date).occurrences.filter {
+            matchesFilter(it, activeFilter)
+        }
+        CalendarDayUi(
+            id = date.toString(),
+            dayLabel = date.dayOfMonth.toString(),
+            accessibilityLabel = calendarAccessibilityLabel(date, occurrences),
+            isInCurrentMonth = YearMonth.from(date) == month,
+            isToday = date == today,
+            isSelected = false,
+            markers = occurrences.take(if (occurrences.size > 5) 4 else 5).map {
+                CalendarMarkerUi(
+                    id = it.id,
+                    contentDescription = calendarOccurrenceLabel(it),
+                    isChanged = it.occurrenceChange != null,
+                    colorHex = it.studyProgram?.color
+                )
+            },
+            hasMoreMarkers = occurrences.size > 5
+        )
+    }
+
     private fun buildSchedule(
         inputs: ActivePlanInputs?,
-        control: ScheduleControls
+        control: ScheduleControls,
+        grid: List<CalendarDayUi>
     ): ScheduleUiState {
         if (inputs == null) return emptyScheduleState()
         // Hidden study programs are neither filter options, legend entries, cancelled classes nor markers.
         val visible = inputs.data.visibleTo(inputs.display)
         val data = visible.data
         val programs = data.visibleAssignments(inputs.display)
-        val activeFilter = control.courseFilterId.takeIf { id ->
-            id == "all" || programs.any { it.id == id }
-        } ?: "all"
+        val activeFilter = activeFilter(inputs, control.courseFilterId)
         val selectedPlan = activePlanProvider.resolve(visible, control.scheduleDate, inputs.display)
         val selected = selectedPlan.schedule
-        val filtered = selected.occurrences.filter {
-            activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
-        }
+        val filtered = selected.occurrences.filter { matchesFilter(it, activeFilter) }
         val cancelled = if (control.showCancelled) cancelledItems(selected.cancelled, activeFilter) else emptyList()
         val labels = collisionLabels(selectedPlan.collisions)
         val names = collisionPartnerNames(selectedPlan.collisions)
         val monday = control.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val currentWeekMonday = control.today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val calendarDays = calendarDates(control.calendarMonth).map { date ->
-            // Days of the grid show only markers, so their collisions are not needed.
-            val occurrences = activePlanProvider.schedule(visible, date).occurrences.filter {
-                activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
-            }
-            CalendarDayUi(
-                id = date.toString(),
-                dayLabel = date.dayOfMonth.toString(),
-                accessibilityLabel = calendarAccessibilityLabel(date, occurrences),
-                isInCurrentMonth = YearMonth.from(date) == control.calendarMonth,
-                isToday = date == control.today,
-                isSelected = date == control.calendarDate,
-                markers = occurrences.take(if (occurrences.size > 5) 4 else 5).map {
-                    CalendarMarkerUi(
-                        id = it.id,
-                        contentDescription = calendarOccurrenceLabel(it),
-                        isChanged = it.occurrenceChange != null,
-                        colorHex = it.studyProgram?.color
-                    )
-                },
-                hasMoreMarkers = occurrences.size > 5
-            )
+        val calendarDays = grid.map { it.copy(isSelected = it.id == control.calendarDate.toString()) }
+        // The selected day's classes are built only in the calendar view.
+        val calendarPlan = when {
+            control.scheduleView != ScheduleView.Calendar -> null
+            control.calendarDate == control.scheduleDate -> selectedPlan
+            else -> activePlanProvider.resolve(visible, control.calendarDate, inputs.display)
         }
-        val calendarPlan = if (control.calendarDate == control.scheduleDate) {
-            selectedPlan
-        } else {
-            activePlanProvider.resolve(visible, control.calendarDate, inputs.display)
-        }
-        val calendarSchedule = calendarPlan.schedule
-        val calendarFiltered = calendarSchedule.occurrences.filter {
-            activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
-        }
-        val calendarLabels = collisionLabels(calendarPlan.collisions)
-        val calendarNames = collisionPartnerNames(calendarPlan.collisions)
+        val calendarFiltered = calendarPlan?.schedule?.occurrences?.filter { matchesFilter(it, activeFilter) }.orEmpty()
+        val calendarLabels = calendarPlan?.let { collisionLabels(it.collisions) }.orEmpty()
+        val calendarNames = calendarPlan?.let { collisionPartnerNames(it.collisions) }.orEmpty()
         val relevantCalendarIds = if (activeFilter == "all") {
             data.calendars.mapTo(mutableSetOf()) { it.id }
         } else {
@@ -323,8 +352,12 @@ class ScheduleViewModel(
             calendarSelectedDayLabel = control.calendarDate.format(fullDateFormatter)
                 .replaceFirstChar { it.titlecase(polishLocale) },
             calendarSelectedDayCountLabel = classCountLabel(calendarFiltered.size),
-            calendarItems = calendarFiltered.map { it.toUi(calendarLabels[it.id], calendarNames[it.id]) } +
-                if (control.showCancelled) cancelledItems(calendarSchedule.cancelled, activeFilter) else emptyList(),
+            calendarItems = if (calendarPlan == null) {
+                emptyList()
+            } else {
+                calendarFiltered.map { it.toUi(calendarLabels[it.id], calendarNames[it.id]) } +
+                    if (control.showCancelled) cancelledItems(calendarPlan.schedule.cancelled, activeFilter) else emptyList()
+            },
             showCancelled = control.showCancelled,
             hasOneWeekCorrection = data.weekOverrides.any {
                 it.academicCalendarId in relevantCalendarIds &&
@@ -340,7 +373,7 @@ class ScheduleViewModel(
 
     private fun cancelledItems(cancelled: List<PlannedOccurrence>, activeFilter: String): List<ClassItemUi> =
         cancelled
-            .filter { activeFilter == "all" || it.classItem.semesterProgramId == activeFilter }
+            .filter { matchesFilter(it, activeFilter) }
             .map { it.toUi(conflictLabel = null) }
 }
 

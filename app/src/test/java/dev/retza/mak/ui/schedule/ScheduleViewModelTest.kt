@@ -119,6 +119,9 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
+        viewModel.selectView(ScheduleView.Calendar)
+        advanceUntilIdle()
+
         val state = viewModel.schedule.value
         assertEquals(listOf("all"), state.filters.map { it.id })
         assertTrue(state.items.isEmpty())
@@ -150,6 +153,7 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
+        viewModel.selectView(ScheduleView.Calendar)
         viewModel.setShowCancelled(true)
         advanceUntilIdle()
 
@@ -263,6 +267,7 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
+        viewModel.selectView(ScheduleView.Calendar)
         viewModel.setShowCancelled(true)
         viewModel.selectCourseFilter(second.semesterProgramId.toString())
         advanceUntilIdle()
@@ -374,6 +379,7 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
+        viewModel.selectView(ScheduleView.Calendar)
         viewModel.selectCalendarDay("2026-10-05")
         advanceUntilIdle()
 
@@ -388,6 +394,7 @@ class ScheduleViewModelTest {
         val repository = FakeRepository()
         addMondayClasses(repository, 3)
         val viewModel = viewModel(repository)
+        viewModel.selectView(ScheduleView.Calendar)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
@@ -401,6 +408,7 @@ class ScheduleViewModelTest {
         val repository = FakeRepository()
         addMondayClasses(repository, 5)
         val viewModel = viewModel(repository)
+        viewModel.selectView(ScheduleView.Calendar)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
@@ -414,6 +422,7 @@ class ScheduleViewModelTest {
         val repository = FakeRepository()
         addMondayClasses(repository, 6)
         val viewModel = viewModel(repository)
+        viewModel.selectView(ScheduleView.Calendar)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
@@ -441,6 +450,7 @@ class ScheduleViewModelTest {
             newNote = null
         )
         val viewModel = viewModel(repository)
+        viewModel.selectView(ScheduleView.Calendar)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
@@ -451,6 +461,48 @@ class ScheduleViewModelTest {
             mapOf("1:2026-09-21" to true, "2:2026-09-21" to false),
             markers.associate { it.id to it.isChanged }
         )
+    }
+
+    @Test
+    fun listViewDoesNotBuildTheCalendarGrid() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        assertTrue(viewModel.schedule.value.calendarDays.isEmpty())
+    }
+
+    @Test
+    fun selectingACalendarDayKeepsTheGrid() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        viewModel.selectView(ScheduleView.Calendar)
+        advanceUntilIdle()
+        val before = viewModel.schedule.value.calendarDays
+
+        viewModel.selectCalendarDay("2026-09-22")
+        advanceUntilIdle()
+
+        val after = viewModel.schedule.value.calendarDays
+        assertEquals(before.map { it.copy(isSelected = false) }, after.map { it.copy(isSelected = false) })
+        assertEquals(listOf("2026-09-22"), after.filter { it.isSelected }.map { it.id })
+    }
+
+    @Test
+    fun gridFollowsPlanChanges() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        viewModel.selectView(ScheduleView.Calendar)
+        advanceUntilIdle()
+        val markersBefore = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }.markers.size
+
+        addMondayClasses(repository, markersBefore + 1)
+        repository.notifyDataChanged()
+        advanceUntilIdle()
+
+        val markersAfter = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }.markers.size
+        assertEquals(markersBefore + 1, markersAfter)
     }
 
     @Test

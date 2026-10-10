@@ -325,6 +325,8 @@ Kryterium zakończenia: testy i ręczne sprawdzenie dają opisane wyniki; `rg "T
 
 ## 5. Licz siatkę kalendarza „Planu” tylko w widoku kalendarza (I-86)
 
+Stan: zrobione. Zrzuty listy i kalendarza „Planu” (październik, listopad, z filtrem kierunku i bez) przy 320 dp przed zmianą i po niej są identyczne.
+
 Cel: zmiana dnia, tygodnia albo filtra w widoku listy nie przelicza 42 dni kalendarza, a siatka liczy się ponownie tylko po zmianie planu, miesiąca, filtra albo dnia dzisiejszego (B2). Zaznaczenie dnia w kalendarzu nie przelicza siatki. Wygląd się nie zmienia. Po tym kroku I-86 jest gotowe.
 
 Pliki: `ui/schedule/ScheduleViewModel.kt`; testy `ui/schedule/ScheduleViewModelTest.kt`; dokumenty `docs/ARCHITECTURE.md`, `docs/QUEUE.md`.
