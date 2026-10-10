@@ -299,6 +299,8 @@ Kryterium zakończenia: testy przechodzą, zrzuty są identyczne, `rg "cancelled
 
 ## 4. Buduj szczegóły terminu z wyniku ScheduleResolver (I-85)
 
+Stan: zrobione. `canEdit` sprawdza status `OneOff` zamiast `base.recurrence`, bo kryterium zabrania tego wzorca; wynik jest ten sam. `building` też pochodzi z terminu. Zrzuty szczegółów zwykłego, przeniesionego i odwołanego terminu przy 320 dp są identyczne z zrzutami z kroku 3.
+
 Cel: szczegóły terminu nie składają godzin, sali, daty i statusu z surowych danych, tylko biorą `PlannedOccurrence` z wyniku resolvera (A1). Dzięki temu dni wolne z I-81 trzeba będzie dopisać tylko w resolverze. Tydzień w szczegółach pochodzi z kalendarza kierunku tych zajęć, a nie z całego semestru.
 
 Pliki: `ui/occurrence/OccurrenceViewModel.kt`, `ui/occurrence/OccurrenceDetailsModels.kt` (bez zmian pól, tylko jeśli kompilator wymaga); testy `ui/occurrence/OccurrenceViewModelTest.kt`.

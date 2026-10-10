@@ -17,7 +17,7 @@ import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.OccurrenceEditDecision
 import dev.retza.mak.domain.OccurrenceEditResult
 import dev.retza.mak.domain.OccurrenceSlot
-import dev.retza.mak.domain.Recurrence
+import dev.retza.mak.domain.WeekStatus
 import dev.retza.mak.domain.decideOccurrenceEdit
 import dev.retza.mak.domain.noteContentChanged
 import dev.retza.mak.domain.occurrenceId
@@ -26,6 +26,8 @@ import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.calendarForAssignment
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.OccurrenceStatusUi
+import dev.retza.mak.ui.components.toUi
+import dev.retza.mak.ui.label
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
@@ -450,53 +452,45 @@ class OccurrenceViewModel(
         val data = inputs.data
         val classId = args.classId
         val originalDate = args.originalDate
-        val base = data.classes.firstOrNull { it.id == classId.toString() } ?: return null
+        val id = occurrenceId(classId.toString(), originalDate)
         val change = data.occurrenceChanges.firstOrNull {
             it.classId == classId.toString() && it.originalDate == originalDate
         }
         val effectiveDate = change?.targetDate ?: originalDate
         val plan = activePlanProvider.resolve(inputs, effectiveDate)
-        val id = occurrenceId(classId.toString(), originalDate)
-        val effectiveStart = change?.startTime ?: base.startTime
-        val effectiveEnd = change?.endTime ?: base.endTime
-        val effectiveRoom = (change?.room ?: base.room)?.trim()?.ifEmpty { null }
-        val existingNote = data.occurrenceNotes.firstOrNull {
-            it.classId == classId.toString() && it.occurrenceDate == originalDate
-        }
-        val status = when {
-            change?.kind == OccurrenceChangeKind.CANCELLED -> OccurrenceStatusUi.Cancelled
-            base.recurrence == Recurrence.ONCE -> OccurrenceStatusUi.OneOff
-            change?.targetDate != null && change.targetDate != change.originalDate -> OccurrenceStatusUi.Moved
-            change != null -> OccurrenceStatusUi.Changed
-            else -> OccurrenceStatusUi.Scheduled
-        }
-        val canEdit = base.recurrence != Recurrence.ONCE &&
+        val occurrence = (plan.schedule.occurrences + plan.schedule.cancelled).firstOrNull { it.id == id }
+            ?: return null
+        val base = occurrence.classItem
+        val status = occurrence.status.toUi()
+        val canEdit = status != OccurrenceStatusUi.OneOff &&
             status != OccurrenceStatusUi.Cancelled
         return OccurrenceDetailsUiState(
             subjectName = base.name,
             courseName = data.studyProgramName(base.semesterProgramId),
             typeLabel = base.type,
-            dateLabel = effectiveDate.format(occurrenceDateFormatter),
-            currentDate = effectiveDate.toString(),
-            startTime = effectiveStart.toString(),
-            endTime = effectiveEnd.toString(),
-            room = effectiveRoom,
-            building = change?.building ?: base.building,
-            teacherName = change?.teacherName ?: base.teacherName,
+            dateLabel = occurrence.date.format(occurrenceDateFormatter),
+            currentDate = occurrence.date.toString(),
+            startTime = occurrence.startTime.toString(),
+            endTime = occurrence.endTime.toString(),
+            room = occurrence.room,
+            building = occurrence.building,
+            teacherName = occurrence.teacherName,
             groupName = base.group,
-            weekLabel = plan.schedule.weekType?.let { "Tydzień ${it.name}" },
+            weekLabel = data.calendarForAssignment(base.semesterProgramId)
+                ?.let { plan.schedule.weeksByCalendarId[it.id] }
+                ?.let { WeekStatus.Single(it.weekType).label() },
             conflictLabel = collisionLabels(plan.collisions)[id],
             conflictWith = collisionPartnerNames(plan.collisions)[id],
-            originalDateLabel = change?.originalDate?.toString(),
-            targetDateLabel = change?.targetDate?.toString(),
+            originalDateLabel = occurrence.occurrenceChange?.originalDate?.toString(),
+            targetDateLabel = occurrence.occurrenceChange?.targetDate?.toString(),
             status = status,
-            sharedNote = base.classNote,
-            occurrenceNote = existingNote?.body,
-            occurrenceNoteDraft = existingNote?.body.orEmpty(),
-            targetDateDraft = effectiveDate.toString(),
-            startTimeDraft = effectiveStart.toString(),
-            endTimeDraft = effectiveEnd.toString(),
-            roomDraft = effectiveRoom.orEmpty(),
+            sharedNote = occurrence.classNote,
+            occurrenceNote = occurrence.occurrenceNoteBody,
+            occurrenceNoteDraft = occurrence.occurrenceNoteBody.orEmpty(),
+            targetDateDraft = occurrence.date.toString(),
+            startTimeDraft = occurrence.startTime.toString(),
+            endTimeDraft = occurrence.endTime.toString(),
+            roomDraft = occurrence.room.orEmpty(),
             baseDate = originalDate.toString(),
             baseStartTime = base.startTime.toString(),
             baseEndTime = base.endTime.toString(),
@@ -505,9 +499,9 @@ class OccurrenceViewModel(
                 ?.startDate?.toString().orEmpty(),
             semesterEndDate = data.calendarForAssignment(base.semesterProgramId)
                 ?.endDate?.toString().orEmpty(),
-            canCancelOccurrence = canEdit && change == null,
+            canCancelOccurrence = canEdit && occurrence.occurrenceChange == null,
             canChangeOccurrence = canEdit,
-            canRestoreOccurrence = change != null
+            canRestoreOccurrence = occurrence.occurrenceChange != null
         )
     }
 

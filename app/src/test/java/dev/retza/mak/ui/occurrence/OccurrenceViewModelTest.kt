@@ -1,5 +1,8 @@
 package dev.retza.mak.ui.occurrence
 
+import dev.retza.mak.data.entity.AcademicCalendarEntity
+import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.components.OccurrenceStatusUi
@@ -10,7 +13,10 @@ import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.activePlanSource
+import dev.retza.mak.ui.settings.InMemorySettingsPreferences
+import dev.retza.mak.ui.settings.SettingsPreferences
 import java.time.LocalDate
+import java.time.LocalTime
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -30,8 +36,10 @@ class OccurrenceViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
-    private fun occurrenceViewModel(repository: FakeRepository) =
-        OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = FeedbackController(), activePlanSource = activePlanSource(repository))
+    private fun occurrenceViewModel(
+        repository: FakeRepository,
+        preferences: SettingsPreferences = InMemorySettingsPreferences()
+    ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = FeedbackController(), activePlanSource = activePlanSource(repository, preferences))
 
     private fun recordingViewModel(
         repository: FakeRepository,
@@ -784,6 +792,52 @@ class OccurrenceViewModelTest {
         assertEquals(1, repository.events.count { it == "saveOccurrenceChange" })
         assertEquals(1, sink.published.size)
         assertEquals("Odwołano termin", sink.published.single().message)
+    }
+    @Test
+    fun detailsOfHiddenProgramAreNotFound() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val preferences = InMemorySettingsPreferences()
+        preferences.setStudyProgramHidden("1", hidden = true)
+        val viewModel = occurrenceViewModel(repository, preferences)
+        advanceUntilIdle()
+
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        assertTrue(viewModel.details.value.notFound)
+    }
+
+    @Test
+    fun detailsWeekComesFromTheClassCalendar() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val calendarB = repository.saveCalendar(
+            AcademicCalendarEntity(
+                id = 0L,
+                semesterId = 1L,
+                startDate = LocalDate.of(2026, 9, 1),
+                endDate = LocalDate.of(2026, 10, 31),
+                firstWeekType = WeekType.B
+            )
+        )
+        val programB = repository.saveSemesterProgram(
+            SemesterProgramEntity(id = 0L, semesterId = 1L, studyProgramId = 1L, academicCalendarId = calendarB)
+        )
+        repository.classes += repository.classes.single().copy(
+            id = 2L,
+            name = "Matematyka",
+            semesterProgramId = programB,
+            startTime = LocalTime.of(12, 0),
+            endTime = LocalTime.of(13, 0),
+            room = null
+        )
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+
+        // On 2026-09-14 the first calendar has week A and this class's calendar has week B.
+        viewModel.open("2:2026-09-14")
+        advanceUntilIdle()
+
+        assertEquals("Tydzień B", viewModel.details.value.weekLabel)
     }
 }
 
