@@ -213,6 +213,12 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         activeSemesterFlow.value = 0L
     }
 
+    suspend fun ensureActiveSemester() {
+        if (semesterById(activeSemesterFlow.value) == null) {
+            semesterFlow.value.firstOrNull()?.let { activeSemesterFlow.value = it.id }
+        }
+    }
+
     suspend fun deleteSemesterAndSelectFallback(
         id: Long
     ): dev.retza.mak.data.repository.SemesterDeletionResult {

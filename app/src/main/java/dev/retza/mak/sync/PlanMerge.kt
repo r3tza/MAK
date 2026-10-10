@@ -10,6 +10,8 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterBackup
+import dev.retza.mak.data.repository.semesterCovering
+import dev.retza.mak.data.repository.withActiveSemester
 import dev.retza.mak.export.ExportImporter
 import dev.retza.mak.export.ExportSnapshot
 import dev.retza.mak.export.ImportSnapshotResult

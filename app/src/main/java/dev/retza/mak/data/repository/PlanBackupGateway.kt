@@ -2,6 +2,8 @@ package dev.retza.mak.data.repository
 
 import androidx.room.withTransaction
 import dev.retza.mak.data.database.AppDatabase
+import java.time.Clock
+import java.time.LocalDate
 
 interface PlanBackupGateway {
     suspend fun snapshot(): BackupData
@@ -18,7 +20,8 @@ interface PlanBackupGateway {
 
 @org.koin.core.annotation.Single(binds = [PlanBackupGateway::class])
 class RoomPlanBackupGateway(
-    private val database: AppDatabase
+    private val database: AppDatabase,
+    private val clock: Clock
 ) : PlanBackupGateway {
     private val semesters = database.semesterDao()
     private val studyPrograms = database.studyProgramDao()
@@ -55,6 +58,12 @@ class RoomPlanBackupGateway(
         }
 
     override suspend fun replaceAll(data: BackupData): Long? = database.withTransaction {
+        // A plan without an active semester (for example from a file made without one) gets the fallback one.
+        val plan = if (data.activeSemesterId == null) {
+            data.withActiveSemester(data.semesterCovering(LocalDate.now(clock)))
+        } else {
+            data
+        }
         occurrenceChanges.deleteAll()
         occurrenceNotes.deleteAll()
         weekOverrides.deleteAll()
@@ -64,8 +73,8 @@ class RoomPlanBackupGateway(
         studyPrograms.deleteAll()
         semesters.deleteAll()
 
-        data.studyPrograms.forEach { studyPrograms.insert(it.toEntity()) }
-        data.semesters.forEach { backup ->
+        plan.studyPrograms.forEach { studyPrograms.insert(it.toEntity()) }
+        plan.semesters.forEach { backup ->
             semesters.insert(backup.semester.toEntity())
             backup.calendars.forEach { calendars.insert(it.toEntity()) }
             backup.programs.forEach { semesterPrograms.insert(it.toEntity()) }
@@ -74,6 +83,6 @@ class RoomPlanBackupGateway(
             backup.occurrenceNotes.forEach { occurrenceNotes.insert(it.toEntity()) }
             backup.occurrenceChanges.forEach { occurrenceChanges.insert(it.toEntity()) }
         }
-        data.activeSemesterId
+        plan.activeSemesterId
     }
 }

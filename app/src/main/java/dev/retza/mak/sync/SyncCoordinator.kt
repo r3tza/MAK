@@ -1,6 +1,7 @@
 package dev.retza.mak.sync
 
 import dev.retza.mak.data.repository.BackupData
+import dev.retza.mak.data.repository.semesterCovering
 import dev.retza.mak.export.NewerExportVersionException
 import java.io.IOException
 import java.time.Clock

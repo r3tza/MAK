@@ -24,6 +24,7 @@ import dev.retza.mak.ui.settings.TestPreferencesFile
 import java.time.LocalDate
 import java.time.Clock
 import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.io.File
 import java.time.DayOfWeek
@@ -56,7 +57,7 @@ class RoomPlanSyncGatewayTest {
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
-        backup = RoomPlanBackupGateway(database)
+        backup = RoomPlanBackupGateway(database, Clock.fixed(Instant.parse("2026-10-10T10:00:00Z"), ZoneId.of("Europe/Warsaw")))
         preferences = DataStoreSettingsPreferences(preferencesFile.open())
         gateway = RoomPlanSyncGateway(backup, preferences)
     }

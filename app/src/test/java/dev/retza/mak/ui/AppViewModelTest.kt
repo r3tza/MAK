@@ -5,7 +5,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
-import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -17,16 +16,6 @@ class AppViewModelTest {
 
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
-
-    @Test
-    fun selectsFirstSemesterWhenNoneActive() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        repository.clearActiveSemester()
-        AppViewModel(FakeSemesterRepository(repository))
-        advanceUntilIdle()
-
-        assertEquals(1L, repository.activeSemesterId)
-    }
 
     @Test
     fun emptyDatabaseRequiresSetup() = runTest(mainDispatcher) {

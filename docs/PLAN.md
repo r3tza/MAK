@@ -55,6 +55,8 @@ Kryterium zakończenia: testy i ręczne sprawdzenie dają opisane wyniki; w `Occ
 
 ## 2. Wybieraj semestr zastępczy jedną regułą w warstwie danych (I-89)
 
+Stan: zrobione. Usunięty test `AppViewModelTest.selectsFirstSemesterWhenNoneActive` (zachowanie przeniesione do repozytorium i sprawdzane w `RoomPersistenceTest`). `DOMAIN.md` opisuje regułę wyboru semestru zastępczego.
+
 Cel: zasada „jeśli są semestry, jeden jest aktywny” jest pilnowana w transakcjach `data` jedną funkcją domenową, a nie w `init` ViewModelu (E4). Usunięcie semestru, import i synchronizacja wybierają ten sam semestr: obejmujący dziś, a bez takiego ten, który zaczyna się najpóźniej, a bez kalendarzy pierwszy.
 
 Pliki: `domain/SemesterActivation.kt`, `sync/SyncPlanFile.kt`, `data/repository/SemesterRepository.kt`, `data/repository/PlanBackupGateway.kt`, `ui/AppViewModel.kt`, `MakApplication.kt`; testy nowy `domain/FallbackSemesterTest.kt`, `sync/SyncCoordinatorTest.kt`, `ui/AppViewModelTest.kt` (jeśli istnieje), Android `data/RoomPersistenceTest.kt`; dokument `docs/DOMAIN.md` (sekcja o aktywnym semestrze, jeśli opisuje wybór po usunięciu).

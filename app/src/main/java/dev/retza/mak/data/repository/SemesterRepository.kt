@@ -4,7 +4,10 @@ import androidx.room.withTransaction
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.domain.SemesterSpan
 import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.fallbackActiveSemester
+import java.time.Clock
 import java.time.DayOfWeek
 import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
@@ -38,6 +41,9 @@ interface SemesterRepository {
     suspend fun setActiveSemester(id: Long)
 
     suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult
+
+    /** Activates the fallback semester when there is none and some semester exists; a no-op otherwise. */
+    suspend fun ensureActiveSemester()
 
     suspend fun saveStudyProgram(record: StudyProgramRecord): Long
 
@@ -92,7 +98,8 @@ interface SemesterRepository {
 
 @org.koin.core.annotation.Single(binds = [SemesterRepository::class])
 class RoomSemesterRepository(
-    private val database: AppDatabase
+    private val database: AppDatabase,
+    private val clock: Clock
 ) : SemesterRepository {
     private val semesters = database.semesterDao()
     private val studyPrograms = database.studyProgramDao()
@@ -167,28 +174,27 @@ class RoomSemesterRepository(
 
     override suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult =
         database.withTransaction {
-            val target = semesters.findById(id) ?: error("Semester does not exist")
-            val wasActive = target.isActive
+            require(semesters.findById(id) != null) { "Semester does not exist" }
             semesters.deleteById(id)
-            val remaining = semesters.getAll()
-            if (remaining.isEmpty()) {
-                semesters.clearActive()
-                return@withTransaction SemesterDeletionResult(null)
-            }
-            val fallbackId = if (wasActive) {
-                val chosen = remaining.first()
-                semesters.clearActive()
-                semesters.markActive(chosen.id)
-                chosen.id
-            } else {
-                remaining.firstOrNull { it.isActive }?.id ?: run {
-                    val chosen = remaining.first()
-                    semesters.markActive(chosen.id)
-                    chosen.id
-                }
-            }
-            SemesterDeletionResult(fallbackId)
+            SemesterDeletionResult(activateFallbackIfNone())
         }
+
+    override suspend fun ensureActiveSemester() {
+        database.withTransaction { activateFallbackIfNone() }
+    }
+
+    /** Inside a transaction: when no semester is active, activates [fallbackActiveSemester] and returns its id. */
+    private suspend fun activateFallbackIfNone(): Long? {
+        val all = semesters.getAllWithData()
+        all.firstOrNull { it.semester.isActive }?.let { return it.semester.id }
+        val chosen = fallbackActiveSemester(
+            all.map { data -> SemesterSpan(data.semester.id, data.academicCalendars.map { it.startDate..it.endDate }) },
+            LocalDate.now(clock)
+        ) ?: return null
+        semesters.clearActive()
+        semesters.markActive(chosen)
+        return chosen
+    }
 
     override suspend fun saveStudyProgram(record: StudyProgramRecord): Long {
         val entity = record.toEntity()

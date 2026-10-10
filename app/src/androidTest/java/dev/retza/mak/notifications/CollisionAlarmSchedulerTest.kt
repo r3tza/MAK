@@ -75,7 +75,7 @@ class CollisionAlarmSchedulerTest {
     @Test
     fun parallelRefreshesStoreExactlyThePlannedAlarms() = runBlocking {
         val semesterId = seedCollidingClasses()
-        val semesterRepository = RoomSemesterRepository(database)
+        val semesterRepository = RoomSemesterRepository(database, Clock.fixed(Instant.parse("2026-10-10T10:00:00Z"), ZoneId.of("Europe/Warsaw")))
         val scheduleRepository = RoomScheduleRepository(database)
         val planner = CollisionNotificationPlanner(ActivePlanProvider(), clock)
         val preferences = EnabledNotifications()
@@ -112,7 +112,7 @@ class CollisionAlarmSchedulerTest {
     @Test
     fun disabledSettingsCancelStoredAlarms() = runBlocking {
         val semesterId = seedCollidingClasses()
-        val semesterRepository = RoomSemesterRepository(database)
+        val semesterRepository = RoomSemesterRepository(database, Clock.fixed(Instant.parse("2026-10-10T10:00:00Z"), ZoneId.of("Europe/Warsaw")))
         val scheduleRepository = RoomScheduleRepository(database)
         val planner = CollisionNotificationPlanner(ActivePlanProvider(), clock)
         val preferences = EnabledNotifications()
@@ -135,7 +135,7 @@ class CollisionAlarmSchedulerTest {
     @Test
     fun sameInputsKeepStoredIds() = runBlocking {
         val semesterId = seedCollidingClasses()
-        val semesterRepository = RoomSemesterRepository(database)
+        val semesterRepository = RoomSemesterRepository(database, Clock.fixed(Instant.parse("2026-10-10T10:00:00Z"), ZoneId.of("Europe/Warsaw")))
         val scheduleRepository = RoomScheduleRepository(database)
         val planner = CollisionNotificationPlanner(ActivePlanProvider(), clock)
         val preferences = EnabledNotifications()

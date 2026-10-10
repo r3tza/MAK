@@ -73,6 +73,16 @@ class MakApplication : Application(), Configuration.Provider {
         )
         initializationScope.launch {
             try {
+                // Data from earlier versions may have no active semester; the rule lives in the repository.
+                semesterRepository.ensureActiveSemester()
+            } catch (error: CancellationException) {
+                throw error
+            } catch (error: Exception) {
+                // The app still starts; the next start retries.
+            }
+        }
+        initializationScope.launch {
+            try {
                 retainExistingHiddenPrograms(semesterRepository.observeStudyPrograms(), preferences)
             } catch (error: CancellationException) {
                 throw error

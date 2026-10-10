@@ -75,6 +75,8 @@ internal class FakeSemesterRepository(
 
     override suspend fun setActiveSemester(id: Long) = written { delegate.setActiveSemester(id) }
 
+    override suspend fun ensureActiveSemester() = written { delegate.ensureActiveSemester() }
+
     override suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult =
         written { delegate.deleteSemesterAndSelectFallback(id) }
 

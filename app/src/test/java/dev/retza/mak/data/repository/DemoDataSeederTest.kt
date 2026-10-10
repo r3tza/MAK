@@ -85,6 +85,8 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
 
     override suspend fun setActiveSemester(id: Long) = Unit
 
+    override suspend fun ensureActiveSemester() = Unit
+
     override suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult =
         SemesterDeletionResult(null)
 

@@ -7,6 +7,8 @@ import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterBackup
+import dev.retza.mak.data.repository.semesterCovering
+import dev.retza.mak.data.repository.withActiveSemester
 import dev.retza.mak.data.repository.toEntity
 import dev.retza.mak.data.repository.toRecord
 import java.time.Clock
