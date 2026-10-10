@@ -19,6 +19,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -74,12 +75,13 @@ fun MakApp(
     onGrantInstallPermission: () -> Unit = {}
 ) {
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
-    val syncState = syncViewModel.sync.collectAsStateWithLifecycle().value
-    val editor = classEditViewModel.editor.collectAsStateWithLifecycle().value
     val navController = rememberNavController()
     val currentRoute = navController.currentBackStackEntryAsState().value
         ?.destination
         ?.route
+    val topBar = remember { TopBarState() }
+    val topBarSpec = topBar.specFor(currentRoute)
+    val topBarActions = topBarSpec?.actions.orEmpty()
     val isRoot = currentRoute == MakRoutes.Today || currentRoute == MakRoutes.Schedule
     val showBack = currentRoute != null && !isRoot && !isSetupRoute(currentRoute)
     val navigationLayout = makNavigationLayout(LocalMakWidthClass.current, isRoot)
@@ -137,12 +139,6 @@ fun MakApp(
 
     BackHandler(enabled = showBack) { navigateBack() }
 
-    val occurrenceActions = occurrenceTopBarActions(
-        planEditTracker = planEditTracker,
-        occurrenceViewModel = occurrenceViewModel,
-        navController = navController
-    )
-
     Scaffold(
         modifier = Modifier.fillMaxSize(),
         containerColor = MaterialTheme.colorScheme.background,
@@ -152,17 +148,17 @@ fun MakApp(
         },
         topBar = {
             MakTopBar(
-                title = titleForRoute(currentRoute, editor.title),
+                title = topBarSpec?.title ?: titleForRoute(currentRoute),
                 showBack = showBack,
                 showSettings = isRoot,
                 onBack = ::navigateBack,
                 onSettings = { openSettings(navController) },
-                actions = if (occurrenceActions.isEmpty()) {
+                actions = if (topBarActions.isEmpty()) {
                     null
                 } else {
                     {
                         MakActionMenu(
-                            actions = occurrenceActions,
+                            actions = topBarActions,
                             modifier = Modifier.padding(end = 4.dp)
                         )
                     }
@@ -213,7 +209,7 @@ fun MakApp(
                     onOpenOccurrence = openOccurrenceById,
                     startSetup = startSetup,
                     openSync = { navController.navigate(MakRoutes.SettingsSync) },
-                    syncAttention = { syncState.attention }
+                    syncAttention = syncViewModel.attention
                 )
                 scheduleRoute(
                     appState = state,
@@ -226,11 +222,14 @@ fun MakApp(
                 classEditRoute(
                     planEditTracker = planEditTracker,
                     classEditViewModel = classEditViewModel,
-                    onBack = ::navigateBack
+                    onBack = ::navigateBack,
+                    topBar = topBar
                 )
                 occurrenceDetailsRoute(
                     planEditTracker = planEditTracker,
-                    occurrenceViewModel = occurrenceViewModel
+                    occurrenceViewModel = occurrenceViewModel,
+                    navController = navController,
+                    topBar = topBar
                 )
                 semesterRoutes(
                     planEditTracker = planEditTracker,

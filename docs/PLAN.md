@@ -188,6 +188,8 @@ Kryterium zakończenia: testy przechodzą; `rg -n "observeActivePlanData" app/sr
 
 ## 4. Niech cel nawigacji deklaruje tytuł i akcje górnego paska (I-86)
 
+Stan: zrobione. Atrapa `MemoryStore` w `SyncViewModelTest` przyjmuje stan początkowy, bo koordynator czyta stan przy tworzeniu. Zrzuty przy 320 dp (formularz „Dodaj zajęcia”, szczegóły, menu „Więcej opcji”, „Edytuj zajęcia” i powrót do szczegółów) przed zmianą i po niej są identyczne.
+
 Cel: `MakApp` nie zbiera stanu formularza zajęć, szczegółów terminu ani całego stanu synchronizacji, więc wpisanie znaku w formularzu nie przebudowuje powłoki (D1). Tytuł formularza i menu szczegółów deklarują ich cele nawigacji, a „Dzisiaj” zbiera tylko informację o problemie synchronizacji. To warunek dalszych etapów I-86, w których ViewModele formularza i szczegółów znikną z `MakApp`. Wygląd się nie zmienia.
 
 Pliki: nowy `ui/TopBar.kt`, `ui/MakNavHostApp.kt`, `ui/MakRoutes.kt`, `ui/ClassOccurrenceRoutes.kt`, `ui/TodayScheduleRoutes.kt`, `ui/settings/SyncViewModel.kt`; testy `ui/MakNavigationTest.kt`, nowy `ui/TopBarStateTest.kt`, Android `ui/settings/SyncViewModelTest.kt`.

@@ -18,6 +18,7 @@ import dev.retza.mak.sync.SyncAccount
 import dev.retza.mak.sync.SyncArchive
 import dev.retza.mak.sync.SyncAuthorization
 import dev.retza.mak.sync.SyncCoordinator
+import dev.retza.mak.sync.SyncIssue
 import dev.retza.mak.sync.SyncState
 import dev.retza.mak.sync.SyncStateStore
 import dev.retza.mak.sync.SyncWorkScheduler
@@ -102,6 +103,26 @@ class SyncViewModelTest {
         awaitState { !it.isWorking && it.accountEmail != null && drive.uploads == 1 }
         assertEquals(1, authorization.completed)
         assertEquals(1, drive.uploads)
+    }
+
+    @Test
+    fun attentionMatchesSyncAttention() = runBlocking {
+        val revokedCoordinator = SyncCoordinator(
+            gateway = EmptyPlan(),
+            transport = drive,
+            store = MemoryStore(SyncState(account = connected, issue = SyncIssue.AUTHORIZATION_REQUIRED)),
+            archive = archive,
+            editTracker = PlanEditTracker(CoroutineScope(Dispatchers.Default)),
+            clock = Clock.systemUTC(),
+            ioDispatcher = Dispatchers.IO
+        )
+        val model = onMain {
+            SyncViewModel(revokedCoordinator, authorization, GlobalContext.get().get<SyncWorkScheduler>(), feedback)
+        }
+
+        val syncText = withTimeout(5_000) { model.sync.first { it.attention != null }.attention?.text }
+        val attentionText = withTimeout(5_000) { model.attention.first { it != null }?.text }
+        assertEquals(syncText, attentionText)
     }
 
     @Test
@@ -321,8 +342,7 @@ class SyncViewModelTest {
         }
     }
 
-    private class MemoryStore : SyncStateStore {
-        private var state = SyncState()
+    private class MemoryStore(private var state: SyncState = SyncState()) : SyncStateStore {
         override fun load() = state
         override fun save(state: SyncState) {
             this.state = state

@@ -16,6 +16,7 @@ import dev.retza.mak.ui.settings.SyncAttentionUi
 import dev.retza.mak.ui.today.TodayScreen
 import dev.retza.mak.ui.today.TodayViewModel
 import dev.retza.mak.update.UpdateViewModel
+import kotlinx.coroutines.flow.StateFlow
 
 internal fun NavGraphBuilder.todayRoute(
     appState: AppUiState,
@@ -25,11 +26,12 @@ internal fun NavGraphBuilder.todayRoute(
     onOpenOccurrence: (String) -> Unit,
     startSetup: () -> Unit,
     openSync: () -> Unit,
-    syncAttention: () -> SyncAttentionUi?
+    syncAttention: StateFlow<SyncAttentionUi?>
 ) {
     composable(MakRoutes.Today) {
         val todayState = todayViewModel.today.collectAsStateWithLifecycle().value
         val updateState = updateViewModel.state.collectAsStateWithLifecycle().value
+        val attention = syncAttention.collectAsStateWithLifecycle().value
         TodayScreen(
             state = todayState,
             onOpenClass = onOpenOccurrence,
@@ -41,7 +43,7 @@ internal fun NavGraphBuilder.todayRoute(
             onDismissUpdate = updateViewModel::dismissAvailableUpdate,
             modifier = Modifier.fillMaxSize(),
             twoColumns = LocalMakWidthClass.current == MakWidthClass.Expanded,
-            syncAttention = syncAttention(),
+            syncAttention = attention,
             onOpenPrograms = { navController.navigate(MakRoutes.StudyPrograms) }
         )
     }

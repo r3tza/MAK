@@ -21,10 +21,9 @@ class MakNavigationTest {
     }
 
     @Test
-    fun editorRouteUsesDynamicEditorTitle() {
-        assertEquals("Dodaj zajęcia", titleForRoute(MakRoutes.Edit, "Dodaj zajęcia"))
-        assertEquals("Edytuj zajęcia", titleForRoute(MakRoutes.Edit, "Edytuj zajęcia"))
-        assertEquals("Plan", titleForRoute(MakRoutes.Schedule, "Dodaj zajęcia"))
+    fun editorRouteUsesFixedFallbackTitle() {
+        assertEquals("Zajęcia", titleForRoute(MakRoutes.Edit))
+        assertEquals("Plan", titleForRoute(MakRoutes.Schedule))
     }
 
     @Test

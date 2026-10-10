@@ -14,7 +14,6 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
-import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
 import dev.retza.mak.sync.PlanEditTracker
 import java.time.LocalDate
@@ -42,7 +41,8 @@ internal fun openClassEditor(
 internal fun NavGraphBuilder.classEditRoute(
     planEditTracker: PlanEditTracker,
     classEditViewModel: ClassEditViewModel,
-    onBack: () -> Unit
+    onBack: () -> Unit,
+    topBar: TopBarState
 ) {
     composable(
         route = MakRoutes.Edit,
@@ -84,8 +84,10 @@ internal fun NavGraphBuilder.classEditRoute(
             PlanEditingWait()
             return@composable
         }
+        val editorState = classEditViewModel.editor.collectAsStateWithLifecycle().value
+        DeclareTopBar(topBar, TopBarSpec(MakRoutes.Edit, title = editorState.title))
         ClassEditScreen(
-            state = classEditViewModel.editor.collectAsStateWithLifecycle().value,
+            state = editorState,
             onNameChanged = { value -> classEditViewModel.update { it.copy(name = value) } },
             onCourseChanged = classEditViewModel::selectCourse,
             onTypeChanged = { value -> classEditViewModel.update { it.copy(type = value) } },
@@ -117,7 +119,9 @@ internal fun NavGraphBuilder.classEditRoute(
 
 internal fun NavGraphBuilder.occurrenceDetailsRoute(
     planEditTracker: PlanEditTracker,
-    occurrenceViewModel: OccurrenceViewModel
+    occurrenceViewModel: OccurrenceViewModel,
+    navController: NavController,
+    topBar: TopBarState
 ) {
     composable(
         route = MakRoutes.Occurrence,
@@ -128,9 +132,10 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
     ) { entry ->
         val args = entry.occurrenceArgs()
         val occurrenceId = args?.toRouteId()
+        val details = occurrenceViewModel.details.collectAsStateWithLifecycle().value
         val editing = TrackPlanEditing(
             planEditTracker,
-            active = occurrenceViewModel.details.collectAsStateWithLifecycle().value.hasPlanDraft(),
+            active = details.hasPlanDraft(),
             isActiveNow = { occurrenceViewModel.details.value.hasPlanDraft() }
         )
         var opened by rememberSaveable(entry.id) { mutableStateOf(false) }
@@ -140,8 +145,34 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
                 opened = true
             }
         }
+        val actions: List<Pair<String, () -> Unit>> = listOfNotNull(
+            if (details.canCancelOccurrence) {
+                "Odwołaj termin" to editing.callback(
+                    refreshBeforeFirstEdit = {
+                        occurrenceViewModel.shownRouteId()?.let { occurrenceViewModel.refreshForEdit(it) } ?: false
+                    },
+                    action = occurrenceViewModel::cancelOccurrence
+                )
+            } else null,
+            if (details.canEditBaseClass) {
+                "Edytuj wszystkie terminy" to {
+                    occurrenceViewModel.selectedClassId.value?.let { id ->
+                        navController.navigate(editRoute(id, details.targetDateDraft))
+                    }
+                }
+            } else null,
+            if (details.canDeleteBaseClass) {
+                "Usuń zajęcia" to editing.callback(
+                    refreshBeforeFirstEdit = {
+                        occurrenceViewModel.shownRouteId()?.let { occurrenceViewModel.refreshForEdit(it) } ?: false
+                    },
+                    action = occurrenceViewModel::requestClassDeletion
+                )
+            } else null
+        )
+        DeclareTopBar(topBar, TopBarSpec(MakRoutes.Occurrence, actions = actions))
         OccurrenceDetailsScreen(
-            state = occurrenceViewModel.details.collectAsStateWithLifecycle().value,
+            state = details,
             onDeleteBaseClass = editing.callback(
                 refreshBeforeFirstEdit = { if (occurrenceId != null) occurrenceViewModel.refreshForEdit(occurrenceId) else false },
                 action = occurrenceViewModel::deleteSelectedClass
@@ -225,47 +256,6 @@ internal fun ClassEditEffects(
             }
         }
     }
-}
-
-@Composable
-internal fun occurrenceTopBarActions(
-    planEditTracker: PlanEditTracker,
-    occurrenceViewModel: OccurrenceViewModel,
-    navController: NavController
-): List<Pair<String, () -> Unit>> {
-    val route = navController.currentBackStackEntryAsState().value?.destination?.route
-    if (route != MakRoutes.Occurrence) return emptyList()
-    val details = occurrenceViewModel.details.collectAsStateWithLifecycle().value
-    val editing = TrackPlanEditing(
-        planEditTracker,
-        active = details.hasPlanDraft(),
-        isActiveNow = { occurrenceViewModel.details.value.hasPlanDraft() }
-    )
-    return listOfNotNull(
-        if (details.canCancelOccurrence) {
-            "Odwołaj termin" to editing.callback(
-                refreshBeforeFirstEdit = {
-                    occurrenceViewModel.shownRouteId()?.let { occurrenceViewModel.refreshForEdit(it) } ?: false
-                },
-                action = occurrenceViewModel::cancelOccurrence
-            )
-        } else null,
-        if (details.canEditBaseClass) {
-            "Edytuj wszystkie terminy" to {
-                occurrenceViewModel.selectedClassId.value?.let { id ->
-                    navController.navigate(editRoute(id, details.targetDateDraft))
-                }
-            }
-        } else null,
-        if (details.canDeleteBaseClass) {
-            "Usuń zajęcia" to editing.callback(
-                refreshBeforeFirstEdit = {
-                    occurrenceViewModel.shownRouteId()?.let { occurrenceViewModel.refreshForEdit(it) } ?: false
-                },
-                action = occurrenceViewModel::requestClassDeletion
-            )
-        } else null
-    )
 }
 
 private fun NavBackStackEntry.occurrenceArgs(): OccurrenceArgs? {

@@ -84,9 +84,9 @@ internal fun addAction(hasLoadedData: Boolean, requiresSetup: Boolean): AddActio
     else -> AddAction.Editor
 }
 
-internal fun titleForRoute(route: String?, editorTitle: String? = null): String = when (route) {
+internal fun titleForRoute(route: String?): String = when (route) {
     MakRoutes.Schedule -> "Plan"
-    MakRoutes.Edit -> editorTitle ?: "Zajęcia"
+    MakRoutes.Edit -> "Zajęcia"
     MakRoutes.Occurrence -> "Termin"
     MakRoutes.Semester -> "Semestr"
     MakRoutes.SemesterCourses -> "Kierunki"

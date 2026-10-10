@@ -126,6 +126,11 @@ class SyncViewModel(
         state.toUi(localState, coordinator.archivedPlans().map { it.toUi() })
     }.flowOn(Dispatchers.IO).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SyncUiState())
 
+    // Only the banner's question; unlike sync, it does not list the archive.
+    val attention: StateFlow<SyncAttentionUi?> = coordinator.state.map { it.attentionUi() }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
+
     val changes: StateFlow<SyncChangesUi> = local.map { localState ->
         SyncChangesUi(
             differences = localState.differences?.items.orEmpty(),
@@ -352,11 +357,7 @@ private fun Exception.toMessage(): String = when {
 
 private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemUi>) = SyncUiState(
     accountEmail = account?.email,
-    attention = if (account == null) null else issueText()?.let { text ->
-        val fix = issueFix()
-        SyncAttentionUi(text, if (fix == SyncIssueFix.UPDATE) "Zaktualizuj" else "Otwórz", fix)
-    }
-        ?: pendingChoice?.let { SyncAttentionUi(CHOICE_TITLE, "Wybierz wersję") },
+    attention = attentionUi(),
     lastSyncLabel = account?.let {
         lastSyncedAtMillis?.let { millis -> "Ostatnia synchronizacja: ${formatMillis(millis)}" }
             ?: "Jeszcze nie zsynchronizowano"
@@ -378,6 +379,12 @@ private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemU
     showChoiceDialog = local.showChoiceDialog && pendingChoice != null,
     showDisconnectDialog = local.showDisconnectDialog && account != null
 )
+
+private fun SyncState.attentionUi(): SyncAttentionUi? = if (account == null) null else issueText()?.let { text ->
+    val fix = issueFix()
+    SyncAttentionUi(text, if (fix == SyncIssueFix.UPDATE) "Zaktualizuj" else "Otwórz", fix)
+}
+    ?: pendingChoice?.let { SyncAttentionUi(CHOICE_TITLE, "Wybierz wersję") }
 
 private fun SyncState.issueFix(): SyncIssueFix? = when (issue) {
     SyncIssue.AUTHORIZATION_REQUIRED -> SyncIssueFix.RECONNECT
