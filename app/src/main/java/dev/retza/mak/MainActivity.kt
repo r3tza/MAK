@@ -48,7 +48,6 @@ import dev.retza.mak.ui.withAppLocale
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
-import dev.retza.mak.ui.schedule.ScheduleViewModel
 import dev.retza.mak.ui.programs.StudyProgramsViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
@@ -56,7 +55,6 @@ import dev.retza.mak.ui.settings.SyncViewModel
 import dev.retza.mak.ui.settings.ThemeMode
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.theme.MAKTheme
-import dev.retza.mak.ui.today.TodayViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -75,8 +73,6 @@ class MainActivity : ComponentActivity() {
     private val settingsViewModel: SettingsViewModel by viewModel()
     private val syncViewModel: SyncViewModel by viewModel()
     private val studyProgramsViewModel: StudyProgramsViewModel by viewModel()
-    private val scheduleViewModel: ScheduleViewModel by viewModel()
-    private val todayViewModel: TodayViewModel by viewModel()
     private val updateViewModel: UpdateViewModel by viewModel()
     private val feedbackController: FeedbackController by inject()
     private val planEditTracker: PlanEditTracker by inject()
@@ -130,8 +126,6 @@ class MainActivity : ComponentActivity() {
                         DisposableEffect(lifecycleOwner) {
                             val observer = LifecycleEventObserver { _, event ->
                                 if (event == Lifecycle.Event.ON_RESUME) {
-                                    todayViewModel.refreshToday()
-                                    scheduleViewModel.refreshToday()
                                     notificationsBlocked =
                                         !NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled()
                                 }
@@ -194,8 +188,6 @@ class MainActivity : ComponentActivity() {
                             settingsViewModel = settingsViewModel,
                             syncViewModel = syncViewModel,
                             studyProgramsViewModel = studyProgramsViewModel,
-                            scheduleViewModel = scheduleViewModel,
-                            todayViewModel = todayViewModel,
                             updateViewModel = updateViewModel,
                             planEditTracker = planEditTracker,
                             feedback = feedbackController.feedback,

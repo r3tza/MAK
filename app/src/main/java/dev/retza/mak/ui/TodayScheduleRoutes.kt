@@ -4,10 +4,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import org.koin.compose.viewmodel.koinViewModel
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.schedule.ScheduleEffect
 import dev.retza.mak.ui.schedule.ScheduleScreen
@@ -20,7 +22,6 @@ import kotlinx.coroutines.flow.StateFlow
 
 internal fun NavGraphBuilder.todayRoute(
     appState: AppUiState,
-    todayViewModel: TodayViewModel,
     updateViewModel: UpdateViewModel,
     navController: NavController,
     onOpenOccurrence: (String) -> Unit,
@@ -29,6 +30,11 @@ internal fun NavGraphBuilder.todayRoute(
     syncAttention: StateFlow<SyncAttentionUi?>
 ) {
     composable(MakRoutes.Today) {
+        val todayViewModel: TodayViewModel = koinViewModel()
+        LifecycleResumeEffect(todayViewModel) {
+            todayViewModel.refreshToday()
+            onPauseOrDispose { }
+        }
         val todayState = todayViewModel.today.collectAsStateWithLifecycle().value
         val updateState = updateViewModel.state.collectAsStateWithLifecycle().value
         val attention = syncAttention.collectAsStateWithLifecycle().value
@@ -51,13 +57,29 @@ internal fun NavGraphBuilder.todayRoute(
 
 internal fun NavGraphBuilder.scheduleRoute(
     appState: AppUiState,
-    scheduleViewModel: ScheduleViewModel,
+    navController: NavController,
+    // Read while composing: the graph keeps the arguments it was built with, so a plain value would stay stale.
+    pendingPlanDate: () -> String?,
+    onPlanDateShown: () -> Unit,
     onOpenOccurrence: (String) -> Unit,
     startSetup: () -> Unit,
     openSync: () -> Unit,
     openPrograms: () -> Unit
 ) {
     composable(MakRoutes.Schedule) {
+        val scheduleViewModel: ScheduleViewModel = koinViewModel()
+        LifecycleResumeEffect(scheduleViewModel) {
+            scheduleViewModel.refreshToday()
+            onPauseOrDispose { }
+        }
+        val planDate = pendingPlanDate()
+        LaunchedEffect(planDate) {
+            planDate?.let { date ->
+                scheduleViewModel.showDate(date)
+                onPlanDateShown()
+            }
+        }
+        ScheduleEffects(scheduleViewModel, navController)
         val scheduleState = scheduleViewModel.schedule.collectAsStateWithLifecycle().value
         ScheduleScreen(
             state = scheduleState,

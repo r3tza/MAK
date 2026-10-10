@@ -263,6 +263,8 @@ Kryterium zakończenia: testy przechodzą, zrzuty są identyczne; w `MakApp` nie
 
 ## 5. Pobieraj ViewModele „Dzisiaj” i „Planu” w ich celach nawigacji (I-86)
 
+Stan: zrobione. `scheduleRoute` dostaje `pendingPlanDate: () -> String?` zamiast wartości: graf `NavHost` zapamiętuje argumenty z chwili zbudowania, więc zwykła wartość zostawała `null` i data z powiadomienia nie działała. Ręcznie: tydzień, widok i wybrany dzień „Planu” zostają po przełączeniu zakładek i powrocie ze szczegółów; data z intencji otwiera „Plan” na właściwym dniu przy działającej aplikacji, po raz drugi i przy zimnym starcie; „Dodaj termin jednorazowy” otwiera formularz z datą dnia.
+
 Cel: `TodayViewModel` i `ScheduleViewModel` powstają w swoich celach nawigacji przez `koinViewModel()` zamiast w `MainActivity` (C1, decyzja użytkownika z 2026-10-10). `MainActivity` nie odświeża już dnia tych ekranów przy powrocie aplikacji; robi to sam cel nawigacji. Zachowanie widoczne dla użytkownika się nie zmienia, także otwarcie „Planu” na dacie z powiadomienia.
 
 Pliki: `MainActivity.kt`, `ui/MakNavHostApp.kt`, `ui/TodayScheduleRoutes.kt`; dokument `docs/ARCHITECTURE.md`.

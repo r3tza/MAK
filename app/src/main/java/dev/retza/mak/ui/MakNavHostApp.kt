@@ -19,7 +19,11 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -39,13 +43,11 @@ import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.MakSnackbarHost
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
-import dev.retza.mak.ui.schedule.ScheduleViewModel
 import dev.retza.mak.ui.programs.StudyProgramsViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.settings.SyncViewModel
 import dev.retza.mak.ui.setup.SetupViewModel
-import dev.retza.mak.ui.today.TodayViewModel
 import dev.retza.mak.update.UpdateViewModel
 import kotlinx.coroutines.flow.Flow
 
@@ -60,8 +62,6 @@ fun MakApp(
     settingsViewModel: SettingsViewModel,
     syncViewModel: SyncViewModel,
     studyProgramsViewModel: StudyProgramsViewModel,
-    scheduleViewModel: ScheduleViewModel,
-    todayViewModel: TodayViewModel,
     updateViewModel: UpdateViewModel,
     planEditTracker: PlanEditTracker,
     feedback: Flow<UiFeedback>,
@@ -76,6 +76,7 @@ fun MakApp(
 ) {
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
     val navController = rememberNavController()
+    var pendingPlanDate by rememberSaveable { mutableStateOf<String?>(null) }
     val currentRoute = navController.currentBackStackEntryAsState().value
         ?.destination
         ?.route
@@ -124,7 +125,7 @@ fun MakApp(
 
     LaunchedEffect(openPlanRequests, navController) {
         openPlanRequests.collect { date ->
-            scheduleViewModel.showDate(date)
+            pendingPlanDate = date
             openRoot(MakRoutes.Schedule)
         }
     }
@@ -135,7 +136,6 @@ fun MakApp(
     SettingsEffects(settingsViewModel, navController)
     StudyProgramEffects(studyProgramsViewModel, navController)
     SetupEffects(setupViewModel, navController)
-    ScheduleEffects(scheduleViewModel, navController)
 
     BackHandler(enabled = showBack) { navigateBack() }
 
@@ -203,7 +203,6 @@ fun MakApp(
             ) {
                 todayRoute(
                     appState = state,
-                    todayViewModel = todayViewModel,
                     updateViewModel = updateViewModel,
                     navController = navController,
                     onOpenOccurrence = openOccurrenceById,
@@ -213,7 +212,9 @@ fun MakApp(
                 )
                 scheduleRoute(
                     appState = state,
-                    scheduleViewModel = scheduleViewModel,
+                    navController = navController,
+                    pendingPlanDate = { pendingPlanDate },
+                    onPlanDateShown = { pendingPlanDate = null },
                     onOpenOccurrence = openOccurrenceById,
                     startSetup = startSetup,
                     openSync = { navController.navigate(MakRoutes.SettingsSync) },
