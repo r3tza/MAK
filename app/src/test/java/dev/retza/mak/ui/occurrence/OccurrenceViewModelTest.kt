@@ -695,6 +695,22 @@ class OccurrenceViewModelTest {
     }
 
     @Test
+    fun restoreWithoutChangeDoesNothing() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.restoreOccurrence()
+        advanceUntilIdle()
+
+        assertTrue(sink.published.none { it.kind == UiFeedbackKind.Error })
+        assertEquals(OccurrenceStatusUi.Scheduled, viewModel.details.value.status)
+    }
+
+    @Test
     fun invalidTimeRangeIsRejectedWithoutSaveOrFeedback() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)

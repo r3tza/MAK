@@ -212,6 +212,16 @@ interface WeekOverrideDao {
     @Query("DELETE FROM week_overrides WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query(
+        "DELETE FROM week_overrides WHERE academic_calendar_id = :calendarId " +
+            "AND week_start_date = :weekStartDate AND scope = :scope"
+    )
+    suspend fun deleteForWeek(
+        calendarId: Long,
+        weekStartDate: LocalDate,
+        scope: dev.retza.mak.data.entity.WeekOverrideScope
+    )
+
     @Query("DELETE FROM week_overrides")
     suspend fun deleteAll()
 }
@@ -230,8 +240,8 @@ interface OccurrenceNoteDao {
     @Update
     suspend fun update(entity: OccurrenceNoteEntity)
 
-    @Query("DELETE FROM occurrence_notes WHERE id = :id")
-    suspend fun deleteById(id: Long)
+    @Query("DELETE FROM occurrence_notes WHERE class_id = :classId AND occurrence_date = :date")
+    suspend fun deleteForOccurrence(classId: Long, date: LocalDate)
 
     @Query("DELETE FROM occurrence_notes")
     suspend fun deleteAll()
@@ -251,8 +261,8 @@ interface OccurrenceChangeDao {
     @Update
     suspend fun update(entity: OccurrenceChangeEntity)
 
-    @Query("DELETE FROM occurrence_changes WHERE id = :id")
-    suspend fun deleteById(id: Long)
+    @Query("DELETE FROM occurrence_changes WHERE class_id = :classId AND original_date = :date")
+    suspend fun deleteForOccurrence(classId: Long, date: LocalDate)
 
     @Query("DELETE FROM occurrence_changes")
     suspend fun deleteAll()

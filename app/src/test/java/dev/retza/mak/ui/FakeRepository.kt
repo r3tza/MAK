@@ -10,6 +10,7 @@ import dev.retza.mak.data.entity.SemesterEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
 import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
+import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.PlanBackupGateway
@@ -501,11 +502,18 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
     suspend fun saveWeekOverride(entity: WeekOverrideEntity): Long {
         awaitSave()
         events += "saveWeekOverride"
-        if (entity.id == 0L) {
-            weekOverrides += entity.copy(id = (weekOverrides.size + 1).toLong())
+        val index = if (entity.id == 0L) {
+            weekOverrides.indexOfFirst {
+                it.academicCalendarId == entity.academicCalendarId &&
+                    it.weekStartDate == entity.weekStartDate && it.scope == entity.scope
+            }
         } else {
-            val index = weekOverrides.indexOfFirst { it.id == entity.id }
-            if (index >= 0) weekOverrides[index] = entity else weekOverrides += entity
+            weekOverrides.indexOfFirst { it.id == entity.id }
+        }
+        if (index >= 0) {
+            weekOverrides[index] = entity.copy(id = weekOverrides[index].id)
+        } else {
+            weekOverrides += entity.copy(id = (weekOverrides.size + 1).toLong())
         }
         notifyDataChanged()
         return entity.id
@@ -515,6 +523,19 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         awaitSave()
         events += "deleteWeekOverride"
         weekOverrides.removeAll { it.id == id }
+        notifyDataChanged()
+    }
+
+    suspend fun deleteWeekOverride(
+        calendarId: Long,
+        weekStartDate: LocalDate,
+        scope: WeekOverrideScope
+    ) {
+        awaitSave()
+        events += "deleteWeekOverride"
+        weekOverrides.removeAll {
+            it.academicCalendarId == calendarId && it.weekStartDate == weekStartDate && it.scope == scope
+        }
         notifyDataChanged()
     }
 
@@ -535,10 +556,10 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         return entity.id
     }
 
-    override suspend fun deleteOccurrenceNote(id: Long) {
+    override suspend fun deleteOccurrenceNote(classId: Long, occurrenceDate: LocalDate) {
         awaitSave()
         events += "deleteOccurrenceNote"
-        occurrenceNotes.removeAll { it.id == id }
+        occurrenceNotes.removeAll { it.classId == classId && it.occurrenceDate == occurrenceDate }
     }
 
     override suspend fun saveOccurrenceChange(record: OccurrenceChangeRecord): Long =
@@ -558,10 +579,10 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         return entity.id
     }
 
-    override suspend fun deleteOccurrenceChange(id: Long) {
+    override suspend fun deleteOccurrenceChange(classId: Long, originalDate: LocalDate) {
         awaitSave()
         events += "deleteOccurrenceChange"
-        occurrenceChanges.removeAll { it.id == id }
+        occurrenceChanges.removeAll { it.classId == classId && it.originalDate == originalDate }
     }
 
     override suspend fun replaceAll(data: BackupData): Long? {

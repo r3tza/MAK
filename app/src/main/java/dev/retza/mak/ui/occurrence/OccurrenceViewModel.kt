@@ -246,12 +246,9 @@ class OccurrenceViewModel(
             },
             onError = { update { it.copy(draftError = "Nie udało się odwołać terminu.") } }
         ) {
-            val existing = freshPlanData()?.occurrenceChanges?.firstOrNull {
-                it.classId == classId.toString() && it.originalDate == original
-            }
             scheduleRepository.saveOccurrenceChange(
                 OccurrenceChangeRecord(
-                    id = existing?.id?.toLongOrNull() ?: 0,
+                    id = 0,
                     semesterId = data.semester.id.toLong(),
                     classId = classId,
                     originalDate = original,
@@ -285,10 +282,7 @@ class OccurrenceViewModel(
                 update { it.copy(isSaving = false) }
             }
         ) {
-            val change = freshPlanData()?.occurrenceChanges?.firstOrNull {
-                it.classId == classId.toString() && it.originalDate == original
-            } ?: return@launchUiOperation
-            scheduleRepository.deleteOccurrenceChange(change.id.toLong())
+            scheduleRepository.deleteOccurrenceChange(classId, original)
             reload(data.semester.id.toLong(), classId, original)
             feedbackSink.publish(UiFeedback("Przywrócono termin", UiFeedbackKind.Success))
         }
@@ -374,15 +368,12 @@ class OccurrenceViewModel(
                 }
             }
         ) {
-            val existing = freshPlanData()?.occurrenceNotes?.firstOrNull {
-                it.classId == classId.toString() && it.occurrenceDate == date
-            }
             if (note == null) {
-                existing?.let { scheduleRepository.deleteOccurrenceNote(it.id.toLong()) }
+                scheduleRepository.deleteOccurrenceNote(classId, date)
             } else {
                 scheduleRepository.saveOccurrenceNote(
                     OccurrenceNoteRecord(
-                        id = existing?.id?.toLongOrNull() ?: 0,
+                        id = 0,
                         semesterId = data.semester.id.toLong(),
                         classId = classId,
                         occurrenceDate = date,
@@ -447,18 +438,15 @@ class OccurrenceViewModel(
                     onFinish = { update { it.copy(isSaving = false) } },
                     onError = { update { it.copy(isSaving = false, draftError = "Nie udało się zapisać zmian.") } }
                 ) {
-                    val existing = freshPlanData()?.occurrenceChanges?.firstOrNull {
-                        it.classId == classId.toString() && it.originalDate == original
-                    }
                     when (decision.result) {
                         OccurrenceEditResult.NoChange -> Unit
                         OccurrenceEditResult.Restored ->
-                            existing?.let { scheduleRepository.deleteOccurrenceChange(it.id.toLong()) }
+                            scheduleRepository.deleteOccurrenceChange(classId, original)
 
                         OccurrenceEditResult.Modified,
                         OccurrenceEditResult.Moved -> scheduleRepository.saveOccurrenceChange(
                             OccurrenceChangeRecord(
-                                id = existing?.id?.toLongOrNull() ?: 0,
+                                id = 0,
                                 semesterId = data.semester.id.toLong(),
                                 classId = classId,
                                 originalDate = original,

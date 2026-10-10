@@ -13,6 +13,7 @@ import dev.retza.mak.data.repository.toEntity
 import dev.retza.mak.data.repository.toRecord
 import dev.retza.mak.ui.settings.InMemorySettingsPreferences
 import dev.retza.mak.ui.settings.SettingsPreferences
+import java.time.LocalDate
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -144,6 +145,16 @@ internal class FakeSemesterRepository(
         delegate.saveWeekOverride(record.toEntity())
 
     override suspend fun deleteWeekOverride(id: Long) = delegate.deleteWeekOverride(id)
+
+    override suspend fun deleteWeekOverride(
+        calendarId: Long,
+        weekStartDate: LocalDate,
+        scope: dev.retza.mak.domain.WeekOverrideScope
+    ) = delegate.deleteWeekOverride(
+        calendarId,
+        weekStartDate,
+        dev.retza.mak.data.entity.WeekOverrideScope.valueOf(scope.name)
+    )
 
     /** Runs a write and then tells the configuration stream that the data changed. */
     private suspend fun <T> written(write: suspend () -> T): T {

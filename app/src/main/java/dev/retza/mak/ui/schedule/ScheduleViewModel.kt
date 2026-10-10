@@ -177,10 +177,6 @@ class ScheduleViewModel(
         val calendarId = visibleWeekCalendarId(data) ?: return
         val monday = controls.value.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val entityScope = WeekOverrideScope.valueOf(scope.name)
-        val existing = data.weekOverrides.firstOrNull {
-            it.academicCalendarId == calendarId.toString() &&
-                it.weekStartDate == monday && it.scope == entityScope
-        }
         weekOverrideOperationRunning = true
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -189,7 +185,7 @@ class ScheduleViewModel(
         ) {
             semesterRepository.saveWeekOverride(
                 WeekOverrideRecord(
-                    id = existing?.id?.toLongOrNull() ?: 0,
+                    id = 0,
                     semesterId = data.semester.id.toLong(),
                     academicCalendarId = calendarId,
                     weekStartDate = monday,
@@ -206,17 +202,13 @@ class ScheduleViewModel(
         val calendarId = visibleWeekCalendarId(data) ?: return
         val monday = controls.value.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
         val entityScope = WeekOverrideScope.valueOf(scope.name)
-        val existing = data.weekOverrides.firstOrNull {
-            it.academicCalendarId == calendarId.toString() &&
-                it.weekStartDate == monday && it.scope == entityScope
-        } ?: return
         weekOverrideOperationRunning = true
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
             errorMessage = "Nie udało się usunąć korekty tygodnia.",
             onFinish = { weekOverrideOperationRunning = false }
         ) {
-            semesterRepository.deleteWeekOverride(existing.id.toLong())
+            semesterRepository.deleteWeekOverride(calendarId, monday, entityScope)
         }
     }
 

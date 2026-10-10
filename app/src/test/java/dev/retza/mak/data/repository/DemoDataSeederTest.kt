@@ -153,6 +153,12 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
 
     override suspend fun deleteWeekOverride(id: Long) = Unit
 
+    override suspend fun deleteWeekOverride(
+        calendarId: Long,
+        weekStartDate: java.time.LocalDate,
+        scope: dev.retza.mak.domain.WeekOverrideScope
+    ) = Unit
+
     override fun observeActivePlanData(semesterId: Long): Flow<dev.retza.mak.domain.ActivePlanData?> =
         flowOf(null)
 
@@ -169,12 +175,12 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
         return nextId++
     }
 
-    override suspend fun deleteOccurrenceNote(id: Long) = Unit
+    override suspend fun deleteOccurrenceNote(classId: Long, occurrenceDate: java.time.LocalDate) = Unit
 
     override suspend fun saveOccurrenceChange(record: OccurrenceChangeRecord): Long {
         occurrenceChanges += record
         return nextId++
     }
 
-    override suspend fun deleteOccurrenceChange(id: Long) = Unit
+    override suspend fun deleteOccurrenceChange(classId: Long, originalDate: java.time.LocalDate) = Unit
 }

@@ -2,6 +2,7 @@ package dev.retza.mak.data.repository
 
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.domain.ActivePlanData
+import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
@@ -14,11 +15,11 @@ interface ScheduleRepository {
 
     suspend fun saveOccurrenceNote(record: OccurrenceNoteRecord): Long
 
-    suspend fun deleteOccurrenceNote(id: Long)
+    suspend fun deleteOccurrenceNote(classId: Long, occurrenceDate: LocalDate)
 
     suspend fun saveOccurrenceChange(record: OccurrenceChangeRecord): Long
 
-    suspend fun deleteOccurrenceChange(id: Long)
+    suspend fun deleteOccurrenceChange(classId: Long, originalDate: LocalDate)
 }
 
 @org.koin.core.annotation.Single(binds = [ScheduleRepository::class])
@@ -76,7 +77,8 @@ class RoomScheduleRepository(
         return entity.id
     }
 
-    override suspend fun deleteOccurrenceNote(id: Long) = occurrenceNotes.deleteById(id)
+    override suspend fun deleteOccurrenceNote(classId: Long, occurrenceDate: LocalDate) =
+        occurrenceNotes.deleteForOccurrence(classId, occurrenceDate)
 
     override suspend fun saveOccurrenceChange(record: OccurrenceChangeRecord): Long {
         val entity = record.toEntity()
@@ -104,7 +106,8 @@ class RoomScheduleRepository(
         return entity.id
     }
 
-    override suspend fun deleteOccurrenceChange(id: Long) = occurrenceChanges.deleteById(id)
+    override suspend fun deleteOccurrenceChange(classId: Long, originalDate: LocalDate) =
+        occurrenceChanges.deleteForOccurrence(classId, originalDate)
 
     private suspend fun validateClassOwnership(classId: Long, semesterId: Long) {
         require(semesters.findById(semesterId) != null) { "Semester does not exist" }

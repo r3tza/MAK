@@ -34,6 +34,7 @@ import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -138,6 +139,94 @@ class RoomPersistenceTest {
         assertEquals(overrideId, database!!.weekOverrideDao().findById(overrideId)?.id)
         assertEquals(changeId, database!!.occurrenceChangeDao().findById(changeId)?.id)
         assertEquals(noteId, database!!.occurrenceNoteDao().findById(noteId)?.id)
+    }
+
+    @Test
+    fun deleteByNaturalKeyRemovesOnlyThatRow() = runBlocking {
+        database = openDatabase()
+        val semesterId = database!!.semesterDao().insert(SemesterEntity(name = "Semestr zimowy", isActive = true))
+        val calendarId = database!!.academicCalendarDao().insert(
+            AcademicCalendarEntity(
+                semesterId = semesterId,
+                startDate = LocalDate.of(2026, 10, 1),
+                endDate = LocalDate.of(2027, 2, 28),
+                firstWeekType = WeekType.A
+            )
+        )
+        val programId = database!!.studyProgramDao().insert(
+            StudyProgramEntity(name = "Informatyka", color = "#112233")
+        )
+        val assignmentId = database!!.semesterProgramDao().insert(
+            SemesterProgramEntity(
+                semesterId = semesterId,
+                studyProgramId = programId,
+                academicCalendarId = calendarId
+            )
+        )
+        val classId = database!!.classDao().insert(
+            ClassEntity(
+                semesterId = semesterId,
+                semesterProgramId = assignmentId,
+                name = "Programowanie",
+                type = "Wykład",
+                teacherName = "Jan Kowalski",
+                dayOfWeek = DayOfWeek.MONDAY,
+                startTime = LocalTime.of(8, 0),
+                endTime = LocalTime.of(9, 30),
+                room = null,
+                building = null,
+                group = null,
+                recurrence = Recurrence.EVERY_WEEK,
+                date = null,
+                classNote = null
+            )
+        )
+        val monday = LocalDate.of(2026, 10, 5)
+        val nextMonday = monday.plusWeeks(1)
+        listOf(monday, nextMonday).forEach { date ->
+            database!!.occurrenceChangeDao().insert(
+                OccurrenceChangeEntity(
+                    semesterId = semesterId,
+                    classId = classId,
+                    originalDate = date,
+                    kind = OccurrenceChangeKind.CANCELLED,
+                    targetDate = null,
+                    newStartTime = null,
+                    newEndTime = null,
+                    newRoom = null,
+                    newBuilding = null,
+                    newTeacherName = null,
+                    newNote = null
+                )
+            )
+            database!!.occurrenceNoteDao().insert(
+                OccurrenceNoteEntity(semesterId = semesterId, classId = classId, occurrenceDate = date, body = "Kolokwium")
+            )
+        }
+        listOf(WeekOverrideScope.ONE_WEEK, WeekOverrideScope.FROM_WEEK).forEach { scope ->
+            database!!.weekOverrideDao().insert(
+                WeekOverrideEntity(
+                    semesterId = semesterId,
+                    academicCalendarId = calendarId,
+                    weekStartDate = monday,
+                    weekType = WeekType.B,
+                    scope = scope
+                )
+            )
+        }
+
+        database!!.occurrenceChangeDao().deleteForOccurrence(classId, monday)
+        database!!.occurrenceNoteDao().deleteForOccurrence(classId, monday)
+        database!!.weekOverrideDao().deleteForWeek(calendarId, monday, WeekOverrideScope.ONE_WEEK)
+
+        assertNull(database!!.occurrenceChangeDao().findForOccurrence(classId, monday))
+        assertNotNull(database!!.occurrenceChangeDao().findForOccurrence(classId, nextMonday))
+        assertNull(database!!.occurrenceNoteDao().findForOccurrence(classId, monday))
+        assertNotNull(database!!.occurrenceNoteDao().findForOccurrence(classId, nextMonday))
+        assertEquals(
+            listOf(WeekOverrideScope.FROM_WEEK),
+            database!!.weekOverrideDao().getForCalendar(calendarId).map { it.scope }
+        )
     }
 
     @Test

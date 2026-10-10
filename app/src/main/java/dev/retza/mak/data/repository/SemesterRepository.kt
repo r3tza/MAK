@@ -4,7 +4,9 @@ import androidx.room.withTransaction
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.domain.WeekOverrideScope
 import java.time.DayOfWeek
+import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
@@ -84,6 +86,8 @@ interface SemesterRepository {
     suspend fun saveWeekOverride(record: WeekOverrideRecord): Long
 
     suspend fun deleteWeekOverride(id: Long)
+
+    suspend fun deleteWeekOverride(calendarId: Long, weekStartDate: LocalDate, scope: WeekOverrideScope)
 }
 
 @org.koin.core.annotation.Single(binds = [SemesterRepository::class])
@@ -504,6 +508,16 @@ class RoomSemesterRepository(
     }
 
     override suspend fun deleteWeekOverride(id: Long) = weekOverrides.deleteById(id)
+
+    override suspend fun deleteWeekOverride(
+        calendarId: Long,
+        weekStartDate: LocalDate,
+        scope: WeekOverrideScope
+    ) = weekOverrides.deleteForWeek(
+        calendarId,
+        weekStartDate,
+        dev.retza.mak.data.entity.WeekOverrideScope.valueOf(scope.name)
+    )
 
     /** A new calendar with the dates, rhythm and week overrides of [source] (`ARCHITECTURE.md`, section 7). */
     private suspend fun copyCalendarWithOverrides(source: AcademicCalendarEntity): Long {

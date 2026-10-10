@@ -592,6 +592,23 @@ class ScheduleViewModelTest {
 
         assertTrue(repository.weekOverrides.isEmpty())
     }
+
+    @Test
+    fun clearingWeekOverrideDeletesByWeekAndScope() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        advanceUntilIdle()
+        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.FROM_WEEK)
+        advanceUntilIdle()
+        viewModel.clearVisibleWeekOverride(WeekOverrideScopeUi.ONE_WEEK)
+        advanceUntilIdle()
+
+        assertEquals(listOf(WeekOverrideScope.FROM_WEEK), repository.weekOverrides.map { it.scope })
+    }
 }
 
 private fun addMondayClasses(repository: FakeRepository, count: Int) {
