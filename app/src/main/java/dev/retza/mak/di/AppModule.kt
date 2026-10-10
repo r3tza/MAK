@@ -5,7 +5,9 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.work.WorkManager
+import dev.retza.mak.data.PlanChanges
 import dev.retza.mak.data.database.AppDatabase
+import dev.retza.mak.data.database.PLAN_TABLES
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.ui.ActivePlanSource
@@ -29,6 +31,7 @@ import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.flow.map
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Configuration
 import org.koin.core.annotation.Module
@@ -57,6 +60,12 @@ class AppModule {
 
     @Single
     fun provideBackgroundDispatcher(): CoroutineDispatcher = Dispatchers.Default
+
+    @Single
+    fun providePlanChanges(database: AppDatabase): PlanChanges = PlanChanges(
+        database.invalidationTracker.createFlow(*PLAN_TABLES, emitInitialState = false).map { },
+        CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    )
 
     @Single
     fun providePlanEditTracker(): PlanEditTracker = PlanEditTracker(CoroutineScope(SupervisorJob() + Dispatchers.Default))

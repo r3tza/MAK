@@ -134,14 +134,37 @@ class SyncCoordinatorTest {
 
     @Test
     fun localChangesAreRecordedButNotTheEchoOfADownload() = runTest {
-        coordinator.recordLocalChange()
-        assertEquals(Instant.parse("2026-09-30T10:00:00Z").toEpochMilli(), coordinator.state.value.localChangedAtMillis)
+        val now = Instant.parse("2026-09-30T10:00:00Z").toEpochMilli()
+        coordinator.recordLocalChange(now)
+        assertEquals(now, coordinator.state.value.localChangedAtMillis)
 
         drive.put(plan("Dysk"))
         coordinator.synchronize()
-        coordinator.recordLocalChange()
+        coordinator.recordLocalChange(now)
 
         assertEquals(null, coordinator.state.value.localChangedAtMillis)
+    }
+
+    @Test
+    fun changeBackToTheSyncedPlanIsNotRecorded() = runTest {
+        phone.data = plan("Telefon")
+        coordinator.synchronize()
+
+        phone.data = plan("Telefon", "Zmiana")
+        phone.data = plan("Telefon")
+        coordinator.recordLocalChange(Instant.parse("2026-09-30T10:05:00Z").toEpochMilli())
+
+        assertNull(coordinator.state.value.localChangedAtMillis)
+    }
+
+    @Test
+    fun lateEchoOfADownloadIsNotRecorded() = runTest {
+        drive.put(plan("Dysk"))
+        coordinator.synchronize()
+
+        coordinator.recordLocalChange(Instant.parse("2026-09-30T10:00:10Z").toEpochMilli())
+
+        assertNull(coordinator.state.value.localChangedAtMillis)
     }
 
     @Test

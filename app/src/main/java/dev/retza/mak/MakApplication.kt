@@ -4,7 +4,7 @@ import android.app.Application
 import android.content.pm.ApplicationInfo
 import androidx.work.Configuration
 import androidx.work.WorkerFactory
-import dev.retza.mak.data.database.AppDatabase
+import dev.retza.mak.data.PlanChanges
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.seedDemoDataIfEmpty
@@ -46,7 +46,7 @@ class MakApplication : Application(), Configuration.Provider {
 
     private val semesterRepository: SemesterRepository by inject()
 
-    private val database: AppDatabase by inject()
+    private val planChanges: PlanChanges by inject()
 
     private val scheduler: CollisionAlarmScheduler by inject()
 
@@ -69,7 +69,7 @@ class MakApplication : Application(), Configuration.Provider {
         syncRoomChangeObserver.observe(initializationScope)
         ensureCollisionChannel(this)
         registerMakWidgetRefresh(
-            database = database,
+            planChanges = planChanges.changes,
             planDisplay = preferences.planDisplay,
             scope = initializationScope,
             requester = GlanceWidgetRefreshRequester(this, initializationScope)

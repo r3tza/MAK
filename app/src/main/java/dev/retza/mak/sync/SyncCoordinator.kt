@@ -62,10 +62,6 @@ class SyncCoordinator(
 ) {
     private val lock = Mutex()
 
-    // Room reports the plan replaced by a download as a change; edits this soon after it are ignored.
-    @Volatile
-    private var lastReplacementMillis = Long.MIN_VALUE / 2
-
     // Read on first use, so creating the coordinator during app start does no file access.
     private val current by lazy { MutableStateFlow(store.load()) }
     val state: StateFlow<SyncState> get() = current
@@ -104,11 +100,14 @@ class SyncCoordinator(
         save(SyncState())
     }
 
-    /** Remembers when the plan on this phone last changed, for the version choice. */
-    suspend fun recordLocalChange() = serialized {
-        val now = clock.millis()
-        if (current.value.account == null || now - lastReplacementMillis < REPLACEMENT_ECHO_MILLIS) return@serialized
-        save(current.value.copy(localChangedAtMillis = now))
+    /**
+     * Remembers when the plan on this phone last changed, for the version choice. A plan equal to the
+     * one last synchronized is not a change: it is the echo of a download or a change taken back.
+     */
+    suspend fun recordLocalChange(changedAtMillis: Long) = serialized {
+        if (current.value.account == null) return@serialized
+        if (SyncPlanFile.fingerprint(gateway.snapshot()) == current.value.localFingerprint) return@serialized
+        save(current.value.copy(localChangedAtMillis = changedAtMillis))
     }
 
     private suspend fun <T> serialized(block: suspend () -> T): T =
@@ -250,7 +249,6 @@ class SyncCoordinator(
             archive.add(localBytes, ArchiveSource.PHONE, clock.millis())
             archive.add(remoteBytes, ArchiveSource.DRIVE, clock.millis())
             gateway.replaceIfUnchanged(localFingerprint, merged, keepLocalActive = true, merged.semesterCovering(today))
-                .also { lastReplacementMillis = clock.millis() }
         }
         val replaced = when (replacement) {
             PlanReplacementResult.Editing -> return SyncOutcome.WaitingForEditor
@@ -296,7 +294,6 @@ class SyncCoordinator(
                 archive.add(localBytes, ArchiveSource.PHONE, clock.millis())
             }
             gateway.replaceIfUnchanged(localFingerprint, remoteData, keepLocalActive = !firstRun, fallbackActive)
-                .also { lastReplacementMillis = clock.millis() }
         }
         val replaced = when (replacement) {
             PlanReplacementResult.Editing -> return SyncOutcome.WaitingForEditor
@@ -348,7 +345,6 @@ class SyncCoordinator(
 
     private companion object {
         const val MAX_PASSES = 3
-        const val REPLACEMENT_ECHO_MILLIS = 2_000L
     }
 }
 

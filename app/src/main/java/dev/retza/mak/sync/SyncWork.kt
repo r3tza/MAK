@@ -12,16 +12,17 @@ import androidx.work.WorkerFactory
 import androidx.work.WorkerParameters
 import androidx.work.ListenableWorker
 import androidx.work.OneTimeWorkRequestBuilder
-import dev.retza.mak.data.database.PLAN_TABLES
+import dev.retza.mak.data.PlanChanges
 import java.io.IOException
+import java.time.Clock
 import java.util.concurrent.TimeUnit
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.conflate
 import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.core.annotation.Single
 
@@ -123,7 +124,8 @@ class SyncWorkScheduler(
  */
 @Single
 class SyncRoomChangeObserver(
-    private val database: dev.retza.mak.data.database.AppDatabase,
+    private val planChanges: PlanChanges,
+    private val clock: Clock,
     private val editTracker: PlanEditTracker,
     private val scheduler: SyncWorkScheduler,
     private val coordinator: SyncCoordinator
@@ -131,22 +133,19 @@ class SyncRoomChangeObserver(
     @OptIn(kotlinx.coroutines.FlowPreview::class)
     fun observe(scope: CoroutineScope) {
         scope.launch {
-            database.invalidationTracker.createFlow(*PLAN_TABLES, emitInitialState = false)
+            planChanges.changes
+                // The debounce keeps the time of the last write of a series, and the plan file is saved once per series.
+                .map { clock.millis() }
                 .debounce(1_000L)
-                .collect { scheduler.enqueueImmediate() }
-        }
-        scope.launch {
-            // Not debounced: the time of the edit, not of the following run.
-            database.invalidationTracker.createFlow(*PLAN_TABLES, emitInitialState = false)
-                .conflate()
-                .collect {
+                .collect { changedAt ->
                     try {
-                        coordinator.recordLocalChange()
+                        coordinator.recordLocalChange(changedAt)
                     } catch (error: CancellationException) {
                         throw error
                     } catch (_: Exception) {
                         // Only a label in the version choice depends on it.
                     }
+                    scheduler.enqueueImmediate()
                 }
         }
         scope.launch {

@@ -62,6 +62,8 @@ Kryterium zakończenia: testy przechodzą; `rg "Dysk Google odmówił|brakuje mi
 
 ## 2. Obserwuj zmiany planu jednym strumieniem i rozpoznawaj własny zapis po skrócie (I-88)
 
+Stan: zrobione. `SyncRoomChangeObserver` nie zna już `AppDatabase`, więc znika też uwaga z I-87 o obserwacji tabel w `sync`. Ręcznego sprawdzenia widgetu nie wykonano: na emulatorze jest widget wersji wydanej, a nie debug; opóźnienie 1 s sprawdza `MakWidgetRefreshTest`.
+
 Cel: widget i synchronizacja reagują na jeden strumień zmian planu na poziomie aplikacji (K3). Odświeżanie widgetu łączy żądania z opóźnieniem 1 s (G1). Czas zmiany planu na telefonie zapisuje się raz na serię zapisów, a własny zapis pobranego planu nie liczy się jako zmiana, bo skrót planu równa się zapisanemu po synchronizacji (F1, zamiast okna 2 sekund). Powiadomienia zostają na współdzielonym strumieniu `ActivePlanSource`, bo potrzebują treści planu.
 
 Pliki: nowy `data/PlanChanges.kt`, `di/AppModule.kt`, `sync/SyncCoordinator.kt`, `sync/SyncWork.kt` (`SyncRoomChangeObserver`), `widget/MakWidgetRefresh.kt`, `MakApplication.kt`; testy `sync/SyncCoordinatorTest.kt`, nowy `widget/MakWidgetRefreshTest.kt` (jeśli taki plik już jest, dopisz do niego); dokumenty `docs/ARCHITECTURE.md`, `docs/SYNC.md`.
