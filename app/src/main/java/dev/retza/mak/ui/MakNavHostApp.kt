@@ -33,7 +33,6 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
-import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.components.MakBrandMark
 import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakIconButton
@@ -53,7 +52,6 @@ fun MakApp(
     settingsViewModel: SettingsViewModel,
     syncViewModel: SyncViewModel,
     updateViewModel: UpdateViewModel,
-    planEditTracker: PlanEditTracker,
     feedback: Flow<UiFeedback>,
     openTodayRequests: Flow<Unit>,
     openPlanRequests: Flow<String>,
@@ -206,22 +204,18 @@ fun MakApp(
                     openPrograms = { navController.navigate(MakRoutes.StudyPrograms) }
                 )
                 classEditRoute(
-                    planEditTracker = planEditTracker,
                     navController = navController,
                     onBack = ::navigateBack,
                     topBar = topBar
                 )
                 occurrenceDetailsRoute(
-                    planEditTracker = planEditTracker,
                     navController = navController,
                     topBar = topBar
                 )
                 semesterRoutes(
-                    planEditTracker = planEditTracker,
                     navController = navController
                 )
                 settingsRoute(
-                    planEditTracker = planEditTracker,
                     settingsViewModel = settingsViewModel,
                     syncViewModel = syncViewModel,
                     updateViewModel = updateViewModel,
@@ -240,12 +234,10 @@ fun MakApp(
                     onGrantInstallPermission = onGrantInstallPermission
                 )
                 studyProgramRoutes(
-                    planEditTracker = planEditTracker,
                     navController = navController,
                     onBack = ::navigateBack
                 )
                 setupRoute(
-                    planEditTracker = planEditTracker,
                     navController = navController,
                     settingsViewModel = settingsViewModel
                 )

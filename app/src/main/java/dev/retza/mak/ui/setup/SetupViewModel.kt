@@ -13,6 +13,8 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.domain.WeekType
 import dev.retza.mak.domain.shouldActivateNewSemester
 import dev.retza.mak.ui.components.FieldErrorUi
+import dev.retza.mak.sync.PlanEditTracker
+import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
@@ -117,10 +119,19 @@ class SetupViewModel(
     private val semesterRepository: SemesterRepository,
     private val feedbackSink: FeedbackSink,
     private val clock: Clock,
+    planEditTracker: PlanEditTracker,
     private val savedState: SavedStateHandle
 ) : ViewModel() {
     private val state = MutableStateFlow(SetupWizardUiState())
     val setup: StateFlow<SetupWizardUiState> = state.asStateFlow()
+
+    // The wizard is a draft from its start, so it holds the edit key until the view model is cleared.
+    private val editSession = PlanEditSession(
+        tracker = planEditTracker,
+        scope = viewModelScope,
+        refreshBase = { true },
+        hasDraft = { true }
+    )
 
     private val effectsChannel = Channel<SetupEffect>(Channel.BUFFERED)
     val effects = effectsChannel.receiveAsFlow()
@@ -130,7 +141,10 @@ class SetupViewModel(
     private var calendarId: Long? = null
 
     // The wizard loads its semester once per destination; a rotation keeps the typed values.
-    private var opened = false
+    private val openedState = MutableStateFlow(false)
+
+    /** True once the wizard holds its edit key and has started for this destination. */
+    val opened: StateFlow<Boolean> = openedState.asStateFlow()
 
     // The first program's draft, restored when the further program form closes.
     private var firstProgramDraft: SetupWizardUiState? = null
@@ -163,9 +177,14 @@ class SetupViewModel(
 
     /** Starts the wizard for this destination once; `resume` comes from the route argument. */
     suspend fun openOnce() {
-        if (opened) return
-        opened = true
+        if (openedState.value) return
+        editSession.admitForm()
+        openedState.value = true
         startFromRoom(savedState.get<Boolean>("resume") ?: false)
+    }
+
+    override fun onCleared() {
+        editSession.close()
     }
 
     private fun start(resume: SetupSemesterResume?, programOptions: List<SetupProgramOptionUi>) {

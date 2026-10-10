@@ -35,7 +35,6 @@ import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import dev.retza.mak.export.BackupFileRead
 import dev.retza.mak.export.readBackupFile
-import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.AppViewModel
 import dev.retza.mak.ui.LocalMakWidthClass
 import dev.retza.mak.ui.MakApp
@@ -65,7 +64,6 @@ class MainActivity : ComponentActivity() {
     private val syncViewModel: SyncViewModel by viewModel()
     private val updateViewModel: UpdateViewModel by viewModel()
     private val feedbackController: FeedbackController by inject()
-    private val planEditTracker: PlanEditTracker by inject()
     private val openTodayRequests = Channel<Unit>(Channel.CONFLATED)
     private val openPlanRequests = Channel<String>(Channel.CONFLATED)
     private var splashReleased by mutableStateOf(false)
@@ -174,7 +172,6 @@ class MainActivity : ComponentActivity() {
                             settingsViewModel = settingsViewModel,
                             syncViewModel = syncViewModel,
                             updateViewModel = updateViewModel,
-                            planEditTracker = planEditTracker,
                             feedback = feedbackController.feedback,
                             openTodayRequests = openTodayRequests.receiveAsFlow(),
                             openPlanRequests = openPlanRequests.receiveAsFlow(),

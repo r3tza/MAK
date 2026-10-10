@@ -12,7 +12,6 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.programs.StudyProgramEditOpenState
 import dev.retza.mak.ui.programs.StudyProgramEditScreen
 import dev.retza.mak.ui.programs.StudyProgramsEffect
@@ -20,7 +19,6 @@ import dev.retza.mak.ui.programs.StudyProgramsScreen
 import dev.retza.mak.ui.programs.StudyProgramsViewModel
 
 internal fun NavGraphBuilder.studyProgramRoutes(
-    planEditTracker: PlanEditTracker,
     navController: NavController,
     onBack: () -> Unit
 ) {
@@ -42,11 +40,6 @@ internal fun NavGraphBuilder.studyProgramRoutes(
         arguments = listOf(navArgument("programId") { type = NavType.LongType })
     ) { entry ->
         val studyProgramsViewModel: StudyProgramsViewModel = koinViewModel()
-        val editing = TrackPlanEditing(planEditTracker)
-        if (!editing.ready) {
-            PlanEditingWait()
-            return@composable
-        }
         val programId = entry.arguments?.getLong("programId")
         val openState by studyProgramsViewModel.opened.collectAsStateWithLifecycle()
         LaunchedEffect(programId) {

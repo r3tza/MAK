@@ -18,6 +18,8 @@ import dev.retza.mak.ui.settings.InMemorySettingsPreferences
 import dev.retza.mak.ui.settings.SettingsPreferences
 import java.time.LocalDate
 import java.time.LocalTime
+import dev.retza.mak.sync.PlanEditTracker
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -40,13 +42,14 @@ class OccurrenceViewModelTest {
     private fun occurrenceViewModel(
         repository: FakeRepository,
         preferences: SettingsPreferences = InMemorySettingsPreferences(),
-        savedState: SavedStateHandle = SavedStateHandle()
-    ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = FeedbackController(), activePlanSource = activePlanSource(repository, preferences), savedState = savedState)
+        savedState: SavedStateHandle = SavedStateHandle(),
+        planEditTracker: PlanEditTracker = PlanEditTracker(CoroutineScope(UnconfinedTestDispatcher()))
+    ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = FeedbackController(), activePlanSource = activePlanSource(repository, preferences), planEditTracker = planEditTracker, savedState = savedState)
 
     private fun recordingViewModel(
         repository: FakeRepository,
         sink: RecordingFeedbackSink
-    ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = sink, activePlanSource = activePlanSource(repository), savedState = SavedStateHandle())
+    ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = sink, activePlanSource = activePlanSource(repository), planEditTracker = PlanEditTracker(CoroutineScope(UnconfinedTestDispatcher())), savedState = SavedStateHandle())
 
     // Invalid route ids are ignored, as the removed public overload did.
     private fun OccurrenceViewModel.open(routeId: String) {
@@ -122,6 +125,41 @@ class OccurrenceViewModelTest {
         assertEquals("B204", state.room)
         assertEquals("Niezapisana notatka", state.sharedNoteDraft)
         assertTrue(state.canSaveSharedNote)
+    }
+
+    @Test
+    fun noteDraftHoldsTheKeyUntilSaved() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val tracker = PlanEditTracker(CoroutineScope(mainDispatcher))
+        val viewModel = occurrenceViewModel(repository, planEditTracker = tracker)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.updateOccurrenceNoteDraft("Notatka do terminu")
+        advanceUntilIdle()
+        assertTrue(tracker.isEditing)
+
+        viewModel.saveOccurrenceNote()
+        advanceUntilIdle()
+        assertEquals("Notatka do terminu", viewModel.details.value.occurrenceNote)
+        assertFalse(tracker.isEditing)
+    }
+
+    @Test
+    fun firstTypedCharacterSurvivesTheAdmissionRefresh() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.updateOccurrenceNoteDraft("K")
+        assertEquals("K", viewModel.details.value.occurrenceNoteDraft)
+        viewModel.updateOccurrenceNoteDraft("Ko")
+        advanceUntilIdle()
+
+        assertEquals("Ko", viewModel.details.value.occurrenceNoteDraft)
     }
 
     @Test
@@ -487,7 +525,9 @@ class OccurrenceViewModelTest {
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
 
-        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "12:30") }
+        viewModel.openEditDialog()
+        viewModel.updateStartTimeDraft("11:00")
+        viewModel.updateEndTimeDraft("12:30")
         advanceUntilIdle()
         assertTrue(viewModel.details.value.canSaveOccurrenceEdit)
 
@@ -596,7 +636,9 @@ class OccurrenceViewModelTest {
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
 
-        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "12:30") }
+        viewModel.openEditDialog()
+        viewModel.updateStartTimeDraft("11:00")
+        viewModel.updateEndTimeDraft("12:30")
         advanceUntilIdle()
         viewModel.saveOccurrenceChange()
         advanceUntilIdle()
@@ -617,7 +659,8 @@ class OccurrenceViewModelTest {
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
 
-        viewModel.updateDraft { it.copy(targetDateDraft = "2026-09-23") }
+        viewModel.openEditDialog()
+        viewModel.updateTargetDateDraft("2026-09-23")
         advanceUntilIdle()
         viewModel.saveOccurrenceChange()
         advanceUntilIdle()
@@ -660,7 +703,9 @@ class OccurrenceViewModelTest {
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
 
-        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "10:30") }
+        viewModel.openEditDialog()
+        viewModel.updateStartTimeDraft("11:00")
+        viewModel.updateEndTimeDraft("10:30")
         advanceUntilIdle()
         viewModel.saveOccurrenceChange()
         advanceUntilIdle()
@@ -679,7 +724,8 @@ class OccurrenceViewModelTest {
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
 
-        viewModel.updateDraft { it.copy(targetDateDraft = "2026-12-01") }
+        viewModel.openEditDialog()
+        viewModel.updateTargetDateDraft("2026-12-01")
         advanceUntilIdle()
         viewModel.saveOccurrenceChange()
         advanceUntilIdle()
@@ -698,7 +744,9 @@ class OccurrenceViewModelTest {
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
 
-        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "12:30") }
+        viewModel.openEditDialog()
+        viewModel.updateStartTimeDraft("11:00")
+        viewModel.updateEndTimeDraft("12:30")
         advanceUntilIdle()
         repository.failSaves = true
         viewModel.saveOccurrenceChange()
@@ -786,7 +834,9 @@ class OccurrenceViewModelTest {
         advanceUntilIdle()
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
-        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "12:30") }
+        viewModel.openEditDialog()
+        viewModel.updateStartTimeDraft("11:00")
+        viewModel.updateEndTimeDraft("12:30")
         advanceUntilIdle()
 
         repository.saveGate = CompletableDeferred()

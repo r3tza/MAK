@@ -23,7 +23,9 @@ import dev.retza.mak.domain.decideOccurrenceEdit
 import dev.retza.mak.domain.noteContentChanged
 import dev.retza.mak.domain.occurrenceId
 import dev.retza.mak.domain.occurrenceRoomOverride
+import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.calendarForAssignment
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.OccurrenceStatusUi
@@ -42,8 +44,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -60,6 +64,7 @@ class OccurrenceViewModel(
     private val activePlanProvider: ActivePlanProvider,
     private val feedbackSink: FeedbackSink,
     private val activePlanSource: ActivePlanSource,
+    planEditTracker: PlanEditTracker,
     savedState: SavedStateHandle
 ) : ViewModel() {
     private val state = MutableStateFlow(OccurrenceDetailsUiState())
@@ -73,6 +78,14 @@ class OccurrenceViewModel(
 
     private val activePlan = activePlanSource.observeActive()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
+
+    // Every edit action below runs through the session: it reloads the shown occurrence before the first draft.
+    private val editSession = PlanEditSession(
+        tracker = planEditTracker,
+        scope = viewModelScope,
+        refreshBase = { shownRouteId()?.let { refreshForEdit(it) } ?: false },
+        hasDraft = { state.value.hasPlanDraft() }
+    )
 
     private var originalDate: LocalDate? = null
     private var openJob: Job? = null
@@ -89,6 +102,22 @@ class OccurrenceViewModel(
         } else {
             state.value = derive(emptyOccurrenceDetails().copy(notFound = true))
         }
+        viewModelScope.launch {
+            state.map { it.hasPlanDraft() }.distinctUntilChanged().collect { hasDraft ->
+                if (!hasDraft) editSession.releaseIfNoDraft()
+            }
+        }
+    }
+
+    override fun onCleared() {
+        editSession.close()
+    }
+
+    /** The occurrence the details show now, as the route id the view model reloads before an edit. */
+    private fun shownRouteId(): String? {
+        val classId = selectedClassIdState.value ?: return null
+        val originalDate = runCatching { LocalDate.parse(details.value.baseDate) }.getOrNull() ?: return null
+        return OccurrenceArgs(classId, originalDate).toRouteId()
     }
 
     internal fun open(args: OccurrenceArgs) {
@@ -142,7 +171,8 @@ class OccurrenceViewModel(
         currentArgs = args
         originalDate = built.baseDate.toLocalDateOrNull()
         selectedClassIdState.value = args.classId
-        state.value = derive(built)
+        // Keeps what the user already typed: the first keystroke admits the screen before this refresh.
+        state.value = derive(state.value.withFreshData(built))
         return true
     }
 
@@ -162,30 +192,32 @@ class OccurrenceViewModel(
         }
     }
 
-    fun openEditDialog() = update {
-        it.copy(
-            showEditDialog = true,
-            targetDateDraft = it.currentDate,
-            startTimeDraft = it.startTime,
-            endTimeDraft = it.endTime,
-            roomDraft = it.room.orEmpty(),
-            draftErrors = emptyMap(),
-            draftError = null
-        )
+    fun openEditDialog() = editSession.run {
+        update {
+            it.copy(
+                showEditDialog = true,
+                targetDateDraft = it.currentDate,
+                startTimeDraft = it.startTime,
+                endTimeDraft = it.endTime,
+                roomDraft = it.room.orEmpty(),
+                draftErrors = emptyMap(),
+                draftError = null
+            )
+        }
     }
 
-    fun dismissEditDialog() {
-        if (state.value.isSaving) return
+    fun dismissEditDialog() = editSession.run {
+        if (state.value.isSaving) return@run
         update { it.copy(showEditDialog = false, draftErrors = emptyMap(), draftError = null) }
     }
 
-    fun requestClassDeletion() = update { it.copy(showDeleteConfirmation = true) }
+    fun requestClassDeletion() = editSession.run { update { it.copy(showDeleteConfirmation = true) } }
 
-    fun cancelClassDeletion() = update { it.copy(showDeleteConfirmation = false) }
+    fun cancelClassDeletion() = editSession.run { update { it.copy(showDeleteConfirmation = false) } }
 
-    fun deleteSelectedClass() {
-        if (state.value.isDeletingClass) return
-        val classId = selectedClassIdState.value ?: return
+    fun deleteSelectedClass() = editSession.run {
+        if (state.value.isDeletingClass) return@run
+        val classId = selectedClassIdState.value ?: return@run
         update { it.copy(isDeletingClass = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -198,11 +230,11 @@ class OccurrenceViewModel(
         }
     }
 
-    fun cancelOccurrence() {
-        if (occurrenceStateOperationRunning) return
-        val data = editPlanData ?: activePlan.value?.data ?: return
-        val classId = selectedClassIdState.value ?: return
-        val original = originalDate ?: return
+    fun cancelOccurrence() = editSession.run {
+        if (occurrenceStateOperationRunning) return@run
+        val data = editPlanData ?: activePlan.value?.data ?: return@run
+        val classId = selectedClassIdState.value ?: return@run
+        val original = originalDate ?: return@run
         occurrenceStateOperationRunning = true
         update { it.copy(isSaving = true, draftError = null) }
         viewModelScope.launchUiOperation(
@@ -238,11 +270,11 @@ class OccurrenceViewModel(
         }
     }
 
-    fun restoreOccurrence() {
-        if (occurrenceStateOperationRunning) return
-        val data = editPlanData ?: activePlan.value?.data ?: return
-        val classId = selectedClassIdState.value ?: return
-        val original = originalDate ?: return
+    fun restoreOccurrence() = editSession.run {
+        if (occurrenceStateOperationRunning) return@run
+        val data = editPlanData ?: activePlan.value?.data ?: return@run
+        val classId = selectedClassIdState.value ?: return@run
+        val original = originalDate ?: return@run
         occurrenceStateOperationRunning = true
         update { it.copy(isSaving = true, draftError = null) }
         viewModelScope.launchUiOperation(
@@ -262,20 +294,36 @@ class OccurrenceViewModel(
         }
     }
 
-    fun updateSharedNoteDraft(value: String) = update {
-        it.copy(sharedNoteDraft = value, sharedNoteError = null)
+    fun updateSharedNoteDraft(value: String) = editSession.edit {
+        update { it.copy(sharedNoteDraft = value, sharedNoteError = null) }
     }
 
-    fun updateOccurrenceNoteDraft(value: String) = update {
-        it.copy(occurrenceNoteDraft = value, occurrenceNoteError = null)
+    fun updateOccurrenceNoteDraft(value: String) = editSession.edit {
+        update { it.copy(occurrenceNoteDraft = value, occurrenceNoteError = null) }
     }
 
-    fun saveSharedNote() {
-        if (state.value.isSavingSharedNote) return
-        val classId = selectedClassIdState.value ?: return
+    fun updateTargetDateDraft(value: String) = editSession.run {
+        updateDraft { it.copy(targetDateDraft = value) }
+    }
+
+    fun updateStartTimeDraft(value: String) = editSession.run {
+        updateDraft { it.copy(startTimeDraft = value) }
+    }
+
+    fun updateEndTimeDraft(value: String) = editSession.run {
+        updateDraft { it.copy(endTimeDraft = value) }
+    }
+
+    fun updateRoomDraft(value: String) = editSession.run {
+        updateDraft { it.copy(roomDraft = value) }
+    }
+
+    fun saveSharedNote() = editSession.run {
+        if (state.value.isSavingSharedNote) return@run
+        val classId = selectedClassIdState.value ?: return@run
         val draft = state.value
         val note = draft.sharedNoteDraft.trim().ifEmpty { null }
-        if (!noteContentChanged(draft.sharedNoteDraft, draft.sharedNote)) return
+        if (!noteContentChanged(draft.sharedNoteDraft, draft.sharedNote)) return@run
         update { it.copy(isSavingSharedNote = true, sharedNoteError = null) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -307,14 +355,14 @@ class OccurrenceViewModel(
         }
     }
 
-    fun saveOccurrenceNote() {
-        if (state.value.isSavingOccurrenceNote) return
-        val data = editPlanData ?: activePlan.value?.data ?: return
-        val classId = selectedClassIdState.value ?: return
-        val date = originalDate ?: return
+    fun saveOccurrenceNote() = editSession.run {
+        if (state.value.isSavingOccurrenceNote) return@run
+        val data = editPlanData ?: activePlan.value?.data ?: return@run
+        val classId = selectedClassIdState.value ?: return@run
+        val date = originalDate ?: return@run
         val draft = state.value
         val note = draft.occurrenceNoteDraft.trim().ifEmpty { null }
-        if (!noteContentChanged(draft.occurrenceNoteDraft, draft.occurrenceNote)) return
+        if (!noteContentChanged(draft.occurrenceNoteDraft, draft.occurrenceNote)) return@run
         update { it.copy(isSavingOccurrenceNote = true, occurrenceNoteError = null) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -359,17 +407,17 @@ class OccurrenceViewModel(
         }
     }
 
-    fun saveOccurrenceChange() {
-        if (state.value.isSaving) return
-        val data = editPlanData ?: activePlan.value?.data ?: return
-        val classId = selectedClassIdState.value ?: return
-        val original = originalDate ?: return
+    fun saveOccurrenceChange() = editSession.run {
+        if (state.value.isSaving) return@run
+        val data = editPlanData ?: activePlan.value?.data ?: return@run
+        val classId = selectedClassIdState.value ?: return@run
+        val original = originalDate ?: return@run
         val draft = state.value
         val base = draft.toBaseSlot()
         val current = draft.toCurrentSlot()
         if (base == null || current == null) {
             update { it.copy(draftErrors = mapOf(OccurrenceEditField.Date to FieldErrorUi("Podaj poprawną datę."))) }
-            return
+            return@run
         }
         val decision = decideOccurrenceEdit(
             base = base,
@@ -386,11 +434,11 @@ class OccurrenceViewModel(
             }
 
             is OccurrenceEditDecision.Ready -> {
-                if (decision.result == OccurrenceEditResult.NoChange) return
+                if (decision.result == OccurrenceEditResult.NoChange) return@run
                 val errors = occurrenceDraftErrors(decision.slot, draft)
                 if (errors.isNotEmpty()) {
                     update { it.copy(draftErrors = errors) }
-                    return
+                    return@run
                 }
                 update { it.copy(isSaving = true, draftErrors = emptyMap(), draftError = null) }
                 viewModelScope.launchUiOperation(

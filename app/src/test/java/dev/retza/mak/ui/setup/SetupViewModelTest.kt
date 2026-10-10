@@ -10,6 +10,8 @@ import dev.retza.mak.ui.feedback.UiFeedback
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
+import dev.retza.mak.sync.PlanEditTracker
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -36,7 +38,7 @@ class SetupViewModelTest {
         sink: FeedbackSink = FeedbackController(),
         clock: Clock = insideSemester,
         savedState: SavedStateHandle = SavedStateHandle()
-    ) = SetupViewModel(FakeSemesterRepository(repository), sink, clock, savedState)
+    ) = SetupViewModel(FakeSemesterRepository(repository), sink, clock, PlanEditTracker(CoroutineScope(UnconfinedTestDispatcher())), savedState)
 
     private fun SetupViewModel.fillValidSemester() {
         update { it.copy(semesterName = "Nowy", startDate = "2026-09-01", endDate = "2026-10-01") }

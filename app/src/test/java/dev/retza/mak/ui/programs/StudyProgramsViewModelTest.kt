@@ -8,6 +8,8 @@ import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.settings.InMemorySettingsPreferences
+import dev.retza.mak.sync.PlanEditTracker
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -36,7 +38,7 @@ class StudyProgramsViewModelTest {
     private val preferences = InMemorySettingsPreferences()
 
     private fun viewModel(repository: FakeRepository, sink: FeedbackSink = RecordingFeedbackSink()) =
-        StudyProgramsViewModel(FakeSemesterRepository(repository), sink, preferences)
+        StudyProgramsViewModel(FakeSemesterRepository(repository), sink, preferences, PlanEditTracker(CoroutineScope(UnconfinedTestDispatcher())))
 
     @Test
     fun listsGlobalPrograms() = runTest(mainDispatcher) {

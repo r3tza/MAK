@@ -12,7 +12,6 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.setup.SetupEffect
@@ -30,7 +29,6 @@ internal fun openSetup(navController: NavController, resumeExisting: Boolean = f
 }
 
 internal fun NavGraphBuilder.setupRoute(
-    planEditTracker: PlanEditTracker,
     navController: NavController,
     settingsViewModel: SettingsViewModel
 ) {
@@ -42,12 +40,12 @@ internal fun NavGraphBuilder.setupRoute(
         })
     ) { _ ->
         val setupViewModel: SetupViewModel = koinViewModel()
-        val editing = TrackPlanEditing(planEditTracker)
-        if (!editing.ready) {
+        LaunchedEffect(Unit) { setupViewModel.openOnce() }
+        val opened = setupViewModel.opened.collectAsStateWithLifecycle().value
+        if (!opened) {
             PlanEditingWait()
             return@composable
         }
-        LaunchedEffect(Unit) { setupViewModel.openOnce() }
         SetupEffects(setupViewModel, navController)
         val setupState by setupViewModel.setup.collectAsStateWithLifecycle()
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()

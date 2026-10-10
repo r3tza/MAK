@@ -13,7 +13,9 @@ import dev.retza.mak.domain.ClassForm
 import dev.retza.mak.domain.ClassValidationError
 import dev.retza.mak.domain.ClassValidator
 import dev.retza.mak.domain.Recurrence as DomainRecurrence
+import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.calendarForAssignment
 import dev.retza.mak.ui.dayNames
 import dev.retza.mak.ui.occurrence.OccurrenceArgs
@@ -47,7 +49,8 @@ class ClassEditViewModel(
     private val scheduleRepository: ScheduleRepository,
     private val feedbackSink: FeedbackSink,
     private val savedState: SavedStateHandle,
-    activePlanSource: ActivePlanSource
+    activePlanSource: ActivePlanSource,
+    planEditTracker: PlanEditTracker
 ) : ViewModel() {
     // The draft survives process death: Android may stop the app while the user copies
     // the timetable from another app, and returning must not clear the form.
@@ -74,6 +77,14 @@ class ClassEditViewModel(
     private val activePlan = activePlanSource.observeActive()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    // The form is a draft from its start, so it holds the edit key until the view model is cleared.
+    private val editSession = PlanEditSession(
+        tracker = planEditTracker,
+        scope = viewModelScope,
+        refreshBase = { true },
+        hasDraft = { true }
+    )
+
     init {
         viewModelScope.launch {
             state.collect { savedState.storeClassEditDraft(it) }
@@ -85,12 +96,20 @@ class ClassEditViewModel(
         }
     }
 
+    override fun onCleared() {
+        editSession.close()
+    }
+
     /** Loads the form for this destination once; a restored draft is kept (`ARCHITECTURE.md`, section 5). */
     suspend fun openOnce() {
+        // Admission comes first: after process death the open state is restored and the form must still hold the key.
+        val admitted = editSession.admitForm()
         if (openState.value != ClassEditOpenState.Opening) return
         val classId = savedState.get<String>("classId")?.toLongOrNull()
         val date = savedState.get<String>("date")?.toLocalDateOrNull()
-        val result = if (classId != null && date != null) {
+        val result = if (!admitted) {
+            ClassEditOpenState.Missing
+        } else if (classId != null && date != null) {
             if (openEditFromFreshPlan(OccurrenceArgs(classId, date).toRouteId())) {
                 ClassEditOpenState.Open
             } else {

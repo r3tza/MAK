@@ -13,6 +13,8 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
+import dev.retza.mak.sync.PlanEditTracker
+import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
@@ -22,6 +24,8 @@ import java.time.temporal.TemporalAdjusters
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
@@ -42,6 +46,7 @@ sealed interface SemesterEffect {
 class SemesterViewModel(
     private val semesterRepository: SemesterRepository,
     private val feedbackSink: FeedbackSink,
+    planEditTracker: PlanEditTracker,
     savedState: SavedStateHandle
 ) : ViewModel() {
     private val state = MutableStateFlow(SemesterScreenUiState())
@@ -54,7 +59,16 @@ class SemesterViewModel(
 
     private var configuration: SemesterConfiguration? = null
     private var selectedCalendarId: Long? = null
-    private var courseFormOpened = false
+    // True while a course form is open: the form is a draft that holds plan edits until it closes.
+    private var courseFormOpen = false
+
+    // Every edit action below runs through the session: it reloads the semester before the first draft.
+    private val editSession = PlanEditSession(
+        tracker = planEditTracker,
+        scope = viewModelScope,
+        refreshBase = { refreshForEdit() },
+        hasDraft = { state.value.hasPlanDraft() || courseFormOpen }
+    )
 
     init {
         val id = semesterId
@@ -65,6 +79,15 @@ class SemesterViewModel(
                 }
             }
         }
+        viewModelScope.launch {
+            state.map { it.hasPlanDraft() }.distinctUntilChanged().collect { hasDraft ->
+                if (!hasDraft) editSession.releaseIfNoDraft()
+            }
+        }
+    }
+
+    override fun onCleared() {
+        editSession.close()
     }
 
     /** Reads the configuration once before the first edit of an edit admission. Returns false when the semester is gone. */
@@ -75,17 +98,65 @@ class SemesterViewModel(
             clear()
             return false
         }
-        apply(loaded)
+        // The first keystroke in the semester form admits the screen before this refresh; keep what it typed.
+        apply(loaded, keepSemesterForm = configuration != null)
         return true
     }
 
     /**
-     * Refreshes the semester before the first course form of this graph opens. A failed refresh is not kept,
-     * so the next form tries again; the stream keeps the data current after that.
+     * Admits the course form when it opens. A form opened by [openAddCourse] or [openCourseEdit] is already admitted.
+     * Returns false when the semester is gone; the screen then leaves.
      */
-    suspend fun refreshForCourseForm(): Boolean {
-        if (!courseFormOpened) courseFormOpened = refreshForEdit()
-        return courseFormOpened
+    suspend fun openCourseFormOnce(): Boolean {
+        if (courseFormOpen) return true
+        courseFormOpen = editSession.admitForm()
+        return courseFormOpen
+    }
+
+    /** Closes the course form and releases plan edits when no other draft is left. */
+    fun endCourseForm() {
+        courseFormOpen = false
+        viewModelScope.launch { editSession.releaseIfNoDraft() }
+    }
+
+    fun cancelCourseForm() {
+        resetCourseDraft()
+        endCourseForm()
+    }
+
+    fun openAddCourse(navigate: () -> Unit) = editSession.run {
+        resetCourseDraft()
+        courseFormOpen = true
+        navigate()
+    }
+
+    fun openCourseEdit(navigate: () -> Unit) = editSession.run {
+        courseFormOpen = true
+        navigate()
+    }
+
+    fun updateSemesterName(value: String) = editSession.edit {
+        update { it.copy(semester = it.semester.copy(name = value)) }
+    }
+
+    fun updateSemesterStartDate(value: String) = editSession.edit {
+        update { it.copy(semester = it.semester.copy(startDate = value)) }
+    }
+
+    fun updateSemesterEndDate(value: String) = editSession.edit {
+        update { it.copy(semester = it.semester.copy(endDate = value)) }
+    }
+
+    fun updateSemesterFirstWeek(value: WeekTypeUi) = editSession.run {
+        update { it.copy(semester = it.semester.copy(firstWeek = value)) }
+    }
+
+    fun updateOverrideWeekType(value: WeekTypeUi) = editSession.run {
+        update { it.copy(overrideForm = it.overrideForm.copy(weekType = value)) }
+    }
+
+    fun updateOverrideScope(value: WeekOverrideScopeUi) = editSession.run {
+        update { it.copy(overrideForm = it.overrideForm.copy(scope = value)) }
     }
 
     private fun clear() {
@@ -95,7 +166,7 @@ class SemesterViewModel(
     }
 
     /** Rebuilds the screen from [loaded], keeping the calendar choice and unsaved drafts. */
-    private fun apply(loaded: SemesterConfiguration) {
+    private fun apply(loaded: SemesterConfiguration, keepSemesterForm: Boolean = false) {
         configuration = loaded
         selectedCalendarId = loaded.calendars.firstOrNull { it.id == selectedCalendarId }?.id
             ?: loaded.sharedCalendar()?.id
@@ -104,7 +175,9 @@ class SemesterViewModel(
         val courseCalendarId = requestedCourseCalendarId
             ?.takeIf { value -> loaded.calendars.any { it.id == value } }
             ?: selectedCalendarId
-        state.value = loaded.toSemesterScreenState(selectedCalendarId).copy(
+        val fresh = loaded.toSemesterScreenState(selectedCalendarId)
+        state.value = fresh.copy(
+            semester = if (keepSemesterForm) current.semester else fresh.semester,
             courseNameDraft = current.courseNameDraft,
             courseColorDraft = current.courseColorDraft,
             courseCalendarMode = current.courseCalendarMode,
@@ -352,14 +425,15 @@ class SemesterViewModel(
             update {
                 it.copy(courseNameDraft = "", courseProgramId = null, isAddingCourse = false)
             }
+            endCourseForm()
             feedbackSink.publish(UiFeedback("Dodano kierunek", UiFeedbackKind.Success))
             effectsChannel.trySend(SemesterEffect.CourseAdded)
         }
     }
 
-    fun separateCourseCalendar(assignmentId: String) {
-        if (state.value.isSeparatingCalendar) return
-        val id = assignmentId.toLongOrNull() ?: return
+    fun separateCourseCalendar(assignmentId: String) = editSession.run {
+        if (state.value.isSeparatingCalendar) return@run
+        val id = assignmentId.toLongOrNull() ?: return@run
         update { it.copy(isSeparatingCalendar = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -373,11 +447,11 @@ class SemesterViewModel(
         }
     }
 
-    fun requestReconnect(assignmentId: String, calendarId: String) {
-        val assignmentValue = assignmentId.toLongOrNull() ?: return
-        val calendarValue = calendarId.toLongOrNull() ?: return
-        val data = configuration ?: return
-        val assignment = data.programs.firstOrNull { it.id == assignmentValue } ?: return
+    fun requestReconnect(assignmentId: String, calendarId: String) = editSession.run {
+        val assignmentValue = assignmentId.toLongOrNull() ?: return@run
+        val calendarValue = calendarId.toLongOrNull() ?: return@run
+        val data = configuration ?: return@run
+        val assignment = data.programs.firstOrNull { it.id == assignmentValue } ?: return@run
         val sourceBecomesUnused = assignment.academicCalendarId != calendarValue &&
             data.programs.none {
                 it.academicCalendarId == assignment.academicCalendarId && it.id != assignmentValue
@@ -421,8 +495,8 @@ class SemesterViewModel(
         }
     }
 
-    fun requestCalendarDeletion(calendarId: String) {
-        val calendar = state.value.calendars.firstOrNull { it.id == calendarId } ?: return
+    fun requestCalendarDeletion(calendarId: String) = editSession.run {
+        val calendar = state.value.calendars.firstOrNull { it.id == calendarId } ?: return@run
         update { it.copy(pendingCalendarDeletion = calendar) }
     }
 
@@ -449,10 +523,10 @@ class SemesterViewModel(
         }
     }
 
-    fun requestCourseDeletion(id: String) {
-        val assignmentId = id.toLongOrNull() ?: return
-        val course = state.value.courseItems.firstOrNull { it.assignmentId == id } ?: return
-        if (state.value.isPreparingCourseDeletion) return
+    fun requestCourseDeletion(id: String) = editSession.run {
+        val assignmentId = id.toLongOrNull() ?: return@run
+        val course = state.value.courseItems.firstOrNull { it.assignmentId == id } ?: return@run
+        if (state.value.isPreparingCourseDeletion) return@run
         update { it.copy(isPreparingCourseDeletion = true) }
         viewModelScope.launch {
             try {
@@ -499,12 +573,14 @@ class SemesterViewModel(
         }
     }
 
-    fun newWeekOverride() = update {
-        it.copy(overrideForm = WeekOverrideFormUiState(isOpen = true))
+    fun newWeekOverride() = editSession.run {
+        update {
+            it.copy(overrideForm = WeekOverrideFormUiState(isOpen = true))
+        }
     }
 
-    fun editWeekOverride(id: String) {
-        val item = state.value.overrides.firstOrNull { it.id == id } ?: return
+    fun editWeekOverride(id: String) = editSession.run {
+        val item = state.value.overrides.firstOrNull { it.id == id } ?: return@run
         update {
             it.copy(
                 overrideForm = WeekOverrideFormUiState(
@@ -519,14 +595,16 @@ class SemesterViewModel(
     }
 
     /** Any picked day stands for its whole week, so the form keeps the Monday of that week. */
-    fun updateWeekStartDate(value: String) = update {
-        val monday = value.toLocalDateOrNull()?.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        it.copy(
-            overrideForm = it.overrideForm.copy(
-                weekStartDate = monday?.toString() ?: value,
-                weekStartDateError = null
+    fun updateWeekStartDate(value: String) = editSession.edit {
+        update {
+            val monday = value.toLocalDateOrNull()?.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            it.copy(
+                overrideForm = it.overrideForm.copy(
+                    weekStartDate = monday?.toString() ?: value,
+                    weekStartDateError = null
+                )
             )
-        )
+        }
     }
 
     fun cancelWeekOverrideEdit() = update {
@@ -568,8 +646,8 @@ class SemesterViewModel(
         }
     }
 
-    fun requestWeekOverrideDeletion(id: String) {
-        val item = state.value.overrides.firstOrNull { it.id == id } ?: return
+    fun requestWeekOverrideDeletion(id: String) = editSession.run {
+        val item = state.value.overrides.firstOrNull { it.id == id } ?: return@run
         update { it.copy(pendingOverrideDeletion = item) }
     }
 

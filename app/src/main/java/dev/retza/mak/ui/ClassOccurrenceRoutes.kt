@@ -5,13 +5,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
-import dev.retza.mak.sync.PlanEditTracker
 import java.time.LocalDate
 import org.koin.compose.viewmodel.koinViewModel
 import dev.retza.mak.ui.edit.ClassEditEffect
@@ -21,7 +19,6 @@ import dev.retza.mak.ui.edit.classEditRecurrenceLabel
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.occurrence.OccurrenceDetailsScreen
 import dev.retza.mak.ui.occurrence.OccurrenceEffect
-import dev.retza.mak.ui.occurrence.OccurrenceArgs
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.occurrence.hasPlanDraft
 
@@ -37,7 +34,6 @@ internal fun openClassEditor(
 }
 
 internal fun NavGraphBuilder.classEditRoute(
-    planEditTracker: PlanEditTracker,
     navController: NavController,
     onBack: () -> Unit,
     topBar: TopBarState
@@ -56,11 +52,6 @@ internal fun NavGraphBuilder.classEditRoute(
         )
     ) { _ ->
         val classEditViewModel: ClassEditViewModel = koinViewModel()
-        val editing = TrackPlanEditing(planEditTracker)
-        if (!editing.ready) {
-            PlanEditingWait()
-            return@composable
-        }
         val openState = classEditViewModel.opened.collectAsStateWithLifecycle().value
         LaunchedEffect(Unit) { classEditViewModel.openOnce() }
         if (openState != ClassEditOpenState.Open) {
@@ -105,7 +96,6 @@ internal fun NavGraphBuilder.classEditRoute(
 }
 
 internal fun NavGraphBuilder.occurrenceDetailsRoute(
-    planEditTracker: PlanEditTracker,
     navController: NavController,
     topBar: TopBarState
 ) {
@@ -115,26 +105,12 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
             navArgument("classId") { type = NavType.StringType },
             navArgument("date") { type = NavType.StringType }
         )
-    ) { entry ->
+    ) { _ ->
         val occurrenceViewModel: OccurrenceViewModel = koinViewModel()
         OccurrenceEffects(occurrenceViewModel, navController)
-        val args = entry.occurrenceArgs()
-        val occurrenceId = args?.toRouteId()
         val details = occurrenceViewModel.details.collectAsStateWithLifecycle().value
-        val editing = TrackPlanEditing(
-            planEditTracker,
-            active = details.hasPlanDraft(),
-            isActiveNow = { occurrenceViewModel.details.value.hasPlanDraft() }
-        )
         val actions: List<Pair<String, () -> Unit>> = listOfNotNull(
-            if (details.canCancelOccurrence) {
-                "Odwołaj termin" to editing.callback(
-                    refreshBeforeFirstEdit = {
-                        occurrenceViewModel.shownRouteId()?.let { occurrenceViewModel.refreshForEdit(it) } ?: false
-                    },
-                    action = occurrenceViewModel::cancelOccurrence
-                )
-            } else null,
+            if (details.canCancelOccurrence) "Odwołaj termin" to occurrenceViewModel::cancelOccurrence else null,
             if (details.canEditBaseClass) {
                 "Edytuj wszystkie terminy" to {
                     occurrenceViewModel.selectedClassId.value?.let { id ->
@@ -142,62 +118,25 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
                     }
                 }
             } else null,
-            if (details.canDeleteBaseClass) {
-                "Usuń zajęcia" to editing.callback(
-                    refreshBeforeFirstEdit = {
-                        occurrenceViewModel.shownRouteId()?.let { occurrenceViewModel.refreshForEdit(it) } ?: false
-                    },
-                    action = occurrenceViewModel::requestClassDeletion
-                )
-            } else null
+            if (details.canDeleteBaseClass) "Usuń zajęcia" to occurrenceViewModel::requestClassDeletion else null
         )
         DeclareTopBar(topBar, TopBarSpec(MakRoutes.Occurrence, actions = actions))
         OccurrenceDetailsScreen(
             state = details,
-            onDeleteBaseClass = editing.callback(
-                refreshBeforeFirstEdit = { if (occurrenceId != null) occurrenceViewModel.refreshForEdit(occurrenceId) else false },
-                action = occurrenceViewModel::deleteSelectedClass
-            ),
-            onDismissDeleteConfirmation = editing.callback(action = occurrenceViewModel::cancelClassDeletion),
-            onOpenOccurrenceEdit = editing.callback(
-                refreshBeforeFirstEdit = { if (occurrenceId != null) occurrenceViewModel.refreshForEdit(occurrenceId) else false },
-                action = occurrenceViewModel::openEditDialog
-            ),
-            onDismissOccurrenceEdit = editing.callback(action = occurrenceViewModel::dismissEditDialog),
-            onSaveOccurrenceChange = editing.callback(
-                refreshBeforeFirstEdit = { if (occurrenceId != null) occurrenceViewModel.refreshForEdit(occurrenceId) else false },
-                action = occurrenceViewModel::saveOccurrenceChange
-            ),
-            onRestoreOccurrence = editing.callback(
-                refreshBeforeFirstEdit = { if (occurrenceId != null) occurrenceViewModel.refreshForEdit(occurrenceId) else false },
-                action = occurrenceViewModel::restoreOccurrence
-            ),
-            onOccurrenceNoteDraftChanged = editing.callback(
-                refreshBeforeFirstEdit = { if (occurrenceId != null) occurrenceViewModel.refreshForEdit(occurrenceId) else false },
-                action = occurrenceViewModel::updateOccurrenceNoteDraft
-            ),
-            onSharedNoteDraftChanged = editing.callback(
-                refreshBeforeFirstEdit = { if (occurrenceId != null) occurrenceViewModel.refreshForEdit(occurrenceId) else false },
-                action = occurrenceViewModel::updateSharedNoteDraft
-            ),
-            onTargetDateDraftChanged = editing.callback(
-                refreshBeforeFirstEdit = { if (occurrenceId != null) occurrenceViewModel.refreshForEdit(occurrenceId) else false },
-                action = { value -> occurrenceViewModel.updateDraft { it.copy(targetDateDraft = value) } }
-            ),
-            onStartTimeDraftChanged = editing.callback(
-                refreshBeforeFirstEdit = { if (occurrenceId != null) occurrenceViewModel.refreshForEdit(occurrenceId) else false },
-                action = { value -> occurrenceViewModel.updateDraft { it.copy(startTimeDraft = value) } }
-            ),
-            onEndTimeDraftChanged = editing.callback(
-                refreshBeforeFirstEdit = { if (occurrenceId != null) occurrenceViewModel.refreshForEdit(occurrenceId) else false },
-                action = { value -> occurrenceViewModel.updateDraft { it.copy(endTimeDraft = value) } }
-            ),
-            onRoomDraftChanged = editing.callback(
-                refreshBeforeFirstEdit = { if (occurrenceId != null) occurrenceViewModel.refreshForEdit(occurrenceId) else false },
-                action = { value -> occurrenceViewModel.updateDraft { it.copy(roomDraft = value) } }
-            ),
-            onSaveSharedNote = editing.callback(action = occurrenceViewModel::saveSharedNote),
-            onSaveOccurrenceNote = editing.callback(action = occurrenceViewModel::saveOccurrenceNote),
+            onDeleteBaseClass = occurrenceViewModel::deleteSelectedClass,
+            onDismissDeleteConfirmation = occurrenceViewModel::cancelClassDeletion,
+            onOpenOccurrenceEdit = occurrenceViewModel::openEditDialog,
+            onDismissOccurrenceEdit = occurrenceViewModel::dismissEditDialog,
+            onSaveOccurrenceChange = occurrenceViewModel::saveOccurrenceChange,
+            onRestoreOccurrence = occurrenceViewModel::restoreOccurrence,
+            onOccurrenceNoteDraftChanged = occurrenceViewModel::updateOccurrenceNoteDraft,
+            onSharedNoteDraftChanged = occurrenceViewModel::updateSharedNoteDraft,
+            onTargetDateDraftChanged = occurrenceViewModel::updateTargetDateDraft,
+            onStartTimeDraftChanged = occurrenceViewModel::updateStartTimeDraft,
+            onEndTimeDraftChanged = occurrenceViewModel::updateEndTimeDraft,
+            onRoomDraftChanged = occurrenceViewModel::updateRoomDraft,
+            onSaveSharedNote = occurrenceViewModel::saveSharedNote,
+            onSaveOccurrenceNote = occurrenceViewModel::saveOccurrenceNote,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -237,17 +176,4 @@ internal fun ClassEditEffects(
             }
         }
     }
-}
-
-private fun NavBackStackEntry.occurrenceArgs(): OccurrenceArgs? {
-    val classId = arguments?.getString("classId")?.toLongOrNull() ?: return null
-    val date = arguments?.getString("date")?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
-    return OccurrenceArgs(classId, date)
-}
-
-/** The occurrence the details show now, as the route id the view model reloads before an edit. */
-private fun OccurrenceViewModel.shownRouteId(): String? {
-    val classId = selectedClassId.value ?: return null
-    val originalDate = runCatching { LocalDate.parse(details.value.baseDate) }.getOrNull() ?: return null
-    return OccurrenceArgs(classId, originalDate).toRouteId()
 }

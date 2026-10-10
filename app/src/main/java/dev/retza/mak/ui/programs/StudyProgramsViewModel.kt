@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.StudyProgramRecord
+import dev.retza.mak.sync.PlanEditTracker
+import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
@@ -67,7 +69,8 @@ sealed interface StudyProgramsEffect {
 class StudyProgramsViewModel(
     private val semesterRepository: SemesterRepository,
     private val feedbackSink: FeedbackSink,
-    private val preferences: SettingsPreferences
+    private val preferences: SettingsPreferences,
+    planEditTracker: PlanEditTracker
 ) : ViewModel() {
     private val state = MutableStateFlow(StudyProgramsUiState())
     val programs: StateFlow<StudyProgramsUiState> = state.asStateFlow()
@@ -77,6 +80,14 @@ class StudyProgramsViewModel(
 
     private val openState = MutableStateFlow(StudyProgramEditOpenState.Opening)
     val opened: StateFlow<StudyProgramEditOpenState> = openState.asStateFlow()
+
+    // The edit form is a draft from its start, so it holds the edit key until the view model is cleared.
+    private val editSession = PlanEditSession(
+        tracker = planEditTracker,
+        scope = viewModelScope,
+        refreshBase = { true },
+        hasDraft = { true }
+    )
 
     init {
         viewModelScope.launch {
@@ -125,7 +136,15 @@ class StudyProgramsViewModel(
     /** Loads the program for this destination once; a rotation keeps the typed values. */
     suspend fun openOnce(id: Long) {
         if (openState.value != StudyProgramEditOpenState.Opening) return
-        openState.value = if (loadEditorFromRoom(id)) StudyProgramEditOpenState.Open else StudyProgramEditOpenState.Missing
+        openState.value = if (editSession.admitForm() && loadEditorFromRoom(id)) {
+            StudyProgramEditOpenState.Open
+        } else {
+            StudyProgramEditOpenState.Missing
+        }
+    }
+
+    override fun onCleared() {
+        editSession.close()
     }
 
     /** Loads the latest Room row of the program into the editor; false when it no longer exists. */

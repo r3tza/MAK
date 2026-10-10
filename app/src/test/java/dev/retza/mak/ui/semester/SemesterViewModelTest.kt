@@ -6,6 +6,7 @@ import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.ui.FakeRepository
+import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
@@ -14,6 +15,7 @@ import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import java.time.LocalDate
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -34,13 +36,15 @@ class SemesterViewModelTest {
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
     private fun viewModel(repository: FakeRepository, semesterId: String = "1") =
-        SemesterViewModel(FakeSemesterRepository(repository), FeedbackController(), savedState(semesterId))
+        SemesterViewModel(FakeSemesterRepository(repository), FeedbackController(), planEditTracker(), savedState(semesterId))
 
     private fun recordingViewModel(
         repository: FakeRepository,
         sink: RecordingFeedbackSink,
         semesterId: String = "1"
-    ) = SemesterViewModel(FakeSemesterRepository(repository), sink, savedState(semesterId))
+    ) = SemesterViewModel(FakeSemesterRepository(repository), sink, planEditTracker(), savedState(semesterId))
+
+    private fun planEditTracker() = PlanEditTracker(CoroutineScope(mainDispatcher))
 
     private fun savedState(semesterId: String) = SavedStateHandle(mapOf("semesterId" to semesterId))
 
@@ -326,7 +330,7 @@ class SemesterViewModelTest {
         val semesterRepository = FakeSemesterRepository(repository).apply {
             countClassesGate = CompletableDeferred()
         }
-        val viewModel = SemesterViewModel(semesterRepository, RecordingFeedbackSink(), savedState("1"))
+        val viewModel = SemesterViewModel(semesterRepository, RecordingFeedbackSink(), planEditTracker(), savedState("1"))
         advanceUntilIdle()
         advanceUntilIdle()
 

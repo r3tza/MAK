@@ -15,6 +15,8 @@ import dev.retza.mak.ui.activePlanSource
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import java.time.LocalTime
+import dev.retza.mak.sync.PlanEditTracker
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -44,6 +46,7 @@ class SettingsViewModelTest {
         PlanBackupService(repository, preferences),
         preferences,
         sink,
+        PlanEditTracker(CoroutineScope(UnconfinedTestDispatcher())),
         mainDispatcher
     )
 

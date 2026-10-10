@@ -12,6 +12,8 @@ import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.settings.InMemorySettingsPreferences
 import java.time.LocalDate
+import dev.retza.mak.sync.PlanEditTracker
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -34,10 +36,10 @@ class ClassEditViewModelTest {
     private val preferences = InMemorySettingsPreferences()
 
     private fun viewModel(repository: FakeRepository, savedState: SavedStateHandle = SavedStateHandle()) =
-        ClassEditViewModel(FakeSemesterRepository(repository), repository, FeedbackController(), savedState, activePlanSource(repository, preferences))
+        ClassEditViewModel(FakeSemesterRepository(repository), repository, FeedbackController(), savedState, activePlanSource(repository, preferences), PlanEditTracker(CoroutineScope(UnconfinedTestDispatcher())))
 
     private fun recordingViewModel(repository: FakeRepository, sink: RecordingFeedbackSink) =
-        ClassEditViewModel(FakeSemesterRepository(repository), repository, sink, SavedStateHandle(), activePlanSource(repository, preferences))
+        ClassEditViewModel(FakeSemesterRepository(repository), repository, sink, SavedStateHandle(), activePlanSource(repository, preferences), PlanEditTracker(CoroutineScope(UnconfinedTestDispatcher())))
 
     @Test
     fun hiddenStudyProgramStaysAnOptionMarkedAsHidden() = runTest(mainDispatcher) {

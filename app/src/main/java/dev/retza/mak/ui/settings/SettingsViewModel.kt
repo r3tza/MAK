@@ -11,7 +11,9 @@ import dev.retza.mak.export.ImportHandle
 import dev.retza.mak.export.ImportPreparation
 import dev.retza.mak.export.ImportSummary
 import dev.retza.mak.export.PlanBackupService
+import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.polishPlural
@@ -29,6 +31,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -73,6 +76,7 @@ class SettingsViewModel(
     private val planBackupService: PlanBackupService,
     private val preferences: SettingsPreferences,
     private val feedbackSink: FeedbackSink,
+    planEditTracker: PlanEditTracker,
     private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
     private val local = MutableStateFlow(SettingsLocalState())
@@ -109,6 +113,26 @@ class SettingsViewModel(
         initialValue = SettingsUiState()
     )
 
+    // The deletion confirmation holds the edit key while a semester is selected for deletion.
+    private val editSession = PlanEditSession(
+        tracker = planEditTracker,
+        scope = viewModelScope,
+        refreshBase = { true },
+        hasDraft = { local.value.semesterToDeleteId != null }
+    )
+
+    init {
+        viewModelScope.launch {
+            local.map { it.semesterToDeleteId != null }.distinctUntilChanged().collect { hasDraft ->
+                if (!hasDraft) editSession.releaseIfNoDraft()
+            }
+        }
+    }
+
+    override fun onCleared() {
+        editSession.close()
+    }
+
     fun selectSemester(id: String) {
         if (local.value.isSelectingSemester) return
         val semesterId = id.toLongOrNull() ?: return
@@ -123,8 +147,9 @@ class SettingsViewModel(
         }
     }
 
-    fun requestSemesterDeletion(id: String) {
-        local.update { it.copy(semesterToDeleteId = id) }
+    /** Opens the deletion confirmation; a semester that no longer exists is dropped instead (`PlanEditSession`). */
+    fun requestSemesterDeletion(id: String) = editSession.run {
+        if (canRequestSemesterDeletion(id)) local.update { it.copy(semesterToDeleteId = id) }
     }
 
     suspend fun canRequestSemesterDeletion(id: String): Boolean {
@@ -134,14 +159,14 @@ class SettingsViewModel(
         return exists
     }
 
-    fun cancelSemesterDeletion() {
-        if (local.value.isDeletingSemester) return
+    fun cancelSemesterDeletion() = editSession.run {
+        if (local.value.isDeletingSemester) return@run
         local.update { it.copy(semesterToDeleteId = null) }
     }
 
-    fun confirmSemesterDeletion() {
-        if (local.value.isDeletingSemester) return
-        val id = local.value.semesterToDeleteId?.toLongOrNull() ?: return
+    fun confirmSemesterDeletion() = editSession.run {
+        if (local.value.isDeletingSemester) return@run
+        val id = local.value.semesterToDeleteId?.toLongOrNull() ?: return@run
         local.update { it.copy(isDeletingSemester = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
