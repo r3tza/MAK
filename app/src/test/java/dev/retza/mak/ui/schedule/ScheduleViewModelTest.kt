@@ -23,6 +23,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -434,6 +435,42 @@ class ScheduleViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf(ScheduleEffect.OpenNewClassEditor(LocalDate.of(2026, 10, 5))), effects)
+    }
+
+    @Test
+    fun weekOverrideSaveRunsOnceWhileTheFirstIsPending() = runTest(mainDispatcher) {
+        val repository = FakeRepository().apply { saveGate = CompletableDeferred() }
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "saveWeekOverride" })
+    }
+
+    @Test
+    fun weekOverrideFailurePublishesErrorAndAllowsRetry() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        repository.failSaves = true
+        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        advanceUntilIdle()
+        assertEquals(
+            listOf(UiFeedback("Nie udało się zapisać korekty tygodnia.", UiFeedbackKind.Error)),
+            feedback
+        )
+
+        repository.failSaves = false
+        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        advanceUntilIdle()
+        assertTrue("saveWeekOverride" in repository.events)
     }
 
     @Test

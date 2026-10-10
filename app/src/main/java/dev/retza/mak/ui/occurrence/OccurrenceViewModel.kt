@@ -32,7 +32,6 @@ import dev.retza.mak.ui.feedback.launchUiOperation
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -174,17 +173,17 @@ class OccurrenceViewModel(
     fun cancelClassDeletion() = update { it.copy(showDeleteConfirmation = false) }
 
     fun deleteSelectedClass() {
+        if (state.value.isDeletingClass) return
         val classId = selectedClassIdState.value ?: return
-        viewModelScope.launch {
-            try {
-                scheduleRepository.deleteClass(classId)
-                effectsChannel.trySend(OccurrenceEffect.CloseDetails)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                update { it.copy(showDeleteConfirmation = false) }
-                feedbackSink.publish(UiFeedback("Nie udało się usunąć zajęć.", UiFeedbackKind.Error))
-            }
+        update { it.copy(isDeletingClass = true) }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się usunąć zajęć.",
+            onFinish = { update { it.copy(isDeletingClass = false) } },
+            onError = { update { it.copy(showDeleteConfirmation = false) } }
+        ) {
+            scheduleRepository.deleteClass(classId)
+            effectsChannel.trySend(OccurrenceEffect.CloseDetails)
         }
     }
 
@@ -538,7 +537,8 @@ class OccurrenceViewModel(
             isSaving = isSaving,
             isSavingSharedNote = isSavingSharedNote,
             isSavingOccurrenceNote = isSavingOccurrenceNote,
-            showDeleteConfirmation = showDeleteConfirmation
+            showDeleteConfirmation = showDeleteConfirmation,
+            isDeletingClass = isDeletingClass
         )
     }
 

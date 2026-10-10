@@ -121,8 +121,7 @@ fun OccurrenceDetailsScreen(
             title = "Usuń zajęcia",
             text = "Usunięcie wpisu usunie wszystkie jego wystąpienia. Tej operacji nie można cofnąć.",
             confirmLabel = "Usuń zajęcia",
-            // The screen has no in-progress deletion state: success closes the screen, failure the dialog.
-            isDeleting = false,
+            isDeleting = state.isDeletingClass,
             onConfirm = onDeleteBaseClass,
             onCancel = onDismissDeleteConfirmation
         )

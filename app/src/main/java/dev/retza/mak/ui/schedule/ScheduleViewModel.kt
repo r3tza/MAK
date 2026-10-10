@@ -28,8 +28,7 @@ import dev.retza.mak.ui.components.CalendarMarkerUi
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.dayNames
 import dev.retza.mak.ui.feedback.FeedbackSink
-import dev.retza.mak.ui.feedback.UiFeedback
-import dev.retza.mak.ui.feedback.UiFeedbackKind
+import dev.retza.mak.ui.feedback.launchUiOperation
 import dev.retza.mak.ui.fullDateFormatter
 import dev.retza.mak.ui.monthFormatter
 import dev.retza.mak.ui.polishLocale
@@ -43,7 +42,6 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
 import java.time.temporal.TemporalAdjusters
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -52,7 +50,6 @@ import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
 
 sealed interface ScheduleEffect {
@@ -77,6 +74,8 @@ class ScheduleViewModel(
     private val activePlanProvider: ActivePlanProvider,
     private val feedbackSink: FeedbackSink
 ) : ViewModel() {
+    // Not in ScheduleUiState: the week dialog closes as soon as the user taps a button.
+    private var weekOverrideOperationRunning = false
     private val controls = LocalDate.now(clock).let { today ->
         MutableStateFlow(
             ScheduleControls(
@@ -155,6 +154,7 @@ class ScheduleViewModel(
     }
 
     fun saveVisibleWeekOverride(weekType: WeekTypeUi, scope: WeekOverrideScopeUi) {
+        if (weekOverrideOperationRunning) return
         val data = activePlan.value?.data ?: return
         val calendarId = visibleWeekCalendarId(data) ?: return
         val monday = controls.value.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -163,23 +163,27 @@ class ScheduleViewModel(
             it.academicCalendarId == calendarId.toString() &&
                 it.weekStartDate == monday && it.scope == entityScope
         }
-        viewModelScope.launch {
-            runReportingFailure("Nie udało się zapisać korekty tygodnia.") {
-                semesterRepository.saveWeekOverride(
-                    WeekOverrideRecord(
-                        id = existing?.id?.toLongOrNull() ?: 0,
-                        semesterId = data.semester.id.toLong(),
-                        academicCalendarId = calendarId,
-                        weekStartDate = monday,
-                        weekType = WeekType.valueOf(weekType.name),
-                        scope = entityScope
-                    )
+        weekOverrideOperationRunning = true
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać korekty tygodnia.",
+            onFinish = { weekOverrideOperationRunning = false }
+        ) {
+            semesterRepository.saveWeekOverride(
+                WeekOverrideRecord(
+                    id = existing?.id?.toLongOrNull() ?: 0,
+                    semesterId = data.semester.id.toLong(),
+                    academicCalendarId = calendarId,
+                    weekStartDate = monday,
+                    weekType = WeekType.valueOf(weekType.name),
+                    scope = entityScope
                 )
-            }
+            )
         }
     }
 
     fun clearVisibleWeekOverride(scope: WeekOverrideScopeUi) {
+        if (weekOverrideOperationRunning) return
         val data = activePlan.value?.data ?: return
         val calendarId = visibleWeekCalendarId(data) ?: return
         val monday = controls.value.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -188,20 +192,13 @@ class ScheduleViewModel(
             it.academicCalendarId == calendarId.toString() &&
                 it.weekStartDate == monday && it.scope == entityScope
         } ?: return
-        viewModelScope.launch {
-            runReportingFailure("Nie udało się usunąć korekty tygodnia.") {
-                semesterRepository.deleteWeekOverride(existing.id.toLong())
-            }
-        }
-    }
-
-    private suspend fun runReportingFailure(message: String, block: suspend () -> Unit) {
-        try {
-            block()
-        } catch (error: CancellationException) {
-            throw error
-        } catch (error: Exception) {
-            feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Error))
+        weekOverrideOperationRunning = true
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się usunąć korekty tygodnia.",
+            onFinish = { weekOverrideOperationRunning = false }
+        ) {
+            semesterRepository.deleteWeekOverride(existing.id.toLong())
         }
     }
 

@@ -18,12 +18,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -40,6 +38,8 @@ import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakColorDot
 import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDatePickerField
+import dev.retza.mak.ui.components.MakDialog
+import dev.retza.mak.ui.components.MakDialogAction
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakFieldPair
@@ -655,28 +655,21 @@ internal fun ReconnectCalendarDialog(
     onConfirm: () -> Unit,
     onCancel: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = { if (!isSaving) onCancel() },
-        title = { Text("Połączyć kalendarze?") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
-                Text("Kierunek ${reconnect.programName} będzie używał wybranego kalendarza.")
-                if (reconnect.sourceBecomesUnused) {
-                    Text(
-                        "Dotychczasowy kalendarz nie będzie już używany i zostanie usunięty " +
-                            "razem ze swoimi korektami. Korekty nie zostaną przeniesione."
-                    )
-                }
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm, enabled = !isSaving) { Text("Połącz") }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel, enabled = !isSaving) { Text("Anuluj") }
+    MakDialog(
+        title = "Połączyć kalendarze?",
+        onDismiss = { if (!isSaving) onCancel() },
+        dismissAction = MakDialogAction("Anuluj", onCancel, enabled = !isSaving),
+        confirmAction = MakDialogAction("Połącz", onConfirm, enabled = !isSaving)
+    ) {
+        Text("Kierunek ${reconnect.programName} będzie używał wybranego kalendarza.")
+        if (reconnect.sourceBecomesUnused) {
+            Text(
+                "Dotychczasowy kalendarz nie będzie już używany i zostanie usunięty " +
+                    "razem ze swoimi korektami. Korekty nie zostaną przeniesione."
+            )
         }
-    )
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+    }
 }
 
 @Composable

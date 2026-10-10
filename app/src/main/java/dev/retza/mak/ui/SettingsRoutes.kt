@@ -17,6 +17,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
+import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.settings.ImportPreviewScreen
 import dev.retza.mak.ui.settings.AboutScreen
 import dev.retza.mak.ui.settings.SettingsDataScreen
@@ -39,6 +40,7 @@ internal fun openSettings(navController: NavController) {
 }
 
 internal fun NavGraphBuilder.settingsRoute(
+    planEditTracker: PlanEditTracker,
     settingsViewModel: SettingsViewModel,
     syncViewModel: SyncViewModel,
     updateViewModel: UpdateViewModel,
@@ -104,6 +106,7 @@ internal fun NavGraphBuilder.settingsRoute(
     composable(MakRoutes.SettingsSemesters) {
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
         val editing = TrackPlanEditing(
+            planEditTracker,
             active = settingsState.semesterToDeleteId != null,
             isActiveNow = { settingsViewModel.settings.value.semesterToDeleteId != null }
         )

@@ -5,12 +5,10 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Info
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
@@ -24,6 +22,8 @@ import dev.retza.mak.ui.dayNames
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakDatePickerField
+import dev.retza.mak.ui.components.MakDialog
+import dev.retza.mak.ui.components.MakDialogAction
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakExpandableSection
 import dev.retza.mak.ui.components.MakField
@@ -124,16 +124,12 @@ fun ClassEditScreen(
     modifier: Modifier = Modifier
 ) {
     state.pendingHiddenData?.let { warning ->
-        AlertDialog(
-            onDismissRequest = { if (!state.isSaving) onDismissHiddenData() },
-            title = { Text("Część danych przestanie być widoczna") },
-            text = { Text(hiddenDataMessage(warning)) },
-            confirmButton = {
-                TextButton(onClick = onConfirmHiddenData, enabled = !state.isSaving) { Text("Zapisz") }
-            },
-            dismissButton = {
-                TextButton(onClick = onDismissHiddenData, enabled = !state.isSaving) { Text("Anuluj") }
-            }
+        MakDialog(
+            title = "Część danych przestanie być widoczna",
+            description = hiddenDataMessage(warning),
+            onDismiss = { if (!state.isSaving) onDismissHiddenData() },
+            dismissAction = MakDialogAction("Anuluj", onDismissHiddenData, enabled = !state.isSaving),
+            confirmAction = MakDialogAction("Zapisz", onConfirmHiddenData, enabled = !state.isSaving)
         )
     }
     var showMoreOptions by remember { mutableStateOf(false) }

@@ -23,7 +23,6 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.launch
-import org.koin.compose.koinInject
 
 /** Controls admission to plan edits before a form reads or changes its base data. */
 internal class PlanEditingController(
@@ -109,9 +108,9 @@ internal class PlanEditingController(
  */
 @Composable
 internal fun TrackPlanEditing(
+    tracker: PlanEditTracker,
     active: Boolean = true,
-    isActiveNow: () -> Boolean = { active },
-    tracker: PlanEditTracker = koinInject()
+    isActiveNow: () -> Boolean = { active }
 ): PlanEditingController {
     val key = rememberSaveable { UUID.randomUUID().toString() }
     var admitted by remember(key, tracker) { mutableStateOf(false) }

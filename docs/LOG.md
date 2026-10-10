@@ -11,6 +11,7 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
   - Zakres ViewModeli: `AppViewModel`, `SettingsViewModel`, `UpdateViewModel` i `SyncViewModel` zostają w `MainActivity`, bo obsługują powłokę aplikacji. `TodayViewModel`, `ScheduleViewModel`, `OccurrenceViewModel`, `ClassEditViewModel`, `SetupViewModel` i `StudyProgramsViewModel` są pobierane w celu nawigacji przez `koinViewModel()`. `SemesterViewModel` żyje w zakresie podgrafu semestru, bo ekran semestru i jego podekrany dzielą szkic (I-86).
   - Kontrakt kopii zapasowej i synchronizacji używa zwykłego modelu zamiast encji Room, a sprawdzenie i zastąpienie planu przy synchronizacji są jedną transakcją w `data` (I-87, przed I-81).
   - Wyzwalacze synchronizacji są węższe: próba „po otwarciu aplikacji” startuje z `MainActivity`, a nie przy każdym starcie procesu; po zamknięciu formularza tylko wtedy, gdy poprzednia próba czekała na formularz. Własny zapis pobranego planu rozpoznaje skrót planu zamiast okna 2 sekund (I-88).
+  - Poprawki z audytu (I-84 do I-90) są wykonywane na gałęzi I-79 (`task/I-79-hide-study-programs`), a nie na osobnych gałęziach od `main`, bo zmieniają te same pliki co I-79.
   - Pozostałe propozycje audytu są zaakceptowane i rozpisane w I-84, I-88, I-89 i I-90. Zmniejszenie liczby rozmiarów widgetu (G1) wymaga osobnego wariantu, bo progi opisuje `FEATURES.md`.
 
 ## 2026-10-09: Wykonanie I-79 (ukrywanie kierunków)

@@ -16,6 +16,7 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
+import dev.retza.mak.sync.PlanEditTracker
 import java.time.LocalDate
 import dev.retza.mak.ui.edit.ClassEditEffect
 import dev.retza.mak.ui.edit.ClassEditScreen
@@ -39,6 +40,7 @@ internal fun openClassEditor(
 }
 
 internal fun NavGraphBuilder.classEditRoute(
+    planEditTracker: PlanEditTracker,
     classEditViewModel: ClassEditViewModel,
     onBack: () -> Unit
 ) {
@@ -55,7 +57,7 @@ internal fun NavGraphBuilder.classEditRoute(
             }
         )
     ) { entry ->
-        val editing = TrackPlanEditing()
+        val editing = TrackPlanEditing(planEditTracker)
         if (!editing.ready) {
             PlanEditingWait()
             return@composable
@@ -114,6 +116,7 @@ internal fun NavGraphBuilder.classEditRoute(
 }
 
 internal fun NavGraphBuilder.occurrenceDetailsRoute(
+    planEditTracker: PlanEditTracker,
     occurrenceViewModel: OccurrenceViewModel
 ) {
     composable(
@@ -126,6 +129,7 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
         val args = entry.occurrenceArgs()
         val occurrenceId = args?.toRouteId()
         val editing = TrackPlanEditing(
+            planEditTracker,
             active = occurrenceViewModel.details.collectAsStateWithLifecycle().value.hasPlanDraft(),
             isActiveNow = { occurrenceViewModel.details.value.hasPlanDraft() }
         )
@@ -225,6 +229,7 @@ internal fun ClassEditEffects(
 
 @Composable
 internal fun occurrenceTopBarActions(
+    planEditTracker: PlanEditTracker,
     occurrenceViewModel: OccurrenceViewModel,
     navController: NavController
 ): List<Pair<String, () -> Unit>> {
@@ -232,6 +237,7 @@ internal fun occurrenceTopBarActions(
     if (route != MakRoutes.Occurrence) return emptyList()
     val details = occurrenceViewModel.details.collectAsStateWithLifecycle().value
     val editing = TrackPlanEditing(
+        planEditTracker,
         active = details.hasPlanDraft(),
         isActiveNow = { occurrenceViewModel.details.value.hasPlanDraft() }
     )

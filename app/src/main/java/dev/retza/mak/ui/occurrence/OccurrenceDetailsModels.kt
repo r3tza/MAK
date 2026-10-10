@@ -64,6 +64,7 @@ data class OccurrenceDetailsUiState(
     val isSavingSharedNote: Boolean = false,
     val isSavingOccurrenceNote: Boolean = false,
     val showDeleteConfirmation: Boolean = false,
+    val isDeletingClass: Boolean = false,
     val canEditBaseClass: Boolean = true,
     val canDeleteBaseClass: Boolean = true,
     // The route points to a class that no longer exists in the active semester.
@@ -81,7 +82,7 @@ data class OccurrenceDetailsUiState(
 /** Details block a downloaded plan only while the user has typed or opened something to confirm. */
 fun OccurrenceDetailsUiState.hasPlanDraft(): Boolean =
     canSaveSharedNote || canSaveOccurrenceNote || isSaving || isSavingSharedNote ||
-        isSavingOccurrenceNote || showEditDialog || showDeleteConfirmation
+        isSavingOccurrenceNote || showEditDialog || showDeleteConfirmation || isDeletingClass
 
 /** The status word shown with its icon on the details screen. */
 fun OccurrenceStatusUi.label(): String = when (this) {

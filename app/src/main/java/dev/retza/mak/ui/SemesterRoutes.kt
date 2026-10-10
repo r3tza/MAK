@@ -14,6 +14,7 @@ import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
+import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.semester.SemesterCalendarsScreen
 import dev.retza.mak.ui.semester.SemesterCourseAddScreen
 import dev.retza.mak.ui.semester.SemesterCourseEditScreen
@@ -34,6 +35,7 @@ internal fun openSemesterConfiguration(
 }
 
 internal fun NavGraphBuilder.semesterRoutes(
+    planEditTracker: PlanEditTracker,
     semesterViewModel: SemesterViewModel,
     navController: NavController,
     studyProgramsViewModel: StudyProgramsViewModel
@@ -43,6 +45,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
         val editing = TrackPlanEditing(
+            planEditTracker,
             active = semesterViewModel.semester.collectAsStateWithLifecycle().value.hasPlanDraft(),
             isActiveNow = { semesterViewModel.semester.value.hasPlanDraft() }
         )
@@ -81,6 +84,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
         val editing = TrackPlanEditing(
+            planEditTracker,
             active = semesterViewModel.semester.collectAsStateWithLifecycle().value.hasPlanDraft(),
             isActiveNow = { semesterViewModel.semester.value.hasPlanDraft() }
         )
@@ -131,7 +135,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         route = MakRoutes.SemesterCourseAdd,
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
-        val editing = TrackPlanEditing()
+        val editing = TrackPlanEditing(planEditTracker)
         if (!editing.ready) {
             PlanEditingWait()
             return@composable
@@ -176,7 +180,7 @@ internal fun NavGraphBuilder.semesterRoutes(
             navArgument("assignmentId") { type = NavType.StringType }
         )
     ) { entry ->
-        val editing = TrackPlanEditing()
+        val editing = TrackPlanEditing(planEditTracker)
         if (!editing.ready) {
             PlanEditingWait()
             return@composable
@@ -248,6 +252,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
         val editing = TrackPlanEditing(
+            planEditTracker,
             active = semesterViewModel.semester.collectAsStateWithLifecycle().value.hasPlanDraft(),
             isActiveNow = { semesterViewModel.semester.value.hasPlanDraft() }
         )
@@ -297,6 +302,7 @@ internal fun NavGraphBuilder.semesterRoutes(
         arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
     ) { entry ->
         val editing = TrackPlanEditing(
+            planEditTracker,
             active = semesterViewModel.semester.collectAsStateWithLifecycle().value.hasPlanDraft(),
             isActiveNow = { semesterViewModel.semester.value.hasPlanDraft() }
         )

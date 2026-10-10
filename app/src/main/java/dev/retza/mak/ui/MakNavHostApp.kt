@@ -28,6 +28,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.components.MakBrandMark
 import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakIconButton
@@ -61,6 +62,7 @@ fun MakApp(
     scheduleViewModel: ScheduleViewModel,
     todayViewModel: TodayViewModel,
     updateViewModel: UpdateViewModel,
+    planEditTracker: PlanEditTracker,
     feedback: Flow<UiFeedback>,
     openTodayRequests: Flow<Unit>,
     openPlanRequests: Flow<String>,
@@ -135,7 +137,11 @@ fun MakApp(
 
     BackHandler(enabled = showBack) { navigateBack() }
 
-    val occurrenceActions = occurrenceTopBarActions(occurrenceViewModel, navController)
+    val occurrenceActions = occurrenceTopBarActions(
+        planEditTracker = planEditTracker,
+        occurrenceViewModel = occurrenceViewModel,
+        navController = navController
+    )
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -217,14 +223,23 @@ fun MakApp(
                     openSync = { navController.navigate(MakRoutes.SettingsSync) },
                     openPrograms = { navController.navigate(MakRoutes.StudyPrograms) }
                 )
-                classEditRoute(classEditViewModel = classEditViewModel, onBack = ::navigateBack)
-                occurrenceDetailsRoute(occurrenceViewModel = occurrenceViewModel)
+                classEditRoute(
+                    planEditTracker = planEditTracker,
+                    classEditViewModel = classEditViewModel,
+                    onBack = ::navigateBack
+                )
+                occurrenceDetailsRoute(
+                    planEditTracker = planEditTracker,
+                    occurrenceViewModel = occurrenceViewModel
+                )
                 semesterRoutes(
+                    planEditTracker = planEditTracker,
                     semesterViewModel = semesterViewModel,
                     navController = navController,
                     studyProgramsViewModel = studyProgramsViewModel
                 )
                 settingsRoute(
+                    planEditTracker = planEditTracker,
                     settingsViewModel = settingsViewModel,
                     syncViewModel = syncViewModel,
                     updateViewModel = updateViewModel,
@@ -243,11 +258,16 @@ fun MakApp(
                     onGrantInstallPermission = onGrantInstallPermission
                 )
                 studyProgramRoutes(
+                    planEditTracker = planEditTracker,
                     studyProgramsViewModel = studyProgramsViewModel,
                     navController = navController,
                     onBack = ::navigateBack
                 )
-                setupRoute(setupViewModel = setupViewModel, settingsViewModel = settingsViewModel)
+                setupRoute(
+                    planEditTracker = planEditTracker,
+                    setupViewModel = setupViewModel,
+                    settingsViewModel = settingsViewModel
+                )
             }
         }
     }
