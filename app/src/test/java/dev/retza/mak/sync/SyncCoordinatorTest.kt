@@ -16,6 +16,7 @@ import java.time.ZoneOffset
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -383,6 +384,21 @@ class SyncCoordinatorTest {
 
         editors.release("form").join()
         assertEquals(SyncOutcome.Downloaded, coordinator.synchronize())
+    }
+
+    @Test
+    fun waitingForEditorIsRememberedUntilTheNextRun() = runTest {
+        phone.data = plan("Wspólny")
+        coordinator.synchronize()
+        drive.put(plan("Wspólny", "Z Dysku"))
+        editors.beginEdit("form")
+
+        assertEquals(SyncOutcome.WaitingForEditor, coordinator.synchronize())
+        assertTrue(coordinator.waitsForEditor.value)
+
+        editors.release("form").join()
+        assertEquals(SyncOutcome.Downloaded, coordinator.synchronize())
+        assertFalse(coordinator.waitsForEditor.value)
     }
 
     @Test

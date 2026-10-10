@@ -119,7 +119,7 @@ class SyncWorkScheduler(
 }
 
 /**
- * Starts a run after each plan change and after the last open editor closes, and records when the
+ * Starts a run after each plan change and after the last open editor closes if a run was waiting for it, and records when the
  * plan last changed, which the version choice shows.
  */
 @Single
@@ -151,7 +151,9 @@ class SyncRoomChangeObserver(
         scope.launch {
             editTracker.editing
                 .drop(1)
-                .collect { editing -> if (!editing) scheduler.enqueueImmediate() }
+                .collect { editing ->
+                    if (!editing && coordinator.waitsForEditor.value) scheduler.enqueueImmediate()
+                }
         }
     }
 }

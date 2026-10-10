@@ -132,6 +132,8 @@ Kryterium zakończenia: testy i ręczne sprawdzenie dają opisane wyniki; `rg "R
 
 ## 3. Zawęź wyzwalacze synchronizacji (I-88)
 
+Stan: zrobione. `SyncCoordinator` ustawia `waitsForEditor` w jednej funkcji `waitForEditor()`.
+
 Cel: próba „po otwarciu aplikacji” startuje z `MainActivity`, a nie przy każdym starcie procesu (widget, alarmy, `SyncWorker`), a zamknięcie formularza uruchamia próbę tylko wtedy, gdy poprzednia próba czekała na formularz (F3, decyzja użytkownika z 2026-10-10). Zmiana po stronie telefonu dalej uruchamia próbę przez strumień z kroku 2.
 
 Pliki: `MakApplication.kt`, `MainActivity.kt`, `sync/SyncCoordinator.kt`, `sync/SyncWork.kt`; testy `sync/SyncCoordinatorTest.kt`; dokumenty `docs/ARCHITECTURE.md`, `docs/SYNC.md`, `docs/QUEUE.md`.

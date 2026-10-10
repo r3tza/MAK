@@ -44,6 +44,7 @@ import dev.retza.mak.ui.areSystemAnimationsOn
 import dev.retza.mak.ui.makWidthClassFor
 import dev.retza.mak.ui.shouldLockPortrait
 import dev.retza.mak.ui.withAppLocale
+import dev.retza.mak.sync.SyncWorkScheduler
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.settings.SyncViewModel
@@ -64,6 +65,7 @@ class MainActivity : ComponentActivity() {
     private val syncViewModel: SyncViewModel by viewModel()
     private val updateViewModel: UpdateViewModel by viewModel()
     private val feedbackController: FeedbackController by inject()
+    private val syncWorkScheduler: SyncWorkScheduler by inject()
     private val openTodayRequests = Channel<Unit>(Channel.CONFLATED)
     private val openPlanRequests = Channel<String>(Channel.CONFLATED)
     private var splashReleased by mutableStateOf(false)
@@ -74,6 +76,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // A recreated activity (theme change, rotation) does not start a run; only a cold start of the app does.
+        if (savedInstanceState == null) syncWorkScheduler.scheduleForAppOpen()
         requestedOrientation = if (shouldLockPortrait(resources.configuration.smallestScreenWidthDp)) {
             ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         } else {

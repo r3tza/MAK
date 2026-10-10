@@ -54,8 +54,6 @@ class MakApplication : Application(), Configuration.Provider {
 
     private val activePlanSource: ActivePlanSource by inject()
 
-    private val syncWorkScheduler: dev.retza.mak.sync.SyncWorkScheduler by inject()
-
     private val syncRoomChangeObserver: dev.retza.mak.sync.SyncRoomChangeObserver by inject()
 
     private val initializationScope = CoroutineScope(SupervisorJob() + Dispatchers.IO)
@@ -65,7 +63,6 @@ class MakApplication : Application(), Configuration.Provider {
         startKoin<MakApplication> {
             androidContext(this@MakApplication)
         }
-        syncWorkScheduler.scheduleForAppOpen()
         syncRoomChangeObserver.observe(initializationScope)
         ensureCollisionChannel(this)
         registerMakWidgetRefresh(

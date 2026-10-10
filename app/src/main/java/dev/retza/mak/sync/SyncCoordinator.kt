@@ -8,6 +8,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -66,6 +67,11 @@ class SyncCoordinator(
     private val current by lazy { MutableStateFlow(store.load()) }
     val state: StateFlow<SyncState> get() = current
 
+    private val waitingForEditor = MutableStateFlow(false)
+
+    /** True when the last run ended waiting for an open editor; the next run is due when the editor closes. */
+    val waitsForEditor: StateFlow<Boolean> = waitingForEditor.asStateFlow()
+
     suspend fun synchronize(): SyncOutcome = serialized { run(resolution = null) }
 
     /** Applies [choice] only to the versions the question described; otherwise the question is asked again. */
@@ -118,6 +124,7 @@ class SyncCoordinator(
     fun archivedPlan(id: String): ByteArray? = archive.read(id)
 
     private suspend fun run(resolution: Resolution?): SyncOutcome {
+        waitingForEditor.value = false
         val account = current.value.account ?: return SyncOutcome.NoAccount
         return try {
             repeat(MAX_PASSES) { pass(account, resolution)?.let { return it } }
@@ -145,6 +152,11 @@ class SyncCoordinator(
         } catch (_: Exception) {
             failed()
         }
+    }
+
+    private fun waitForEditor(): SyncOutcome {
+        waitingForEditor.value = true
+        return SyncOutcome.WaitingForEditor
     }
 
     private fun authorizationRequired() = issue(SyncIssue.AUTHORIZATION_REQUIRED, message = null)
@@ -251,7 +263,7 @@ class SyncCoordinator(
             gateway.replaceIfUnchanged(localFingerprint, merged, keepLocalActive = true, merged.semesterCovering(today))
         }
         val replaced = when (replacement) {
-            PlanReplacementResult.Editing -> return SyncOutcome.WaitingForEditor
+            PlanReplacementResult.Editing -> return waitForEditor()
             is PlanReplacementResult.Applied -> replacement.value
         }
         if (!replaced) return null
@@ -296,7 +308,7 @@ class SyncCoordinator(
             gateway.replaceIfUnchanged(localFingerprint, remoteData, keepLocalActive = !firstRun, fallbackActive)
         }
         val replaced = when (replacement) {
-            PlanReplacementResult.Editing -> return SyncOutcome.WaitingForEditor
+            PlanReplacementResult.Editing -> return waitForEditor()
             is PlanReplacementResult.Applied -> replacement.value
         }
         if (!replaced) return null
