@@ -10,6 +10,12 @@ enum class ThemeMode {
     Dark
 }
 
+fun ThemeMode.label(): String = when (this) {
+    ThemeMode.System -> "Systemowy"
+    ThemeMode.Light -> "Jasny"
+    ThemeMode.Dark -> "Ciemny"
+}
+
 data class CollisionNotificationPreferences(
     val enabled: Boolean = false,
     val eveningEnabled: Boolean = true,
@@ -53,9 +59,3 @@ interface SettingsPreferences {
 
 fun themeModeFromStored(value: String?): ThemeMode =
     ThemeMode.entries.firstOrNull { it.name == value } ?: ThemeMode.System
-
-fun themeModeFromId(id: String): ThemeMode = when (id) {
-    "light" -> ThemeMode.Light
-    "dark" -> ThemeMode.Dark
-    else -> ThemeMode.System
-}

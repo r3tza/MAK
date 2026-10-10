@@ -91,7 +91,7 @@ data class NotificationSettingsUi(
 data class SettingsUiState(
     val semesters: List<SemesterUi> = emptyList(),
     val activeSemesterId: String? = null,
-    val themeOptions: List<SettingsOptionUi> = emptyList(),
+    val theme: ThemeMode = ThemeMode.System,
     val gapThresholdOptions: List<SettingsOptionUi> = emptyList(),
     val minimumBreakOptions: List<SettingsOptionUi> = emptyList(),
     val semesterToDeleteId: String? = null,
@@ -112,7 +112,7 @@ fun SettingsScreen(
     onOpenData: () -> Unit,
     onSemesterSelected: (String) -> Unit,
     onAddSemester: () -> Unit,
-    onThemeSelected: (String) -> Unit,
+    onThemeSelected: (ThemeMode) -> Unit,
     onGapThresholdSelected: (String) -> Unit,
     onMinimumBreakSelected: (String) -> Unit,
     notificationsBlocked: Boolean,
@@ -183,11 +183,10 @@ fun SettingsScreen(
                 SettingsFieldItem {
                     MakSelectField(
                         label = "Motyw",
-                        value = state.themeOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                        options = state.themeOptions.map { it.label },
-                        onSelected = { label ->
-                            state.themeOptions.firstOrNull { it.label == label }?.id?.let(onThemeSelected)
-                        }
+                        value = state.theme.label(),
+                        options = ThemeMode.entries,
+                        onSelected = onThemeSelected,
+                        optionLabel = { it.label() }
                     )
                 }
             }

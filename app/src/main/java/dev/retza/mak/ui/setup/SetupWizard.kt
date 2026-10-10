@@ -30,6 +30,8 @@ import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.MakTextAction
+import dev.retza.mak.ui.components.WeekTypeSelectField
+import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.components.distinctLabels
 
 @Composable
@@ -38,7 +40,7 @@ fun SetupWizard(
     onSemesterNameChanged: (String) -> Unit,
     onStartDateChanged: (String) -> Unit,
     onEndDateChanged: (String) -> Unit,
-    onFirstWeekChanged: (String) -> Unit,
+    onFirstWeekChanged: (WeekTypeUi) -> Unit,
     onCourseNameChanged: (String) -> Unit,
     onCourseColorChanged: (String) -> Unit,
     onProgramModeChanged: (SetupProgramMode) -> Unit,
@@ -133,7 +135,7 @@ private fun SemesterStep(
     onSemesterNameChanged: (String) -> Unit,
     onStartDateChanged: (String) -> Unit,
     onEndDateChanged: (String) -> Unit,
-    onFirstWeekChanged: (String) -> Unit,
+    onFirstWeekChanged: (WeekTypeUi) -> Unit,
     onNext: () -> Unit,
     onReturnToSettings: () -> Unit,
     showReturnToSettings: Boolean
@@ -172,12 +174,10 @@ private fun SemesterStep(
                 }
             }
         )
-        MakSelectField(
+        WeekTypeSelectField(
             label = "Pierwszy tydzień",
-            value = "Tydzień ${state.firstWeekLabel}",
-            options = listOf("Tydzień A", "Tydzień B"),
-            // The wizard state keeps only the letter.
-            onSelected = { onFirstWeekChanged(it.last().toString()) }
+            value = state.firstWeek,
+            onSelected = onFirstWeekChanged
         )
         MakPrimaryAction(text = "Utwórz semestr", onClick = onNext)
         if (showReturnToSettings) {

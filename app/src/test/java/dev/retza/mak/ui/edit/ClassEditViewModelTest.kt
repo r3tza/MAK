@@ -2,6 +2,7 @@ package dev.retza.mak.ui.edit
 
 import androidx.lifecycle.SavedStateHandle
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
+import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
@@ -62,7 +63,7 @@ class ClassEditViewModelTest {
         advanceUntilIdle()
         first.openNewFromFreshPlan()
         first.update { it.copy(name = "Algebra", room = "C12", teacher = "dr Nowak", startTime = "08:15") }
-        first.update { it.copy(recurrenceId = "a_week") }
+        first.update { it.copy(recurrence = Recurrence.A_WEEK) }
         advanceUntilIdle()
 
         val restored = viewModel(repository, savedState)
@@ -73,9 +74,22 @@ class ClassEditViewModelTest {
         assertEquals("C12", editor.room)
         assertEquals("dr Nowak", editor.teacher)
         assertEquals("08:15", editor.startTime)
-        assertEquals("a_week", editor.recurrenceId)
-        assertEquals("Tydzień A", editor.recurrenceLabel)
+        assertEquals(Recurrence.A_WEEK, editor.recurrence)
         assertEquals(listOf("Informatyka"), editor.courseOptions.map { it.label }.take(1))
+    }
+
+    @Test
+    fun oldDraftWithRecurrenceIdIsRestored() = runTest(mainDispatcher) {
+        val savedState = SavedStateHandle(
+            mapOf(
+                "class_edit_draft" to true,
+                "class_edit_draft.recurrenceId" to "b_week"
+            )
+        )
+        val viewModel = viewModel(FakeRepository(), savedState)
+        advanceUntilIdle()
+
+        assertEquals(Recurrence.B_WEEK, viewModel.editor.value.recurrence)
     }
 
     @Test
@@ -282,7 +296,7 @@ class ClassEditViewModelTest {
 
         val editor = viewModel.editor.value
         assertEquals("Dodaj zajęcia", editor.title)
-        assertEquals("every_week", editor.recurrenceId)
+        assertEquals(Recurrence.EVERY_WEEK, editor.recurrence)
         assertEquals("", editor.occurrenceDate)
         assertEquals(listOf("Informatyka"), editor.courseOptions.map { it.label })
         assertEquals("2026-09-01", editor.semesterStartDate)
@@ -298,7 +312,7 @@ class ClassEditViewModelTest {
         viewModel.openNewFromFreshPlan(LocalDate.of(2026, 9, 25))
 
         val editor = viewModel.editor.value
-        assertEquals("once", editor.recurrenceId)
+        assertEquals(Recurrence.ONCE, editor.recurrence)
         assertEquals("2026-09-25", editor.occurrenceDate)
     }
 

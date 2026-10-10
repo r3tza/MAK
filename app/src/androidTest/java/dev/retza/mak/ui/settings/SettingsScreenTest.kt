@@ -49,7 +49,7 @@ class SettingsScreenTest {
                         state = SettingsUiState(
                             semesters = listOf(semester),
                             activeSemesterId = "1",
-                            themeOptions = listOf(SettingsOptionUi("system", "Systemowy", true)),
+                            theme = ThemeMode.System,
                             gapThresholdOptions = listOf(SettingsOptionUi("30", "30 min", true)),
                             minimumBreakOptions = listOf(SettingsOptionUi("0", "0 min", true)),
                             notifications = NotificationSettingsUi(
@@ -159,7 +159,7 @@ class SettingsScreenTest {
                         state = SettingsUiState(
                             semesters = listOf(semester),
                             activeSemesterId = "1",
-                            themeOptions = listOf(SettingsOptionUi("system", "Systemowy", true)),
+                            theme = ThemeMode.System,
                             gapThresholdOptions = listOf(SettingsOptionUi("30", "30 min", true))
                         ),
                         onOpenSemesters = {},

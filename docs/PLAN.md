@@ -141,6 +141,8 @@ Kryterium zakończenia: testy przechodzą, zrzuty są identyczne; `rg "polishLoc
 
 ## 4. Trzymaj rytm, typ tygodnia i motyw w stanie jako typy (I-89)
 
+Stan: zrobione. Szkic formularza zapisuje rytm pod kluczem `recurrence`, a `legacyRecurrenceFromId` czyta stary klucz `recurrenceId`. Usunięty test `selectingUnknownThemeIdKeepsSystem` (nieznanego identyfikatora nie da się już przekazać). `SemesterUi.firstWeekLabel` to tekst podsumowania semestru, a nie stan kreatora, więc został. Zrzuty przy 320 dp (formularz zajęć i menu „Powtarzanie”, dialog tygodnia w „Planie”, ustawienia i menu „Motyw”, ekran semestru, formularz korekty, kreator krok 1) przed zmianą i po niej są identyczne; ręcznie wybór „Tydzień B” w kreatorze i motywu „Ciemny”.
+
 Cel: formularze trzymają w stanie `Recurrence`, `WeekTypeUi` i `ThemeMode`, a pola wyboru dostają wartości typów z jedną funkcją etykiety, zamiast odczytywać wybór z tekstu (H4). Cztery kopie pola „Tydzień A/B” i dwie kopie wyboru zakresu korekty zastępują komponenty `WeekTypeSelectField` i `WeekOverrideScopeChoice`. Wygląd i teksty się nie zmieniają.
 
 Pliki: `ui/edit/ClassEditScreen.kt`, `ui/edit/ClassEditViewModel.kt`, `ui/ClassOccurrenceRoutes.kt`, `ui/semester/SemesterScreen.kt`, `ui/setup/SetupWizard.kt`, `ui/setup/SetupViewModel.kt`, `ui/SetupRoutes.kt`, `ui/schedule/ScheduleScreen.kt`, `ui/settings/SettingsScreen.kt`, `ui/settings/SettingsViewModel.kt`, `ui/settings/SettingsPreferences.kt`, nowy `ui/components/WeekFields.kt`; testy zmienionych ViewModeli i ekranów.

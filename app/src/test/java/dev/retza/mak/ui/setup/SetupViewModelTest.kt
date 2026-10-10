@@ -7,6 +7,7 @@ import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
+import dev.retza.mak.ui.semester.WeekTypeUi
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -369,7 +370,7 @@ class SetupViewModelTest {
         assertEquals("Semestr drugi", state.semesterName)
         assertEquals("2027-02-01", state.startDate)
         assertEquals("2027-06-30", state.endDate)
-        assertEquals("B", state.firstWeekLabel)
+        assertEquals(WeekTypeUi.B, state.firstWeek)
 
         viewModel.update { it.copy(courseName = "Nowy kierunek") }
         viewModel.next()

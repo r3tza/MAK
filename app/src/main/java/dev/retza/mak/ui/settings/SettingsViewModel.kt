@@ -179,9 +179,8 @@ class SettingsViewModel(
         }
     }
 
-    fun selectTheme(id: String) {
+    fun selectTheme(mode: ThemeMode) {
         if (local.value.isSavingTheme) return
-        val mode = themeModeFromId(id)
         local.update { it.copy(isSavingTheme = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -369,11 +368,7 @@ private fun buildSettingsState(
         )
     },
     activeSemesterId = activeData?.semester?.id,
-    themeOptions = listOf(
-        SettingsOptionUi("system", "Systemowy", preferences.theme == ThemeMode.System),
-        SettingsOptionUi("light", "Jasny", preferences.theme == ThemeMode.Light),
-        SettingsOptionUi("dark", "Ciemny", preferences.theme == ThemeMode.Dark)
-    ),
+    theme = preferences.theme,
     gapThresholdOptions = PlanDisplayLimits.gapThresholdOptions.map { minutes ->
         SettingsOptionUi(
             id = minutes.toString(),

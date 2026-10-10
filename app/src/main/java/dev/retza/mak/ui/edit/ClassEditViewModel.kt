@@ -129,11 +129,9 @@ class ClassEditViewModel(
     suspend fun openNewFromFreshPlan(oneOffDate: LocalDate? = null) {
         editingClassId = null
         editPlanData = null
-        val recurrenceId = if (oneOffDate == null) "every_week" else "once"
         state.value = withActiveOptions(
             defaultClassEditState().copy(
-                recurrenceId = recurrenceId,
-                recurrenceLabel = classEditRecurrenceLabel(recurrenceId),
+                recurrence = if (oneOffDate == null) DomainRecurrence.EVERY_WEEK else DomainRecurrence.ONCE,
                 occurrenceDate = oneOffDate?.toString().orEmpty()
             ),
             freshActivePlanData().also { editPlanData = it }
@@ -155,12 +153,6 @@ class ClassEditViewModel(
 
     private fun classEditState(item: dev.retza.mak.domain.ClassItem, data: ActivePlanData): ClassEditUiState {
         val program = data.programForAssignment(item.semesterProgramId)
-        val recurrenceId = when (item.recurrence) {
-            DomainRecurrence.EVERY_WEEK -> "every_week"
-            DomainRecurrence.A_WEEK -> "a_week"
-            DomainRecurrence.B_WEEK -> "b_week"
-            DomainRecurrence.ONCE -> "once"
-        }
         return withActiveOptions(
             defaultClassEditState().copy(
                 title = "Edytuj zajęcia",
@@ -171,8 +163,7 @@ class ClassEditViewModel(
                 dayLabel = dayNames[item.dayOfWeek].orEmpty(),
                 startTime = item.startTime.toString(),
                 endTime = item.endTime.toString(),
-                recurrenceId = recurrenceId,
-                recurrenceLabel = classEditRecurrenceLabel(recurrenceId),
+                recurrence = item.recurrence,
                 occurrenceDate = item.date?.toString().orEmpty(),
                 room = item.room.orEmpty(),
                 building = item.building.orEmpty(),
@@ -221,7 +212,7 @@ class ClassEditViewModel(
         val editor = state.value
         val start = editor.startTime.toLocalTimeOrNull()
         val end = editor.endTime.toLocalTimeOrNull()
-        val recurrence = classEditRecurrenceFromId(editor.recurrenceId)
+        val recurrence = editor.recurrence
         val date = editor.occurrenceDate.toLocalDateOrNull()
         val assignmentId = editor.semesterProgramId
         val assignment = assignmentId?.let { id ->
@@ -368,14 +359,13 @@ private fun ActivePlanData.courseOptions(hiddenProgramIds: Set<String>): List<Cl
 
 private fun defaultClassEditState() = ClassEditUiState()
 
-private fun classEditRecurrenceFromId(id: String): DomainRecurrence = when (id) {
+// Drafts saved before the form kept `Recurrence` stored the old option ids under "recurrenceId".
+private fun legacyRecurrenceFromId(id: String?): DomainRecurrence = when (id) {
     "a_week" -> DomainRecurrence.A_WEEK
     "b_week" -> DomainRecurrence.B_WEEK
     "once" -> DomainRecurrence.ONCE
     else -> DomainRecurrence.EVERY_WEEK
 }
-
-
 
 private const val KEY_EDITING_CLASS_ID = "class_edit_editing_class_id"
 private const val KEY_OPEN_STATE = "class_edit_open_state"
@@ -391,7 +381,7 @@ private val draftFields: List<Pair<String, (ClassEditUiState) -> String?>> = lis
     "dayLabel" to { it.dayLabel },
     "startTime" to { it.startTime },
     "endTime" to { it.endTime },
-    "recurrenceId" to { it.recurrenceId },
+    "recurrence" to { it.recurrence.name },
     "occurrenceDate" to { it.occurrenceDate },
     "room" to { it.room },
     "building" to { it.building },
@@ -408,7 +398,8 @@ private fun SavedStateHandle.storeClassEditDraft(value: ClassEditUiState) {
 private fun SavedStateHandle.restoreClassEditDraft(): ClassEditUiState? {
     if (get<Boolean>(KEY_DRAFT) != true) return null
     fun field(key: String): String? = get<String>("$KEY_DRAFT.$key")
-    val recurrenceId = field("recurrenceId") ?: "every_week"
+    val recurrence = field("recurrence")?.let { DomainRecurrence.valueOf(it) }
+        ?: legacyRecurrenceFromId(field("recurrenceId"))
     return defaultClassEditState().copy(
         title = field("title") ?: "Dodaj zajęcia",
         name = field("name").orEmpty(),
@@ -418,8 +409,7 @@ private fun SavedStateHandle.restoreClassEditDraft(): ClassEditUiState? {
         dayLabel = field("dayLabel").orEmpty(),
         startTime = field("startTime").orEmpty(),
         endTime = field("endTime").orEmpty(),
-        recurrenceId = recurrenceId,
-        recurrenceLabel = classEditRecurrenceLabel(recurrenceId),
+        recurrence = recurrence,
         occurrenceDate = field("occurrenceDate").orEmpty(),
         room = field("room").orEmpty(),
         building = field("building").orEmpty(),

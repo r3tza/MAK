@@ -54,7 +54,7 @@ internal fun NavGraphBuilder.setupRoute(
             onSemesterNameChanged = { value -> setupViewModel.update { it.copy(semesterName = value) } },
             onStartDateChanged = { value -> setupViewModel.update { it.copy(startDate = value) } },
             onEndDateChanged = { value -> setupViewModel.update { it.copy(endDate = value) } },
-            onFirstWeekChanged = { value -> setupViewModel.update { it.copy(firstWeekLabel = value) } },
+            onFirstWeekChanged = { value -> setupViewModel.update { it.copy(firstWeek = value) } },
             onCourseNameChanged = { value -> setupViewModel.update { it.copy(courseName = value) } },
             onCourseColorChanged = { value -> setupViewModel.update { it.copy(courseColor = value) } },
             onProgramModeChanged = setupViewModel::selectProgramMode,

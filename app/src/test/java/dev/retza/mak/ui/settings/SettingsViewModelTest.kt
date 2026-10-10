@@ -72,7 +72,7 @@ class SettingsViewModelTest {
         assertEquals("", inactiveSemester.firstWeekLabel)
         assertEquals("", inactiveSemester.courseCountLabel)
         assertEquals("", inactiveSemester.classCountLabel)
-        assertEquals("system", state.themeOptions.first { it.isSelected }.id)
+        assertEquals(ThemeMode.System, state.theme)
     }
 
     @Test
@@ -110,22 +110,11 @@ class SettingsViewModelTest {
         val viewModel = viewModel(repository, preferences)
         backgroundScope.launch { viewModel.settings.collect {} }
 
-        viewModel.selectTheme("dark")
+        viewModel.selectTheme(ThemeMode.Dark)
         advanceUntilIdle()
 
         assertEquals(ThemeMode.Dark, viewModel.loadedThemeMode.value)
-        assertEquals("dark", viewModel.settings.value.themeOptions.first { it.isSelected }.id)
-    }
-
-    @Test
-    fun selectingUnknownThemeIdKeepsSystem() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val viewModel = viewModel(repository)
-
-        viewModel.selectTheme("neon")
-        advanceUntilIdle()
-
-        assertEquals(ThemeMode.System, viewModel.loadedThemeMode.value)
+        assertEquals(ThemeMode.Dark, viewModel.settings.value.theme)
     }
 
     @Test

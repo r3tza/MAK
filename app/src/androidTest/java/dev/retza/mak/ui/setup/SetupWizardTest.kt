@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.width
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -34,7 +35,7 @@ class SetupWizardTest {
     @Test
     fun emptyWizardShowsSemesterStepAndAcceptsBasicActionsAt320Dp() {
         var nextClicks = 0
-        var selectedWeek = ""
+        var selectedWeek = WeekTypeUi.A
 
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
@@ -70,7 +71,7 @@ class SetupWizardTest {
         // The step title repeats the button label, so target the clickable node.
         composeTestRule.onNode(hasText("Utwórz semestr") and hasClickAction()).performClick()
 
-        assertEquals("B", selectedWeek)
+        assertEquals(WeekTypeUi.B, selectedWeek)
         assertEquals(1, nextClicks)
     }
 

@@ -15,7 +15,6 @@ import org.koin.compose.viewmodel.koinViewModel
 import dev.retza.mak.ui.edit.ClassEditEffect
 import dev.retza.mak.ui.edit.ClassEditOpenState
 import dev.retza.mak.ui.edit.ClassEditScreen
-import dev.retza.mak.ui.edit.classEditRecurrenceLabel
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.occurrence.OccurrenceDetailsScreen
 import dev.retza.mak.ui.occurrence.OccurrenceEffect
@@ -72,14 +71,7 @@ internal fun NavGraphBuilder.classEditRoute(
             onDayChanged = { value -> classEditViewModel.update { it.copy(dayLabel = value) } },
             onStartTimeChanged = { value -> classEditViewModel.update { it.copy(startTime = value) } },
             onEndTimeChanged = { value -> classEditViewModel.update { it.copy(endTime = value) } },
-            onRecurrenceChanged = { value ->
-                classEditViewModel.update {
-                    it.copy(
-                        recurrenceId = value,
-                        recurrenceLabel = classEditRecurrenceLabel(value)
-                    )
-                }
-            },
+            onRecurrenceChanged = { value -> classEditViewModel.update { it.copy(recurrence = value) } },
             onOccurrenceDateChanged = { value -> classEditViewModel.update { it.copy(occurrenceDate = value) } },
             onRoomChanged = { value -> classEditViewModel.update { it.copy(room = value) } },
             onBuildingChanged = { value -> classEditViewModel.update { it.copy(building = value) } },

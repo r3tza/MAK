@@ -34,7 +34,6 @@ import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakActionMenu
-import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakColorDot
 import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDatePickerField
@@ -55,6 +54,8 @@ import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakTextAction
+import dev.retza.mak.ui.components.WeekOverrideScopeChoice
+import dev.retza.mak.ui.components.WeekTypeSelectField
 import dev.retza.mak.ui.components.makRowFocus
 import dev.retza.mak.ui.longDateFormatter
 import dev.retza.mak.ui.polishPlural
@@ -519,11 +520,10 @@ private fun CalendarDateFields(
                 }
             }
         )
-        MakSelectField(
+        WeekTypeSelectField(
             label = "Pierwszy tydzień",
-            value = "Tydzień ${state.firstWeek.name}",
-            options = listOf("Tydzień A", "Tydzień B"),
-            onSelected = { onFirstWeekChanged(if (it.endsWith("B")) WeekTypeUi.B else WeekTypeUi.A) }
+            value = state.firstWeek,
+            onSelected = onFirstWeekChanged
         )
     }
 }
@@ -835,25 +835,12 @@ private fun WeekOverrideForm(
         state.weekStartDate.toLocalDateOrNull()?.let { monday ->
             MakHelperText("Korekta obejmuje tydzień od poniedziałku ${monday.format(longDateFormatter)}.")
         }
-        MakSelectField(
+        WeekTypeSelectField(
             label = "Oznaczenie tygodnia",
-            value = "Tydzień ${state.weekType.name}",
-            options = listOf("Tydzień A", "Tydzień B"),
-            onSelected = { onWeekTypeChanged(if (it.endsWith("B")) WeekTypeUi.B else WeekTypeUi.A) }
+            value = state.weekType,
+            onSelected = onWeekTypeChanged
         )
-        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
-            WeekOverrideScopeUi.entries.forEach { scope ->
-                val label = when (scope) {
-                    WeekOverrideScopeUi.ONE_WEEK -> "Tylko ten tydzień"
-                    WeekOverrideScopeUi.FROM_WEEK -> "Od tego tygodnia w przyszłość"
-                }
-                MakChoiceRow(
-                    label = label,
-                    selected = state.scope == scope,
-                    onClick = { onScopeChanged(scope) }
-                )
-            }
-        }
+        WeekOverrideScopeChoice(selected = state.scope, onSelected = onScopeChanged)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)

@@ -16,6 +16,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.ui.polishPlural
 import dev.retza.mak.ui.toLocalDateOrNull
 import dev.retza.mak.ui.dayNames
@@ -47,22 +48,14 @@ enum class ClassEditField {
     Date
 }
 
-data class RecurrenceOptionUi(
-    val id: String,
-    val label: String
-)
-
 internal val classTypeOptions = listOf("Wykład", "Ćwiczenia", "Laboratorium", "Projekt", "Seminarium", "Inne")
 
-internal val classRecurrenceOptions = listOf(
-    RecurrenceOptionUi("every_week", "Co tydzień"),
-    RecurrenceOptionUi("a_week", "Tydzień A"),
-    RecurrenceOptionUi("b_week", "Tydzień B"),
-    RecurrenceOptionUi("once", "Jednorazowo")
-)
-
-internal fun classEditRecurrenceLabel(id: String): String =
-    classRecurrenceOptions.firstOrNull { it.id == id }?.label ?: "Co tydzień"
+fun Recurrence.formLabel(): String = when (this) {
+    Recurrence.EVERY_WEEK -> "Co tydzień"
+    Recurrence.A_WEEK -> "Tydzień A"
+    Recurrence.B_WEEK -> "Tydzień B"
+    Recurrence.ONCE -> "Jednorazowo"
+}
 
 data class ClassCourseOptionUi(
     val id: String,
@@ -85,8 +78,7 @@ data class ClassEditUiState(
     val dayLabel: String = "",
     val startTime: String = "",
     val endTime: String = "",
-    val recurrenceId: String = "every_week",
-    val recurrenceLabel: String = "Co tydzień",
+    val recurrence: Recurrence = Recurrence.EVERY_WEEK,
     val occurrenceDate: String = "",
     val semesterStartDate: String? = null,
     val semesterEndDate: String? = null,
@@ -110,7 +102,7 @@ fun ClassEditScreen(
     onDayChanged: (String) -> Unit,
     onStartTimeChanged: (String) -> Unit,
     onEndTimeChanged: (String) -> Unit,
-    onRecurrenceChanged: (String) -> Unit,
+    onRecurrenceChanged: (Recurrence) -> Unit,
     onOccurrenceDateChanged: (String) -> Unit,
     onRoomChanged: (String) -> Unit,
     onBuildingChanged: (String) -> Unit,
@@ -221,14 +213,13 @@ fun ClassEditScreen(
             )
             MakSelectField(
                 label = "Powtarzanie",
-                value = state.recurrenceLabel,
-                options = classRecurrenceOptions.map { it.label },
-                onSelected = { label ->
-                    classRecurrenceOptions.firstOrNull { it.label == label }?.id?.let(onRecurrenceChanged)
-                },
+                value = state.recurrence.formLabel(),
+                options = Recurrence.entries,
+                onSelected = onRecurrenceChanged,
+                optionLabel = { it.formLabel() },
                 isError = state.errors.containsKey(ClassEditField.Recurrence)
             )
-            if (state.recurrenceId == "once") {
+            if (state.recurrence == Recurrence.ONCE) {
                 MakDatePickerField(
                     label = "Data zajęć",
                     value = state.occurrenceDate,

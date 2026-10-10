@@ -57,7 +57,8 @@ import dev.retza.mak.ui.components.CalendarLegendUi
 import dev.retza.mak.ui.components.ClassCard
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.MakCheckbox
-import dev.retza.mak.ui.components.MakChoiceRow
+import dev.retza.mak.ui.components.WeekOverrideScopeChoice
+import dev.retza.mak.ui.components.WeekTypeSelectField
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDialogAction
 import dev.retza.mak.ui.components.MakEmptyState
@@ -656,26 +657,12 @@ private fun WeekCorrectionDialog(
         dismissAction = MakDialogAction("Anuluj", onDismiss),
         confirmAction = MakDialogAction("Zapisz", { onSave(type, scope) })
     ) {
-        MakSelectField(
+        WeekTypeSelectField(
             label = "Oznaczenie tygodnia",
-            value = "Tydzień ${type.name}",
-            options = listOf("Tydzień A", "Tydzień B"),
-            onSelected = { type = if (it.endsWith("B")) WeekTypeUi.B else WeekTypeUi.A }
+            value = type,
+            onSelected = { type = it }
         )
-        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
-            WeekOverrideScopeUi.entries.forEach { item ->
-                val label = if (item == WeekOverrideScopeUi.ONE_WEEK) {
-                    "Tylko ten tydzień"
-                } else {
-                    "Od tego tygodnia w przyszłość"
-                }
-                MakChoiceRow(
-                    label = label,
-                    selected = scope == item,
-                    onClick = { scope = item }
-                )
-            }
-        }
+        WeekOverrideScopeChoice(selected = scope, onSelected = { scope = it })
         MakSecondaryAction(
             text = "Usuń korektę",
             onClick = { onClear(scope) },
