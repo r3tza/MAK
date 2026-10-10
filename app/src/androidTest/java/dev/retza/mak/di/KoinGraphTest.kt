@@ -67,7 +67,7 @@ class KoinGraphTest {
         assertNotNull(koin.get<OccurrenceViewModel> { parametersOf(SavedStateHandle()) })
         assertNotNull(koin.get<ClassEditViewModel> { parametersOf(SavedStateHandle()) })
         assertNotNull(koin.get<SemesterViewModel>())
-        assertNotNull(koin.get<SetupViewModel>())
+        assertNotNull(koin.get<SetupViewModel> { parametersOf(SavedStateHandle()) })
         assertNotNull(koin.get<SettingsViewModel>())
         assertNotNull(koin.get<StudyProgramsViewModel>())
         assertNotNull(koin.get<ScheduleViewModel>())

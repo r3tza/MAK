@@ -46,12 +46,10 @@ import dev.retza.mak.ui.makWidthClassFor
 import dev.retza.mak.ui.shouldLockPortrait
 import dev.retza.mak.ui.withAppLocale
 import dev.retza.mak.ui.feedback.FeedbackController
-import dev.retza.mak.ui.programs.StudyProgramsViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.settings.SyncViewModel
 import dev.retza.mak.ui.settings.ThemeMode
-import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.theme.MAKTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -65,10 +63,8 @@ import dev.retza.mak.update.UpdateViewModel
 class MainActivity : ComponentActivity() {
     private val appViewModel: AppViewModel by viewModel()
     private val semesterViewModel: SemesterViewModel by viewModel()
-    private val setupViewModel: SetupViewModel by viewModel()
     private val settingsViewModel: SettingsViewModel by viewModel()
     private val syncViewModel: SyncViewModel by viewModel()
-    private val studyProgramsViewModel: StudyProgramsViewModel by viewModel()
     private val updateViewModel: UpdateViewModel by viewModel()
     private val feedbackController: FeedbackController by inject()
     private val planEditTracker: PlanEditTracker by inject()
@@ -178,10 +174,8 @@ class MainActivity : ComponentActivity() {
                         MakApp(
                             viewModel = appViewModel,
                             semesterViewModel = semesterViewModel,
-                            setupViewModel = setupViewModel,
                             settingsViewModel = settingsViewModel,
                             syncViewModel = syncViewModel,
-                            studyProgramsViewModel = studyProgramsViewModel,
                             updateViewModel = updateViewModel,
                             planEditTracker = planEditTracker,
                             feedback = feedbackController.feedback,

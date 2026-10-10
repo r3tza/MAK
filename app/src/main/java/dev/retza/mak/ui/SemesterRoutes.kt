@@ -9,6 +9,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.compose.viewmodel.koinViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
@@ -24,6 +25,7 @@ import dev.retza.mak.ui.semester.SemesterScreen
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.semester.hasPlanDraft
 import dev.retza.mak.ui.semester.SemesterWeekOverridesScreen
+import dev.retza.mak.ui.programs.StudyProgramEditOpenState
 import dev.retza.mak.ui.programs.StudyProgramEditorUi
 import dev.retza.mak.ui.programs.StudyProgramsViewModel
 
@@ -37,8 +39,7 @@ internal fun openSemesterConfiguration(
 internal fun NavGraphBuilder.semesterRoutes(
     planEditTracker: PlanEditTracker,
     semesterViewModel: SemesterViewModel,
-    navController: NavController,
-    studyProgramsViewModel: StudyProgramsViewModel
+    navController: NavController
 ) {
     composable(
         route = MakRoutes.Semester,
@@ -111,12 +112,6 @@ internal fun NavGraphBuilder.semesterRoutes(
                     holdIfInactive = true
                 ) {
                     semesterId?.let {
-                    // Explicit entry starts from the saved values, so an abandoned draft does not return.
-                    semesterViewModel.semester.value.courseItems
-                        .firstOrNull { item -> item.assignmentId == assignmentId }
-                        ?.programId
-                        ?.toLongOrNull()
-                        ?.let(studyProgramsViewModel::openEdit)
                     navController.navigate(semesterCourseEditRoute(it, assignmentId))
                     }
                 }
@@ -180,6 +175,7 @@ internal fun NavGraphBuilder.semesterRoutes(
             navArgument("assignmentId") { type = NavType.StringType }
         )
     ) { entry ->
+        val studyProgramsViewModel: StudyProgramsViewModel = koinViewModel()
         val editing = TrackPlanEditing(planEditTracker)
         if (!editing.ready) {
             PlanEditingWait()
@@ -196,7 +192,9 @@ internal fun NavGraphBuilder.semesterRoutes(
                     .firstOrNull { it.assignmentId == assignmentId }
                     ?.programId
                     ?.toLongOrNull()
-                val programLoaded = programId != null && studyProgramsViewModel.openEditFromRoom(programId)
+                programId?.let { studyProgramsViewModel.openOnce(it) }
+                val programLoaded = programId != null &&
+                    studyProgramsViewModel.opened.value == StudyProgramEditOpenState.Open
                 openSucceeded = semesterLoaded && programLoaded
                 opened = true
             }
@@ -208,6 +206,7 @@ internal fun NavGraphBuilder.semesterRoutes(
             PlanEditingWait()
             return@composable
         }
+        StudyProgramEffects(studyProgramsViewModel, navController)
         val semesterState = semesterViewModel.semester.collectAsStateWithLifecycle().value
         val programId = semesterState.courseItems
             .firstOrNull { it.assignmentId == assignmentId }

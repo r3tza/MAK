@@ -2,6 +2,7 @@ package dev.retza.mak.ui.setup
 
 import dev.retza.mak.ui.components.DefaultCourseColor
 import dev.retza.mak.ui.components.suggestedCourseColor
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
@@ -19,7 +20,6 @@ import dev.retza.mak.ui.feedback.launchUiOperation
 import java.time.Clock
 import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -116,7 +116,8 @@ data class SetupSemesterResume(
 class SetupViewModel(
     private val semesterRepository: SemesterRepository,
     private val feedbackSink: FeedbackSink,
-    private val clock: Clock
+    private val clock: Clock,
+    private val savedState: SavedStateHandle
 ) : ViewModel() {
     private val state = MutableStateFlow(SetupWizardUiState())
     val setup: StateFlow<SetupWizardUiState> = state.asStateFlow()
@@ -127,8 +128,9 @@ class SetupViewModel(
     private var semesterId: Long? = null
     private var courseId: Long? = null
     private var calendarId: Long? = null
-    private var saveJob: Job? = null
-    private var sessionToken = 0L
+
+    // The wizard loads its semester once per destination; a rotation keeps the typed values.
+    private var opened = false
 
     // The first program's draft, restored when the further program form closes.
     private var firstProgramDraft: SetupWizardUiState? = null
@@ -159,13 +161,14 @@ class SetupViewModel(
         if (it.isProgramChoiceLocked) it else it.copy(selectedProgramId = id)
     }
 
-    fun start(resume: SetupSemesterResume? = null) {
-        start(resume, state.value.programOptions)
+    /** Starts the wizard for this destination once; `resume` comes from the route argument. */
+    suspend fun openOnce() {
+        if (opened) return
+        opened = true
+        startFromRoom(savedState.get<Boolean>("resume") ?: false)
     }
 
     private fun start(resume: SetupSemesterResume?, programOptions: List<SetupProgramOptionUi>) {
-        sessionToken += 1
-        saveJob?.cancel()
         firstProgramDraft = null
         if (resume == null) {
             semesterId = null
@@ -277,16 +280,10 @@ class SetupViewModel(
         val calendar = calendarId ?: return
         val program = programRecordFor(current, id = 0L) ?: return
         state.update { it.copy(isSaving = true, errors = emptyMap()) }
-        val token = sessionToken
-        saveJob = viewModelScope.launchUiOperation(
+        viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
             errorMessage = "Nie udało się dodać kierunku.",
-            onFinish = {
-                if (token == sessionToken) {
-                    state.update { it.copy(isSaving = false) }
-                }
-            },
-            isCurrent = { token == sessionToken }
+            onFinish = { state.update { it.copy(isSaving = false) } }
         ) {
             val ids = when (current.calendarMode) {
                 SetupCalendarMode.Shared -> semesterRepository.saveStudyProgramAssignment(
@@ -300,7 +297,6 @@ class SetupViewModel(
                     sourceCalendarId = calendar
                 )
             }
-            if (token != sessionToken) return@launchUiOperation
             state.update { it.copy(isSaving = false) }
             closeAnotherProgram(SetupProgramOptionUi(ids.studyProgramId, program.name, program.color))
             feedbackSink.publish(UiFeedback("Dodano kierunek", UiFeedbackKind.Success))
@@ -349,31 +345,24 @@ class SetupViewModel(
         val id = semesterId ?: return
         if (state.value.isActivating) return
         state.update { it.copy(isActivating = true) }
-        val token = sessionToken
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
             errorMessage = "Nie udało się ustawić aktywnego semestru.",
-            onFinish = {
-                if (token == sessionToken) {
-                    state.update { it.copy(isActivating = false) }
-                }
-            },
-            isCurrent = { token == sessionToken }
+            onFinish = { state.update { it.copy(isActivating = false) } }
         ) {
             semesterRepository.setActiveSemester(id)
-            if (token != sessionToken) return@launchUiOperation
             state.update { it.copy(isSemesterActive = true) }
             effectsChannel.trySend(SetupEffect.OpenNewClassEditor)
         }
     }
 
     fun finish() {
-        start()
+        start(resume = null, programOptions = state.value.programOptions)
         effectsChannel.trySend(SetupEffect.FinishToToday)
     }
 
     fun returnToSettings() {
-        start()
+        start(resume = null, programOptions = state.value.programOptions)
         effectsChannel.trySend(SetupEffect.ReturnToSettings)
     }
 
@@ -407,16 +396,10 @@ class SetupViewModel(
         val existingCalendar = calendarId
         val isUpdate = existingSemester != null
         state.update { it.copy(isSaving = true, errors = emptyMap()) }
-        val token = sessionToken
-        saveJob = viewModelScope.launchUiOperation(
+        viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
             errorMessage = "Nie udało się zapisać konfiguracji.",
-            onFinish = {
-                if (token == sessionToken) {
-                    state.update { it.copy(isSaving = false) }
-                }
-            },
-            isCurrent = { token == sessionToken }
+            onFinish = { state.update { it.copy(isSaving = false) } }
         ) {
             val activate = existingSemester == null && shouldActivateNewSemester(
                 today = LocalDate.now(clock),
@@ -440,7 +423,6 @@ class SetupViewModel(
                 ),
                 activate = activate
             )
-            if (token != sessionToken) return@launchUiOperation
             semesterId = ids.semesterId
             courseId = ids.studyProgramId
             calendarId = ids.academicCalendarId

@@ -98,6 +98,8 @@ Kryterium zakończenia: testy i ręczne sprawdzenie dają opisane wyniki; `rg "o
 
 ## 2. Pobieraj ViewModele kreatora i kierunków w ich celach nawigacji (I-86)
 
+Stan: zrobione. Stan otwarcia formularza kierunku jest w pamięci ViewModelu, bez `SavedStateHandle`: ViewModel przetrwa odtworzenie aktywności, a szkicu po zakończeniu procesu `ARCHITECTURE.md` nie wymaga. Usunięte testy: `SetupViewModelTest.startDuringSaveResetsTheWizardWithoutFeedback` (ponowny start w jednym ViewModelu już nie istnieje), `StudyProgramsViewModelTest.explicitOpenDiscardsAbandonedDraft` i `restoringRouteAfterExplicitOpenKeepsDraft` (`openEdit` usunięte). `KoinGraphTest` rozwiązuje `SetupViewModel` z `SavedStateHandle`. Ręcznie: edycja kierunku w ustawieniach (szkic po odtworzeniu aktywności, zapis), edycja kierunku w semestrze (zapis), otwarcie kreatora. Ekran „Kierunki” semestru po zapisie nazwy pokazuje starą nazwę, bo `SemesterViewModel` wczytuje dane raz; tak było przed zmianą, poprawia to krok 3.
+
 Cel: `SetupViewModel` i `StudyProgramsViewModel` powstają w swoich celach nawigacji (C1). Kreator otwiera się raz na swój ViewModel, więc znikają token sesji i flaga `opened` (D4). Formularz kierunku w ustawieniach i w semestrze dostaje własny ViewModel zamiast wspólnego z listą.
 
 Pliki: `MainActivity.kt`, `ui/MakNavHostApp.kt`, `ui/SetupRoutes.kt`, `ui/StudyProgramRoutes.kt`, `ui/SemesterRoutes.kt` (tylko `SemesterCourses` i `SemesterCourseEdit`), `ui/setup/SetupViewModel.kt`, `ui/programs/StudyProgramsViewModel.kt`; testy `ui/setup/SetupViewModelTest.kt`, `ui/programs/StudyProgramsViewModelTest.kt`.

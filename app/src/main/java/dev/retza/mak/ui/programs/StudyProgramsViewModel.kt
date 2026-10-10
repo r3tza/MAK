@@ -55,6 +55,8 @@ data class StudyProgramsUiState(
     val editor: StudyProgramEditorUi = StudyProgramEditorUi()
 )
 
+enum class StudyProgramEditOpenState { Opening, Open, Missing }
+
 sealed interface StudyProgramsEffect {
     data object CloseEditor : StudyProgramsEffect
 }
@@ -72,6 +74,9 @@ class StudyProgramsViewModel(
 
     private val effectsChannel = Channel<StudyProgramsEffect>(Channel.BUFFERED)
     val effects = effectsChannel.receiveAsFlow()
+
+    private val openState = MutableStateFlow(StudyProgramEditOpenState.Opening)
+    val opened: StateFlow<StudyProgramEditOpenState> = openState.asStateFlow()
 
     init {
         viewModelScope.launch {
@@ -117,15 +122,14 @@ class StudyProgramsViewModel(
         }
     }
 
-    /** Starts a fresh edit of the program: discards any earlier draft, then loads the saved values. */
-    fun openEdit(id: Long) {
-        state.update { it.copy(editor = StudyProgramEditorUi()) }
-        loadEditor(id)
+    /** Loads the program for this destination once; a rotation keeps the typed values. */
+    suspend fun openOnce(id: Long) {
+        if (openState.value != StudyProgramEditOpenState.Opening) return
+        openState.value = if (loadEditorFromRoom(id)) StudyProgramEditOpenState.Open else StudyProgramEditOpenState.Missing
     }
 
-    /** Starts a new route edit from the latest Room row after the route has acquired its edit key. */
-    suspend fun openEditFromRoom(id: Long): Boolean {
-        state.update { it.copy(editor = StudyProgramEditorUi()) }
+    /** Loads the latest Room row of the program into the editor; false when it no longer exists. */
+    private suspend fun loadEditorFromRoom(id: Long): Boolean {
         val program = semesterRepository.observeStudyPrograms().first()
             .firstOrNull { it.id == id }
             ?.let { StudyProgramUi(it.id, it.name, it.color) }
@@ -134,40 +138,6 @@ class StudyProgramsViewModel(
             it.copy(editor = StudyProgramEditorUi(id = program.id, name = program.name, color = program.color))
         }
         return true
-    }
-
-    /**
-     * Restores the screen after rotation or process death: keeps the current draft when the route
-     * is shown again for the same program.
-     */
-    fun openEditIfNeeded(id: Long) {
-        if (state.value.editor.id == id) return
-        loadEditor(id)
-    }
-
-    private fun loadEditor(id: Long) {
-        viewModelScope.launch {
-            val program = semesterRepository.observeStudyPrograms().first()
-                .firstOrNull { it.id == id }
-                ?.let { StudyProgramUi(it.id, it.name, it.color) } ?: return@launch
-            state.update {
-                val current = it.editor
-                if (current.id == id && (current.name != program.name || current.color != program.color)) {
-                    it
-                } else {
-                    // Same program: the usage observer does not emit again, so its names are kept.
-                    val usedIn = if (current.id == id) current.usedInSemesters else emptyList()
-                    it.copy(
-                        editor = StudyProgramEditorUi(
-                            id = program.id,
-                            name = program.name,
-                            color = program.color,
-                            usedInSemesters = usedIn
-                        )
-                    )
-                }
-            }
-        }
     }
 
     fun updateName(value: String) = state.update {

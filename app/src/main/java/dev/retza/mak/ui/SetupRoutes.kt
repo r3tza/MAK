@@ -4,11 +4,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.compose.viewmodel.koinViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
@@ -33,7 +31,7 @@ internal fun openSetup(navController: NavController, resumeExisting: Boolean = f
 
 internal fun NavGraphBuilder.setupRoute(
     planEditTracker: PlanEditTracker,
-    setupViewModel: SetupViewModel,
+    navController: NavController,
     settingsViewModel: SettingsViewModel
 ) {
     composable(
@@ -42,24 +40,15 @@ internal fun NavGraphBuilder.setupRoute(
             type = NavType.BoolType
             defaultValue = false
         })
-    ) { entry ->
+    ) { _ ->
+        val setupViewModel: SetupViewModel = koinViewModel()
         val editing = TrackPlanEditing(planEditTracker)
         if (!editing.ready) {
             PlanEditingWait()
             return@composable
         }
-        var opened by rememberSaveable { mutableStateOf(false) }
-        val resumeExisting = entry.arguments?.getBoolean("resume") ?: false
-        LaunchedEffect(editing.ready, opened) {
-            if (!opened) {
-                setupViewModel.startFromRoom(resumeExisting)
-                opened = true
-            }
-        }
-        if (!opened) {
-            PlanEditingWait()
-            return@composable
-        }
+        LaunchedEffect(Unit) { setupViewModel.openOnce() }
+        SetupEffects(setupViewModel, navController)
         val setupState by setupViewModel.setup.collectAsStateWithLifecycle()
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
         SetupWizard(

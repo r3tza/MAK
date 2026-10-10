@@ -41,11 +41,9 @@ import dev.retza.mak.ui.components.MakNavBar
 import dev.retza.mak.ui.components.MakNavRail
 import dev.retza.mak.ui.feedback.MakSnackbarHost
 import dev.retza.mak.ui.feedback.UiFeedback
-import dev.retza.mak.ui.programs.StudyProgramsViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.settings.SyncViewModel
-import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.update.UpdateViewModel
 import kotlinx.coroutines.flow.Flow
 
@@ -54,10 +52,8 @@ import kotlinx.coroutines.flow.Flow
 fun MakApp(
     viewModel: AppViewModel,
     semesterViewModel: SemesterViewModel,
-    setupViewModel: SetupViewModel,
     settingsViewModel: SettingsViewModel,
     syncViewModel: SyncViewModel,
-    studyProgramsViewModel: StudyProgramsViewModel,
     updateViewModel: UpdateViewModel,
     planEditTracker: PlanEditTracker,
     feedback: Flow<UiFeedback>,
@@ -128,8 +124,6 @@ fun MakApp(
 
     SemesterEffects(semesterViewModel, navController)
     SettingsEffects(settingsViewModel, navController)
-    StudyProgramEffects(studyProgramsViewModel, navController)
-    SetupEffects(setupViewModel, navController)
 
     BackHandler(enabled = showBack) { navigateBack() }
 
@@ -228,8 +222,7 @@ fun MakApp(
                 semesterRoutes(
                     planEditTracker = planEditTracker,
                     semesterViewModel = semesterViewModel,
-                    navController = navController,
-                    studyProgramsViewModel = studyProgramsViewModel
+                    navController = navController
                 )
                 settingsRoute(
                     planEditTracker = planEditTracker,
@@ -252,13 +245,12 @@ fun MakApp(
                 )
                 studyProgramRoutes(
                     planEditTracker = planEditTracker,
-                    studyProgramsViewModel = studyProgramsViewModel,
                     navController = navController,
                     onBack = ::navigateBack
                 )
                 setupRoute(
                     planEditTracker = planEditTracker,
-                    setupViewModel = setupViewModel,
+                    navController = navController,
                     settingsViewModel = settingsViewModel
                 )
             }
