@@ -11,6 +11,7 @@ import dev.retza.mak.export.StudyProgramSnapshot
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
+import dev.retza.mak.ui.activePlanSource
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import java.time.LocalTime
@@ -39,7 +40,7 @@ class SettingsViewModelTest {
         sink: FeedbackSink = RecordingFeedbackSink()
     ) = SettingsViewModel(
         FakeSemesterRepository(repository),
-        repository,
+        activePlanSource(repository, preferences),
         PlanBackupService(repository, preferences),
         preferences,
         sink,

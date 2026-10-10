@@ -6,6 +6,10 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.work.WorkManager
 import dev.retza.mak.data.database.AppDatabase
+import dev.retza.mak.data.repository.ScheduleRepository
+import dev.retza.mak.data.repository.SemesterRepository
+import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.ui.settings.SettingsPreferences
 import dev.retza.mak.update.InstalledAppInfoProvider
 import dev.retza.mak.update.UpdateCheckService
 import dev.retza.mak.update.UpdateChecker
@@ -56,6 +60,18 @@ class AppModule {
 
     @Single
     fun providePlanEditTracker(): PlanEditTracker = PlanEditTracker(CoroutineScope(SupervisorJob() + Dispatchers.Default))
+
+    @Single
+    fun provideActivePlanSource(
+        semesterRepository: SemesterRepository,
+        scheduleRepository: ScheduleRepository,
+        preferences: SettingsPreferences
+    ): ActivePlanSource = ActivePlanSource(
+        semesterRepository,
+        scheduleRepository,
+        preferences,
+        CoroutineScope(SupervisorJob() + Dispatchers.Default)
+    )
 
     @Single
     fun provideDriveHttpClient(): DriveHttpClient = UrlConnectionDriveHttpClient(Dispatchers.IO)

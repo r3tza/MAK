@@ -27,6 +27,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -150,12 +151,12 @@ class WidgetPlanLoaderTest {
         )
     }
 
-    private fun loader(
+    private fun TestScope.loader(
         repository: Any,
         preferences: InMemorySettingsPreferences = InMemorySettingsPreferences()
     ) = WidgetPlanLoader(
         semesterRepository = repository as SemesterRepository,
-        activePlanSource = ActivePlanSource(repository, repository as ScheduleRepository, preferences),
+        activePlanSource = ActivePlanSource(repository, repository as ScheduleRepository, preferences, backgroundScope),
         activePlanProvider = ActivePlanProvider(),
         clock = Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), ZoneId.of("UTC"))
     )

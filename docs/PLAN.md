@@ -129,6 +129,8 @@ Kryterium zakończenia: testy przechodzą; `rg "withTransaction|AppDatabase" app
 
 ## 3. Udostępnij jeden współdzielony strumień aktywnego planu (I-86)
 
+Stan: zrobione. `OccurrenceViewModel.refreshForEdit` czytał `observeActive().first()`, które przy aktywnym kolektorze zwraca ostatnią wartość ze wspólnego strumienia zamiast stanu bazy; teraz czyta aktywny semestr i `observe(id).first()`, jak `reload`. `ActivePlanSourceTest` używa zakresu na `StandardTestDispatcher(testScheduler)` zamiast `backgroundScope`. Ręcznie: usunięcie zajęć od razu zmienia „Dzisiaj”, „Plan” i liczbę zajęć w „Semestrach”; widgetu nie sprawdzano.
+
 Cel: ekrany, widget i powiadomienia czytają plan aktywnego semestru z jednego zapytania Room zamiast każdy z własnego (B1), a ustawienia nie wczytują osobno całego planu dla kilku liczb (B4 dla ustawień). Wygląd i zachowanie się nie zmieniają.
 
 Pliki: `ui/ActivePlanSource.kt`, `di/AppModule.kt`, `ui/settings/SettingsViewModel.kt`; testy `ui/FakeSemesterRepository.kt` (funkcja `activePlanSource`), `ui/FakeRepository.kt`, nowy `ui/ActivePlanSourceTest.kt`, `widget/WidgetPlanLoaderTest.kt`, `ui/settings/SettingsViewModelTest.kt`, Android `notifications/CollisionAlarmSchedulerTest.kt`.

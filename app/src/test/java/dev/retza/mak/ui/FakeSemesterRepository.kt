@@ -13,6 +13,8 @@ import dev.retza.mak.data.repository.toRecord
 import dev.retza.mak.ui.settings.InMemorySettingsPreferences
 import dev.retza.mak.ui.settings.SettingsPreferences
 import kotlinx.coroutines.CompletableDeferred
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
@@ -134,5 +136,6 @@ internal class FakeSemesterRepository(
 /** The plan source the app builds from [repository] and [preferences]. */
 internal fun activePlanSource(
     repository: FakeRepository,
-    preferences: SettingsPreferences = InMemorySettingsPreferences()
-) = ActivePlanSource(FakeSemesterRepository(repository), repository, preferences)
+    preferences: SettingsPreferences = InMemorySettingsPreferences(),
+    scope: CoroutineScope = CoroutineScope(Dispatchers.Main)
+) = ActivePlanSource(FakeSemesterRepository(repository), repository, preferences, scope)

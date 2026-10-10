@@ -124,7 +124,8 @@ class OccurrenceViewModel(
     /** Reloads the source data after edit admission, before a preview starts a draft or confirmation. */
     suspend fun refreshForEdit(routeId: String): Boolean {
         val args = OccurrenceArgs.parse(routeId) ?: return false
-        val inputs = activePlanSource.observeActive().first()
+        val semester = semesterRepository.observeActiveSemester().first()
+        val inputs = semester?.let { activePlanSource.observe(it.id).first() }
         val built = inputs?.let { buildDetails(it, args) }
         if (inputs == null || built == null) {
             clearMissingOccurrence()

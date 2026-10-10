@@ -29,13 +29,16 @@ import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.SupervisorJob
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -48,6 +51,7 @@ class CollisionAlarmSchedulerTest {
     private val clock = Clock.fixed(Instant.parse("2026-09-21T06:00:00Z"), ZoneId.of("Europe/Warsaw"))
     private lateinit var database: AppDatabase
     private lateinit var context: Context
+    private val sourceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Before
     fun setUp() {
@@ -63,6 +67,7 @@ class CollisionAlarmSchedulerTest {
 
     @After
     fun tearDown() {
+        sourceScope.cancel()
         database.close()
         context.getSharedPreferences(ALARMS, Context.MODE_PRIVATE).edit().clear().commit()
     }
@@ -74,7 +79,7 @@ class CollisionAlarmSchedulerTest {
         val scheduleRepository = RoomScheduleRepository(database)
         val planner = CollisionNotificationPlanner(ActivePlanProvider(), clock)
         val preferences = EnabledNotifications()
-        val activePlanSource = ActivePlanSource(semesterRepository, scheduleRepository, preferences)
+        val activePlanSource = ActivePlanSource(semesterRepository, scheduleRepository, preferences, sourceScope)
         val scheduler = CollisionAlarmScheduler(
             context,
             activePlanSource,
@@ -111,7 +116,7 @@ class CollisionAlarmSchedulerTest {
         val scheduleRepository = RoomScheduleRepository(database)
         val planner = CollisionNotificationPlanner(ActivePlanProvider(), clock)
         val preferences = EnabledNotifications()
-        val activePlanSource = ActivePlanSource(semesterRepository, scheduleRepository, preferences)
+        val activePlanSource = ActivePlanSource(semesterRepository, scheduleRepository, preferences, sourceScope)
         val scheduler = CollisionAlarmScheduler(context, activePlanSource, planner, preferences, clock)
         val enabledSettings = preferences.collisionNotifications.first()
         val inputs = activePlanSource.observe(semesterId).first()!!
@@ -134,7 +139,7 @@ class CollisionAlarmSchedulerTest {
         val scheduleRepository = RoomScheduleRepository(database)
         val planner = CollisionNotificationPlanner(ActivePlanProvider(), clock)
         val preferences = EnabledNotifications()
-        val activePlanSource = ActivePlanSource(semesterRepository, scheduleRepository, preferences)
+        val activePlanSource = ActivePlanSource(semesterRepository, scheduleRepository, preferences, sourceScope)
         val scheduler = CollisionAlarmScheduler(context, activePlanSource, planner, preferences, clock)
         val settings = preferences.collisionNotifications.first()
         val inputs = activePlanSource.observe(semesterId).first()!!

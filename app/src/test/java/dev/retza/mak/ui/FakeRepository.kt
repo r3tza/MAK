@@ -162,8 +162,13 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         )
     }
 
-    override fun observeActivePlanData(semesterId: Long): Flow<ActivePlanData?> =
-        observeSemesterData(semesterId).map { it?.toActivePlanData() }
+    var activePlanDataQueries = 0
+        private set
+
+    override fun observeActivePlanData(semesterId: Long): Flow<ActivePlanData?> {
+        activePlanDataQueries++
+        return observeSemesterData(semesterId).map { it?.toActivePlanData() }
+    }
 
     fun observeStudyPrograms(): Flow<List<StudyProgramEntity>> = studyProgramState
     fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramEntity>> = flow {

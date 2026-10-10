@@ -3,7 +3,6 @@ package dev.retza.mak.ui.settings
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
-import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.ActivePlanData
@@ -12,6 +11,7 @@ import dev.retza.mak.export.ImportHandle
 import dev.retza.mak.export.ImportPreparation
 import dev.retza.mak.export.ImportSummary
 import dev.retza.mak.export.PlanBackupService
+import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.polishPlural
@@ -29,9 +29,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -70,7 +69,7 @@ private data class SettingsLocalState(
 @KoinViewModel
 class SettingsViewModel(
     private val semesterRepository: SemesterRepository,
-    private val scheduleRepository: ScheduleRepository,
+    private val activePlanSource: ActivePlanSource,
     private val planBackupService: PlanBackupService,
     private val preferences: SettingsPreferences,
     private val feedbackSink: FeedbackSink,
@@ -83,9 +82,7 @@ class SettingsViewModel(
 
     private var pendingImport: ImportHandle? = null
 
-    private val activePlanData = semesterRepository.observeActiveSemester().flatMapLatest { semester ->
-        if (semester == null) flowOf(null) else scheduleRepository.observeActivePlanData(semester.id)
-    }
+    private val activePlanData = activePlanSource.observeActive().map { it?.data }
 
     /** Null until the stored theme is read, so the first frame never uses a guessed theme. */
     val loadedThemeMode: StateFlow<ThemeMode?> = preferences.theme
