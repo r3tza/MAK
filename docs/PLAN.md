@@ -20,6 +20,8 @@ Przeczytaj tę sekcję przed każdym krokiem.
 
 ## 1. Zastąp encje Room w BackupData rekordami repozytorium (I-87)
 
+Stan: zrobione (`ac3918d`). Fragment `references()` w planie wołał `withReferences` na odbiorcy `buildList`; poprawione na `this@references.withReferences`. `DomainMappers.kt` nie wymagał zmian.
+
 Cel: kontrakt kopii zapasowej i synchronizacji używa zwykłych klas danych, a encje Room nie wychodzą poza `data` (F4, `ARCHITECTURE.md`, sekcja 5: „Publiczne kontrakty nie wystawiają encji Room”). Rekordy z mapowaniem w obie strony już istnieją (`data/repository/SemesterRecords.kt`, `ScheduleRecords.kt`, funkcje `toRecord()` i `toEntity()` w `DomainMappers.kt`), więc krok nie dodaje nowego modelu, tylko zmienia typy. Przy okazji `PlanMerge.references()` powstaje z `withReferences` (F5). Format pliku JSON się nie zmienia.
 
 Pliki: `data/repository/BackupData.kt`, `data/repository/PlanBackupGateway.kt`, `data/repository/DomainMappers.kt` (tylko jeśli brakuje mapowania), `data/repository/OccurrenceNoteRemap.kt`, `export/ExportImporter.kt`, `export/ExportSnapshot.kt`, `sync/PlanMerge.kt`, `sync/PlanDifferences.kt`, `ui/settings/SyncDifferenceLabels.kt`; testy JVM `export/BackupDataFixtures.kt`, `sync/PlanFixtures.kt`, `sync/PlanMergeTest.kt`, `sync/SyncCoordinatorTest.kt`, `ui/FakeRepository.kt` i inne wskazane przez kompilator; testy Android `data/RoomPersistenceTest.kt`, `sync/RoomPlanSyncGatewayTest.kt`.
@@ -64,6 +66,8 @@ Weryfikacja:
 Kryterium zakończenia: testy przechodzą; `rg "data\.entity" app/src/main/java/dev/retza/mak/export app/src/main/java/dev/retza/mak/sync app/src/main/java/dev/retza/mak/ui` nic nie znajduje; w `data/repository/BackupData.kt` nie ma słowa `Entity`. Commit: `chore: use plain records in the backup contract (I-87)`.
 
 ## 2. Sprawdzaj i zastępuj plan synchronizacji w jednej transakcji w data (I-87)
+
+Stan: zrobione. Kryterium `rg "withTransaction|AppDatabase"` w `sync` znajduje jeszcze `SyncRoomChangeObserver` w `SyncWork.kt`, który obserwuje zmiany tabel; zostaje do I-88 (jeden strumień zmian planu).
 
 Cel: sprawdzenie, że plan na telefonie się nie zmienił, i zastąpienie go planem z Dysku są jedną transakcją otwieraną w `data`, a `RoomPlanSyncGateway` nie zna `AppDatabase` (F4). Skrót planu liczy dalej `SyncPlanFile` w `sync`, bo `data` nie zna formatu pliku, więc warunek przychodzi do `data` jako funkcja.
 

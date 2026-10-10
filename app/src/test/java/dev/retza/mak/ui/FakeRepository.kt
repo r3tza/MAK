@@ -576,6 +576,12 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         return data.activeSemesterId
     }
 
+    override suspend fun replaceIfCurrent(prepare: (current: BackupData) -> BackupData?): Boolean {
+        val next = prepare(snapshot()) ?: return false
+        replaceAll(next)
+        return true
+    }
+
     private suspend fun awaitSave() {
         if (failSaves) throw IllegalStateException("save failed")
         saveGate?.await()

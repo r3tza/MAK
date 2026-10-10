@@ -16,6 +16,9 @@ class PlanBackupServiceTest {
             override suspend fun snapshot() = BackupData(emptyList(), emptyList())
 
             override suspend fun replaceAll(data: BackupData): Long? = null
+
+            override suspend fun replaceIfCurrent(prepare: (current: BackupData) -> BackupData?): Boolean =
+                prepare(snapshot())?.let { replaceAll(it); true } ?: false
         },
         preferences
     )

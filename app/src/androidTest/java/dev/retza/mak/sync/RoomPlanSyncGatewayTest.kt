@@ -58,7 +58,7 @@ class RoomPlanSyncGatewayTest {
         database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
         backup = RoomPlanBackupGateway(database)
         preferences = DataStoreSettingsPreferences(preferencesFile.open())
-        gateway = RoomPlanSyncGateway(database, backup, preferences)
+        gateway = RoomPlanSyncGateway(backup, preferences)
     }
 
     @After
@@ -104,6 +104,17 @@ class RoomPlanSyncGatewayTest {
     }
 
     @Test
+    fun replaceIfCurrentWritesNothingWhenPrepareReturnsNull() = runBlocking {
+        backup.replaceAll(plan("Lokalny", active = 1))
+        val before = backup.snapshot()
+
+        val replaced = backup.replaceIfCurrent { null }
+
+        assertFalse(replaced)
+        assertEquals(before, backup.snapshot())
+    }
+
+    @Test
     fun editorStartedDuringRoomReplacementReadsTheCommittedPlan() = runBlocking {
         val original = plan("Lokalny", active = 1)
         val downloaded = plan("Pobrany", active = 1)
@@ -114,13 +125,15 @@ class RoomPlanSyncGatewayTest {
         val blockingBackup = object : PlanBackupGateway {
             override suspend fun snapshot() = backup.snapshot()
 
-            override suspend fun replaceAll(data: BackupData): Long? {
+            override suspend fun replaceAll(data: BackupData): Long? = backup.replaceAll(data)
+
+            override suspend fun replaceIfCurrent(prepare: (current: BackupData) -> BackupData?): Boolean {
                 replacementEntered.complete(Unit)
                 finishReplacement.await()
-                return backup.replaceAll(data)
+                return backup.replaceIfCurrent(prepare)
             }
         }
-        val blockingGateway = RoomPlanSyncGateway(database, blockingBackup, preferences)
+        val blockingGateway = RoomPlanSyncGateway(blockingBackup, preferences)
         val tracker = PlanEditTracker(CoroutineScope(Dispatchers.Default))
 
         val replacement = async(Dispatchers.IO) {
@@ -161,16 +174,17 @@ class RoomPlanSyncGatewayTest {
         val finishReplacement = CompletableDeferred<Unit>()
         val blockingBackup = object : PlanBackupGateway {
             override suspend fun snapshot() = backup.snapshot()
-            override suspend fun replaceAll(data: BackupData): Long? {
+            override suspend fun replaceAll(data: BackupData): Long? = backup.replaceAll(data)
+            override suspend fun replaceIfCurrent(prepare: (current: BackupData) -> BackupData?): Boolean {
                 replacementEntered.complete(Unit)
                 finishReplacement.await()
-                return backup.replaceAll(data)
+                return backup.replaceIfCurrent(prepare)
             }
         }
         val tracker = PlanEditTracker(CoroutineScope(Dispatchers.Default))
         val replacement = async(Dispatchers.IO) {
             tracker.withReplacement {
-                RoomPlanSyncGateway(database, blockingBackup, preferences).replaceIfUnchanged(
+                RoomPlanSyncGateway(blockingBackup, preferences).replaceIfUnchanged(
                     expected,
                     replacementPlan,
                     keepLocalActive = true,

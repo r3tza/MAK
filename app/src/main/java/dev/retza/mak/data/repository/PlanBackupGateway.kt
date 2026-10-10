@@ -7,6 +7,13 @@ interface PlanBackupGateway {
     suspend fun snapshot(): BackupData
 
     suspend fun replaceAll(data: BackupData): Long?
+
+    /**
+     * Reads the plan and replaces it in one transaction. [prepare] gets the current plan and returns the plan
+     * to write, or null to leave the database unchanged. It runs inside the transaction, so it must not suspend.
+     * True when the plan was replaced.
+     */
+    suspend fun replaceIfCurrent(prepare: (current: BackupData) -> BackupData?): Boolean
 }
 
 @org.koin.core.annotation.Single(binds = [PlanBackupGateway::class])
@@ -39,6 +46,13 @@ class RoomPlanBackupGateway(
             }
         )
     }
+
+    override suspend fun replaceIfCurrent(prepare: (current: BackupData) -> BackupData?): Boolean =
+        database.withTransaction {
+            val next = prepare(snapshot()) ?: return@withTransaction false
+            replaceAll(next)
+            true
+        }
 
     override suspend fun replaceAll(data: BackupData): Long? = database.withTransaction {
         occurrenceChanges.deleteAll()

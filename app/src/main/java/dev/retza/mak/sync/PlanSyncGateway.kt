@@ -1,7 +1,5 @@
 package dev.retza.mak.sync
 
-import androidx.room.withTransaction
-import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.PlanBackupGateway
 import dev.retza.mak.ui.settings.SettingsPreferences
@@ -25,7 +23,6 @@ interface PlanSyncGateway {
 
 @Single(binds = [PlanSyncGateway::class])
 class RoomPlanSyncGateway(
-    private val database: AppDatabase,
     private val backup: PlanBackupGateway,
     private val preferences: SettingsPreferences
 ) : PlanSyncGateway {
@@ -37,12 +34,14 @@ class RoomPlanSyncGateway(
         keepLocalActive: Boolean,
         fallbackActiveId: Long?
     ): Boolean {
-        val replaced = database.withTransaction {
-            val current = backup.snapshot()
-            if (SyncPlanFile.fingerprint(current) != expectedFingerprint) return@withTransaction false
-            val activeId = activeSemesterAfterReplace(current.activeSemesterId, data, keepLocalActive, fallbackActiveId)
-            backup.replaceAll(data.withActiveSemester(activeId))
-            true
+        val replaced = backup.replaceIfCurrent { current ->
+            if (SyncPlanFile.fingerprint(current) != expectedFingerprint) {
+                null
+            } else {
+                data.withActiveSemester(
+                    activeSemesterAfterReplace(current.activeSemesterId, data, keepLocalActive, fallbackActiveId)
+                )
+            }
         }
         // Like the active semester: program numbers mean the same programs only after the first download.
         // Later downloads keep the choice; programs they removed are forgotten by `retainExistingHiddenPrograms`.
