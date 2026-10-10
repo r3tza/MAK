@@ -9,14 +9,12 @@ import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.PlanDisplaySettings
 import dev.retza.mak.domain.allProgramsHidden
 import dev.retza.mak.domain.hiddenAssignments
-import dev.retza.mak.domain.countGaps
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.uniqueCollisionCount
 import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.label
 import dev.retza.mak.ui.polishLocale
-import dev.retza.mak.ui.settings.SettingsPreferences
 import dev.retza.mak.ui.toUi
 import dev.retza.mak.ui.todayTitleFormatter
 import java.time.Clock
@@ -34,7 +32,6 @@ private data class LoadedPlan(val inputs: ActivePlanInputs?)
 @KoinViewModel
 class TodayViewModel(
     activePlanSource: ActivePlanSource,
-    private val preferences: SettingsPreferences,
     private val clock: Clock,
     private val activePlanProvider: ActivePlanProvider
 ) : ViewModel() {
@@ -46,10 +43,9 @@ class TodayViewModel(
 
     val today: StateFlow<TodayUiState> = combine(
         activePlan,
-        date,
-        preferences.gapThresholdMinutes
-    ) { loaded, day, thresholdMinutes ->
-        if (loaded == null) loadingTodayState() else buildToday(loaded.inputs, day, thresholdMinutes)
+        date
+    ) { loaded, day ->
+        if (loaded == null) loadingTodayState() else buildToday(loaded.inputs, day)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -62,8 +58,7 @@ class TodayViewModel(
 
     private fun buildToday(
         inputs: ActivePlanInputs?,
-        day: LocalDate,
-        thresholdMinutes: Int
+        day: LocalDate
     ): TodayUiState {
         if (inputs == null) return emptyTodayState()
         val data = inputs.data
@@ -79,7 +74,7 @@ class TodayViewModel(
             hasActiveSemester = true,
             classCount = schedule.occurrences.size,
             collisionCount = uniqueCollisionCount(plan.collisions),
-            gapCount = countGaps(schedule.occurrences, thresholdMinutes.toLong()),
+            gapCount = plan.gapCount,
             items = schedule.occurrences.map { it.toUi(labels[it.id], names[it.id]) },
             // With every program hidden the note on the list says it all; the hint would repeat it.
             hiddenProgramNames = if (allHidden) emptyList() else hiddenProgramNames(data, inputs.display),

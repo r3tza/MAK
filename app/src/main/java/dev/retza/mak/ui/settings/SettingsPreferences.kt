@@ -23,8 +23,6 @@ interface SettingsPreferences {
 
     val collisionNotifications: Flow<CollisionNotificationPreferences>
 
-    val gapThresholdMinutes: Flow<Int>
-
     /** Settings every view of the plan, the widget and notifications resolve the plan with. */
     val planDisplay: Flow<PlanDisplaySettings>
 

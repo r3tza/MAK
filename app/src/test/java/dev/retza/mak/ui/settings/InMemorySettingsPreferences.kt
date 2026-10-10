@@ -8,12 +8,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 class InMemorySettingsPreferences(
     initialTheme: ThemeMode = ThemeMode.System,
     initialNotifications: CollisionNotificationPreferences = CollisionNotificationPreferences(),
-    initialGapThresholdMinutes: Int = 30,
     initialPlanDisplay: PlanDisplaySettings = PlanDisplaySettings.DEFAULT
 ) : SettingsPreferences {
     private val state = MutableStateFlow(initialTheme)
     private val notifications = MutableStateFlow(initialNotifications)
-    private val gapThreshold = MutableStateFlow(initialGapThresholdMinutes)
     private val display = MutableStateFlow(initialPlanDisplay)
 
     var failNextWrite = false
@@ -21,8 +19,6 @@ class InMemorySettingsPreferences(
     override val theme: Flow<ThemeMode> = state
 
     override val collisionNotifications: Flow<CollisionNotificationPreferences> = notifications
-
-    override val gapThresholdMinutes: Flow<Int> = gapThreshold
 
     override val planDisplay: Flow<PlanDisplaySettings> = display
 
@@ -33,7 +29,7 @@ class InMemorySettingsPreferences(
 
     override suspend fun setGapThresholdMinutes(minutes: Int) {
         awaitWrite()
-        gapThreshold.value = minutes
+        display.value = display.value.copy(gapThresholdMinutes = minutes)
     }
 
     override suspend fun setMinimumBreakMinutes(minutes: Int) {

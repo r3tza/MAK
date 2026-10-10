@@ -21,7 +21,8 @@ data class ActivePlanInputs(
 
 data class ActivePlan(
     val schedule: ResolvedSchedule,
-    val collisions: List<Collision>
+    val collisions: List<Collision>,
+    val gapCount: Int
 )
 
 @org.koin.core.annotation.Single
@@ -30,17 +31,18 @@ class ActivePlanProvider(
     private val collisionDetector: CollisionDetector = CollisionDetector()
 ) {
     fun resolve(inputs: ActivePlanInputs, date: LocalDate): ActivePlan =
-        resolve(inputs.data.visibleTo(inputs.display), date, inputs.display.minimumBreakMinutes)
+        resolve(inputs.data.visibleTo(inputs.display), date, inputs.display)
 
     fun resolve(data: ActivePlanData, date: LocalDate, display: PlanDisplaySettings): ActivePlan =
-        resolve(data.visibleTo(display), date, display.minimumBreakMinutes)
+        resolve(data.visibleTo(display), date, display)
 
     /** For a caller that resolves many days of one plan and filters it once. */
-    fun resolve(visible: VisiblePlanData, date: LocalDate, minimumBreakMinutes: Int): ActivePlan {
+    fun resolve(visible: VisiblePlanData, date: LocalDate, display: PlanDisplaySettings): ActivePlan {
         val schedule = schedule(visible, date)
         return ActivePlan(
             schedule = schedule,
-            collisions = collisionDetector.detect(schedule, minimumBreakMinutes)
+            collisions = collisionDetector.detect(schedule, display.minimumBreakMinutes),
+            gapCount = countGaps(schedule.occurrences, display.gapThresholdMinutes.toLong())
         )
     }
 

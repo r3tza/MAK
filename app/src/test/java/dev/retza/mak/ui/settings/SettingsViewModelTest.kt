@@ -254,7 +254,7 @@ class SettingsViewModelTest {
         viewModel.setGapThresholdMinutes("45")
         advanceUntilIdle()
 
-        assertEquals(45, preferences.gapThresholdMinutes.first())
+        assertEquals(45, preferences.planDisplay.first().gapThresholdMinutes)
         assertTrue(viewModel.settings.value.gapThresholdOptions.first { it.id == "45" }.isSelected)
     }
 

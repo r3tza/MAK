@@ -3,9 +3,7 @@ package dev.retza.mak.ui.settings
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import java.io.IOException
@@ -52,7 +50,7 @@ class SettingsPreferencesTest {
         val collector = launch(Dispatchers.Default) { preferences.theme.collect { themes.add(it) } }
         try {
             preferences.setGapThresholdMinutes(45)
-            preferences.gapThresholdMinutes.first { it == 45 }
+            preferences.planDisplay.first { it.gapThresholdMinutes == 45 }
             delay(200)
         } finally {
             collector.cancelAndJoin()
@@ -91,11 +89,13 @@ class SettingsPreferencesTest {
     }
 
     @Test
-    fun storedGapThresholdBelowTwentyIsReadAsTwenty() = runBlocking {
-        val dataStore = openDataStore()
-        dataStore.edit { it[intPreferencesKey("gap_threshold_minutes")] = 15 }
+    fun storedGapThresholdIsClampedToTwentyAndKeptAboveIt() = runBlocking {
+        val preferences = preferences(openDataStore())
+        preferences.setGapThresholdMinutes(15)
+        assertEquals(20, preferences.planDisplay.first().gapThresholdMinutes)
 
-        assertEquals(20, preferences(dataStore).gapThresholdMinutes.first())
+        preferences.setGapThresholdMinutes(45)
+        assertEquals(45, preferences.planDisplay.first().gapThresholdMinutes)
     }
 
     @Test

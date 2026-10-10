@@ -8,6 +8,7 @@ import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import dev.retza.mak.domain.PlanDisplayLimits
 import dev.retza.mak.domain.PlanDisplaySettings
 import java.io.IOException
 import java.time.LocalTime
@@ -30,13 +31,6 @@ private val hiddenStudyProgramIdsKey = stringSetPreferencesKey("hidden_study_pro
 private const val readRetryDelayMillis = 100L
 private const val defaultEveningHourMinutes = 20 * 60
 private const val defaultLeadMinutes = 30
-private const val defaultGapThresholdMinutes = 30
-// A gap is longer than the threshold and a collision break is not longer than the minimum break, so
-// keeping the smallest threshold at least the largest minimum break means no break is both
-// (decision of 2026-10-09). A stored threshold of 15 minutes is read as 20.
-private const val minGapThresholdMinutes = 20
-private const val maxGapThresholdMinutes = 180
-private const val maxMinimumBreakMinutes = 20
 
 @org.koin.core.annotation.Single(binds = [SettingsPreferences::class])
 class DataStoreSettingsPreferences(
@@ -57,14 +51,12 @@ class DataStoreSettingsPreferences(
     override val collisionNotifications: Flow<CollisionNotificationPreferences> =
         preferences.map { stored -> stored.toNotificationPreferences() }.distinctUntilChanged()
 
-    override val gapThresholdMinutes: Flow<Int> = preferences.map { stored ->
-        (stored[gapThresholdMinutesKey] ?: defaultGapThresholdMinutes)
-            .coerceIn(minGapThresholdMinutes, maxGapThresholdMinutes)
-    }.distinctUntilChanged()
-
     override val planDisplay: Flow<PlanDisplaySettings> = preferences.map { stored ->
         PlanDisplaySettings(
-            minimumBreakMinutes = (stored[minimumBreakMinutesKey] ?: 0).coerceIn(0, maxMinimumBreakMinutes),
+            minimumBreakMinutes = (stored[minimumBreakMinutesKey] ?: 0)
+                .coerceIn(0, PlanDisplayLimits.maxMinimumBreakMinutes),
+            gapThresholdMinutes = (stored[gapThresholdMinutesKey] ?: PlanDisplayLimits.DEFAULT_GAP_THRESHOLD_MINUTES)
+                .coerceIn(PlanDisplayLimits.minGapThresholdMinutes, PlanDisplayLimits.MAX_GAP_THRESHOLD_MINUTES),
             hiddenProgramIds = stored[hiddenStudyProgramIdsKey].orEmpty()
         )
     }.distinctUntilChanged()
@@ -95,14 +87,16 @@ class DataStoreSettingsPreferences(
 
     override suspend fun setGapThresholdMinutes(minutes: Int) {
         dataStore.edit { preferences ->
-            preferences[gapThresholdMinutesKey] =
-                minutes.coerceIn(minGapThresholdMinutes, maxGapThresholdMinutes)
+            preferences[gapThresholdMinutesKey] = minutes.coerceIn(
+                PlanDisplayLimits.minGapThresholdMinutes,
+                PlanDisplayLimits.MAX_GAP_THRESHOLD_MINUTES
+            )
         }
     }
 
     override suspend fun setMinimumBreakMinutes(minutes: Int) {
         dataStore.edit { preferences ->
-            preferences[minimumBreakMinutesKey] = minutes.coerceIn(0, maxMinimumBreakMinutes)
+            preferences[minimumBreakMinutesKey] = minutes.coerceIn(0, PlanDisplayLimits.maxMinimumBreakMinutes)
         }
     }
 

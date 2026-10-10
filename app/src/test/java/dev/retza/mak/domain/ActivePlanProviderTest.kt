@@ -63,6 +63,32 @@ class ActivePlanProviderTest {
         assertTrue(plan.schedule.occurrences.isEmpty())
     }
 
+    @Test
+    fun gapCountUsesThresholdFromDisplaySettings() {
+        val date = LocalDate.of(2026, 9, 21)
+        val semester = Semester(id = "semester", name = "Semestr")
+        val calendar = AcademicCalendar(id = "calendar", startDate = date, endDate = date.plusDays(7), firstWeekType = WeekType.A)
+        val course = StudyProgram("course", "Informatyka", "#137B71")
+        val assignment = SemesterProgram("assignment", semester.id, course.id, calendar.id)
+        val data = ActivePlanData(
+            semester = semester,
+            classes = listOf(
+                classItem("first", semester.id, assignment.id, LocalTime.of(9, 0), LocalTime.of(10, 0)),
+                classItem("second", semester.id, assignment.id, LocalTime.of(10, 40), LocalTime.of(11, 40))
+            ),
+            courses = listOf(course),
+            semesterPrograms = listOf(assignment),
+            calendars = listOf(calendar)
+        )
+
+        val provider = ActivePlanProvider()
+        val thirtyMinutes = provider.resolve(data, date, PlanDisplaySettings(0, gapThresholdMinutes = 30))
+        val fortyFiveMinutes = provider.resolve(data, date, PlanDisplaySettings(0, gapThresholdMinutes = 45))
+
+        assertEquals(1, thirtyMinutes.gapCount)
+        assertEquals(0, fortyFiveMinutes.gapCount)
+    }
+
     private fun twoProgramPlan(display: PlanDisplaySettings): ActivePlan {
         val date = LocalDate.of(2026, 9, 21)
         val semester = Semester(id = "semester", name = "Semestr")

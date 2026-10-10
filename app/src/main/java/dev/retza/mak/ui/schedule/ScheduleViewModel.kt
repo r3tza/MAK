@@ -219,12 +219,11 @@ class ScheduleViewModel(
         // Hidden study programs are neither filter options, legend entries, cancelled classes nor markers.
         val visible = inputs.data.visibleTo(inputs.display)
         val data = visible.data
-        val minimumBreak = inputs.display.minimumBreakMinutes
         val programs = data.visibleAssignments(inputs.display)
         val activeFilter = control.courseFilterId.takeIf { id ->
             id == "all" || programs.any { it.id == id }
         } ?: "all"
-        val selectedPlan = activePlanProvider.resolve(visible, control.scheduleDate, minimumBreak)
+        val selectedPlan = activePlanProvider.resolve(visible, control.scheduleDate, inputs.display)
         val selected = selectedPlan.schedule
         val filtered = selected.occurrences.filter {
             activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
@@ -260,7 +259,7 @@ class ScheduleViewModel(
         val calendarPlan = if (control.calendarDate == control.scheduleDate) {
             selectedPlan
         } else {
-            activePlanProvider.resolve(visible, control.calendarDate, minimumBreak)
+            activePlanProvider.resolve(visible, control.calendarDate, inputs.display)
         }
         val calendarSchedule = calendarPlan.schedule
         val calendarFiltered = calendarSchedule.occurrences.filter {

@@ -7,6 +7,7 @@ import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.ActivePlanData
+import dev.retza.mak.domain.PlanDisplayLimits
 import dev.retza.mak.export.ImportHandle
 import dev.retza.mak.export.ImportPreparation
 import dev.retza.mak.export.ImportSummary
@@ -93,10 +94,9 @@ class SettingsViewModel(
     private val preferencesSnapshot = combine(
         preferences.theme,
         preferences.collisionNotifications,
-        preferences.gapThresholdMinutes,
         preferences.planDisplay
-    ) { theme, notifications, gapThresholdMinutes, display ->
-        PreferencesSnapshot(theme, notifications, gapThresholdMinutes, display.minimumBreakMinutes)
+    ) { theme, notifications, display ->
+        PreferencesSnapshot(theme, notifications, display.gapThresholdMinutes, display.minimumBreakMinutes)
     }
 
     val settings: StateFlow<SettingsUiState> = combine(
@@ -352,14 +352,14 @@ private fun buildSettingsState(
         SettingsOptionUi("light", "Jasny", preferences.theme == ThemeMode.Light),
         SettingsOptionUi("dark", "Ciemny", preferences.theme == ThemeMode.Dark)
     ),
-    gapThresholdOptions = gapThresholdOptions.map { minutes ->
+    gapThresholdOptions = PlanDisplayLimits.gapThresholdOptions.map { minutes ->
         SettingsOptionUi(
             id = minutes.toString(),
             label = "$minutes min",
             isSelected = preferences.gapThresholdMinutes == minutes
         )
     },
-    minimumBreakOptions = minimumBreakOptions.map { minutes ->
+    minimumBreakOptions = PlanDisplayLimits.minimumBreakOptions.map { minutes ->
         SettingsOptionUi(
             id = minutes.toString(),
             label = "$minutes min",
@@ -392,7 +392,5 @@ private fun buildSettingsState(
 
 private val notificationHourOptions = listOf(18, 19, 20, 21, 22)
 private val notificationLeadOptions = listOf(15L, 30L, 45L, 60L)
-private val gapThresholdOptions = listOf(20, 30, 45, 60)
-private val minimumBreakOptions = listOf(0, 5, 10, 15, 20)
 
 private val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.forLanguageTag("pl-PL"))

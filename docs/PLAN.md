@@ -349,6 +349,8 @@ Kryterium zakończenia: testy przechodzą, zrzuty się nie zmieniły, w `buildDe
 
 ## 5. Przenieś próg okienek do PlanDisplaySettings i wydziel kopię kalendarza (I-85)
 
+Stan: zrobione. `TodayViewModel` nie ma już parametru `preferences`; `InMemorySettingsPreferences` ustawia próg przez `initialPlanDisplay`. Ręcznej zmiany progu na „Dzisiaj” nie sprawdzono, bo w dniu sprawdzenia (sobota) dane demonstracyjne nie miały okienek.
+
 Cel: próg okienek płynie razem z planem jak minimalna przerwa, a liczbę okienek zwraca `ActivePlan` (A5, decyzja użytkownika z 2026-10-10: na wypadek pokazania okienek na widgecie albo w powiadomieniach). Granice 20 minut są w jednym obiekcie domenowym. Kopia kalendarza z korektami i sprzątanie osieroconego kalendarza są w jednej funkcji każde (J1), zanim I-81 doda do kalendarza dni wolne.
 
 Pliki: `domain/PlanDisplaySettings.kt`, `domain/ActivePlanProvider.kt`, `domain/CollisionNotificationPlanner.kt`, `ui/settings/SettingsPreferences.kt`, `ui/settings/DataStoreSettingsPreferences.kt`, `ui/settings/SettingsViewModel.kt`, `ui/today/TodayViewModel.kt`, `ui/schedule/ScheduleViewModel.kt`, `data/repository/SemesterRepository.kt`; testy `domain/ActivePlanProviderTest.kt`, `ui/today/TodayViewModelTest.kt`, `ui/settings/SettingsViewModelTest.kt`, `ui/settings/InMemorySettingsPreferences.kt`, `ui/FakeSemesterRepository.kt` (jeśli implementuje `SettingsPreferences`), Android `notifications/CollisionAlarmSchedulerTest.kt`, `sync/RoomPlanSyncGatewayTest.kt`, `ui/settings/SettingsPreferencesTest.kt`, `data/RoomPersistenceTest.kt`; dokument `docs/ARCHITECTURE.md`.

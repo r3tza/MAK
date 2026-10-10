@@ -91,7 +91,7 @@ class CollisionNotificationPlanner(
         val visible = inputs.data.visibleTo(inputs.display)
         for (offset in 0 until settings.horizonDays) {
             val date = today.plusDays(offset)
-            val groups = collisionNotificationGroups(activePlanProvider.resolve(visible, date, inputs.display.minimumBreakMinutes).collisions)
+            val groups = collisionNotificationGroups(activePlanProvider.resolve(visible, date, inputs.display).collisions)
             if (groups.isEmpty()) continue
             if (settings.eveningEnabled) {
                 val from = date.minusDays(1).atTime(settings.eveningHour)

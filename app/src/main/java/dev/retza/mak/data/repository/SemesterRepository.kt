@@ -2,6 +2,7 @@ package dev.retza.mak.data.repository
 
 import androidx.room.withTransaction
 import dev.retza.mak.data.database.AppDatabase
+import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
 import java.time.DayOfWeek
 import kotlinx.coroutines.flow.Flow
@@ -216,10 +217,8 @@ class RoomSemesterRepository(
                 semesterPrograms.update(existing.copy(academicCalendarId = academicCalendarId))
                 // Like the other reassignments, a calendar left without programs is removed.
                 val previousCalendarId = existing.academicCalendarId
-                if (previousCalendarId != academicCalendarId &&
-                    calendars.countAssignments(previousCalendarId) == 0
-                ) {
-                    calendars.deleteById(previousCalendarId)
+                if (previousCalendarId != academicCalendarId) {
+                    deleteCalendarIfOrphaned(previousCalendarId)
                 }
                 existing.id
             }
@@ -246,17 +245,7 @@ class RoomSemesterRepository(
                 }
                 programEntity.id
             }
-            val calendarId = calendars.insert(
-                dev.retza.mak.data.entity.AcademicCalendarEntity(
-                    semesterId = semesterId,
-                    startDate = source.startDate,
-                    endDate = source.endDate,
-                    firstWeekType = source.firstWeekType
-                )
-            )
-            weekOverrides.getForCalendar(source.id).forEach { override ->
-                weekOverrides.insert(override.copy(id = 0, academicCalendarId = calendarId))
-            }
+            val calendarId = copyCalendarWithOverrides(source)
             val semesterProgramId = semesterPrograms.insert(
                 SemesterProgramEntity(
                     semesterId = semesterId,
@@ -321,17 +310,7 @@ class RoomSemesterRepository(
                 ?: error("Assignment does not exist")
             val source = calendars.findById(assignment.academicCalendarId)
                 ?: error("Calendar does not exist")
-            val newCalendarId = calendars.insert(
-                dev.retza.mak.data.entity.AcademicCalendarEntity(
-                    semesterId = source.semesterId,
-                    startDate = source.startDate,
-                    endDate = source.endDate,
-                    firstWeekType = source.firstWeekType
-                )
-            )
-            weekOverrides.getForCalendar(source.id).forEach { override ->
-                weekOverrides.insert(override.copy(id = 0, academicCalendarId = newCalendarId))
-            }
+            val newCalendarId = copyCalendarWithOverrides(source)
             semesterPrograms.update(assignment.copy(academicCalendarId = newCalendarId))
             SetupConfigurationIds(
                 semesterId = assignment.semesterId,
@@ -353,8 +332,8 @@ class RoomSemesterRepository(
         }
         val previousCalendarId = assignment.academicCalendarId
         semesterPrograms.update(assignment.copy(academicCalendarId = calendarId))
-        if (previousCalendarId != calendarId && calendars.countAssignments(previousCalendarId) == 0) {
-            calendars.deleteById(previousCalendarId)
+        if (previousCalendarId != calendarId) {
+            deleteCalendarIfOrphaned(previousCalendarId)
         }
         SetupConfigurationIds(
             semesterId = assignment.semesterId,
@@ -385,10 +364,8 @@ class RoomSemesterRepository(
                 "Calendar must belong to the semester"
             }
             semesterPrograms.update(entity)
-            if (existing.academicCalendarId != entity.academicCalendarId &&
-                calendars.countAssignments(existing.academicCalendarId) == 0
-            ) {
-                calendars.deleteById(existing.academicCalendarId)
+            if (existing.academicCalendarId != entity.academicCalendarId) {
+                deleteCalendarIfOrphaned(existing.academicCalendarId)
             }
         }
         return entity.id
@@ -398,9 +375,7 @@ class RoomSemesterRepository(
         database.withTransaction {
             val existing = semesterPrograms.findById(id) ?: return@withTransaction
             semesterPrograms.deleteById(id)
-            if (calendars.countAssignments(existing.academicCalendarId) == 0) {
-                calendars.deleteById(existing.academicCalendarId)
-            }
+            deleteCalendarIfOrphaned(existing.academicCalendarId)
         }
     }
 
@@ -464,10 +439,8 @@ class RoomSemesterRepository(
             } else {
                 val previousCalendarId = existingAssignment.academicCalendarId
                 semesterPrograms.update(existingAssignment.copy(academicCalendarId = calendarId))
-                if (previousCalendarId != calendarId &&
-                    calendars.countAssignments(previousCalendarId) == 0
-                ) {
-                    calendars.deleteById(previousCalendarId)
+                if (previousCalendarId != calendarId) {
+                    deleteCalendarIfOrphaned(previousCalendarId)
                 }
                 existingAssignment.id
             }
@@ -511,4 +484,25 @@ class RoomSemesterRepository(
     }
 
     override suspend fun deleteWeekOverride(id: Long) = weekOverrides.deleteById(id)
+
+    /** A new calendar with the dates, rhythm and week overrides of [source] (`ARCHITECTURE.md`, section 7). */
+    private suspend fun copyCalendarWithOverrides(source: AcademicCalendarEntity): Long {
+        val calendarId = calendars.insert(
+            AcademicCalendarEntity(
+                semesterId = source.semesterId,
+                startDate = source.startDate,
+                endDate = source.endDate,
+                firstWeekType = source.firstWeekType
+            )
+        )
+        weekOverrides.getForCalendar(source.id).forEach { override ->
+            weekOverrides.insert(override.copy(id = 0, academicCalendarId = calendarId))
+        }
+        return calendarId
+    }
+
+    /** Removes a calendar no study program uses any more, with its week overrides. */
+    private suspend fun deleteCalendarIfOrphaned(calendarId: Long) {
+        if (calendars.countAssignments(calendarId) == 0) calendars.deleteById(calendarId)
+    }
 }

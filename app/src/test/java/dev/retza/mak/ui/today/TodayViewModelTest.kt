@@ -2,6 +2,7 @@ package dev.retza.mak.ui.today
 
 import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.domain.ActivePlanProvider
+import dev.retza.mak.domain.PlanDisplaySettings
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.activePlanSource
@@ -70,7 +71,9 @@ class TodayViewModelTest {
             startTime = LocalTime.of(11, 1),
             endTime = LocalTime.of(12, 0)
         )
-        val preferences = InMemorySettingsPreferences(initialGapThresholdMinutes = 30)
+        val preferences = InMemorySettingsPreferences(
+            initialPlanDisplay = PlanDisplaySettings(minimumBreakMinutes = 0, gapThresholdMinutes = 30)
+        )
         val viewModel = todayViewModel(repository, preferences = preferences)
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
@@ -175,7 +178,6 @@ class TodayViewModelTest {
         preferences: InMemorySettingsPreferences = InMemorySettingsPreferences()
     ) = TodayViewModel(
         activePlanSource(repository, preferences),
-        preferences,
         clock,
         ActivePlanProvider()
     )

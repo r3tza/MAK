@@ -196,7 +196,6 @@ class CollisionAlarmSchedulerTest {
         override val theme: Flow<ThemeMode> = flowOf(ThemeMode.System)
         override val collisionNotifications: Flow<CollisionNotificationPreferences> =
             flowOf(CollisionNotificationPreferences(enabled = true))
-        override val gapThresholdMinutes: Flow<Int> = flowOf(30)
         override val planDisplay: Flow<PlanDisplaySettings> = flowOf(PlanDisplaySettings.DEFAULT)
         override suspend fun setTheme(mode: ThemeMode) = Unit
         override suspend fun setGapThresholdMinutes(minutes: Int) = Unit
