@@ -79,7 +79,7 @@ fun OccurrenceDetailsScreen(
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
         ) {
-            OccurrenceHeader(title = state.subjectName.ifBlank { state.title })
+            OccurrenceHeader(title = state.subjectName.ifBlank { "Szczegóły terminu" })
             StatusSummary(state)
             state.conflictLabel?.let { label ->
                 MakConflictNote(
@@ -135,7 +135,7 @@ private fun OccurrenceBottomActions(
     onOpenOccurrenceEdit: () -> Unit,
     onRestoreOccurrence: () -> Unit
 ) {
-    val canChange = state.canChangeOccurrence || state.canMoveOccurrence
+    val canChange = state.canChangeOccurrence
     if (!state.canRestoreOccurrence && !canChange) return
     // The action stands outside the scrolling content, so it gets the same width limit.
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
@@ -262,7 +262,7 @@ private fun StatusSummary(state: OccurrenceDetailsUiState) {
         ) {
             Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
             Text(
-                text = state.statusLabel ?: state.status.label(),
+                text = state.status.label(),
                 color = tint,
                 fontWeight = FontWeight.SemiBold,
                 style = MaterialTheme.typography.bodyMedium

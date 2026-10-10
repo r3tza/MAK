@@ -14,6 +14,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dev.retza.mak.export.ImportSummary
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
@@ -427,7 +428,7 @@ class SettingsScreenTest {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     ImportPreviewScreen(
                         state = SettingsUiState(
-                            importPreview = ImportPreviewUi(
+                            importPreview = ImportSummary(
                                 semesterCount = 2,
                                 programCount = 3,
                                 classCount = 10,

@@ -56,7 +56,7 @@ private data class SettingsLocalState(
     val isSelectingSemester: Boolean = false,
     val isSavingTheme: Boolean = false,
     val isExporting: Boolean = false,
-    val importPreview: ImportPreviewUi? = null,
+    val importPreview: ImportSummary? = null,
     val importErrorMessage: String? = null,
     val isPreparingImport: Boolean = false,
     val isReplacingData: Boolean = false,
@@ -274,7 +274,7 @@ class SettingsViewModel(
 
                 is ImportPreparation.Ready -> {
                     pendingImport = preparation.handle
-                    local.update { it.copy(importPreview = preparation.summary.toImportPreviewUi()) }
+                    local.update { it.copy(importPreview = preparation.summary) }
                     effectsChannel.trySend(SettingsEffect.OpenImportPreview)
                 }
             }
@@ -316,16 +316,6 @@ class SettingsViewModel(
         }
     }
 }
-
-private fun ImportSummary.toImportPreviewUi(): ImportPreviewUi = ImportPreviewUi(
-    semesterCount = semesterCount,
-    programCount = programCount,
-    classCount = classCount,
-    overrideCount = overrideCount,
-    noteCount = noteCount,
-    changeCount = changeCount,
-    activeSemesterName = activeSemesterName
-)
 
 private fun buildSettingsState(
     semesterList: List<SemesterRecord>,

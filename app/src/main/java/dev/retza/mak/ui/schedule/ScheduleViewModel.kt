@@ -14,6 +14,7 @@ import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
 import dev.retza.mak.domain.cancelledOccurrences
 import dev.retza.mak.domain.collisionLabels
+import dev.retza.mak.domain.occurrenceId
 import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.SemesterProgram
 import dev.retza.mak.domain.allProgramsHidden
@@ -351,7 +352,7 @@ class ScheduleViewModel(
             .map { cancelled ->
                 val item = cancelled.classItem
                 ClassItemUi(
-                    id = "${item.id}:$date",
+                    id = occurrenceId(item.id, date),
                     name = item.name,
                     type = item.type,
                     courseName = cancelled.studyProgram?.name.orEmpty(),

@@ -6,6 +6,7 @@ import dev.retza.mak.domain.ClassItem
 import dev.retza.mak.domain.PlanDisplaySettings
 import dev.retza.mak.domain.StudyProgram
 import androidx.compose.ui.unit.dp
+import dev.retza.mak.ui.components.parseHexColor
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -271,11 +272,9 @@ class WidgetPresenterTest {
         val compactPolicy = widgetLayoutPolicy(widgetLayoutMode(180.dp, 110.dp))
         val mediumPolicy = widgetLayoutPolicy(widgetLayoutMode(180.dp, 175.dp))
         val largePolicy = widgetLayoutPolicy(widgetLayoutMode(180.dp, 240.dp))
-        assertTrue(widgetShouldShowConflict(item, compactPolicy))
+        assertTrue(widgetShouldShowConflict(item))
         assertFalse(widgetShouldShowNotes(item, compactPolicy))
-        assertTrue(widgetShouldShowConflict(item, mediumPolicy))
         assertFalse(widgetShouldShowNotes(item, mediumPolicy))
-        assertTrue(widgetShouldShowConflict(item, largePolicy))
         assertTrue(widgetShouldShowNotes(item, largePolicy))
     }
 
@@ -290,8 +289,8 @@ class WidgetPresenterTest {
 
     @Test
     fun invalidColorAndLongTextAreHandledWithoutBreakingWidgetText() {
-        assertNull(parseWidgetColor("#not-a-color"))
-        assertNotNull(parseWidgetColor("#137B71"))
+        assertNull(parseHexColor("#not-a-color"))
+        assertNotNull(parseHexColor("#137B71"))
         assertEquals("abcd…", truncateWidgetText("abcdefgh", 5))
         assertEquals("short", truncateWidgetText("short", 5))
     }

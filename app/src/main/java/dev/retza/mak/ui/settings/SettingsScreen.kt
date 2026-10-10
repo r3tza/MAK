@@ -54,6 +54,7 @@ import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.makRowFocus
 import dev.retza.mak.ui.polishPlural
+import dev.retza.mak.export.ImportSummary
 
 @Composable
 private fun ActiveSemesterField(
@@ -87,27 +88,15 @@ data class NotificationSettingsUi(
     val leadOptions: List<SettingsOptionUi> = emptyList()
 )
 
-data class ImportPreviewUi(
-    val semesterCount: Int,
-    val programCount: Int,
-    val classCount: Int,
-    val overrideCount: Int,
-    val noteCount: Int,
-    val changeCount: Int,
-    val activeSemesterName: String?
-)
-
 data class SettingsUiState(
     val semesters: List<SemesterUi> = emptyList(),
     val activeSemesterId: String? = null,
     val themeOptions: List<SettingsOptionUi> = emptyList(),
     val gapThresholdOptions: List<SettingsOptionUi> = emptyList(),
     val minimumBreakOptions: List<SettingsOptionUi> = emptyList(),
-    val notificationsDetails: String =
-        "Android może opóźnić powiadomienie o kilkanaście minut, aby oszczędzać baterię.",
     val semesterToDeleteId: String? = null,
     val isDeletingSemester: Boolean = false,
-    val importPreview: ImportPreviewUi? = null,
+    val importPreview: ImportSummary? = null,
     val importErrorMessage: String? = null,
     val isPreparingImport: Boolean = false,
     val isReplacingData: Boolean = false,
@@ -607,7 +596,7 @@ fun SettingsNotificationsScreen(
                 }
             }
         }
-        if (notifications.enabled) MakHelperText(state.notificationsDetails)
+        if (notifications.enabled) MakHelperText(NOTIFICATION_DELAY_NOTE)
     }
 }
 
@@ -721,3 +710,6 @@ private fun ImportStatRow(label: String, value: Int) {
         Text(value.toString(), fontWeight = FontWeight.SemiBold)
     }
 }
+
+private const val NOTIFICATION_DELAY_NOTE =
+    "Android może opóźnić powiadomienie o kilkanaście minut, aby oszczędzać baterię."

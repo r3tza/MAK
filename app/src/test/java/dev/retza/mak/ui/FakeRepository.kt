@@ -93,6 +93,7 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
     val events = mutableListOf<String>()
     var saveGate: CompletableDeferred<Unit>? = null
     var occurrenceDataGate: CompletableDeferred<Unit>? = null
+    var semesterProgramsGate: CompletableDeferred<Unit>? = null
     var failSaves = false
     var failSetupConfiguration = false
     var setActiveCount = 0
@@ -163,8 +164,10 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         observeSemesterData(semesterId).map { it?.toActivePlanData() }
 
     fun observeStudyPrograms(): Flow<List<StudyProgramEntity>> = studyProgramState
-    fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramEntity>> =
-        flowOf(semesterPrograms.filter { it.semesterId == semesterId })
+    fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramEntity>> = flow {
+        semesterProgramsGate?.await()
+        emit(semesterPrograms.filter { it.semesterId == semesterId })
+    }
     fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarEntity>> =
         flowOf(calendars.filter { it.semesterId == semesterId })
     fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>> =

@@ -46,7 +46,9 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import dev.retza.mak.MainActivity
+import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.components.courseShapeColor
+import dev.retza.mak.ui.components.parseHexColor
 import dev.retza.mak.ui.theme.MakOrange
 import dev.retza.mak.ui.theme.MakOrangeDark
 import dev.retza.mak.ui.theme.MakOrangeSoft
@@ -103,7 +105,7 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
         horizontalAlignment = Alignment.Start
     ) {
         WidgetHeader(state)
-        Spacer(GlanceModifier.height(layoutPolicy.headerSpacing))
+        Spacer(GlanceModifier.height(WidgetHeaderSpacing))
         when (state) {
             is WidgetUiState.NoActiveSemester -> WidgetMessage("Brak aktywnego semestru")
             is WidgetUiState.OutsideSemester -> WidgetMessage("Poza zakresem semestru")
@@ -212,7 +214,7 @@ private fun WidgetHeaderDetails(weekLabel: String, count: Int, collisionCount: I
         WidgetWeekLabel(weekLabel)
         Spacer(GlanceModifier.width(4.dp))
         Text(
-            text = widgetCountLabel(count),
+            text = classCountLabel(count),
             style = TextStyle(
                 color = GlanceTheme.colors.onSurfaceVariant,
                 fontSize = 11.sp
@@ -277,7 +279,7 @@ private fun WidgetOccurrenceRow(
                 .width(4.dp)
                 .height(layoutPolicy.accentHeight)
                 .then(
-                    parseWidgetColor(item.courseColor)
+                    item.courseColor?.let(::parseHexColor)
                         ?.let { GlanceModifier.background(widgetCourseColor(it)) }
                         ?: GlanceModifier.background(Color.Transparent)
                 )
@@ -325,7 +327,7 @@ private fun WidgetOccurrenceRow(
                     maxLines = 1
                 )
             }
-            if (widgetShouldShowConflict(item, layoutPolicy)) {
+            if (widgetShouldShowConflict(item)) {
                 WidgetConflictAlert(item)
             }
             if (widgetShouldShowNotes(item, layoutPolicy)) {
@@ -451,14 +453,3 @@ private fun widgetCourseColor(color: Color): androidx.glance.unit.ColorProvider 
 
 private val WidgetDayBackground = 0xFFFFFFFF.toInt()
 private val WidgetNightBackground = 0xFF202B40.toInt()
-
-internal fun parseWidgetColor(value: String?): Color? = runCatching {
-    val hex = value?.trim()?.removePrefix("#") ?: return null
-    val argb = when (hex.length) {
-        6 -> hex.toLong(16) or 0xFF000000L
-        8 -> hex.toLong(16)
-        else -> return null
-    }
-    Color(argb.toInt())
-}.getOrNull()
-

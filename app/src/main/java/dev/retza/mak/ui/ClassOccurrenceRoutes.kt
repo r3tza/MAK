@@ -9,6 +9,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.navigation.NavBackStackEntry
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
@@ -18,9 +19,11 @@ import androidx.navigation.navArgument
 import java.time.LocalDate
 import dev.retza.mak.ui.edit.ClassEditEffect
 import dev.retza.mak.ui.edit.ClassEditScreen
+import dev.retza.mak.ui.edit.classEditRecurrenceLabel
 import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.occurrence.OccurrenceDetailsScreen
 import dev.retza.mak.ui.occurrence.OccurrenceEffect
+import dev.retza.mak.ui.occurrence.OccurrenceArgs
 import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.occurrence.hasPlanDraft
 
@@ -59,12 +62,12 @@ internal fun NavGraphBuilder.classEditRoute(
         }
         var opened by rememberSaveable(entry.id) { mutableStateOf(false) }
         var openSucceeded by rememberSaveable(entry.id) { mutableStateOf(false) }
-        val classId = entry.arguments?.getString("classId")
+        val args = entry.occurrenceArgs()
         val date = entry.arguments?.getString("date")
-        LaunchedEffect(editing.ready, classId, date, opened) {
+        LaunchedEffect(editing.ready, args, date, opened) {
             if (!opened) {
-                openSucceeded = if (classId != null && date != null) {
-                    classEditViewModel.openEditFromFreshPlan("$classId:$date")
+                openSucceeded = if (args != null) {
+                    classEditViewModel.openEditFromFreshPlan(args.toRouteId())
                 } else {
                     classEditViewModel.openNewFromFreshPlan(date?.let(LocalDate::parse))
                     true
@@ -91,7 +94,7 @@ internal fun NavGraphBuilder.classEditRoute(
                 classEditViewModel.update {
                     it.copy(
                         recurrenceId = value,
-                        recurrenceLabel = recurrenceLabelForUi(value)
+                        recurrenceLabel = classEditRecurrenceLabel(value)
                     )
                 }
             },
@@ -120,19 +123,16 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
             navArgument("date") { type = NavType.StringType }
         )
     ) { entry ->
-        val occurrenceId = entry.arguments?.getString("classId")?.let { classId ->
-            entry.arguments?.getString("date")?.let { date -> "$classId:$date" }
-        }
+        val args = entry.occurrenceArgs()
+        val occurrenceId = args?.toRouteId()
         val editing = TrackPlanEditing(
             active = occurrenceViewModel.details.collectAsStateWithLifecycle().value.hasPlanDraft(),
             isActiveNow = { occurrenceViewModel.details.value.hasPlanDraft() }
         )
-        val classId = entry.arguments?.getString("classId")
-        val date = entry.arguments?.getString("date")
         var opened by rememberSaveable(entry.id) { mutableStateOf(false) }
-        LaunchedEffect(classId, date, opened) {
-            if (!opened && classId != null && date != null) {
-                occurrenceViewModel.open("$classId:$date")
+        LaunchedEffect(args, opened) {
+            if (!opened && args != null) {
+                occurrenceViewModel.open(args)
                 opened = true
             }
         }
@@ -239,10 +239,7 @@ internal fun occurrenceTopBarActions(
         if (details.canCancelOccurrence) {
             "Odwołaj termin" to editing.callback(
                 refreshBeforeFirstEdit = {
-                    val classId = occurrenceViewModel.selectedClassId.value
-                    val originalDate = occurrenceViewModel.details.value.baseDate
-                    if (classId == null || originalDate.isBlank()) false
-                    else occurrenceViewModel.refreshForEdit("$classId:$originalDate")
+                    occurrenceViewModel.shownRouteId()?.let { occurrenceViewModel.refreshForEdit(it) } ?: false
                 },
                 action = occurrenceViewModel::cancelOccurrence
             )
@@ -257,10 +254,7 @@ internal fun occurrenceTopBarActions(
         if (details.canDeleteBaseClass) {
             "Usuń zajęcia" to editing.callback(
                 refreshBeforeFirstEdit = {
-                    val classId = occurrenceViewModel.selectedClassId.value
-                    val originalDate = occurrenceViewModel.details.value.baseDate
-                    if (classId == null || originalDate.isBlank()) false
-                    else occurrenceViewModel.refreshForEdit("$classId:$originalDate")
+                    occurrenceViewModel.shownRouteId()?.let { occurrenceViewModel.refreshForEdit(it) } ?: false
                 },
                 action = occurrenceViewModel::requestClassDeletion
             )
@@ -268,9 +262,15 @@ internal fun occurrenceTopBarActions(
     )
 }
 
-private fun recurrenceLabelForUi(id: String): String = when (id) {
-    "a_week" -> "Tydzień A"
-    "b_week" -> "Tydzień B"
-    "once" -> "Jednorazowo"
-    else -> "Co tydzień"
+private fun NavBackStackEntry.occurrenceArgs(): OccurrenceArgs? {
+    val classId = arguments?.getString("classId")?.toLongOrNull() ?: return null
+    val date = arguments?.getString("date")?.let { runCatching { LocalDate.parse(it) }.getOrNull() } ?: return null
+    return OccurrenceArgs(classId, date)
+}
+
+/** The occurrence the details show now, as the route id the view model reloads before an edit. */
+private fun OccurrenceViewModel.shownRouteId(): String? {
+    val classId = selectedClassId.value ?: return null
+    val originalDate = runCatching { LocalDate.parse(details.value.baseDate) }.getOrNull() ?: return null
+    return OccurrenceArgs(classId, originalDate).toRouteId()
 }

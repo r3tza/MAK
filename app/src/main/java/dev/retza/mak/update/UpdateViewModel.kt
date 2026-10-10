@@ -2,7 +2,6 @@ package dev.retza.mak.update
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -75,8 +74,7 @@ class UpdateViewModel(
                 mutableState.update { current ->
                     current.copy(
                         automaticChecks = preferenceState.automaticChecks,
-                        showUpdateBanner = current.availableUpdate?.versionCode?.toLong()
-                            ?.let { it != preferenceState.dismissedVersionCode } == true
+                        showUpdateBanner = showsBanner(current.availableUpdate, preferenceState.dismissedVersionCode)
                     )
                 }
             }
@@ -107,8 +105,7 @@ class UpdateViewModel(
             mutableState.update { current ->
                 val checked = current.withCheckResult(result, hideAutomaticError = true)
                 checked.copy(
-                    showUpdateBanner = checked.availableUpdate?.versionCode?.toLong()
-                        ?.let { it != pref.dismissedVersionCode } == true
+                    showUpdateBanner = showsBanner(checked.availableUpdate, pref.dismissedVersionCode)
                 )
             }
         }
@@ -133,11 +130,7 @@ class UpdateViewModel(
                     requiredMinSdk = null
                 )
             }
-            val result = try {
-                checker.check()
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            }
+            val result = checker.check()
             mutableState.update { current -> current.withCheckResult(result) }
         }
     }
@@ -209,3 +202,7 @@ private fun UpdateUiState.withCheckResult(result: UpdateCheckResult, hideAutomat
         )
     }
 }
+
+/** The banner offers an available update until the user dismisses that version. */
+private fun showsBanner(update: UpdateInfo?, dismissedVersionCode: Long?): Boolean =
+    update != null && update.versionCode.toLong() != dismissedVersionCode

@@ -5,8 +5,7 @@ import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.uniqueCollisionCount
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
-import java.util.Locale
+import dev.retza.mak.ui.todayTitleFormatter
 
 class WidgetPresenter {
     fun present(
@@ -64,7 +63,4 @@ class WidgetPresenter {
     }
 }
 
-internal fun widgetDateLabel(date: LocalDate): String = date.format(widgetDateFormatter)
-
-private val widgetDateFormatter =
-    DateTimeFormatter.ofPattern("EEEE, d MMMM", Locale.forLanguageTag("pl-PL"))
+internal fun widgetDateLabel(date: LocalDate): String = date.format(todayTitleFormatter)

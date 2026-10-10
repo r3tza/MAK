@@ -52,7 +52,6 @@ class OccurrenceDetailsScreenTest {
                 sharedNote = "Notatka wspólna",
                 occurrenceNoteDraft = "Notatka tylko dla tego terminu",
                 canChangeOccurrence = true,
-                canMoveOccurrence = true,
                 canRestoreOccurrence = false,
                 canSaveOccurrenceEdit = true
             )
@@ -161,11 +160,9 @@ class OccurrenceDetailsScreenTest {
                             startTime = "09:00",
                             endTime = "10:30",
                             sharedNote = "Wspólna",
-                            sharedNoteDraft = "Wspólna",
+                            sharedNoteDraft = "Wspólna zmieniona",
                             occurrenceNote = "Daty",
-                            occurrenceNoteDraft = "Daty",
-                            canSaveSharedNote = true,
-                            canSaveOccurrenceNote = true
+                            occurrenceNoteDraft = "Daty zmienione"
                         ),
                         onDeleteBaseClass = {},
                         onDismissDeleteConfirmation = {},
@@ -219,7 +216,6 @@ class OccurrenceDetailsScreenTest {
                             baseStartTime = "11:00",
                             baseEndTime = "12:30",
                             canChangeOccurrence = false,
-                            canMoveOccurrence = false,
                             canRestoreOccurrence = true
                         ),
                         onDeleteBaseClass = {},

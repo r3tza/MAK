@@ -15,12 +15,13 @@ import dev.retza.mak.domain.ClassValidator
 import dev.retza.mak.domain.Recurrence as DomainRecurrence
 import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.calendarForAssignment
+import dev.retza.mak.ui.dayNames
+import dev.retza.mak.ui.occurrence.OccurrenceArgs
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
-import java.time.DayOfWeek
 import java.time.LocalDate
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -71,16 +72,7 @@ class ClassEditViewModel(
         }
         viewModelScope.launch {
             activePlan.collect { inputs ->
-                val hidden = inputs?.display?.hiddenProgramIds.orEmpty()
-                val optionsData = editPlanData ?: inputs?.data
-                state.update { current ->
-                    val calendar = optionsData?.calendarForAssignment(current.semesterProgramId)
-                    current.copy(
-                        courseOptions = optionsData?.courseOptions(hidden).orEmpty(),
-                        semesterStartDate = calendar?.startDate?.toString(),
-                        semesterEndDate = calendar?.endDate?.toString()
-                    )
-                }
+                state.update { withActiveOptions(it, editPlanData ?: inputs?.data) }
             }
         }
     }
@@ -100,7 +92,7 @@ class ClassEditViewModel(
     }
 
     suspend fun openEditFromFreshPlan(occurrenceId: String): Boolean {
-        val classId = occurrenceId.substringBefore(':').toLongOrNull() ?: return false
+        val classId = OccurrenceArgs.parse(occurrenceId)?.classId ?: return false
         editingClassId = null
         editPlanData = null
         state.value = withActiveOptions(defaultClassEditState())
@@ -128,7 +120,7 @@ class ClassEditViewModel(
                 courseName = program?.name.orEmpty(),
                 semesterProgramId = item.semesterProgramId,
                 type = item.type,
-                dayLabel = classEditDayNames[item.dayOfWeek].orEmpty(),
+                dayLabel = dayNames[item.dayOfWeek].orEmpty(),
                 startTime = item.startTime.toString(),
                 endTime = item.endTime.toString(),
                 recurrenceId = recurrenceId,
@@ -225,7 +217,7 @@ class ClassEditViewModel(
             ) {
                 put(ClassEditField.Date, FieldErrorUi("Data musi należeć do kalendarza kierunku."))
             }
-            if (editor.dayLabel !in classEditDayNames.values) {
+            if (editor.dayLabel !in dayNames.values) {
                 put(ClassEditField.Day, FieldErrorUi("Wybierz dzień tygodnia."))
             }
             if (editor.type.isBlank()) {
@@ -245,7 +237,7 @@ class ClassEditViewModel(
             name = editor.name.trim(),
             type = editor.type,
             teacherName = editor.teacher.trim().ifEmpty { null },
-            dayOfWeek = classEditDayNames.entries.first { it.value == editor.dayLabel }.key,
+            dayOfWeek = dayNames.entries.first { it.value == editor.dayLabel }.key,
             startTime = start,
             endTime = end,
             room = editor.room.trim().ifEmpty { null },
@@ -326,16 +318,7 @@ private fun ActivePlanData.courseOptions(hiddenProgramIds: Set<String>): List<Cl
         ClassCourseOptionUi(assignment.id, program.name, isHidden = program.id in hiddenProgramIds)
     }
 
-private fun defaultClassEditState() = ClassEditUiState(
-    typeOptions = listOf("Wykład", "Ćwiczenia", "Laboratorium", "Projekt", "Seminarium", "Inne"),
-    dayOptions = classEditDayNames.values.toList(),
-    recurrenceOptions = listOf(
-        RecurrenceOptionUi("every_week", "Co tydzień"),
-        RecurrenceOptionUi("a_week", "Tydzień A"),
-        RecurrenceOptionUi("b_week", "Tydzień B"),
-        RecurrenceOptionUi("once", "Jednorazowo")
-    )
-)
+private fun defaultClassEditState() = ClassEditUiState()
 
 private fun classEditRecurrenceFromId(id: String): DomainRecurrence = when (id) {
     "a_week" -> DomainRecurrence.A_WEEK
@@ -344,27 +327,10 @@ private fun classEditRecurrenceFromId(id: String): DomainRecurrence = when (id) 
     else -> DomainRecurrence.EVERY_WEEK
 }
 
-private fun classEditRecurrenceLabel(id: String): String = when (id) {
-    "a_week" -> "Tydzień A"
-    "b_week" -> "Tydzień B"
-    "once" -> "Jednorazowo"
-    else -> "Co tydzień"
-}
-
 private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
 
 private fun String.toLocalTimeOrNull(): java.time.LocalTime? =
     runCatching { java.time.LocalTime.parse(this) }.getOrNull()
-
-private val classEditDayNames = linkedMapOf(
-    DayOfWeek.MONDAY to "Poniedziałek",
-    DayOfWeek.TUESDAY to "Wtorek",
-    DayOfWeek.WEDNESDAY to "Środa",
-    DayOfWeek.THURSDAY to "Czwartek",
-    DayOfWeek.FRIDAY to "Piątek",
-    DayOfWeek.SATURDAY to "Sobota",
-    DayOfWeek.SUNDAY to "Niedziela"
-)
 
 private const val KEY_EDITING_CLASS_ID = "class_edit_editing_class_id"
 private const val KEY_DRAFT = "class_edit_draft"

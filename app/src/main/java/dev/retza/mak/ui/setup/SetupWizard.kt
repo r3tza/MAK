@@ -108,7 +108,6 @@ fun SetupWizard(
             SetupStep.Classes -> if (state.isSemesterActive) {
                 ClassesStep(
                     programNames = state.semesterProgramNames,
-                    canSkip = state.canSkipClasses,
                     onAddClass = onAddClass,
                     onAddAnotherProgram = onAddAnotherProgram,
                     onFinish = onFinish,
@@ -357,7 +356,6 @@ private fun InactiveSemesterClassesStep(
 @Composable
 private fun ClassesStep(
     programNames: List<String>,
-    canSkip: Boolean,
     onAddClass: () -> Unit,
     onAddAnotherProgram: () -> Unit,
     onFinish: () -> Unit,
@@ -367,9 +365,7 @@ private fun ClassesStep(
         SemesterProgramsNote(programNames)
         MakPrimaryAction(text = "Dodaj zajęcia", onClick = onAddClass)
         MakSecondaryAction(text = "Dodaj kolejny kierunek", onClick = onAddAnotherProgram)
-        if (canSkip) {
-            MakSecondaryAction(text = "Przejdź do Dzisiaj", onClick = onFinish)
-        }
+        MakSecondaryAction(text = "Przejdź do Dzisiaj", onClick = onFinish)
         MakTextAction(text = "Wstecz", onClick = onBack)
     }
 }

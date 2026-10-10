@@ -1,6 +1,7 @@
 package dev.retza.mak.ui.occurrence
 
 import androidx.compose.runtime.Immutable
+import dev.retza.mak.domain.noteContentChanged
 import dev.retza.mak.ui.components.FieldErrorUi
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
@@ -22,7 +23,6 @@ enum class OccurrenceEditField {
 
 @Immutable
 data class OccurrenceDetailsUiState(
-    val title: String = "Szczegóły terminu",
     val subjectName: String = "",
     val courseName: String = "",
     val typeLabel: String = "",
@@ -37,7 +37,6 @@ data class OccurrenceDetailsUiState(
     val originalDateLabel: String? = null,
     val targetDateLabel: String? = null,
     val status: OccurrenceStatusUi = OccurrenceStatusUi.Scheduled,
-    val statusLabel: String? = null,
     val conflictLabel: String? = null,
     val conflictWith: String? = null,
     val sharedNote: String? = null,
@@ -64,8 +63,6 @@ data class OccurrenceDetailsUiState(
     val canSaveOccurrenceEdit: Boolean = false,
     val isSavingSharedNote: Boolean = false,
     val isSavingOccurrenceNote: Boolean = false,
-    val canSaveSharedNote: Boolean = false,
-    val canSaveOccurrenceNote: Boolean = false,
     val showDeleteConfirmation: Boolean = false,
     val canEditBaseClass: Boolean = true,
     val canDeleteBaseClass: Boolean = true,
@@ -73,9 +70,13 @@ data class OccurrenceDetailsUiState(
     val notFound: Boolean = false,
     val canCancelOccurrence: Boolean = true,
     val canChangeOccurrence: Boolean = true,
-    val canMoveOccurrence: Boolean = true,
     val canRestoreOccurrence: Boolean = false
-)
+) {
+    val canSaveSharedNote: Boolean
+        get() = noteContentChanged(sharedNoteDraft, sharedNote)
+    val canSaveOccurrenceNote: Boolean
+        get() = noteContentChanged(occurrenceNoteDraft, occurrenceNote)
+}
 
 /** Details block a downloaded plan only while the user has typed or opened something to confirm. */
 fun OccurrenceDetailsUiState.hasPlanDraft(): Boolean =

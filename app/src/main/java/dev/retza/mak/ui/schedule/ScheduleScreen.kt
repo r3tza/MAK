@@ -118,8 +118,7 @@ data class ScheduleUiState(
     // False when the filter shows several calendars, so a week correction would have no target.
     val canCorrectWeek: Boolean = true,
     // Every study program of the semester is hidden on this phone; the list gives way to a note.
-    val allProgramsHidden: Boolean = false,
-    val emptyMessage: String = "Brak zajęć w tym dniu dla wybranego kierunku."
+    val allProgramsHidden: Boolean = false
 )
 
 @Composable
@@ -228,7 +227,7 @@ private fun ListView(
         }
         MakRowTitle(title = state.selectedDayLabel, meta = state.selectedDayCountLabel)
         if (state.items.isEmpty()) {
-            MakEmptyState(state.emptyMessage)
+            MakEmptyState("Brak zajęć w tym dniu dla wybranego kierunku.")
         } else {
                 Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 state.items.forEach { item ->

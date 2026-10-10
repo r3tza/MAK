@@ -71,7 +71,6 @@ class OccurrenceViewModel(
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
     private var originalDate: LocalDate? = null
-    private var noteDate: LocalDate? = null
     private var openJob: Job? = null
     private var occurrenceStateOperationRunning = false
     private var editPlanData: ActivePlanData? = null
@@ -87,7 +86,6 @@ class OccurrenceViewModel(
         openJob?.cancel()
         selectedClassIdState.value = null
         originalDate = null
-        noteDate = null
         state.value = derive(emptyOccurrenceDetails())
         currentArgs = args
         openJob = viewModelScope.launch {
@@ -106,14 +104,12 @@ class OccurrenceViewModel(
                     }
                 } else if (first) {
                     originalDate = built.baseDate.toLocalDateOrNull()
-                    noteDate = built.baseDate.toLocalDateOrNull()
                     selectedClassIdState.value = shown.classId
                     state.value = derive(built)
                 } else {
                     val current = state.value
                     if (!current.showEditDialog) {
                         originalDate = built.baseDate.toLocalDateOrNull()
-                        noteDate = built.baseDate.toLocalDateOrNull()
                     }
                     selectedClassIdState.value = shown.classId
                     state.value = derive(current.withFreshData(built))
@@ -135,7 +131,6 @@ class OccurrenceViewModel(
         editPlanData = inputs.data
         currentArgs = args
         originalDate = built.baseDate.toLocalDateOrNull()
-        noteDate = built.baseDate.toLocalDateOrNull()
         selectedClassIdState.value = args.classId
         state.value = derive(built)
         return true
@@ -144,7 +139,6 @@ class OccurrenceViewModel(
     private fun clearMissingOccurrence() {
         selectedClassIdState.value = null
         originalDate = null
-        noteDate = null
         state.value = derive(emptyOccurrenceDetails().copy(notFound = true))
     }
 
@@ -307,7 +301,7 @@ class OccurrenceViewModel(
         if (state.value.isSavingOccurrenceNote) return
         val data = editPlanData ?: activePlan.value?.data ?: return
         val classId = selectedClassIdState.value ?: return
-        val date = noteDate ?: return
+        val date = originalDate ?: return
         val draft = state.value
         val note = draft.occurrenceNoteDraft.trim().ifEmpty { null }
         if (!noteContentChanged(draft.occurrenceNoteDraft, draft.occurrenceNote)) return
@@ -445,7 +439,6 @@ class OccurrenceViewModel(
         val built = buildDetails(fresh, args) ?: return
         currentArgs = args
         originalDate = built.baseDate.toLocalDateOrNull()
-        noteDate = built.baseDate.toLocalDateOrNull()
         selectedClassIdState.value = classId
         state.value = derive(built)
     }
@@ -514,7 +507,6 @@ class OccurrenceViewModel(
                 ?.endDate?.toString().orEmpty(),
             canCancelOccurrence = canEdit && change == null,
             canChangeOccurrence = canEdit,
-            canMoveOccurrence = canEdit,
             canRestoreOccurrence = change != null
         )
     }
@@ -551,16 +543,13 @@ class OccurrenceViewModel(
     }
 
     private fun derive(value: OccurrenceDetailsUiState): OccurrenceDetailsUiState = value.copy(
-        canSaveOccurrenceEdit = canSaveOccurrenceEdit(value),
-        canSaveSharedNote = noteContentChanged(value.sharedNoteDraft, value.sharedNote),
-        canSaveOccurrenceNote = noteContentChanged(value.occurrenceNoteDraft, value.occurrenceNote)
+        canSaveOccurrenceEdit = canSaveOccurrenceEdit(value)
     )
 }
 
 private fun emptyOccurrenceDetails(): OccurrenceDetailsUiState = OccurrenceDetailsUiState(
     canCancelOccurrence = false,
     canChangeOccurrence = false,
-    canMoveOccurrence = false,
     canEditBaseClass = false,
     canDeleteBaseClass = false
 )

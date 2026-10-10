@@ -98,7 +98,7 @@ fun MakApp(
 
     val startSetup: () -> Unit = {
         if (state.hasLoadedData) {
-            openSetup(navController, resumeExisting = state.setupResume != null)
+            openSetup(navController, resumeExisting = state.canResumeSetup)
         }
     }
 

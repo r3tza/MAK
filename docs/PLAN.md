@@ -29,6 +29,8 @@ Kryterium zakończenia: kod i testy kompilują się, filtrowane testy JVM przech
 
 ## 2. Zastąp stałe pola stanu i kopie funkcji (I-84)
 
+Stan: zrobione. Różnice wobec opisu: lista kierunków kreatora używa istniejącego `SetupProgramOptionUi` zamiast nowego typu, a `semesterProgramNames` jest właściwością obliczaną; `canSaveOccurrenceEdit` zostaje w `derive()`, bo zależy od prywatnej logiki edycji terminu w `OccurrenceViewModel`, a obliczane są tylko flagi zapisu notatek; `includeTeacher` zostaje polem polityki widgetu ustawianym z `wide`; ręczne sprawdzenie aktualizacji nadal zawsze pokazuje baner (`withCheckResult`), a automatyczne i preferencje liczą go przez `showsBanner`. Trasy budują identyfikator terminu przez `NavBackStackEntry.occurrenceArgs()` i `OccurrenceViewModel.shownRouteId()`. Filtrowane testy JVM (`ui`, `widget`, `update`: 293 testy) przechodzą; testy Android kompilują się, nie były uruchamiane.
+
 Cel: stan ekranów nie przechowuje wartości stałych ani wynikających z innych pól, a widget i formularz używają wspólnych funkcji z `ui` (I5, G2, G3, H1, H3, B4 dla `AppViewModel`).
 
 Pliki: `ui/AppViewModel.kt`, `ui/MakNavHostApp.kt`, `ui/setup/SetupViewModel.kt`, `ui/setup/SetupWizard.kt`, `ui/occurrence/OccurrenceViewModel.kt`, `ui/occurrence/OccurrenceDetailsModels.kt`, `ui/occurrence/OccurrenceDetailsScreen.kt`, `ui/edit/ClassEditViewModel.kt`, `ui/settings/SettingsViewModel.kt`, `ui/settings/SettingsScreen.kt`, `ui/schedule/ScheduleViewModel.kt`, `ui/ClassOccurrenceRoutes.kt`, `update/UpdateViewModel.kt`, `widget/WidgetLayoutPolicy.kt`, `widget/MakTodayWidget.kt`, `widget/WidgetPresenter.kt` i testy.

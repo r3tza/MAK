@@ -20,6 +20,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import java.time.LocalDate
 import dev.retza.mak.ui.polishPlural
+import dev.retza.mak.ui.dayNames
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakDatePickerField
@@ -50,6 +51,18 @@ data class RecurrenceOptionUi(
     val id: String,
     val label: String
 )
+
+internal val classTypeOptions = listOf("Wykład", "Ćwiczenia", "Laboratorium", "Projekt", "Seminarium", "Inne")
+
+internal val classRecurrenceOptions = listOf(
+    RecurrenceOptionUi("every_week", "Co tydzień"),
+    RecurrenceOptionUi("a_week", "Tydzień A"),
+    RecurrenceOptionUi("b_week", "Tydzień B"),
+    RecurrenceOptionUi("once", "Jednorazowo")
+)
+
+internal fun classEditRecurrenceLabel(id: String): String =
+    classRecurrenceOptions.firstOrNull { it.id == id }?.label ?: "Co tydzień"
 
 data class ClassCourseOptionUi(
     val id: String,
@@ -83,9 +96,6 @@ data class ClassEditUiState(
     val teacher: String = "",
     val note: String = "",
     val courseOptions: List<ClassCourseOptionUi> = emptyList(),
-    val typeOptions: List<String> = emptyList(),
-    val dayOptions: List<String> = emptyList(),
-    val recurrenceOptions: List<RecurrenceOptionUi> = emptyList(),
     val errors: Map<ClassEditField, FieldErrorUi> = emptyMap(),
     val isSaving: Boolean = false,
     val pendingHiddenData: HiddenDataWarningUi? = null
@@ -173,7 +183,7 @@ fun ClassEditScreen(
                         MakSelectField(
                             label = "Typ",
                             value = state.type,
-                            options = state.typeOptions,
+                            options = classTypeOptions,
                             onSelected = onTypeChanged,
                             isError = state.errors.containsKey(ClassEditField.Type)
                         )
@@ -184,7 +194,7 @@ fun ClassEditScreen(
             MakSelectField(
                 label = "Dzień tygodnia",
                 value = state.dayLabel,
-                options = state.dayOptions,
+                options = dayNames.values.toList(),
                 onSelected = onDayChanged,
                 isError = state.errors.containsKey(ClassEditField.Day)
             )
@@ -216,9 +226,9 @@ fun ClassEditScreen(
             MakSelectField(
                 label = "Powtarzanie",
                 value = state.recurrenceLabel,
-                options = state.recurrenceOptions.map { it.label },
+                options = classRecurrenceOptions.map { it.label },
                 onSelected = { label ->
-                    state.recurrenceOptions.firstOrNull { it.label == label }?.id?.let(onRecurrenceChanged)
+                    classRecurrenceOptions.firstOrNull { it.label == label }?.id?.let(onRecurrenceChanged)
                 },
                 isError = state.errors.containsKey(ClassEditField.Recurrence)
             )

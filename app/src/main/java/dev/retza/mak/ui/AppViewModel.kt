@@ -2,10 +2,7 @@ package dev.retza.mak.ui
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
-import dev.retza.mak.domain.ActivePlanData
-import dev.retza.mak.ui.setup.SetupSemesterResume
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import org.koin.core.annotation.KoinViewModel
 import kotlinx.coroutines.flow.SharingStarted
@@ -19,50 +16,28 @@ import kotlinx.coroutines.launch
 data class AppUiState(
     val hasLoadedData: Boolean = false,
     val requiresSetup: Boolean = false,
-    val setupResume: SetupSemesterResume? = null
-)
-
-private data class SetupCheck(
-    val semesterId: Long,
-    val plan: ActivePlanData
+    // An active semester without study programs: the wizard continues with it instead of starting over.
+    val canResumeSetup: Boolean = false
 )
 
 @OptIn(ExperimentalCoroutinesApi::class)
 @KoinViewModel
 class AppViewModel(
-    private val semesterRepository: SemesterRepository,
-    private val scheduleRepository: ScheduleRepository
+    private val semesterRepository: SemesterRepository
 ) : ViewModel() {
-    private val setupCheck = semesterRepository.observeActiveSemester()
+    val uiState = semesterRepository.observeActiveSemester()
         .flatMapLatest { semester ->
             if (semester == null) {
-                flowOf(null)
+                flowOf(AppUiState(hasLoadedData = true, requiresSetup = true))
             } else {
-                scheduleRepository.observeActivePlanData(semester.id)
-                    .map { plan -> plan?.let { SetupCheck(semester.id, it) } }
+                semesterRepository.observeSemesterPrograms(semester.id).map { programs ->
+                    AppUiState(
+                        hasLoadedData = true,
+                        requiresSetup = programs.isEmpty(),
+                        canResumeSetup = programs.isEmpty()
+                    )
+                }
             }
-        }
-
-    val uiState = setupCheck
-        .map { check ->
-            AppUiState(
-                hasLoadedData = true,
-                requiresSetup = check == null || check.plan.semesterPrograms.isEmpty(),
-                setupResume = check
-                    ?.takeIf { it.plan.semesterPrograms.isEmpty() }
-                    ?.let { ready ->
-                        val calendar = ready.plan.calendars
-                            .minByOrNull { it.id.toLongOrNull() ?: Long.MAX_VALUE }
-                        SetupSemesterResume(
-                            semesterId = ready.semesterId,
-                            calendarId = calendar?.id?.toLongOrNull() ?: 0L,
-                            name = ready.plan.semester.name,
-                            startDate = calendar?.startDate?.toString().orEmpty(),
-                            endDate = calendar?.endDate?.toString().orEmpty(),
-                            firstWeekLabel = calendar?.firstWeekType?.name ?: "A"
-                        )
-                    }
-            )
         }
         .stateIn(
             scope = viewModelScope,
