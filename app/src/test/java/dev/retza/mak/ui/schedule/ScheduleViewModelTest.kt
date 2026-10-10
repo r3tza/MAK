@@ -103,8 +103,8 @@ class ScheduleViewModelTest {
 
         val state = viewModel.schedule.value
         assertEquals(ScheduleView.List, state.view)
-        assertEquals(listOf("all", "1"), state.filters.map { it.id })
-        assertTrue(state.filters.first { it.id == "all" }.isSelected)
+        assertEquals(listOf(null, 1L), state.filters.map { it.id })
+        assertTrue(state.filters.first { it.id == null }.isSelected)
         assertEquals(7, state.days.size)
         assertEquals("1 zajęcie", state.selectedDayCountLabel)
         assertEquals("Programowanie", state.items.single().name)
@@ -123,7 +123,7 @@ class ScheduleViewModelTest {
         advanceUntilIdle()
 
         val state = viewModel.schedule.value
-        assertEquals(listOf("all"), state.filters.map { it.id })
+        assertEquals(listOf(null), state.filters.map { it.id })
         assertTrue(state.items.isEmpty())
         assertTrue(state.calendarDays.single { it.id == "2026-09-21" }.markers.isEmpty())
         assertTrue(state.allProgramsHidden)
@@ -169,16 +169,33 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
-        viewModel.selectCourseFilter("1")
+        viewModel.selectCourseFilter(1L)
         advanceUntilIdle()
-        assertTrue(viewModel.schedule.value.filters.any { it.id == "1" && it.isSelected })
+        assertTrue(viewModel.schedule.value.filters.any { it.id == 1L && it.isSelected })
 
         repository.setActiveSemester(2)
         advanceUntilIdle()
 
         val filters = viewModel.schedule.value.filters
-        assertTrue(filters.any { it.id == "all" && it.isSelected })
-        assertTrue(filters.none { it.id == "1" })
+        assertTrue(filters.any { it.id == null && it.isSelected })
+        assertTrue(filters.none { it.id == 1L })
+    }
+
+    @Test
+    fun allProgramsFilterIsNull() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        viewModel.selectCourseFilter(1L)
+        advanceUntilIdle()
+        viewModel.selectCourseFilter(null)
+        advanceUntilIdle()
+
+        val state = viewModel.schedule.value
+        assertTrue(state.filters.first { it.id == null }.isSelected)
+        assertEquals("Programowanie", state.items.single().name)
     }
 
     @Test
@@ -269,7 +286,7 @@ class ScheduleViewModelTest {
 
         viewModel.selectView(ScheduleView.Calendar)
         viewModel.setShowCancelled(true)
-        viewModel.selectCourseFilter(second.semesterProgramId.toString())
+        viewModel.selectCourseFilter(second.semesterProgramId)
         advanceUntilIdle()
 
         val state = viewModel.schedule.value
@@ -293,7 +310,7 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
-        viewModel.selectCourseFilter(result.semesterProgramId.toString())
+        viewModel.selectCourseFilter(result.semesterProgramId)
         viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
         advanceUntilIdle()
 
@@ -315,7 +332,7 @@ class ScheduleViewModelTest {
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
-        viewModel.selectCourseFilter(result.semesterProgramId.toString())
+        viewModel.selectCourseFilter(result.semesterProgramId)
 
         repository.failSaves = true
         viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
@@ -346,7 +363,7 @@ class ScheduleViewModelTest {
         advanceUntilIdle()
         assertFalse("two calendars, all courses", viewModel.schedule.value.canCorrectWeek)
 
-        viewModel.selectCourseFilter(second.semesterProgramId.toString())
+        viewModel.selectCourseFilter(second.semesterProgramId)
         advanceUntilIdle()
         assertTrue("two calendars, one course", viewModel.schedule.value.canCorrectWeek)
     }

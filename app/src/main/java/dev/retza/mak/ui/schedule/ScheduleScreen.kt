@@ -90,7 +90,8 @@ data class ScheduleDayUi(
 )
 
 data class ScheduleFilterUi(
-    val id: String,
+    // Null means "all programs".
+    val id: Long?,
     val label: String,
     val isSelected: Boolean = false
 )
@@ -129,7 +130,7 @@ fun ScheduleScreen(
     onPreviousWeek: () -> Unit,
     onNextWeek: () -> Unit,
     onDaySelected: (String) -> Unit,
-    onFilterSelected: (String) -> Unit,
+    onFilterSelected: (Long?) -> Unit,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onCalendarDaySelected: (String) -> Unit,
@@ -211,7 +212,7 @@ private fun ListView(
     onPreviousWeek: () -> Unit,
     onNextWeek: () -> Unit,
     onDaySelected: (String) -> Unit,
-    onFilterSelected: (String) -> Unit,
+    onFilterSelected: (Long?) -> Unit,
     onOpenClass: (String) -> Unit,
     onEditWeek: () -> Unit
 ) {
@@ -385,7 +386,7 @@ private fun WeekTypeBadge(
 @Composable
 private fun ScheduleFilterSection(
     filters: List<ScheduleFilterUi>,
-    onFilterSelected: (String) -> Unit
+    onFilterSelected: (Long?) -> Unit
 ) {
     val selectedFilter = filters.firstOrNull { it.isSelected } ?: filters.first()
     val labelById = filters.map { it.id }.zip(distinctLabels(filters.map { it.label })).toMap()

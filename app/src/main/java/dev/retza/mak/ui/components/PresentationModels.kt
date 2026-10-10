@@ -29,7 +29,7 @@ data class ClassItemUi(
 
 @Immutable
 data class SemesterUi(
-    val id: String,
+    val id: Long,
     val name: String,
     val dateRangeLabel: String,
     val firstWeekLabel: String,

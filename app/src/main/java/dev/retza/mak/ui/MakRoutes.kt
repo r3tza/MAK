@@ -51,7 +51,7 @@ fun semesterCoursesRoute(id: String): String = "semester/$id/courses"
 
 fun semesterCourseAddRoute(id: String): String = "semester/$id/course-new"
 
-fun semesterCourseEditRoute(semesterId: String, assignmentId: String): String =
+fun semesterCourseEditRoute(semesterId: String, assignmentId: Long): String =
     "semester/$semesterId/course/$assignmentId"
 
 fun semesterOverridesRoute(id: String): String = "semester/$id/week-overrides"

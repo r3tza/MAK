@@ -86,14 +86,14 @@ data class SemesterFormUiState(
 )
 
 data class WeekOverrideUi(
-    val id: String,
+    val id: Long,
     val weekStartDate: String,
     val weekType: WeekTypeUi,
     val scope: WeekOverrideScopeUi
 )
 
 data class WeekOverrideFormUiState(
-    val id: String? = null,
+    val id: Long? = null,
     val weekStartDate: String = "",
     val weekType: WeekTypeUi = WeekTypeUi.A,
     val scope: WeekOverrideScopeUi = WeekOverrideScopeUi.ONE_WEEK,
@@ -116,17 +116,17 @@ enum class CourseProgramModeUi {
 }
 
 data class SemesterCourseUi(
-    val assignmentId: String,
-    val programId: String,
+    val assignmentId: Long,
+    val programId: Long,
     val name: String,
     val color: String,
-    val calendarId: String,
+    val calendarId: Long?,
     val calendarLabel: String,
     val sharesCalendar: Boolean
 )
 
 data class SemesterCalendarUi(
-    val id: String,
+    val id: Long,
     val startDate: String,
     val endDate: String,
     val firstWeek: WeekTypeUi,
@@ -134,20 +134,20 @@ data class SemesterCalendarUi(
 )
 
 data class SemesterProgramOptionUi(
-    val id: String,
+    val id: Long,
     val name: String,
     val color: String
 )
 
 data class CourseDeletionUi(
-    val assignmentId: String,
+    val assignmentId: Long,
     val programName: String,
     val classCount: Int
 )
 
 data class ReconnectCalendarUi(
-    val assignmentId: String,
-    val calendarId: String,
+    val assignmentId: Long,
+    val calendarId: Long,
     val programName: String,
     val sourceBecomesUnused: Boolean
 )
@@ -161,13 +161,13 @@ data class SemesterScreenUiState(
     val overrideCount: Int = 0,
     val courseItems: List<SemesterCourseUi> = emptyList(),
     val calendars: List<SemesterCalendarUi> = emptyList(),
-    val selectedCalendarId: String? = null,
+    val selectedCalendarId: Long? = null,
     val courseNameDraft: String = "",
     val courseColorDraft: String = DefaultCourseColor,
     val courseCalendarMode: CourseCalendarModeUi = CourseCalendarModeUi.SHARED,
-    val courseCalendarId: String? = null,
+    val courseCalendarId: Long? = null,
     val courseProgramMode: CourseProgramModeUi = CourseProgramModeUi.NEW,
-    val courseProgramId: String? = null,
+    val courseProgramId: Long? = null,
     val courseProgramOptions: List<SemesterProgramOptionUi> = emptyList(),
     val courseNameError: String? = null,
     val isAddingCourse: Boolean = false,
@@ -301,8 +301,8 @@ private fun SemesterNavigationRow(
 fun SemesterCoursesScreen(
     state: SemesterScreenUiState,
     onAddCourse: () -> Unit,
-    onEditCourse: (String) -> Unit,
-    onDeleteCourse: (String) -> Unit,
+    onEditCourse: (Long) -> Unit,
+    onDeleteCourse: (Long) -> Unit,
     onConfirmCourseDeletion: () -> Unit,
     onCancelCourseDeletion: () -> Unit,
     modifier: Modifier = Modifier
@@ -329,14 +329,14 @@ fun SemesterCoursesScreen(
 @Composable
 fun SemesterWeekOverridesScreen(
     state: SemesterScreenUiState,
-    onCalendarSelected: (String) -> Unit,
+    onCalendarSelected: (Long) -> Unit,
     onWeekStartDateChanged: (String) -> Unit,
     onWeekTypeChanged: (WeekTypeUi) -> Unit,
     onScopeChanged: (WeekOverrideScopeUi) -> Unit,
     onNewOverride: () -> Unit,
-    onEditOverride: (String) -> Unit,
+    onEditOverride: (Long) -> Unit,
     onSaveOverride: () -> Unit,
-    onDeleteOverride: (String) -> Unit,
+    onDeleteOverride: (Long) -> Unit,
     onCancelOverrideEdit: () -> Unit,
     onConfirmOverrideDeletion: () -> Unit,
     onCancelOverrideDeletion: () -> Unit,
@@ -384,12 +384,12 @@ fun SemesterWeekOverridesScreen(
 @Composable
 fun SemesterCalendarsScreen(
     state: SemesterScreenUiState,
-    onCalendarSelected: (String) -> Unit,
+    onCalendarSelected: (Long) -> Unit,
     onStartDateChanged: (String) -> Unit,
     onEndDateChanged: (String) -> Unit,
     onFirstWeekChanged: (WeekTypeUi) -> Unit,
     onSaveCalendar: () -> Unit,
-    onDeleteCalendar: (String) -> Unit,
+    onDeleteCalendar: (Long) -> Unit,
     onConfirmCalendarDeletion: () -> Unit,
     onCancelCalendarDeletion: () -> Unit,
     modifier: Modifier = Modifier
@@ -570,8 +570,8 @@ private fun SemesterForm(
 private fun CoursesBlock(
     state: SemesterScreenUiState,
     onAddCourse: () -> Unit,
-    onEditCourse: (String) -> Unit,
-    onDeleteCourse: (String) -> Unit
+    onEditCourse: (Long) -> Unit,
+    onDeleteCourse: (Long) -> Unit
 ) {
     Column(
         modifier = Modifier.padding(bottom = 22.dp),
@@ -718,9 +718,9 @@ private fun WeekOverridesSection(
     onWeekTypeChanged: (WeekTypeUi) -> Unit,
     onScopeChanged: (WeekOverrideScopeUi) -> Unit,
     onNewOverride: () -> Unit,
-    onEditOverride: (String) -> Unit,
+    onEditOverride: (Long) -> Unit,
     onSaveOverride: () -> Unit,
-    onDeleteOverride: (String) -> Unit,
+    onDeleteOverride: (Long) -> Unit,
     onCancelEdit: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {

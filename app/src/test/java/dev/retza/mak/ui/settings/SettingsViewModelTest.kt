@@ -67,11 +67,11 @@ class SettingsViewModelTest {
 
         val state = viewModel.settings.value
         assertEquals(2, state.semesters.size)
-        assertEquals("1", state.activeSemesterId)
-        assertEquals("Semestr", state.semesters.first { it.id == "1" }.name)
-        val activeSemester = state.semesters.first { it.id == "1" }
+        assertEquals(1L, state.activeSemesterId)
+        assertEquals("Semestr", state.semesters.first { it.id == 1L }.name)
+        val activeSemester = state.semesters.first { it.id == 1L }
         assertTrue(activeSemester.firstWeekLabel.startsWith("pierwszy tydzień "))
-        val inactiveSemester = state.semesters.first { it.id != "1" }
+        val inactiveSemester = state.semesters.first { it.id != 1L }
         assertEquals("", inactiveSemester.dateRangeLabel)
         assertEquals("", inactiveSemester.firstWeekLabel)
         assertEquals("", inactiveSemester.courseCountLabel)
@@ -96,7 +96,7 @@ class SettingsViewModelTest {
 
         val expected = "${LocalDate.of(2026, 9, 1).format(shortDateFormatter)} - " +
             LocalDate.of(2026, 10, 31).format(shortDateFormatter)
-        assertEquals(expected, viewModel.settings.value.semesters.first { it.id == "1" }.dateRangeLabel)
+        assertEquals(expected, viewModel.settings.value.semesters.first { it.id == 1L }.dateRangeLabel)
     }
 
     @Test
@@ -136,7 +136,7 @@ class SettingsViewModelTest {
         backgroundScope.launch { viewModel.settings.collect {} }
         advanceUntilIdle()
 
-        viewModel.selectSemester("2")
+        viewModel.selectSemester(2L)
         advanceUntilIdle()
 
         assertEquals(2L, repository.activeSemesterId)
@@ -151,12 +151,12 @@ class SettingsViewModelTest {
         backgroundScope.launch { viewModel.settings.collect {} }
         advanceUntilIdle()
 
-        viewModel.requestSemesterDeletion("2")
+        viewModel.requestSemesterDeletion(2L)
         viewModel.confirmSemesterDeletion()
         advanceUntilIdle()
 
         assertEquals(1L, repository.activeSemesterId)
-        assertEquals(listOf("1"), viewModel.settings.value.semesters.map { it.id })
+        assertEquals(listOf(1L), viewModel.settings.value.semesters.map { it.id })
         assertEquals(listOf("Usunięto semestr"), sink.published.map { it.message })
     }
 
@@ -167,7 +167,7 @@ class SettingsViewModelTest {
         advanceUntilIdle()
         repository.deleteSemesterAndSelectFallback(2L)
 
-        val exists = viewModel.canRequestSemesterDeletion("2")
+        val exists = viewModel.canRequestSemesterDeletion(2L)
 
         assertFalse(exists)
         assertEquals(null, viewModel.settings.value.semesterToDeleteId)

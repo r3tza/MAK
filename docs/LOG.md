@@ -2,6 +2,12 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-10: Wykonanie poprawek z audytu (I-84 do I-90)
+
+- Wykonanie (agent na zlecenie użytkownika, polecenie „wykonaj wszystkie poprawki z audytu”): ViewModele ekranów są pobierane w celach nawigacji, a w `MainActivity` zostały cztery ViewModele powłoki; `SemesterViewModel` żyje w podgrafie semestru i zbiera `observeSemesterConfiguration`. Dopuszczanie edycji wobec synchronizacji trzyma ViewModel przez `PlanEditSession` zamiast kompozycyjnego `TrackPlanEditing`; wpisany znak trafia do stanu od razu, a odświeżenie przed edycją zachowuje wpisany tekst (regresja znaleziona przy odbiorze: pierwszy znak trafiał na koniec tekstu). Górny pasek deklaruje cel nawigacji (`TopBarState`). Widget i synchronizacja obserwują jeden strumień `PlanChanges`, a własny zapis pobranego planu rozpoznaje skrót planu. Kontrakt kopii zapasowej używa rekordów zamiast encji Room, a sprawdzenie i zastąpienie planu to jedna transakcja `replaceIfCurrent` w `data`. Identyfikatory w domenie i stanie interfejsu są `Long`. Nowe pakiety `settings` i `text`; `ActivePlanSource` w `data`.
+- Decyzje agenta przy planowaniu, zatwierdzone przez użytkownika: komunikaty dat w kreatorze ujednolicone z ekranem semestru („Podaj poprawną datę.”, „Koniec nie może być wcześniejszy od początku.”; zgoda 2026-10-11); semestr zastępczy po usunięciu, imporcie i synchronizacji to semestr obejmujący dziś, a bez takiego najpóźniej zaczynający się; B6 zrobione tylko dla kart (zgoda na te dwie decyzje 2026-10-10) (kropka koloru i znaczniki kalendarza czytają motyw w funkcji `@Composable`).
+- Decyzja użytkownika z 2026-10-10: widget zachowuje wszystkie rozmiary z `FEATURES.md`. Odrzucone: zmniejszenie liczby rozmiarów (druga część G1 z audytu), bo użytkownik woli więcej możliwości dopasowania widgetu niż niewielki zysk wydajności.
+
 ## 2026-10-10: Decyzje po audycie jakości kodu (I-84 do I-90)
 
 - Fakty: Audyt z 2026-10-09 (`docs/audit_09102026.md`) wskazał reguły planu liczone poza `ScheduleResolver`, wszystkie ViewModele w zakresie `MainActivity`, encje Room w kontrakcie kopii zapasowej, nadmiarowe uruchomienia synchronizacji, martwy kod i kilka odstępstw od zapisanych zasad.
@@ -159,9 +165,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Fakty: Tag `v0.2.2` zbudował się poprawnie w GitHub Actions, a użytkownik opublikował wydanie. Użytkownik potwierdził, że aktualizacja z aplikacji do 0.2.2 działa.
 - Decyzja: I-52 ma status `gotowe`. O-07 pozostaje otwarty dla niepotwierdzonych przypadków błędów i jawnego potwierdzenia zachowania danych. I-49 pozostaje w toku do sprawdzenia instalacji według README na drugim telefonie i domknięcia O-07.
 - Weryfikacja: Przed tagiem przeszły testy JVM, kompilacja testów urządzenia, lint i `assembleDebug`; workflow wydania zakończył się sukcesem. Główny przebieg aktualizacji potwierdził użytkownik 2026-09-28.
-
-## 2026-09-28: Treść notatek w widgetcie (I-53)
-
-- Fakty: Rozszerzony widget pokazywał przy metadanych tylko ikonę, że zajęcia mają notatkę. Nie pokazywał treści ani nie rozróżniał notatki do zajęć od notatki do terminu, mimo wolnego miejsca w dużych rozmiarach.
-- Decyzja: W rozszerzonym widgetcie każda notatka ma osobny wiersz z ikoną i treścią, jak na karcie w aplikacji. Notatka do zajęć używa ikony notatki, a notatka do terminu ikony kalendarza. Wariant kompaktowy pomija notatki, aby zachować czas i nazwę zajęć. Użytkownik zlecił wariant 2026-09-28.
-- Weryfikacja: Test prezentera sprawdza treść notatki, a test kompozycji Glance oba rodzaje, ikony i treść. Odbiór rozmiarów i motywów na launcherze należy do O-06.

@@ -46,8 +46,8 @@ class ScheduleScreenTest {
         setScheduleContent(
             state = scheduleState(
                 filters = listOf(
-                    ScheduleFilterUi("all", "Wszystkie", true),
-                    ScheduleFilterUi("course", "Informatyka", false)
+                    ScheduleFilterUi(null, "Wszystkie", true),
+                    ScheduleFilterUi(3L, "Informatyka", false)
                 )
             )
         )
@@ -87,9 +87,9 @@ class ScheduleScreenTest {
         setScheduleContent(
             state = scheduleState(
                 filters = listOf(
-                    ScheduleFilterUi("all", "Wszystkie", false),
+                    ScheduleFilterUi(null, "Wszystkie", false),
                     ScheduleFilterUi(
-                        "course",
+                         3L,
                         selectedCourse,
                         true
                     )
@@ -208,13 +208,13 @@ class ScheduleScreenTest {
 
     @Test
     fun filterWithRepeatedCourseNamesSelectsByIdAt320Dp() {
-        var selected = ""
+        var selected: Long? = null
         setScheduleContent(
             state = scheduleState(
                 filters = listOf(
-                    ScheduleFilterUi("all", "Wszystkie", true),
-                    ScheduleFilterUi("a", "Informatyka"),
-                    ScheduleFilterUi("b", "Informatyka")
+                    ScheduleFilterUi(null, "Wszystkie", true),
+                    ScheduleFilterUi(1L, "Informatyka"),
+                    ScheduleFilterUi(2L, "Informatyka")
                 )
             ),
             onFilterSelected = { selected = it }
@@ -224,7 +224,7 @@ class ScheduleScreenTest {
         composeTestRule.onNodeWithText("Informatyka (1)").assertIsDisplayed()
         composeTestRule.onNodeWithText("Informatyka (2)").performClick()
 
-        assertEquals("b", selected)
+        assertEquals(2L, selected)
     }
 
     @Test
@@ -414,7 +414,7 @@ class ScheduleScreenTest {
         width: androidx.compose.ui.unit.Dp = 320.dp,
         darkTheme: Boolean = false,
         state: ScheduleUiState,
-        onFilterSelected: (String) -> Unit = {},
+        onFilterSelected: (Long?) -> Unit = {},
         onAddOneOff: () -> Unit = {},
         onShowCancelledChanged: (Boolean) -> Unit = {},
         fontScale: Float? = null,
@@ -450,7 +450,7 @@ class ScheduleScreenTest {
     }
 
     private fun scheduleState(
-        filters: List<ScheduleFilterUi> = listOf(ScheduleFilterUi("all", "Wszystkie", true)),
+        filters: List<ScheduleFilterUi> = listOf(ScheduleFilterUi(null, "Wszystkie", true)),
         items: List<ClassItemUi> = emptyList()
     ) = ScheduleUiState(
         weekRangeLabel = "1 wrz - 7 wrz",

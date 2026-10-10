@@ -1,6 +1,6 @@
 # Plan najbliższych prac
 
-Cel: dokończyć poprawki z audytu (polecenie użytkownika z 2026-10-10): K1 z I-89 (typy poza pakietem `ui`) i I-90 (jeden typ identyfikatora w domenie i stanie interfejsu, K2). Raport audytu: `docs/audit_09102026.md`. Po tym planie wszystkie zaakceptowane punkty audytu są zrobione; poza zakresem zostaje mniej rozmiarów widgetu (druga część G1), zapisana w pomysłach do rozważenia.
+Cel: dokończyć poprawki z audytu (polecenie użytkownika z 2026-10-10): K1 z I-89 (typy poza pakietem `ui`) i I-90 (jeden typ identyfikatora w domenie i stanie interfejsu, K2). Raport audytu: `docs/audit_09102026.md`. Po tym planie wszystkie zaakceptowane punkty audytu są zrobione; mniejszej liczby rozmiarów widgetu (druga część G1) użytkownik nie przyjął.
 
 ## Zasady dla wykonawcy
 
@@ -77,6 +77,8 @@ Weryfikacja:
 Kryterium zakończenia: testy i ręczne sprawdzenie dają opisane wyniki; `rg "toLongOrNull\(\) \?: 0" app/src/main` nic nie znajduje; w `DomainMappers.kt` nie ma `toString()` przy identyfikatorach. Commit: `chore: use Long ids in domain models (I-90)`. W tym commicie w `QUEUE.md` zmień status I-90 na `w toku`.
 
 ## 3. Trzymaj identyfikatory w stanie interfejsu jako Long (I-90)
+
+Stan: zrobione. Klucze opcji ustawień (minuty, godzina wieczorna) zostają napisami, bo nie są numerami wierszy. Argumenty tras zostają `NavType.StringType`; `assignmentId` jest czytany w `SemesterRoutes`, a `semesterId` i `classId` w `SavedStateHandle`. Szkic formularza zajęć zapisuje kierunek jako tekst, aby stare szkice dało się odczytać. Zrzuty przy 320 dp przed zmianą i po niej są identyczne.
 
 Cel: stan interfejsu trzyma identyfikatory semestrów, kierunków, przypisań i kalendarzy jako `Long`, więc ViewModele nie konwertują ich przez `toString()` i `toLongOrNull()` (K2). Wyjątki: identyfikator terminu w trasie (`"klasa:data"`) i identyfikatory dni (`"2026-10-12"`), które nie są numerami wierszy.
 

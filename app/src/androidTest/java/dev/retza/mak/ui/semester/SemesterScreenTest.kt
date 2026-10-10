@@ -37,9 +37,9 @@ class SemesterScreenTest {
     val composeTestRule = createComposeRule()
 
     private fun course(
-        assignmentId: String,
+        assignmentId: Long,
         name: String,
-        calendarId: String = "1",
+        calendarId: Long = 1L,
         calendarLabel: String = "2026-10-01 - 2027-02-28",
         sharesCalendar: Boolean = false
     ) = SemesterCourseUi(
@@ -66,9 +66,9 @@ class SemesterScreenTest {
                                 startDate = "2026-10-01",
                                 endDate = "2027-02-28"
                             ),
-                            courseItems = listOf(course("1", "Informatyka")),
+                            courseItems = listOf(course(1L, "Informatyka")),
                             overrides = listOf(
-                                WeekOverrideUi("override", "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
+                                WeekOverrideUi(7L, "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
                             ),
                             overrideCount = 1
                         ),
@@ -112,7 +112,7 @@ class SemesterScreenTest {
                     SemesterScreen(
                         state = SemesterScreenUiState(
                             semester = SemesterFormUiState(name = "Semestr zimowy"),
-                            calendars = listOf(calendar("1"), calendar("2", "2026-11-01", "2027-03-15"))
+                            calendars = listOf(calendar(1L), calendar(2L, "2026-11-01", "2027-03-15"))
                         ),
                         onSemesterNameChanged = {},
                         onSemesterStartDateChanged = {},
@@ -136,8 +136,8 @@ class SemesterScreenTest {
     @Test
     fun coursesScreenKeepsLongNamesAndActionsAt320Dp() {
         var added = 0
-        var edited = ""
-        var deleted = ""
+        var edited = 0L
+        var deleted = 0L
 
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
@@ -145,8 +145,8 @@ class SemesterScreenTest {
                     SemesterCoursesScreen(
                         state = SemesterScreenUiState(
                             courseItems = listOf(
-                                course("1", "Informatyka stosowana i systemy wbudowane"),
-                                course("2", "Automatyka i robotyka")
+                                course(1L, "Informatyka stosowana i systemy wbudowane"),
+                                course(2L, "Automatyka i robotyka")
                             )
                         ),
                         onAddCourse = { added += 1 },
@@ -169,9 +169,9 @@ class SemesterScreenTest {
         composeTestRule.onAllNodesWithText("Usuń").assertCountEquals(2)
         composeTestRule.onAllNodesWithText("Edytuj").assertCountEquals(2)
         composeTestRule.onAllNodesWithText("Edytuj")[0].performClick()
-        assertEquals("1", edited)
+        assertEquals(1L, edited)
         composeTestRule.onAllNodesWithText("Usuń")[1].performClick()
-        assertEquals("2", deleted)
+        assertEquals(2L, deleted)
         composeTestRule.onNodeWithText("Rozdziel kalendarz").assertDoesNotExist()
         composeTestRule.onNodeWithText("Dodaj kierunek").performClick()
         assertEquals(1, added)
@@ -185,12 +185,12 @@ class SemesterScreenTest {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SemesterCourseAddScreen(
                         state = SemesterScreenUiState(
-                            calendars = listOf(calendar("1"), calendar("2", "2026-11-01", "2027-03-15")),
+                            calendars = listOf(calendar(1L), calendar(2L, "2026-11-01", "2027-03-15")),
                             courseProgramOptions = listOf(
-                                SemesterProgramOptionUi("1", "Informatyka", "#137B71")
+                                SemesterProgramOptionUi(1L, "Informatyka", "#137B71")
                             ),
-                            selectedCalendarId = "1",
-                            courseCalendarId = "1"
+                            selectedCalendarId = 1L,
+                            courseCalendarId = 1L
                         ),
                         onCourseNameChanged = {},
                         onCourseColorChanged = {},
@@ -223,13 +223,13 @@ class SemesterScreenTest {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SemesterCourseAddScreen(
                         state = SemesterScreenUiState(
-                            calendars = listOf(calendar("1")),
-                            selectedCalendarId = "1",
-                            courseCalendarId = "1",
+                            calendars = listOf(calendar(1L)),
+                            selectedCalendarId = 1L,
+                            courseCalendarId = 1L,
                             courseProgramMode = CourseProgramModeUi.EXISTING,
-                            courseProgramId = "1",
+                            courseProgramId = 1L,
                             courseProgramOptions = listOf(
-                                SemesterProgramOptionUi("1", "Informatyka", "#137B71")
+                                SemesterProgramOptionUi(1L, "Informatyka", "#137B71")
                             )
                         ),
                         onCourseNameChanged = {},
@@ -255,15 +255,15 @@ class SemesterScreenTest {
 
     @Test
     fun courseEditScreenShowsNameCalendarAndColorInOrderAndSharedSplitActionAt320Dp() {
-        var separated = ""
+        var separated = 0L
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SemesterCourseEditScreen(
                         state = SemesterScreenUiState(
-                            courseItems = listOf(course("1", "Informatyka", sharesCalendar = true)),
-                            calendars = listOf(calendar("1")),
-                            selectedCalendarId = "1"
+                            courseItems = listOf(course(1L, "Informatyka", sharesCalendar = true)),
+                            calendars = listOf(calendar(1L)),
+                            selectedCalendarId = 1L
                         ),
                         editor = StudyProgramEditorUi(id = 1L, name = "Informatyka", color = "#137B71"),
                         onNameChanged = {},
@@ -290,7 +290,7 @@ class SemesterScreenTest {
             .performScrollTo()
             .assertIsDisplayed()
         composeTestRule.onNodeWithText("Rozdziel kalendarz").performScrollTo().performClick()
-        assertEquals("1", separated)
+        assertEquals(1L, separated)
         // With one calendar there is nothing to choose, so the picker stays hidden.
         composeTestRule.onNodeWithText("Kalendarz").assertDoesNotExist()
     }
@@ -302,9 +302,9 @@ class SemesterScreenTest {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SemesterCourseEditScreen(
                         state = SemesterScreenUiState(
-                            courseItems = listOf(course("1", "Informatyka", sharesCalendar = false)),
-                            calendars = listOf(calendar("1"), calendar("2", "2026-11-01", "2027-03-15")),
-                            selectedCalendarId = "1"
+                            courseItems = listOf(course(1L, "Informatyka", sharesCalendar = false)),
+                            calendars = listOf(calendar(1L), calendar(2L, "2026-11-01", "2027-03-15")),
+                            selectedCalendarId = 1L
                         ),
                         editor = StudyProgramEditorUi(id = 1L, name = "Informatyka", color = "#137B71"),
                         onNameChanged = {},
@@ -333,12 +333,12 @@ class SemesterScreenTest {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SemesterCourseEditScreen(
                         state = SemesterScreenUiState(
-                            courseItems = listOf(course("1", "Informatyka", sharesCalendar = true)),
-                            calendars = listOf(calendar("1"), calendar("2", "2026-11-01", "2027-03-15")),
-                            selectedCalendarId = "1",
+                            courseItems = listOf(course(1L, "Informatyka", sharesCalendar = true)),
+                            calendars = listOf(calendar(1L), calendar(2L, "2026-11-01", "2027-03-15")),
+                            selectedCalendarId = 1L,
                             pendingReconnect = ReconnectCalendarUi(
-                                assignmentId = "1",
-                                calendarId = "2",
+                                assignmentId = 1L,
+                                calendarId = 2L,
                                 programName = "Informatyka",
                                 sourceBecomesUnused = true
                             )
@@ -377,7 +377,7 @@ class SemesterScreenTest {
                     SemesterCoursesScreen(
                         state = SemesterScreenUiState(
                             pendingCourseDeletion = CourseDeletionUi(
-                                assignmentId = "1",
+                                assignmentId = 1L,
                                 programName = "Informatyka",
                                 classCount = 5
                             )
@@ -403,7 +403,7 @@ class SemesterScreenTest {
 
     @Test
     fun calendarsScreenListsCalendarsAndAllowsUnusedDeleteAt320Dp() {
-        var deleted = ""
+        var deleted = 0L
 
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
@@ -415,10 +415,10 @@ class SemesterScreenTest {
                                 endDate = "2027-02-28"
                             ),
                             calendars = listOf(
-                                calendar("1", courseNames = listOf("Informatyka")),
-                                calendar("2", "2026-11-01", "2027-03-15")
+                                calendar(1L, courseNames = listOf("Informatyka")),
+                                calendar(2L, "2026-11-01", "2027-03-15")
                             ),
-                            selectedCalendarId = "1"
+                            selectedCalendarId = 1L
                         ),
                         onCalendarSelected = {},
                         onStartDateChanged = {},
@@ -440,20 +440,20 @@ class SemesterScreenTest {
         composeTestRule.onNodeWithText("1 lis 2026 - 15 mar 2027").assertIsDisplayed()
         composeTestRule.onNodeWithText("2026-11-01 - 2027-03-15").assertDoesNotExist()
         composeTestRule.onNodeWithText("Usuń").performClick()
-        assertEquals("2", deleted)
+        assertEquals(2L, deleted)
     }
 
     @Test
     fun weekOverridesScreenOffersCalendarChoiceAt320Dp() {
-        var selected = ""
+        var selected = 0L
 
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SemesterWeekOverridesScreen(
                         state = SemesterScreenUiState(
-                            calendars = listOf(calendar("1"), calendar("2", "2026-11-01", "2027-03-15")),
-                            selectedCalendarId = "1"
+                            calendars = listOf(calendar(1L), calendar(2L, "2026-11-01", "2027-03-15")),
+                            selectedCalendarId = 1L
                         ),
                         onCalendarSelected = { selected = it },
                         onWeekStartDateChanged = {},
@@ -473,7 +473,7 @@ class SemesterScreenTest {
 
         composeTestRule.onNodeWithText("1 paź 2026 - 28 lut 2027, tydzień A, brak kierunków").performClick()
         composeTestRule.onNodeWithText("1 lis 2026 - 15 mar 2027, tydzień A, brak kierunków").performClick()
-        assertEquals("2", selected)
+        assertEquals(2L, selected)
     }
 
     @Test
@@ -481,7 +481,7 @@ class SemesterScreenTest {
         var state by mutableStateOf(
             SemesterScreenUiState(
                 overrides = listOf(
-                    WeekOverrideUi("7", "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
+                    WeekOverrideUi(7L, "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
                 )
             )
         )
@@ -552,10 +552,10 @@ class SemesterScreenTest {
                     SemesterWeekOverridesScreen(
                         state = SemesterScreenUiState(
                             overrides = listOf(
-                                WeekOverrideUi("7", "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
+                                WeekOverrideUi(7L, "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
                             ),
                             overrideForm = WeekOverrideFormUiState(
-                                id = "7",
+                                id = 7L,
                                 weekStartDate = "2026-10-05",
                                 isOpen = true
                             )
@@ -585,7 +585,7 @@ class SemesterScreenTest {
     fun weekOverrideDeletionAsksForConfirmationAt320Dp() {
         var confirmed = 0
         var cancelled = 0
-        val override = WeekOverrideUi("7", "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
+        val override = WeekOverrideUi(7L, "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
@@ -620,7 +620,7 @@ class SemesterScreenTest {
     }
 
     private fun calendar(
-        id: String,
+        id: Long,
         startDate: String = "2026-10-01",
         endDate: String = "2027-02-28",
         courseNames: List<String> = emptyList()

@@ -57,7 +57,7 @@ private data class PreferencesSnapshot(
 )
 
 private data class SettingsLocalState(
-    val semesterToDeleteId: String? = null,
+    val semesterToDeleteId: Long? = null,
     val isDeletingSemester: Boolean = false,
     val isSelectingSemester: Boolean = false,
     val isSavingTheme: Boolean = false,
@@ -136,28 +136,26 @@ class SettingsViewModel(
         editSession.close()
     }
 
-    fun selectSemester(id: String) {
+    fun selectSemester(id: Long) {
         if (local.value.isSelectingSemester) return
-        val semesterId = id.toLongOrNull() ?: return // I-90 step 3
         local.update { it.copy(isSelectingSemester = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
             errorMessage = "Nie udało się zmienić aktywnego semestru.",
             onFinish = { local.update { it.copy(isSelectingSemester = false) } }
         ) {
-            semesterRepository.setActiveSemester(semesterId)
+            semesterRepository.setActiveSemester(id)
             feedbackSink.publish(UiFeedback("Zmieniono aktywny semestr", UiFeedbackKind.Success))
         }
     }
 
     /** Opens the deletion confirmation; a semester that no longer exists is dropped instead (`PlanEditSession`). */
-    fun requestSemesterDeletion(id: String) = editSession.run {
+    fun requestSemesterDeletion(id: Long) = editSession.run {
         if (canRequestSemesterDeletion(id)) local.update { it.copy(semesterToDeleteId = id) }
     }
 
-    suspend fun canRequestSemesterDeletion(id: String): Boolean {
-        val semesterId = id.toLongOrNull() ?: return false // I-90 step 3
-        val exists = semesterRepository.observeSemesters().first().any { it.id == semesterId }
+    suspend fun canRequestSemesterDeletion(id: Long): Boolean {
+        val exists = semesterRepository.observeSemesters().first().any { it.id == id }
         if (!exists) local.update { it.copy(semesterToDeleteId = null) }
         return exists
     }
@@ -169,7 +167,7 @@ class SettingsViewModel(
 
     fun confirmSemesterDeletion() = editSession.run {
         if (local.value.isDeletingSemester) return@run
-        val id = local.value.semesterToDeleteId?.toLongOrNull() ?: return@run // I-90 step 3
+        val id = local.value.semesterToDeleteId ?: return@run
         local.update { it.copy(isDeletingSemester = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -351,7 +349,7 @@ private fun buildSettingsState(
         val isActive = semester.id == activeData?.semester?.id
         val calendar = activeData?.sharedCalendar()
         SemesterUi(
-            id = semester.id.toString(), // I-90 step 3
+            id = semester.id,
             name = semester.name,
             dateRangeLabel = if (isActive && calendar != null) {
                 "${calendar.startDate.format(shortDateFormatter)} - " +
@@ -370,7 +368,7 @@ private fun buildSettingsState(
             isActive = isActive
         )
     },
-    activeSemesterId = activeData?.semester?.id?.toString(), // I-90 step 3
+    activeSemesterId = activeData?.semester?.id,
     theme = preferences.theme,
     gapThresholdOptions = PlanDisplayLimits.gapThresholdOptions.map { minutes ->
         SettingsOptionUi(

@@ -65,11 +65,11 @@ private data class ScheduleControls(
     val calendarMonth: YearMonth,
     val calendarDate: LocalDate,
     val scheduleView: ScheduleView = ScheduleView.List,
-    val courseFilterId: String = "all",
+    val courseFilterId: Long? = null,
     val showCancelled: Boolean = false
 )
 
-private data class GridKey(val month: YearMonth, val filter: String, val today: LocalDate, val view: ScheduleView)
+private data class GridKey(val month: YearMonth, val filter: Long?, val today: LocalDate, val view: ScheduleView)
 
 @KoinViewModel
 class ScheduleViewModel(
@@ -144,7 +144,7 @@ class ScheduleViewModel(
         id.toLocalDateOrNull()?.let { date -> controls.update { it.copy(scheduleDate = date) } }
     }
 
-    fun selectCourseFilter(id: String) = controls.update { it.copy(courseFilterId = id) }
+    fun selectCourseFilter(id: Long?) = controls.update { it.copy(courseFilterId = id) }
 
     fun changeMonth(amount: Long) = controls.update { control ->
         val month = control.calendarMonth.plusMonths(amount)
@@ -214,8 +214,7 @@ class ScheduleViewModel(
 
     private fun visibleWeekCalendarId(
         data: ActivePlanData,
-        // I-90 step 3: the selection is read once here; "all" and an unknown id both give null.
-        filterId: Long? = controls.value.courseFilterId.toLongOrNull()
+        filterId: Long? = controls.value.courseFilterId
     ): Long? {
         if (filterId == null) return data.calendars.singleOrNull()?.id
         val assignment = data.semesterPrograms.firstOrNull { it.id == filterId } ?: return null
@@ -225,10 +224,10 @@ class ScheduleViewModel(
     private fun matchesFilter(occurrence: PlannedOccurrence, activeFilter: Long?): Boolean =
         activeFilter == null || occurrence.classItem.semesterProgramId == activeFilter
 
-    private fun activeFilter(inputs: ActivePlanInputs, requested: String): Long? {
+    private fun activeFilter(inputs: ActivePlanInputs, requested: Long?): Long? {
         val visible = inputs.data.visibleTo(inputs.display)
         val programs = visible.data.visibleAssignments(inputs.display)
-        return requested.toLongOrNull()?.takeIf { id -> programs.any { it.id == id } } // I-90 step 3
+        return requested?.takeIf { id -> programs.any { it.id == id } }
     }
 
     private fun calendarGrid(
@@ -324,11 +323,11 @@ class ScheduleViewModel(
                     }
                 )
             },
-            filters = listOf(ScheduleFilterUi("all", "Wszystkie", activeFilter == null)) +
+            filters = listOf(ScheduleFilterUi(null, "Wszystkie", activeFilter == null)) +
                 programs.map { assignment ->
                     val program = data.courses.firstOrNull { it.id == assignment.studyProgramId }
                     ScheduleFilterUi(
-                        assignment.id.toString(), // I-90 step 3
+                        assignment.id,
                         program?.name.orEmpty(),
                         activeFilter == assignment.id
                     )

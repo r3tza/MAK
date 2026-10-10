@@ -60,8 +60,8 @@ import dev.retza.mak.export.ImportSummary
 @Composable
 private fun ActiveSemesterField(
     semesters: List<SemesterUi>,
-    activeSemesterId: String?,
-    onSemesterSelected: (String) -> Unit
+    activeSemesterId: Long?,
+    onSemesterSelected: (Long) -> Unit
 ) {
     val labels = distinctLabels(semesters.map { it.name })
     val labelById = semesters.map { it.id }.zip(labels).toMap()
@@ -91,11 +91,11 @@ data class NotificationSettingsUi(
 
 data class SettingsUiState(
     val semesters: List<SemesterUi> = emptyList(),
-    val activeSemesterId: String? = null,
+    val activeSemesterId: Long? = null,
     val theme: ThemeMode = ThemeMode.System,
     val gapThresholdOptions: List<SettingsOptionUi> = emptyList(),
     val minimumBreakOptions: List<SettingsOptionUi> = emptyList(),
-    val semesterToDeleteId: String? = null,
+    val semesterToDeleteId: Long? = null,
     val isDeletingSemester: Boolean = false,
     val importPreview: ImportSummary? = null,
     val importErrorMessage: String? = null,
@@ -111,7 +111,7 @@ fun SettingsScreen(
     onOpenPrograms: () -> Unit,
     onOpenNotifications: () -> Unit,
     onOpenData: () -> Unit,
-    onSemesterSelected: (String) -> Unit,
+    onSemesterSelected: (Long) -> Unit,
     onAddSemester: () -> Unit,
     onThemeSelected: (ThemeMode) -> Unit,
     onGapThresholdSelected: (String) -> Unit,
@@ -400,10 +400,10 @@ private fun notificationsStatus(
 @Composable
 fun SettingsSemestersScreen(
     state: SettingsUiState,
-    onSemesterSelected: (String) -> Unit,
+    onSemesterSelected: (Long) -> Unit,
     onAddSemester: () -> Unit,
-    onConfigureSemester: (String) -> Unit,
-    onDeleteSemester: (String) -> Unit,
+    onConfigureSemester: (Long) -> Unit,
+    onDeleteSemester: (Long) -> Unit,
     onConfirmDelete: () -> Unit,
     onCancelDelete: () -> Unit,
     modifier: Modifier = Modifier

@@ -58,7 +58,7 @@ fun Recurrence.formLabel(): String = when (this) {
 }
 
 data class ClassCourseOptionUi(
-    val id: String,
+    val id: Long,
     val label: String,
     // Hidden on this phone: it can be chosen, but its classes stay out of the plan.
     val isHidden: Boolean = false
@@ -73,7 +73,7 @@ data class ClassEditUiState(
     val title: String = "Dodaj zajęcia",
     val name: String = "",
     val courseName: String = "",
-    val semesterProgramId: String? = null,
+    val semesterProgramId: Long? = null,
     val type: String = "",
     val dayLabel: String = "",
     val startTime: String = "",
@@ -97,7 +97,7 @@ data class ClassEditUiState(
 fun ClassEditScreen(
     state: ClassEditUiState,
     onNameChanged: (String) -> Unit,
-    onCourseChanged: (String) -> Unit,
+    onCourseChanged: (Long) -> Unit,
     onTypeChanged: (String) -> Unit,
     onDayChanged: (String) -> Unit,
     onStartTimeChanged: (String) -> Unit,

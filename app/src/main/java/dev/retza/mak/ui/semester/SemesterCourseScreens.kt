@@ -36,9 +36,9 @@ fun SemesterCourseAddScreen(
     onCourseNameChanged: (String) -> Unit,
     onCourseColorChanged: (String) -> Unit,
     onProgramModeChanged: (CourseProgramModeUi) -> Unit,
-    onSelectProgram: (String?) -> Unit,
+    onSelectProgram: (Long?) -> Unit,
     onCourseModeChanged: (CourseCalendarModeUi) -> Unit,
-    onCourseCalendarChanged: (String) -> Unit,
+    onCourseCalendarChanged: (Long) -> Unit,
     onAddCourse: () -> Unit,
     onCancel: () -> Unit,
     modifier: Modifier = Modifier
@@ -141,13 +141,13 @@ fun SemesterCourseEditScreen(
     onColorChanged: (String) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit,
-    onSeparateCourse: (String) -> Unit,
-    onRequestReconnect: (String, String) -> Unit,
+    onSeparateCourse: (Long) -> Unit,
+    onRequestReconnect: (Long, Long) -> Unit,
     onConfirmReconnect: () -> Unit,
     onCancelReconnect: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val course = state.courseItems.firstOrNull { it.programId == editor.id?.toString() }
+    val course = state.courseItems.firstOrNull { it.programId == editor.id }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
         Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
             MakField(

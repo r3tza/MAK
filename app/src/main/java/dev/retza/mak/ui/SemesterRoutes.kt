@@ -31,9 +31,9 @@ import dev.retza.mak.ui.programs.StudyProgramsViewModel
 
 internal fun openSemesterConfiguration(
     navController: NavController,
-    id: String
+    id: Long
 ) {
-    navController.navigate(semesterGraphRoute(id))
+    navController.navigate(semesterGraphRoute(id.toString()))
 }
 
 internal fun NavGraphBuilder.semesterRoutes(navController: NavController) {
@@ -136,13 +136,13 @@ internal fun NavGraphBuilder.semesterRoutes(navController: NavController) {
             val studyProgramsViewModel: StudyProgramsViewModel = koinViewModel()
             // Saving, cancelling and back all leave this screen, which closes the course form.
             DisposableEffect(entry.id) { onDispose { semesterViewModel.endCourseForm() } }
-            val assignmentId = entry.arguments?.getString("assignmentId")
+            // A route id that is not a number matches no course, so the screen leaves instead of using id 0.
+            val assignmentId = entry.arguments?.getString("assignmentId")?.toLongOrNull()
             val opened by produceState<Boolean?>(null, entry.id) {
                 val semesterLoaded = semesterViewModel.openCourseFormOnce()
                 val programId = semesterViewModel.semester.value.courseItems
                     .firstOrNull { it.assignmentId == assignmentId }
                     ?.programId
-                    ?.toLongOrNull() // I-90 step 3
                 programId?.let { studyProgramsViewModel.openOnce(it) }
                 val programLoaded = programId != null &&
                     studyProgramsViewModel.opened.value == StudyProgramEditOpenState.Open
@@ -160,7 +160,6 @@ internal fun NavGraphBuilder.semesterRoutes(navController: NavController) {
             val programId = semesterState.courseItems
                 .firstOrNull { it.assignmentId == assignmentId }
                 ?.programId
-                ?.toLongOrNull() // I-90 step 3
             val programsState = studyProgramsViewModel.programs.collectAsStateWithLifecycle().value
             val editor = if (programId != null && programsState.editor.id == programId) {
                 programsState.editor

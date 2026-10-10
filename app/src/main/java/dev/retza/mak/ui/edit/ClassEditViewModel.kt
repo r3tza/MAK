@@ -160,7 +160,7 @@ class ClassEditViewModel(
                 title = "Edytuj zajęcia",
                 name = item.name,
                 courseName = program?.name.orEmpty(),
-                semesterProgramId = item.semesterProgramId.toString(), // I-90 step 3
+                semesterProgramId = item.semesterProgramId,
                 type = item.type,
                 dayLabel = dayNames[item.dayOfWeek].orEmpty(),
                 startTime = item.startTime.toString(),
@@ -180,9 +180,9 @@ class ClassEditViewModel(
         state.update { transform(it).copy(errors = emptyMap()) }
     }
 
-    fun selectCourse(optionId: String) {
+    fun selectCourse(optionId: Long) {
         val data = editPlanData ?: activePlan.value?.data
-        val calendar = data?.calendarForAssignment(optionId.toLongOrNull()) // I-90 step 3
+        val calendar = data?.calendarForAssignment(optionId)
         update {
             it.copy(
                 semesterProgramId = optionId,
@@ -216,7 +216,7 @@ class ClassEditViewModel(
         val end = editor.endTime.toLocalTimeOrNull()
         val recurrence = editor.recurrence
         val date = editor.occurrenceDate.toLocalDateOrNull()
-        val assignmentId = editor.semesterProgramId?.toLongOrNull() // I-90 step 3
+        val assignmentId = editor.semesterProgramId
         val assignment = assignmentId?.let { id ->
             data.semesterPrograms.firstOrNull { it.id == id }
         }
@@ -320,7 +320,7 @@ class ClassEditViewModel(
         value: ClassEditUiState,
         data: ActivePlanData? = activePlan.value?.data
     ): ClassEditUiState {
-        val calendar = data?.calendarForAssignment(value.semesterProgramId?.toLongOrNull()) // I-90 step 3
+        val calendar = data?.calendarForAssignment(value.semesterProgramId)
         return value.copy(
             courseOptions = data?.courseOptions(activePlan.value?.display?.hiddenProgramIds.orEmpty()).orEmpty(),
             semesterStartDate = calendar?.startDate?.toString(),
@@ -354,7 +354,7 @@ private fun ActivePlanData.courseOptions(hiddenProgramIds: Set<Long>): List<Clas
     semesterPrograms.mapNotNull { assignment ->
         val program = courses.firstOrNull { it.id == assignment.studyProgramId }
             ?: return@mapNotNull null
-        ClassCourseOptionUi(assignment.id.toString(), program.name, isHidden = program.id in hiddenProgramIds) // I-90 step 3
+        ClassCourseOptionUi(assignment.id, program.name, isHidden = program.id in hiddenProgramIds)
     }
 
 private fun defaultClassEditState() = ClassEditUiState()
@@ -376,7 +376,7 @@ private val draftFields: List<Pair<String, (ClassEditUiState) -> String?>> = lis
     "title" to { it.title },
     "name" to { it.name },
     "courseName" to { it.courseName },
-    "semesterProgramId" to { it.semesterProgramId },
+    "semesterProgramId" to { it.semesterProgramId?.toString() },
     "type" to { it.type },
     "dayLabel" to { it.dayLabel },
     "startTime" to { it.startTime },
@@ -404,7 +404,7 @@ private fun SavedStateHandle.restoreClassEditDraft(): ClassEditUiState? {
         title = field("title") ?: "Dodaj zajęcia",
         name = field("name").orEmpty(),
         courseName = field("courseName").orEmpty(),
-        semesterProgramId = field("semesterProgramId"),
+        semesterProgramId = field("semesterProgramId")?.toLongOrNull(),
         type = field("type").orEmpty(),
         dayLabel = field("dayLabel").orEmpty(),
         startTime = field("startTime").orEmpty(),

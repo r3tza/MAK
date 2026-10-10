@@ -362,7 +362,7 @@ class ClassEditViewModelTest {
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                semesterProgramId = "1",
+                semesterProgramId = 1L,
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "11:00",
@@ -392,7 +392,7 @@ class ClassEditViewModelTest {
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                semesterProgramId = "1",
+                semesterProgramId = 1L,
                 type = "Wykład",
                 dayLabel = "Wtorek",
                 startTime = "12:00",
@@ -423,7 +423,7 @@ class ClassEditViewModelTest {
                 endTime = "11:30"
             )
         }
-        viewModel.selectCourse("999")
+        viewModel.selectCourse(999L)
         advanceUntilIdle()
 
         viewModel.save()
@@ -442,7 +442,7 @@ class ClassEditViewModelTest {
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                semesterProgramId = "1",
+                semesterProgramId = 1L,
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "12:00",
@@ -474,7 +474,7 @@ class ClassEditViewModelTest {
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                semesterProgramId = "1",
+                semesterProgramId = 1L,
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "12:00",
@@ -509,7 +509,7 @@ class ClassEditViewModelTest {
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                semesterProgramId = "1",
+                semesterProgramId = 1L,
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "12:00",
@@ -568,7 +568,7 @@ class ClassEditViewModelTest {
         viewModel.openNewFromFreshPlan()
         advanceUntilIdle()
 
-        viewModel.selectCourse(result.semesterProgramId.toString())
+        viewModel.selectCourse(result.semesterProgramId)
         advanceUntilIdle()
 
         assertEquals("2026-12-20", viewModel.editor.value.semesterEndDate)
@@ -620,7 +620,7 @@ class ClassEditViewModelTest {
         advanceUntilIdle()
         viewModel.openNewFromFreshPlan()
         val secondOption = viewModel.editor.value.courseOptions.first {
-            it.id == secondAssignmentId.toString()
+            it.id == secondAssignmentId
         }
         assertEquals("Informatyka", secondOption.label)
         viewModel.selectCourse(secondOption.id)
@@ -651,7 +651,7 @@ class ClassEditViewModelTest {
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                semesterProgramId = "1",
+                semesterProgramId = 1L,
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "11:00",

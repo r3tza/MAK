@@ -57,7 +57,8 @@ class SemesterViewModel(
     private val state = MutableStateFlow(SemesterScreenUiState())
     val semester: StateFlow<SemesterScreenUiState> = state.asStateFlow()
 
-    private val semesterId: Long? = savedState.get<String>("semesterId")?.toLongOrNull() // I-90 step 3
+    // The route argument is text; a value that is not a number leaves the screen empty.
+    private val semesterId: Long? = savedState.get<String>("semesterId")?.toLongOrNull()
 
     private val effectsChannel = Channel<SemesterEffect>(Channel.BUFFERED)
     val effects = effectsChannel.receiveAsFlow()
@@ -176,8 +177,7 @@ class SemesterViewModel(
         selectedCalendarId = loaded.calendars.firstOrNull { it.id == selectedCalendarId }?.id
             ?: loaded.sharedCalendar()?.id
         val current = state.value
-        val requestedCourseCalendarId = current.courseCalendarId?.toLongOrNull() // I-90 step 3
-        val courseCalendarId = requestedCourseCalendarId
+        val courseCalendarId = current.courseCalendarId
             ?.takeIf { value -> loaded.calendars.any { it.id == value } }
             ?: selectedCalendarId
         val fresh = loaded.toSemesterScreenState(selectedCalendarId)
@@ -186,7 +186,7 @@ class SemesterViewModel(
             courseNameDraft = current.courseNameDraft,
             courseColorDraft = current.courseColorDraft,
             courseCalendarMode = current.courseCalendarMode,
-            courseCalendarId = courseCalendarId?.toString(), // I-90 step 3
+            courseCalendarId = courseCalendarId,
             courseProgramMode = current.courseProgramMode,
             courseProgramId = current.courseProgramId,
             overrideForm = current.overrideForm
@@ -334,7 +334,7 @@ class SemesterViewModel(
         )
     }
 
-    fun selectCourseProgram(id: String?) = update { current ->
+    fun selectCourseProgram(id: Long?) = update { current ->
         val option = id?.let { selected -> current.courseProgramOptions.firstOrNull { it.id == selected } }
         if (option == null) {
             current.copy(courseProgramId = null)
@@ -356,12 +356,12 @@ class SemesterViewModel(
         )
     }
 
-    fun selectCourseCalendar(calendarId: String) = update {
+    fun selectCourseCalendar(calendarId: Long) = update {
         it.copy(courseCalendarId = calendarId, courseCalendarMode = CourseCalendarModeUi.SHARED)
     }
 
-    fun selectCalendar(calendarId: String) {
-        selectedCalendarId = calendarId.toLongOrNull() // I-90 step 3
+    fun selectCalendar(calendarId: Long) {
+        selectedCalendarId = calendarId
         apply(configuration ?: return)
     }
 
@@ -370,7 +370,7 @@ class SemesterViewModel(
         val id = semesterId ?: return
         val draft = state.value
         val wantsExisting = draft.courseProgramMode == CourseProgramModeUi.EXISTING
-        val existingProgramId = if (wantsExisting) draft.courseProgramId?.toLongOrNull() else null // I-90 step 3
+        val existingProgramId = if (wantsExisting) draft.courseProgramId else null
         if (wantsExisting && existingProgramId == null) {
             update { it.copy(courseNameError = FormErrorTexts.ProgramRequired) }
             return
@@ -386,12 +386,12 @@ class SemesterViewModel(
             return
         }
         if (existingProgramId != null &&
-            draft.courseItems.any { it.programId == existingProgramId.toString() } // I-90 step 3
+            draft.courseItems.any { it.programId == existingProgramId }
         ) {
             update { it.copy(courseNameError = "Ten kierunek jest już przypięty do semestru.") }
             return
         }
-        val sourceCalendarId = draft.courseCalendarId?.toLongOrNull() ?: selectedCalendarId // I-90 step 3
+        val sourceCalendarId = draft.courseCalendarId ?: selectedCalendarId
         if (sourceCalendarId == null) {
             update { it.copy(courseNameError = "Brak kalendarza semestru.") }
             return
@@ -431,9 +431,8 @@ class SemesterViewModel(
         }
     }
 
-    fun separateCourseCalendar(assignmentId: String) = editSession.run {
+    fun separateCourseCalendar(assignmentId: Long) = editSession.run {
         if (state.value.isSeparatingCalendar) return@run
-        val id = assignmentId.toLongOrNull() ?: return@run // I-90 step 3
         update { it.copy(isSeparatingCalendar = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -442,19 +441,17 @@ class SemesterViewModel(
                 update { it.copy(isSeparatingCalendar = false) }
             }
         ) {
-            semesterRepository.separateSemesterProgramCalendar(id)
+            semesterRepository.separateSemesterProgramCalendar(assignmentId)
             feedbackSink.publish(UiFeedback("Rozdzielono kalendarz kierunku", UiFeedbackKind.Success))
         }
     }
 
-    fun requestReconnect(assignmentId: String, calendarId: String) = editSession.run {
-        val assignmentValue = assignmentId.toLongOrNull() ?: return@run // I-90 step 3
-        val calendarValue = calendarId.toLongOrNull() ?: return@run // I-90 step 3
+    fun requestReconnect(assignmentId: Long, calendarId: Long) = editSession.run {
         val data = configuration ?: return@run
-        val assignment = data.programs.firstOrNull { it.id == assignmentValue } ?: return@run
-        val sourceBecomesUnused = assignment.academicCalendarId != calendarValue &&
+        val assignment = data.programs.firstOrNull { it.id == assignmentId } ?: return@run
+        val sourceBecomesUnused = assignment.academicCalendarId != calendarId &&
             data.programs.none {
-                it.academicCalendarId == assignment.academicCalendarId && it.id != assignmentValue
+                it.academicCalendarId == assignment.academicCalendarId && it.id != assignmentId
             }
         val programName = data.studyPrograms
             .firstOrNull { it.id == assignment.studyProgramId }
@@ -478,8 +475,8 @@ class SemesterViewModel(
     fun confirmReconnect() {
         val pending = state.value.pendingReconnect ?: return
         if (state.value.isReconnectingCalendar) return
-        val assignmentId = pending.assignmentId.toLongOrNull() ?: return // I-90 step 3
-        val calendarId = pending.calendarId.toLongOrNull() ?: return // I-90 step 3
+        val assignmentId = pending.assignmentId
+        val calendarId = pending.calendarId
         update { it.copy(isReconnectingCalendar = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -495,7 +492,7 @@ class SemesterViewModel(
         }
     }
 
-    fun requestCalendarDeletion(calendarId: String) = editSession.run {
+    fun requestCalendarDeletion(calendarId: Long) = editSession.run {
         val calendar = state.value.calendars.firstOrNull { it.id == calendarId } ?: return@run
         update { it.copy(pendingCalendarDeletion = calendar) }
     }
@@ -507,7 +504,7 @@ class SemesterViewModel(
 
     fun confirmCalendarDeletion() {
         if (state.value.isDeletingCalendar) return
-        val id = state.value.pendingCalendarDeletion?.id?.toLongOrNull() ?: return // I-90 step 3
+        val id = state.value.pendingCalendarDeletion?.id ?: return
         update { it.copy(isDeletingCalendar = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -523,14 +520,13 @@ class SemesterViewModel(
         }
     }
 
-    fun requestCourseDeletion(id: String) = editSession.run {
-        val assignmentId = id.toLongOrNull() ?: return@run // I-90 step 3
+    fun requestCourseDeletion(id: Long) = editSession.run {
         val course = state.value.courseItems.firstOrNull { it.assignmentId == id } ?: return@run
         if (state.value.isPreparingCourseDeletion) return@run
         update { it.copy(isPreparingCourseDeletion = true) }
         viewModelScope.launch {
             try {
-                val classCount = semesterRepository.countClassesForAssignment(assignmentId)
+                val classCount = semesterRepository.countClassesForAssignment(id)
                 update {
                     it.copy(
                         isPreparingCourseDeletion = false,
@@ -558,7 +554,7 @@ class SemesterViewModel(
     fun confirmCourseDeletion() {
         if (state.value.isDeletingCourse) return
         val pending = state.value.pendingCourseDeletion ?: return
-        val assignmentId = pending.assignmentId.toLongOrNull() ?: return // I-90 step 3
+        val assignmentId = pending.assignmentId
         update { it.copy(isDeletingCourse = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -579,7 +575,7 @@ class SemesterViewModel(
         }
     }
 
-    fun editWeekOverride(id: String) = editSession.run {
+    fun editWeekOverride(id: Long) = editSession.run {
         val item = state.value.overrides.firstOrNull { it.id == id } ?: return@run
         update {
             it.copy(
@@ -622,9 +618,8 @@ class SemesterViewModel(
             update { it.copy(overrideForm = form.copy(weekStartDateError = "Wybierz tydzień.")) }
             return
         }
-        // I-90 step 3: a new override has no id; an id that is not a number stops the save instead of becoming 0.
-        val formId = form.id
-        val overrideId = if (formId == null) 0L else formId.toLongOrNull() ?: return
+        // A new override has no id yet; the repository treats 0 as "insert".
+        val overrideId = form.id ?: 0L
         update { it.copy(overrideForm = form.copy(isSaving = true, weekStartDateError = null)) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -649,7 +644,7 @@ class SemesterViewModel(
         }
     }
 
-    fun requestWeekOverrideDeletion(id: String) = editSession.run {
+    fun requestWeekOverrideDeletion(id: Long) = editSession.run {
         val item = state.value.overrides.firstOrNull { it.id == id } ?: return@run
         update { it.copy(pendingOverrideDeletion = item) }
     }
@@ -661,7 +656,7 @@ class SemesterViewModel(
 
     fun confirmWeekOverrideDeletion() {
         if (state.value.isDeletingOverride) return
-        val overrideId = state.value.pendingOverrideDeletion?.id?.toLongOrNull() ?: return // I-90 step 3
+        val overrideId = state.value.pendingOverrideDeletion?.id ?: return
         update { it.copy(isDeletingOverride = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -689,11 +684,11 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
             ?: return@mapNotNull null
         val calendar = calendars.firstOrNull { it.id == assignment.academicCalendarId }
         SemesterCourseUi(
-            assignmentId = assignment.id.toString(), // I-90 step 3
-            programId = assignment.studyProgramId.toString(), // I-90 step 3
+            assignmentId = assignment.id,
+            programId = assignment.studyProgramId,
             name = program.name,
             color = program.color,
-            calendarId = calendar?.id?.toString().orEmpty(), // I-90 step 3
+            calendarId = calendar?.id,
             calendarLabel = calendarLabel(calendar),
             sharesCalendar = programs.count {
                 it.academicCalendarId == assignment.academicCalendarId
@@ -713,7 +708,7 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
             .filter { it.academicCalendarId == selected?.id }
             .map { override ->
                 WeekOverrideUi(
-                    override.id.toString(), // I-90 step 3
+                    override.id,
                     override.weekStartDate.toString(),
                     WeekTypeUi.valueOf(override.weekType.name),
                     WeekOverrideScopeUi.valueOf(override.scope.name)
@@ -723,7 +718,7 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
         courseItems = courseItems,
         calendars = calendars.map { calendar ->
             SemesterCalendarUi(
-                id = calendar.id.toString(), // I-90 step 3
+                id = calendar.id,
                 startDate = calendar.startDate.toString(),
                 endDate = calendar.endDate.toString(),
                 firstWeek = WeekTypeUi.valueOf(calendar.firstWeekType.name),
@@ -734,10 +729,10 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
                     }
             )
         },
-        selectedCalendarId = selected?.id?.toString(), // I-90 step 3
-        courseCalendarId = selected?.id?.toString(), // I-90 step 3
+        selectedCalendarId = selected?.id,
+        courseCalendarId = selected?.id,
         courseProgramOptions = studyPrograms.map {
-            SemesterProgramOptionUi(it.id.toString(), it.name, it.color) // I-90 step 3
+            SemesterProgramOptionUi(it.id, it.name, it.color)
         }
     )
 }

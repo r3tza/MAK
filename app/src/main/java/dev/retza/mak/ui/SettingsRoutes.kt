@@ -44,7 +44,7 @@ internal fun NavGraphBuilder.settingsRoute(
     updateViewModel: UpdateViewModel,
     navController: NavController,
     onAddSemester: () -> Unit,
-    onConfigureSemester: (String) -> Unit,
+    onConfigureSemester: (Long) -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     notificationsBlocked: Boolean,

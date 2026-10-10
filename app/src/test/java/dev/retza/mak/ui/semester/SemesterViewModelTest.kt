@@ -69,7 +69,7 @@ class SemesterViewModelTest {
         assertEquals("2026-09-01", state.semester.startDate)
         assertEquals("2026-10-31", state.semester.endDate)
         assertEquals(WeekTypeUi.A, state.semester.firstWeek)
-        assertEquals(listOf("1" to "Informatyka"), state.courseItems.map { it.assignmentId to it.name })
+        assertEquals(listOf(1L to "Informatyka"), state.courseItems.map { it.assignmentId to it.name })
         assertEquals(1, state.overrides.size)
         assertEquals("2026-10-05", state.overrides.single().weekStartDate)
         assertEquals(WeekTypeUi.B, state.overrides.single().weekType)
@@ -243,14 +243,14 @@ class SemesterViewModelTest {
                 courseNameDraft = "Nowy kierunek",
                 courseColorDraft = "#123456",
                 courseCalendarMode = CourseCalendarModeUi.SEPARATE,
-                courseCalendarId = "2",
+                courseCalendarId = 2L,
                 courseProgramMode = CourseProgramModeUi.EXISTING,
-                courseProgramId = "2",
+                courseProgramId = 2L,
                 courseNameError = "Błąd formularza."
             )
         }
-        assertEquals("2", viewModel.semester.value.courseProgramId)
-        assertEquals("2", viewModel.semester.value.courseCalendarId)
+        assertEquals(2L, viewModel.semester.value.courseProgramId)
+        assertEquals(2L, viewModel.semester.value.courseCalendarId)
 
         viewModel.resetCourseDraft()
 
@@ -293,7 +293,7 @@ class SemesterViewModelTest {
         advanceUntilIdle()
         advanceUntilIdle()
 
-        viewModel.requestCourseDeletion("1")
+        viewModel.requestCourseDeletion(1L)
         advanceUntilIdle()
         viewModel.confirmCourseDeletion()
         advanceUntilIdle()
@@ -314,11 +314,11 @@ class SemesterViewModelTest {
         advanceUntilIdle()
         advanceUntilIdle()
 
-        viewModel.requestCourseDeletion("1")
+        viewModel.requestCourseDeletion(1L)
         advanceUntilIdle()
 
         val pending = viewModel.semester.value.pendingCourseDeletion
-        assertEquals("1", pending?.assignmentId)
+        assertEquals(1L, pending?.assignmentId)
         assertEquals(repository.classes.count { it.semesterProgramId == 1L }, pending?.classCount)
         assertFalse("deleteSemesterProgram" in repository.events)
         assertEquals(1, repository.semesterPrograms.size)
@@ -334,7 +334,7 @@ class SemesterViewModelTest {
         advanceUntilIdle()
         advanceUntilIdle()
 
-        viewModel.requestCourseDeletion("1")
+        viewModel.requestCourseDeletion(1L)
 
         assertTrue(viewModel.semester.value.isPreparingCourseDeletion)
         assertTrue(viewModel.semester.value.hasPlanDraft())
@@ -354,7 +354,7 @@ class SemesterViewModelTest {
         advanceUntilIdle()
         advanceUntilIdle()
 
-        viewModel.requestCourseDeletion("1")
+        viewModel.requestCourseDeletion(1L)
         advanceUntilIdle()
         viewModel.cancelCourseDeletion()
         viewModel.confirmCourseDeletion()
@@ -445,9 +445,9 @@ class SemesterViewModelTest {
         advanceUntilIdle()
         advanceUntilIdle()
 
-        viewModel.editWeekOverride("5")
+        viewModel.editWeekOverride(5L)
         advanceUntilIdle()
-        assertEquals("5", viewModel.semester.value.overrideForm.id)
+        assertEquals(5L, viewModel.semester.value.overrideForm.id)
 
         viewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekType = WeekTypeUi.B)) }
         viewModel.saveWeekOverride()
@@ -497,7 +497,7 @@ class SemesterViewModelTest {
         advanceUntilIdle()
         advanceUntilIdle()
 
-        viewModel.requestWeekOverrideDeletion("5")
+        viewModel.requestWeekOverrideDeletion(5L)
         assertTrue(repository.events.none { it == "deleteWeekOverride" })
         viewModel.confirmWeekOverrideDeletion()
         advanceUntilIdle()
@@ -525,8 +525,8 @@ class SemesterViewModelTest {
         advanceUntilIdle()
         advanceUntilIdle()
 
-        viewModel.requestWeekOverrideDeletion("5")
-        assertEquals("5", viewModel.semester.value.pendingOverrideDeletion?.id)
+        viewModel.requestWeekOverrideDeletion(5L)
+        assertEquals(5L, viewModel.semester.value.pendingOverrideDeletion?.id)
         viewModel.cancelWeekOverrideDeletion()
         viewModel.confirmWeekOverrideDeletion()
         advanceUntilIdle()
@@ -544,7 +544,7 @@ class SemesterViewModelTest {
         advanceUntilIdle()
         val unused = repository.secondCalendar
 
-        viewModel.requestCalendarDeletion(unused.id.toString())
+        viewModel.requestCalendarDeletion(unused.id)
         advanceUntilIdle()
         assertTrue(repository.events.none { it == "deleteCalendar" })
 
@@ -571,7 +571,7 @@ class SemesterViewModelTest {
         assertEquals(1, repository.events.count { it == "addSeparatedSemesterProgram" })
         val newProgramId = repository.studyPrograms.first { it.name == "Fizyka" }.id
         val assignment = repository.semesterPrograms.first { it.studyProgramId == newProgramId }
-        assertTrue(assignment.academicCalendarId.toString() != sourceCalendarId)
+        assertTrue(assignment.academicCalendarId != sourceCalendarId)
         assertEquals(2, viewModel.semester.value.calendars.size)
         assertEquals(
             listOf(UiFeedback("Dodano kierunek", UiFeedbackKind.Success)),
@@ -603,11 +603,11 @@ class SemesterViewModelTest {
         advanceUntilIdle()
         advanceUntilIdle()
 
-        viewModel.selectCourseProgram("1")
+        viewModel.selectCourseProgram(1L)
 
         assertEquals("Informatyka", viewModel.semester.value.courseNameDraft)
         assertEquals("#137B71", viewModel.semester.value.courseColorDraft)
-        assertEquals("1", viewModel.semester.value.courseProgramId)
+        assertEquals(1L, viewModel.semester.value.courseProgramId)
     }
 
     @Test
@@ -618,7 +618,7 @@ class SemesterViewModelTest {
         advanceUntilIdle()
         advanceUntilIdle()
 
-        viewModel.selectCourseProgram("1")
+        viewModel.selectCourseProgram(1L)
         viewModel.addCourse()
         advanceUntilIdle()
 
@@ -634,11 +634,11 @@ class SemesterViewModelTest {
         advanceUntilIdle()
         advanceUntilIdle()
 
-        viewModel.update { it.copy(courseCalendarId = "999") }
-        viewModel.selectCalendar(repository.calendar.id.toString())
+        viewModel.update { it.copy(courseCalendarId = 999L) }
+        viewModel.selectCalendar(repository.calendar.id)
         advanceUntilIdle()
 
-        assertEquals(repository.calendar.id.toString(), viewModel.semester.value.courseCalendarId)
+        assertEquals(repository.calendar.id, viewModel.semester.value.courseCalendarId)
     }
 
     @Test
@@ -674,12 +674,12 @@ class SemesterViewModelTest {
             scope = WeekOverrideScope.ONE_WEEK
         ))
 
-        viewModel.selectCalendar(repository.calendar.id.toString())
+        viewModel.selectCalendar(repository.calendar.id)
         advanceUntilIdle()
         assertEquals(1, viewModel.semester.value.overrides.size)
         assertEquals(2, viewModel.semester.value.overrideCount)
 
-        viewModel.selectCalendar(separatedCalendarId.toString())
+        viewModel.selectCalendar(separatedCalendarId)
         advanceUntilIdle()
         assertEquals(1, viewModel.semester.value.overrides.size)
         assertEquals(2, viewModel.semester.value.overrideCount)
@@ -705,7 +705,7 @@ class SemesterViewModelTest {
             .first { it.name == "Informatyka" }
             .assignmentId
 
-        viewModel.requestReconnect(informatykaId, separatedCalendarId.toString())
+        viewModel.requestReconnect(informatykaId, separatedCalendarId)
         advanceUntilIdle()
         assertEquals(true, viewModel.semester.value.pendingReconnect?.sourceBecomesUnused)
         assertEquals("Informatyka", viewModel.semester.value.pendingReconnect?.programName)

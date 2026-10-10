@@ -33,10 +33,10 @@ class ClassEditScreenTest {
                     ClassEditScreen(
                         state = ClassEditUiState(
                             courseName = "Zarządzanie",
-                            semesterProgramId = "2",
+                            semesterProgramId = 2L,
                             courseOptions = listOf(
-                                ClassCourseOptionUi("1", "Informatyka"),
-                                ClassCourseOptionUi("2", "Zarządzanie", isHidden = true)
+                                ClassCourseOptionUi(1L, "Informatyka"),
+                                ClassCourseOptionUi(2L, "Zarządzanie", isHidden = true)
                             )
                         ),
                         onNameChanged = {},
