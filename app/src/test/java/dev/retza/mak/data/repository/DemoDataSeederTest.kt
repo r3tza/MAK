@@ -65,6 +65,18 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>> =
         flowOf(weekOverrides.filter { it.semesterId == semesterId })
 
+    override fun observeSemesterConfiguration(id: Long): Flow<SemesterConfiguration?> = flowOf(
+        semesters.find { it.id == id }?.let { semester ->
+            SemesterConfiguration(
+                semester = semester,
+                programs = semesterPrograms.filter { it.semesterId == id },
+                studyPrograms = studyPrograms.toList(),
+                calendars = calendars.filter { it.semesterId == id },
+                overrides = weekOverrides.filter { it.semesterId == id }
+            )
+        }
+    )
+
     override suspend fun saveSemester(record: SemesterRecord): Long {
         val id = record.id.takeIf { it != 0L } ?: nextId++
         semesters += record.copy(id = id)

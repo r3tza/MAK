@@ -142,6 +142,8 @@ Kryterium zakończenia: testy przechodzą; `rg "sessionToken" app/src/main/java/
 
 ## 3. Trzymaj SemesterViewModel w podgrafie semestru i zbieraj jeden strumień konfiguracji (I-86)
 
+Stan: zrobione. `openCourseFormOnce` nazywa się `refreshForCourseForm` i zapamiętuje udane odświeżenie na czas życia grafu. `observeSemesterConfiguration` ma `distinctUntilChanged`, bo zapytanie obejmuje też zajęcia i notatki, a ich zapis nadpisywałby niezapisany formularz semestru. Opis przypadku brzegowego o zamykaniu ekranu po usunięciu semestru był błędny: `CloseConfiguration` wysyła tylko zapis semestru, tak jak przed zmianą. Usunięte testy przełączania semestrów w jednym ViewModelu (7, wymienione w commicie). Ręcznie: szkic nazwy semestru zostaje po wizycie w „Kierunkach”; po zapisie nazwy kierunku lista kierunków semestru od razu pokazuje nową nazwę (przed zmianą pokazywała starą).
+
 Cel: ekran semestru i jego podekrany dzielą jeden `SemesterViewModel` w zakresie podgrafu nawigacji (decyzja użytkownika z 2026-10-10). Stan pochodzi z jednego strumienia repozytorium `observeSemesterConfiguration(id)`, więc znikają ręczne `refresh(token)` po zapisach, tokeny sesji i pięć osobnych odczytów (E3), a pobranie planu z synchronizacji odświeża też ekran semestru.
 
 Pliki: `data/repository/SemesterRecords.kt`, `data/repository/SemesterRepository.kt`, `data/database/Daos.kt` (tylko jeśli brakuje zapytania), `ui/MakRoutes.kt`, `ui/SemesterRoutes.kt`, `ui/MakNavHostApp.kt`, `MainActivity.kt`, `ui/semester/SemesterViewModel.kt`; testy `ui/FakeSemesterRepository.kt`, `ui/semester/SemesterViewModelTest.kt`, Android `data/RoomPersistenceTest.kt`.

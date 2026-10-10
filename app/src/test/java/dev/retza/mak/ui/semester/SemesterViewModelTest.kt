@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.semester
 
+import androidx.lifecycle.SavedStateHandle
 import dev.retza.mak.ui.components.DefaultCourseColor
 import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.data.entity.WeekOverrideScope
@@ -32,11 +33,16 @@ class SemesterViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
-    private fun viewModel(repository: FakeRepository) =
-        SemesterViewModel(FakeSemesterRepository(repository), FeedbackController())
+    private fun viewModel(repository: FakeRepository, semesterId: String = "1") =
+        SemesterViewModel(FakeSemesterRepository(repository), FeedbackController(), savedState(semesterId))
 
-    private fun recordingViewModel(repository: FakeRepository, sink: RecordingFeedbackSink) =
-        SemesterViewModel(FakeSemesterRepository(repository), sink)
+    private fun recordingViewModel(
+        repository: FakeRepository,
+        sink: RecordingFeedbackSink,
+        semesterId: String = "1"
+    ) = SemesterViewModel(FakeSemesterRepository(repository), sink, savedState(semesterId))
+
+    private fun savedState(semesterId: String) = SavedStateHandle(mapOf("semesterId" to semesterId))
 
     @Test
     fun openMapsFormCoursesAndOverrides() = runTest(mainDispatcher) {
@@ -52,7 +58,6 @@ class SemesterViewModelTest {
         val viewModel = viewModel(repository)
         advanceUntilIdle()
 
-        viewModel.open("1")
         advanceUntilIdle()
 
         val state = viewModel.semester.value
@@ -65,7 +70,6 @@ class SemesterViewModelTest {
         assertEquals("2026-10-05", state.overrides.single().weekStartDate)
         assertEquals(WeekTypeUi.B, state.overrides.single().weekType)
         assertEquals(WeekOverrideScopeUi.ONE_WEEK, state.overrides.single().scope)
-        assertEquals(1L, viewModel.semesterId.value)
     }
 
     @Test
@@ -73,7 +77,6 @@ class SemesterViewModelTest {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
         val baselineName = viewModel.semester.value.semester.name
         repository.saveGate = CompletableDeferred()
@@ -91,88 +94,17 @@ class SemesterViewModelTest {
     }
 
     @Test
-    fun openWaitsForFirstDataEmission() = runTest(mainDispatcher) {
+    fun loadWaitsForFirstDataEmission() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         repository.occurrenceDataGate = CompletableDeferred()
         val viewModel = viewModel(repository)
-        advanceUntilIdle()
-
-        viewModel.open("1")
-        advanceUntilIdle()
-        assertEquals("", viewModel.semester.value.semester.name)
-        assertEquals(null, viewModel.semesterId.value)
-
-        repository.occurrenceDataGate?.complete(Unit)
-        advanceUntilIdle()
-
-        assertEquals("Semestr", viewModel.semester.value.semester.name)
-        assertEquals(1L, viewModel.semesterId.value)
-    }
-
-    @Test
-    fun lastOpenWinsWhenDataArrivesLate() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        repository.occurrenceDataGate = CompletableDeferred()
-        val viewModel = viewModel(repository)
-        advanceUntilIdle()
-
-        viewModel.open("1")
-        viewModel.open("2")
         advanceUntilIdle()
         assertEquals("", viewModel.semester.value.semester.name)
 
         repository.occurrenceDataGate?.complete(Unit)
         advanceUntilIdle()
 
-        assertEquals("Semestr drugi", viewModel.semester.value.semester.name)
-        assertEquals(2L, viewModel.semesterId.value)
-    }
-
-    @Test
-    fun openingConfigurationDoesNotChangeActiveSemester() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val viewModel = viewModel(repository)
-        advanceUntilIdle()
-
-        viewModel.open("2")
-        advanceUntilIdle()
-
-        assertEquals("Semestr drugi", viewModel.semester.value.semester.name)
-        assertEquals(1L, repository.activeSemesterId)
-    }
-
-    @Test
-    fun openIfNeededKeepsUnsavedFormOfTheSameSemester() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val viewModel = viewModel(repository)
-        advanceUntilIdle()
-        viewModel.open("1")
-        advanceUntilIdle()
-
-        viewModel.update { it.copy(semester = it.semester.copy(name = "Zmieniona nazwa")) }
-        viewModel.openIfNeeded("1")
-        advanceUntilIdle()
-        assertEquals("Zmieniona nazwa", viewModel.semester.value.semester.name)
-
-        viewModel.openIfNeeded("2")
-        advanceUntilIdle()
-        assertEquals("Semestr drugi", viewModel.semester.value.semester.name)
-    }
-
-    @Test
-    fun invalidIdDoesNotKeepPreviousSemester() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val viewModel = viewModel(repository)
-        advanceUntilIdle()
-        viewModel.open("1")
-        advanceUntilIdle()
         assertEquals("Semestr", viewModel.semester.value.semester.name)
-
-        viewModel.open("99")
-        advanceUntilIdle()
-
-        assertEquals("", viewModel.semester.value.semester.name)
-        assertEquals(null, viewModel.semesterId.value)
     }
 
     @Test
@@ -181,7 +113,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.update { it.copy(semester = it.semester.copy(name = "")) }
@@ -212,7 +143,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         val effects = mutableListOf<SemesterEffect>()
@@ -238,7 +168,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         val effects = mutableListOf<SemesterEffect>()
@@ -263,7 +192,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.updateCourseName("   ")
@@ -283,7 +211,6 @@ class SemesterViewModelTest {
         val effects = mutableListOf<SemesterEffect>()
         backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.updateCourseName("Fizyka")
@@ -305,7 +232,6 @@ class SemesterViewModelTest {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.update {
@@ -340,7 +266,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.updateCourseName("Fizyka")
@@ -362,7 +287,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.requestCourseDeletion("1")
@@ -384,7 +308,6 @@ class SemesterViewModelTest {
         val repository = FakeRepository()
         val viewModel = recordingViewModel(repository, RecordingFeedbackSink())
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.requestCourseDeletion("1")
@@ -403,9 +326,8 @@ class SemesterViewModelTest {
         val semesterRepository = FakeSemesterRepository(repository).apply {
             countClassesGate = CompletableDeferred()
         }
-        val viewModel = SemesterViewModel(semesterRepository, RecordingFeedbackSink())
+        val viewModel = SemesterViewModel(semesterRepository, RecordingFeedbackSink(), savedState("1"))
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.requestCourseDeletion("1")
@@ -426,7 +348,6 @@ class SemesterViewModelTest {
         val repository = FakeRepository()
         val viewModel = recordingViewModel(repository, RecordingFeedbackSink())
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.requestCourseDeletion("1")
@@ -446,7 +367,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.newWeekOverride()
@@ -464,7 +384,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.newWeekOverride()
@@ -482,7 +401,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.newWeekOverride()
@@ -521,7 +439,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.editWeekOverride("5")
@@ -545,7 +462,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.newWeekOverride()
@@ -575,7 +491,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.requestWeekOverrideDeletion("5")
@@ -604,7 +519,6 @@ class SemesterViewModelTest {
         )
         val viewModel = recordingViewModel(repository, RecordingFeedbackSink())
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.requestWeekOverrideDeletion("5")
@@ -620,10 +534,9 @@ class SemesterViewModelTest {
     @Test
     fun calendarDeletionWaitsForConfirmation() = runTest(mainDispatcher) {
         val repository = FakeRepository()
-        val viewModel = recordingViewModel(repository, RecordingFeedbackSink())
-        advanceUntilIdle()
         // The second semester owns the only calendar without an assigned program.
-        viewModel.open("2")
+        val viewModel = recordingViewModel(repository, RecordingFeedbackSink(), semesterId = "2")
+        advanceUntilIdle()
         advanceUntilIdle()
         val unused = repository.secondCalendar
 
@@ -643,7 +556,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
         val sourceCalendarId = viewModel.semester.value.selectedCalendarId
 
@@ -669,7 +581,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.updateCourseName("Fizyka")
@@ -686,7 +597,6 @@ class SemesterViewModelTest {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.selectCourseProgram("1")
@@ -702,7 +612,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.selectCourseProgram("1")
@@ -719,7 +628,6 @@ class SemesterViewModelTest {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.update { it.copy(courseCalendarId = "999") }
@@ -735,7 +643,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.updateCourseName("Fizyka")
@@ -746,22 +653,22 @@ class SemesterViewModelTest {
         val separatedCalendarId = repository.semesterPrograms
             .first { it.studyProgramId == newProgramId }
             .academicCalendarId
-        repository.weekOverrides += WeekOverrideEntity(
+        repository.saveWeekOverride(WeekOverrideEntity(
             id = 6L,
             semesterId = 1L,
             academicCalendarId = repository.calendar.id,
             weekStartDate = LocalDate.of(2026, 9, 28),
             weekType = WeekType.B,
             scope = WeekOverrideScope.ONE_WEEK
-        )
-        repository.weekOverrides += WeekOverrideEntity(
+        ))
+        repository.saveWeekOverride(WeekOverrideEntity(
             id = 7L,
             semesterId = 1L,
             academicCalendarId = separatedCalendarId,
             weekStartDate = LocalDate.of(2026, 10, 5),
             weekType = WeekType.A,
             scope = WeekOverrideScope.ONE_WEEK
-        )
+        ))
 
         viewModel.selectCalendar(repository.calendar.id.toString())
         advanceUntilIdle()
@@ -780,7 +687,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         viewModel.updateCourseName("Fizyka")
@@ -814,7 +720,6 @@ class SemesterViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.open("1")
         advanceUntilIdle()
 
         val assignmentId = viewModel.semester.value.courseItems.first().assignmentId
@@ -830,80 +735,48 @@ class SemesterViewModelTest {
     }
 
     @Test
-    fun unparsableIdClearsPreviousSemester() = runTest(mainDispatcher) {
+    fun externalChangeRefreshesTheScreen() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.open("1")
-        advanceUntilIdle()
-        assertEquals("Semestr", viewModel.semester.value.semester.name)
+        assertTrue(viewModel.semester.value.overrides.isEmpty())
 
-        viewModel.open("abc")
+        repository.saveWeekOverride(
+            WeekOverrideEntity(
+                id = 0L,
+                semesterId = 1L,
+                academicCalendarId = 1L,
+                weekStartDate = LocalDate.of(2026, 10, 5),
+                weekType = WeekType.B,
+                scope = WeekOverrideScope.ONE_WEEK
+            )
+        )
         advanceUntilIdle()
 
-        assertEquals("", viewModel.semester.value.semester.name)
-        assertEquals(null, viewModel.semesterId.value)
+        assertEquals(listOf("2026-10-05"), viewModel.semester.value.overrides.map { it.weekStartDate })
     }
 
     @Test
-    fun lateSaveFromPreviousSessionDoesNotCloseOrModifyCurrentSemester() = runTest(mainDispatcher) {
+    fun externalChangeKeepsTheCourseDraft() = runTest(mainDispatcher) {
         val repository = FakeRepository()
-        val sink = RecordingFeedbackSink()
-        val viewModel = recordingViewModel(repository, sink)
+        val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.open("1")
+        viewModel.updateCourseName("Fizyka")
+
+        repository.saveWeekOverride(
+            WeekOverrideEntity(
+                id = 0L,
+                semesterId = 1L,
+                academicCalendarId = 1L,
+                weekStartDate = LocalDate.of(2026, 10, 5),
+                weekType = WeekType.B,
+                scope = WeekOverrideScope.ONE_WEEK
+            )
+        )
         advanceUntilIdle()
 
-        val effects = mutableListOf<SemesterEffect>()
-        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
-        advanceUntilIdle()
-
-        repository.saveGate = CompletableDeferred()
-        viewModel.saveSemester()
-        advanceUntilIdle()
-
-        viewModel.open("2")
-        advanceUntilIdle()
-        assertEquals("Semestr drugi", viewModel.semester.value.semester.name)
-
-        repository.saveGate?.complete(Unit)
-        advanceUntilIdle()
-
-        assertEquals("Semestr drugi", viewModel.semester.value.semester.name)
-        assertEquals(2L, viewModel.semesterId.value)
-        assertEquals(1L, repository.activeSemesterId)
-        assertTrue(effects.isEmpty())
-        assertTrue(sink.published.isEmpty())
-        assertFalse(viewModel.semester.value.semester.isSaving)
-    }
-
-    @Test
-    fun failedSaveFromPreviousSessionDoesNotReportOnCurrentSemester() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink()
-        val viewModel = recordingViewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.open("1")
-        advanceUntilIdle()
-
-        val effects = mutableListOf<SemesterEffect>()
-        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
-        advanceUntilIdle()
-
-        repository.saveGate = CompletableDeferred()
-        viewModel.saveSemester()
-        advanceUntilIdle()
-
-        viewModel.open("2")
-        advanceUntilIdle()
-        repository.saveGate?.completeExceptionally(IllegalStateException("save failed"))
-        advanceUntilIdle()
-
-        // The failure belongs to the semester that is no longer open.
-        assertEquals("Semestr drugi", viewModel.semester.value.semester.name)
-        assertNull(viewModel.semester.value.semester.dateRangeError)
-        assertTrue(sink.published.isEmpty())
-        assertTrue(effects.isEmpty())
+        assertEquals("Fizyka", viewModel.semester.value.courseNameDraft)
+        assertEquals(1, viewModel.semester.value.overrides.size)
     }
 }
 

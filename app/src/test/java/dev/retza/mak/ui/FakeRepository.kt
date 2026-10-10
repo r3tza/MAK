@@ -507,6 +507,7 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
             val index = weekOverrides.indexOfFirst { it.id == entity.id }
             if (index >= 0) weekOverrides[index] = entity else weekOverrides += entity
         }
+        notifyDataChanged()
         return entity.id
     }
 
@@ -514,6 +515,7 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         awaitSave()
         events += "deleteWeekOverride"
         weekOverrides.removeAll { it.id == id }
+        notifyDataChanged()
     }
 
     override suspend fun saveOccurrenceNote(record: OccurrenceNoteRecord): Long =

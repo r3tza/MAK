@@ -7,6 +7,7 @@ object MakRoutes {
     const val Schedule = "schedule"
     const val Edit = "edit?classId={classId}&date={date}"
     const val Occurrence = "occurrence/{classId}/{date}"
+    const val SemesterGraph = "semester-graph/{semesterId}"
     const val Semester = "semester/{semesterId}"
     const val SemesterCourses = "semester/{semesterId}/courses"
     const val SemesterCourseAdd = "semester/{semesterId}/course-new"
@@ -41,6 +42,8 @@ fun newClassRoute(date: LocalDate? = null): String =
     date?.let { "edit?date=$it" } ?: "edit"
 
 fun semesterRoute(id: String): String = "semester/$id"
+
+fun semesterGraphRoute(id: String): String = "semester-graph/$id"
 
 fun studyProgramEditRoute(id: Long): String = "settings/programs/$id"
 

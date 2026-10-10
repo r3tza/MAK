@@ -6,6 +6,8 @@ import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
 import java.time.DayOfWeek
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
 interface SemesterRepository {
@@ -25,6 +27,9 @@ interface SemesterRepository {
     fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarRecord>>
 
     fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>>
+
+    /** The semester with its programs, calendars and week overrides, or null when it does not exist. */
+    fun observeSemesterConfiguration(id: Long): Flow<SemesterConfiguration?>
 
     suspend fun saveSemester(record: SemesterRecord): Long
 
@@ -115,6 +120,21 @@ class RoomSemesterRepository(
 
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>> =
         weekOverrides.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }
+
+    override fun observeSemesterConfiguration(id: Long): Flow<SemesterConfiguration?> =
+        combine(semesters.observeWithData(id), studyPrograms.observeAll()) { data, programs ->
+            data?.let {
+                SemesterConfiguration(
+                    semester = it.semester.toRecord(),
+                    programs = it.semesterPrograms.map { program -> program.toRecord() },
+                    studyPrograms = programs.map { program -> program.toRecord() },
+                    calendars = it.academicCalendars.map { calendar -> calendar.toRecord() },
+                    overrides = it.weekOverrides.map { week -> week.toRecord() }
+                )
+            }
+        }
+            // The query also covers classes and notes; their writes must not reset an unsaved semester form.
+            .distinctUntilChanged()
 
     override suspend fun saveSemester(record: SemesterRecord): Long {
         val entity = record.toEntity()

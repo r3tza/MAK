@@ -41,7 +41,6 @@ import dev.retza.mak.ui.components.MakNavBar
 import dev.retza.mak.ui.components.MakNavRail
 import dev.retza.mak.ui.feedback.MakSnackbarHost
 import dev.retza.mak.ui.feedback.UiFeedback
-import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.settings.SyncViewModel
 import dev.retza.mak.update.UpdateViewModel
@@ -51,7 +50,6 @@ import kotlinx.coroutines.flow.Flow
 @Composable
 fun MakApp(
     viewModel: AppViewModel,
-    semesterViewModel: SemesterViewModel,
     settingsViewModel: SettingsViewModel,
     syncViewModel: SyncViewModel,
     updateViewModel: UpdateViewModel,
@@ -122,7 +120,6 @@ fun MakApp(
         }
     }
 
-    SemesterEffects(semesterViewModel, navController)
     SettingsEffects(settingsViewModel, navController)
 
     BackHandler(enabled = showBack) { navigateBack() }
@@ -221,7 +218,6 @@ fun MakApp(
                 )
                 semesterRoutes(
                     planEditTracker = planEditTracker,
-                    semesterViewModel = semesterViewModel,
                     navController = navController
                 )
                 settingsRoute(

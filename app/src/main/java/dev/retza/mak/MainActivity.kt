@@ -46,7 +46,6 @@ import dev.retza.mak.ui.makWidthClassFor
 import dev.retza.mak.ui.shouldLockPortrait
 import dev.retza.mak.ui.withAppLocale
 import dev.retza.mak.ui.feedback.FeedbackController
-import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.settings.SyncViewModel
 import dev.retza.mak.ui.settings.ThemeMode
@@ -62,7 +61,6 @@ import dev.retza.mak.update.UpdateViewModel
 
 class MainActivity : ComponentActivity() {
     private val appViewModel: AppViewModel by viewModel()
-    private val semesterViewModel: SemesterViewModel by viewModel()
     private val settingsViewModel: SettingsViewModel by viewModel()
     private val syncViewModel: SyncViewModel by viewModel()
     private val updateViewModel: UpdateViewModel by viewModel()
@@ -173,7 +171,6 @@ class MainActivity : ComponentActivity() {
                         ) { updateViewModel.resumeInstallationAfterPermission() }
                         MakApp(
                             viewModel = appViewModel,
-                            semesterViewModel = semesterViewModel,
                             settingsViewModel = settingsViewModel,
                             syncViewModel = syncViewModel,
                             updateViewModel = updateViewModel,

@@ -21,6 +21,7 @@ import dev.retza.mak.data.repository.AcademicCalendarRecord
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.StudyProgramRecord
+import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.data.repository.RoomPlanBackupGateway
 import dev.retza.mak.data.repository.RoomScheduleRepository
 import dev.retza.mak.data.repository.RoomSemesterRepository
@@ -627,6 +628,32 @@ class RoomPersistenceTest {
         }
 
         assertEquals(calendarId, database!!.academicCalendarDao().findById(calendarId)?.id)
+    }
+
+    @Test
+    fun semesterConfigurationEmitsAfterAWrite() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val calendarId = insertCalendar(semesterId)
+        val monday = LocalDate.of(2026, 10, 5)
+
+        val configurations = repository.observeSemesterConfiguration(semesterId)
+        assertTrue(configurations.first()?.overrides?.isEmpty() == true)
+
+        repository.saveWeekOverride(
+            WeekOverrideRecord(
+                semesterId = semesterId,
+                academicCalendarId = calendarId,
+                weekStartDate = monday,
+                weekType = dev.retza.mak.domain.WeekType.B,
+                scope = dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK
+            )
+        )
+
+        val updated = configurations.first { it?.overrides?.isNotEmpty() == true }
+        assertEquals(monday, updated?.overrides?.single()?.weekStartDate)
+        assertEquals(dev.retza.mak.domain.WeekType.B, updated?.overrides?.single()?.weekType)
     }
 
     private suspend fun insertCalendar(semesterId: Long): Long =
