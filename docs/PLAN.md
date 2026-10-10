@@ -21,6 +21,8 @@ Przeczytaj tę sekcję przed każdym krokiem.
 
 ## 1. Przenieś akcje zapisu na launchUiOperation i usuń koinInject z TrackPlanEditing (I-84)
 
+Stan: zrobione (`84fdd76`). Wywołań `TrackPlanEditing` jest 12, nie 13; parametr trackera dostała też `occurrenceTopBarActions`. Testy Android uruchomione na `Medium_Phone` (na tym komputerze nie ma `Medium_Phone_A12`). Zrzutów obu dialogów przy 320 dp nie wykonano.
+
 Cel: każda akcja zapisu z interfejsu ma blokadę podwójnego wywołania i flagę trwania przez `launchUiOperation` (E1, `ARCHITECTURE.md`, sekcja 5, I-64), zależność `PlanEditTracker` przychodzi jawnie z granicy hosta (D3, `STACK.md`, sekcja o Koin), a dwa dialogi rysuje `MakDialog` (H7, `LOG.md`, I-72). Dla użytkownika zmienia się tylko jedno: w dialogu „Usuń zajęcia” przyciski są nieaktywne, dopóki trwa usuwanie.
 
 Pliki: `ui/schedule/ScheduleViewModel.kt`, `ui/occurrence/OccurrenceViewModel.kt`, `ui/occurrence/OccurrenceDetailsModels.kt`, `ui/occurrence/OccurrenceDetailsScreen.kt`, `ui/PlanEditing.kt`, `MainActivity.kt`, `ui/MakNavHostApp.kt`, `ui/ClassOccurrenceRoutes.kt`, `ui/SemesterRoutes.kt`, `ui/SettingsRoutes.kt`, `ui/SetupRoutes.kt`, `ui/StudyProgramRoutes.kt`, `ui/edit/ClassEditScreen.kt`, `ui/semester/SemesterScreen.kt`; testy `ui/schedule/ScheduleViewModelTest.kt`, `ui/occurrence/OccurrenceViewModelTest.kt` (JVM), `ui/edit/ClassEditScreenTest.kt`, `ui/semester/SemesterScreenTest.kt`, `ui/occurrence/OccurrenceDetailsScreenTest.kt`, `ui/PlanEditingTest.kt` (Android).
@@ -107,6 +109,8 @@ Weryfikacja:
 Kryterium zakończenia: wszystkie testy z weryfikacji przechodzą; `rg "koinInject|runReportingFailure" app/src/main` nic nie znajduje; `rg "AlertDialog\(" app/src/main` znajduje tylko `MakConfirmDeletionDialog` w `ui/components/MakComponents.kt` (poza zakresem H7). Commit: `fix: guard week override and class deletion writes (I-84)`.
 
 ## 2. Ogranicz zbędne odświeżanie powiadomień i preferencji (I-84)
+
+Stan: zrobione. `refresh()` bez argumentów czyta plan tylko przy włączonych powiadomieniach. `SettingsPreferencesTest` używa `runBlocking` z kolektorem na `Dispatchers.Default`, bo testy Android w tym pliku nie używają `runTest`.
 
 Cel: zmiana motywu, zapis czasu sprawdzenia aktualizacji albo ukrycie banera nie przelicza planu ani alarmów, a przy wyłączonych powiadomieniach o kolizjach aplikacja nie subskrybuje planu (B3, B5). Zachowanie widoczne dla użytkownika się nie zmienia.
 

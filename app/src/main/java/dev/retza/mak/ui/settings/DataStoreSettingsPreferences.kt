@@ -52,15 +52,15 @@ class DataStoreSettingsPreferences(
 
     override val theme: Flow<ThemeMode> = preferences.map { stored ->
         themeModeFromStored(stored[themeKey])
-    }
+    }.distinctUntilChanged()
 
     override val collisionNotifications: Flow<CollisionNotificationPreferences> =
-        preferences.map { stored -> stored.toNotificationPreferences() }
+        preferences.map { stored -> stored.toNotificationPreferences() }.distinctUntilChanged()
 
     override val gapThresholdMinutes: Flow<Int> = preferences.map { stored ->
         (stored[gapThresholdMinutesKey] ?: defaultGapThresholdMinutes)
             .coerceIn(minGapThresholdMinutes, maxGapThresholdMinutes)
-    }
+    }.distinctUntilChanged()
 
     override val planDisplay: Flow<PlanDisplaySettings> = preferences.map { stored ->
         PlanDisplaySettings(

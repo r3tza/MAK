@@ -104,6 +104,56 @@ class CollisionAlarmSchedulerTest {
         }
     }
 
+    @Test
+    fun disabledSettingsCancelStoredAlarms() = runBlocking {
+        val semesterId = seedCollidingClasses()
+        val semesterRepository = RoomSemesterRepository(database)
+        val scheduleRepository = RoomScheduleRepository(database)
+        val planner = CollisionNotificationPlanner(ActivePlanProvider(), clock)
+        val preferences = EnabledNotifications()
+        val activePlanSource = ActivePlanSource(semesterRepository, scheduleRepository, preferences)
+        val scheduler = CollisionAlarmScheduler(context, activePlanSource, planner, preferences, clock)
+        val enabledSettings = preferences.collisionNotifications.first()
+        val inputs = activePlanSource.observe(semesterId).first()!!
+
+        try {
+            scheduler.refresh(enabledSettings, inputs)
+            assertTrue(storedAlarmIds().isNotEmpty())
+
+            scheduler.refresh(enabledSettings.copy(enabled = false), null)
+            assertEquals(emptySet<String>(), storedAlarmIds())
+        } finally {
+            scheduler.cancelAll()
+        }
+    }
+
+    @Test
+    fun sameInputsKeepStoredIds() = runBlocking {
+        val semesterId = seedCollidingClasses()
+        val semesterRepository = RoomSemesterRepository(database)
+        val scheduleRepository = RoomScheduleRepository(database)
+        val planner = CollisionNotificationPlanner(ActivePlanProvider(), clock)
+        val preferences = EnabledNotifications()
+        val activePlanSource = ActivePlanSource(semesterRepository, scheduleRepository, preferences)
+        val scheduler = CollisionAlarmScheduler(context, activePlanSource, planner, preferences, clock)
+        val settings = preferences.collisionNotifications.first()
+        val inputs = activePlanSource.observe(semesterId).first()!!
+
+        try {
+            scheduler.refresh(settings, inputs)
+            val firstIds = storedAlarmIds()
+            assertTrue(firstIds.isNotEmpty())
+
+            scheduler.refresh(settings, inputs)
+            assertEquals(firstIds, storedAlarmIds())
+        } finally {
+            scheduler.cancelAll()
+        }
+    }
+
+    private fun storedAlarmIds(): Set<String> =
+        context.getSharedPreferences(ALARMS, Context.MODE_PRIVATE).getStringSet(IDS, emptySet()).orEmpty()
+
     private suspend fun seedCollidingClasses(): Long {
         val semesterId = database.semesterDao().insert(SemesterEntity(name = "Semestr", isActive = true))
         val calendarId = database.academicCalendarDao().insert(

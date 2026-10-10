@@ -5,10 +5,12 @@ import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
 import androidx.core.content.edit
+import dev.retza.mak.domain.ActivePlanInputs
 import dev.retza.mak.domain.CollisionNotificationPlanner
 import dev.retza.mak.domain.PlannedCollisionNotification
 import dev.retza.mak.domain.toAlarmPayload
 import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.ui.settings.CollisionNotificationPreferences
 import dev.retza.mak.ui.settings.SettingsPreferences
 import java.time.Clock
 import java.time.temporal.ChronoUnit
@@ -37,21 +39,25 @@ class CollisionAlarmScheduler(
 
     suspend fun refresh() = mutex.withLock {
         val settings = preferences.collisionNotifications.first()
-        if (!settings.enabled) {
+        val inputs = if (settings.enabled) activePlanSource.observeActive().first() else null
+        refreshLocked(settings, inputs)
+    }
+
+    /** Schedules from values the caller already has, so a collector does not read the plan twice. */
+    suspend fun refresh(settings: CollisionNotificationPreferences, inputs: ActivePlanInputs?) =
+        mutex.withLock { refreshLocked(settings, inputs) }
+
+    private fun refreshLocked(settings: CollisionNotificationPreferences, inputs: ActivePlanInputs?) {
+        if (!settings.enabled || inputs == null) {
             cancelAllLocked()
-            return@withLock
-        }
-        val inputs = activePlanSource.observeActive().first()
-        if (inputs == null) {
-            cancelAllLocked()
-            return@withLock
+            return
         }
         val planned = planner.plan(inputs, settings.toPlannerSettings())
         val plannedIds = planned.map { it.id }.toSet()
         storedIds().subtract(plannedIds).forEach { cancelAlarm(it) }
         planned.forEach { schedule(it) }
         scheduleMaintenance()
-        store(plannedIds)
+        if (storedIds() != plannedIds) store(plannedIds)
     }
 
     suspend fun cancelAll() = mutex.withLock { cancelAllLocked() }

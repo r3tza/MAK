@@ -46,6 +46,21 @@ class SettingsPreferencesTest {
     }
 
     @Test
+    fun otherKeyDoesNotReemitTheme() = runBlocking {
+        val preferences = preferences(openDataStore())
+        val themes = mutableListOf<ThemeMode>()
+        val collector = launch(Dispatchers.Default) { preferences.theme.collect { themes.add(it) } }
+        try {
+            preferences.setGapThresholdMinutes(45)
+            preferences.gapThresholdMinutes.first { it == 45 }
+            delay(200)
+        } finally {
+            collector.cancelAndJoin()
+        }
+        assertEquals(1, themes.size)
+    }
+
+    @Test
     fun minimumBreakDefaultsToZeroAndClampsToTwenty() = runBlocking {
         val preferences = preferences(openDataStore())
         assertEquals(0, preferences.planDisplay.first().minimumBreakMinutes)

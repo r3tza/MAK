@@ -18,10 +18,13 @@ import dev.retza.mak.widget.registerMakWidgetRefresh
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.debounce
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.launch
 import org.koin.android.ext.android.inject
 import org.koin.android.ext.koin.androidContext
@@ -31,7 +34,7 @@ import org.koin.plugin.module.dsl.startKoin
 
 private const val NOTIFICATION_REFRESH_DEBOUNCE_MILLIS = 1_000L
 
-@OptIn(FlowPreview::class)
+@OptIn(FlowPreview::class, ExperimentalCoroutinesApi::class)
 @KoinApplication
 class MakApplication : Application(), Configuration.Provider {
     override val workManagerConfiguration: Configuration
@@ -93,11 +96,15 @@ class MakApplication : Application(), Configuration.Provider {
             }
         }
         initializationScope.launch {
-            combine(activePlanSource.observeActive(), preferences.collisionNotifications) { _, _ -> }
+            preferences.collisionNotifications
+                .flatMapLatest { settings ->
+                    if (!settings.enabled) flowOf(settings to null)
+                    else activePlanSource.observeActive().map { inputs -> settings to inputs }
+                }
                 .debounce(NOTIFICATION_REFRESH_DEBOUNCE_MILLIS)
-                .collect {
+                .collect { (settings, inputs) ->
                     try {
-                        scheduler.refresh()
+                        scheduler.refresh(settings, inputs)
                     } catch (error: CancellationException) {
                         throw error
                     } catch (error: Exception) {
