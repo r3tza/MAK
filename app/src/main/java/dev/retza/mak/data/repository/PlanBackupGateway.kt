@@ -25,16 +25,16 @@ class RoomPlanBackupGateway(
     override suspend fun snapshot(): BackupData = database.withTransaction {
         val all = semesters.getAllWithData()
         BackupData(
-            studyPrograms = studyPrograms.getAll(),
+            studyPrograms = studyPrograms.getAll().map { it.toRecord() },
             semesters = all.map { data ->
                 SemesterBackup(
-                    semester = data.semester,
-                    calendars = data.academicCalendars,
-                    programs = data.semesterPrograms,
-                    classes = data.classes,
-                    weekOverrides = data.weekOverrides,
-                    occurrenceNotes = data.occurrenceNotes,
-                    occurrenceChanges = data.occurrenceChanges
+                    semester = data.semester.toRecord(),
+                    calendars = data.academicCalendars.map { it.toRecord() },
+                    programs = data.semesterPrograms.map { it.toRecord() },
+                    classes = data.classes.map { it.toRecord() },
+                    weekOverrides = data.weekOverrides.map { it.toRecord() },
+                    occurrenceNotes = data.occurrenceNotes.map { it.toRecord() },
+                    occurrenceChanges = data.occurrenceChanges.map { it.toRecord() }
                 )
             }
         )
@@ -50,15 +50,15 @@ class RoomPlanBackupGateway(
         studyPrograms.deleteAll()
         semesters.deleteAll()
 
-        data.studyPrograms.forEach { studyPrograms.insert(it) }
+        data.studyPrograms.forEach { studyPrograms.insert(it.toEntity()) }
         data.semesters.forEach { backup ->
-            semesters.insert(backup.semester)
-            backup.calendars.forEach { calendars.insert(it) }
-            backup.programs.forEach { semesterPrograms.insert(it) }
-            backup.classes.forEach { classes.insert(it) }
-            backup.weekOverrides.forEach { weekOverrides.insert(it) }
-            backup.occurrenceNotes.forEach { occurrenceNotes.insert(it) }
-            backup.occurrenceChanges.forEach { occurrenceChanges.insert(it) }
+            semesters.insert(backup.semester.toEntity())
+            backup.calendars.forEach { calendars.insert(it.toEntity()) }
+            backup.programs.forEach { semesterPrograms.insert(it.toEntity()) }
+            backup.classes.forEach { classes.insert(it.toEntity()) }
+            backup.weekOverrides.forEach { weekOverrides.insert(it.toEntity()) }
+            backup.occurrenceNotes.forEach { occurrenceNotes.insert(it.toEntity()) }
+            backup.occurrenceChanges.forEach { occurrenceChanges.insert(it.toEntity()) }
         }
         data.activeSemesterId
     }

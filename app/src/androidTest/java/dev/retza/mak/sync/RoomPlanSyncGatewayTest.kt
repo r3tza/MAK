@@ -13,9 +13,11 @@ import dev.retza.mak.data.entity.SemesterProgramEntity
 import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
+import dev.retza.mak.data.repository.ClassRecord
 import dev.retza.mak.data.repository.RoomPlanBackupGateway
 import dev.retza.mak.data.repository.PlanBackupGateway
 import dev.retza.mak.data.repository.SemesterBackup
+import dev.retza.mak.data.repository.toRecord
 import dev.retza.mak.ui.settings.DataStoreSettingsPreferences
 import dev.retza.mak.ui.settings.SettingsPreferences
 import dev.retza.mak.ui.settings.TestPreferencesFile
@@ -178,7 +180,7 @@ class RoomPlanSyncGatewayTest {
         }
         replacementEntered.await()
 
-        var classesBeforeCommit: List<ClassEntity>? = null
+        var classesBeforeCommit: List<ClassRecord>? = null
         val editor = async(start = CoroutineStart.UNDISPATCHED) {
             tracker.beginEdit("class-form")
             classesBeforeCommit = backup.snapshot().semesters.flatMap { it.classes }
@@ -190,7 +192,7 @@ class RoomPlanSyncGatewayTest {
         replacement.await()
         editor.await()
 
-        assertEquals(emptyList<ClassEntity>(), classesBeforeCommit)
+        assertEquals(emptyList<ClassRecord>(), classesBeforeCommit)
         assertTrue(backup.snapshot().semesters.flatMap { it.classes }.isEmpty())
     }
 
@@ -304,13 +306,13 @@ class RoomPlanSyncGatewayTest {
     }
 
     private fun plan(vararg names: String, active: Long? = null) = BackupData(
-        studyPrograms = listOf(StudyProgramEntity(id = 1, name = "Informatyka", color = "#137B71")),
+        studyPrograms = listOf(StudyProgramEntity(id = 1, name = "Informatyka", color = "#137B71").toRecord()),
         semesters = names.mapIndexed { index, name ->
             val id = index + 1L
             SemesterBackup(
-                semester = SemesterEntity(id = id, name = name, isActive = id == active),
-                calendars = listOf(AcademicCalendarEntity(id, id, LocalDate.of(2026, 10, 1), LocalDate.of(2027, 1, 31), WeekType.A)),
-                programs = listOf(SemesterProgramEntity(id, id, 1, id)),
+                semester = SemesterEntity(id = id, name = name, isActive = id == active).toRecord(),
+                calendars = listOf(AcademicCalendarEntity(id, id, LocalDate.of(2026, 10, 1), LocalDate.of(2027, 1, 31), WeekType.A).toRecord()),
+                programs = listOf(SemesterProgramEntity(id, id, 1, id).toRecord()),
                 classes = emptyList(),
                 weekOverrides = emptyList(),
                 occurrenceNotes = emptyList(),
@@ -339,7 +341,7 @@ class RoomPlanSyncGatewayTest {
                         recurrence = Recurrence.EVERY_WEEK,
                         date = null,
                         classNote = null
-                    )
+                    ).toRecord()
                 )
             )
         }

@@ -1,8 +1,8 @@
 package dev.retza.mak.sync
 
-import dev.retza.mak.data.entity.ClassEntity
-import dev.retza.mak.data.entity.OccurrenceChangeEntity
-import dev.retza.mak.data.entity.OccurrenceNoteEntity
+import dev.retza.mak.data.repository.ClassRecord
+import dev.retza.mak.data.repository.OccurrenceChangeRecord
+import dev.retza.mak.data.repository.OccurrenceNoteRecord
 import dev.retza.mak.data.repository.BackupData
 import kotlinx.serialization.Serializable
 
@@ -52,7 +52,7 @@ enum class ClassField {
     GROUP,
     NOTE;
 
-    internal fun read(row: ClassEntity): Any? = when (this) {
+    internal fun read(row: ClassRecord): Any? = when (this) {
         NAME -> row.name
         PROGRAM -> row.semesterProgramId
         TYPE -> row.type
@@ -65,7 +65,7 @@ enum class ClassField {
     }
 
     /** [into] with this field taken from [from]. */
-    internal fun copy(from: ClassEntity, into: ClassEntity): ClassEntity = when (this) {
+    internal fun copy(from: ClassRecord, into: ClassRecord): ClassRecord = when (this) {
         NAME -> into.copy(name = from.name)
         PROGRAM -> into.copy(semesterProgramId = from.semesterProgramId)
         TYPE -> into.copy(type = from.type)
@@ -102,7 +102,7 @@ fun planDifferences(phone: BackupData, drive: BackupData, base: BackupData): Lis
                 differences += PlanDifference(key, phoneKey = key, driveKey = null, collision = true)
                 differences += PlanDifference(key, phoneKey = null, driveKey = key, collision = true)
             }
-            onPhone is ClassEntity && onDrive is ClassEntity -> ClassField.entries
+            onPhone is ClassRecord && onDrive is ClassRecord -> ClassField.entries
                 .filter { it.read(onPhone) != it.read(onDrive) }
                 .forEach { differences += PlanDifference(key, phoneKey = key, driveKey = key, field = it) }
             else -> differences += PlanDifference(
@@ -112,7 +112,7 @@ fun planDifferences(phone: BackupData, drive: BackupData, base: BackupData): Lis
             )
         }
     }
-    val classes = (driveRows.values + phoneRows.values).filterIsInstance<ClassEntity>().associateBy { it.id }
+    val classes = (driveRows.values + phoneRows.values).filterIsInstance<ClassRecord>().associateBy { it.id }
     return differences.sortedWith(differenceOrder(phoneRows, driveRows, classes))
 }
 
@@ -136,14 +136,14 @@ internal fun BackupData.rows(): Map<PlanRowKey, Any> {
 private fun differenceOrder(
     phoneRows: Map<PlanRowKey, Any>,
     driveRows: Map<PlanRowKey, Any>,
-    classes: Map<Long, ClassEntity>
+    classes: Map<Long, ClassRecord>
 ): Comparator<PlanDifference> {
-    fun classOf(difference: PlanDifference): ClassEntity? {
+    fun classOf(difference: PlanDifference): ClassRecord? {
         val row = phoneRows[difference.key] ?: driveRows[difference.key]
         return when (row) {
-            is ClassEntity -> row
-            is OccurrenceNoteEntity -> classes[row.classId]
-            is OccurrenceChangeEntity -> classes[row.classId]
+            is ClassRecord -> row
+            is OccurrenceNoteRecord -> classes[row.classId]
+            is OccurrenceChangeRecord -> classes[row.classId]
             else -> null
         }
     }

@@ -10,6 +10,7 @@ import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterBackup
+import dev.retza.mak.data.repository.toRecord
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -24,15 +25,17 @@ internal fun basePlan(
     assignments: List<SemesterProgramEntity> = listOf(SemesterProgramEntity(id = 1, semesterId = 1, studyProgramId = 1, academicCalendarId = 1)),
     active: Boolean = true
 ): BackupData = BackupData(
-    studyPrograms = programs,
+    studyPrograms = programs.map { it.toRecord() },
     semesters = listOf(
         SemesterBackup(
-            semester = SemesterEntity(id = 1, name = "Zimowy", isActive = active),
-            calendars = listOf(AcademicCalendarEntity(1, 1, LocalDate.of(2026, 10, 1), LocalDate.of(2027, 2, 28), WeekType.A)),
-            programs = assignments,
-            classes = classes,
+            semester = SemesterEntity(id = 1, name = "Zimowy", isActive = active).toRecord(),
+            calendars = listOf(
+                AcademicCalendarEntity(1, 1, LocalDate.of(2026, 10, 1), LocalDate.of(2027, 2, 28), WeekType.A).toRecord()
+            ),
+            programs = assignments.map { it.toRecord() },
+            classes = classes.map { it.toRecord() },
             weekOverrides = emptyList(),
-            occurrenceNotes = notes,
+            occurrenceNotes = notes.map { it.toRecord() },
             occurrenceChanges = emptyList()
         )
     )

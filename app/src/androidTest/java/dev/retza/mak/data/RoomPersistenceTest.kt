@@ -25,6 +25,7 @@ import dev.retza.mak.data.repository.RoomPlanBackupGateway
 import dev.retza.mak.data.repository.RoomScheduleRepository
 import dev.retza.mak.data.repository.RoomSemesterRepository
 import dev.retza.mak.data.repository.SemesterBackup
+import dev.retza.mak.data.repository.toRecord
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -333,13 +334,13 @@ class RoomPersistenceTest {
             classNote = null
         )
         val data = BackupData(
-            studyPrograms = listOf(newProgram),
+            studyPrograms = listOf(newProgram.toRecord()),
             semesters = listOf(
                 SemesterBackup(
-                    semester = newSemester,
-                    calendars = listOf(newCalendar),
-                    programs = listOf(newAssignment),
-                    classes = listOf(newClass),
+                    semester = newSemester.toRecord(),
+                    calendars = listOf(newCalendar.toRecord()),
+                    programs = listOf(newAssignment.toRecord()),
+                    classes = listOf(newClass.toRecord()),
                     weekOverrides = emptyList(),
                     occurrenceNotes = emptyList(),
                     occurrenceChanges = emptyList()
@@ -367,10 +368,10 @@ class RoomPersistenceTest {
                 "BEGIN SELECT RAISE(ABORT, 'insert failed'); END"
         )
         val data = BackupData(
-            studyPrograms = listOf(StudyProgramEntity(id = 900, name = "Nowy", color = "#111111")),
+            studyPrograms = listOf(StudyProgramEntity(id = 900, name = "Nowy", color = "#111111").toRecord()),
             semesters = listOf(
                 SemesterBackup(
-                    semester = SemesterEntity(id = 900, name = "Nowy", isActive = true),
+                    semester = SemesterEntity(id = 900, name = "Nowy", isActive = true).toRecord(),
                     calendars = emptyList(),
                     programs = emptyList(),
                     classes = emptyList(),

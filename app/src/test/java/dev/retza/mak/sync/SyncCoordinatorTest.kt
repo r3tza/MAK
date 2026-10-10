@@ -7,6 +7,8 @@ import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterBackup
+import dev.retza.mak.data.repository.toEntity
+import dev.retza.mak.data.repository.toRecord
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -108,12 +110,12 @@ class SyncCoordinatorTest {
         val base = basePlan()
         phone.data = base
         coordinator.synchronize()
-        phone.data = basePlan(classes = base.semesters[0].classes + classRow(2, "Bazy danych", java.time.DayOfWeek.MONDAY, 12))
+        phone.data = basePlan(classes = base.semesters[0].classes.map { it.toEntity() } + classRow(2, "Bazy danych", java.time.DayOfWeek.MONDAY, 12))
         drive.put(
             basePlan(
-                programs = base.studyPrograms + dev.retza.mak.data.entity.StudyProgramEntity(id = 2, name = "Ekonometria", color = "#A65724"),
-                assignments = base.semesters[0].programs + dev.retza.mak.data.entity.SemesterProgramEntity(id = 2, semesterId = 1, studyProgramId = 2, academicCalendarId = 1),
-                classes = base.semesters[0].classes + classRow(3, "Statystyka", java.time.DayOfWeek.TUESDAY, 10, semesterProgramId = 2)
+                programs = base.studyPrograms.map { it.toEntity() } + dev.retza.mak.data.entity.StudyProgramEntity(id = 2, name = "Ekonometria", color = "#A65724"),
+                assignments = base.semesters[0].programs.map { it.toEntity() } + dev.retza.mak.data.entity.SemesterProgramEntity(id = 2, semesterId = 1, studyProgramId = 2, academicCalendarId = 1),
+                classes = base.semesters[0].classes.map { it.toEntity() } + classRow(3, "Statystyka", java.time.DayOfWeek.TUESDAY, 10, semesterProgramId = 2)
             )
         )
         coordinator.synchronize()
@@ -527,18 +529,18 @@ class SyncCoordinatorTest {
 private fun BackupData.names() = semesters.map { it.semester.name }
 
 private fun plan(vararg names: String, active: Long? = null, starts: List<LocalDate> = emptyList()): BackupData = BackupData(
-    studyPrograms = listOf(StudyProgramEntity(id = 1, name = "Informatyka", color = "#137B71")),
+    studyPrograms = listOf(StudyProgramEntity(id = 1, name = "Informatyka", color = "#137B71").toRecord()),
     semesters = names.mapIndexed { index, name ->
         val id = index + 1L
         SemesterBackup(
-            semester = SemesterEntity(id = id, name = name, isActive = id == (active ?: 1L)),
+            semester = SemesterEntity(id = id, name = name, isActive = id == (active ?: 1L)).toRecord(),
             calendars = listOf(
                 starts.getOrNull(index).let { start ->
                     val from = start ?: LocalDate.of(2026, 10, 1)
-                    AcademicCalendarEntity(id, id, from, from.plusMonths(4), WeekType.A)
+                    AcademicCalendarEntity(id, id, from, from.plusMonths(4), WeekType.A).toRecord()
                 }
             ),
-            programs = listOf(SemesterProgramEntity(id, id, 1, id)),
+            programs = listOf(SemesterProgramEntity(id, id, 1, id).toRecord()),
             classes = emptyList(),
             weekOverrides = emptyList(),
             occurrenceNotes = emptyList(),

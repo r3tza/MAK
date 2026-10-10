@@ -1,17 +1,17 @@
 package dev.retza.mak.export
 
-import dev.retza.mak.data.entity.AcademicCalendarEntity
-import dev.retza.mak.data.entity.ClassEntity
-import dev.retza.mak.data.entity.OccurrenceChangeEntity
-import dev.retza.mak.data.entity.OccurrenceChangeKind
-import dev.retza.mak.data.entity.OccurrenceNoteEntity
-import dev.retza.mak.data.entity.Recurrence
-import dev.retza.mak.data.entity.SemesterEntity
-import dev.retza.mak.data.entity.SemesterProgramEntity
-import dev.retza.mak.data.entity.StudyProgramEntity
-import dev.retza.mak.data.entity.WeekOverrideEntity
-import dev.retza.mak.data.entity.WeekOverrideScope
-import dev.retza.mak.data.entity.WeekType
+import dev.retza.mak.data.repository.AcademicCalendarRecord
+import dev.retza.mak.data.repository.ClassRecord
+import dev.retza.mak.data.repository.OccurrenceChangeRecord
+import dev.retza.mak.domain.OccurrenceChangeKind
+import dev.retza.mak.data.repository.OccurrenceNoteRecord
+import dev.retza.mak.domain.Recurrence
+import dev.retza.mak.data.repository.SemesterRecord
+import dev.retza.mak.data.repository.SemesterProgramRecord
+import dev.retza.mak.data.repository.StudyProgramRecord
+import dev.retza.mak.data.repository.WeekOverrideRecord
+import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterBackup
 import dev.retza.mak.data.repository.withOccurrenceNotesOnOriginalDates
@@ -128,7 +128,7 @@ object ExportImporter {
         }
 
         val programs = snapshot.studyPrograms.map {
-            StudyProgramEntity(id = it.id, name = it.name, color = it.color)
+            StudyProgramRecord(id = it.id, name = it.name, color = it.color)
         }
         return ImportSnapshotResult.Ready(BackupData(studyPrograms = programs, semesters = semesters))
     }
@@ -144,7 +144,7 @@ object ExportImporter {
         }
 
         val calendarIds = semester.calendars.map { it.id }.toSet()
-        val calendars = mutableListOf<AcademicCalendarEntity>()
+        val calendars = mutableListOf<AcademicCalendarRecord>()
         semester.calendars.forEach { calendar ->
             if (calendar.semesterId != semester.id) {
                 errors += "Kalendarz ${calendar.id} należy do innego semestru."
@@ -165,11 +165,11 @@ object ExportImporter {
                 errors += "Kalendarz ${calendar.id} ma niepoprawny pierwszy tydzień."
                 return@forEach
             }
-            calendars += AcademicCalendarEntity(calendar.id, semester.id, start, end, week)
+            calendars += AcademicCalendarRecord(calendar.id, semester.id, start, end, week)
         }
 
         val programIds = semester.programs.map { it.id }.toSet()
-        val programs = mutableListOf<SemesterProgramEntity>()
+        val programs = mutableListOf<SemesterProgramRecord>()
         semester.programs.forEach { program ->
             if (program.semesterId != semester.id) {
                 errors += "Przypisanie ${program.id} należy do innego semestru."
@@ -183,7 +183,7 @@ object ExportImporter {
                 errors += "Przypisanie ${program.id} wskazuje nieistniejący kalendarz."
                 return@forEach
             }
-            programs += SemesterProgramEntity(
+            programs += SemesterProgramRecord(
                 id = program.id,
                 semesterId = semester.id,
                 studyProgramId = program.studyProgramId,
@@ -192,7 +192,7 @@ object ExportImporter {
         }
 
         val classIds = semester.classes.map { it.id }.toSet()
-        val classes = mutableListOf<ClassEntity>()
+        val classes = mutableListOf<ClassRecord>()
         semester.classes.forEach { item ->
             if (item.semesterId != semester.id) {
                 errors += "Zajęcia ${item.id} należą do innego semestru."
@@ -223,7 +223,7 @@ object ExportImporter {
             ) {
                 return@forEach
             }
-            classes += ClassEntity(
+            classes += ClassRecord(
                 id = item.id,
                 semesterId = semester.id,
                 semesterProgramId = item.semesterProgramId,
@@ -242,7 +242,7 @@ object ExportImporter {
             )
         }
 
-        val weekOverrides = mutableListOf<WeekOverrideEntity>()
+        val weekOverrides = mutableListOf<WeekOverrideRecord>()
         semester.weekOverrides.forEach { override ->
             if (override.semesterId != semester.id) {
                 errors += "Korekta ${override.id} należy do innego semestru."
@@ -263,7 +263,7 @@ object ExportImporter {
                 errors += "Korekta ${override.id} ma niepoprawne dane."
                 return@forEach
             }
-            weekOverrides += WeekOverrideEntity(
+            weekOverrides += WeekOverrideRecord(
                 id = override.id,
                 semesterId = semester.id,
                 academicCalendarId = override.academicCalendarId,
@@ -273,7 +273,7 @@ object ExportImporter {
             )
         }
 
-        val occurrenceNotes = mutableListOf<OccurrenceNoteEntity>()
+        val occurrenceNotes = mutableListOf<OccurrenceNoteRecord>()
         semester.occurrenceNotes.forEach { note ->
             if (note.semesterId != semester.id || note.classId !in classIds) {
                 errors += "Notatka ${note.id} wskazuje nieistniejące zajęcia."
@@ -290,7 +290,7 @@ object ExportImporter {
             if (date == null || blank) {
                 return@forEach
             }
-            occurrenceNotes += OccurrenceNoteEntity(
+            occurrenceNotes += OccurrenceNoteRecord(
                 id = note.id,
                 semesterId = semester.id,
                 classId = note.classId,
@@ -299,7 +299,7 @@ object ExportImporter {
             )
         }
 
-        val occurrenceChanges = mutableListOf<OccurrenceChangeEntity>()
+        val occurrenceChanges = mutableListOf<OccurrenceChangeRecord>()
         semester.occurrenceChanges.forEach { change ->
             if (change.semesterId != semester.id || change.classId !in classIds) {
                 errors += "Zmiana ${change.id} wskazuje nieistniejące zajęcia."
@@ -341,24 +341,24 @@ object ExportImporter {
                 }
             }
             if (originalDate == null || kind == null || !valid) return@forEach
-            occurrenceChanges += OccurrenceChangeEntity(
+            occurrenceChanges += OccurrenceChangeRecord(
                 id = change.id,
                 semesterId = semester.id,
                 classId = change.classId,
                 originalDate = originalDate,
                 kind = kind,
                 targetDate = targetDate,
-                newStartTime = startTime,
-                newEndTime = endTime,
-                newRoom = change.room,
-                newBuilding = change.building,
-                newTeacherName = change.teacherName,
-                newNote = change.note
+                startTime = startTime,
+                endTime = endTime,
+                room = change.room,
+                building = change.building,
+                teacherName = change.teacherName,
+                note = change.note
             )
         }
 
         return SemesterBackup(
-            semester = SemesterEntity(id = semester.id, name = semester.name, isActive = semester.isActive),
+            semester = SemesterRecord(id = semester.id, name = semester.name, isActive = semester.isActive),
             calendars = calendars,
             programs = programs,
             classes = classes,

@@ -14,6 +14,8 @@ import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.PlanBackupGateway
 import dev.retza.mak.data.repository.SemesterBackup
+import dev.retza.mak.data.repository.toEntity
+import dev.retza.mak.data.repository.toRecord
 import dev.retza.mak.data.repository.ClassRecord
 import dev.retza.mak.data.repository.OccurrenceChangeRecord
 import dev.retza.mak.data.repository.OccurrenceNoteRecord
@@ -174,16 +176,16 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         flowOf(weekOverrides.filter { it.semesterId == semesterId })
     override suspend fun snapshot(): BackupData {
         return BackupData(
-            studyPrograms = studyPrograms,
+            studyPrograms = studyPrograms.map { it.toRecord() },
             semesters = semesterFlow.value.map { semester ->
                 SemesterBackup(
-                    semester = semester,
-                    calendars = calendars.filter { it.semesterId == semester.id },
-                    programs = semesterPrograms.filter { it.semesterId == semester.id },
-                    classes = classes.filter { it.semesterId == semester.id },
-                    weekOverrides = weekOverrides.filter { it.semesterId == semester.id },
-                    occurrenceNotes = occurrenceNotes,
-                    occurrenceChanges = occurrenceChanges
+                    semester = semester.toRecord(),
+                    calendars = calendars.filter { it.semesterId == semester.id }.map { it.toRecord() },
+                    programs = semesterPrograms.filter { it.semesterId == semester.id }.map { it.toRecord() },
+                    classes = classes.filter { it.semesterId == semester.id }.map { it.toRecord() },
+                    weekOverrides = weekOverrides.filter { it.semesterId == semester.id }.map { it.toRecord() },
+                    occurrenceNotes = occurrenceNotes.map { it.toRecord() },
+                    occurrenceChanges = occurrenceChanges.map { it.toRecord() }
                 )
             }
         )
@@ -558,19 +560,19 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
     override suspend fun replaceAll(data: BackupData): Long? {
         awaitSave()
         events += "replaceAllData"
-        semesterFlow.value = data.semesters.map { it.semester }
+        semesterFlow.value = data.semesters.map { it.semester.toEntity() }
         activeSemesterFlow.value = data.activeSemesterId ?: 0L
-        studyProgramState.value = data.studyPrograms
-        calendarState.value = data.semesters.flatMap { it.calendars }
-        semesterProgramState.value = data.semesters.flatMap { it.programs }
+        studyProgramState.value = data.studyPrograms.map { it.toEntity() }
+        calendarState.value = data.semesters.flatMap { s -> s.calendars.map { it.toEntity() } }
+        semesterProgramState.value = data.semesters.flatMap { s -> s.programs.map { it.toEntity() } }
         classes.clear()
-        classes += data.semesters.flatMap { it.classes }
+        classes += data.semesters.flatMap { s -> s.classes.map { it.toEntity() } }
         weekOverrides.clear()
-        weekOverrides += data.semesters.flatMap { it.weekOverrides }
+        weekOverrides += data.semesters.flatMap { s -> s.weekOverrides.map { it.toEntity() } }
         occurrenceNotes.clear()
-        occurrenceNotes += data.semesters.flatMap { it.occurrenceNotes }
+        occurrenceNotes += data.semesters.flatMap { s -> s.occurrenceNotes.map { it.toEntity() } }
         occurrenceChanges.clear()
-        occurrenceChanges += data.semesters.flatMap { it.occurrenceChanges }
+        occurrenceChanges += data.semesters.flatMap { s -> s.occurrenceChanges.map { it.toEntity() } }
         return data.activeSemesterId
     }
 

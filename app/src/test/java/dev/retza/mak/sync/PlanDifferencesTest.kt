@@ -1,5 +1,6 @@
 package dev.retza.mak.sync
 
+import dev.retza.mak.data.repository.toEntity
 import java.time.DayOfWeek
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -47,8 +48,8 @@ class PlanDifferencesTest {
     @Test
     fun classesAddedOnBothSidesUnderOneNumberAreTwoCollisions() {
         val base = basePlan()
-        val phone = basePlan(classes = basePlan().semesters[0].classes + classRow(2, "Bazy danych", DayOfWeek.MONDAY, 12))
-        val drive = basePlan(classes = basePlan().semesters[0].classes + classRow(2, "Statystyka", DayOfWeek.TUESDAY, 10))
+        val phone = basePlan(classes = basePlan().semesters[0].classes.map { it.toEntity() } + classRow(2, "Bazy danych", DayOfWeek.MONDAY, 12))
+        val drive = basePlan(classes = basePlan().semesters[0].classes.map { it.toEntity() } + classRow(2, "Statystyka", DayOfWeek.TUESDAY, 10))
 
         val differences = planDifferences(phone, drive, base)
 

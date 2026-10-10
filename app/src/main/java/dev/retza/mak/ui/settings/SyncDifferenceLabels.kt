@@ -1,16 +1,16 @@
 package dev.retza.mak.ui.settings
 
-import dev.retza.mak.data.entity.AcademicCalendarEntity
-import dev.retza.mak.data.entity.ClassEntity
-import dev.retza.mak.data.entity.OccurrenceChangeEntity
-import dev.retza.mak.data.entity.OccurrenceChangeKind
-import dev.retza.mak.data.entity.OccurrenceNoteEntity
-import dev.retza.mak.data.entity.Recurrence
-import dev.retza.mak.data.entity.SemesterEntity
-import dev.retza.mak.data.entity.SemesterProgramEntity
-import dev.retza.mak.data.entity.StudyProgramEntity
-import dev.retza.mak.data.entity.WeekOverrideEntity
-import dev.retza.mak.data.entity.WeekOverrideScope
+import dev.retza.mak.data.repository.AcademicCalendarRecord
+import dev.retza.mak.data.repository.ClassRecord
+import dev.retza.mak.data.repository.OccurrenceChangeRecord
+import dev.retza.mak.domain.OccurrenceChangeKind
+import dev.retza.mak.data.repository.OccurrenceNoteRecord
+import dev.retza.mak.domain.Recurrence
+import dev.retza.mak.data.repository.SemesterRecord
+import dev.retza.mak.data.repository.SemesterProgramRecord
+import dev.retza.mak.data.repository.StudyProgramRecord
+import dev.retza.mak.data.repository.WeekOverrideRecord
+import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.sync.ClassField
 import dev.retza.mak.sync.PlanDifference
@@ -44,7 +44,7 @@ internal class SyncDifferenceLabels(phone: BackupData, drive: BackupData) {
         val side = if (onPhone != null) PlanSide.PHONE else PlanSide.DRIVE
         val title = titleOf(row, side)
         val field = difference.field
-        if (field != null && onPhone is ClassEntity && onDrive is ClassEntity) {
+        if (field != null && onPhone is ClassRecord && onDrive is ClassRecord) {
             return SyncDifferenceUi(
                 title = title,
                 subtitle = "${fieldLabel(field)}, ${slot(onPhone)}",
@@ -53,7 +53,7 @@ internal class SyncDifferenceLabels(phone: BackupData, drive: BackupData) {
             )
         }
         return when (row) {
-            is ClassEntity -> classDifference(title, onPhone as ClassEntity?, onDrive as ClassEntity?)
+            is ClassRecord -> classDifference(title, onPhone as ClassRecord?, onDrive as ClassRecord?)
             else -> SyncDifferenceUi(
                 title = title,
                 subtitle = subtitleOf(row, side),
@@ -80,69 +80,69 @@ internal class SyncDifferenceLabels(phone: BackupData, drive: BackupData) {
         (rowOf(key, side) ?: rowOf(key, opposite(side))) as? T
 
     private fun className(id: Long, side: PlanSide) =
-        lookup<ClassEntity>(PlanRowKey(dev.retza.mak.sync.PlanRowKind.CLASS, id), side)?.name ?: "Zajęcia"
+        lookup<ClassRecord>(PlanRowKey(dev.retza.mak.sync.PlanRowKind.CLASS, id), side)?.name ?: "Zajęcia"
 
     private fun semesterName(id: Long, side: PlanSide) =
-        lookup<SemesterEntity>(PlanRowKey(dev.retza.mak.sync.PlanRowKind.SEMESTER, id), side)?.name ?: "semestr"
+        lookup<SemesterRecord>(PlanRowKey(dev.retza.mak.sync.PlanRowKind.SEMESTER, id), side)?.name ?: "semestr"
 
     private fun programName(id: Long, side: PlanSide) =
-        lookup<StudyProgramEntity>(PlanRowKey(dev.retza.mak.sync.PlanRowKind.STUDY_PROGRAM, id), side)?.name ?: "kierunek"
+        lookup<StudyProgramRecord>(PlanRowKey(dev.retza.mak.sync.PlanRowKind.STUDY_PROGRAM, id), side)?.name ?: "kierunek"
 
     private fun assignmentProgramName(id: Long, side: PlanSide) =
-        lookup<SemesterProgramEntity>(PlanRowKey(dev.retza.mak.sync.PlanRowKind.SEMESTER_PROGRAM, id), side)
+        lookup<SemesterProgramRecord>(PlanRowKey(dev.retza.mak.sync.PlanRowKind.SEMESTER_PROGRAM, id), side)
             ?.let { programName(it.studyProgramId, side) } ?: "kierunek"
 
     private fun titleOf(row: Any, side: PlanSide): String = when (row) {
-        is ClassEntity -> row.name
-        is OccurrenceNoteEntity -> className(row.classId, side)
-        is OccurrenceChangeEntity -> className(row.classId, side)
-        is StudyProgramEntity -> row.name
-        is SemesterEntity -> row.name
-        is AcademicCalendarEntity -> "Kalendarz semestru ${semesterName(row.semesterId, side)}"
-        is SemesterProgramEntity -> programName(row.studyProgramId, side)
-        is WeekOverrideEntity -> "Korekta tygodnia od ${date(row.weekStartDate)}"
+        is ClassRecord -> row.name
+        is OccurrenceNoteRecord -> className(row.classId, side)
+        is OccurrenceChangeRecord -> className(row.classId, side)
+        is StudyProgramRecord -> row.name
+        is SemesterRecord -> row.name
+        is AcademicCalendarRecord -> "Kalendarz semestru ${semesterName(row.semesterId, side)}"
+        is SemesterProgramRecord -> programName(row.studyProgramId, side)
+        is WeekOverrideRecord -> "Korekta tygodnia od ${date(row.weekStartDate)}"
         else -> "Wpis"
     }
 
     private fun subtitleOf(row: Any, side: PlanSide): String = when (row) {
-        is OccurrenceNoteEntity -> "Notatka do terminu, ${date(row.occurrenceDate)}"
-        is OccurrenceChangeEntity -> "Zmiana terminu, ${date(row.originalDate)}"
-        is StudyProgramEntity -> "Kierunek"
-        is SemesterEntity -> "Semestr"
-        is AcademicCalendarEntity -> "Daty semestru i tydzień A/B"
-        is SemesterProgramEntity -> "Kierunek w semestrze ${semesterName(row.semesterId, side)}"
-        is WeekOverrideEntity -> "Semestr ${semesterName(row.semesterId, side)}"
+        is OccurrenceNoteRecord -> "Notatka do terminu, ${date(row.occurrenceDate)}"
+        is OccurrenceChangeRecord -> "Zmiana terminu, ${date(row.originalDate)}"
+        is StudyProgramRecord -> "Kierunek"
+        is SemesterRecord -> "Semestr"
+        is AcademicCalendarRecord -> "Daty semestru i tydzień A/B"
+        is SemesterProgramRecord -> "Kierunek w semestrze ${semesterName(row.semesterId, side)}"
+        is WeekOverrideRecord -> "Semestr ${semesterName(row.semesterId, side)}"
         else -> ""
     }
 
     private fun valueOf(row: Any, side: PlanSide): String = when (row) {
-        is OccurrenceNoteEntity -> row.body
-        is OccurrenceChangeEntity -> changeValue(row)
-        is StudyProgramEntity -> "${row.name}, kolor ${row.color}"
-        is SemesterEntity -> row.name
-        is AcademicCalendarEntity ->
+        is OccurrenceNoteRecord -> row.body
+        is OccurrenceChangeRecord -> changeValue(row)
+        is StudyProgramRecord -> "${row.name}, kolor ${row.color}"
+        is SemesterRecord -> row.name
+        is AcademicCalendarRecord ->
             "Od ${date(row.startDate)} ${row.startDate.year} do ${date(row.endDate)} ${row.endDate.year}, pierwszy tydzień ${row.firstWeekType}"
-        is SemesterProgramEntity -> "Przypisany"
-        is WeekOverrideEntity -> "Tydzień ${row.weekType}, " +
+        is SemesterProgramRecord -> "Przypisany"
+        is WeekOverrideRecord -> "Tydzień ${row.weekType}, " +
             if (row.scope == WeekOverrideScope.ONE_WEEK) "tylko ten tydzień" else "od tego tygodnia"
         else -> ""
     }
 
-    private fun changeValue(change: OccurrenceChangeEntity): String {
+    private fun changeValue(change: OccurrenceChangeRecord): String {
         if (change.kind == OccurrenceChangeKind.CANCELLED) return "Odwołane"
         val parts = listOfNotNull(
             change.targetDate?.let { "przeniesione na ${date(it)}" },
-            if (change.newStartTime != null && change.newEndTime != null) "${time(change.newStartTime)}-${time(change.newEndTime)}" else null,
-            change.newRoom?.let { "sala $it" },
-            change.newBuilding?.let { "budynek $it" },
-            change.newTeacherName,
-            change.newNote
+            if (change.startTime != null && change.endTime != null) "${time(change.startTime)}-${time(change.endTime)}" else null,
+            change.room?.let { "sala $it" },
+            change.building?.let { "budynek $it" },
+            change.teacherName,
+            change.note
         )
         return parts.joinToString(", ").replaceFirstChar { it.uppercase() }.ifEmpty { "Zmienione" }
     }
 
     /** A class on one side only; a class on both sides differs field by field. */
-    private fun classDifference(title: String, onPhone: ClassEntity?, onDrive: ClassEntity?): SyncDifferenceUi {
+    private fun classDifference(title: String, onPhone: ClassRecord?, onDrive: ClassRecord?): SyncDifferenceUi {
         val any = onPhone ?: onDrive!!
         return SyncDifferenceUi(
             title = title,
@@ -164,7 +164,7 @@ internal class SyncDifferenceLabels(phone: BackupData, drive: BackupData) {
         ClassField.NOTE -> "Notatka do zajęć"
     }
 
-    private fun fieldValue(field: ClassField, row: ClassEntity, side: PlanSide): String = when (field) {
+    private fun fieldValue(field: ClassField, row: ClassRecord, side: PlanSide): String = when (field) {
         ClassField.NAME -> row.name
         ClassField.PROGRAM -> assignmentProgramName(row.semesterProgramId, side)
         ClassField.TYPE -> row.type
@@ -176,13 +176,13 @@ internal class SyncDifferenceLabels(phone: BackupData, drive: BackupData) {
         ClassField.NOTE -> row.classNote
     }?.takeIf { it.isNotBlank() } ?: EMPTY_FIELD
 
-    private fun classSummary(row: ClassEntity) =
+    private fun classSummary(row: ClassRecord) =
         listOfNotNull(slot(row), recurrence(row), row.room?.let { "sala $it" }).joinToString(", ")
 
-    private fun slot(row: ClassEntity) = (row.date?.let(::date) ?: dayNames.getValue(row.dayOfWeek)) +
+    private fun slot(row: ClassRecord) = (row.date?.let(::date) ?: dayNames.getValue(row.dayOfWeek)) +
         ", ${time(row.startTime)}-${time(row.endTime)}"
 
-    private fun recurrence(row: ClassEntity) = when (row.recurrence) {
+    private fun recurrence(row: ClassRecord) = when (row.recurrence) {
         Recurrence.EVERY_WEEK -> "co tydzień"
         Recurrence.A_WEEK -> "tydzień A"
         Recurrence.B_WEEK -> "tydzień B"
