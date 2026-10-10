@@ -18,6 +18,9 @@ import dev.retza.mak.sync.SyncIssue
 import dev.retza.mak.sync.SyncOutcome
 import dev.retza.mak.sync.SyncState
 import dev.retza.mak.sync.SyncWorkScheduler
+import dev.retza.mak.ui.AppLocale
+import dev.retza.mak.ui.dayMonthFormatter
+import dev.retza.mak.ui.timeFormatter
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
@@ -26,7 +29,6 @@ import java.io.OutputStream
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -410,8 +412,6 @@ internal const val CHOICE_TITLE = "Plan różni się na telefonie i na Dysku"
 
 private const val GENERIC_MERGE_PROBLEM = "Wybrane zmiany wykluczają się. Wybierz tę samą wersję przy powiązanych pozycjach."
 
-private val changeTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-private val changeDayFormatter = DateTimeFormatter.ofPattern("d MMMM", Locale.forLanguageTag("pl-PL"))
 
 /** „Zmieniony dziś o 12:20”, „Zmieniony wczoraj o 9:05” or „Zmieniony 7 października o 18:05”. */
 internal fun changeLabel(millis: Long?, zone: ZoneId = ZoneId.systemDefault(), today: java.time.LocalDate = java.time.LocalDate.now(zone)): String {
@@ -420,9 +420,9 @@ internal fun changeLabel(millis: Long?, zone: ZoneId = ZoneId.systemDefault(), t
     val day = when (moment.toLocalDate()) {
         today -> "dziś"
         today.minusDays(1) -> "wczoraj"
-        else -> changeDayFormatter.format(moment)
+        else -> dayMonthFormatter.format(moment)
     }
-    return "Zmieniony $day o ${changeTimeFormatter.format(moment)}"
+    return "Zmieniony $day o ${timeFormatter.format(moment)}"
 }
 
 private fun PlanSummary.label() = listOf(
@@ -440,7 +440,7 @@ private fun dev.retza.mak.sync.ArchivedPlan.toUi() = SyncArchiveItemUi(
     fileName = "mak-poprzednia-wersja-${fileDate.format(Instant.ofEpochMilli(createdAtMillis))}.json"
 )
 
-private val displayFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy, HH:mm", Locale.forLanguageTag("pl-PL"))
+private val displayFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy, HH:mm", AppLocale)
 private val fileDate = DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmm").withZone(ZoneId.systemDefault())
 
 private fun formatMillis(millis: Long): String =

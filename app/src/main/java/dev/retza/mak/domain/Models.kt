@@ -62,6 +62,9 @@ data class AcademicCalendar(
             "Academic calendar end must not be before its start"
         }
     }
+
+    /** Whether [date] falls within the calendar, both ends included. */
+    operator fun contains(date: LocalDate): Boolean = !date.isBefore(startDate) && !date.isAfter(endDate)
 }
 
 data class SemesterProgram(

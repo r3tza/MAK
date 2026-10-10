@@ -16,13 +16,13 @@ import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.classCountLabel
+import dev.retza.mak.ui.shortDateFormatter
 import dev.retza.mak.ui.polishPlural
+import dev.retza.mak.ui.sharedCalendar
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -347,7 +347,7 @@ private fun buildSettingsState(
 ): SettingsUiState = SettingsUiState(
     semesters = semesterList.map { semester ->
         val isActive = semester.id.toString() == activeData?.semester?.id
-        val calendar = activeData?.calendars?.firstOrNull()
+        val calendar = activeData?.sharedCalendar()
         SemesterUi(
             id = semester.id.toString(),
             name = semester.name,
@@ -415,4 +415,3 @@ private fun buildSettingsState(
 private val notificationHourOptions = listOf(18, 19, 20, 21, 22)
 private val notificationLeadOptions = listOf(15L, 30L, 45L, 60L)
 
-private val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.forLanguageTag("pl-PL"))

@@ -104,6 +104,8 @@ Kryterium zakończenia: testy przechodzą; `rg "setActiveSemester\(list" app/src
 
 ## 3. Uporządkuj wspólne pomocniki dat, tygodni, kalendarzy, DataStore i kolorów (I-89)
 
+Stan: zrobione. `remember` objął wywołania koloru w `ClassCard`, `CourseNameText` i `ThemePreview`; `MakColorDot`, `courseMarkerTint` i wersja `courseShapeColor` dla napisu czytają motyw w środku funkcji `@Composable`, więc zostały bez zmian (B6 ma średnią pewność). `ScheduleViewModel` nie szuka kierunku po identyfikatorze, więc nie używa `programForAssignment`. Wszystkie prywatne kopie `toLocalDateOrNull` miały to samo ciało. Zrzuty przy 320 dp („Dzisiaj”, lista, czwartek i kalendarz „Planu”, szczegóły przeniesionego terminu, „Ustawienia”, „Semestry”, ekran semestru, „O aplikacji”) przed zmianą i po niej są identyczne.
+
 Cel: formatery dat, ustawienia regionalne, parsowanie dat i godzin, początek tygodnia, kalendarz i kierunek przypisania, zawieranie daty w kalendarzu, odczyt DataStore z ponawianiem i liczenie koloru kierunku są w jednym miejscu każde (H2, H6, J2, B6). Wygląd i teksty się nie zmieniają.
 
 Pliki: `ui/PlanMapping.kt`, `ui/AppLocale.kt`, `ui/SemesterCalendar.kt`, `domain/Models.kt`, `domain/WeekCalculator.kt`, `di/AppModule.kt`, `ui/settings/DataStoreSettingsPreferences.kt`, `update/UpdatePreferences.kt`, `ui/components/CourseColors.kt`, `ui/components/CourseColorDisplay.kt`, `ui/schedule/ScheduleScreen.kt` i pliki z prywatnymi kopiami wymienione niżej; testy zmienionych klas.

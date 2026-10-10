@@ -3,6 +3,7 @@ package dev.retza.mak.di
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.preferencesDataStore
 import androidx.work.WorkManager
 import dev.retza.mak.data.PlanChanges
@@ -26,12 +27,16 @@ import dev.retza.mak.sync.SyncBaseCopy
 import dev.retza.mak.sync.SyncCoordinator
 import dev.retza.mak.sync.UrlConnectionDriveHttpClient
 import java.io.File
+import java.io.IOException
 import java.time.Clock
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.retryWhen
 import org.koin.core.annotation.ComponentScan
 import org.koin.core.annotation.Configuration
 import org.koin.core.annotation.Module
@@ -41,6 +46,20 @@ import org.koin.core.annotation.Single
 internal const val SETTINGS_DATASTORE_NAME = "mak_settings"
 
 private val Context.settingsDataStore by preferencesDataStore(name = SETTINGS_DATASTORE_NAME)
+
+private const val readRetryDelayMillis = 100L
+
+/**
+ * Reads settings with a retry after an I/O error: emits empty preferences, waits, and reads again, so a damaged
+ * file does not stop the app.
+ */
+internal fun DataStore<Preferences>.readWithRetry(): Flow<Preferences> = data
+    .retryWhen { cause, _ ->
+        if (cause !is IOException) return@retryWhen false
+        emit(emptyPreferences())
+        delay(readRetryDelayMillis)
+        true
+    }
 
 @Module
 @Configuration

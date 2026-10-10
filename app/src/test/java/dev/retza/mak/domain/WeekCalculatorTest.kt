@@ -25,6 +25,11 @@ class WeekCalculatorTest {
     }
 
     @Test
+    fun weekStartOfSundayIsPreviousMonday() {
+        assertEquals(LocalDate.of(2026, 1, 5), LocalDate.of(2026, 1, 11).weekStart())
+    }
+
+    @Test
     fun weekTypesAlternateFromTheSemesterAnchor() {
         assertEquals(WeekType.A, calculator.calculateWeekType(calendar, LocalDate.of(2026, 1, 7)))
         assertEquals(WeekType.B, calculator.calculateWeekType(calendar, LocalDate.of(2026, 1, 12)))

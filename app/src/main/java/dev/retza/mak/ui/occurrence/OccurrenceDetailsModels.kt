@@ -4,9 +4,8 @@ import androidx.compose.runtime.Immutable
 import dev.retza.mak.domain.noteContentChanged
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.OccurrenceStatusUi
+import dev.retza.mak.ui.dayMonthFormatter
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 enum class OccurrenceEditField {
     Date,
@@ -102,7 +101,5 @@ fun OccurrenceDetailsUiState.changeLines(): List<String> {
     }
 }
 
-private val changeDateFormatter = DateTimeFormatter.ofPattern("d MMMM", Locale.forLanguageTag("pl"))
-
 private fun changeDate(iso: String): String =
-    runCatching { LocalDate.parse(iso).format(changeDateFormatter) }.getOrDefault(iso)
+    runCatching { LocalDate.parse(iso).format(dayMonthFormatter) }.getOrDefault(iso)

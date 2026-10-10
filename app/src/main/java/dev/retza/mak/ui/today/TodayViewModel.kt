@@ -13,8 +13,8 @@ import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.uniqueCollisionCount
 import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.ui.AppLocale
 import dev.retza.mak.ui.label
-import dev.retza.mak.ui.polishLocale
 import dev.retza.mak.ui.toUi
 import dev.retza.mak.ui.todayTitleFormatter
 import java.time.Clock
@@ -68,7 +68,7 @@ class TodayViewModel(
         val labels = collisionLabels(plan.collisions)
         val names = collisionPartnerNames(plan.collisions)
         return TodayUiState(
-            dateLabel = day.format(todayTitleFormatter).replaceFirstChar { it.titlecase(polishLocale) },
+            dateLabel = day.format(todayTitleFormatter).replaceFirstChar { it.titlecase(AppLocale) },
             semesterLabel = data.semester.name,
             weekLabel = schedule.weekStatus.label(),
             hasActiveSemester = true,

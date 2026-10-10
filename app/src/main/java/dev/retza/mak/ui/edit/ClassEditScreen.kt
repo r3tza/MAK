@@ -16,8 +16,8 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import java.time.LocalDate
 import dev.retza.mak.ui.polishPlural
+import dev.retza.mak.ui.toLocalDateOrNull
 import dev.retza.mak.ui.dayNames
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
@@ -283,7 +283,6 @@ fun ClassEditScreen(
     }
 }
 
-private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
 
 internal fun hiddenDataMessage(warning: HiddenDataWarningUi): String {
     val parts = buildList {

@@ -423,6 +423,10 @@ fun ClassCard(
     onClick: (() -> Unit)? = null
 ) {
     val accent = classAccentColor(item)
+    val surface = MaterialTheme.colorScheme.surface
+    val barColor = remember(accent, surface) {
+        courseShapeColor(accent, surface)
+    }
     val shape = RoundedCornerShape(16.dp)
     var focused by remember { mutableStateOf(false) }
     val clickable = if (onClick != null) {
@@ -453,7 +457,7 @@ fun ClassCard(
                 .fillMaxHeight()
                 .background(
                     if (item.isCancelled) MaterialTheme.colorScheme.error
-                    else courseShapeColor(accent, MaterialTheme.colorScheme.surface)
+                    else barColor
                 )
         )
         Row(
@@ -611,10 +615,11 @@ internal fun CourseNameText(
     modifier: Modifier = Modifier
 ) {
     val surface = MaterialTheme.colorScheme.surface
+    val textColor = remember(accent, surface) { Color(courseTextColor(accent.toArgb(), surface.toArgb())) }
     Text(
         text = name,
         modifier = modifier,
-        color = Color(courseTextColor(accent.toArgb(), surface.toArgb())),
+        color = textColor,
         style = MaterialTheme.typography.bodySmall,
         fontWeight = FontWeight.Bold,
         maxLines = 1,

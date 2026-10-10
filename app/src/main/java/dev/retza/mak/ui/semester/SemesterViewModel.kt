@@ -13,14 +13,15 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
+import dev.retza.mak.domain.weekStart
 import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.PlanEditSession
+import dev.retza.mak.ui.shortDateWithYearFormatter
+import dev.retza.mak.ui.toLocalDateOrNull
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
-import java.time.DayOfWeek
-import java.time.temporal.TemporalAdjusters
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -597,7 +598,7 @@ class SemesterViewModel(
     /** Any picked day stands for its whole week, so the form keeps the Monday of that week. */
     fun updateWeekStartDate(value: String) = editSession.edit {
         update {
-            val monday = value.toLocalDateOrNull()?.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            val monday = value.toLocalDateOrNull()?.weekStart()
             it.copy(
                 overrideForm = it.overrideForm.copy(
                     weekStartDate = monday?.toString() ?: value,
@@ -617,7 +618,7 @@ class SemesterViewModel(
         val currentCalendarId = selectedCalendarId ?: return
         val form = state.value.overrideForm
         val date = form.weekStartDate.toLocalDateOrNull()
-            ?.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+            ?.weekStart()
         if (date == null) {
             update { it.copy(overrideForm = form.copy(weekStartDateError = "Wybierz tydzień.")) }
             return
@@ -675,8 +676,6 @@ class SemesterViewModel(
     }
 }
 
-private fun String.toLocalDateOrNull(): java.time.LocalDate? =
-    runCatching { java.time.LocalDate.parse(this) }.getOrNull()
 
 private fun SemesterConfiguration.sharedCalendar(): AcademicCalendarRecord? =
     calendars.minByOrNull { it.id }
@@ -743,8 +742,6 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
 
 private fun calendarLabel(calendar: AcademicCalendarRecord?): String =
     calendar?.let {
-        "${it.startDate.format(calendarDateFormatter)} - ${it.endDate.format(calendarDateFormatter)}"
+        "${it.startDate.format(shortDateWithYearFormatter)} - ${it.endDate.format(shortDateWithYearFormatter)}"
     }.orEmpty()
 
-private val calendarDateFormatter =
-    java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.forLanguageTag("pl-PL"))

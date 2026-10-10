@@ -13,7 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import java.time.LocalDate
+import dev.retza.mak.ui.toLocalDateOrNull
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.MakCourseColorPicker
 import dev.retza.mak.ui.components.MakChoiceRow
@@ -186,7 +186,6 @@ private fun SemesterStep(
     }
 }
 
-private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
 
 @Composable
 private fun CourseStep(

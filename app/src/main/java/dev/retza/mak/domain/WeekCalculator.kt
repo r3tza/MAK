@@ -3,17 +3,21 @@ package dev.retza.mak.domain
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
+import java.time.temporal.TemporalAdjusters
+
+/** Monday of the week that contains this date. */
+fun LocalDate.weekStart(): LocalDate = with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
 class WeekCalculator {
     fun weekStart(date: LocalDate): LocalDate =
-        date.with(java.time.temporal.TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        date.weekStart()
 
     fun calculate(
         calendar: AcademicCalendar,
         date: LocalDate,
         overrides: Collection<WeekOverride> = emptyList()
     ): WeekCalculation? {
-        if (date.isBefore(calendar.startDate) || date.isAfter(calendar.endDate)) {
+        if (date !in calendar) {
             return null
         }
 

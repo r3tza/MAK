@@ -35,6 +35,18 @@ class PlanMappingTest {
     }
 
     @Test
+    fun toLocalDateOrNullRejectsGarbage() {
+        assertEquals(LocalDate.of(2026, 10, 7), "2026-10-07".toLocalDateOrNull())
+        assertNull("7.10.2026".toLocalDateOrNull())
+        assertNull("25:99".toLocalTimeOrNull())
+    }
+
+    @Test
+    fun dayMonthFormatterUsesPolishMonthName() {
+        assertEquals("7 października", LocalDate.of(2026, 10, 7).format(dayMonthFormatter))
+    }
+
+    @Test
     fun weekStatusLabels() {
         assertEquals("Tydzień A", WeekStatus.Single(WeekType.A).label())
         assertEquals("Różne tygodnie", WeekStatus.Mixed.label())

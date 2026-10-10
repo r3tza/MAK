@@ -1,5 +1,7 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.data.entity.AcademicCalendarEntity
+import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.export.AcademicCalendarSnapshot
 import dev.retza.mak.export.ClassSnapshot
 import dev.retza.mak.export.ExportSnapshot
@@ -12,8 +14,10 @@ import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.activePlanSource
+import dev.retza.mak.ui.shortDateFormatter
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
+import java.time.LocalDate
 import java.time.LocalTime
 import dev.retza.mak.sync.PlanEditTracker
 import kotlinx.coroutines.CoroutineScope
@@ -69,6 +73,26 @@ class SettingsViewModelTest {
         assertEquals("", inactiveSemester.courseCountLabel)
         assertEquals("", inactiveSemester.classCountLabel)
         assertEquals("system", state.themeOptions.first { it.isSelected }.id)
+    }
+
+    @Test
+    fun activeSemesterCardShowsLowestIdCalendar() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.saveCalendar(
+            AcademicCalendarEntity(
+                semesterId = 1L,
+                startDate = LocalDate.of(2026, 11, 1),
+                endDate = LocalDate.of(2027, 1, 31),
+                firstWeekType = WeekType.B
+            )
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        val expected = "${LocalDate.of(2026, 9, 1).format(shortDateFormatter)} - " +
+            LocalDate.of(2026, 10, 31).format(shortDateFormatter)
+        assertEquals(expected, viewModel.settings.value.semesters.first { it.id == "1" }.dateRangeLabel)
     }
 
     @Test

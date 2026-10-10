@@ -11,6 +11,7 @@ import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekStatus
 import dev.retza.mak.domain.WeekType
+import dev.retza.mak.domain.weekStart
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.SemesterProgram
@@ -19,6 +20,7 @@ import dev.retza.mak.domain.visibleAssignments
 import dev.retza.mak.domain.visibleTo
 import dev.retza.mak.domain.VisiblePlanData
 import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.ui.AppLocale
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
@@ -32,17 +34,15 @@ import dev.retza.mak.ui.feedback.launchUiOperation
 import dev.retza.mak.ui.fullDateFormatter
 import dev.retza.mak.ui.label
 import dev.retza.mak.ui.monthFormatter
-import dev.retza.mak.ui.polishLocale
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.shortDateFormatter
 import dev.retza.mak.ui.shortDayNames
+import dev.retza.mak.ui.toLocalDateOrNull
 import dev.retza.mak.ui.toUi
 import java.time.Clock
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.temporal.TemporalAdjusters
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -175,7 +175,7 @@ class ScheduleViewModel(
         if (weekOverrideOperationRunning) return
         val data = activePlan.value?.data ?: return
         val calendarId = visibleWeekCalendarId(data) ?: return
-        val monday = controls.value.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val monday = controls.value.scheduleDate.weekStart()
         val entityScope = WeekOverrideScope.valueOf(scope.name)
         weekOverrideOperationRunning = true
         viewModelScope.launchUiOperation(
@@ -200,7 +200,7 @@ class ScheduleViewModel(
         if (weekOverrideOperationRunning) return
         val data = activePlan.value?.data ?: return
         val calendarId = visibleWeekCalendarId(data) ?: return
-        val monday = controls.value.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val monday = controls.value.scheduleDate.weekStart()
         val entityScope = WeekOverrideScope.valueOf(scope.name)
         weekOverrideOperationRunning = true
         viewModelScope.launchUiOperation(
@@ -276,8 +276,8 @@ class ScheduleViewModel(
         val cancelled = if (control.showCancelled) cancelledItems(selected.cancelled, activeFilter) else emptyList()
         val labels = collisionLabels(selectedPlan.collisions)
         val names = collisionPartnerNames(selectedPlan.collisions)
-        val monday = control.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val currentWeekMonday = control.today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+        val monday = control.scheduleDate.weekStart()
+        val currentWeekMonday = control.today.weekStart()
         val calendarDays = grid.map { it.copy(isSelected = it.id == control.calendarDate.toString()) }
         // The selected day's classes are built only in the calendar view.
         val calendarPlan = when {
@@ -319,7 +319,7 @@ class ScheduleViewModel(
                     accessibilityLabel = date.format(fullDateFormatter),
                     isSelected = date == control.scheduleDate,
                     isEnabled = data.calendars.any { calendar ->
-                        !date.isBefore(calendar.startDate) && !date.isAfter(calendar.endDate)
+                        date in calendar
                     }
                 )
             },
@@ -342,7 +342,7 @@ class ScheduleViewModel(
             allProgramsHidden = inputs.data.allProgramsHidden(inputs.display),
             // Capitalized like the list heading; fullDateFormatter stays lowercase for screen readers.
             calendarSelectedDayLabel = control.calendarDate.format(fullDateFormatter)
-                .replaceFirstChar { it.titlecase(polishLocale) },
+                .replaceFirstChar { it.titlecase(AppLocale) },
             calendarSelectedDayCountLabel = classCountLabel(calendarFiltered.size),
             calendarItems = if (calendarPlan == null) {
                 emptyList()
@@ -369,7 +369,6 @@ class ScheduleViewModel(
             .map { it.toUi(conflictLabel = null) }
 }
 
-private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
 
 private fun emptyScheduleState() = ScheduleUiState(
     weekRangeLabel = "",
@@ -412,6 +411,6 @@ private fun calendarOccurrenceLabel(occurrence: PlannedOccurrence): String {
 }
 
 private fun calendarDates(month: YearMonth): List<LocalDate> {
-    val first = month.atDay(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+    val first = month.atDay(1).weekStart()
     return (0L until 42L).map(first::plusDays)
 }

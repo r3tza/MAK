@@ -18,11 +18,11 @@ import dev.retza.mak.sync.PlanMergeProblem
 import dev.retza.mak.sync.PlanRowKey
 import dev.retza.mak.sync.PlanSide
 import dev.retza.mak.sync.rows
+import dev.retza.mak.ui.dayMonthFormatter
 import dev.retza.mak.ui.dayNames
-import dev.retza.mak.ui.polishLocale
+import dev.retza.mak.ui.timeFormatter
 import java.time.LocalDate
 import java.time.LocalTime
-import java.time.format.DateTimeFormatter
 
 /** One difference as the user reads it: what it is and the value on each side. */
 data class SyncDifferenceUi(
@@ -189,14 +189,12 @@ internal class SyncDifferenceLabels(phone: BackupData, drive: BackupData) {
         Recurrence.ONCE -> "jednorazowo"
     }
 
-    private fun date(value: LocalDate) = dateFormatter.format(value)
+    private fun date(value: LocalDate) = dayMonthFormatter.format(value)
 
     private fun time(value: LocalTime) = timeFormatter.format(value)
 
     private companion object {
         const val MISSING = "Brak"
         const val EMPTY_FIELD = "Puste"
-        val dateFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("d MMMM", polishLocale)
-        val timeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
     }
 }

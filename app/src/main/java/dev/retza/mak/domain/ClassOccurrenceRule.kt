@@ -13,7 +13,7 @@ fun ClassItem.hasBaseOccurrenceOn(
     weekCalculator: WeekCalculator = WeekCalculator()
 ): Boolean {
     if (recurrence == Recurrence.ONCE) {
-        return this.date == date && !date.isBefore(calendar.startDate) && !date.isAfter(calendar.endDate)
+        return this.date == date && date in calendar
     }
     if (dayOfWeek != date.dayOfWeek) return false
     val week = weekCalculator.calculate(calendar, date, overrides) ?: return false

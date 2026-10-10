@@ -138,8 +138,8 @@ private fun ThemePreview(color: Int?, name: String, dark: Boolean) {
     val surface = if (dark) MakPaperDark else MakPaper
     val muted = if (dark) MakMutedDark else MakMuted
     val shape = RoundedCornerShape(12.dp)
-    val bar = color?.let { Color(courseShapeColor(it, surface.toArgb())) } ?: muted
-    val text = color?.let { Color(courseTextColor(it, surface.toArgb())) } ?: muted
+    val bar = remember(color, surface, muted) { color?.let { Color(courseShapeColor(it, surface.toArgb())) } ?: muted }
+    val text = remember(color, surface, muted) { color?.let { Color(courseTextColor(it, surface.toArgb())) } ?: muted }
     Row(
         modifier = Modifier
             .fillMaxWidth()

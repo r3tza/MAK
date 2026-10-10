@@ -6,14 +6,22 @@ import dev.retza.mak.domain.WeekStatus
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.toUi
 import java.time.DayOfWeek
+import java.time.LocalDate
+import java.time.LocalTime
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 
-internal val polishLocale = Locale.forLanguageTag("pl-PL")
-internal val fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", polishLocale)
-internal val todayTitleFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM", polishLocale)
-internal val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", polishLocale)
-internal val monthFormatter = DateTimeFormatter.ofPattern("LLLL yyyy", polishLocale)
+internal val fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", AppLocale)
+internal val todayTitleFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM", AppLocale)
+internal val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", AppLocale)
+internal val dayMonthFormatter = DateTimeFormatter.ofPattern("d MMMM", AppLocale)
+internal val shortDateWithYearFormatter = DateTimeFormatter.ofPattern("d MMM yyyy", AppLocale)
+internal val longDateFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy", AppLocale)
+internal val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
+internal val monthFormatter = DateTimeFormatter.ofPattern("LLLL yyyy", AppLocale)
+
+internal fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
+
+internal fun String.toLocalTimeOrNull(): LocalTime? = runCatching { LocalTime.parse(this) }.getOrNull()
 internal val dayNames = linkedMapOf(
     DayOfWeek.MONDAY to "Poniedziałek",
     DayOfWeek.TUESDAY to "Wtorek",

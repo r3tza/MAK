@@ -27,6 +27,10 @@ import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.calendarForAssignment
+import dev.retza.mak.ui.programForAssignment
+import dev.retza.mak.ui.fullDateFormatter
+import dev.retza.mak.ui.toLocalDateOrNull
+import dev.retza.mak.ui.toLocalTimeOrNull
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.OccurrenceStatusUi
 import dev.retza.mak.ui.components.toUi
@@ -36,8 +40,6 @@ import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -512,7 +514,7 @@ class OccurrenceViewModel(
             subjectName = base.name,
             courseName = data.studyProgramName(base.semesterProgramId),
             typeLabel = base.type,
-            dateLabel = occurrence.date.format(occurrenceDateFormatter),
+            dateLabel = occurrence.date.format(fullDateFormatter),
             currentDate = occurrence.date.toString(),
             startTime = occurrence.startTime.toString(),
             endTime = occurrence.endTime.toString(),
@@ -549,10 +551,8 @@ class OccurrenceViewModel(
         )
     }
 
-    private fun ActivePlanData.studyProgramName(assignmentId: String): String {
-        val assignment = semesterPrograms.firstOrNull { it.id == assignmentId } ?: return ""
-        return courses.firstOrNull { it.id == assignment.studyProgramId }?.name.orEmpty()
-    }
+    private fun ActivePlanData.studyProgramName(assignmentId: String): String =
+        programForAssignment(assignmentId)?.name.orEmpty()
 
     /**
      * Takes the stored values from [fresh] and keeps what the user is doing: a note draft that
@@ -639,10 +639,3 @@ private fun OccurrenceDetailsUiState.toCurrentSlot(): OccurrenceSlot? {
     return OccurrenceSlot(date, start, end, room)
 }
 
-private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
-
-private fun String.toLocalTimeOrNull(): java.time.LocalTime? =
-    runCatching { java.time.LocalTime.parse(this) }.getOrNull()
-
-private val occurrenceDateFormatter =
-    DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.forLanguageTag("pl-PL"))

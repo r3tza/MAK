@@ -56,11 +56,11 @@ import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.makRowFocus
+import dev.retza.mak.ui.longDateFormatter
 import dev.retza.mak.ui.polishPlural
+import dev.retza.mak.ui.shortDateWithYearFormatter
+import dev.retza.mak.ui.toLocalDateOrNull
 import dev.retza.mak.ui.components.parseHexColor
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 enum class WeekTypeUi {
     A,
@@ -704,13 +704,11 @@ internal fun calendarLabel(calendar: SemesterCalendarUi): String {
 }
 
 private fun String.asLongDate(): String =
-    toLocalDateOrNull()?.format(polishShortDateFormatter) ?: this
+    toLocalDateOrNull()?.format(longDateFormatter) ?: this
 
 private fun String.asCalendarDate(): String =
-    toLocalDateOrNull()?.format(calendarDateFormatter) ?: this
+    toLocalDateOrNull()?.format(shortDateWithYearFormatter) ?: this
 
-private val calendarDateFormatter =
-    java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.forLanguageTag("pl-PL"))
 
 @Composable
 private fun WeekOverridesSection(
@@ -790,7 +788,7 @@ private fun WeekOverrideCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text("Tydzień ${item.weekType.name}", fontWeight = FontWeight.SemiBold)
-                val weekStart = item.weekStartDate.toLocalDateOrNull()?.format(polishShortDateFormatter)
+                val weekStart = item.weekStartDate.toLocalDateOrNull()?.format(longDateFormatter)
                     ?: item.weekStartDate
                 Text(
                     text = when (item.scope) {
@@ -835,7 +833,7 @@ private fun WeekOverrideForm(
         )
         FieldError(state.weekStartDateError?.let(::FieldErrorUi))
         state.weekStartDate.toLocalDateOrNull()?.let { monday ->
-            MakHelperText("Korekta obejmuje tydzień od poniedziałku ${monday.format(polishShortDateFormatter)}.")
+            MakHelperText("Korekta obejmuje tydzień od poniedziałku ${monday.format(longDateFormatter)}.")
         }
         MakSelectField(
             label = "Oznaczenie tygodnia",
@@ -876,7 +874,4 @@ private fun WeekOverrideForm(
     }
 }
 
-private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
 
-private val polishShortDateFormatter =
-    DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.forLanguageTag("pl-PL"))

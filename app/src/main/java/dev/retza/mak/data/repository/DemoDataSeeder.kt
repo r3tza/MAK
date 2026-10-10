@@ -3,6 +3,7 @@ package dev.retza.mak.data.repository
 import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.weekStart
 import dev.retza.mak.domain.WeekType
 import java.time.Clock
 import java.time.DayOfWeek
@@ -22,7 +23,7 @@ suspend fun seedDemoDataIfEmpty(
     if (semesterRepository.observeSemesters().first().isNotEmpty()) return
 
     val today = LocalDate.now(clock)
-    val semesterStart = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY)).minusWeeks(4)
+    val semesterStart = today.weekStart().minusWeeks(4)
     val semesterEnd = semesterStart.plusWeeks(22).plusDays(6)
     val semesterId = semesterRepository.saveSemester(
         SemesterRecord(name = "Semestr demonstracyjny 2026/27", isActive = true)
@@ -148,7 +149,7 @@ suspend fun seedDemoDataIfEmpty(
         )
     )
 
-    val currentMonday = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+    val currentMonday = today.weekStart()
     semesterRepository.saveWeekOverride(
         WeekOverrideRecord(
             semesterId = semesterId,

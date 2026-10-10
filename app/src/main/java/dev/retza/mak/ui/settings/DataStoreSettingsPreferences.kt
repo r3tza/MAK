@@ -4,19 +4,16 @@ import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
-import androidx.datastore.preferences.core.emptyPreferences
 import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.datastore.preferences.core.stringPreferencesKey
 import androidx.datastore.preferences.core.stringSetPreferencesKey
+import dev.retza.mak.di.readWithRetry
 import dev.retza.mak.domain.PlanDisplayLimits
 import dev.retza.mak.domain.PlanDisplaySettings
-import java.io.IOException
 import java.time.LocalTime
-import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
-import kotlinx.coroutines.flow.retryWhen
 
 private val themeKey = stringPreferencesKey("theme_mode")
 private val notificationsEnabledKey = booleanPreferencesKey("collision_notifications_enabled")
@@ -28,7 +25,6 @@ private val gapThresholdMinutesKey = intPreferencesKey("gap_threshold_minutes")
 private val minimumBreakMinutesKey = intPreferencesKey("minimum_break_minutes")
 private val hiddenStudyProgramIdsKey = stringSetPreferencesKey("hidden_study_program_ids")
 
-private const val readRetryDelayMillis = 100L
 private const val defaultEveningHourMinutes = 20 * 60
 private const val defaultLeadMinutes = 30
 
@@ -36,13 +32,7 @@ private const val defaultLeadMinutes = 30
 class DataStoreSettingsPreferences(
     private val dataStore: DataStore<Preferences>
 ) : SettingsPreferences {
-    private val preferences: Flow<Preferences> = dataStore.data
-        .retryWhen { cause, _ ->
-            if (cause !is IOException) return@retryWhen false
-            emit(emptyPreferences())
-            delay(readRetryDelayMillis)
-            true
-        }
+    private val preferences: Flow<Preferences> = dataStore.readWithRetry()
 
     override val theme: Flow<ThemeMode> = preferences.map { stored ->
         themeModeFromStored(stored[themeKey])

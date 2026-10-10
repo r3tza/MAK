@@ -17,6 +17,9 @@ import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.calendarForAssignment
+import dev.retza.mak.ui.programForAssignment
+import dev.retza.mak.ui.toLocalDateOrNull
+import dev.retza.mak.ui.toLocalTimeOrNull
 import dev.retza.mak.ui.dayNames
 import dev.retza.mak.ui.occurrence.OccurrenceArgs
 import dev.retza.mak.ui.components.FieldErrorUi
@@ -151,8 +154,7 @@ class ClassEditViewModel(
     }
 
     private fun classEditState(item: dev.retza.mak.domain.ClassItem, data: ActivePlanData): ClassEditUiState {
-        val assignment = data.semesterPrograms.firstOrNull { it.id == item.semesterProgramId }
-        val program = assignment?.let { link -> data.courses.firstOrNull { it.id == link.studyProgramId } }
+        val program = data.programForAssignment(item.semesterProgramId)
         val recurrenceId = when (item.recurrence) {
             DomainRecurrence.EVERY_WEEK -> "every_week"
             DomainRecurrence.A_WEEK -> "a_week"
@@ -259,7 +261,7 @@ class ClassEditViewModel(
             }
             val calendar = data.calendarForAssignment(assignment?.id)
             if (recurrence == DomainRecurrence.ONCE && date != null && calendar != null &&
-                (date.isBefore(calendar.startDate) || date.isAfter(calendar.endDate))
+                date !in calendar
             ) {
                 put(ClassEditField.Date, FieldErrorUi("Data musi należeć do kalendarza kierunku."))
             }
@@ -373,10 +375,7 @@ private fun classEditRecurrenceFromId(id: String): DomainRecurrence = when (id) 
     else -> DomainRecurrence.EVERY_WEEK
 }
 
-private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
 
-private fun String.toLocalTimeOrNull(): java.time.LocalTime? =
-    runCatching { java.time.LocalTime.parse(this) }.getOrNull()
 
 private const val KEY_EDITING_CLASS_ID = "class_edit_editing_class_id"
 private const val KEY_OPEN_STATE = "class_edit_open_state"

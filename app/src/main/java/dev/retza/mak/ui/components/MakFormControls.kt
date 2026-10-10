@@ -64,17 +64,18 @@ import androidx.compose.ui.platform.LocalWindowInfo
 import androidx.compose.foundation.layout.widthIn
 import java.time.Instant
 import java.time.LocalDate
-import java.time.LocalTime
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
-import java.util.Locale
+import dev.retza.mak.ui.AppLocale
+import dev.retza.mak.ui.toLocalDateOrNull
+import dev.retza.mak.ui.toLocalTimeOrNull
 
 private val LowWindowHeight = 560.dp
 
 /** The vertical clock does not fit a window lower than 560 dp, e.g. a split screen. */
 internal fun useHorizontalTimePicker(windowHeight: Dp): Boolean = windowHeight < LowWindowHeight
 
-private val polishDateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy", Locale.forLanguageTag("pl-PL"))
+private val polishDateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy", AppLocale)
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -362,10 +363,6 @@ private fun rememberOpenOnTap(enabled: Boolean, onTap: () -> Unit): MutableInter
     }
     return interactionSource
 }
-
-private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
-
-private fun String.toLocalTimeOrNull(): LocalTime? = runCatching { LocalTime.parse(this) }.getOrNull()
 
 private fun LocalDate.coerceToRange(minDate: LocalDate?, maxDate: LocalDate?): LocalDate {
     var result = this

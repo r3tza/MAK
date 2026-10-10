@@ -15,6 +15,7 @@ import dev.retza.mak.domain.shouldActivateNewSemester
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.PlanEditSession
+import dev.retza.mak.ui.toLocalDateOrNull
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
@@ -475,4 +476,3 @@ private fun SetupWizardUiState.withProgramOptions(options: List<SetupProgramOpti
     )
 }
 
-private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
