@@ -14,6 +14,7 @@ import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.uniqueCollisionCount
 import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.ui.label
 import dev.retza.mak.ui.polishLocale
 import dev.retza.mak.ui.settings.SettingsPreferences
 import dev.retza.mak.ui.toUi
@@ -74,11 +75,7 @@ class TodayViewModel(
         return TodayUiState(
             dateLabel = day.format(todayTitleFormatter).replaceFirstChar { it.titlecase(polishLocale) },
             semesterLabel = data.semester.name,
-            weekLabel = if (schedule.hasMixedWeekTypes) {
-                "Różne tygodnie"
-            } else {
-                schedule.weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem"
-            },
+            weekLabel = schedule.weekStatus.label(),
             hasActiveSemester = true,
             classCount = schedule.occurrences.size,
             collisionCount = uniqueCollisionCount(plan.collisions),

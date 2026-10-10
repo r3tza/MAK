@@ -128,6 +128,37 @@ class ScheduleViewModelTest {
     }
 
     @Test
+    fun cancelledTermOfHiddenProgramIsNotShown() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.occurrenceChanges += OccurrenceChangeEntity(
+            id = 1L,
+            semesterId = 1L,
+            classId = 1L,
+            originalDate = LocalDate.of(2026, 9, 21),
+            kind = dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED,
+            targetDate = null,
+            newStartTime = null,
+            newEndTime = null,
+            newRoom = null,
+            newBuilding = null,
+            newTeacherName = null,
+            newNote = null
+        )
+        val preferences = InMemorySettingsPreferences()
+        preferences.setStudyProgramHidden("1", hidden = true)
+        val viewModel = viewModel(repository, preferences = preferences)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        viewModel.setShowCancelled(true)
+        advanceUntilIdle()
+
+        val state = viewModel.schedule.value
+        assertTrue(state.items.isEmpty())
+        assertTrue(state.calendarItems.isEmpty())
+    }
+
+    @Test
     fun changingSemesterDropsFilterThatNoLongerExists() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)

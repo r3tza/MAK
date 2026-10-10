@@ -22,6 +22,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.espresso.Espresso
 import dev.retza.mak.ui.components.FieldErrorUi
+import dev.retza.mak.ui.components.OccurrenceStatusUi
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule

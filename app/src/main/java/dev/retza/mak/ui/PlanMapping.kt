@@ -1,9 +1,10 @@
 package dev.retza.mak.ui
 
-import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.Recurrence
+import dev.retza.mak.domain.WeekStatus
 import dev.retza.mak.ui.components.ClassItemUi
+import dev.retza.mak.ui.components.toUi
 import java.time.DayOfWeek
 import java.time.format.DateTimeFormatter
 import java.util.Locale
@@ -38,9 +39,6 @@ internal fun classCountLabel(count: Int): String =
     "$count ${polishPlural(count, "zajęcie", "zajęcia", "zajęć")}"
 
 internal fun PlannedOccurrence.toUi(conflictLabel: String?, conflictWith: String? = null): ClassItemUi {
-    val cancelled = occurrenceChange?.kind == OccurrenceChangeKind.CANCELLED
-    val modified = occurrenceChange?.kind == OccurrenceChangeKind.MODIFIED
-    val oneOff = classItem.recurrence == Recurrence.ONCE
     return ClassItemUi(
         id = id,
         name = name,
@@ -60,16 +58,14 @@ internal fun PlannedOccurrence.toUi(conflictLabel: String?, conflictWith: String
         },
         classNote = classNote?.takeIf { it.isNotBlank() },
         occurrenceNote = occurrenceNoteBody?.takeIf { it.isNotBlank() },
-        statusBadge = when {
-            cancelled -> "Odwołane"
-            oneOff -> "Jednorazowe"
-            modified -> "Zmienione"
-            else -> null
-        },
-        isCancelled = cancelled,
-        isModified = modified,
-        isOneOff = oneOff,
+        status = status.toUi(),
         conflictLabel = conflictLabel,
         conflictWith = conflictWith
     )
+}
+
+internal fun WeekStatus.label(): String = when (this) {
+    is WeekStatus.Single -> "Tydzień ${type.name}"
+    WeekStatus.Mixed -> "Różne tygodnie"
+    WeekStatus.OutsideSemester -> "Poza semestrem"
 }

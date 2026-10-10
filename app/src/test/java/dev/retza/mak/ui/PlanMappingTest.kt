@@ -3,6 +3,8 @@ package dev.retza.mak.ui
 import dev.retza.mak.domain.ClassItem
 import dev.retza.mak.domain.OccurrenceNote
 import dev.retza.mak.domain.PlannedOccurrence
+import dev.retza.mak.domain.WeekStatus
+import dev.retza.mak.domain.WeekType
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -30,6 +32,13 @@ class PlanMappingTest {
         assertEquals("Na dziś", ui.occurrenceNote)
         assertEquals("Kolizja 09:30-10:00", ui.conflictLabel)
         assertEquals("Matematyka", ui.conflictWith)
+    }
+
+    @Test
+    fun weekStatusLabels() {
+        assertEquals("Tydzień A", WeekStatus.Single(WeekType.A).label())
+        assertEquals("Różne tygodnie", WeekStatus.Mixed.label())
+        assertEquals("Poza semestrem", WeekStatus.OutsideSemester.label())
     }
 
     private fun occurrence(

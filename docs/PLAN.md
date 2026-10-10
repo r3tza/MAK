@@ -169,6 +169,8 @@ Kryterium zakończenia: testy i ręczne sprawdzenie dają opisane wyniki. Commit
 
 ## 3. Zwracaj odwołane terminy, status terminu i stan tygodnia z ScheduleResolver (I-85)
 
+Stan: zrobione. `OccurrenceNoteRemapTest` nie tworzy `ClassItemUi`, więc się nie zmienił; `isModified` i `isOneOff` zostają tylko w warstwie danych (`OccurrenceNoteRemap.kt`, `Migrations.kt`) i nie dotyczą kryterium. Zrzuty przy 320 dp („Dzisiaj”, lista i kalendarz „Planu” z odwołanym terminem, „Plan” i szczegóły przeniesionego terminu, szczegóły odwołanego) przed zmianą i po niej są identyczne piksel po pikselu.
+
 Cel: reguły odwołanych terminów, statusu terminu i etykiety tygodnia są w jednym miejscu (A2, A3, A4; decyzja użytkownika z 2026-10-10 w `LOG.md`). `cancelledOccurrences` znika, a karta, kalendarz i widget biorą status i tydzień z wyniku resolvera. Wygląd ekranów się nie zmienia.
 
 Gałąź: `task/I-79-hide-study-programs`, zobacz „Zasady dla wykonawcy”.

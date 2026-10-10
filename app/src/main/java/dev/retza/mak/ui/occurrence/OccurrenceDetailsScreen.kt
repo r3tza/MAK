@@ -13,16 +13,14 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import dev.retza.mak.ui.components.oneOffTint
-import dev.retza.mak.ui.components.modifiedTint
+import dev.retza.mak.ui.components.OccurrenceStatusUi
+import dev.retza.mak.ui.components.label
+import dev.retza.mak.ui.components.occurrenceStatusIcon
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.Icon
-import androidx.compose.material.icons.outlined.LooksOne
-import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Event
-import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -242,12 +240,8 @@ private fun OccurrenceHeader(title: String) {
 private fun StatusSummary(state: OccurrenceDetailsUiState) {
     val changeLines = state.changeLines()
     if (state.status == OccurrenceStatusUi.Scheduled && changeLines.isEmpty()) return
-    val (icon, tint) = when (state.status) {
-        OccurrenceStatusUi.Cancelled -> Icons.Outlined.EventBusy to MaterialTheme.colorScheme.error
-        OccurrenceStatusUi.Changed, OccurrenceStatusUi.Moved -> Icons.Outlined.EditCalendar to modifiedTint()
-        OccurrenceStatusUi.OneOff -> Icons.Outlined.LooksOne to oneOffTint()
-        OccurrenceStatusUi.Scheduled -> Icons.Outlined.Event to MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val (icon, tint) = occurrenceStatusIcon(state.status)
+        ?: (Icons.Outlined.Event to MaterialTheme.colorScheme.onSurfaceVariant)
     Column(
         modifier = Modifier
             .fillMaxWidth()

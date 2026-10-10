@@ -17,13 +17,15 @@ data class ClassItemUi(
     val weekLabel: String? = null,
     val classNote: String? = null,
     val occurrenceNote: String? = null,
-    val statusBadge: String? = null,
-    val isCancelled: Boolean = false,
-    val isModified: Boolean = false,
-    val isOneOff: Boolean = false,
+    val status: OccurrenceStatusUi = OccurrenceStatusUi.Scheduled,
     val conflictLabel: String? = null,
     val conflictWith: String? = null
-)
+) {
+    val isCancelled: Boolean
+        get() = status == OccurrenceStatusUi.Cancelled
+    val statusBadge: String?
+        get() = status.cardBadge()
+}
 
 @Immutable
 data class SemesterUi(

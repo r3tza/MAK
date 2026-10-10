@@ -7,7 +7,7 @@ import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class CancelledOccurrencesTest {
+class ResolvedCancelledOccurrencesTest {
     private val monday = LocalDate.of(2026, 9, 21)
     private val semester = Semester(id = "s", name = "Semestr")
     private val calendar = AcademicCalendar("c", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 12, 31), WeekType.A)
@@ -45,35 +45,49 @@ class CancelledOccurrencesTest {
         occurrenceNotes = notes
     )
 
+    private fun cancelled(data: ActivePlanData, date: LocalDate) =
+        ActivePlanProvider().schedule(data.visibleTo(PlanDisplaySettings.DEFAULT), date).cancelled
+
     @Test
     fun cancellationOfExistingTermIsReturnedWithItsNote() {
         val note = OccurrenceNote("n", lecture.id, monday, "Przynieś kartkę")
 
-        val result = cancelledOccurrences(data(changes = listOf(cancellation(monday)), notes = listOf(note)), monday)
+        val result = cancelled(data(changes = listOf(cancellation(monday)), notes = listOf(note)), monday)
 
         assertEquals(listOf(lecture.id), result.map { it.classItem.id })
         assertEquals(program, result.single().studyProgram)
-        assertEquals(note, result.single().occurrenceNote)
+        assertEquals("Przynieś kartkę", result.single().occurrenceNoteBody)
     }
 
     @Test
     fun cancellationHiddenAfterClassMovedToAnotherDay() {
         val moved = lecture.copy(dayOfWeek = DayOfWeek.TUESDAY)
 
-        assertTrue(cancelledOccurrences(data(item = moved, changes = listOf(cancellation(monday))), monday).isEmpty())
+        assertTrue(cancelled(data(item = moved, changes = listOf(cancellation(monday))), monday).isEmpty())
     }
 
     @Test
     fun cancellationOutsideCalendarIsNotReturned() {
         val outside = LocalDate.of(2027, 1, 4)
 
-        assertTrue(cancelledOccurrences(data(changes = listOf(cancellation(outside))), outside).isEmpty())
+        assertTrue(cancelled(data(changes = listOf(cancellation(outside))), outside).isEmpty())
     }
 
     @Test
     fun oneTimeClassHasNoCancelledTerms() {
         val once = lecture.copy(recurrence = Recurrence.ONCE, date = monday)
 
-        assertTrue(cancelledOccurrences(data(item = once, changes = listOf(cancellation(monday))), monday).isEmpty())
+        assertTrue(cancelled(data(item = once, changes = listOf(cancellation(monday))), monday).isEmpty())
+    }
+
+    @Test
+    fun cancelledTermIsNotAmongOccurrences() {
+        val schedule = ActivePlanProvider().schedule(
+            data(changes = listOf(cancellation(monday))).visibleTo(PlanDisplaySettings.DEFAULT),
+            monday
+        )
+
+        assertTrue(schedule.occurrences.isEmpty())
+        assertEquals(OccurrenceStatus.CANCELLED, schedule.cancelled.single().status)
     }
 }

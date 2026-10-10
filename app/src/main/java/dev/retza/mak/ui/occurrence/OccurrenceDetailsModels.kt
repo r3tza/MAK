@@ -3,17 +3,10 @@ package dev.retza.mak.ui.occurrence
 import androidx.compose.runtime.Immutable
 import dev.retza.mak.domain.noteContentChanged
 import dev.retza.mak.ui.components.FieldErrorUi
+import dev.retza.mak.ui.components.OccurrenceStatusUi
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.util.Locale
-
-enum class OccurrenceStatusUi {
-    Scheduled,
-    Cancelled,
-    Changed,
-    Moved,
-    OneOff
-}
 
 enum class OccurrenceEditField {
     Date,
@@ -83,15 +76,6 @@ data class OccurrenceDetailsUiState(
 fun OccurrenceDetailsUiState.hasPlanDraft(): Boolean =
     canSaveSharedNote || canSaveOccurrenceNote || isSaving || isSavingSharedNote ||
         isSavingOccurrenceNote || showEditDialog || showDeleteConfirmation || isDeletingClass
-
-/** The status word shown with its icon on the details screen. */
-fun OccurrenceStatusUi.label(): String = when (this) {
-    OccurrenceStatusUi.Scheduled -> "Zaplanowane"
-    OccurrenceStatusUi.Cancelled -> "Odwołane"
-    OccurrenceStatusUi.Changed -> "Zmienione"
-    OccurrenceStatusUi.Moved -> "Przeniesione"
-    OccurrenceStatusUi.OneOff -> "Jednorazowe"
-}
 
 /**
  * What differs from the base occurrence, one line per change; the class card shows only an icon,

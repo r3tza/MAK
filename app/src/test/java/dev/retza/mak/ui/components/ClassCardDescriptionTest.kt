@@ -17,7 +17,7 @@ class ClassCardDescriptionTest {
 
     @Test
     fun cancelledClassIsReadAsCancelled() {
-        val item = base.copy(statusBadge = "Odwołane", isCancelled = true)
+        val item = base.copy(status = OccurrenceStatusUi.Cancelled)
 
         assertEquals(
             "08:00-09:30, Analiza, Odwołane, Informatyka, Wykład, A1",
@@ -35,7 +35,7 @@ class ClassCardDescriptionTest {
 
     @Test
     fun oneOffLabelIsReadOnce() {
-        val item = base.copy(weekLabel = "Jednorazowe", statusBadge = "Jednorazowe", isOneOff = true)
+        val item = base.copy(weekLabel = "Jednorazowe", status = OccurrenceStatusUi.OneOff)
 
         assertEquals("08:00-09:30, Analiza, Jednorazowe, Informatyka, Wykład, A1", classCardDescription(item))
     }

@@ -2,6 +2,7 @@ package dev.retza.mak.ui.occurrence
 
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.ui.FakeRepository
+import dev.retza.mak.ui.components.OccurrenceStatusUi
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController

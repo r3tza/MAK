@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.occurrence
 
+import dev.retza.mak.ui.components.OccurrenceStatusUi
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test

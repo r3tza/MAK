@@ -7,14 +7,11 @@ import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanInputs
 import dev.retza.mak.domain.ActivePlanProvider
-import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.PlannedOccurrence
-import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.WeekStatus
 import dev.retza.mak.domain.WeekType
-import dev.retza.mak.domain.cancelledOccurrences
 import dev.retza.mak.domain.collisionLabels
-import dev.retza.mak.domain.occurrenceId
 import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.SemesterProgram
 import dev.retza.mak.domain.allProgramsHidden
@@ -26,10 +23,13 @@ import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
 import dev.retza.mak.ui.components.CalendarMarkerUi
 import dev.retza.mak.ui.components.ClassItemUi
+import dev.retza.mak.ui.components.cardBadge
+import dev.retza.mak.ui.components.toUi
 import dev.retza.mak.ui.dayNames
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.launchUiOperation
 import dev.retza.mak.ui.fullDateFormatter
+import dev.retza.mak.ui.label
 import dev.retza.mak.ui.monthFormatter
 import dev.retza.mak.ui.polishLocale
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
@@ -229,7 +229,7 @@ class ScheduleViewModel(
         val filtered = selected.occurrences.filter {
             activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
         }
-        val cancelled = if (control.showCancelled) cancelledItems(data, control.scheduleDate, activeFilter) else emptyList()
+        val cancelled = if (control.showCancelled) cancelledItems(selected.cancelled, activeFilter) else emptyList()
         val labels = collisionLabels(selectedPlan.collisions)
         val names = collisionPartnerNames(selectedPlan.collisions)
         val monday = control.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
@@ -279,17 +279,13 @@ class ScheduleViewModel(
             view = control.scheduleView,
             weekRangeLabel = "${monday.format(shortDateFormatter)} - ${monday.plusDays(6).format(shortDateFormatter)}",
             weekSubtitle = if (monday == currentWeekMonday) "Bieżący tydzień" else data.semester.name,
-            weekTypeLabel = if (selected.hasMixedWeekTypes) {
-                "Różne tygodnie"
-            } else {
-                selected.weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem"
-            },
+            weekTypeLabel = selected.weekStatus.label(),
             weekSourceLabel = when {
-                selected.hasMixedWeekTypes -> "Różne kalendarze"
+                selected.weekStatus == WeekStatus.Mixed -> "Różne kalendarze"
                 selected.correction == null -> "Wyliczony automatycznie"
                 else -> "Korekta ręczna"
             },
-            weekType = if (selected.hasMixedWeekTypes) {
+            weekType = if (selected.weekStatus == WeekStatus.Mixed) {
                 null
             } else {
                 selected.weekType?.let { WeekTypeUi.valueOf(it.name) }
@@ -329,7 +325,7 @@ class ScheduleViewModel(
                 .replaceFirstChar { it.titlecase(polishLocale) },
             calendarSelectedDayCountLabel = classCountLabel(calendarFiltered.size),
             calendarItems = calendarFiltered.map { it.toUi(calendarLabels[it.id], calendarNames[it.id]) } +
-                if (control.showCancelled) cancelledItems(data, control.calendarDate, activeFilter) else emptyList(),
+                if (control.showCancelled) cancelledItems(calendarSchedule.cancelled, activeFilter) else emptyList(),
             showCancelled = control.showCancelled,
             hasOneWeekCorrection = data.weekOverrides.any {
                 it.academicCalendarId in relevantCalendarIds &&
@@ -343,28 +339,10 @@ class ScheduleViewModel(
         )
     }
 
-    private fun cancelledItems(data: ActivePlanData, date: LocalDate, activeFilter: String): List<ClassItemUi> =
-        cancelledOccurrences(data, date)
+    private fun cancelledItems(cancelled: List<PlannedOccurrence>, activeFilter: String): List<ClassItemUi> =
+        cancelled
             .filter { activeFilter == "all" || it.classItem.semesterProgramId == activeFilter }
-            .map { cancelled ->
-                val item = cancelled.classItem
-                ClassItemUi(
-                    id = occurrenceId(item.id, date),
-                    name = item.name,
-                    type = item.type,
-                    courseName = cancelled.studyProgram?.name.orEmpty(),
-                    courseColor = cancelled.studyProgram?.color,
-                    startTime = item.startTime.toString(),
-                    endTime = item.endTime.toString(),
-                    room = item.room?.trim()?.ifEmpty { null },
-                    building = item.building,
-                    teacherName = item.teacherName,
-                    classNote = item.classNote?.takeIf { it.isNotBlank() },
-                    occurrenceNote = cancelled.occurrenceNote?.body?.takeIf { it.isNotBlank() },
-                    statusBadge = "Odwołane",
-                    isCancelled = true
-                )
-            }
+            .map { it.toUi(conflictLabel = null) }
 }
 
 private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
@@ -405,12 +383,7 @@ private fun calendarAccessibilityLabel(
 }
 
 private fun calendarOccurrenceLabel(occurrence: PlannedOccurrence): String {
-    val status = when {
-        occurrence.occurrenceChange?.kind == OccurrenceChangeKind.CANCELLED -> ", odwołane"
-        occurrence.occurrenceChange?.kind == OccurrenceChangeKind.MODIFIED -> ", zmienione"
-        occurrence.classItem.recurrence == Recurrence.ONCE -> ", jednorazowe"
-        else -> ""
-    }
+    val status = occurrence.status.toUi().cardBadge()?.let { ", ${it.lowercase()}" }.orEmpty()
     return "${occurrence.name}, ${occurrence.startTime} - ${occurrence.endTime}$status"
 }
 

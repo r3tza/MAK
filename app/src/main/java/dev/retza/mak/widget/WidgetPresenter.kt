@@ -1,10 +1,12 @@
 package dev.retza.mak.widget
 
 import dev.retza.mak.domain.ActivePlan
+import dev.retza.mak.domain.WeekStatus
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.uniqueCollisionCount
 import java.time.LocalDate
 import java.time.LocalTime
+import dev.retza.mak.ui.label
 import dev.retza.mak.ui.todayTitleFormatter
 
 class WidgetPresenter {
@@ -15,16 +17,11 @@ class WidgetPresenter {
         now: LocalTime
     ): WidgetUiState {
         val dateLabel = widgetDateLabel(date)
-        val weekType = plan.schedule.weekType
-        val mixedWeekTypes = plan.schedule.hasMixedWeekTypes
-        if (weekType == null && !mixedWeekTypes) {
+        val weekStatus = plan.schedule.weekStatus
+        if (weekStatus == WeekStatus.OutsideSemester) {
             return WidgetUiState.OutsideSemester(dateLabel, semesterName)
         }
-        val weekLabel = if (mixedWeekTypes) {
-            "Różne tygodnie"
-        } else {
-            weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem"
-        }
+        val weekLabel = weekStatus.label()
         if (plan.schedule.occurrences.isEmpty()) {
             return WidgetUiState.EmptyDay(dateLabel, weekLabel)
         }

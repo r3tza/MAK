@@ -37,7 +37,7 @@ class ScheduleResolver(
             .groupBy { it.classId to it.occurrenceDate }
             .mapValues { (_, notes) -> notes.last() }
 
-        val occurrences = semesterClasses
+        val resolved = semesterClasses
             .mapNotNull { classItem ->
                 val calendar = calendarFor(classItem) ?: return@mapNotNull null
                 resolveClass(
@@ -53,6 +53,7 @@ class ScheduleResolver(
             }
             .flatten()
             .sortedWith(compareBy<PlannedOccurrence> { it.startTime }.thenBy { it.name }.thenBy { it.id })
+        val (cancelled, occurrences) = resolved.partition { it.status == OccurrenceStatus.CANCELLED }
 
         val weeks = semesterCalendars
             .mapNotNull { calendar ->
@@ -68,7 +69,9 @@ class ScheduleResolver(
             semesterId = semester.id,
             week = sharedWeek,
             occurrences = occurrences,
-            hasMixedWeekTypes = hasMixedWeekTypes
+            hasMixedWeekTypes = hasMixedWeekTypes,
+            cancelled = cancelled,
+            weeksByCalendarId = weeks
         )
     }
 
@@ -108,8 +111,6 @@ class ScheduleResolver(
 
         return sourceDates.mapNotNull { sourceDate ->
             val change = changesByDate[sourceDate]
-            if (change?.kind == OccurrenceChangeKind.CANCELLED) return@mapNotNull null
-
             val actualDate = change?.targetDate ?: sourceDate
             if (actualDate != date) return@mapNotNull null
 

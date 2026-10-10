@@ -55,9 +55,6 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.material.icons.Icons
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.material.icons.outlined.StickyNote2
-import androidx.compose.material.icons.outlined.LooksOne
-import androidx.compose.material.icons.outlined.EventBusy
-import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Add
@@ -482,7 +479,7 @@ fun ClassCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
-                classStatusIcon(item)?.let { (icon, tint) ->
+                occurrenceStatusIcon(item.status)?.let { (icon, tint) ->
                     // The card's own description already reads the status.
                     Icon(
                         imageVector = icon,
@@ -661,15 +658,6 @@ internal fun modifiedTint(): Color =
 @Composable
 internal fun oneOffTint(): Color =
     if (isDarkSurface()) lerp(MakOnce, Color.White, 0.55f) else MakOnce
-
-/** Icon and color for a class state that changes the plan or marks a one-off date; null otherwise. */
-@Composable
-internal fun classStatusIcon(item: ClassItemUi): Pair<ImageVector, Color>? = when {
-    item.isCancelled -> Icons.Outlined.EventBusy to MaterialTheme.colorScheme.error
-    item.isModified -> Icons.Outlined.EditCalendar to modifiedTint()
-    item.isOneOff -> Icons.Outlined.LooksOne to oneOffTint()
-    else -> null
-}
 
 @Composable
 fun MakEmptyState(message: String, modifier: Modifier = Modifier) {

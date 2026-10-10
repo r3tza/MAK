@@ -28,6 +28,14 @@ enum class OccurrenceChangeKind {
     MODIFIED
 }
 
+enum class OccurrenceStatus { SCHEDULED, CANCELLED, MOVED, MODIFIED, ONE_OFF }
+
+sealed interface WeekStatus {
+    data class Single(val type: WeekType) : WeekStatus
+    data object Mixed : WeekStatus
+    data object OutsideSemester : WeekStatus
+}
+
 data class Semester(
     val id: String,
     val name: String
@@ -142,6 +150,18 @@ data class PlannedOccurrence(
     val occurrenceNote: OccurrenceNote?,
     val occurrenceChange: OccurrenceChange? = null
 ) {
+    val status: OccurrenceStatus
+        get() {
+            val change = occurrenceChange
+            return when {
+                change?.kind == OccurrenceChangeKind.CANCELLED -> OccurrenceStatus.CANCELLED
+                classItem.recurrence == Recurrence.ONCE -> OccurrenceStatus.ONE_OFF
+                change?.targetDate != null && change.targetDate != change.originalDate -> OccurrenceStatus.MOVED
+                change != null -> OccurrenceStatus.MODIFIED
+                else -> OccurrenceStatus.SCHEDULED
+            }
+        }
+
     // Identified by the class and its original planned date, like iCalendar RECURRENCE-ID,
     // so an occurrence moved onto a day with a regular one of the same class stays distinct.
     val id: String
@@ -170,10 +190,19 @@ data class ResolvedSchedule(
     val semesterId: String,
     val week: WeekCalculation?,
     val occurrences: List<PlannedOccurrence>,
-    val hasMixedWeekTypes: Boolean = false
+    val hasMixedWeekTypes: Boolean = false,
+    val cancelled: List<PlannedOccurrence> = emptyList(),
+    val weeksByCalendarId: Map<String, WeekCalculation> = emptyMap()
 ) {
     val items: List<PlannedOccurrence>
         get() = occurrences
+
+    val weekStatus: WeekStatus
+        get() = when {
+            hasMixedWeekTypes -> WeekStatus.Mixed
+            week != null -> WeekStatus.Single(week.weekType)
+            else -> WeekStatus.OutsideSemester
+        }
 
     val weekType: WeekType?
         get() = week?.weekType

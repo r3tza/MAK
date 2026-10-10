@@ -240,4 +240,64 @@ class ScheduleResolverTest {
         val result = resolve(LocalDate.of(2026, 1, 5), listOf(classItem(), otherSemesterClass))
         assertFalse(result.occurrences.any { it.classId == "other" })
     }
+
+    @Test
+    fun movedTermStatusIsMovedAndChangedTermIsModified() {
+        val monday = LocalDate.of(2026, 1, 5)
+        val tuesday = LocalDate.of(2026, 1, 6)
+        val nextMonday = LocalDate.of(2026, 1, 12)
+        val moved = OccurrenceChange("move", "class-1", monday, OccurrenceChangeKind.MODIFIED, targetDate = tuesday)
+        val retimed = OccurrenceChange(
+            "retime",
+            "class-1",
+            nextMonday,
+            OccurrenceChangeKind.MODIFIED,
+            startTime = LocalTime.of(12, 0)
+        )
+        val changes = listOf(moved, retimed)
+        val once = classItem(id = "once", recurrence = Recurrence.ONCE, date = monday)
+
+        assertEquals(
+            OccurrenceStatus.MOVED,
+            resolve(tuesday, listOf(classItem()), changes = changes).occurrences.single().status
+        )
+        assertEquals(
+            OccurrenceStatus.MODIFIED,
+            resolve(nextMonday, listOf(classItem()), changes = changes).occurrences.single().status
+        )
+        assertEquals(
+            OccurrenceStatus.SCHEDULED,
+            resolve(LocalDate.of(2026, 1, 19), listOf(classItem()), changes = changes).occurrences.single().status
+        )
+        assertEquals(OccurrenceStatus.ONE_OFF, resolve(monday, listOf(once)).occurrences.single().status)
+    }
+
+    @Test
+    fun weekStatusReportsMixedAndOutsideSemester() {
+        val date = LocalDate.of(2026, 1, 5)
+        val otherCalendar = AcademicCalendar(
+            id = "calendar-2",
+            startDate = LocalDate.of(2026, 1, 1),
+            endDate = LocalDate.of(2026, 1, 31),
+            firstWeekType = WeekType.B
+        )
+        val otherAssignment = SemesterProgram("assignment-2", semester.id, course.id, otherCalendar.id)
+
+        val mixed = resolver.resolve(
+            date = date,
+            semester = semester,
+            classes = emptyList(),
+            courses = listOf(course),
+            semesterPrograms = listOf(assignment, otherAssignment),
+            calendars = listOf(calendar, otherCalendar)
+        )
+
+        assertEquals(WeekStatus.Mixed, mixed.weekStatus)
+        assertEquals(setOf("calendar-1", "calendar-2"), mixed.weeksByCalendarId.keys)
+        assertEquals(WeekStatus.Single(WeekType.A), resolve(LocalDate.of(2026, 1, 1), emptyList()).weekStatus)
+        assertEquals(
+            WeekStatus.OutsideSemester,
+            resolve(LocalDate.of(2026, 2, 10), emptyList()).weekStatus
+        )
+    }
 }
