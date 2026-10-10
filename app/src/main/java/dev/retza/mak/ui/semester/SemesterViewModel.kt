@@ -11,10 +11,14 @@ import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
+import dev.retza.mak.domain.DateRangeError
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
+import dev.retza.mak.domain.validateDateRange
+import dev.retza.mak.domain.validateRequiredName
 import dev.retza.mak.domain.weekStart
 import dev.retza.mak.sync.PlanEditTracker
+import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.shortDateWithYearFormatter
 import dev.retza.mak.ui.toLocalDateOrNull
@@ -200,17 +204,15 @@ class SemesterViewModel(
         val form = state.value.semester
         val start = form.startDate.toLocalDateOrNull()
         val end = form.endDate.toLocalDateOrNull()
-        if (form.name.isBlank() || start == null || end == null || end.isBefore(start)) {
+        val nameValid = validateRequiredName(form.name)
+        val dateErrors = validateDateRange(start, end)
+        if (!nameValid || dateErrors.isNotEmpty() || start == null || end == null) {
             update {
                 it.copy(semester = form.copy(
-                    nameError = if (form.name.isBlank()) "Podaj nazwę semestru." else null,
-                    startDateError = if (start == null) "Podaj poprawną datę." else null,
-                    endDateError = if (end == null) "Podaj poprawną datę." else null,
-                    dateRangeError = if (start != null && end != null && end.isBefore(start)) {
-                        "Koniec nie może być wcześniejszy od początku."
-                    } else {
-                        null
-                    }
+                    nameError = if (nameValid) null else FormErrorTexts.SemesterNameRequired,
+                    startDateError = if (DateRangeError.START_REQUIRED in dateErrors) FormErrorTexts.DateRequired else null,
+                    endDateError = if (DateRangeError.END_REQUIRED in dateErrors) FormErrorTexts.DateRequired else null,
+                    dateRangeError = if (DateRangeError.END_BEFORE_START in dateErrors) FormErrorTexts.EndBeforeStart else null
                 ))
             }
             return
@@ -260,16 +262,13 @@ class SemesterViewModel(
         val form = state.value.semester
         val start = form.startDate.toLocalDateOrNull()
         val end = form.endDate.toLocalDateOrNull()
-        if (start == null || end == null || end.isBefore(start)) {
+        val dateErrors = validateDateRange(start, end)
+        if (dateErrors.isNotEmpty() || start == null || end == null) {
             update {
                 it.copy(semester = form.copy(
-                    startDateError = if (start == null) "Podaj poprawną datę." else null,
-                    endDateError = if (end == null) "Podaj poprawną datę." else null,
-                    dateRangeError = if (start != null && end != null && end.isBefore(start)) {
-                        "Koniec nie może być wcześniejszy od początku."
-                    } else {
-                        null
-                    }
+                    startDateError = if (DateRangeError.START_REQUIRED in dateErrors) FormErrorTexts.DateRequired else null,
+                    endDateError = if (DateRangeError.END_REQUIRED in dateErrors) FormErrorTexts.DateRequired else null,
+                    dateRangeError = if (DateRangeError.END_BEFORE_START in dateErrors) FormErrorTexts.EndBeforeStart else null
                 ))
             }
             return
@@ -373,7 +372,7 @@ class SemesterViewModel(
         val wantsExisting = draft.courseProgramMode == CourseProgramModeUi.EXISTING
         val existingProgramId = if (wantsExisting) draft.courseProgramId?.toLongOrNull() else null
         if (wantsExisting && existingProgramId == null) {
-            update { it.copy(courseNameError = "Wybierz kierunek.") }
+            update { it.copy(courseNameError = FormErrorTexts.ProgramRequired) }
             return
         }
         val name = if (wantsExisting) {
@@ -382,8 +381,8 @@ class SemesterViewModel(
         } else {
             draft.courseNameDraft.trim()
         }
-        if (name.isBlank()) {
-            update { it.copy(courseNameError = "Podaj nazwę kierunku.") }
+        if (!validateRequiredName(name)) {
+            update { it.copy(courseNameError = FormErrorTexts.ProgramNameRequired) }
             return
         }
         if (existingProgramId != null &&

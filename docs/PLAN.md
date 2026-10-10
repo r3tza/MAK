@@ -180,6 +180,8 @@ Kryterium zakończenia: testy przechodzą, zrzuty są identyczne; `rg "endsWith\
 
 ## 5. Waliduj semestr, kierunek i edycję terminu czystymi funkcjami (I-89)
 
+Stan: zrobione. `StudyProgramsViewModel` też korzysta z `FormErrorTexts` (tekst „Podaj nazwę kierunku.”). `SetupViewModelTest` nie sprawdzał tekstów dat, więc nie wymagał zmian. Brak daty końca w kreatorze pokazuje „Podaj poprawną datę.” zamiast „Data końca nie może być wcześniejsza od początku.”.
+
 Cel: reguły formularzy semestru, kierunku i edycji terminu są czystymi funkcjami domenowymi z kodami błędów, jak `validateClassForm` (H5, `ARCHITECTURE.md`, sekcja 7: „Walidacja formularza to czysta funkcja wywoływana z ViewModelu”). ViewModele zamieniają kody na teksty. Jedno brzmienie dla tej samej reguły.
 
 Pliki: nowy `domain/FormValidation.kt`, `ui/semester/SemesterViewModel.kt`, `ui/setup/SetupViewModel.kt`, `ui/edit/ClassEditViewModel.kt`, `ui/occurrence/OccurrenceViewModel.kt`, nowy `ui/FormErrorTexts.kt`; testy nowy `domain/FormValidationTest.kt` i testy zmienionych ViewModeli; dokument `docs/QUEUE.md`.

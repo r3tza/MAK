@@ -53,6 +53,27 @@ fun decideOccurrenceEdit(
     return OccurrenceEditDecision.Ready(result, draft)
 }
 
+enum class OccurrenceDraftError {
+    DATE_OUTSIDE_SEMESTER,
+    END_NOT_AFTER_START
+}
+
+/** Semester bounds are nullable; a missing bound does not restrict the date. */
+fun validateOccurrenceDraft(
+    slot: OccurrenceSlot,
+    semesterStart: LocalDate?,
+    semesterEnd: LocalDate?
+): Set<OccurrenceDraftError> {
+    val errors = linkedSetOf<OccurrenceDraftError>()
+    if ((semesterStart != null && slot.date.isBefore(semesterStart)) ||
+        (semesterEnd != null && slot.date.isAfter(semesterEnd))
+    ) {
+        errors += OccurrenceDraftError.DATE_OUTSIDE_SEMESTER
+    }
+    if (!slot.endTime.isAfter(slot.startTime)) errors += OccurrenceDraftError.END_NOT_AFTER_START
+    return errors
+}
+
 fun occurrenceRoomOverride(baseRoom: String?, draftRoom: String?): String? {
     val base = normalizeRoom(baseRoom)
     val draft = normalizeRoom(draftRoom)

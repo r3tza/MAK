@@ -16,6 +16,7 @@ import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.OccurrenceEditDecision
+import dev.retza.mak.domain.OccurrenceDraftError
 import dev.retza.mak.domain.OccurrenceEditResult
 import dev.retza.mak.domain.OccurrenceSlot
 import dev.retza.mak.domain.WeekStatus
@@ -23,9 +24,11 @@ import dev.retza.mak.domain.decideOccurrenceEdit
 import dev.retza.mak.domain.noteContentChanged
 import dev.retza.mak.domain.occurrenceId
 import dev.retza.mak.domain.occurrenceRoomOverride
+import dev.retza.mak.domain.validateOccurrenceDraft
 import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.ActivePlanSource
 import dev.retza.mak.ui.PlanEditSession
+import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.calendarForAssignment
 import dev.retza.mak.ui.programForAssignment
 import dev.retza.mak.ui.fullDateFormatter
@@ -409,7 +412,7 @@ class OccurrenceViewModel(
         val base = draft.toBaseSlot()
         val current = draft.toCurrentSlot()
         if (base == null || current == null) {
-            update { it.copy(draftErrors = mapOf(OccurrenceEditField.Date to FieldErrorUi("Podaj poprawną datę."))) }
+            update { it.copy(draftErrors = mapOf(OccurrenceEditField.Date to FieldErrorUi(FormErrorTexts.DateRequired))) }
             return@run
         }
         val decision = decideOccurrenceEdit(
@@ -423,7 +426,7 @@ class OccurrenceViewModel(
         )
         when (decision) {
             is OccurrenceEditDecision.InvalidDateTime -> update {
-                it.copy(draftErrors = mapOf(OccurrenceEditField.Date to FieldErrorUi("Podaj poprawną datę.")))
+                it.copy(draftErrors = mapOf(OccurrenceEditField.Date to FieldErrorUi(FormErrorTexts.DateRequired)))
             }
 
             is OccurrenceEditDecision.Ready -> {
@@ -613,15 +616,16 @@ private fun occurrenceDraftErrors(
     slot: OccurrenceSlot,
     state: OccurrenceDetailsUiState
 ): Map<OccurrenceEditField, FieldErrorUi> = buildMap {
-    val semesterStart = state.semesterStartDate?.toLocalDateOrNull()
-    val semesterEnd = state.semesterEndDate?.toLocalDateOrNull()
-    if ((semesterStart != null && slot.date.isBefore(semesterStart)) ||
-        (semesterEnd != null && slot.date.isAfter(semesterEnd))
-    ) {
-        put(OccurrenceEditField.Date, FieldErrorUi("Data musi należeć do aktywnego semestru."))
+    val errors = validateOccurrenceDraft(
+        slot = slot,
+        semesterStart = state.semesterStartDate?.toLocalDateOrNull(),
+        semesterEnd = state.semesterEndDate?.toLocalDateOrNull()
+    )
+    if (OccurrenceDraftError.DATE_OUTSIDE_SEMESTER in errors) {
+        put(OccurrenceEditField.Date, FieldErrorUi(FormErrorTexts.DateOutsideSemester))
     }
-    if (!slot.endTime.isAfter(slot.startTime)) {
-        put(OccurrenceEditField.EndTime, FieldErrorUi("Koniec musi być późniejszy niż początek tego samego dnia."))
+    if (OccurrenceDraftError.END_NOT_AFTER_START in errors) {
+        put(OccurrenceEditField.EndTime, FieldErrorUi(FormErrorTexts.EndNotAfterStart))
     }
 }
 

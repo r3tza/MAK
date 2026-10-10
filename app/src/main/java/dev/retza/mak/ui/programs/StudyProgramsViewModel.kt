@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.sync.PlanEditTracker
+import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
@@ -206,7 +207,7 @@ class StudyProgramsViewModel(
         if (editor.isSaving) return
         val name = editor.name.trim()
         if (name.isBlank()) {
-            state.update { it.copy(editor = it.editor.copy(nameError = "Podaj nazwę kierunku.")) }
+            state.update { it.copy(editor = it.editor.copy(nameError = FormErrorTexts.ProgramNameRequired)) }
             return
         }
         state.update { it.copy(editor = it.editor.copy(isSaving = true)) }

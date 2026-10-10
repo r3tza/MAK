@@ -1,5 +1,9 @@
 package dev.retza.mak.ui.setup
 
+import dev.retza.mak.domain.DateRangeError
+import dev.retza.mak.domain.validateDateRange
+import dev.retza.mak.domain.validateRequiredName
+import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.components.DefaultCourseColor
 import dev.retza.mak.ui.components.suggestedCourseColor
 import androidx.lifecycle.SavedStateHandle
@@ -329,9 +333,9 @@ class SetupViewModel(
         when (current.programMode) {
             SetupProgramMode.New -> {
                 val name = current.courseName.trim()
-                if (name.isBlank()) {
+                if (!validateRequiredName(name)) {
                     state.update {
-                        it.copy(errors = mapOf(SetupField.CourseName to FieldErrorUi("Podaj nazwę kierunku.")))
+                        it.copy(errors = mapOf(SetupField.CourseName to FieldErrorUi(FormErrorTexts.ProgramNameRequired)))
                     }
                     null
                 } else {
@@ -347,7 +351,7 @@ class SetupViewModel(
                 val selected = current.availableProgramOptions.firstOrNull { it.id == current.selectedProgramId }
                 if (selected == null) {
                     state.update {
-                        it.copy(errors = mapOf(SetupField.CourseProgram to FieldErrorUi("Wybierz kierunek.")))
+                        it.copy(errors = mapOf(SetupField.CourseProgram to FieldErrorUi(FormErrorTexts.ProgramRequired)))
                     }
                     null
                 } else {
@@ -391,13 +395,19 @@ class SetupViewModel(
         val current = state.value
         val start = current.startDate.toLocalDateOrNull()
         val end = current.endDate.toLocalDateOrNull()
+        val dateErrors = validateDateRange(start, end)
         val errors = buildMap {
-            if (current.semesterName.isBlank()) {
-                put(SetupField.SemesterName, FieldErrorUi("Podaj nazwę semestru."))
+            if (!validateRequiredName(current.semesterName)) {
+                put(SetupField.SemesterName, FieldErrorUi(FormErrorTexts.SemesterNameRequired))
             }
-            if (start == null) put(SetupField.StartDate, FieldErrorUi("Wybierz poprawną datę."))
-            if (end == null || start != null && end.isBefore(start)) {
-                put(SetupField.EndDate, FieldErrorUi("Data końca nie może być wcześniejsza od początku."))
+            if (DateRangeError.START_REQUIRED in dateErrors) {
+                put(SetupField.StartDate, FieldErrorUi(FormErrorTexts.DateRequired))
+            }
+            if (DateRangeError.END_REQUIRED in dateErrors) {
+                put(SetupField.EndDate, FieldErrorUi(FormErrorTexts.DateRequired))
+            }
+            if (DateRangeError.END_BEFORE_START in dateErrors) {
+                put(SetupField.EndDate, FieldErrorUi(FormErrorTexts.EndBeforeStart))
             }
         }
         if (errors.isNotEmpty() || start == null || end == null) {

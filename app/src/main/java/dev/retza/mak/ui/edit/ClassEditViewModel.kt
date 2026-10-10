@@ -12,9 +12,11 @@ import dev.retza.mak.domain.hiddenByClassEdit
 import dev.retza.mak.domain.ClassForm
 import dev.retza.mak.domain.ClassValidationError
 import dev.retza.mak.domain.ClassValidator
+import dev.retza.mak.domain.dateInCalendar
 import dev.retza.mak.domain.Recurrence as DomainRecurrence
 import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.calendarForAssignment
 import dev.retza.mak.ui.programForAssignment
@@ -233,7 +235,7 @@ class ClassEditViewModel(
                 put(ClassEditField.Name, FieldErrorUi("Podaj nazwę przedmiotu."))
             }
             if (ClassValidationError.PROGRAM_REQUIRED in validation.errors) {
-                put(ClassEditField.Course, FieldErrorUi("Wybierz kierunek."))
+                put(ClassEditField.Course, FieldErrorUi(FormErrorTexts.ProgramRequired))
             }
             if (ClassValidationError.START_TIME_REQUIRED in validation.errors) {
                 put(ClassEditField.StartTime, FieldErrorUi("Podaj godzinę rozpoczęcia."))
@@ -245,16 +247,14 @@ class ClassEditViewModel(
                 ClassValidationError.END_NOT_AFTER_START in validation.errors ||
                 ClassValidationError.CROSSES_MIDNIGHT in validation.errors
             ) {
-                put(ClassEditField.EndTime, FieldErrorUi("Koniec musi być późniejszy niż początek tego samego dnia."))
+                put(ClassEditField.EndTime, FieldErrorUi(FormErrorTexts.EndNotAfterStart))
             }
             if (ClassValidationError.DATE_REQUIRED in validation.errors) {
                 put(ClassEditField.Date, FieldErrorUi("Podaj datę zajęć jednorazowych."))
             }
             val calendar = data.calendarForAssignment(assignment?.id)
-            if (recurrence == DomainRecurrence.ONCE && date != null && calendar != null &&
-                date !in calendar
-            ) {
-                put(ClassEditField.Date, FieldErrorUi("Data musi należeć do kalendarza kierunku."))
+            if (recurrence == DomainRecurrence.ONCE && date != null && !dateInCalendar(date, calendar)) {
+                put(ClassEditField.Date, FieldErrorUi(FormErrorTexts.DateOutsideCalendar))
             }
             if (editor.dayLabel !in dayNames.values) {
                 put(ClassEditField.Day, FieldErrorUi("Wybierz dzień tygodnia."))
