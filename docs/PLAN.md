@@ -1,6 +1,6 @@
 # Plan najbliższych prac
 
-Cel: wykonać I-87 (model kopii zapasowej bez encji Room, kroki 1 i 2), potem pierwsze trzy etapy I-86 (ViewModele w zakresie celu nawigacji, kroki 3 do 5). Raport audytu: `docs/audit_09102026.md`; oznaczenia w nawiasach (F4, B1 i podobne) to jego punkty. Decyzje użytkownika z 2026-10-10 są w `LOG.md`. I-87 idzie pierwsze, bo blokuje I-88 i I-81. Pozostałe etapy I-86 są wypisane w `QUEUE.md` i trafią do następnego planu.
+Cel: dokończyć I-86 (ViewModele w zakresie celu nawigacji, etapy 4 do 7 z `QUEUE.md`). Raport audytu: `docs/audit_09102026.md`; oznaczenia w nawiasach (C1, D2 i podobne) to jego punkty. Decyzja użytkownika z 2026-10-10 o zakresie ViewModeli jest w `LOG.md`. Etapy 1 do 3 są zrobione: wspólny strumień planu, górny pasek deklarowany przez cel nawigacji, ViewModele „Dzisiaj” i „Planu” w celach nawigacji. Po kroku 5 w `MainActivity` zostają tylko `AppViewModel`, `SettingsViewModel`, `UpdateViewModel` i `SyncViewModel`.
 
 ## Zasady dla wykonawcy
 
@@ -9,320 +9,361 @@ Przeczytaj tę sekcję przed każdym krokiem.
 - Wszystkie kroki wykonuj na gałęzi `task/I-79-hide-study-programs` (decyzja użytkownika z 2026-10-10). Przed pierwszym krokiem sprawdź `git branch --show-current`; jeśli to inna gałąź, przełącz się poleceniem `git switch task/I-79-hide-study-programs` i nie twórz nowej.
 - Ścieżki kodu są względne wobec `app/src/main/java/dev/retza/mak/`, testów JVM wobec `app/src/test/java/dev/retza/mak/`, testów Android wobec `app/src/androidTest/java/dev/retza/mak/`.
 - Przed zmianą otwórz każdy plik z listy kroku i znajdź opisany fragment po nazwie funkcji, nie po numerze wiersza. Jeśli fragmentu nie ma albo wygląda inaczej niż w opisie, zrób zmianę zgodną z celem kroku i opisz różnicę w commicie. Zatrzymaj się tylko wtedy, gdy nie da się ustalić zamierzonego zachowania.
-- Polecenia uruchamiaj w katalogu repozytorium w PowerShellu. Testy JVM jednej klasy: `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.sync.PlanMergeTest"`. Jeśli Gradle zgłosi `No cached version ... available for offline mode`, uruchom to samo polecenie raz bez `--offline`, potem wróć do `--offline`.
+- Polecenia uruchamiaj w katalogu repozytorium w PowerShellu. Testy JVM jednej klasy: `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.occurrence.OccurrenceViewModelTest"`. Jeśli Gradle zgłosi `No cached version ... available for offline mode`, uruchom to samo polecenie raz bez `--offline`, potem wróć do `--offline`.
 - Po każdej zmianie kodu: `.\gradlew.bat --offline :app:compileDebugUnitTestKotlin :app:compileDebugAndroidTestKotlin`. Kompilacja testów Android nie oznacza ich uruchomienia.
-- Testy Android: najwyżej jeden emulator naraz, z 2048 MiB RAM. Obraz `Medium_Phone_A12` (`STACK.md`, sekcja 6); na komputerze, który go nie ma, `Medium_Phone` (testy używają aplikacji `dev.retza.mak.debug`, a dane odbioru synchronizacji są w `dev.retza.mak`; nie czyść ich). Jedna klasa na wywołanie: `.\gradlew.bat connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.retza.mak.sync.RoomPlanSyncGatewayTest"`; lista klas po przecinku w PowerShellu uruchamia tylko pierwszą. Przed testami Android cofnij zmiany ekranu ze zrzutów (`adb shell wm size reset`), bo przy 320 dp część testów nie znajduje elementów. Testy Android przeinstalowują aplikację debug i zerują jej dane, więc zrzuty do porównania rób przed nimi albo odtwórz dane po nich.
+- Testy Android: najwyżej jeden emulator naraz, z 2048 MiB RAM. Obraz `Medium_Phone_A12` (`STACK.md`, sekcja 6); na komputerze, który go nie ma, `Medium_Phone` (testy używają aplikacji `dev.retza.mak.debug`, a dane odbioru synchronizacji są w `dev.retza.mak`; nie czyść ich). Jedna klasa na wywołanie: `.\gradlew.bat connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.retza.mak.di.KoinGraphTest"`; lista klas po przecinku w PowerShellu uruchamia tylko pierwszą. Przed testami Android cofnij zmiany ekranu ze zrzutów (`adb shell wm size reset`). Testy Android przeinstalowują aplikację debug i zerują jej dane, więc ręczne sprawdzenie rób po `installDebug`, przed testami Android, albo odtwórz dane po nich.
+- Graf `NavHost` zapamiętuje argumenty funkcji `NavGraphBuilder.xxxRoute(...)` z chwili zbudowania. Wartości, które się zmieniają w czasie, przekazuj do trasy jako funkcję (`() -> T`) albo strumień i czytaj je w `composable` (wzór: `pendingPlanDate` w `TodayScheduleRoutes.kt`).
+- ViewModel pobrany w `composable` przez `koinViewModel()` dostaje `SavedStateHandle` celu nawigacji z jego argumentami (klucze jak w trasie, na przykład `"classId"` i `"date"`). Wzór pobrania: `todayRoute` w `TodayScheduleRoutes.kt`.
 - Nie uruchamiaj pełnego zestawu testów aplikacji bez polecenia użytkownika.
-- Każdy krok kończy się jednym commitem z podanym tematem, bez stopki `Co-authored-by`. Do commita dołącz zmiany `PLAN.md`, `QUEUE.md` i dokumentów, których dotyczy krok. Po commicie dopisz pod nagłówkiem kroku linię `Stan: zrobione.` i krótko opisz różnice wobec planu; ta zmiana trafia do commita następnego kroku.
+- Każdy krok kończy się jednym commitem z podanym tematem, bez stopki `Co-authored-by`. Do commita dołącz zmiany `PLAN.md`, `QUEUE.md` i dokumentów, których dotyczy krok. Pod nagłówkiem zrobionego kroku dopisz linię `Stan: zrobione.` z krótkim opisem różnic wobec planu.
 - Nie wypychaj gałęzi, nie otwieraj pull requesta i nie scalaj bez wyraźnego polecenia użytkownika.
 - Po zmianie plików `docs/*.md` uruchom `py scripts/check_map.py`; wymagany kod 0.
 - Teksty interfejsu i dokumentacja po polsku, identyfikatory i komentarze w kodzie po angielsku. Bez znaków `·`, `—` i strzałek.
 
-## 1. Zastąp encje Room w BackupData rekordami repozytorium (I-87)
+## 1. Pobieraj ViewModele szczegółów terminu i formularza zajęć w ich celach nawigacji (I-86)
 
-Stan: zrobione (`ac3918d`). Fragment `references()` w planie wołał `withReferences` na odbiorcy `buildList`; poprawione na `this@references.withReferences`. `DomainMappers.kt` nie wymagał zmian.
+Stan: zrobione. Pomocnik `open(routeId)` w teście pomija niepoprawne identyfikatory zamiast `!!`, bo istniejące testy sprawdzają takie wejście. `openOnce` czyta datę bez wyjątku przy złym formacie. Ręcznie: odwołanie i przywrócenie terminu, „Edytuj wszystkie terminy” z danymi zajęć, szkic nazwy po dwukrotnym odtworzeniu aktywności (tryb nocny), zapis wraca do szczegółów z nową nazwą, pusty formularz „Dodaj zajęcia”, termin jednorazowy z datą dnia kalendarza.
 
-Cel: kontrakt kopii zapasowej i synchronizacji używa zwykłych klas danych, a encje Room nie wychodzą poza `data` (F4, `ARCHITECTURE.md`, sekcja 5: „Publiczne kontrakty nie wystawiają encji Room”). Rekordy z mapowaniem w obie strony już istnieją (`data/repository/SemesterRecords.kt`, `ScheduleRecords.kt`, funkcje `toRecord()` i `toEntity()` w `DomainMappers.kt`), więc krok nie dodaje nowego modelu, tylko zmienia typy. Przy okazji `PlanMerge.references()` powstaje z `withReferences` (F5). Format pliku JSON się nie zmienia.
+Cel: `OccurrenceViewModel` i `ClassEditViewModel` powstają w swoich celach nawigacji i czytają argumenty z `SavedStateHandle` (C1). Szczegóły przestają liczyć się po zamknięciu ekranu, bo ich ViewModel znika razem z celem (C2). Znikają flagi `opened` i `openSucceeded` w trasach (D4). Zachowanie widoczne dla użytkownika się nie zmienia.
 
-Pliki: `data/repository/BackupData.kt`, `data/repository/PlanBackupGateway.kt`, `data/repository/DomainMappers.kt` (tylko jeśli brakuje mapowania), `data/repository/OccurrenceNoteRemap.kt`, `export/ExportImporter.kt`, `export/ExportSnapshot.kt`, `sync/PlanMerge.kt`, `sync/PlanDifferences.kt`, `ui/settings/SyncDifferenceLabels.kt`; testy JVM `export/BackupDataFixtures.kt`, `sync/PlanFixtures.kt`, `sync/PlanMergeTest.kt`, `sync/SyncCoordinatorTest.kt`, `ui/FakeRepository.kt` i inne wskazane przez kompilator; testy Android `data/RoomPersistenceTest.kt`, `sync/RoomPlanSyncGatewayTest.kt`.
+Pliki: `MainActivity.kt`, `ui/MakNavHostApp.kt`, `ui/ClassOccurrenceRoutes.kt`, `ui/occurrence/OccurrenceViewModel.kt`, `ui/edit/ClassEditViewModel.kt`; testy `ui/occurrence/OccurrenceViewModelTest.kt`, `ui/edit/ClassEditViewModelTest.kt`, Android `di/KoinGraphTest.kt`.
 
 Zmiany:
 
-1. `BackupData.kt`: typy pól zamień na rekordy, nazwy pól zostają:
-   - `BackupData.studyPrograms: List<StudyProgramRecord>`;
-   - `SemesterBackup.semester: SemesterRecord`, `calendars: List<AcademicCalendarRecord>`, `programs: List<SemesterProgramRecord>`, `classes: List<ClassRecord>`, `weekOverrides: List<WeekOverrideRecord>`, `occurrenceNotes: List<OccurrenceNoteRecord>`, `occurrenceChanges: List<OccurrenceChangeRecord>`.
-   - Usuń importy `dev.retza.mak.data.entity.*`. `activeSemesterId` działa bez zmian, bo `SemesterRecord` ma `isActive`.
-2. `RoomPlanBackupGateway`: w `snapshot()` mapuj każdą encję przez `toRecord()` (`studyPrograms.getAll().map { it.toRecord() }`, `data.semester.toRecord()`, `data.academicCalendars.map { it.toRecord() }` i tak dalej). W `replaceAll` wstawiaj `it.toEntity()`. Brakujące funkcje `toRecord()` albo `toEntity()` dopisz w `DomainMappers.kt` obok istniejących, tym samym wzorem.
-3. Odbiorcy przechodzą z enumów `dev.retza.mak.data.entity` na enumy domenowe o tych samych nazwach i wartościach (`dev.retza.mak.domain.WeekType`, `WeekOverrideScope`, `Recurrence`, `OccurrenceChangeKind`). Rekordy już ich używają.
-4. Pola zmiany terminu mają w rekordzie krótsze nazwy. Przy przepisywaniu `OccurrenceChangeEntity` na `OccurrenceChangeRecord` zamień: `newStartTime` na `startTime`, `newEndTime` na `endTime`, `newRoom` na `room`, `newBuilding` na `building`, `newTeacherName` na `teacherName`, `newNote` na `note`. Pozostałe rekordy mają te same nazwy pól co encje.
-5. `OccurrenceNoteRemap.kt`: importy `OccurrenceChangeKind` i `Recurrence` z `dev.retza.mak.domain`. `remapOccurrenceNotesToOriginalDates` i typy `NoteRow`, `ChangeRow`, `ClassRow` zostają bez zmian, bo używa ich też `Migrations.kt`.
-6. `ExportImporter.kt`: buduj rekordy zamiast encji (`StudyProgramRecord(...)`, `AcademicCalendarRecord(...)` i tak dalej, z argumentami nazwanymi). `ExportSnapshot.kt`: funkcje `from(entity: XEntity)` przyjmują rekordy (`from(record: XRecord)`).
-7. `PlanMerge.kt`: w `withId`, `withReferences`, `toBackupData` i rzutowaniach w `mergePlans` (`as ClassEntity`) zamień encje na rekordy. `references()` zastąp:
-   ```kotlin
-   /** The rows this row needs in the plan, read from the same table as [withReferences]. */
-   internal fun Any.references(): List<PlanRowKey> = buildList {
-       this@references.withReferences { kind, id ->
-           add(PlanRowKey(kind, id))
-           id
-       }
-   }
-   ```
-8. `PlanDifferences.kt` (`ClassField.read`, `ClassField.copy`, `classOf`) i `SyncDifferenceLabels.kt`: te same zamiany typów, gałęzie `is XEntity` na `is XRecord`.
-9. Testy i atrapy: `PlanFixtures`, `BackupDataFixtures`, `SyncCoordinatorTest`, `PlanMergeTest` i miejsca w `FakeRepository`, które tworzą `BackupData` albo `SemesterBackup`, budują rekordy. `FakeRepository` może dalej trzymać encje we własnych listach i mapować je w `snapshot()` i `replaceAll` przez `toRecord()` i `toEntity()` (funkcje są `internal`, testy są w tym samym module). `RoomPersistenceTest` i `RoomPlanSyncGatewayTest` tworzą `BackupData` z rekordów; wstawianie przez DAO zostaje na encjach.
+1. `OccurrenceViewModel`:
+   - Dodaj parametr konstruktora `savedState: SavedStateHandle` (ostatni). W `init` odczytaj argumenty: `OccurrenceArgs.parse("${savedState.get<String>("classId")}:${savedState.get<String>("date")}")`; jeśli są poprawne, wywołaj `open(args)`, w przeciwnym razie ustaw `state.value = derive(emptyOccurrenceDetails().copy(notFound = true))`.
+   - `fun open(args: OccurrenceArgs)` zmień na `internal fun open(args: OccurrenceArgs)`; usuń publiczne `fun open(routeId: String)`. W `OccurrenceViewModelTest` dodaj na końcu pliku `private fun OccurrenceViewModel.open(routeId: String) = open(OccurrenceArgs.parse(routeId)!!)`, aby istniejące wywołania w testach zostały bez zmian. Pomocnik tworzący ViewModel w teście przekazuje `SavedStateHandle()` (bez argumentów, więc `init` ustawia `notFound`, a test woła `open` sam).
+2. `ClassEditViewModel`:
+   - Dodaj stan otwarcia trzymany w `SavedStateHandle`, aby przetrwał zmianę konfiguracji i zakończenie procesu:
+     ```kotlin
+     enum class ClassEditOpenState { Opening, Open, Missing }
+
+     private val openState = MutableStateFlow(savedState.get<String>(KEY_OPEN_STATE)?.let(ClassEditOpenState::valueOf) ?: ClassEditOpenState.Opening)
+     val opened: StateFlow<ClassEditOpenState> = openState.asStateFlow()
+     ```
+   - Dodaj funkcję, którą trasa woła po dopuszczeniu edycji:
+     ```kotlin
+     /** Loads the form for this destination once; a restored draft is kept (`ARCHITECTURE.md`, section 5). */
+     suspend fun openOnce() {
+         if (openState.value != ClassEditOpenState.Opening) return
+         val classId = savedState.get<String>("classId")?.toLongOrNull()
+         val date = savedState.get<String>("date")
+         val result = if (classId != null && date != null) {
+             if (openEditFromFreshPlan(OccurrenceArgs(classId, LocalDate.parse(date)).toRouteId())) ClassEditOpenState.Open else ClassEditOpenState.Missing
+         } else {
+             openNewFromFreshPlan(date?.toLocalDateOrNull())
+             ClassEditOpenState.Open
+         }
+         openState.value = result
+         savedState[KEY_OPEN_STATE] = result.name
+     }
+     ```
+     `KEY_OPEN_STATE` dodaj obok `KEY_EDITING_CLASS_ID`. Sprawdź w `MakRoutes.Edit` i `editRoute`, jak wygląda argument `date` dla edycji istniejących zajęć; jeśli nie jest datą `LocalDate`, użyj tej samej konwersji co dzisiejsza trasa (`entry.occurrenceArgs()`).
+3. `ClassOccurrenceRoutes.kt`:
+   - `classEditRoute`: usuń parametr `classEditViewModel`; w `composable` pierwsza linia `val classEditViewModel: ClassEditViewModel = koinViewModel()`. Usuń `opened`, `openSucceeded`, `args`, `date` i oba `LaunchedEffect` z nimi. Po `if (!editing.ready) { ... }`:
+     ```kotlin
+     val openState = classEditViewModel.opened.collectAsStateWithLifecycle().value
+     LaunchedEffect(Unit) { classEditViewModel.openOnce() }
+     if (openState != ClassEditOpenState.Open) {
+         LaunchedEffect(openState) { if (openState == ClassEditOpenState.Missing) onBack() }
+         PlanEditingWait()
+         return@composable
+     }
+     ClassEditEffects(classEditViewModel, navController)
+     ```
+     Trasa dostaje parametr `navController: NavController`.
+   - `occurrenceDetailsRoute`: usuń parametr `occurrenceViewModel`; pierwsza linia `val occurrenceViewModel: OccurrenceViewModel = koinViewModel()`. Usuń `opened` i `LaunchedEffect(args, opened)`. `occurrenceId` licz jak dziś z `entry.occurrenceArgs()`. Dodaj `OccurrenceEffects(occurrenceViewModel, navController)`.
+4. `MakNavHostApp.kt`: usuń parametry `occurrenceViewModel` i `classEditViewModel` z `MakApp`, wywołania `OccurrenceEffects(...)` i `ClassEditEffects(...)` oraz te argumenty w `classEditRoute` i `occurrenceDetailsRoute` (dodaj `navController = navController` do `classEditRoute`).
+5. `MainActivity`: usuń pola `occurrenceViewModel` i `classEditViewModel` i ich argumenty w `MakApp(...)`.
+6. `KoinGraphTest`: `OccurrenceViewModel` rozwiązuj tak jak `ClassEditViewModel`, z `parametersOf(SavedStateHandle())`, z tym samym komentarzem.
 
 Testy:
 
-- `PlanMergeTest`, nowy test `referencesFollowWithReferences`: dla jednego rekordu każdego rodzaju (`AcademicCalendarRecord`, `SemesterProgramRecord`, `ClassRecord`, `WeekOverrideRecord`, `OccurrenceNoteRecord`, `OccurrenceChangeRecord`) lista `references()` zawiera klucze wszystkich pól odwołań, a dla `StudyProgramRecord` i `SemesterRecord` jest pusta. Przykład: `ClassRecord(id = 5, semesterId = 1, semesterProgramId = 2, ...)` daje `listOf(PlanRowKey(PlanRowKind.SEMESTER, 1), PlanRowKey(PlanRowKind.SEMESTER_PROGRAM, 2))`.
-- `JsonExportCodecTest`, `ExportImporterTest`, `PlanBackupServiceTest`, `PlanDifferencesTest`, `PlanMergeTest`, `SyncCoordinatorTest`: istniejące testy przechodzą bez zmiany oczekiwań. To sprawdza, że format pliku się nie zmienił.
+- `OccurrenceViewModelTest`, nowy `detailsOpenFromSavedStateArguments`: ViewModel z `SavedStateHandle(mapOf("classId" to "1", "date" to "2026-09-21"))`, `advanceUntilIdle()`; `details.value.notFound` jest fałszem, a `subjectName` to nazwa zajęć 1 z danych testu.
+- `OccurrenceViewModelTest`, nowy `missingArgumentsShowNotFound`: `SavedStateHandle()` daje `notFound == true`.
+- `ClassEditViewModelTest`, nowy `openOnceLoadsTheClassFromArguments`: `SavedStateHandle(mapOf("classId" to "1", "date" to "2026-09-21"))`, `openOnce()`; `opened.value == Open`, `editor.value.name` to nazwa zajęć 1.
+- `ClassEditViewModelTest`, nowy `openOnceKeepsARestoredDraft`: `SavedStateHandle` z argumentami i zapisanym `KEY_OPEN_STATE = "Open"` oraz szkicem (wzór zapisu szkicu w istniejącym teście odtwarzania po zakończeniu procesu); `openOnce()` nie zmienia `editor.value.name` ze szkicu.
+- `ClassEditViewModelTest`, nowy `openOnceForMissingClassReportsMissing`: `classId` = `999`; `opened.value == Missing`.
 
-Przypadki brzegowe: plik eksportu w wersji 2 nadal przepina notatki przez `withOccurrenceNotesOnOriginalDates`; scalanie, które przenumerowuje wpis z Dysku, przepina też jego dzieci, bo `references()` i `withReferences` czytają teraz jedną tabelę odwołań; puste `room` i `building` w zmianie terminu dalej są zapisane jako `null`.
+Przypadki brzegowe: obrót ekranu w formularzu nie wczytuje zajęć ponownie, bo `openState` jest `Open`; po zakończeniu procesu szkic i `Open` wracają z `SavedStateHandle`; zajęcia usunięte w tle przed otwarciem formularza dają `Missing` i powrót; zamknięte szczegóły nie przeliczają się po zapisie planu, bo ich ViewModel jest wyczyszczony.
 
 Weryfikacja:
 
-1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.export.*" --tests "dev.retza.mak.sync.*" --tests "dev.retza.mak.ui.settings.*" --tests "dev.retza.mak.data.*"`.
+1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.occurrence.*" --tests "dev.retza.mak.ui.edit.*" --tests "dev.retza.mak.ui.MakNavigationTest"`.
 2. `.\gradlew.bat --offline :app:compileDebugAndroidTestKotlin`.
-3. Na emulatorze klasy `dev.retza.mak.data.RoomPersistenceTest`, `dev.retza.mak.sync.RoomPlanSyncGatewayTest` i `dev.retza.mak.ui.settings.SyncViewModelTest`.
+3. Ręcznie (wersja debug, przed testami Android): otwórz szczegóły terminu z „Planu”, odwołaj i przywróć termin, zmień salę; „Edytuj wszystkie terminy” otwiera formularz z danymi zajęć; zapis wraca do szczegółów z nowymi danymi; „Dodaj” otwiera pusty formularz; „Dodaj termin jednorazowy” w kalendarzu wpisuje datę dnia; odtworzenie aktywności w formularzu (`adb shell cmd uimode night yes`, potem `night no`; telefon ma zablokowany pion) nie gubi wpisanej nazwy.
+4. Na emulatorze klasy `dev.retza.mak.di.KoinGraphTest`, `dev.retza.mak.ui.PlanEditingTest`, `dev.retza.mak.ui.edit.ClassEditScreenTest` i `dev.retza.mak.ui.occurrence.OccurrenceDetailsScreenTest`.
 
-Kryterium zakończenia: testy przechodzą; `rg "data\.entity" app/src/main/java/dev/retza/mak/export app/src/main/java/dev/retza/mak/sync app/src/main/java/dev/retza/mak/ui` nic nie znajduje; w `data/repository/BackupData.kt` nie ma słowa `Entity`. Commit: `chore: use plain records in the backup contract (I-87)`.
+Kryterium zakończenia: testy i ręczne sprawdzenie dają opisane wyniki; `rg "occurrenceViewModel|classEditViewModel" app/src/main/java/dev/retza/mak/MainActivity.kt app/src/main/java/dev/retza/mak/ui/MakNavHostApp.kt` nic nie znajduje; w `ClassOccurrenceRoutes.kt` nie ma `rememberSaveable`. Commit: `chore: scope occurrence and class form view models to their destinations (I-86)`.
 
-## 2. Sprawdzaj i zastępuj plan synchronizacji w jednej transakcji w data (I-87)
+## 2. Pobieraj ViewModele kreatora i kierunków w ich celach nawigacji (I-86)
 
-Stan: zrobione. Kryterium `rg "withTransaction|AppDatabase"` w `sync` znajduje jeszcze `SyncRoomChangeObserver` w `SyncWork.kt`, który obserwuje zmiany tabel; zostaje do I-88 (jeden strumień zmian planu).
+Cel: `SetupViewModel` i `StudyProgramsViewModel` powstają w swoich celach nawigacji (C1). Kreator otwiera się raz na swój ViewModel, więc znikają token sesji i flaga `opened` (D4). Formularz kierunku w ustawieniach i w semestrze dostaje własny ViewModel zamiast wspólnego z listą.
 
-Cel: sprawdzenie, że plan na telefonie się nie zmienił, i zastąpienie go planem z Dysku są jedną transakcją otwieraną w `data`, a `RoomPlanSyncGateway` nie zna `AppDatabase` (F4). Skrót planu liczy dalej `SyncPlanFile` w `sync`, bo `data` nie zna formatu pliku, więc warunek przychodzi do `data` jako funkcja.
-
-Pliki: `data/repository/PlanBackupGateway.kt`, `sync/PlanSyncGateway.kt`; testy `export/PlanBackupServiceTest.kt` i `ui/FakeRepository.kt` (atrapy `PlanBackupGateway`), Android `sync/RoomPlanSyncGatewayTest.kt`; dokumenty `docs/SYNC.md`, `docs/QUEUE.md`.
+Pliki: `MainActivity.kt`, `ui/MakNavHostApp.kt`, `ui/SetupRoutes.kt`, `ui/StudyProgramRoutes.kt`, `ui/SemesterRoutes.kt` (tylko `SemesterCourses` i `SemesterCourseEdit`), `ui/setup/SetupViewModel.kt`, `ui/programs/StudyProgramsViewModel.kt`; testy `ui/setup/SetupViewModelTest.kt`, `ui/programs/StudyProgramsViewModelTest.kt`.
 
 Zmiany:
 
-1. `PlanBackupGateway`: dodaj
+1. `SetupViewModel`:
+   - Dodaj parametr konstruktora `savedState: SavedStateHandle` (ostatni) i pole `private var opened = false`.
+   - Dodaj `suspend fun openOnce() { if (opened) return; opened = true; startFromRoom(savedState.get<Boolean>("resume") ?: false) }`.
+   - Usuń `sessionToken`, `saveJob` (jeśli służy tylko do anulowania przy nowym starcie) i każdy argument `isCurrent = { token == sessionToken }` oraz warunki `if (token != sessionToken) ...` i `if (token == sessionToken)`. W `onFinish` zostaje samo `state.update { it.copy(isSaving = false) }`. Sesja kreatora trwa tyle co ViewModel, więc nie ma czego unieważniać.
+   - Publiczne `fun start(resume)` usuń, jeśli po zmianie wołają je tylko testy; testy przejdą na `startFromRoom` albo `openOnce`.
+2. `SetupRoutes.kt`, `setupRoute`: usuń parametr `setupViewModel`, dodaj `navController: NavController`. W `composable`: `val setupViewModel: SetupViewModel = koinViewModel()`; po `if (!editing.ready) { ... }` zastąp `opened` i `LaunchedEffect` przez `LaunchedEffect(Unit) { setupViewModel.openOnce() }` i dodaj `SetupEffects(setupViewModel, navController)`. Ekran oczekiwania przed `openOnce` nie jest potrzebny, bo `SetupWizard` pokazuje stan domyślny, który `openOnce` zaraz podmienia; jeśli zrzut pokaże mignięcie pustego kroku, zostaw `PlanEditingWait()` do chwili, gdy `setup.value` ma ustawione `programOptions` (sprawdź pole w `SetupWizardUiState`).
+3. `StudyProgramsViewModel`: usuń `openEdit`, `openEditIfNeeded` i `loadEditor`, jeśli po zmianach z punktu 5 nic ich nie woła (`rg -n "openEdit\b|openEditIfNeeded|loadEditor" app/src`). Zostaje `openEditFromRoom`.
+4. `StudyProgramRoutes.kt`:
+   - Usuń parametr `studyProgramsViewModel`. W `composable(MakRoutes.StudyPrograms)` i `composable(MakRoutes.StudyProgramEdit)` pierwsza linia `val studyProgramsViewModel: StudyProgramsViewModel = koinViewModel()`.
+   - W formularzu kierunku stan otwarcia trzymaj w ViewModelu tym samym wzorem co `ClassEditOpenState` z kroku 1 (`StudyProgramEditOpenState`, `openOnce(id)` zapisane w `SavedStateHandle`, `programId` z argumentu trasy). Usuń `opened` i `openSucceeded`.
+   - W formularzu dodaj `StudyProgramEffects(studyProgramsViewModel, navController)`.
+5. `SemesterRoutes.kt`:
+   - `SemesterCourseEdit`: `val studyProgramsViewModel: StudyProgramsViewModel = koinViewModel()` w `composable`; ładowanie programu (`studyProgramsViewModel.openEditFromRoom(programId)`) przenieś do `openOnce(programId)` z punktu 4 i usuń flagi tej trasy. Dodaj `StudyProgramEffects(studyProgramsViewModel, navController)`.
+   - `SemesterCourses`, `onEditCourse`: usuń wywołanie `studyProgramsViewModel::openEdit` (formularz w nowym celu ładuje program sam).
+   - Usuń parametr `studyProgramsViewModel` z `semesterRoutes`.
+6. `MakNavHostApp.kt` i `MainActivity.kt`: usuń `setupViewModel`, `studyProgramsViewModel`, `SetupEffects(...)` i `StudyProgramEffects(...)` z powłoki; `setupRoute` dostaje `navController`.
+
+Testy:
+
+- `SetupViewModelTest`: konstrukcja z `SavedStateHandle()`; testy, które sprawdzały unieważnienie zapisu po ponownym `start`, usuń i wymień w commicie, bo ponowny start w tym samym ViewModelu nie istnieje. Nowy `openOnceStartsOnlyOnce`: dwa wywołania `openOnce()` po zmianie nazwy semestru w stanie między nimi nie czyszczą wpisanej nazwy.
+- `SetupViewModelTest`, nowy `openOnceResumesFromArgument`: `SavedStateHandle(mapOf("resume" to true))` przy aktywnym semestrze bez przypisań ustawia krok `Course` (wzór danych w istniejącym teście `startFromRoom(resumeExisting = true)`).
+- `StudyProgramsViewModelTest`: testy `openEdit` i `openEditIfNeeded` przepisz na `openOnce`; nowy `openOnceForMissingProgramReportsMissing`.
+
+Przypadki brzegowe: powrót z „Dodaj zajęcia” do kreatora nie zaczyna go od nowa; kreator z „Ustawień” (`resume=false`) i z „Dzisiaj” po przerwanej konfiguracji (`resume=true`) dostają różne ViewModele; obrót ekranu w formularzu kierunku zostawia wpisaną nazwę; formularz kierunku w semestrze i w ustawieniach nie dzielą szkicu.
+
+Weryfikacja:
+
+1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.setup.*" --tests "dev.retza.mak.ui.programs.*"`.
+2. `.\gradlew.bat --offline :app:compileDebugAndroidTestKotlin`.
+3. Ręcznie (przed testami Android): „Ustawienia”, „Semestry”, „Dodaj semestr” przechodzi kreator do końca; „Kierunki” w ustawieniach: odznaczenie kierunku, edycja nazwy i zapis; w semestrze „Kierunki”, edycja kierunku i zapis wraca do listy.
+4. Na emulatorze klasy `dev.retza.mak.di.KoinGraphTest`, `dev.retza.mak.ui.setup.SetupWizardTest` (jeśli istnieje; sprawdź `rg -l "SetupWizard" app/src/androidTest`), `dev.retza.mak.ui.programs.StudyProgramsScreenTest` i `dev.retza.mak.ui.semester.SemesterScreenTest`.
+
+Kryterium zakończenia: testy przechodzą; `rg "sessionToken" app/src/main/java/dev/retza/mak/ui/setup` nic nie znajduje; w `SetupRoutes.kt` i `StudyProgramRoutes.kt` nie ma `rememberSaveable`. Commit: `chore: scope setup and study program view models to their destinations (I-86)`.
+
+## 3. Trzymaj SemesterViewModel w podgrafie semestru i zbieraj jeden strumień konfiguracji (I-86)
+
+Cel: ekran semestru i jego podekrany dzielą jeden `SemesterViewModel` w zakresie podgrafu nawigacji (decyzja użytkownika z 2026-10-10). Stan pochodzi z jednego strumienia repozytorium `observeSemesterConfiguration(id)`, więc znikają ręczne `refresh(token)` po zapisach, tokeny sesji i pięć osobnych odczytów (E3), a pobranie planu z synchronizacji odświeża też ekran semestru.
+
+Pliki: `data/repository/SemesterRecords.kt`, `data/repository/SemesterRepository.kt`, `data/database/Daos.kt` (tylko jeśli brakuje zapytania), `ui/MakRoutes.kt`, `ui/SemesterRoutes.kt`, `ui/MakNavHostApp.kt`, `MainActivity.kt`, `ui/semester/SemesterViewModel.kt`; testy `ui/FakeSemesterRepository.kt`, `ui/semester/SemesterViewModelTest.kt`, Android `data/RoomPersistenceTest.kt`.
+
+Zmiany:
+
+1. `SemesterRecords.kt`: dodaj
+   ```kotlin
+   /** One semester with everything its configuration screens show, read in one transaction. */
+   data class SemesterConfiguration(
+       val semester: SemesterRecord,
+       val programs: List<SemesterProgramRecord>,
+       val studyPrograms: List<StudyProgramRecord>,
+       val calendars: List<AcademicCalendarRecord>,
+       val overrides: List<WeekOverrideRecord>
+   )
+   ```
+   `studyPrograms` to wszystkie globalne kierunki (do wyboru istniejącego), jak dziś w `SemesterSnapshot`.
+2. `SemesterRepository`: `fun observeSemesterConfiguration(id: Long): Flow<SemesterConfiguration?>`. W `RoomSemesterRepository`: `combine(semesters.observeWithData(id), studyPrograms.observeAll())`, mapowanie encji przez `toRecord()`; `null`, gdy semestru nie ma. Sprawdź nazwę metody obserwującej wszystkie kierunki w `StudyProgramDao` (tę, której używa `observeStudyPrograms`). Pola `SemesterWithData` sprawdź w `data/database/Relations.kt` (korekty tygodni muszą tam być; jeśli nie ma, dodaj relację wzorem `academicCalendars`).
+3. `FakeSemesterRepository`: implementacja przez `combine` istniejących strumieni atrapy (`observeSemester`, `observeSemesterPrograms`, `observeStudyPrograms`, `observeCalendars`, `observeWeekOverrides`), aby emitowała po zapisach tak jak one. Jeśli `observeSemester` w atrapie jest jednorazowym `flow {}`, zamień go na strumień oparty na tym samym źródle zmian co `observeSemesterPrograms`.
+4. `MakRoutes.kt`: dodaj `const val SemesterGraph = "semester-graph/{semesterId}"` i `fun semesterGraphRoute(id: String): String = "semester-graph/$id"`. `openSemesterConfiguration` w `SemesterRoutes.kt` nawiguje do `semesterGraphRoute(id)` zamiast `semesterRoute(id)`.
+5. `SemesterRoutes.kt`:
+   - Wszystkie `composable` semestru (`Semester`, `SemesterCourses`, `SemesterCourseAdd`, `SemesterCourseEdit`, `SemesterOverrides`, `SemesterCalendars`) włóż do `navigation(route = MakRoutes.SemesterGraph, startDestination = MakRoutes.Semester, arguments = listOf(navArgument("semesterId") { type = NavType.StringType })) { ... }`. Cel startowy dostaje argument grafu.
+   - Dodaj pomocnik:
+     ```kotlin
+     /** The semester screens share one view model kept by the semester graph entry. */
+     @Composable
+     private fun semesterViewModel(navController: NavController, entry: NavBackStackEntry): SemesterViewModel {
+         val graphEntry = remember(entry) { navController.getBackStackEntry(MakRoutes.SemesterGraph) }
+         return koinViewModel(viewModelStoreOwner = graphEntry)
+     }
+     ```
+     i w każdym `composable` semestru pierwszą linią `val semesterViewModel = semesterViewModel(navController, entry)`. Usuń parametr `semesterViewModel` z `semesterRoutes`. W każdym `composable` dodaj `SemesterEffects(semesterViewModel, navController)`.
+   - Usuń wywołania `semesterViewModel.open(...)`, `openIfNeeded(...)`, flagi `opened` w trasie `Semester` i ich `LaunchedEffect`. Wywołania `refreshForEdit(semesterId)` zmień na `refreshForEdit()` (punkt 6). Flagi `opened`/`openSucceeded` w `SemesterCourseAdd` i `SemesterCourseEdit` zastąp stanem otwarcia w ViewModelu wzorem z kroku 1 (`openCourseFormOnce()` zwraca wynik `refreshForEdit()`, zapamiętany w polu ViewModelu na czas życia celu nawigacji; wystarczy zwykłe pole, bo ViewModel przetrwa obrót).
+6. `SemesterViewModel`:
+   - Dodaj parametr konstruktora `savedState: SavedStateHandle` (ostatni). `private val semesterId: Long? = savedState.get<String>("semesterId")?.toLongOrNull()`; `semesterIdState` ustaw na tę wartość od razu.
+   - Zastąp `open`, `openIfNeeded`, `openJob`, `sessionToken`, `isCurrentSession`, `refresh(token)` i `loadSnapshot` zbieraniem w `init`:
+     ```kotlin
+     init {
+         val id = semesterId
+         if (id != null) {
+             viewModelScope.launch {
+                 semesterRepository.observeSemesterConfiguration(id).collect { configuration ->
+                     if (configuration == null) {
+                         state.value = SemesterScreenUiState()
+                     } else {
+                         apply(configuration)
+                     }
+                 }
+             }
+         }
+     }
+     ```
+     `apply(configuration)` to dzisiejsze ciało `refresh(token)` bez tokenów: wybór kalendarza, zachowanie szkicu kierunku (`courseNameDraft`, `courseColorDraft`, `courseCalendarMode`, `courseCalendarId`, `courseProgramMode`, `courseProgramId`) i formularza korekty (`overrideForm`). Ostatnią konfigurację trzymaj w `private var configuration: SemesterConfiguration?`.
+   - Typ prywatny `SemesterSnapshot` zastąp `SemesterConfiguration` (te same pola), a jego funkcje rozszerzające (`sharedCalendar`, `toSemesterScreenState`) przenieś na `SemesterConfiguration` jako `private fun`.
+   - `refreshForEdit(id: String)` zmień na `suspend fun refreshForEdit(): Boolean`: `semesterRepository.observeSemesterConfiguration(semesterId ?: return false).first()`, potem `apply(it)`; `null` czyści stan i zwraca `false`.
+   - `selectCalendar(calendarId)`: zamiast `viewModelScope.launch { refresh(token) }` ustaw `selectedCalendarId` i wywołaj `apply(configuration ?: return)`.
+   - Po każdym zapisie usuń `refresh(token)` i warunki `isCurrentSession(token)`; argumenty `isCurrent` w `launchUiOperation` usuń. Strumień sam przyniesie nowe dane.
+7. `MakNavHostApp.kt` i `MainActivity.kt`: usuń `semesterViewModel` i `SemesterEffects(...)` z powłoki.
+8. `titleForRoute` w `MakRoutes.kt` dalej rozpoznaje trasy celów (`MakRoutes.Semester` i podekrany), bo `currentRoute` to trasa celu, a nie grafu; nic nie zmieniaj, tylko sprawdź tytuł ręcznie.
+
+Testy:
+
+- `SemesterViewModelTest`: pomocnik tworzy ViewModel z `SavedStateHandle(mapOf("semesterId" to "1"))`. Wywołania `open("1")` i `openIfNeeded("1")` usuń (ViewModel sam zbiera dane). Testy przełączania między semestrami w jednym ViewModelu usuń i wymień w commicie. Testy, które po zapisie sprawdzały odświeżenie przez `refresh`, mają przejść bez zmiany oczekiwań dzięki strumieniowi atrapy.
+- `SemesterViewModelTest`, nowy `externalChangeRefreshesTheScreen`: po otwarciu zapis do atrapy z pominięciem ViewModelu (na przykład nowa korekta tygodnia przez `repository.saveWeekOverride`), `advanceUntilIdle()`; lista korekt w stanie ma nową pozycję.
+- `SemesterViewModelTest`, nowy `externalChangeKeepsTheCourseDraft`: wpisz nazwę w szkicu kierunku, zmień dane z zewnątrz; `courseNameDraft` zostaje.
+- `RoomPersistenceTest` (Android), nowy `semesterConfigurationEmitsAfterAWrite`: `observeSemesterConfiguration(id)` po zapisie korekty emituje konfigurację z tą korektą.
+
+Przypadki brzegowe: usunięcie semestru, którego konfiguracja jest otwarta, daje `null` i pusty stan, a efekt `CloseConfiguration` zamyka ekran jak dziś; powrót z podekranu do ekranu semestru zachowuje szkic formularza semestru; pobranie planu z synchronizacji przy otwartym semestrze odświeża listy (wcześniej nie odświeżało); otwarcie innego semestru tworzy nowy graf i nowy ViewModel.
+
+Weryfikacja:
+
+1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.semester.*" --tests "dev.retza.mak.ui.*"`.
+2. `.\gradlew.bat --offline :app:compileDebugAndroidTestKotlin`.
+3. Ręcznie (przed testami Android): „Ustawienia”, „Semestry”, „Konfiguruj”: zmiana nazwy semestru, „Kierunki” (dodanie kierunku z osobnym kalendarzem, edycja, usunięcie), „Korekty tygodni” (dodanie i usunięcie), „Kalendarze”; tytuły pasków jak przed zmianą; powrót z podekranu nie gubi niezapisanej nazwy semestru.
+4. Na emulatorze klasy `dev.retza.mak.data.RoomPersistenceTest`, `dev.retza.mak.ui.semester.SemesterScreenTest`, `dev.retza.mak.di.KoinGraphTest` i `dev.retza.mak.ui.PlanEditingTest`.
+
+Kryterium zakończenia: testy i ręczne sprawdzenie dają opisane wyniki; `rg "sessionToken|isCurrentSession|loadSnapshot|fun open" app/src/main/java/dev/retza/mak/ui/semester/SemesterViewModel.kt` nic nie znajduje; w `SemesterRoutes.kt` nie ma `rememberSaveable`. Commit: `chore: keep the semester view model in its navigation graph (I-86)`.
+
+## 4. Steruj dopuszczaniem edycji z ViewModelu (I-86)
+
+Cel: dopuszczanie edycji wobec synchronizacji (`PlanEditTracker`) trzyma ViewModel, a nie kompozycja trasy (D2). ViewModel zajmuje klucz przy pierwszej akcji tworzącej szkic, raz odświeża dane bazowe i zwalnia klucz, gdy szkic znika. Trasy przekazują zwykłe funkcje ViewModelu, więc nowe pole nie może pominąć dopuszczenia. Zachowanie widoczne dla użytkownika się nie zmienia.
+
+Pliki: nowy `ui/PlanEditSession.kt`, `ui/PlanEditing.kt` (usunąć `TrackPlanEditing` i `PlanEditingController`, zostaje `PlanEditingWait`), ViewModele `ui/occurrence/OccurrenceViewModel.kt`, `ui/edit/ClassEditViewModel.kt`, `ui/semester/SemesterViewModel.kt`, `ui/setup/SetupViewModel.kt`, `ui/programs/StudyProgramsViewModel.kt`, `ui/settings/SettingsViewModel.kt`, trasy `ui/ClassOccurrenceRoutes.kt`, `ui/SemesterRoutes.kt`, `ui/SettingsRoutes.kt`, `ui/SetupRoutes.kt`, `ui/StudyProgramRoutes.kt`, `ui/MakNavHostApp.kt`, `MainActivity.kt` (parametr `planEditTracker` przestaje być potrzebny w trasach); testy: nowy `ui/PlanEditSessionTest.kt` (JVM), Android `ui/PlanEditingTest.kt` (przepisać albo usunąć), testy ViewModeli zmienionych klas.
+
+Zmiany:
+
+1. Nowy `ui/PlanEditSession.kt`:
    ```kotlin
    /**
-    * Reads the plan and replaces it in one transaction. [prepare] gets the current plan and returns the plan
-    * to write, or null to leave the database unchanged. It runs inside the transaction, so it must not suspend.
-    * True when the plan was replaced.
+    * Edit admission held by a view model (`ARCHITECTURE.md`, section 7). A sync replacement waits while the key
+    * is held. The first action that starts a draft reloads the base data after admission; the key is released
+    * when [hasDraft] turns false and when the view model is cleared.
     */
-   suspend fun replaceIfCurrent(prepare: (current: BackupData) -> BackupData?): Boolean
-   ```
-   W `RoomPlanBackupGateway`:
-   ```kotlin
-   override suspend fun replaceIfCurrent(prepare: (current: BackupData) -> BackupData?): Boolean =
-       database.withTransaction {
-           val next = prepare(snapshot()) ?: return@withTransaction false
-           replaceAll(next)
-           true
+   class PlanEditSession(
+       private val tracker: PlanEditTracker,
+       private val scope: CoroutineScope,
+       private val refreshBase: suspend () -> Boolean,
+       private val hasDraft: () -> Boolean
+   ) {
+       private val key = UUID.randomUUID().toString()
+       private val mutex = Mutex()
+       private var admitted = false
+
+       /** Admits a screen that is a draft from its start and reloads its base; false when the base is gone. */
+       suspend fun admitForm(): Boolean = mutex.withLock {
+           tracker.beginEdit(key)
+           admitted = true
+           refreshBase().also { loaded -> if (!loaded) release() }
        }
+
+       /** Runs an action that may start a draft or a confirmation. */
+       fun run(action: suspend () -> Unit) {
+           scope.launch {
+               mutex.withLock {
+                   tracker.beginEdit(key)
+                   val first = !admitted
+                   admitted = true
+                   try {
+                       if (first && !refreshBase()) {
+                           release()
+                           return@withLock
+                       }
+                       action()
+                   } finally {
+                       if (currentCoroutineContext().isActive && admitted && !hasDraft()) release()
+                   }
+               }
+           }
+       }
+
+       /** Releases the key once the draft is gone, for example after a save that finished later. */
+       suspend fun releaseIfNoDraft() = mutex.withLock { if (admitted && !hasDraft()) release() }
+
+       fun close() {
+           if (admitted) tracker.release(key)
+       }
+
+       private suspend fun release() {
+           tracker.endEdit(key)
+           admitted = false
+       }
+   }
    ```
-   Room pozwala zagnieździć `withTransaction` z `snapshot()` i `replaceAll` w tej transakcji.
-2. `RoomPlanSyncGateway`: usuń parametr konstruktora `database: AppDatabase` i importy `androidx.room.withTransaction` i `AppDatabase`. Ciało `replaceIfUnchanged` do wyliczenia `replaced`:
+2. W każdym ViewModelu z listy plików:
+   - dodaj parametr konstruktora `planEditTracker: PlanEditTracker` (zależność z grafu Koin, bez wartości domyślnej, `STACK.md`, sekcja o Koin);
+   - utwórz `private val editSession = PlanEditSession(planEditTracker, viewModelScope, refreshBase = { ... }, hasDraft = { ... })`, gdzie `refreshBase` to dzisiejsza funkcja odświeżenia przed edycją (`refreshForEdit` dla szczegółów i semestru, `canRequestSemesterDeletion` dla usuwania semestru w ustawieniach, `{ true }` dla formularzy, które same czytają bazę w `openOnce`), a `hasDraft` to dzisiejszy warunek `active` z trasy (`details.value.hasPlanDraft()`, `semester.value.hasPlanDraft() || courseFormOpen`, `settings.value.semesterToDeleteId != null`, `{ true }` dla formularzy zawsze aktywnych);
+   - w `init` zbieraj `state.map { hasDraft() }.distinctUntilChanged()` i przy `false` wołaj `editSession.releaseIfNoDraft()`;
+   - w `onCleared()` wołaj `editSession.close()`;
+   - każdą publiczną akcję, która w trasie była opakowana w `editing.callback(...)` albo `editing.run(...)`, opakuj w ViewModelu w `editSession.run { ... }`; akcje bez opakowania zostają bez zmian;
+   - formularze zawsze aktywne (`ClassEditViewModel`, `SetupViewModel`, formularz kierunku w `StudyProgramsViewModel`, `SemesterCourseAdd` i `SemesterCourseEdit` w `SemesterViewModel`) wołają `editSession.admitForm()` na początku `openOnce()` (albo `openCourseFormOnce()`) i kończą z `Missing`, gdy zwróci `false`.
+3. `SemesterViewModel`: pole `private var courseFormOpen = false`; `openCourseFormOnce()` ustawia je na `true` po udanym `admitForm()`; anulowanie i udany zapis formularza kierunku (`resetCourseDraft`, efekt `CourseAdded`, zapis edycji) ustawiają `false` i wołają `editSession.releaseIfNoDraft()`. Zastępuje to dzisiejsze `holdIfInactive = true` w `SemesterCourses`.
+4. Trasy: usuń `TrackPlanEditing(...)`, `editing.ready`, `editing.callback(...)`, `editing.run(...)` i parametr `planEditTracker`; przekazuj referencje funkcji ViewModelu (`occurrenceViewModel::cancelOccurrence`, `{ value -> semesterViewModel.updateCourseName(value) }` i podobne). Ekrany formularzy pokazują `PlanEditingWait()`, dopóki stan otwarcia z kroków 1 do 3 nie jest `Open`.
+5. Usuń `TrackPlanEditing` i `PlanEditingController` z `ui/PlanEditing.kt`. Z powłoki i `MainActivity` usuń `planEditTracker`, jeśli nic poza trasami go nie używało.
+6. `docs/ARCHITECTURE.md`, sekcja 7: znajdź opis dopuszczania edycji (`rg -n "TrackPlanEditing|PlanEditTracker|dopuszcz" docs/ARCHITECTURE.md docs/SYNC.md`) i zastąp nazwę `TrackPlanEditing` opisem: „ViewModel ekranu z edycją planu trzyma `PlanEditSession`: zajmuje klucz w `PlanEditTracker` przy pierwszej akcji tworzącej szkic, raz odświeża dane bazowe i zwalnia klucz, gdy szkic znika albo ViewModel jest czyszczony.”
+
+Testy:
+
+- `PlanEditSessionTest` (nowy, JVM), z `PlanEditTracker(backgroundScope)` i atrapami funkcji:
+  - `firstActionRefreshesOnce`: dwie akcje `run` wołają `refreshBase` raz;
+  - `failedRefreshSkipsTheActionAndReleases`: `refreshBase` zwraca `false`; akcja się nie wykonuje, `tracker.isEditing` jest fałszem;
+  - `keyStaysWhileDraftExists`: `hasDraft` zwraca `true` po akcji; `tracker.isEditing` jest prawdą; po zmianie na `false` i `releaseIfNoDraft()` jest fałszem;
+  - `replacementWaitsForAnAdmittedForm`: po `admitForm()` `tracker.withReplacement { }` zwraca `PlanReplacementResult.Editing`.
+- `PlanEditingTest` (Android): przypadki, które sprawdzały kompozycyjny `TrackPlanEditing`, przenieś do `PlanEditSessionTest`; klasę Android usuń, jeśli nic w niej nie zostanie, i wymień to w commicie.
+- Testy ViewModeli zmienionych klas przekazują `PlanEditTracker(backgroundScope)`; istniejące oczekiwania się nie zmieniają. W `OccurrenceViewModelTest` dodaj `noteDraftHoldsTheKeyUntilSaved`: wpisanie notatki zajmuje klucz, zapis notatki go zwalnia.
+
+Przypadki brzegowe: synchronizacja czeka, gdy formularz zajęć jest otwarty (klucz zajęty od `openOnce`); po obrocie ekranu klucz zostaje, bo ViewModel trwa; zamknięcie celu nawigacji zwalnia klucz od razu przez `onCleared` (okres karencji `PlanEditTracker.release` dalej obejmuje odtworzenie aktywności); nieudane odświeżenie przed edycją szczegółów pokazuje „Nie znaleziono tych zajęć.” jak dziś.
+
+Weryfikacja:
+
+1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.*" --tests "dev.retza.mak.sync.PlanEditTrackerTest"`.
+2. `.\gradlew.bat --offline :app:compileDebugAndroidTestKotlin`.
+3. Ręcznie (przed testami Android): w szczegółach wpisanie notatki i zapis, odwołanie i przywrócenie terminu, zmiana sali; formularz zajęć zapis i anulowanie; kreator do końca; semestr: dodanie kierunku z listy, edycja i usunięcie kierunku, korekta tygodnia; usunięcie semestru w ustawieniach z potwierdzeniem i anulowaniem.
+4. Na emulatorze klasy `dev.retza.mak.di.KoinGraphTest`, `dev.retza.mak.sync.RoomPlanSyncGatewayTest`, `dev.retza.mak.ui.semester.SemesterScreenTest`, `dev.retza.mak.ui.occurrence.OccurrenceDetailsScreenTest` i `dev.retza.mak.ui.edit.ClassEditScreenTest`.
+
+Kryterium zakończenia: testy i ręczne sprawdzenie dają opisane wyniki; `rg "TrackPlanEditing|PlanEditingController|refreshBeforeFirstEdit|holdIfInactive" app/src` nic nie znajduje. Commit: `chore: hold plan edit admission in view models (I-86)`.
+
+## 5. Licz siatkę kalendarza „Planu” tylko w widoku kalendarza (I-86)
+
+Cel: zmiana dnia, tygodnia albo filtra w widoku listy nie przelicza 42 dni kalendarza, a siatka liczy się ponownie tylko po zmianie planu, miesiąca, filtra albo dnia dzisiejszego (B2). Zaznaczenie dnia w kalendarzu nie przelicza siatki. Wygląd się nie zmienia. Po tym kroku I-86 jest gotowe.
+
+Pliki: `ui/schedule/ScheduleViewModel.kt`; testy `ui/schedule/ScheduleViewModelTest.kt`; dokumenty `docs/ARCHITECTURE.md`, `docs/QUEUE.md`.
+
+Zmiany:
+
+1. W `ScheduleViewModel` dodaj prywatną funkcję `matchesFilter(occurrence: PlannedOccurrence, activeFilter: String): Boolean = activeFilter == "all" || occurrence.classItem.semesterProgramId == activeFilter` i użyj jej we wszystkich czterech miejscach z tym warunkiem (`buildSchedule` i `cancelledItems`).
+2. Wydziel z `buildSchedule` budowę siatki do `private fun calendarGrid(visible: VisiblePlanData, month: YearMonth, activeFilter: String, today: LocalDate): List<CalendarDayUi>` z `isSelected = false` dla każdego dnia. Wyliczenie `activeFilter` (sprawdzenie, czy wybrany kierunek istnieje) wydziel do `private fun activeFilter(inputs: ActivePlanInputs, requested: String): String`.
+3. Dodaj strumień siatki:
    ```kotlin
-   val replaced = backup.replaceIfCurrent { current ->
-       if (SyncPlanFile.fingerprint(current) != expectedFingerprint) {
-           null
+   private data class GridKey(val month: YearMonth, val filter: String, val today: LocalDate, val view: ScheduleView)
+
+   // The grid resolves 42 days, so it is rebuilt only when what it shows changes, and only in the calendar view.
+   private val calendarGrid: StateFlow<List<CalendarDayUi>> = combine(
+       activePlan,
+       controls.map { GridKey(it.calendarMonth, it.courseFilterId, it.today, it.scheduleView) }.distinctUntilChanged()
+   ) { inputs, key ->
+       if (inputs == null || key.view != ScheduleView.Calendar) {
+           emptyList()
        } else {
-           data.withActiveSemester(
-               activeSemesterAfterReplace(current.activeSemesterId, data, keepLocalActive, fallbackActiveId)
-           )
+           val visible = inputs.data.visibleTo(inputs.display)
+           calendarGrid(visible, key.month, activeFilter(inputs, key.filter), key.today)
        }
-   }
+   }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
    ```
-   Dalsza część (czyszczenie ukrytych kierunków po pierwszym pobraniu) zostaje bez zmian.
-3. Atrapy `PlanBackupGateway` w testach (`PlanBackupServiceTest`, `FakeRepository`, obiekt `blockingBackup` w `RoomPlanSyncGatewayTest`) dostają `replaceIfCurrent`. W atrapach JVM wystarczy `prepare(snapshot())?.let { replaceAll(it); true } ?: false`. W `blockingBackup` blokada (`replacementEntered`, `finishReplacement`) przechodzi do `replaceIfCurrent` przed wywołaniem `backup.replaceIfCurrent(prepare)`. Wywołania `RoomPlanSyncGateway(database, backup, preferences)` w tym teście zmień na `RoomPlanSyncGateway(backup, preferences)`.
-4. `docs/SYNC.md`, punkt 2 listy o zastosowaniu planu z Dysku („Zastosowanie planu z Dysku to jedna transakcja `replaceAll`...”): zamień na „Zastosowanie planu z Dysku to jedna transakcja w `data` (`replaceIfCurrent`), która najpierw sprawdza, że skrót planu lokalnego się nie zmienił.”, resztę punktu zostaw.
-5. `docs/QUEUE.md`, wiersz I-87: w kryteriach zamień `replaceAll(data, expected)` na `replaceIfCurrent(prepare)`, przenieś wiersz do tabeli „Zakończone” ze statusem `gotowe`, listą zrealizowanych punktów (F4, F5) i uruchomionych testów.
+   Sprawdź nazwę wartości widoku kalendarza w `ScheduleView` (`rg -n "enum class ScheduleView" app/src`).
+4. `schedule` łączy trzy strumienie: `combine(activePlan, controls, calendarGrid) { inputs, control, grid -> buildSchedule(inputs, control, grid) }`. W `buildSchedule` zamiast budowy siatki: `calendarDays = grid.map { it.copy(isSelected = it.id == control.calendarDate.toString()) }`.
+5. W `buildSchedule` dzień kalendarza (`calendarPlan`, `calendarFiltered`, etykiety kolizji kalendarza, `calendarItems`) licz tylko w widoku kalendarza; w widoku listy `calendarItems = emptyList()`, `calendarSelectedDayCountLabel = classCountLabel(0)`. Pozostałe pola bez zmian.
+6. `docs/ARCHITECTURE.md`, sekcja 5: w zdaniu o zakresie ViewModeli dopisanym w poprzednim planie usuń nawias „(I-86; na razie „Dzisiaj” i „Plan”)”.
+7. `docs/QUEUE.md`: I-86 przenieś do tabeli „Zakończone” ze statusem `gotowe`, listą zrealizowanych punktów audytu (C1, C2, D1, D2, D4, E3, B1, B2, B4 dla ustawień) i uruchomionych testów.
 
 Testy:
 
-- `RoomPlanSyncGatewayTest`: istniejące testy przechodzą, w tym `editorStartedDuringRoomReplacementReadsTheCommittedPlan` i test, w którym plan zmienia się między odczytem skrótu a zastąpieniem (oczekuje `false` i niezmienionego planu).
-- `RoomPlanSyncGatewayTest`, nowy test `replaceIfCurrentWritesNothingWhenPrepareReturnsNull`: `backup.replaceAll(plan("Lokalny", active = 1))`, potem `backup.replaceIfCurrent { null }` zwraca `false`, a `backup.snapshot()` jest równe planowi sprzed wywołania.
-- `SyncCoordinatorTest`: istniejące testy przechodzą bez zmian oczekiwań.
+- `ScheduleViewModelTest`: testy, które czytają `calendarDays` albo `calendarItems`, najpierw wołają `viewModel.selectView(ScheduleView.Calendar)`; oczekiwane wartości się nie zmieniają.
+- `ScheduleViewModelTest`, nowy `listViewDoesNotBuildTheCalendarGrid`: w widoku listy `calendarDays` jest puste.
+- `ScheduleViewModelTest`, nowy `selectingACalendarDayKeepsTheGrid`: w widoku kalendarza zapamiętaj `schedule.value.calendarDays.map { it.copy(isSelected = false) }`, wybierz inny dzień tego miesiąca; lista bez zaznaczenia jest równa poprzedniej, a zaznaczony jest nowy dzień.
+- `ScheduleViewModelTest`, nowy `gridFollowsPlanChanges`: w widoku kalendarza dodanie zajęć w atrapie zmienia znaczniki dnia tych zajęć.
 
-Przypadki brzegowe: wyjątek w `prepare` albo w `replaceAll` wycofuje całą transakcję, więc plan zostaje w poprzednim stanie; `prepare` nie może wołać funkcji `suspend`, co pilnuje kompilator przez typ parametru; zmiana planu w trakcie sprawdzenia daje `false` jak dziś.
-
-Weryfikacja:
-
-1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.sync.*" --tests "dev.retza.mak.export.*"`.
-2. `.\gradlew.bat --offline :app:compileDebugAndroidTestKotlin`.
-3. Na emulatorze klasy `dev.retza.mak.sync.RoomPlanSyncGatewayTest`, `dev.retza.mak.data.RoomPersistenceTest` i `dev.retza.mak.di.KoinGraphTest`.
-
-Kryterium zakończenia: testy przechodzą; `rg "withTransaction|AppDatabase" app/src/main/java/dev/retza/mak/sync` nic nie znajduje; `py scripts/check_map.py` zwraca 0. Commit: `chore: check and replace the synced plan in one data transaction (I-87)`.
-
-## 3. Udostępnij jeden współdzielony strumień aktywnego planu (I-86)
-
-Stan: zrobione. `OccurrenceViewModel.refreshForEdit` czytał `observeActive().first()`, które przy aktywnym kolektorze zwraca ostatnią wartość ze wspólnego strumienia zamiast stanu bazy; teraz czyta aktywny semestr i `observe(id).first()`, jak `reload`. `ActivePlanSourceTest` używa zakresu na `StandardTestDispatcher(testScheduler)` zamiast `backgroundScope`. Ręcznie: usunięcie zajęć od razu zmienia „Dzisiaj”, „Plan” i liczbę zajęć w „Semestrach”; widgetu nie sprawdzano.
-
-Cel: ekrany, widget i powiadomienia czytają plan aktywnego semestru z jednego zapytania Room zamiast każdy z własnego (B1), a ustawienia nie wczytują osobno całego planu dla kilku liczb (B4 dla ustawień). Wygląd i zachowanie się nie zmieniają.
-
-Pliki: `ui/ActivePlanSource.kt`, `di/AppModule.kt`, `ui/settings/SettingsViewModel.kt`; testy `ui/FakeSemesterRepository.kt` (funkcja `activePlanSource`), `ui/FakeRepository.kt`, nowy `ui/ActivePlanSourceTest.kt`, `widget/WidgetPlanLoaderTest.kt`, `ui/settings/SettingsViewModelTest.kt`, Android `notifications/CollisionAlarmSchedulerTest.kt`.
-
-Zmiany:
-
-1. `ActivePlanSource`:
-   - Usuń adnotację `@org.koin.core.annotation.Single` z klasy i dodaj ostatni parametr konstruktora `scope: CoroutineScope`.
-   - `observeActive()` zwraca jedno pole klasy:
-     ```kotlin
-     // One Room query for every collector. The cache is dropped when nobody listens, so a later first()
-     // from a receiver reads the database again instead of an old plan.
-     private val active: Flow<ActivePlanInputs?> = semesterRepository.observeActiveSemester()
-         .flatMapLatest { semester -> if (semester == null) flowOf(null) else observe(semester.id) }
-         .distinctUntilChanged()
-         .shareIn(scope, SharingStarted.WhileSubscribed(stopTimeoutMillis = 5_000, replayExpirationMillis = 0), replay = 1)
-
-     fun observeActive(): Flow<ActivePlanInputs?> = active
-     ```
-   - `observe(semesterId)` zostaje zimnym strumieniem; używają go widget i `OccurrenceViewModel` dla podanego semestru.
-2. `di/AppModule.kt`: dodaj, wzorem `providePlanEditTracker`:
-   ```kotlin
-   @Single
-   fun provideActivePlanSource(
-       semesterRepository: SemesterRepository,
-       scheduleRepository: ScheduleRepository,
-       preferences: SettingsPreferences
-   ): ActivePlanSource = ActivePlanSource(
-       semesterRepository,
-       scheduleRepository,
-       preferences,
-       CoroutineScope(SupervisorJob() + Dispatchers.Default)
-   )
-   ```
-3. `SettingsViewModel`: zamień parametr konstruktora `scheduleRepository: ScheduleRepository` na `activePlanSource: ActivePlanSource` (jeśli `rg -n "scheduleRepository" app/src/main/java/dev/retza/mak/ui/settings/SettingsViewModel.kt` pokaże inne użycia, zostaw oba). Pole `activePlanData` zastąp wyrażeniem `activePlanSource.observeActive().map { it?.data }`. `buildSettingsState` dostaje te same dane co dziś (`ActivePlanData?`).
-4. Nie przepinaj odczytów `scheduleRepository.observeActivePlanData(semester.id).first()` w `ClassEditViewModel` i `OccurrenceViewModel` (funkcje przygotowania edycji): mają czytać bazę z chwili przed zapisem, a nie wspólny strumień.
-5. Testy: funkcja `activePlanSource(...)` w `FakeSemesterRepository.kt` dostaje parametr `scope: CoroutineScope = CoroutineScope(Dispatchers.Main)` i przekazuje go do konstruktora. W testach ViewModeli `Dispatchers.Main` podmienia `MainDispatcherRule`, więc `advanceUntilIdle()` obejmuje współdzielony strumień. Testy bez tej reguły (sprawdź `WidgetPlanLoaderTest`) przekazują `backgroundScope`. `SettingsViewModelTest` buduje `SettingsViewModel` z `activePlanSource(...)`. Trzy wywołania w `CollisionAlarmSchedulerTest` przekazują `CoroutineScope(SupervisorJob() + Dispatchers.Default)`, anulowany w `@After`.
-
-Testy:
-
-- `ActivePlanSourceTest` (nowy, JVM): `twoCollectorsShareOneQuery`: w `FakeRepository` dodaj licznik `activePlanDataQueries`, zwiększany w `observeActivePlanData`; dwóch kolektorów `observeActive()` w `backgroundScope`, `advanceUntilIdle()`, licznik równa się 1.
-- `ActivePlanSourceTest`: `sameDataIsNotEmittedTwice`: kolektor zbiera do listy, potem `preferences.setTheme(ThemeMode.Dark)` (nie zmienia `planDisplay`), `advanceUntilIdle()`; lista ma jeden element.
-- `SettingsViewModelTest`: istniejące testy przechodzą bez zmian oczekiwań.
-
-Przypadki brzegowe: `CollisionAlarmReceiver` i `CollisionAlarmScheduler.refresh()` wołają `observeActive().first()` bez innych kolektorów; dzięki `replayExpirationMillis = 0` dostają świeży odczyt bazy, a nie plan sprzed godzin; zmiana aktywnego semestru przełącza zapytanie przez `flatMapLatest` jak dziś; przez 5 s po zamknięciu ostatniego ekranu zapytanie dalej działa, więc powrót na ekran nie czyta bazy ponownie.
+Przypadki brzegowe: przełączenie z listy do kalendarza pokazuje siatkę od razu po pierwszym przeliczeniu (stan początkowy `emptyList()` trwa jedną emisję); zmiana filtra kierunku przelicza siatkę; po północy `refreshToday()` zmienia `today` i przelicza siatkę.
 
 Weryfikacja:
 
-1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.*" --tests "dev.retza.mak.widget.*" --tests "dev.retza.mak.domain.*"`.
+1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.schedule.*"`.
 2. `.\gradlew.bat --offline :app:compileDebugAndroidTestKotlin`.
-3. Na emulatorze klasy `dev.retza.mak.di.KoinGraphTest`, `dev.retza.mak.notifications.CollisionAlarmSchedulerTest` i `dev.retza.mak.ui.settings.SettingsScreenTest`.
-4. Ręcznie (wersja debug): dodanie zajęć w formularzu od razu zmienia „Dzisiaj”, „Plan” i widget na ekranie głównym; „Ustawienia” pokazują liczbę kierunków i zajęć aktywnego semestru jak przed zmianą.
+3. Zrzuty przy 320 dp przed zmianą i po niej (przed testami Android): kalendarz „Planu” w bieżącym miesiącu i w następnym, z filtrem kierunku i bez; lista „Planu”. Mają być identyczne.
+4. Na emulatorze klasa `dev.retza.mak.ui.schedule.ScheduleScreenTest`.
 
-Kryterium zakończenia: testy przechodzą; `rg -n "observeActivePlanData" app/src/main` znajduje tylko `ScheduleRepository.kt`, `ActivePlanSource.kt` i odczyty przed edycją w `ClassEditViewModel` i `OccurrenceViewModel`. Commit: `chore: share one active plan stream (I-86)`.
-
-## 4. Niech cel nawigacji deklaruje tytuł i akcje górnego paska (I-86)
-
-Stan: zrobione. Atrapa `MemoryStore` w `SyncViewModelTest` przyjmuje stan początkowy, bo koordynator czyta stan przy tworzeniu. Zrzuty przy 320 dp (formularz „Dodaj zajęcia”, szczegóły, menu „Więcej opcji”, „Edytuj zajęcia” i powrót do szczegółów) przed zmianą i po niej są identyczne.
-
-Cel: `MakApp` nie zbiera stanu formularza zajęć, szczegółów terminu ani całego stanu synchronizacji, więc wpisanie znaku w formularzu nie przebudowuje powłoki (D1). Tytuł formularza i menu szczegółów deklarują ich cele nawigacji, a „Dzisiaj” zbiera tylko informację o problemie synchronizacji. To warunek dalszych etapów I-86, w których ViewModele formularza i szczegółów znikną z `MakApp`. Wygląd się nie zmienia.
-
-Pliki: nowy `ui/TopBar.kt`, `ui/MakNavHostApp.kt`, `ui/MakRoutes.kt`, `ui/ClassOccurrenceRoutes.kt`, `ui/TodayScheduleRoutes.kt`, `ui/settings/SyncViewModel.kt`; testy `ui/MakNavigationTest.kt`, nowy `ui/TopBarStateTest.kt`, Android `ui/settings/SyncViewModelTest.kt`.
-
-Zmiany:
-
-1. Nowy plik `ui/TopBar.kt`:
-   ```kotlin
-   /** What a destination adds to the shared top bar while it is shown. */
-   internal data class TopBarSpec(
-       val route: String,
-       val title: String? = null,
-       val actions: List<Pair<String, () -> Unit>> = emptyList()
-   )
-
-   /** Holds the spec of the destination on screen; a leaving destination clears only its own spec. */
-   @Stable
-   internal class TopBarState {
-       private var spec by mutableStateOf<TopBarSpec?>(null)
-
-       fun show(spec: TopBarSpec) {
-           this.spec = spec
-       }
-
-       fun clear(route: String) {
-           if (spec?.route == route) spec = null
-       }
-
-       fun specFor(route: String?): TopBarSpec? = spec?.takeIf { it.route == route }
-   }
-
-   /** Declares the top bar of the calling destination for as long as it stays composed. */
-   @Composable
-   internal fun DeclareTopBar(state: TopBarState, spec: TopBarSpec) {
-       SideEffect { state.show(spec) }
-       DisposableEffect(state, spec.route) { onDispose { state.clear(spec.route) } }
-   }
-   ```
-2. `MakRoutes.kt`, `titleForRoute`: usuń parametr `editorTitle`; gałąź `MakRoutes.Edit -> "Zajęcia"`.
-3. `MakNavHostApp.kt`, funkcja `MakApp`:
-   - Usuń `val syncState = syncViewModel.sync.collectAsStateWithLifecycle().value` i `val editor = classEditViewModel.editor.collectAsStateWithLifecycle().value`.
-   - Dodaj `val topBar = remember { TopBarState() }` i `val topBarSpec = topBar.specFor(currentRoute)`.
-   - Usuń wywołanie `occurrenceTopBarActions(...)` i zmienną `occurrenceActions`.
-   - W `MakTopBar`: `title = topBarSpec?.title ?: titleForRoute(currentRoute)`; `actions` buduj z `topBarSpec?.actions.orEmpty()` tym samym warunkiem co dziś z `occurrenceActions` (pusta lista daje `null`).
-   - `classEditRoute` dostaje argument `topBar = topBar`; `occurrenceDetailsRoute` dostaje `topBar = topBar` i `navController = navController`.
-   - `todayRoute` dostaje `syncAttention = syncViewModel.attention` (strumień z punktu 6) zamiast lambdy.
-4. `ClassOccurrenceRoutes.kt`:
-   - `classEditRoute` dostaje parametr `topBar: TopBarState`. Po warunkach `if (!opened || !openSucceeded)`, przed `ClassEditScreen`, zbierz stan raz (`val editorState = classEditViewModel.editor.collectAsStateWithLifecycle().value`), przekaż go jako `state = editorState` i dodaj `DeclareTopBar(topBar, TopBarSpec(MakRoutes.Edit, title = editorState.title))`.
-   - `occurrenceDetailsRoute` dostaje parametry `topBar: TopBarState` i `navController: NavController`. Treść funkcji `occurrenceTopBarActions` przenieś do tej trasy, po wyliczeniu `editing`, i użyj tego samego kontrolera `editing` zamiast drugiego `TrackPlanEditing`. Wynik podaj przez `DeclareTopBar(topBar, TopBarSpec(MakRoutes.Occurrence, actions = actions))`. Usuń funkcję `occurrenceTopBarActions` i importy, których nic już nie używa.
-5. `TodayScheduleRoutes.kt`, `todayRoute`: parametr `syncAttention: StateFlow<SyncAttentionUi?>`; w `composable` `val attention = syncAttention.collectAsStateWithLifecycle().value` i `syncAttention = attention` w `TodayScreen`.
-6. `SyncViewModel`:
-   - Wydziel z `SyncState.toUi` wyliczenie pola `attention` do `private fun SyncState.attentionUi(): SyncAttentionUi?` i użyj jej w `toUi`.
-   - Dodaj `val attention: StateFlow<SyncAttentionUi?> = coordinator.state.map { it.attentionUi() }.distinctUntilChanged().stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)`. Ten strumień nie listuje archiwum, w przeciwieństwie do `sync`.
-
-Testy:
-
-- `MakNavigationTest`: asercje z `titleForRoute(MakRoutes.Edit, "...")` zamień na `assertEquals("Zajęcia", titleForRoute(MakRoutes.Edit))`; asercję `titleForRoute(MakRoutes.Schedule, "Dodaj zajęcia")` na `titleForRoute(MakRoutes.Schedule)`.
-- `TopBarStateTest` (nowy, JVM): `leavingDestinationDoesNotClearTheNextOne`: `show(TopBarSpec(MakRoutes.Edit, title = "Edytuj zajęcia"))`, potem `clear(MakRoutes.Occurrence)`; `specFor(MakRoutes.Edit)?.title == "Edytuj zajęcia"`. `specForOtherRouteIsNull`: po `show` dla `Edit` `specFor(MakRoutes.Today)` jest `null`.
-- `SyncViewModelTest` (Android): nowy test `attentionMatchesSyncAttention`: przy stanie z problemem autoryzacji (wzór w istniejących testach tej klasy) `attention.value?.text` równa się `sync.value.attention?.text`.
-
-Przypadki brzegowe: przejście ze szczegółów do formularza („Edytuj wszystkie terminy”) pokazuje tytuł formularza, a zamknięcie szczegółów go nie czyści, bo `clear` sprawdza trasę; na ekranie oczekiwania przed otwarciem formularza tytuł to „Zajęcia”; menu szczegółów znika razem z celem nawigacji; pisanie w notatce szczegółów przebudowuje pasek, ale nie całą powłokę.
-
-Weryfikacja:
-
-1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.*"`.
-2. `.\gradlew.bat --offline :app:compileDebugAndroidTestKotlin`.
-3. Na emulatorze klasy `dev.retza.mak.ui.settings.SyncViewModelTest`, `dev.retza.mak.ui.occurrence.OccurrenceDetailsScreenTest`, `dev.retza.mak.ui.edit.ClassEditScreenTest` i `dev.retza.mak.ui.today.TodayScreenTest`.
-4. Ręcznie przy 320 dp, zanim uruchomisz testy Android (zerują dane): tytuł „Dodaj zajęcia” i „Edytuj zajęcia” w formularzu, menu „Więcej opcji” w szczegółach z „Odwołaj termin”, „Edytuj wszystkie terminy” i „Usuń zajęcia”, przejście ze szczegółów do formularza i z powrotem. Zrzuty paska formularza i szczegółów przed zmianą i po niej mają być identyczne.
-
-Kryterium zakończenia: testy przechodzą, zrzuty są identyczne; w `MakApp` nie ma `classEditViewModel.editor`, `syncViewModel.sync` ani `occurrenceTopBarActions`. Commit: `chore: let destinations declare their top bar (I-86)`.
-
-## 5. Pobieraj ViewModele „Dzisiaj” i „Planu” w ich celach nawigacji (I-86)
-
-Stan: zrobione. `scheduleRoute` dostaje `pendingPlanDate: () -> String?` zamiast wartości: graf `NavHost` zapamiętuje argumenty z chwili zbudowania, więc zwykła wartość zostawała `null` i data z powiadomienia nie działała. Ręcznie: tydzień, widok i wybrany dzień „Planu” zostają po przełączeniu zakładek i powrocie ze szczegółów; data z intencji otwiera „Plan” na właściwym dniu przy działającej aplikacji, po raz drugi i przy zimnym starcie; „Dodaj termin jednorazowy” otwiera formularz z datą dnia.
-
-Cel: `TodayViewModel` i `ScheduleViewModel` powstają w swoich celach nawigacji przez `koinViewModel()` zamiast w `MainActivity` (C1, decyzja użytkownika z 2026-10-10). `MainActivity` nie odświeża już dnia tych ekranów przy powrocie aplikacji; robi to sam cel nawigacji. Zachowanie widoczne dla użytkownika się nie zmienia, także otwarcie „Planu” na dacie z powiadomienia.
-
-Pliki: `MainActivity.kt`, `ui/MakNavHostApp.kt`, `ui/TodayScheduleRoutes.kt`; dokument `docs/ARCHITECTURE.md`.
-
-Zmiany:
-
-1. `MainActivity`: usuń pola `todayViewModel` i `scheduleViewModel`, ich argumenty w `MakApp(...)` i oba wywołania `refreshToday()` w obserwatorze `ON_RESUME` (obserwator zostaje dla `notificationsBlocked`).
-2. `MakApp`: usuń parametry `todayViewModel` i `scheduleViewModel` oraz wywołanie `ScheduleEffects(...)`. Prośbę o datę z powiadomienia przechowaj w stanie powłoki zamiast wołać `scheduleViewModel.showDate`:
-   ```kotlin
-   var pendingPlanDate by rememberSaveable { mutableStateOf<String?>(null) }
-   LaunchedEffect(openPlanRequests, navController) {
-       openPlanRequests.collect { date ->
-           pendingPlanDate = date
-           openRoot(MakRoutes.Schedule)
-       }
-   }
-   ```
-   Do `scheduleRoute` przekaż `navController = navController`, `pendingPlanDate = pendingPlanDate` i `onPlanDateShown = { pendingPlanDate = null }`.
-3. `todayRoute`: usuń parametr `todayViewModel`. W `composable(MakRoutes.Today)` na początku:
-   ```kotlin
-   val todayViewModel: TodayViewModel = koinViewModel()
-   LifecycleResumeEffect(todayViewModel) {
-       todayViewModel.refreshToday()
-       onPauseOrDispose { }
-   }
-   ```
-   Importy: `org.koin.compose.viewmodel.koinViewModel`, `androidx.lifecycle.compose.LifecycleResumeEffect`.
-4. `scheduleRoute`: usuń parametr `scheduleViewModel`, dodaj `navController: NavController`, `pendingPlanDate: String?` i `onPlanDateShown: () -> Unit`. W `composable(MakRoutes.Schedule)` na początku:
-   ```kotlin
-   val scheduleViewModel: ScheduleViewModel = koinViewModel()
-   LifecycleResumeEffect(scheduleViewModel) {
-       scheduleViewModel.refreshToday()
-       onPauseOrDispose { }
-   }
-   LaunchedEffect(pendingPlanDate) {
-       pendingPlanDate?.let { date ->
-           scheduleViewModel.showDate(date)
-           onPlanDateShown()
-       }
-   }
-   ScheduleEffects(scheduleViewModel, navController)
-   ```
-   Dalej bez zmian. `refreshToday()` nie zmienia stanu, gdy dzień jest ten sam, więc wywołanie przy każdym powrocie na ekran jest bezpieczne.
-5. `docs/ARCHITECTURE.md`, sekcja 5: w miejscu o ViewModelach i `MainActivity` (`rg -n "MainActivity" docs/ARCHITECTURE.md`) dopisz: „`AppViewModel`, `SettingsViewModel`, `UpdateViewModel` i `SyncViewModel` żyją w zakresie `MainActivity`, bo obsługują powłokę. Pozostałe ViewModele ekranów są pobierane w celu nawigacji przez `koinViewModel()`, a `SemesterViewModel` w zakresie podgrafu semestru (I-86; na razie „Dzisiaj” i „Plan”).” Nawias poprawi ostatni etap I-86.
-
-Testy:
-
-- `TodayViewModelTest` i `ScheduleViewModelTest`: istniejące testy przechodzą bez zmian, bo ViewModele się nie zmieniają.
-- `KoinGraphTest` (Android): przechodzi bez zmian i nadal rozwiązuje oba ViewModele.
-- Testów powłoki z `MakApp` nie ma, więc nawigację sprawdź ręcznie (weryfikacja, punkt 4).
-
-Przypadki brzegowe: przełączanie „Dzisiaj” i „Plan” paskiem nawigacji zachowuje wybrany tydzień i widok „Planu”, bo `openRoot` zapisuje stan celu (`saveState`, `restoreState`) razem z jego ViewModelem; data z powiadomienia przychodzi, zanim „Plan” jest złożony, i czeka w `pendingPlanDate`; po obrocie ekranu prośba nie wykonuje się drugi raz, bo `onPlanDateShown` ją czyści; po północy powrót do aplikacji przesuwa „Dzisiaj” i „Plan” na nowy dzień.
-
-Weryfikacja:
-
-1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.today.*" --tests "dev.retza.mak.ui.schedule.*" --tests "dev.retza.mak.ui.MakNavigationTest"`.
-2. `.\gradlew.bat --offline :app:compileDebugAndroidTestKotlin`.
-3. Na emulatorze klasy `dev.retza.mak.di.KoinGraphTest`, `dev.retza.mak.ui.today.TodayScreenTest` i `dev.retza.mak.ui.schedule.ScheduleScreenTest`.
-4. Ręcznie (wersja debug): w „Planie” przejdź do następnego tygodnia i widoku kalendarza, przełącz na „Dzisiaj” i z powrotem: tydzień i widok zostają. Otwórz szczegóły terminu z „Planu” i wróć: wybrany dzień zostaje. „Dodaj zajęcia jednorazowe” z kalendarza otwiera formularz z datą dnia. `adb shell am start -n dev.retza.mak.debug/dev.retza.mak.MainActivity --es dev.retza.mak.extra.OPEN_PLAN_DATE 2026-10-15` pokazuje „Plan” na 15 października.
-
-Kryterium zakończenia: testy i ręczne sprawdzenie dają opisane wyniki; `rg "todayViewModel|scheduleViewModel" app/src/main/java/dev/retza/mak/MainActivity.kt app/src/main/java/dev/retza/mak/ui/MakNavHostApp.kt` nic nie znajduje. Commit: `chore: scope today and plan view models to their destinations (I-86)`. W tym commicie w `QUEUE.md` przy I-86 zapisz, które etapy są zrobione.
+Kryterium zakończenia: testy przechodzą, zrzuty są identyczne, `py scripts/check_map.py` zwraca 0; w `MainActivity` są tylko `AppViewModel`, `SettingsViewModel`, `UpdateViewModel` i `SyncViewModel`. Commit: `chore: build the calendar grid only in the calendar view (I-86)`.

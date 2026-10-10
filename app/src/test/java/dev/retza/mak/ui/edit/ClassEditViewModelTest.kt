@@ -134,6 +134,51 @@ class ClassEditViewModelTest {
         assertEquals("Zapis po odświeżeniu", repository.classes.single().name)
     }
 
+    @Test
+    fun openOnceLoadsTheClassFromArguments() = runTest(mainDispatcher) {
+        val viewModel = viewModel(
+            FakeRepository(),
+            SavedStateHandle(mapOf("classId" to "1", "date" to "2026-09-21"))
+        )
+        advanceUntilIdle()
+
+        viewModel.openOnce()
+
+        assertEquals(ClassEditOpenState.Open, viewModel.opened.value)
+        assertEquals("Programowanie", viewModel.editor.value.name)
+    }
+
+    @Test
+    fun openOnceKeepsARestoredDraft() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val savedState = SavedStateHandle(mapOf("classId" to "1", "date" to "2026-09-21"))
+        val first = viewModel(repository, savedState)
+        advanceUntilIdle()
+        first.openOnce()
+        first.update { it.copy(name = "Szkic po obrocie") }
+        advanceUntilIdle()
+
+        val restored = viewModel(repository, savedState)
+        advanceUntilIdle()
+        restored.openOnce()
+
+        assertEquals(ClassEditOpenState.Open, restored.opened.value)
+        assertEquals("Szkic po obrocie", restored.editor.value.name)
+    }
+
+    @Test
+    fun openOnceForMissingClassReportsMissing() = runTest(mainDispatcher) {
+        val viewModel = viewModel(
+            FakeRepository(),
+            SavedStateHandle(mapOf("classId" to "999", "date" to "2026-09-21"))
+        )
+        advanceUntilIdle()
+
+        viewModel.openOnce()
+
+        assertEquals(ClassEditOpenState.Missing, viewModel.opened.value)
+    }
+
     private fun repositoryWithNoteOnMonday(): FakeRepository = FakeRepository().apply {
         occurrenceNotes += OccurrenceNoteEntity(
             id = 1L,

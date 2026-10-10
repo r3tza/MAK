@@ -63,8 +63,8 @@ class KoinGraphTest {
         assertNotNull(koin.get<UpdateInstaller>())
 
         assertNotNull(koin.get<AppViewModel>())
-        assertNotNull(koin.get<OccurrenceViewModel>())
         // Hosts get SavedStateHandle from viewModel(); resolving directly must pass it in.
+        assertNotNull(koin.get<OccurrenceViewModel> { parametersOf(SavedStateHandle()) })
         assertNotNull(koin.get<ClassEditViewModel> { parametersOf(SavedStateHandle()) })
         assertNotNull(koin.get<SemesterViewModel>())
         assertNotNull(koin.get<SetupViewModel>())

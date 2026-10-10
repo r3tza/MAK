@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.occurrence
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
@@ -58,7 +59,8 @@ class OccurrenceViewModel(
     private val scheduleRepository: ScheduleRepository,
     private val activePlanProvider: ActivePlanProvider,
     private val feedbackSink: FeedbackSink,
-    private val activePlanSource: ActivePlanSource
+    private val activePlanSource: ActivePlanSource,
+    savedState: SavedStateHandle
 ) : ViewModel() {
     private val state = MutableStateFlow(OccurrenceDetailsUiState())
     val details: StateFlow<OccurrenceDetailsUiState> = state.asStateFlow()
@@ -79,12 +81,17 @@ class OccurrenceViewModel(
     // The occurrence shown now; a move in the details points it at the new date.
     private var currentArgs: OccurrenceArgs? = null
 
-    fun open(routeId: String) {
-        val args = OccurrenceArgs.parse(routeId) ?: return
-        open(args)
+    // The destination's arguments are read once; the view model lives only as long as its destination.
+    init {
+        val args = OccurrenceArgs.parse("${savedState.get<String>("classId")}:${savedState.get<String>("date")}")
+        if (args != null) {
+            open(args)
+        } else {
+            state.value = derive(emptyOccurrenceDetails().copy(notFound = true))
+        }
     }
 
-    fun open(args: OccurrenceArgs) {
+    internal fun open(args: OccurrenceArgs) {
         openJob?.cancel()
         selectedClassIdState.value = null
         originalDate = null

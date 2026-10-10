@@ -10,7 +10,6 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import org.koin.compose.viewmodel.koinViewModel
-import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.schedule.ScheduleEffect
 import dev.retza.mak.ui.schedule.ScheduleScreen
 import dev.retza.mak.ui.schedule.ScheduleViewModel

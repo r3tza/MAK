@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.occurrence
 
+import androidx.lifecycle.SavedStateHandle
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
 import dev.retza.mak.data.entity.WeekType
@@ -38,13 +39,39 @@ class OccurrenceViewModelTest {
 
     private fun occurrenceViewModel(
         repository: FakeRepository,
-        preferences: SettingsPreferences = InMemorySettingsPreferences()
-    ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = FeedbackController(), activePlanSource = activePlanSource(repository, preferences))
+        preferences: SettingsPreferences = InMemorySettingsPreferences(),
+        savedState: SavedStateHandle = SavedStateHandle()
+    ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = FeedbackController(), activePlanSource = activePlanSource(repository, preferences), savedState = savedState)
 
     private fun recordingViewModel(
         repository: FakeRepository,
         sink: RecordingFeedbackSink
-    ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = sink, activePlanSource = activePlanSource(repository))
+    ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = sink, activePlanSource = activePlanSource(repository), savedState = SavedStateHandle())
+
+    // Invalid route ids are ignored, as the removed public overload did.
+    private fun OccurrenceViewModel.open(routeId: String) {
+        OccurrenceArgs.parse(routeId)?.let { open(it) }
+    }
+
+    @Test
+    fun detailsOpenFromSavedStateArguments() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = occurrenceViewModel(
+            repository,
+            savedState = SavedStateHandle(mapOf("classId" to "1", "date" to "2026-09-21"))
+        )
+        advanceUntilIdle()
+
+        assertFalse(viewModel.details.value.notFound)
+        assertEquals("Programowanie", viewModel.details.value.subjectName)
+    }
+
+    @Test
+    fun missingArgumentsShowNotFound() {
+        val viewModel = occurrenceViewModel(FakeRepository())
+
+        assertTrue(viewModel.details.value.notFound)
+    }
 
     @Test
     fun openValidOccurrenceBuildsDetails() = runTest(mainDispatcher) {

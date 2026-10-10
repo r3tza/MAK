@@ -39,10 +39,8 @@ import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakIconButton
 import dev.retza.mak.ui.components.MakNavBar
 import dev.retza.mak.ui.components.MakNavRail
-import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.MakSnackbarHost
 import dev.retza.mak.ui.feedback.UiFeedback
-import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.programs.StudyProgramsViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
@@ -55,8 +53,6 @@ import kotlinx.coroutines.flow.Flow
 @Composable
 fun MakApp(
     viewModel: AppViewModel,
-    occurrenceViewModel: OccurrenceViewModel,
-    classEditViewModel: ClassEditViewModel,
     semesterViewModel: SemesterViewModel,
     setupViewModel: SetupViewModel,
     settingsViewModel: SettingsViewModel,
@@ -130,8 +126,6 @@ fun MakApp(
         }
     }
 
-    OccurrenceEffects(occurrenceViewModel, navController)
-    ClassEditEffects(classEditViewModel, navController)
     SemesterEffects(semesterViewModel, navController)
     SettingsEffects(settingsViewModel, navController)
     StudyProgramEffects(studyProgramsViewModel, navController)
@@ -222,13 +216,12 @@ fun MakApp(
                 )
                 classEditRoute(
                     planEditTracker = planEditTracker,
-                    classEditViewModel = classEditViewModel,
+                    navController = navController,
                     onBack = ::navigateBack,
                     topBar = topBar
                 )
                 occurrenceDetailsRoute(
                     planEditTracker = planEditTracker,
-                    occurrenceViewModel = occurrenceViewModel,
                     navController = navController,
                     topBar = topBar
                 )

@@ -39,6 +39,8 @@ sealed interface ClassEditEffect {
     data object CloseEditor : ClassEditEffect
 }
 
+enum class ClassEditOpenState { Opening, Open, Missing }
+
 @KoinViewModel
 class ClassEditViewModel(
     private val semesterRepository: SemesterRepository,
@@ -62,6 +64,12 @@ class ClassEditViewModel(
         }
     private var editPlanData: ActivePlanData? = null
 
+    // Kept in the saved state so a rotation or process death does not load the form again over a restored draft.
+    private val openState = MutableStateFlow(
+        savedState.get<String>(KEY_OPEN_STATE)?.let(ClassEditOpenState::valueOf) ?: ClassEditOpenState.Opening
+    )
+    val opened: StateFlow<ClassEditOpenState> = openState.asStateFlow()
+
     // Unfiltered: the form offers every study program and only marks the hidden ones (`FEATURES.md`, I-79).
     private val activePlan = activePlanSource.observeActive()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -75,6 +83,25 @@ class ClassEditViewModel(
                 state.update { withActiveOptions(it, editPlanData ?: inputs?.data) }
             }
         }
+    }
+
+    /** Loads the form for this destination once; a restored draft is kept (`ARCHITECTURE.md`, section 5). */
+    suspend fun openOnce() {
+        if (openState.value != ClassEditOpenState.Opening) return
+        val classId = savedState.get<String>("classId")?.toLongOrNull()
+        val date = savedState.get<String>("date")?.toLocalDateOrNull()
+        val result = if (classId != null && date != null) {
+            if (openEditFromFreshPlan(OccurrenceArgs(classId, date).toRouteId())) {
+                ClassEditOpenState.Open
+            } else {
+                ClassEditOpenState.Missing
+            }
+        } else {
+            openNewFromFreshPlan(date)
+            ClassEditOpenState.Open
+        }
+        openState.value = result
+        savedState[KEY_OPEN_STATE] = result.name
     }
 
     suspend fun openNewFromFreshPlan(oneOffDate: LocalDate? = null) {
@@ -333,6 +360,7 @@ private fun String.toLocalTimeOrNull(): java.time.LocalTime? =
     runCatching { java.time.LocalTime.parse(this) }.getOrNull()
 
 private const val KEY_EDITING_CLASS_ID = "class_edit_editing_class_id"
+private const val KEY_OPEN_STATE = "class_edit_open_state"
 private const val KEY_DRAFT = "class_edit_draft"
 
 // Only the values typed by the user are stored; options and calendar ranges come from Room.

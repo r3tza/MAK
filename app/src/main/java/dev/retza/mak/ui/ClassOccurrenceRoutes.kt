@@ -3,10 +3,6 @@ package dev.retza.mak.ui
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavBackStackEntry
@@ -17,7 +13,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import dev.retza.mak.sync.PlanEditTracker
 import java.time.LocalDate
+import org.koin.compose.viewmodel.koinViewModel
 import dev.retza.mak.ui.edit.ClassEditEffect
+import dev.retza.mak.ui.edit.ClassEditOpenState
 import dev.retza.mak.ui.edit.ClassEditScreen
 import dev.retza.mak.ui.edit.classEditRecurrenceLabel
 import dev.retza.mak.ui.edit.ClassEditViewModel
@@ -40,7 +38,7 @@ internal fun openClassEditor(
 
 internal fun NavGraphBuilder.classEditRoute(
     planEditTracker: PlanEditTracker,
-    classEditViewModel: ClassEditViewModel,
+    navController: NavController,
     onBack: () -> Unit,
     topBar: TopBarState
 ) {
@@ -56,34 +54,23 @@ internal fun NavGraphBuilder.classEditRoute(
                 nullable = true
             }
         )
-    ) { entry ->
+    ) { _ ->
+        val classEditViewModel: ClassEditViewModel = koinViewModel()
         val editing = TrackPlanEditing(planEditTracker)
         if (!editing.ready) {
             PlanEditingWait()
             return@composable
         }
-        var opened by rememberSaveable(entry.id) { mutableStateOf(false) }
-        var openSucceeded by rememberSaveable(entry.id) { mutableStateOf(false) }
-        val args = entry.occurrenceArgs()
-        val date = entry.arguments?.getString("date")
-        LaunchedEffect(editing.ready, args, date, opened) {
-            if (!opened) {
-                openSucceeded = if (args != null) {
-                    classEditViewModel.openEditFromFreshPlan(args.toRouteId())
-                } else {
-                    classEditViewModel.openNewFromFreshPlan(date?.let(LocalDate::parse))
-                    true
-                }
-                opened = true
-            }
-        }
-        if (!opened || !openSucceeded) {
-            LaunchedEffect(opened, openSucceeded) {
-                if (opened && !openSucceeded) onBack()
+        val openState = classEditViewModel.opened.collectAsStateWithLifecycle().value
+        LaunchedEffect(Unit) { classEditViewModel.openOnce() }
+        if (openState != ClassEditOpenState.Open) {
+            LaunchedEffect(openState) {
+                if (openState == ClassEditOpenState.Missing) onBack()
             }
             PlanEditingWait()
             return@composable
         }
+        ClassEditEffects(classEditViewModel, navController)
         val editorState = classEditViewModel.editor.collectAsStateWithLifecycle().value
         DeclareTopBar(topBar, TopBarSpec(MakRoutes.Edit, title = editorState.title))
         ClassEditScreen(
@@ -119,7 +106,6 @@ internal fun NavGraphBuilder.classEditRoute(
 
 internal fun NavGraphBuilder.occurrenceDetailsRoute(
     planEditTracker: PlanEditTracker,
-    occurrenceViewModel: OccurrenceViewModel,
     navController: NavController,
     topBar: TopBarState
 ) {
@@ -130,6 +116,8 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
             navArgument("date") { type = NavType.StringType }
         )
     ) { entry ->
+        val occurrenceViewModel: OccurrenceViewModel = koinViewModel()
+        OccurrenceEffects(occurrenceViewModel, navController)
         val args = entry.occurrenceArgs()
         val occurrenceId = args?.toRouteId()
         val details = occurrenceViewModel.details.collectAsStateWithLifecycle().value
@@ -138,13 +126,6 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
             active = details.hasPlanDraft(),
             isActiveNow = { occurrenceViewModel.details.value.hasPlanDraft() }
         )
-        var opened by rememberSaveable(entry.id) { mutableStateOf(false) }
-        LaunchedEffect(args, opened) {
-            if (!opened && args != null) {
-                occurrenceViewModel.open(args)
-                opened = true
-            }
-        }
         val actions: List<Pair<String, () -> Unit>> = listOfNotNull(
             if (details.canCancelOccurrence) {
                 "Odwołaj termin" to editing.callback(
