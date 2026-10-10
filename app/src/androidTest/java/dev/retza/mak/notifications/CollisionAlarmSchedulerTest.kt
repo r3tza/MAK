@@ -19,10 +19,10 @@ import dev.retza.mak.data.repository.RoomSemesterRepository
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.CollisionNotificationPlanner
 import dev.retza.mak.domain.PlanDisplaySettings
-import dev.retza.mak.ui.settings.CollisionNotificationPreferences
-import dev.retza.mak.ui.settings.SettingsPreferences
-import dev.retza.mak.ui.settings.ThemeMode
-import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.settings.CollisionNotificationPreferences
+import dev.retza.mak.settings.SettingsPreferences
+import dev.retza.mak.settings.ThemeMode
+import dev.retza.mak.data.ActivePlanSource
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.Instant

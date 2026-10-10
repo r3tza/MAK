@@ -4,7 +4,7 @@ import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.ActivePlanInputs
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.allProgramsHidden
-import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.data.ActivePlanSource
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalTime

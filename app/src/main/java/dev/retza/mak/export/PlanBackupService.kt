@@ -2,7 +2,7 @@ package dev.retza.mak.export
 
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.PlanBackupGateway
-import dev.retza.mak.ui.settings.SettingsPreferences
+import dev.retza.mak.settings.SettingsPreferences
 
 class ImportHandle internal constructor(internal val data: BackupData)
 

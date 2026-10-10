@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.settings.ThemeMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -53,7 +54,7 @@ import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.makRowFocus
-import dev.retza.mak.ui.polishPlural
+import dev.retza.mak.text.polishPlural
 import dev.retza.mak.export.ImportSummary
 
 @Composable

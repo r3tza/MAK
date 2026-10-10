@@ -48,7 +48,7 @@ import dev.retza.mak.sync.SyncWorkScheduler
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.settings.SyncViewModel
-import dev.retza.mak.ui.settings.ThemeMode
+import dev.retza.mak.settings.ThemeMode
 import dev.retza.mak.ui.theme.MAKTheme
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel

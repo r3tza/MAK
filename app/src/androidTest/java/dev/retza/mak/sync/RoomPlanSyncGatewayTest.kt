@@ -18,8 +18,8 @@ import dev.retza.mak.data.repository.RoomPlanBackupGateway
 import dev.retza.mak.data.repository.PlanBackupGateway
 import dev.retza.mak.data.repository.SemesterBackup
 import dev.retza.mak.data.repository.toRecord
-import dev.retza.mak.ui.settings.DataStoreSettingsPreferences
-import dev.retza.mak.ui.settings.SettingsPreferences
+import dev.retza.mak.settings.DataStoreSettingsPreferences
+import dev.retza.mak.settings.SettingsPreferences
 import dev.retza.mak.ui.settings.TestPreferencesFile
 import java.time.LocalDate
 import java.time.Clock

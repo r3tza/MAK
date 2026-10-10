@@ -9,9 +9,9 @@ import dev.retza.mak.domain.ActivePlanInputs
 import dev.retza.mak.domain.CollisionNotificationPlanner
 import dev.retza.mak.domain.PlannedCollisionNotification
 import dev.retza.mak.domain.toAlarmPayload
-import dev.retza.mak.ui.ActivePlanSource
-import dev.retza.mak.ui.settings.CollisionNotificationPreferences
-import dev.retza.mak.ui.settings.SettingsPreferences
+import dev.retza.mak.data.ActivePlanSource
+import dev.retza.mak.settings.CollisionNotificationPreferences
+import dev.retza.mak.settings.SettingsPreferences
 import java.time.Clock
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.first

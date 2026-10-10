@@ -14,7 +14,7 @@ import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.schedule.ScheduleViewModel
 import dev.retza.mak.ui.programs.StudyProgramsViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
-import dev.retza.mak.ui.settings.SettingsPreferences
+import dev.retza.mak.settings.SettingsPreferences
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.today.TodayViewModel

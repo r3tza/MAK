@@ -15,7 +15,7 @@ import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.semester.WeekOverrideScopeUi
 import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.activePlanSource
-import dev.retza.mak.ui.settings.InMemorySettingsPreferences
+import dev.retza.mak.settings.InMemorySettingsPreferences
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate

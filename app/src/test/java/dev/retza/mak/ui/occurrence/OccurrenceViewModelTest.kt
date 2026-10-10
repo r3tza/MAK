@@ -14,8 +14,8 @@ import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.activePlanSource
-import dev.retza.mak.ui.settings.InMemorySettingsPreferences
-import dev.retza.mak.ui.settings.SettingsPreferences
+import dev.retza.mak.settings.InMemorySettingsPreferences
+import dev.retza.mak.settings.SettingsPreferences
 import java.time.LocalDate
 import java.time.LocalTime
 import dev.retza.mak.sync.PlanEditTracker

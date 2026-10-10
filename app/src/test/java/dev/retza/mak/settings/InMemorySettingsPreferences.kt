@@ -1,4 +1,4 @@
-package dev.retza.mak.ui.settings
+package dev.retza.mak.settings
 
 import dev.retza.mak.domain.PlanDisplaySettings
 import java.time.LocalTime

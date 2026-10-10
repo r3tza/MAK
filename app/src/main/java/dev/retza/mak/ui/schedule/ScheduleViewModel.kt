@@ -19,7 +19,7 @@ import dev.retza.mak.domain.allProgramsHidden
 import dev.retza.mak.domain.visibleAssignments
 import dev.retza.mak.domain.visibleTo
 import dev.retza.mak.domain.VisiblePlanData
-import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.data.ActivePlanSource
 import dev.retza.mak.ui.AppLocale
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.components.CalendarDayUi

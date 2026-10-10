@@ -14,8 +14,8 @@ import dev.retza.mak.data.repository.toActivePlanData
 import dev.retza.mak.data.repository.toRecord
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.PlanDisplaySettings
-import dev.retza.mak.ui.ActivePlanSource
-import dev.retza.mak.ui.settings.InMemorySettingsPreferences
+import dev.retza.mak.data.ActivePlanSource
+import dev.retza.mak.settings.InMemorySettingsPreferences
 import java.lang.reflect.Proxy
 import java.time.Clock
 import java.time.DayOfWeek

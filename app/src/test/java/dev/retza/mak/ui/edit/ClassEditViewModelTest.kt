@@ -11,7 +11,7 @@ import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
-import dev.retza.mak.ui.settings.InMemorySettingsPreferences
+import dev.retza.mak.settings.InMemorySettingsPreferences
 import java.time.LocalDate
 import dev.retza.mak.sync.PlanEditTracker
 import kotlinx.coroutines.CoroutineScope

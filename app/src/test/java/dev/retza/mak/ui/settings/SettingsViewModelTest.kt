@@ -1,5 +1,9 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.settings.InMemorySettingsPreferences
+import dev.retza.mak.settings.themeModeFromStored
+import dev.retza.mak.settings.ThemeMode
+import dev.retza.mak.settings.SettingsPreferences
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.export.AcademicCalendarSnapshot

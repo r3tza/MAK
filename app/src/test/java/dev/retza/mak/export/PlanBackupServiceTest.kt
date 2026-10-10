@@ -2,7 +2,7 @@ package dev.retza.mak.export
 
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.PlanBackupGateway
-import dev.retza.mak.ui.settings.InMemorySettingsPreferences
+import dev.retza.mak.settings.InMemorySettingsPreferences
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals

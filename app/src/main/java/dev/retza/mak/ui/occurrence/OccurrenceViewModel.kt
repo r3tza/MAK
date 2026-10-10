@@ -26,7 +26,7 @@ import dev.retza.mak.domain.occurrenceId
 import dev.retza.mak.domain.occurrenceRoomOverride
 import dev.retza.mak.domain.validateOccurrenceDraft
 import dev.retza.mak.sync.PlanEditTracker
-import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.data.ActivePlanSource
 import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.calendarForAssignment

@@ -1,5 +1,8 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.settings.CollisionNotificationPreferences
+import dev.retza.mak.settings.ThemeMode
+import dev.retza.mak.settings.SettingsPreferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
@@ -12,12 +15,12 @@ import dev.retza.mak.export.ImportPreparation
 import dev.retza.mak.export.ImportSummary
 import dev.retza.mak.export.PlanBackupService
 import dev.retza.mak.sync.PlanEditTracker
-import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.data.ActivePlanSource
 import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.shortDateFormatter
-import dev.retza.mak.ui.polishPlural
+import dev.retza.mak.text.polishPlural
 import dev.retza.mak.ui.sharedCalendar
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback

@@ -58,7 +58,7 @@ import dev.retza.mak.ui.components.WeekOverrideScopeChoice
 import dev.retza.mak.ui.components.WeekTypeSelectField
 import dev.retza.mak.ui.components.makRowFocus
 import dev.retza.mak.ui.longDateFormatter
-import dev.retza.mak.ui.polishPlural
+import dev.retza.mak.text.polishPlural
 import dev.retza.mak.ui.shortDateWithYearFormatter
 import dev.retza.mak.ui.toLocalDateOrNull
 import dev.retza.mak.ui.components.parseHexColor

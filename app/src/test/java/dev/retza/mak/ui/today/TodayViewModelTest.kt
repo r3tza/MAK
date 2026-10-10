@@ -6,7 +6,7 @@ import dev.retza.mak.domain.PlanDisplaySettings
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.activePlanSource
-import dev.retza.mak.ui.settings.InMemorySettingsPreferences
+import dev.retza.mak.settings.InMemorySettingsPreferences
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalTime

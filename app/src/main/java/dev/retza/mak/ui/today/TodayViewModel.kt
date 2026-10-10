@@ -12,7 +12,7 @@ import dev.retza.mak.domain.hiddenAssignments
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.uniqueCollisionCount
-import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.data.ActivePlanSource
 import dev.retza.mak.ui.AppLocale
 import dev.retza.mak.ui.label
 import dev.retza.mak.ui.toUi

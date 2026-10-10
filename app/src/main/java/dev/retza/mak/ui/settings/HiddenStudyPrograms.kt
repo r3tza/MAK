@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.settings.SettingsPreferences
 import dev.retza.mak.data.repository.StudyProgramRecord
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.distinctUntilChanged

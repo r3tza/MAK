@@ -15,9 +15,9 @@ import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.CollisionNotificationKind
 import dev.retza.mak.domain.collisionNotificationGroups
 import dev.retza.mak.domain.shouldShowCollisionNotification
-import dev.retza.mak.ui.ActivePlanSource
-import dev.retza.mak.ui.polishPlural
-import dev.retza.mak.ui.settings.SettingsPreferences
+import dev.retza.mak.data.ActivePlanSource
+import dev.retza.mak.text.polishPlural
+import dev.retza.mak.settings.SettingsPreferences
 import java.time.Clock
 import java.time.LocalDate
 import java.time.LocalDateTime

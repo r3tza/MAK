@@ -15,7 +15,7 @@ import dev.retza.mak.domain.ClassValidator
 import dev.retza.mak.domain.dateInCalendar
 import dev.retza.mak.domain.Recurrence as DomainRecurrence
 import dev.retza.mak.sync.PlanEditTracker
-import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.data.ActivePlanSource
 import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.calendarForAssignment

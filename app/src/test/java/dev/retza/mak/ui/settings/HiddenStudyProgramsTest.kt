@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.settings.InMemorySettingsPreferences
 import dev.retza.mak.data.repository.StudyProgramRecord
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first

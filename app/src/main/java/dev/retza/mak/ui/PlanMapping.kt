@@ -1,5 +1,6 @@
 package dev.retza.mak.ui
 
+import dev.retza.mak.text.polishPlural
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.WeekStatus

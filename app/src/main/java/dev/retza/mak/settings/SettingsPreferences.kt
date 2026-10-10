@@ -1,4 +1,4 @@
-package dev.retza.mak.ui.settings
+package dev.retza.mak.settings
 
 import dev.retza.mak.domain.PlanDisplaySettings
 import java.time.LocalTime
@@ -8,12 +8,6 @@ enum class ThemeMode {
     System,
     Light,
     Dark
-}
-
-fun ThemeMode.label(): String = when (this) {
-    ThemeMode.System -> "Systemowy"
-    ThemeMode.Light -> "Jasny"
-    ThemeMode.Dark -> "Ciemny"
 }
 
 data class CollisionNotificationPreferences(

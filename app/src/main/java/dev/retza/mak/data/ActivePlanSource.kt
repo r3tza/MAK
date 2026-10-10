@@ -1,9 +1,9 @@
-package dev.retza.mak.ui
+package dev.retza.mak.data
 
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.ActivePlanInputs
-import dev.retza.mak.ui.settings.SettingsPreferences
+import dev.retza.mak.settings.SettingsPreferences
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow

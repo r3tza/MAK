@@ -1,5 +1,6 @@
 package dev.retza.mak.ui
 
+import dev.retza.mak.data.ActivePlanSource
 import dev.retza.mak.data.repository.AcademicCalendarRecord
 import dev.retza.mak.data.repository.SemesterConfiguration
 import dev.retza.mak.data.repository.SemesterDeletionResult
@@ -11,8 +12,8 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.data.repository.toEntity
 import dev.retza.mak.data.repository.toRecord
-import dev.retza.mak.ui.settings.InMemorySettingsPreferences
-import dev.retza.mak.ui.settings.SettingsPreferences
+import dev.retza.mak.settings.InMemorySettingsPreferences
+import dev.retza.mak.settings.SettingsPreferences
 import java.time.LocalDate
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineScope

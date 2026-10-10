@@ -11,8 +11,8 @@ import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.database.PLAN_TABLES
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
-import dev.retza.mak.ui.ActivePlanSource
-import dev.retza.mak.ui.settings.SettingsPreferences
+import dev.retza.mak.data.ActivePlanSource
+import dev.retza.mak.settings.SettingsPreferences
 import dev.retza.mak.update.InstalledAppInfoProvider
 import dev.retza.mak.update.UpdateCheckService
 import dev.retza.mak.update.UpdateChecker

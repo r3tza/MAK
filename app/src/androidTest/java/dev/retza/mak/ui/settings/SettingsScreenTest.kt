@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.settings.ThemeMode
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width

@@ -1,7 +1,7 @@
 package dev.retza.mak.ui
 
-import dev.retza.mak.ui.settings.InMemorySettingsPreferences
-import dev.retza.mak.ui.settings.ThemeMode
+import dev.retza.mak.settings.InMemorySettingsPreferences
+import dev.retza.mak.settings.ThemeMode
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.SupervisorJob
 import kotlinx.coroutines.cancel

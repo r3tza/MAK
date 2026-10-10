@@ -10,8 +10,8 @@ import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.seedDemoDataIfEmpty
 import dev.retza.mak.notifications.CollisionAlarmScheduler
 import dev.retza.mak.notifications.ensureCollisionChannel
-import dev.retza.mak.ui.ActivePlanSource
-import dev.retza.mak.ui.settings.SettingsPreferences
+import dev.retza.mak.data.ActivePlanSource
+import dev.retza.mak.settings.SettingsPreferences
 import dev.retza.mak.ui.settings.retainExistingHiddenPrograms
 import dev.retza.mak.widget.GlanceWidgetRefreshRequester
 import dev.retza.mak.widget.registerMakWidgetRefresh

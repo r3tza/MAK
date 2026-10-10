@@ -2,7 +2,7 @@ package dev.retza.mak.widget
 
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import dev.retza.mak.ui.polishPlural
+import dev.retza.mak.text.polishPlural
 
 internal enum class WidgetStatusMode {
     ConflictOnly,

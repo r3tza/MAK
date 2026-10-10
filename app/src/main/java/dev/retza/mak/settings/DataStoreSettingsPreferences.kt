@@ -1,4 +1,4 @@
-package dev.retza.mak.ui.settings
+package dev.retza.mak.settings
 
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
