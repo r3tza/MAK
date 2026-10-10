@@ -126,6 +126,51 @@ class SyncViewModelTest {
     }
 
     @Test
+    fun issueTextsComeFromTheViewModel() = runBlocking {
+        assertEquals(
+            "Na Dysku Google brakuje miejsca. Zwolnij miejsce i synchronizuj ponownie.",
+            issueTextFor(SyncState(account = connected, issue = SyncIssue.STORAGE_FULL))
+        )
+        assertEquals(
+            "Dysk Google odmówił dostępu. Jeśli to się powtarza, połącz konto ponownie.",
+            issueTextFor(SyncState(account = connected, issue = SyncIssue.ACCESS_DENIED))
+        )
+        assertEquals(
+            "Telefon ma inne konto Google niż połączone. Wyłącz synchronizację i połącz konto ponownie.",
+            issueTextFor(SyncState(account = connected, issue = SyncIssue.ACCOUNT_MISMATCH))
+        )
+        assertEquals(
+            "Lokalny plan przekracza limit 8 MiB i nie może zostać wysłany.",
+            issueTextFor(SyncState(account = connected, issue = SyncIssue.LOCAL_PLAN_TOO_LARGE))
+        )
+        // A message saved by an older version does not come back for a general failure.
+        assertEquals(
+            "Nie udało się zsynchronizować planu.",
+            issueTextFor(SyncState(account = connected, issue = SyncIssue.FAILED, issueMessage = "stary tekst"))
+        )
+    }
+
+    private suspend fun issueTextFor(state: SyncState): String? {
+        val model = onMain {
+            SyncViewModel(
+                SyncCoordinator(
+                    gateway = EmptyPlan(),
+                    transport = drive,
+                    store = MemoryStore(state),
+                    archive = archive,
+                    editTracker = PlanEditTracker(CoroutineScope(Dispatchers.Default)),
+                    clock = Clock.systemUTC(),
+                    ioDispatcher = Dispatchers.IO
+                ),
+                authorization,
+                GlobalContext.get().get<SyncWorkScheduler>(),
+                feedback
+            )
+        }
+        return withTimeout(5_000) { model.sync.first { it.accountEmail != null }.issue }
+    }
+
+    @Test
     fun archiveIsWrittenOnIoAndSuccessWaitsForStreamClose() = runBlocking {
         val bytes = "archived plan".toByteArray()
         archive.add(bytes, ArchiveSource.PHONE, System.currentTimeMillis())

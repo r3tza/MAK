@@ -130,27 +130,27 @@ class SyncCoordinator(
         } catch (_: UserActionRequiredException) {
             authorizationRequired()
         } catch (_: AccountMismatchException) {
-            failed(ACCOUNT_MISMATCH)
+            issue(SyncIssue.ACCOUNT_MISMATCH, message = null)
         } catch (error: DriveHttpException) {
             when {
                 error.isTransient() -> throw error
                 error.statusCode == 401 -> authorizationRequired()
-                error.isStorageFull() -> failed("Na Dysku Google brakuje miejsca. Zwolnij miejsce i synchronizuj ponownie.")
-                error.statusCode == 403 -> failed("Dysk Google odmówił dostępu. Jeśli to się powtarza, połącz konto ponownie.")
-                else -> failed(GENERIC_FAILURE)
+                error.isStorageFull() -> issue(SyncIssue.STORAGE_FULL, message = null)
+                error.statusCode == 403 -> issue(SyncIssue.ACCESS_DENIED, message = null)
+                else -> failed()
             }
         } catch (error: CancellationException) {
             throw error
         } catch (error: IOException) {
             throw error
         } catch (_: Exception) {
-            failed(GENERIC_FAILURE)
+            failed()
         }
     }
 
     private fun authorizationRequired() = issue(SyncIssue.AUTHORIZATION_REQUIRED, message = null)
 
-    private fun failed(message: String) = issue(SyncIssue.FAILED, message)
+    private fun failed() = issue(SyncIssue.FAILED, message = null)
 
     private fun issue(issue: SyncIssue, message: String?): SyncOutcome {
         save(current.value.copy(issue = issue, issueMessage = message))
@@ -341,7 +341,7 @@ class SyncCoordinator(
 
     private fun localSizeIssue(bytes: ByteArray): SyncOutcome? =
         if (bytes.size > SyncPlanFile.MAX_BYTES) {
-            issue(SyncIssue.LOCAL_PLAN_TOO_LARGE, LOCAL_PLAN_TOO_LARGE_MESSAGE)
+            issue(SyncIssue.LOCAL_PLAN_TOO_LARGE, message = null)
         } else {
             null
         }
@@ -349,10 +349,6 @@ class SyncCoordinator(
     private companion object {
         const val MAX_PASSES = 3
         const val REPLACEMENT_ECHO_MILLIS = 2_000L
-        const val GENERIC_FAILURE = "Nie udało się zsynchronizować planu."
-        const val LOCAL_PLAN_TOO_LARGE_MESSAGE = "Lokalny plan przekracza limit 8 MiB i nie może zostać wysłany."
-        const val ACCOUNT_MISMATCH =
-            "Telefon ma inne konto Google niż połączone. Wyłącz synchronizację i połącz konto ponownie."
     }
 }
 

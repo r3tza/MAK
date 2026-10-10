@@ -350,10 +350,12 @@ class SyncViewModel(
 
 private fun Exception.toMessage(): String = when {
     this is IOException -> "Brak połączenia z internetem. Aplikacja spróbuje ponownie później."
-    this is AccountMismatchException ->
-        "Google zwrócił inne konto niż połączone. Wyłącz synchronizację i połącz konto ponownie."
+    this is AccountMismatchException -> ACCOUNT_MISMATCH_TEXT
     else -> "Nie udało się zsynchronizować planu."
 }
+
+private const val ACCOUNT_MISMATCH_TEXT =
+    "Telefon ma inne konto Google niż połączone. Wyłącz synchronizację i połącz konto ponownie."
 
 private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemUi>) = SyncUiState(
     accountEmail = account?.email,
@@ -396,8 +398,11 @@ private fun SyncState.issueText(): String? = when (issue) {
     SyncIssue.AUTHORIZATION_REQUIRED -> "Google wymaga ponownego potwierdzenia dostępu do Dysku."
     SyncIssue.INVALID_REMOTE_PLAN -> issueMessage ?: "Plik planu na Dysku jest niepoprawny."
     SyncIssue.NEWER_REMOTE_PLAN -> "Plan na Dysku pochodzi z nowszej wersji MAK. Zaktualizuj aplikację."
-    SyncIssue.LOCAL_PLAN_TOO_LARGE -> issueMessage ?: "Lokalny plan przekracza limit 8 MiB i nie może zostać wysłany."
-    SyncIssue.FAILED -> issueMessage ?: "Nie udało się zsynchronizować planu."
+    SyncIssue.LOCAL_PLAN_TOO_LARGE -> "Lokalny plan przekracza limit 8 MiB i nie może zostać wysłany."
+    SyncIssue.STORAGE_FULL -> "Na Dysku Google brakuje miejsca. Zwolnij miejsce i synchronizuj ponownie."
+    SyncIssue.ACCESS_DENIED -> "Dysk Google odmówił dostępu. Jeśli to się powtarza, połącz konto ponownie."
+    SyncIssue.ACCOUNT_MISMATCH -> ACCOUNT_MISMATCH_TEXT
+    SyncIssue.FAILED -> "Nie udało się zsynchronizować planu."
     null -> null
 }
 

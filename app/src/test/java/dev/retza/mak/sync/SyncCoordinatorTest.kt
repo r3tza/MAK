@@ -319,7 +319,7 @@ class SyncCoordinatorTest {
         assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
 
         assertEquals(SyncIssue.LOCAL_PLAN_TOO_LARGE, coordinator.state.value.issue)
-        assertTrue(coordinator.state.value.issueMessage.orEmpty().lowercase().contains("lokal"))
+        assertNull(coordinator.state.value.issueMessage)
         assertNull(drive.file)
         assertEquals(0, drive.uploads)
         assertEquals(fingerprint.length, 64)
@@ -440,7 +440,18 @@ class SyncCoordinatorTest {
         drive.failure = DriveHttpException(403, "quota")
 
         assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
+        assertEquals(SyncIssue.ACCESS_DENIED, coordinator.state.value.issue)
+        assertNull(coordinator.state.value.issueMessage)
+    }
+
+    @Test
+    fun otherDriveErrorIsFailedWithoutMessage() = runTest {
+        phone.data = plan("Telefon")
+        drive.failure = DriveHttpException(400, "bad")
+
+        assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
         assertEquals(SyncIssue.FAILED, coordinator.state.value.issue)
+        assertNull(coordinator.state.value.issueMessage)
     }
 
     @Test
@@ -460,7 +471,8 @@ class SyncCoordinatorTest {
         drive.failure = DriveHttpException(403, "full", reason = "storageQuotaExceeded")
 
         assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
-        assertTrue(coordinator.state.value.issueMessage!!.contains("brakuje miejsca"))
+        assertEquals(SyncIssue.STORAGE_FULL, coordinator.state.value.issue)
+        assertNull(coordinator.state.value.issueMessage)
     }
 
     @Test
@@ -479,8 +491,8 @@ class SyncCoordinatorTest {
         drive.failure = AccountMismatchException()
 
         assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
-        assertEquals(SyncIssue.FAILED, coordinator.state.value.issue)
-        assertEquals(true, coordinator.state.value.issueMessage.orEmpty().contains("Wyłącz synchronizację"))
+        assertEquals(SyncIssue.ACCOUNT_MISMATCH, coordinator.state.value.issue)
+        assertNull(coordinator.state.value.issueMessage)
     }
 
     @Test
