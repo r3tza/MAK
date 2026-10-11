@@ -23,7 +23,8 @@ internal fun basePlan(
     notes: List<OccurrenceNoteEntity> = emptyList(),
     programs: List<StudyProgramEntity> = listOf(StudyProgramEntity(id = 1, name = "Informatyka", color = "#137B71")),
     assignments: List<SemesterProgramEntity> = listOf(SemesterProgramEntity(id = 1, semesterId = 1, studyProgramId = 1, academicCalendarId = 1)),
-    active: Boolean = true
+    active: Boolean = true,
+    freeDays: List<dev.retza.mak.data.entity.FreeDayEntity> = emptyList()
 ): BackupData = BackupData(
     studyPrograms = programs.map { it.toRecord() },
     semesters = listOf(
@@ -35,6 +36,7 @@ internal fun basePlan(
             programs = assignments.map { it.toRecord() },
             classes = classes.map { it.toRecord() },
             weekOverrides = emptyList(),
+            freeDays = freeDays.map { it.toRecord() },
             occurrenceNotes = notes.map { it.toRecord() },
             occurrenceChanges = emptyList()
         )

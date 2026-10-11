@@ -8,6 +8,7 @@ import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.SemesterProgramRecord
 import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
+import dev.retza.mak.data.repository.FreeDayRecord
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterBackup
 import dev.retza.mak.data.repository.withActiveSemester
@@ -148,6 +149,7 @@ private fun Any.withId(id: Long): Any = when (this) {
     is SemesterProgramRecord -> copy(id = id)
     is ClassRecord -> copy(id = id)
     is WeekOverrideRecord -> copy(id = id)
+    is FreeDayRecord -> copy(id = id)
     is OccurrenceNoteRecord -> copy(id = id)
     is OccurrenceChangeRecord -> copy(id = id)
     else -> error("Unknown plan row ${this::class.simpleName}")
@@ -166,6 +168,10 @@ private fun Any.withReferences(map: (PlanRowKind, Long) -> Long): Any = when (th
         semesterProgramId = map(PlanRowKind.SEMESTER_PROGRAM, semesterProgramId)
     )
     is WeekOverrideRecord -> copy(
+        semesterId = map(PlanRowKind.SEMESTER, semesterId),
+        academicCalendarId = map(PlanRowKind.CALENDAR, academicCalendarId)
+    )
+    is FreeDayRecord -> copy(
         semesterId = map(PlanRowKind.SEMESTER, semesterId),
         academicCalendarId = map(PlanRowKind.CALENDAR, academicCalendarId)
     )
@@ -193,6 +199,7 @@ private fun Map<PlanRowKey, Any>.toBackupData(): BackupData {
                 programs = all.filterIsInstance<SemesterProgramRecord>().filter { it.semesterId == semester.id }.sortedBy { it.id },
                 classes = all.filterIsInstance<ClassRecord>().filter { it.semesterId == semester.id }.sortedBy { it.id },
                 weekOverrides = all.filterIsInstance<WeekOverrideRecord>().filter { it.semesterId == semester.id }.sortedBy { it.id },
+                freeDays = all.filterIsInstance<FreeDayRecord>().filter { it.semesterId == semester.id }.sortedBy { it.id },
                 occurrenceNotes = all.filterIsInstance<OccurrenceNoteRecord>().filter { it.semesterId == semester.id }.sortedBy { it.id },
                 occurrenceChanges = all.filterIsInstance<OccurrenceChangeRecord>().filter { it.semesterId == semester.id }.sortedBy { it.id }
             )

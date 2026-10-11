@@ -54,7 +54,7 @@ class ExportImporterTest {
     @Test
     fun currentVersionFileKeepsNoteDate() {
         val snapshot = snapshotWithMovedOccurrenceNote()
-        assertEquals(3, snapshot.schemaVersion)
+        assertEquals(ExportSchema.VERSION, snapshot.schemaVersion)
 
         val result = ExportImporter.prepare(snapshot)
 
@@ -339,6 +339,74 @@ class ExportImporterTest {
         )
     }
 
+    @Test
+    fun prepareRejectsFreeDayWithCalendarOutsideSemester() {
+        val semester = semesterData(1, active = true).copy(
+            freeDays = listOf(freeDayEntity(id = 50, calendarId = 20, start = LocalDate.of(2026, 11, 11), end = LocalDate.of(2026, 11, 11)))
+        )
+
+        val result = ExportImporter.prepare(exportSnapshotOf(listOf(semester), listOf(program())))
+
+        assertTrue(result is ImportSnapshotResult.Invalid)
+        assertTrue(
+            (result as ImportSnapshotResult.Invalid).errors.any {
+                it.contains("wskazuje kalendarz spoza semestru")
+            }
+        )
+    }
+
+    @Test
+    fun prepareRejectsFreeDayEndingBeforeItStarts() {
+        val semester = semesterData(1, active = true).copy(
+            freeDays = listOf(freeDayEntity(id = 50, calendarId = 10, start = LocalDate.of(2026, 11, 12), end = LocalDate.of(2026, 11, 11)))
+        )
+
+        val result = ExportImporter.prepare(exportSnapshotOf(listOf(semester), listOf(program())))
+
+        assertTrue(result is ImportSnapshotResult.Invalid)
+        assertTrue(
+            (result as ImportSnapshotResult.Invalid).errors.any {
+                it.contains("kończy się przed początkiem")
+            }
+        )
+    }
+
+    @Test
+    fun prepareRejectsDuplicatedFreeDayId() {
+        val semester = semesterData(1, active = true).copy(
+            freeDays = listOf(
+                freeDayEntity(id = 50, calendarId = 10, start = LocalDate.of(2026, 11, 11), end = LocalDate.of(2026, 11, 11)),
+                freeDayEntity(id = 50, calendarId = 10, start = LocalDate.of(2026, 12, 24), end = LocalDate.of(2026, 12, 24))
+            )
+        )
+
+        val result = ExportImporter.prepare(exportSnapshotOf(listOf(semester), listOf(program())))
+
+        assertTrue(result is ImportSnapshotResult.Invalid)
+        assertTrue(
+            (result as ImportSnapshotResult.Invalid).errors.any {
+                it.contains("Plik zawiera dni wolne o powtórzonym identyfikatorze.")
+            }
+        )
+    }
+
+    @Test
+    fun prepareAcceptsVersion3Snapshot() {
+        val snapshot = validSnapshot().copy(schemaVersion = ExportSchema.WITHOUT_FREE_DAYS_VERSION)
+
+        assertTrue(ExportImporter.prepare(snapshot) is ImportSnapshotResult.Ready)
+    }
+
+    private fun freeDayEntity(id: Long, calendarId: Long, start: LocalDate, end: LocalDate) =
+        dev.retza.mak.data.entity.FreeDayEntity(
+            id = id,
+            semesterId = 1,
+            academicCalendarId = calendarId,
+            startDate = start,
+            endDate = end,
+            name = null
+        )
+
     private fun snapshotWithChange(change: OccurrenceChangeEntity): ExportSnapshot {
         val base = semesterData(1, active = true).copy(occurrenceChanges = listOf(change))
         return exportSnapshotOf(listOf(base), listOf(program()))
@@ -414,7 +482,8 @@ class ExportImporterTest {
             classes = listOf(classEntity),
             weekOverrides = emptyList(),
             occurrenceNotes = emptyList(),
-            occurrenceChanges = emptyList()
+            occurrenceChanges = emptyList(),
+            freeDays = emptyList()
         )
     }
 

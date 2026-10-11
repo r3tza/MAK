@@ -8,6 +8,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.data.entity.SemesterEntity
@@ -226,6 +227,36 @@ interface WeekOverrideDao {
     )
 
     @Query("DELETE FROM week_overrides")
+    suspend fun deleteAll()
+}
+
+@Dao
+interface FreeDayDao {
+    @Query(
+        "SELECT * FROM free_days WHERE semester_id = :semesterId " +
+            "ORDER BY start_date, end_date, id"
+    )
+    fun observeForSemester(semesterId: Long): Flow<List<FreeDayEntity>>
+
+    @Query(
+        "SELECT * FROM free_days WHERE semester_id = :semesterId " +
+            "ORDER BY start_date, end_date, id"
+    )
+    suspend fun getForSemester(semesterId: Long): List<FreeDayEntity>
+
+    @Query(
+        "SELECT * FROM free_days WHERE academic_calendar_id = :calendarId " +
+            "ORDER BY start_date, end_date, id"
+    )
+    suspend fun getForCalendar(calendarId: Long): List<FreeDayEntity>
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insert(entity: FreeDayEntity): Long
+
+    @Query("DELETE FROM free_days WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
+
+    @Query("DELETE FROM free_days")
     suspend fun deleteAll()
 }
 

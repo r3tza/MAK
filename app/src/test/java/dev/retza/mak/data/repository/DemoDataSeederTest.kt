@@ -2,6 +2,7 @@ package dev.retza.mak.data.repository
 
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -74,10 +75,24 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
                 programs = semesterPrograms.filter { it.semesterId == id },
                 studyPrograms = studyPrograms.toList(),
                 calendars = calendars.filter { it.semesterId == id },
-                overrides = weekOverrides.filter { it.semesterId == id }
+                overrides = weekOverrides.filter { it.semesterId == id },
+                freeDays = emptyList()
             )
         }
     )
+
+    override fun observeFreeDays(semesterId: Long): Flow<List<FreeDayRecord>> = flowOf(emptyList())
+
+    override suspend fun saveFreeDayGroup(
+        semesterId: Long,
+        replacedIds: List<Long>,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        name: String?,
+        calendarIds: List<Long>
+    ) = Unit
+
+    override suspend fun deleteFreeDays(ids: List<Long>) = Unit
 
     override suspend fun saveSemester(record: SemesterRecord): Long {
         val id = record.id.takeIf { it != 0L } ?: nextId++

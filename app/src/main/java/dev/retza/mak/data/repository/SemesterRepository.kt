@@ -3,6 +3,7 @@ package dev.retza.mak.data.repository
 import androidx.room.withTransaction
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.entity.AcademicCalendarEntity
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
 import dev.retza.mak.domain.SemesterSpan
 import dev.retza.mak.domain.WeekOverrideScope
@@ -97,6 +98,20 @@ interface SemesterRepository {
     suspend fun deleteWeekOverride(id: Long)
 
     suspend fun deleteWeekOverride(calendarId: Long, weekStartDate: LocalDate, scope: WeekOverrideScope)
+
+    fun observeFreeDays(semesterId: Long): Flow<List<FreeDayRecord>>
+
+    /** Replaces [replacedIds] with the range in each calendar of [calendarIds], in one transaction. */
+    suspend fun saveFreeDayGroup(
+        semesterId: Long,
+        replacedIds: List<Long>,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        name: String?,
+        calendarIds: List<Long>
+    )
+
+    suspend fun deleteFreeDays(ids: List<Long>)
 }
 
 @org.koin.core.annotation.Single(binds = [SemesterRepository::class])
@@ -110,6 +125,7 @@ class RoomSemesterRepository(
     private val semesterPrograms = database.semesterProgramDao()
     private val weekOverrides = database.weekOverrideDao()
     private val classes = database.classDao()
+    private val freeDays = database.freeDayDao()
 
     override fun observeSemesters(): Flow<List<SemesterRecord>> =
         semesters.observeAll().map { list -> list.map { it.toRecord() } }
@@ -150,7 +166,8 @@ class RoomSemesterRepository(
                     programs = it.semesterPrograms.map { program -> program.toRecord() },
                     studyPrograms = programs.map { program -> program.toRecord() },
                     calendars = it.academicCalendars.map { calendar -> calendar.toRecord() },
-                    overrides = it.weekOverrides.map { week -> week.toRecord() }
+                    overrides = it.weekOverrides.map { week -> week.toRecord() },
+                    freeDays = it.freeDays.map { day -> day.toRecord() }
                 )
             }
         }
@@ -535,7 +552,50 @@ class RoomSemesterRepository(
         dev.retza.mak.data.entity.WeekOverrideScope.valueOf(scope.name)
     )
 
-    /** A new calendar with the dates, rhythm and week overrides of [source] (`ARCHITECTURE.md`, section 7). */
+    override fun observeFreeDays(semesterId: Long): Flow<List<FreeDayRecord>> =
+        freeDays.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }
+
+    override suspend fun saveFreeDayGroup(
+        semesterId: Long,
+        replacedIds: List<Long>,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        name: String?,
+        calendarIds: List<Long>
+    ) {
+        database.withTransaction {
+            require(semesters.findById(semesterId) != null) { "Semester does not exist" }
+            require(calendarIds.isNotEmpty()) { "Free day group needs at least one calendar" }
+            require(!endDate.isBefore(startDate)) { "Free day must not end before it starts" }
+            calendarIds.forEach { id ->
+                require(calendars.findById(id)?.semesterId == semesterId) {
+                    "Calendar must belong to the semester"
+                }
+            }
+            val existingIds = freeDays.getForSemester(semesterId).map { it.id }.toSet()
+            require(replacedIds.all { it in existingIds }) { "Free day does not exist in the semester" }
+            freeDays.deleteByIds(replacedIds)
+            val trimmedName = name?.trim()?.takeIf { it.isNotEmpty() }
+            calendarIds.forEach { calendarId ->
+                freeDays.insert(
+                    FreeDayEntity(
+                        semesterId = semesterId,
+                        academicCalendarId = calendarId,
+                        startDate = startDate,
+                        endDate = endDate,
+                        name = trimmedName
+                    )
+                )
+            }
+        }
+    }
+
+    override suspend fun deleteFreeDays(ids: List<Long>) = freeDays.deleteByIds(ids)
+
+    /**
+     * A new calendar with the dates, rhythm, week overrides and free days of [source]
+     * (`ARCHITECTURE.md`, section 7).
+     */
     private suspend fun copyCalendarWithOverrides(source: AcademicCalendarEntity): Long {
         val calendarId = calendars.insert(
             AcademicCalendarEntity(
@@ -547,6 +607,9 @@ class RoomSemesterRepository(
         )
         weekOverrides.getForCalendar(source.id).forEach { override ->
             weekOverrides.insert(override.copy(id = 0, academicCalendarId = calendarId))
+        }
+        freeDays.getForCalendar(source.id).forEach { day ->
+            freeDays.insert(day.copy(id = 0, academicCalendarId = calendarId))
         }
         return calendarId
     }

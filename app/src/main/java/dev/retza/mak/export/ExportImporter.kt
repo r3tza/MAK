@@ -2,6 +2,7 @@ package dev.retza.mak.export
 
 import dev.retza.mak.data.repository.AcademicCalendarRecord
 import dev.retza.mak.data.repository.ClassRecord
+import dev.retza.mak.data.repository.FreeDayRecord
 import dev.retza.mak.data.repository.OccurrenceChangeRecord
 import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.data.repository.OccurrenceNoteRecord
@@ -28,13 +29,14 @@ sealed interface ImportSnapshotResult {
 object ExportImporter {
     fun prepare(snapshot: ExportSnapshot): ImportSnapshotResult {
         if (snapshot.schemaVersion != ExportSchema.VERSION &&
+            snapshot.schemaVersion != ExportSchema.WITHOUT_FREE_DAYS_VERSION &&
             snapshot.schemaVersion != ExportSchema.NOTES_ON_ACTUAL_DATE_VERSION
         ) {
             return ImportSnapshotResult.Invalid(
                 listOf(
                     "Nieobsługiwana wersja pliku: ${snapshot.schemaVersion}. " +
-                        "Obsługiwane wersje to ${ExportSchema.NOTES_ON_ACTUAL_DATE_VERSION} " +
-                        "i ${ExportSchema.VERSION}."
+                        "Obsługiwane wersje to ${ExportSchema.NOTES_ON_ACTUAL_DATE_VERSION}, " +
+                        "${ExportSchema.WITHOUT_FREE_DAYS_VERSION} i ${ExportSchema.VERSION}."
                 )
             )
         }
@@ -78,6 +80,11 @@ object ExportImporter {
             errors,
             snapshot.semesters.flatMap { it.weekOverrides }.map { it.id },
             "Plik zawiera korekty tygodni o powtórzonym identyfikatorze."
+        )
+        checkUnique(
+            errors,
+            snapshot.semesters.flatMap { it.freeDays }.map { it.id },
+            "Plik zawiera dni wolne o powtórzonym identyfikatorze."
         )
         checkUnique(
             errors,
@@ -273,6 +280,36 @@ object ExportImporter {
             )
         }
 
+        val freeDays = mutableListOf<FreeDayRecord>()
+        semester.freeDays.forEach { freeDay ->
+            if (freeDay.semesterId != semester.id) {
+                errors += "Dzień wolny ${freeDay.id} należy do innego semestru."
+                return@forEach
+            }
+            if (freeDay.academicCalendarId !in calendarIds) {
+                errors += "Dzień wolny ${freeDay.id} wskazuje kalendarz spoza semestru."
+                return@forEach
+            }
+            val start = freeDay.startDate.toLocalDateOrNull()
+            val end = freeDay.endDate.toLocalDateOrNull()
+            if (start == null || end == null) {
+                errors += "Dzień wolny ${freeDay.id} ma niepoprawną datę."
+                return@forEach
+            }
+            if (end.isBefore(start)) {
+                errors += "Dzień wolny ${freeDay.id} kończy się przed początkiem."
+                return@forEach
+            }
+            freeDays += FreeDayRecord(
+                id = freeDay.id,
+                semesterId = semester.id,
+                academicCalendarId = freeDay.academicCalendarId,
+                startDate = start,
+                endDate = end,
+                name = freeDay.name?.takeIf { it.isNotBlank() }
+            )
+        }
+
         val occurrenceNotes = mutableListOf<OccurrenceNoteRecord>()
         semester.occurrenceNotes.forEach { note ->
             if (note.semesterId != semester.id || note.classId !in classIds) {
@@ -363,6 +400,7 @@ object ExportImporter {
             programs = programs,
             classes = classes,
             weekOverrides = weekOverrides,
+            freeDays = freeDays,
             occurrenceNotes = occurrenceNotes,
             occurrenceChanges = occurrenceChanges
         )

@@ -183,6 +183,42 @@ data class WeekOverrideEntity(
 )
 
 @Entity(
+    tableName = "free_days",
+    foreignKeys = [
+        ForeignKey(
+            entity = SemesterEntity::class,
+            parentColumns = ["id"],
+            childColumns = ["semester_id"],
+            onDelete = ForeignKey.CASCADE
+        ),
+        ForeignKey(
+            entity = AcademicCalendarEntity::class,
+            parentColumns = ["id", "semester_id"],
+            childColumns = ["academic_calendar_id", "semester_id"],
+            onDelete = ForeignKey.CASCADE
+        )
+    ],
+    indices = [
+        Index(value = ["semester_id"]),
+        Index(value = ["academic_calendar_id"]),
+        Index(value = ["academic_calendar_id", "semester_id"])
+    ]
+)
+data class FreeDayEntity(
+    @PrimaryKey(autoGenerate = true)
+    val id: Long = 0,
+    @ColumnInfo(name = "semester_id")
+    val semesterId: Long,
+    @ColumnInfo(name = "academic_calendar_id")
+    val academicCalendarId: Long,
+    @ColumnInfo(name = "start_date")
+    val startDate: LocalDate,
+    @ColumnInfo(name = "end_date")
+    val endDate: LocalDate,
+    val name: String?
+)
+
+@Entity(
     tableName = "occurrence_notes",
     foreignKeys = [
         ForeignKey(

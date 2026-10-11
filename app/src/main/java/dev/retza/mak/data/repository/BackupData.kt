@@ -30,6 +30,7 @@ data class SemesterBackup(
     val programs: List<SemesterProgramRecord>,
     val classes: List<ClassRecord>,
     val weekOverrides: List<WeekOverrideRecord>,
+    val freeDays: List<FreeDayRecord>,
     val occurrenceNotes: List<OccurrenceNoteRecord>,
     val occurrenceChanges: List<OccurrenceChangeRecord>
 )

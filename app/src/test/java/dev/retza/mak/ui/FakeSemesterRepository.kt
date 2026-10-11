@@ -1,7 +1,9 @@
 package dev.retza.mak.ui
 
 import dev.retza.mak.data.ActivePlanSource
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.repository.AcademicCalendarRecord
+import dev.retza.mak.data.repository.FreeDayRecord
 import dev.retza.mak.data.repository.SemesterConfiguration
 import dev.retza.mak.data.repository.SemesterDeletionResult
 import dev.retza.mak.data.repository.SemesterProgramRecord
@@ -74,10 +76,44 @@ internal class FakeSemesterRepository(
                     programs = it.semesterPrograms.map { program -> program.toRecord() },
                     studyPrograms = delegate.studyPrograms.map { program -> program.toRecord() },
                     calendars = it.academicCalendars.map { calendar -> calendar.toRecord() },
-                    overrides = it.weekOverrides.map { week -> week.toRecord() }
+                    overrides = it.weekOverrides.map { week -> week.toRecord() },
+                    freeDays = it.freeDays.map { day -> day.toRecord() }
                 )
             }
         }
+
+    override fun observeFreeDays(semesterId: Long): Flow<List<FreeDayRecord>> =
+        delegate.observeSemesterData(semesterId).map { data ->
+            data?.freeDays?.map { it.toRecord() }.orEmpty()
+        }
+
+    override suspend fun saveFreeDayGroup(
+        semesterId: Long,
+        replacedIds: List<Long>,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        name: String?,
+        calendarIds: List<Long>
+    ) {
+        written {
+            delegate.freeDays.removeAll { it.id in replacedIds }
+            var nextId = (delegate.freeDays.maxOfOrNull { it.id } ?: 0L) + 1
+            calendarIds.forEach { calendarId ->
+                delegate.freeDays += FreeDayEntity(
+                    id = nextId++,
+                    semesterId = semesterId,
+                    academicCalendarId = calendarId,
+                    startDate = startDate,
+                    endDate = endDate,
+                    name = name?.trim()?.takeIf { it.isNotEmpty() }
+                )
+            }
+        }
+    }
+
+    override suspend fun deleteFreeDays(ids: List<Long>) {
+        written { delegate.freeDays.removeAll { it.id in ids } }
+    }
 
     override suspend fun saveSemester(record: SemesterRecord): Long =
         written { delegate.saveSemester(record.toEntity()) }

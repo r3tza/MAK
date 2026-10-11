@@ -40,11 +40,21 @@ data class WeekOverrideRecord(
     val scope: WeekOverrideScope
 )
 
+data class FreeDayRecord(
+    val id: Long = 0,
+    val semesterId: Long,
+    val academicCalendarId: Long,
+    val startDate: LocalDate,
+    val endDate: LocalDate,
+    val name: String? = null
+)
+
 /** One semester with everything its configuration screens show, read in one transaction. */
 data class SemesterConfiguration(
     val semester: SemesterRecord,
     val programs: List<SemesterProgramRecord>,
     val studyPrograms: List<StudyProgramRecord>,
     val calendars: List<AcademicCalendarRecord>,
-    val overrides: List<WeekOverrideRecord>
+    val overrides: List<WeekOverrideRecord>,
+    val freeDays: List<FreeDayRecord>
 )

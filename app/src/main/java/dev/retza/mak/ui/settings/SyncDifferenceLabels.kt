@@ -10,6 +10,7 @@ import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.SemesterProgramRecord
 import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
+import dev.retza.mak.data.repository.FreeDayRecord
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.sync.ClassField
@@ -101,6 +102,7 @@ internal class SyncDifferenceLabels(phone: BackupData, drive: BackupData) {
         is AcademicCalendarRecord -> "Kalendarz semestru ${semesterName(row.semesterId, side)}"
         is SemesterProgramRecord -> programName(row.studyProgramId, side)
         is WeekOverrideRecord -> "Korekta tygodnia od ${date(row.weekStartDate)}"
+        is FreeDayRecord -> row.name ?: "Dni wolne"
         else -> "Wpis"
     }
 
@@ -112,6 +114,7 @@ internal class SyncDifferenceLabels(phone: BackupData, drive: BackupData) {
         is AcademicCalendarRecord -> "Daty semestru i tydzień A/B"
         is SemesterProgramRecord -> "Kierunek w semestrze ${semesterName(row.semesterId, side)}"
         is WeekOverrideRecord -> "Semestr ${semesterName(row.semesterId, side)}"
+        is FreeDayRecord -> "Dni wolne, semestr ${semesterName(row.semesterId, side)}"
         else -> ""
     }
 
@@ -125,6 +128,9 @@ internal class SyncDifferenceLabels(phone: BackupData, drive: BackupData) {
         is SemesterProgramRecord -> "Przypisany"
         is WeekOverrideRecord -> "Tydzień ${row.weekType}, " +
             if (row.scope == WeekOverrideScope.ONE_WEEK) "tylko ten tydzień" else "od tego tygodnia"
+        is FreeDayRecord ->
+            if (row.startDate == row.endDate) date(row.startDate)
+            else "${date(row.startDate)} - ${date(row.endDate)}"
         else -> ""
     }
 

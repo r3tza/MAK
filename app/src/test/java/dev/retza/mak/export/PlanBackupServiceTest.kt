@@ -35,7 +35,7 @@ class PlanBackupServiceTest {
 
     @Test
     fun fileFromANewerVersionAsksToUpdateTheApp() {
-        val newer = """{"schemaVersion":4,"studyPrograms":[],"semesters":[],"daysOff":[]}"""
+        val newer = """{"schemaVersion":5,"studyPrograms":[],"semesters":[],"daysOff":[]}"""
 
         val result = service.prepareImport(newer.toByteArray())
 

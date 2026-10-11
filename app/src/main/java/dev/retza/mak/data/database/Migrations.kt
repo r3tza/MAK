@@ -154,3 +154,15 @@ val MIGRATION_2_3 = object : Migration(2, 3) {
         }
     }
 }
+
+/** Version 4 adds free days of academic calendars. */
+val MIGRATION_3_4 = object : Migration(3, 4) {
+    override fun migrate(db: SupportSQLiteDatabase) {
+        db.execSQL(
+            "CREATE TABLE IF NOT EXISTS `free_days` (`id` INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL, `semester_id` INTEGER NOT NULL, `academic_calendar_id` INTEGER NOT NULL, `start_date` TEXT NOT NULL, `end_date` TEXT NOT NULL, `name` TEXT, FOREIGN KEY(`semester_id`) REFERENCES `semesters`(`id`) ON UPDATE NO ACTION ON DELETE CASCADE , FOREIGN KEY(`academic_calendar_id`, `semester_id`) REFERENCES `academic_calendars`(`id`, `semester_id`) ON UPDATE NO ACTION ON DELETE CASCADE )"
+        )
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_free_days_semester_id` ON `free_days` (`semester_id`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_free_days_academic_calendar_id` ON `free_days` (`academic_calendar_id`)")
+        db.execSQL("CREATE INDEX IF NOT EXISTS `index_free_days_academic_calendar_id_semester_id` ON `free_days` (`academic_calendar_id`, `semester_id`)")
+    }
+}

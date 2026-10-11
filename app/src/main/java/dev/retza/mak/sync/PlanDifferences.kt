@@ -14,6 +14,7 @@ enum class PlanRowKind {
     SEMESTER_PROGRAM,
     CLASS,
     WEEK_OVERRIDE,
+    FREE_DAY,
     OCCURRENCE_NOTE,
     OCCURRENCE_CHANGE
 }
@@ -126,6 +127,7 @@ internal fun BackupData.rows(): Map<PlanRowKey, Any> {
         backup.programs.forEach { rows[PlanRowKey(PlanRowKind.SEMESTER_PROGRAM, it.id)] = it }
         backup.classes.forEach { rows[PlanRowKey(PlanRowKind.CLASS, it.id)] = it }
         backup.weekOverrides.forEach { rows[PlanRowKey(PlanRowKind.WEEK_OVERRIDE, it.id)] = it }
+        backup.freeDays.forEach { rows[PlanRowKey(PlanRowKind.FREE_DAY, it.id)] = it }
         backup.occurrenceNotes.forEach { rows[PlanRowKey(PlanRowKind.OCCURRENCE_NOTE, it.id)] = it }
         backup.occurrenceChanges.forEach { rows[PlanRowKey(PlanRowKind.OCCURRENCE_CHANGE, it.id)] = it }
     }

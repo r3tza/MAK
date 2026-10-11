@@ -4,6 +4,7 @@ import dev.retza.mak.data.repository.AcademicCalendarRecord
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterBackup
 import dev.retza.mak.data.repository.ClassRecord
+import dev.retza.mak.data.repository.FreeDayRecord
 import dev.retza.mak.data.repository.OccurrenceChangeRecord
 import dev.retza.mak.data.repository.OccurrenceNoteRecord
 import dev.retza.mak.data.repository.SemesterProgramRecord
@@ -12,7 +13,10 @@ import dev.retza.mak.data.repository.WeekOverrideRecord
 import kotlinx.serialization.Serializable
 
 object ExportSchema {
-    const val VERSION = 3
+    const val VERSION = 4
+
+    /** Version 3 had no free days. */
+    const val WITHOUT_FREE_DAYS_VERSION = 3
 
     /** Version 2 stored occurrence notes under the actual date of a moved occurrence. */
     const val NOTES_ON_ACTUAL_DATE_VERSION = 2
@@ -62,7 +66,8 @@ data class SemesterSnapshot(
     val classes: List<ClassSnapshot>,
     val weekOverrides: List<WeekOverrideSnapshot>,
     val occurrenceNotes: List<OccurrenceNoteSnapshot>,
-    val occurrenceChanges: List<OccurrenceChangeSnapshot>
+    val occurrenceChanges: List<OccurrenceChangeSnapshot>,
+    val freeDays: List<FreeDaySnapshot> = emptyList()
 ) {
     companion object {
         fun from(backup: SemesterBackup): SemesterSnapshot =
@@ -75,7 +80,8 @@ data class SemesterSnapshot(
                 classes = backup.classes.sortedBy { it.id }.map(ClassSnapshot::from),
                 weekOverrides = backup.weekOverrides.sortedBy { it.id }.map(WeekOverrideSnapshot::from),
                 occurrenceNotes = backup.occurrenceNotes.sortedBy { it.id }.map(OccurrenceNoteSnapshot::from),
-                occurrenceChanges = backup.occurrenceChanges.sortedBy { it.id }.map(OccurrenceChangeSnapshot::from)
+                occurrenceChanges = backup.occurrenceChanges.sortedBy { it.id }.map(OccurrenceChangeSnapshot::from),
+                freeDays = backup.freeDays.sortedBy { it.id }.map(FreeDaySnapshot::from)
             )
     }
 }
@@ -176,6 +182,28 @@ data class WeekOverrideSnapshot(
                 weekStartDate = record.weekStartDate.toString(),
                 weekType = record.weekType.name,
                 scope = record.scope.name
+            )
+    }
+}
+
+@Serializable
+data class FreeDaySnapshot(
+    val id: Long,
+    val semesterId: Long,
+    val academicCalendarId: Long,
+    val startDate: String,
+    val endDate: String,
+    val name: String?
+) {
+    companion object {
+        fun from(record: FreeDayRecord): FreeDaySnapshot =
+            FreeDaySnapshot(
+                id = record.id,
+                semesterId = record.semesterId,
+                academicCalendarId = record.academicCalendarId,
+                startDate = record.startDate.toString(),
+                endDate = record.endDate.toString(),
+                name = record.name
             )
     }
 }
