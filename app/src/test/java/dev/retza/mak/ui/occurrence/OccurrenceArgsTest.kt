@@ -7,16 +7,15 @@ import org.junit.Test
 
 class OccurrenceArgsTest {
     @Test
-    fun parseRejectsInvalidInput() {
-        assertNull(OccurrenceArgs.parse("nope"))
-        assertNull(OccurrenceArgs.parse("42:not-a-date"))
-        assertNull(OccurrenceArgs.parse("42"))
+    fun fromRejectsInvalidInput() {
+        assertNull(OccurrenceArgs.from("nope", "2026-10-05"))
+        assertNull(OccurrenceArgs.from("42", "not-a-date"))
+        assertNull(OccurrenceArgs.from(null, "2026-10-05"))
+        assertNull(OccurrenceArgs.from("42", null))
     }
 
     @Test
-    fun routeIdRoundTrips() {
-        val args = OccurrenceArgs(7L, LocalDate.of(2026, 10, 5))
-        assertEquals("7:2026-10-05", args.toRouteId())
-        assertEquals(args, OccurrenceArgs.parse(args.toRouteId()))
+    fun fromReadsRouteArguments() {
+        assertEquals(OccurrenceArgs(7L, LocalDate.of(2026, 10, 5)), OccurrenceArgs.from("7", "2026-10-05"))
     }
 }

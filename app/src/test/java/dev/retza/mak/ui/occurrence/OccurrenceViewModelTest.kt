@@ -53,7 +53,7 @@ class OccurrenceViewModelTest {
 
     // Invalid route ids are ignored, as the removed public overload did.
     private fun OccurrenceViewModel.open(routeId: String) {
-        OccurrenceArgs.parse(routeId)?.let { open(it) }
+        OccurrenceArgs.from(routeId.substringBefore(':'), routeId.substringAfter(':', ""))?.let { open(it) }
     }
 
     @Test
@@ -250,7 +250,7 @@ class OccurrenceViewModelTest {
         advanceUntilIdle()
 
         repository.classes.clear()
-        val refreshed = viewModel.refreshForEdit("1:2026-09-21")
+        val refreshed = viewModel.refreshForEdit(OccurrenceArgs(1L, LocalDate.of(2026, 9, 21)))
 
         assertFalse(refreshed)
         assertTrue(viewModel.details.value.notFound)
@@ -732,7 +732,7 @@ class OccurrenceViewModelTest {
     }
 
     @Test
-    fun outOfSemesterDateIsRejectedWithoutSaveOrFeedback() = runTest(mainDispatcher) {
+    fun dateOutsideProgramCalendarIsRejectedWithoutSaveOrFeedback() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
@@ -747,6 +747,10 @@ class OccurrenceViewModelTest {
         advanceUntilIdle()
 
         assertNotNull(viewModel.details.value.draftErrors[OccurrenceEditField.Date])
+        assertEquals(
+            "Data musi należeć do kalendarza kierunku.",
+            viewModel.details.value.draftErrors[OccurrenceEditField.Date]?.message
+        )
         assertTrue(repository.occurrenceChanges.isEmpty())
         assertTrue(sink.published.isEmpty())
     }

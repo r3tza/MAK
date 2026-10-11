@@ -12,7 +12,7 @@ fun shouldActivateNewSemester(
     calendarStart: LocalDate,
     calendarEnd: LocalDate,
     hasActiveSemester: Boolean
-): Boolean = !hasActiveSemester || (!today.isBefore(calendarStart) && !today.isAfter(calendarEnd))
+): Boolean = !hasActiveSemester || today in calendarStart..calendarEnd
 
 /** A semester with the date ranges of its calendars, enough to pick a fallback. */
 data class SemesterSpan(val id: Long, val calendars: List<ClosedRange<LocalDate>>)

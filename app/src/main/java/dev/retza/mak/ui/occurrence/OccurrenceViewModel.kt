@@ -9,6 +9,7 @@ import dev.retza.mak.data.repository.OccurrenceNoteRecord
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.toRecord
+import dev.retza.mak.domain.AcademicCalendar
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanInputs
 import dev.retza.mak.domain.ActivePlanProvider
@@ -22,6 +23,8 @@ import dev.retza.mak.domain.OccurrenceSlot
 import dev.retza.mak.domain.WeekStatus
 import dev.retza.mak.domain.decideOccurrenceEdit
 import dev.retza.mak.domain.noteContentChanged
+import dev.retza.mak.domain.normalizeNote
+import dev.retza.mak.domain.normalizeRoom
 import dev.retza.mak.domain.occurrenceId
 import dev.retza.mak.domain.occurrenceRoomOverride
 import dev.retza.mak.domain.validateOccurrenceDraft
@@ -32,8 +35,8 @@ import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.calendarForAssignment
 import dev.retza.mak.ui.programForAssignment
 import dev.retza.mak.ui.fullDateFormatter
-import dev.retza.mak.ui.toLocalDateOrNull
-import dev.retza.mak.ui.toLocalTimeOrNull
+import dev.retza.mak.domain.toLocalDateOrNull
+import dev.retza.mak.domain.toLocalTimeOrNull
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.OccurrenceStatusUi
 import dev.retza.mak.ui.components.toUi
@@ -88,7 +91,7 @@ class OccurrenceViewModel(
     private val editSession = PlanEditSession(
         tracker = planEditTracker,
         scope = viewModelScope,
-        refreshBase = { shownRouteId()?.let { refreshForEdit(it) } ?: false },
+        refreshBase = { shownArgs()?.let { refreshForEdit(it) } ?: false },
         hasDraft = { state.value.hasPlanDraft() }
     )
 
@@ -101,7 +104,7 @@ class OccurrenceViewModel(
 
     // The destination's arguments are read once; the view model lives only as long as its destination.
     init {
-        val args = OccurrenceArgs.parse("${savedState.get<String>("classId")}:${savedState.get<String>("date")}")
+        val args = OccurrenceArgs.from(savedState.get<String>("classId"), savedState.get<String>("date"))
         if (args != null) {
             open(args)
         } else {
@@ -118,11 +121,11 @@ class OccurrenceViewModel(
         editSession.close()
     }
 
-    /** The occurrence the details show now, as the route id the view model reloads before an edit. */
-    private fun shownRouteId(): String? {
+    /** The occurrence the details show now, reloaded before an edit. */
+    private fun shownArgs(): OccurrenceArgs? {
         val classId = selectedClassIdState.value ?: return null
-        val originalDate = runCatching { LocalDate.parse(details.value.baseDate) }.getOrNull() ?: return null
-        return OccurrenceArgs(classId, originalDate).toRouteId()
+        val date = details.value.baseDate.toLocalDateOrNull() ?: return null
+        return OccurrenceArgs(classId, date)
     }
 
     internal fun open(args: OccurrenceArgs) {
@@ -163,8 +166,7 @@ class OccurrenceViewModel(
     }
 
     /** Reloads the source data after edit admission, before a preview starts a draft or confirmation. */
-    suspend fun refreshForEdit(routeId: String): Boolean {
-        val args = OccurrenceArgs.parse(routeId) ?: return false
+    suspend fun refreshForEdit(args: OccurrenceArgs): Boolean {
         val semester = semesterRepository.observeActiveSemester().first()
         val inputs = semester?.let { activePlanSource.observe(it.id).first() }
         val built = inputs?.let { buildDetails(it, args) }
@@ -321,7 +323,7 @@ class OccurrenceViewModel(
         if (state.value.isSavingSharedNote) return@run
         val classId = selectedClassIdState.value ?: return@run
         val draft = state.value
-        val note = draft.sharedNoteDraft.trim().ifEmpty { null }
+        val note = normalizeNote(draft.sharedNoteDraft)
         if (!noteContentChanged(draft.sharedNoteDraft, draft.sharedNote)) return@run
         update { it.copy(isSavingSharedNote = true, sharedNoteError = null) }
         viewModelScope.launchUiOperation(
@@ -360,7 +362,7 @@ class OccurrenceViewModel(
         val classId = selectedClassIdState.value ?: return@run
         val date = originalDate ?: return@run
         val draft = state.value
-        val note = draft.occurrenceNoteDraft.trim().ifEmpty { null }
+        val note = normalizeNote(draft.occurrenceNoteDraft)
         if (!noteContentChanged(draft.occurrenceNoteDraft, draft.occurrenceNote)) return@run
         update { it.copy(isSavingOccurrenceNote = true, occurrenceNoteError = null) }
         viewModelScope.launchUiOperation(
@@ -431,7 +433,8 @@ class OccurrenceViewModel(
 
             is OccurrenceEditDecision.Ready -> {
                 if (decision.result == OccurrenceEditResult.NoChange) return@run
-                val errors = occurrenceDraftErrors(decision.slot, draft)
+                val calendar = data.calendarForAssignment(data.classes.firstOrNull { it.id == classId }?.semesterProgramId)
+                val errors = occurrenceDraftErrors(decision.slot, calendar)
                 if (errors.isNotEmpty()) {
                     update { it.copy(draftErrors = errors) }
                     return@run
@@ -543,7 +546,7 @@ class OccurrenceViewModel(
             baseDate = originalDate.toString(),
             baseStartTime = base.startTime.toString(),
             baseEndTime = base.endTime.toString(),
-            baseRoom = base.room?.trim()?.ifEmpty { null },
+            baseRoom = normalizeRoom(base.room),
             semesterStartDate = data.calendarForAssignment(base.semesterProgramId)
                 ?.startDate?.toString().orEmpty(),
             semesterEndDate = data.calendarForAssignment(base.semesterProgramId)
@@ -614,15 +617,11 @@ private fun canSaveOccurrenceEdit(state: OccurrenceDetailsUiState): Boolean {
 
 private fun occurrenceDraftErrors(
     slot: OccurrenceSlot,
-    state: OccurrenceDetailsUiState
+    calendar: AcademicCalendar?
 ): Map<OccurrenceEditField, FieldErrorUi> = buildMap {
-    val errors = validateOccurrenceDraft(
-        slot = slot,
-        semesterStart = state.semesterStartDate?.toLocalDateOrNull(),
-        semesterEnd = state.semesterEndDate?.toLocalDateOrNull()
-    )
-    if (OccurrenceDraftError.DATE_OUTSIDE_SEMESTER in errors) {
-        put(OccurrenceEditField.Date, FieldErrorUi(FormErrorTexts.DateOutsideSemester))
+    val errors = validateOccurrenceDraft(slot, calendar)
+    if (OccurrenceDraftError.DATE_OUTSIDE_CALENDAR in errors) {
+        put(OccurrenceEditField.Date, FieldErrorUi(FormErrorTexts.DateOutsideCalendar))
     }
     if (OccurrenceDraftError.END_NOT_AFTER_START in errors) {
         put(OccurrenceEditField.EndTime, FieldErrorUi(FormErrorTexts.EndNotAfterStart))

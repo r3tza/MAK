@@ -98,7 +98,7 @@ class ClassEditViewModelTest {
         val savedState = SavedStateHandle()
         val first = viewModel(repository, savedState)
         advanceUntilIdle()
-        first.openEditFromFreshPlan("1:2026-09-21")
+        first.openEditFromFreshPlan(1L)
         advanceUntilIdle()
         first.update { it.copy(name = "Programowanie obiektowe") }
         advanceUntilIdle()
@@ -115,12 +115,12 @@ class ClassEditViewModelTest {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openEditFromFreshPlan("1:2026-09-21")
+        viewModel.openEditFromFreshPlan(1L)
         advanceUntilIdle()
         viewModel.update { it.copy(name = "Nieaktualny szkic") }
         repository.classes.clear()
 
-        val opened = viewModel.openEditFromFreshPlan("1:2026-09-21")
+        val opened = viewModel.openEditFromFreshPlan(1L)
 
         assertFalse(opened)
         assertEquals("Dodaj zajęcia", viewModel.editor.value.title)
@@ -140,7 +140,7 @@ class ClassEditViewModelTest {
             repository.calendars.first { it.id == 1L }.copy(startDate = LocalDate.of(2026, 10, 1))
         )
 
-        assertTrue(viewModel.openEditFromFreshPlan("1:2026-09-21"))
+        assertTrue(viewModel.openEditFromFreshPlan(1L))
         assertEquals("Kierunek świeży", viewModel.editor.value.courseOptions.single().label)
         assertEquals("2026-10-01", viewModel.editor.value.semesterStartDate)
         viewModel.update { it.copy(name = "Zapis po odświeżeniu") }
@@ -210,7 +210,7 @@ class ClassEditViewModelTest {
         val repository = repositoryWithNoteOnMonday()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openEditFromFreshPlan("1:2026-09-21")
+        viewModel.openEditFromFreshPlan(1L)
         advanceUntilIdle()
 
         viewModel.update { it.copy(dayLabel = "Wtorek") }
@@ -226,7 +226,7 @@ class ClassEditViewModelTest {
         val repository = repositoryWithNoteOnMonday()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openEditFromFreshPlan("1:2026-09-21")
+        viewModel.openEditFromFreshPlan(1L)
         advanceUntilIdle()
         viewModel.update { it.copy(dayLabel = "Wtorek") }
         viewModel.save()
@@ -245,7 +245,7 @@ class ClassEditViewModelTest {
         val repository = repositoryWithNoteOnMonday()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openEditFromFreshPlan("1:2026-09-21")
+        viewModel.openEditFromFreshPlan(1L)
         advanceUntilIdle()
         viewModel.update { it.copy(dayLabel = "Wtorek") }
         viewModel.save()
@@ -264,7 +264,7 @@ class ClassEditViewModelTest {
         val repository = repositoryWithNoteOnMonday()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openEditFromFreshPlan("1:2026-09-21")
+        viewModel.openEditFromFreshPlan(1L)
         advanceUntilIdle()
 
         viewModel.update { it.copy(startTime = "08:00") }
@@ -322,7 +322,7 @@ class ClassEditViewModelTest {
         val viewModel = viewModel(repository)
         advanceUntilIdle()
 
-        viewModel.openEditFromFreshPlan("1:2026-09-21")
+        viewModel.openEditFromFreshPlan(1L)
 
         val editor = viewModel.editor.value
         assertEquals("Edytuj zajęcia", editor.title)
@@ -342,7 +342,7 @@ class ClassEditViewModelTest {
         val viewModel = viewModel(repository)
         advanceUntilIdle()
 
-        val opening = launch { viewModel.openEditFromFreshPlan("1:2026-09-21") }
+        val opening = launch { viewModel.openEditFromFreshPlan(1L) }
         advanceUntilIdle()
         assertEquals("", viewModel.editor.value.name)
 
@@ -384,7 +384,7 @@ class ClassEditViewModelTest {
     }
 
     @Test
-    fun saveRejectsOneOffDateOutsideSemester() = runTest(mainDispatcher) {
+    fun saveRejectsOneOffDateOutsideCalendar() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
@@ -533,7 +533,7 @@ class ClassEditViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.openEditFromFreshPlan("1:2026-09-21")
+        viewModel.openEditFromFreshPlan(1L)
         advanceUntilIdle()
         viewModel.update { it.copy(name = "Programowanie zaawansowane") }
         advanceUntilIdle()
@@ -597,7 +597,7 @@ class ClassEditViewModelTest {
         val viewModel = viewModel(repository)
         advanceUntilIdle()
 
-        viewModel.openEditFromFreshPlan("2:2026-09-21")
+        viewModel.openEditFromFreshPlan(2L)
         advanceUntilIdle()
 
         assertEquals("2026-12-20", viewModel.editor.value.semesterEndDate)

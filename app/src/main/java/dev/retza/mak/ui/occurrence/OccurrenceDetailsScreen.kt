@@ -4,7 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.widthIn
 import dev.retza.mak.ui.MakContentMaxWidth
-import dev.retza.mak.ui.toLocalDateOrNull
+import dev.retza.mak.domain.toLocalDateOrNull
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth

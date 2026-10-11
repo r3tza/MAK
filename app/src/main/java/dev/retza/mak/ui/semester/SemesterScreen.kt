@@ -62,7 +62,7 @@ import dev.retza.mak.ui.components.makRowFocus
 import dev.retza.mak.ui.longDateFormatter
 import dev.retza.mak.text.polishPlural
 import dev.retza.mak.ui.shortDateWithYearFormatter
-import dev.retza.mak.ui.toLocalDateOrNull
+import dev.retza.mak.domain.toLocalDateOrNull
 import dev.retza.mak.ui.components.parseHexColor
 
 data class SemesterFormUiState(

@@ -36,7 +36,7 @@ import dev.retza.mak.ui.label
 import dev.retza.mak.ui.monthFormatter
 import dev.retza.mak.ui.shortDateFormatter
 import dev.retza.mak.ui.shortDayNames
-import dev.retza.mak.ui.toLocalDateOrNull
+import dev.retza.mak.domain.toLocalDateOrNull
 import dev.retza.mak.ui.toUi
 import java.time.Clock
 import java.time.LocalDate

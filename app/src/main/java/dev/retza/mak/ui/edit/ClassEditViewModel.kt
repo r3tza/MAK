@@ -13,17 +13,16 @@ import dev.retza.mak.domain.ClassForm
 import dev.retza.mak.domain.ClassValidationError
 import dev.retza.mak.domain.ClassValidator
 import dev.retza.mak.domain.dateInCalendar
-import dev.retza.mak.domain.Recurrence as DomainRecurrence
+import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.data.ActivePlanSource
 import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.calendarForAssignment
 import dev.retza.mak.ui.programForAssignment
-import dev.retza.mak.ui.toLocalDateOrNull
-import dev.retza.mak.ui.toLocalTimeOrNull
+import dev.retza.mak.domain.toLocalDateOrNull
+import dev.retza.mak.domain.toLocalTimeOrNull
 import dev.retza.mak.ui.dayNames
-import dev.retza.mak.ui.occurrence.OccurrenceArgs
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
@@ -115,7 +114,7 @@ class ClassEditViewModel(
         val result = if (!admitted) {
             ClassEditOpenState.Missing
         } else if (classId != null && date != null) {
-            if (openEditFromFreshPlan(OccurrenceArgs(classId, date).toRouteId())) {
+            if (openEditFromFreshPlan(classId)) {
                 ClassEditOpenState.Open
             } else {
                 ClassEditOpenState.Missing
@@ -133,15 +132,14 @@ class ClassEditViewModel(
         editPlanData = null
         state.value = withActiveOptions(
             defaultClassEditState().copy(
-                recurrence = if (oneOffDate == null) DomainRecurrence.EVERY_WEEK else DomainRecurrence.ONCE,
+                recurrence = if (oneOffDate == null) Recurrence.EVERY_WEEK else Recurrence.ONCE,
                 occurrenceDate = oneOffDate?.toString().orEmpty()
             ),
             freshActivePlanData().also { editPlanData = it }
         )
     }
 
-    suspend fun openEditFromFreshPlan(occurrenceId: String): Boolean {
-        val classId = OccurrenceArgs.parse(occurrenceId)?.classId ?: return false
+    suspend fun openEditFromFreshPlan(classId: Long): Boolean {
         editingClassId = null
         editPlanData = null
         state.value = withActiveOptions(defaultClassEditState())
@@ -253,7 +251,7 @@ class ClassEditViewModel(
                 put(ClassEditField.Date, FieldErrorUi("Podaj datę zajęć jednorazowych."))
             }
             val calendar = data.calendarForAssignment(assignment?.id)
-            if (recurrence == DomainRecurrence.ONCE && date != null && !dateInCalendar(date, calendar)) {
+            if (recurrence == Recurrence.ONCE && date != null && !dateInCalendar(date, calendar)) {
                 put(ClassEditField.Date, FieldErrorUi(FormErrorTexts.DateOutsideCalendar))
             }
             if (editor.dayLabel !in dayNames.values) {
@@ -282,8 +280,8 @@ class ClassEditViewModel(
             room = editor.room.trim().ifEmpty { null },
             building = editor.building.trim().ifEmpty { null },
             group = editor.group.trim().ifEmpty { null },
-            recurrence = DomainRecurrence.valueOf(recurrence.name),
-            date = if (recurrence == DomainRecurrence.ONCE) date else null,
+            recurrence = recurrence,
+            date = if (recurrence == Recurrence.ONCE) date else null,
             classNote = editor.note.trim().ifEmpty { null }
         )
         if (classId != null && !confirmedHiddenData) {
@@ -303,9 +301,8 @@ class ClassEditViewModel(
             onFinish = { state.update { it.copy(isSaving = false) } }
         ) {
             scheduleRepository.saveClass(record)
-            val savedPlanData = freshActivePlanData()
             editingClassId = null
-            state.value = withActiveOptions(defaultClassEditState(), savedPlanData)
+            state.value = withActiveOptions(defaultClassEditState())
             feedbackSink.publish(UiFeedback(successMessage, UiFeedbackKind.Success))
             effectsChannel.trySend(ClassEditEffect.CloseEditor)
         }
@@ -360,11 +357,11 @@ private fun ActivePlanData.courseOptions(hiddenProgramIds: Set<Long>): List<Clas
 private fun defaultClassEditState() = ClassEditUiState()
 
 // Drafts saved before the form kept `Recurrence` stored the old option ids under "recurrenceId".
-private fun legacyRecurrenceFromId(id: String?): DomainRecurrence = when (id) {
-    "a_week" -> DomainRecurrence.A_WEEK
-    "b_week" -> DomainRecurrence.B_WEEK
-    "once" -> DomainRecurrence.ONCE
-    else -> DomainRecurrence.EVERY_WEEK
+private fun legacyRecurrenceFromId(id: String?): Recurrence = when (id) {
+    "a_week" -> Recurrence.A_WEEK
+    "b_week" -> Recurrence.B_WEEK
+    "once" -> Recurrence.ONCE
+    else -> Recurrence.EVERY_WEEK
 }
 
 private const val KEY_EDITING_CLASS_ID = "class_edit_editing_class_id"
@@ -398,7 +395,7 @@ private fun SavedStateHandle.storeClassEditDraft(value: ClassEditUiState) {
 private fun SavedStateHandle.restoreClassEditDraft(): ClassEditUiState? {
     if (get<Boolean>(KEY_DRAFT) != true) return null
     fun field(key: String): String? = get<String>("$KEY_DRAFT.$key")
-    val recurrence = field("recurrence")?.let { DomainRecurrence.valueOf(it) }
+    val recurrence = field("recurrence")?.let { Recurrence.valueOf(it) }
         ?: legacyRecurrenceFromId(field("recurrenceId"))
     return defaultClassEditState().copy(
         title = field("title") ?: "Dodaj zajęcia",

@@ -14,7 +14,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import dev.retza.mak.domain.WeekType
-import dev.retza.mak.ui.toLocalDateOrNull
+import dev.retza.mak.domain.toLocalDateOrNull
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.MakCourseColorPicker
 import dev.retza.mak.ui.components.MakChoiceRow

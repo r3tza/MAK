@@ -21,7 +21,7 @@ import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.shortDateWithYearFormatter
-import dev.retza.mak.ui.toLocalDateOrNull
+import dev.retza.mak.domain.toLocalDateOrNull
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind

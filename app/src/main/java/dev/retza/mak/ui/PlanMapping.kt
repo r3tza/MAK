@@ -7,8 +7,6 @@ import dev.retza.mak.domain.WeekStatus
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.toUi
 import java.time.DayOfWeek
-import java.time.LocalDate
-import java.time.LocalTime
 import java.time.format.DateTimeFormatter
 
 internal val fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", AppLocale)
@@ -20,9 +18,6 @@ internal val longDateFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy", AppL
 internal val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 internal val monthFormatter = DateTimeFormatter.ofPattern("LLLL yyyy", AppLocale)
 
-internal fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
-
-internal fun String.toLocalTimeOrNull(): LocalTime? = runCatching { LocalTime.parse(this) }.getOrNull()
 internal val dayNames = linkedMapOf(
     DayOfWeek.MONDAY to "Poniedziałek",
     DayOfWeek.TUESDAY to "Wtorek",

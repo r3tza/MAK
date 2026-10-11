@@ -37,9 +37,9 @@ fun decideOccurrenceEdit(
     draftEndTime: String,
     draftRoom: String
 ): OccurrenceEditDecision {
-    val date = parseDate(draftDate) ?: return OccurrenceEditDecision.InvalidDateTime
-    val start = parseTime(draftStartTime) ?: return OccurrenceEditDecision.InvalidDateTime
-    val end = parseTime(draftEndTime) ?: return OccurrenceEditDecision.InvalidDateTime
+    val date = draftDate.toLocalDateOrNull() ?: return OccurrenceEditDecision.InvalidDateTime
+    val start = draftStartTime.toLocalTimeOrNull() ?: return OccurrenceEditDecision.InvalidDateTime
+    val end = draftEndTime.toLocalTimeOrNull() ?: return OccurrenceEditDecision.InvalidDateTime
     val draft = OccurrenceSlot(date, start, end, normalizeRoom(draftRoom))
     val baseSlot = base.normalized()
     val currentSlot = current.normalized()
@@ -54,21 +54,18 @@ fun decideOccurrenceEdit(
 }
 
 enum class OccurrenceDraftError {
-    DATE_OUTSIDE_SEMESTER,
+    DATE_OUTSIDE_CALENDAR,
     END_NOT_AFTER_START
 }
 
-/** Semester bounds are nullable; a missing bound does not restrict the date. */
+/** Without a calendar the date is not restricted, like [dateInCalendar]. */
 fun validateOccurrenceDraft(
     slot: OccurrenceSlot,
-    semesterStart: LocalDate?,
-    semesterEnd: LocalDate?
+    calendar: AcademicCalendar?
 ): Set<OccurrenceDraftError> {
     val errors = linkedSetOf<OccurrenceDraftError>()
-    if ((semesterStart != null && slot.date.isBefore(semesterStart)) ||
-        (semesterEnd != null && slot.date.isAfter(semesterEnd))
-    ) {
-        errors += OccurrenceDraftError.DATE_OUTSIDE_SEMESTER
+    if (!dateInCalendar(slot.date, calendar)) {
+        errors += OccurrenceDraftError.DATE_OUTSIDE_CALENDAR
     }
     if (!slot.endTime.isAfter(slot.startTime)) errors += OccurrenceDraftError.END_NOT_AFTER_START
     return errors
@@ -87,12 +84,6 @@ fun occurrenceRoomOverride(baseRoom: String?, draftRoom: String?): String? {
 fun noteContentChanged(draft: String, stored: String?): Boolean =
     normalizeNote(draft) != normalizeNote(stored)
 
-private fun normalizeNote(value: String?): String? = value?.trim()?.ifEmpty { null }
+internal fun normalizeNote(value: String?): String? = value?.trim()?.ifEmpty { null }
 
 internal fun normalizeRoom(room: String?): String? = room?.trim()?.ifEmpty { null }
-
-private fun parseDate(value: String): LocalDate? =
-    runCatching { LocalDate.parse(value.trim()) }.getOrNull()
-
-private fun parseTime(value: String): LocalTime? =
-    runCatching { LocalTime.parse(value.trim()) }.getOrNull()

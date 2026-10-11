@@ -130,6 +130,8 @@ Kryterium zakończenia: testy przechodzą; `rg "semesterCovering|fallbackActive"
 
 ## 3. Sprawdzaj datę terminu kalendarzem kierunku i uprość edycję terminu (I-91)
 
+Stan: zrobione. Wykonało dwóch subagentów (parsowanie dat oraz logika edycji), recenzja i testy Android: agent planujący. Test `ClassEditViewModelTest.saveRejectsOneOffDateOutsideSemester` ma nazwę `saveRejectsOneOffDateOutsideCalendar`, zgodną z regułą. Testy Android: `OccurrenceDetailsScreenTest` 7/7, `ClassEditScreenTest` 2/2, `KoinGraphTest` 3/3.
+
 Cel: przeniesiony termin spoza kalendarza kierunku dostaje ten sam komunikat co zajęcia jednorazowe, „Data musi należeć do kalendarza kierunku.”, zamiast mylącego „Data musi należeć do aktywnego semestru.” (ViewModel i tak sprawdza zakres kalendarza kierunku). Edycja terminu i zajęć traci zbędne kroki: składanie i rozbieranie tekstu `"classId:date"`, własne parsowanie dat, ręczną normalizację tekstu i ponowne wczytanie planu po zapisie zajęć.
 
 Pliki: `ui/PlanMapping.kt`, nowy `domain/IsoText.kt`, `domain/OccurrenceEdit.kt`, `domain/SemesterActivation.kt`, `ui/FormErrorTexts.kt`, `ui/occurrence/OccurrenceArgs.kt`, `ui/occurrence/OccurrenceViewModel.kt`, `ui/edit/ClassEditViewModel.kt` oraz pliki importujące `dev.retza.mak.ui.toLocalDateOrNull` lub `dev.retza.mak.ui.toLocalTimeOrNull` (`rg -l "ui.toLocal(Date|Time)OrNull" app/src`); testy JVM `domain/FormValidationTest.kt`, `ui/PlanMappingTest.kt`, nowy `domain/IsoTextTest.kt`, `ui/occurrence/OccurrenceArgsTest.kt`, `ui/occurrence/OccurrenceViewModelTest.kt`, `ui/edit/ClassEditViewModelTest.kt`.

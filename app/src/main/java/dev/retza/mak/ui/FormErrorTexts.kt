@@ -8,6 +8,5 @@ internal object FormErrorTexts {
     const val DateRequired = "Podaj poprawną datę."
     const val EndBeforeStart = "Koniec nie może być wcześniejszy od początku."
     const val DateOutsideCalendar = "Data musi należeć do kalendarza kierunku."
-    const val DateOutsideSemester = "Data musi należeć do aktywnego semestru."
     const val EndNotAfterStart = "Koniec musi być późniejszy niż początek tego samego dnia."
 }

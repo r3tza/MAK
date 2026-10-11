@@ -67,8 +67,8 @@ import java.time.LocalDate
 import java.time.ZoneOffset
 import java.time.format.DateTimeFormatter
 import dev.retza.mak.ui.AppLocale
-import dev.retza.mak.ui.toLocalDateOrNull
-import dev.retza.mak.ui.toLocalTimeOrNull
+import dev.retza.mak.domain.toLocalDateOrNull
+import dev.retza.mak.domain.toLocalTimeOrNull
 
 private val LowWindowHeight = 560.dp
 

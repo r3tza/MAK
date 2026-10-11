@@ -66,17 +66,23 @@ class FormValidationTest {
     }
 
     @Test
-    fun occurrenceDateOutsideSemesterIsReported() {
+    fun occurrenceDateOutsideCalendarIsReported() {
+        val calendar = AcademicCalendar(
+            id = 1L,
+            startDate = LocalDate.of(2026, 2, 1),
+            endDate = LocalDate.of(2026, 6, 30),
+            firstWeekType = WeekType.A
+        )
         val slot = slot(date = LocalDate.of(2026, 1, 31))
         assertEquals(
-            setOf(OccurrenceDraftError.DATE_OUTSIDE_SEMESTER),
-            validateOccurrenceDraft(slot, LocalDate.of(2026, 2, 1), LocalDate.of(2026, 6, 30))
+            setOf(OccurrenceDraftError.DATE_OUTSIDE_CALENDAR),
+            validateOccurrenceDraft(slot, calendar)
         )
     }
 
     @Test
-    fun missingSemesterBoundsDoNotRestrictOccurrenceDate() {
-        assertTrue(validateOccurrenceDraft(slot(date = LocalDate.of(2030, 1, 1)), null, null).isEmpty())
+    fun missingCalendarDoesNotRestrictOccurrenceDate() {
+        assertTrue(validateOccurrenceDraft(slot(date = LocalDate.of(2030, 1, 1)), null).isEmpty())
     }
 
     @Test
@@ -84,7 +90,7 @@ class FormValidationTest {
         val slot = slot(start = LocalTime.of(10, 0), end = LocalTime.of(10, 0))
         assertEquals(
             setOf(OccurrenceDraftError.END_NOT_AFTER_START),
-            validateOccurrenceDraft(slot, null, null)
+            validateOccurrenceDraft(slot, null)
         )
     }
 
