@@ -276,8 +276,8 @@ Ekran główny dzieli ustawienia na sekcje:
 2. „Wygląd”:
    - pozycja „Motyw” z bieżącą wartością „Systemowy”, „Jasny” albo „Ciemny”; dopóki jest to jedyne ustawienie wyglądu, wybór może pozostać na ekranie głównym.
 3. „Powiadomienia”:
-   - pozycja „Powiadomienia o kolizjach” z wartością „Włączone” albo „Wyłączone”;
-   - drugi wiersz podsumowania pokazuje ustawioną godzinę i wyprzedzenie, np. „20:00 dzień wcześniej, 30 min przed zajęciami”;
+   - pozycja „Powiadomienia” (decyzja użytkownika z 2026-10-11, I-97) z liczbą włączonych rodzajów powiadomień: „Wszystkie włączone”, „Włączone: 1 z 2” albo „Wyłączone”; godzina i wyprzedzenie są tylko na ekranie „Powiadomienia”;
+   - gdy włączony jest co najmniej jeden rodzaj, a system blokuje powiadomienia, drugi wiersz podsumowania pokazuje „Zablokowane przez system”;
    - pozycja prowadzi do osobnego ekranu ustawień powiadomień.
 4. „Dane”:
    - pozycja „Kopia zapasowa i import” prowadząca do osobnego ekranu danych;
@@ -312,7 +312,7 @@ Ekran „Kierunki” semestru (decyzja użytkownika z 2026-09-28) pokazuje nagł
 
 Na Androidzie 13 i nowszym włączenie powiadomień przy braku zgody prosi o zgodę systemową. Na Androidzie 12 taka zgoda nie istnieje, więc aplikacja otwiera systemowe ustawienia powiadomień aplikacji, a po powrocie odświeża stan „Zablokowane przez system”.
 
-Ekran „Powiadomienia” dzieli ustawienia na sekcje w neutralnych kontenerach, rozdzielone odstępem 16 dp: „Kolizje w planie” z głównym przełącznikiem, „Dzień wcześniej” z przełącznikiem powiadomienia wieczornego i godziną oraz „Przed zajęciami” z przełącznikiem i wyprzedzeniem. Sekcje obu rodzajów są widoczne tylko przy włączonej funkcji, a godzina albo wyprzedzenie tylko przy włączonym danym rodzaju. Każde włączenie to wiersz z przełącznikiem. Przy włączonej funkcji pod sekcjami tekst pomocniczy informuje, że Android może opóźnić powiadomienie o kilkanaście minut.
+Ekran „Powiadomienia” dzieli ustawienia na sekcje w neutralnych kontenerach, rozdzielone odstępem 16 dp: „Kolizje w planie” z głównym przełącznikiem, „Dzień wcześniej” z przełącznikiem powiadomienia wieczornego i godziną oraz „Przed zajęciami” z przełącznikiem i wyprzedzeniem. Ekran zawsze pokazuje wszystkie rodzaje powiadomień (decyzja użytkownika z 2026-10-11, I-97). Główny przełącznik włącza albo wyłącza wszystkie rodzaje naraz; jest włączony, gdy włączony jest co najmniej jeden rodzaj, i wyłączony, gdy żaden. Włączenie jednego rodzaju włącza główny przełącznik, a wyłączenie ostatniego go wyłącza. Godzina albo wyprzedzenie są widoczne tylko przy włączonym danym rodzaju. Włączenie dowolnego przełącznika, gdy system blokuje powiadomienia, prosi o zgodę systemu. Pod sekcjami tekst pomocniczy informuje, że Android może opóźnić powiadomienie o kilkanaście minut. Zapisane ustawienia ze starszych wersji z wyłączoną funkcją czytają się jako wszystkie rodzaje wyłączone.
 
 Ekrany podrzędne ustawień rozdzielają komunikaty, pola, wiersze i przyciski odstępem co najmniej 12 dp. Komunikat informacyjny ma 16 dp paddingu poziomego, 12 dp pionowego i tekst co najmniej 12 sp.
 

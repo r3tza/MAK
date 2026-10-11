@@ -6,6 +6,8 @@ import dev.retza.mak.settings.SettingsPreferences
 import android.content.Context
 import androidx.datastore.core.DataStore
 import androidx.datastore.preferences.core.Preferences
+import androidx.datastore.preferences.core.booleanPreferencesKey
+import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
@@ -99,6 +101,69 @@ class SettingsPreferencesTest {
 
         preferences.setGapThresholdMinutes(45)
         assertEquals(45, preferences.planDisplay.first().gapThresholdMinutes)
+    }
+
+    @Test
+    fun turningMainOnEnablesAllKinds() = runBlocking {
+        val preferences = preferences(openDataStore())
+
+        preferences.setCollisionNotificationsEnabled(true)
+
+        assertNotifications(preferences, enabled = true, evening = true, beforeClass = true)
+    }
+
+    @Test
+    fun turningMainOffDisablesAllKinds() = runBlocking {
+        val preferences = preferences(openDataStore())
+        preferences.setCollisionNotificationsEnabled(true)
+
+        preferences.setCollisionNotificationsEnabled(false)
+
+        assertNotifications(preferences, enabled = false, evening = false, beforeClass = false)
+    }
+
+    @Test
+    fun turningOffLastKindTurnsMainOff() = runBlocking {
+        val preferences = preferences(openDataStore())
+        preferences.setCollisionNotificationsEnabled(true)
+
+        preferences.setEveningNotificationsEnabled(false)
+        assertNotifications(preferences, enabled = true, evening = false, beforeClass = true)
+
+        preferences.setBeforeClassNotificationsEnabled(false)
+        assertNotifications(preferences, enabled = false, evening = false, beforeClass = false)
+    }
+
+    @Test
+    fun turningOnOneKindTurnsMainOnAndLeavesOtherOff() = runBlocking {
+        val preferences = preferences(openDataStore())
+        assertNotifications(preferences, enabled = false, evening = false, beforeClass = false)
+
+        preferences.setEveningNotificationsEnabled(true)
+
+        assertNotifications(preferences, enabled = true, evening = true, beforeClass = false)
+    }
+
+    @Test
+    fun legacyDisabledFunctionReadsAsAllKindsOff() = runBlocking {
+        // Written straight into the store: the old version stored only the main switch as false.
+        // The kind keys are missing, so their defaults (true) must not switch them on.
+        val dataStore = openDataStore()
+        dataStore.edit { it[booleanPreferencesKey("collision_notifications_enabled")] = false }
+
+        assertNotifications(preferences(dataStore), enabled = false, evening = false, beforeClass = false)
+    }
+
+    private suspend fun assertNotifications(
+        preferences: SettingsPreferences,
+        enabled: Boolean,
+        evening: Boolean,
+        beforeClass: Boolean
+    ) {
+        val stored = preferences.collisionNotifications.first()
+        assertEquals(enabled, stored.enabled)
+        assertEquals(evening, stored.eveningEnabled)
+        assertEquals(beforeClass, stored.beforeClassEnabled)
     }
 
     @Test

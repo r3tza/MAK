@@ -11,7 +11,7 @@ class InMemorySettingsPreferences(
     initialPlanDisplay: PlanDisplaySettings = PlanDisplaySettings.DEFAULT
 ) : SettingsPreferences {
     private val state = MutableStateFlow(initialTheme)
-    private val notifications = MutableStateFlow(initialNotifications)
+    private val notifications = MutableStateFlow(initialNotifications.readKindsThroughMainSwitch())
     private val display = MutableStateFlow(initialPlanDisplay)
 
     var failNextWrite = false
@@ -55,17 +55,29 @@ class InMemorySettingsPreferences(
 
     override suspend fun setCollisionNotificationsEnabled(enabled: Boolean) {
         awaitWrite()
-        notifications.value = notifications.value.copy(enabled = enabled)
+        notifications.value = notifications.value.copy(
+            enabled = enabled,
+            eveningEnabled = enabled,
+            beforeClassEnabled = enabled
+        )
     }
 
     override suspend fun setEveningNotificationsEnabled(enabled: Boolean) {
         awaitWrite()
-        notifications.value = notifications.value.copy(eveningEnabled = enabled)
+        val stored = notifications.value.readKindsThroughMainSwitch()
+        notifications.value = stored.copy(
+            enabled = enabled || stored.beforeClassEnabled,
+            eveningEnabled = enabled
+        )
     }
 
     override suspend fun setBeforeClassNotificationsEnabled(enabled: Boolean) {
         awaitWrite()
-        notifications.value = notifications.value.copy(beforeClassEnabled = enabled)
+        val stored = notifications.value.readKindsThroughMainSwitch()
+        notifications.value = stored.copy(
+            enabled = stored.eveningEnabled || enabled,
+            beforeClassEnabled = enabled
+        )
     }
 
     override suspend fun setEveningHour(hour: LocalTime) {
@@ -84,4 +96,11 @@ class InMemorySettingsPreferences(
             throw IllegalStateException("settings write failed")
         }
     }
+}
+
+/** Same reading rule as DataStoreSettingsPreferences: a kind is on only while the main switch is on. */
+private fun CollisionNotificationPreferences.readKindsThroughMainSwitch(): CollisionNotificationPreferences {
+    val evening = enabled && eveningEnabled
+    val beforeClass = enabled && beforeClassEnabled
+    return copy(enabled = evening || beforeClass, eveningEnabled = evening, beforeClassEnabled = beforeClass)
 }

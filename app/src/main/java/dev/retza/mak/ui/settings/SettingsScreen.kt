@@ -89,7 +89,10 @@ data class NotificationSettingsUi(
     val beforeClassEnabled: Boolean = true,
     val eveningHourOptions: List<SettingsOptionUi> = emptyList(),
     val leadOptions: List<SettingsOptionUi> = emptyList()
-)
+) {
+    // One entry per notification kind; the settings summary counts the enabled ones.
+    val kindStates: List<Boolean> get() = listOf(eveningEnabled, beforeClassEnabled)
+}
 
 data class SettingsUiState(
     val semesters: List<SemesterUi> = emptyList(),
@@ -194,7 +197,7 @@ fun SettingsScreen(
             SettingsListSection("Powiadomienia") {
                 val notificationsStatus = notificationsStatus(state.notifications, notificationsBlocked)
                 SettingsNavigationRow(
-                    title = "Powiadomienia o kolizjach",
+                    title = "Powiadomienia",
                     value = notificationsStatus.first,
                     details = notificationsStatus.second,
                     onClick = onOpenNotifications
@@ -390,11 +393,14 @@ private fun notificationsStatus(
     notifications: NotificationSettingsUi,
     blocked: Boolean
 ): Pair<String, String?> {
-    if (!notifications.enabled) return "Wyłączone" to null
-    if (blocked) return "Włączone" to "Zablokowane przez system"
-    val hour = notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty()
-    val lead = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty()
-    return "Włączone" to "$hour dzień wcześniej, $lead przed zajęciami"
+    val kinds = notifications.kindStates
+    val enabledCount = kinds.count { it }
+    val value = when (enabledCount) {
+        0 -> return "Wyłączone" to null
+        kinds.size -> "Wszystkie włączone"
+        else -> "Włączone: $enabledCount z ${kinds.size}"
+    }
+    return value to if (blocked) "Zablokowane przez system" else null
 }
 
 @Composable
@@ -574,45 +580,49 @@ fun SettingsNotificationsScreen(
                 }
             )
         }
-        if (notifications.enabled) {
-            SettingsListSection("Dzień wcześniej") {
-                SettingsSwitchRow(
-                    title = "Powiadomienie wieczorne",
-                    checked = notifications.eveningEnabled,
-                    onCheckedChange = onEveningNotificationsEnabled
-                )
-                if (notifications.eveningEnabled) {
-                    SettingsFieldItem {
-                        MakSelectField(
-                            label = "Godzina wieczorna",
-                            value = notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                            options = notifications.eveningHourOptions,
-                            onSelected = { onEveningHourSelected(it.id) },
-                            optionLabel = { it.label }
-                        )
-                    }
+        SettingsListSection("Dzień wcześniej") {
+            SettingsSwitchRow(
+                title = "Powiadomienie wieczorne",
+                checked = notifications.eveningEnabled,
+                onCheckedChange = { enabled ->
+                    onEveningNotificationsEnabled(enabled)
+                    if (enabled && notificationsBlocked) onRequestNotificationPermission()
                 }
-            }
-            SettingsListSection("Przed zajęciami") {
-                SettingsSwitchRow(
-                    title = "Powiadomienie przed zajęciami",
-                    checked = notifications.beforeClassEnabled,
-                    onCheckedChange = onBeforeClassNotificationsEnabled
-                )
-                if (notifications.beforeClassEnabled) {
-                    SettingsFieldItem {
-                        MakSelectField(
-                            label = "Wyprzedzenie przed zajęciami",
-                            value = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                            options = notifications.leadOptions,
-                            onSelected = { onBeforeClassLeadSelected(it.id) },
-                            optionLabel = { it.label }
-                        )
-                    }
+            )
+            if (notifications.eveningEnabled) {
+                SettingsFieldItem {
+                    MakSelectField(
+                        label = "Godzina wieczorna",
+                        value = notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
+                        options = notifications.eveningHourOptions,
+                        onSelected = { onEveningHourSelected(it.id) },
+                        optionLabel = { it.label }
+                    )
                 }
             }
         }
-        if (notifications.enabled) MakHelperText(NOTIFICATION_DELAY_NOTE)
+        SettingsListSection("Przed zajęciami") {
+            SettingsSwitchRow(
+                title = "Powiadomienie przed zajęciami",
+                checked = notifications.beforeClassEnabled,
+                onCheckedChange = { enabled ->
+                    onBeforeClassNotificationsEnabled(enabled)
+                    if (enabled && notificationsBlocked) onRequestNotificationPermission()
+                }
+            )
+            if (notifications.beforeClassEnabled) {
+                SettingsFieldItem {
+                    MakSelectField(
+                        label = "Wyprzedzenie przed zajęciami",
+                        value = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
+                        options = notifications.leadOptions,
+                        onSelected = { onBeforeClassLeadSelected(it.id) },
+                        optionLabel = { it.label }
+                    )
+                }
+            }
+        }
+        MakHelperText(NOTIFICATION_DELAY_NOTE)
     }
 }
 

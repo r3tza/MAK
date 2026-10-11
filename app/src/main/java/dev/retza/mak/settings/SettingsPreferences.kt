@@ -10,6 +10,10 @@ enum class ThemeMode {
     Dark
 }
 
+/**
+ * `enabled` is true exactly when at least one kind is enabled. Turning the main switch on or off sets all kinds;
+ * turning one kind on turns the main switch on; turning the last kind off turns the main switch off.
+ */
 data class CollisionNotificationPreferences(
     val enabled: Boolean = false,
     val eveningEnabled: Boolean = true,

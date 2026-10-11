@@ -130,6 +130,8 @@ Kryterium zakończenia: karta wygląda jak wariant C, daty mają rok według reg
 
 ## 3. Powiąż główny przełącznik z rodzajami powiadomień i licz włączone w podsumowaniu (I-97)
 
+Stan: zrobione. Różnice wobec planu: `kindStates` jest właściwością obliczaną z pól rodzajów; test `legacyDisabledFunctionReadsAsAllKindsOff` zapisuje sam klucz `collision_notifications_enabled = false` bezpośrednio w DataStore. Na emulatorze sprawdzone ręcznie cztery reguły decyzji 8 i podsumowania „Wyłączone” oraz „Włączone: 1 z 2”.
+
 Cel: główny przełącznik włącza albo wyłącza wszystkie rodzaje naraz i jest włączony wtedy i tylko wtedy, gdy włączony jest co najmniej jeden rodzaj (decyzja 8). Znika stan, w którym główny jest włączony, żaden rodzaj nie jest, powiadomienia nie przychodzą, a ustawienia pokazują „Włączone”. Wiersz na głównym ekranie ustawień nazywa się „Powiadomienia” i pokazuje liczbę włączonych rodzajów (decyzje 9 i 10).
 
 Pliki: `settings/SettingsPreferences.kt`, `settings/DataStoreSettingsPreferences.kt`, `ui/settings/SettingsScreen.kt` (`SettingsNotificationsScreen`, `notificationsStatus`, wiersz „Powiadomienia o kolizjach” w sekcji „Powiadomienia”), `ui/settings/SettingsViewModel.kt` (`NotificationSettingsUi`); testy JVM `settings/InMemorySettingsPreferences.kt`, `ui/settings/SettingsViewModelTest.kt`; testy Android `ui/settings/SettingsPreferencesTest.kt`, `ui/settings/SettingsScreenTest.kt`, `notifications/CollisionAlarmSchedulerTest.kt` (`EnabledNotifications`); `docs/FEATURES.md`, `docs/LOG.md`, `docs/QUEUE.md`.

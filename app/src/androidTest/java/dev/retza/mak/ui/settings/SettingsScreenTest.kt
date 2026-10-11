@@ -4,6 +4,7 @@ import dev.retza.mak.settings.ThemeMode
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
@@ -78,13 +79,11 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithText("USTAWIENIA").assertDoesNotExist()
         composeTestRule.onNodeWithText("Plan").assertIsDisplayed()
         composeTestRule.onNodeWithText("Wygląd").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Powiadomienia").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Powiadomienia").assertCountEquals(2)
         composeTestRule.onNodeWithText("Dane").assertIsDisplayed()
         composeTestRule.onNodeWithText("O aplikacji").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Wersja").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Włączone").assertIsDisplayed()
-        composeTestRule.onNodeWithText("20:00 dzień wcześniej, 30 min przed zajęciami")
-            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Wszystkie włączone").assertIsDisplayed()
 
         composeTestRule.onNodeWithText("Minimalna przerwa").performScrollTo().assertIsDisplayed()
         composeTestRule.onNodeWithText("Zajęcia z krótszą lub równą przerwą są kolizją.").performScrollTo()
@@ -92,7 +91,7 @@ class SettingsScreenTest {
 
         composeTestRule.onNodeWithText("Zarządzaj semestrami").performScrollTo().performClick()
         assertEquals("semesters", opened)
-        composeTestRule.onNodeWithText("Powiadomienia o kolizjach").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Wszystkie włączone").performScrollTo().performClick()
         assertEquals("notifications", opened)
         composeTestRule.onNodeWithText("Kopia zapasowa i import").performScrollTo().performClick()
         assertEquals("data", opened)
@@ -362,6 +361,95 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithText("Powiadomienia o kolizjach").assertIsDisplayed()
         composeTestRule.onAllNodesWithText("Włączone").assertCountEquals(0)
         composeTestRule.onAllNodesWithText("Wyłączone").assertCountEquals(0)
+    }
+
+    @Test
+    fun notificationSummaryCountsEnabledKinds() {
+        val notifications = mutableStateOf(
+            NotificationSettingsUi(
+                enabled = true,
+                eveningEnabled = true,
+                beforeClassEnabled = true,
+                eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
+                leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
+            )
+        )
+        val blocked = mutableStateOf(false)
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
+                    SettingsScreen(
+                        state = SettingsUiState(
+                            semesters = listOf(semester),
+                            activeSemesterId = 1L,
+                            theme = ThemeMode.System,
+                            gapThresholdOptions = listOf(SettingsOptionUi("30", "30 min", true)),
+                            minimumBreakOptions = listOf(SettingsOptionUi("0", "0 min", true)),
+                            notifications = notifications.value
+                        ),
+                        onOpenSemesters = {},
+                        onOpenPrograms = {},
+                        onOpenNotifications = {},
+                        onOpenData = {},
+                        onOpenAbout = {},
+                        onSemesterSelected = {},
+                        onAddSemester = {},
+                        onThemeSelected = {},
+                        onGapThresholdSelected = {},
+                        onMinimumBreakSelected = {},
+                        notificationsBlocked = blocked.value,
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Wszystkie włączone").assertIsDisplayed()
+
+        composeTestRule.runOnIdle {
+            notifications.value = notifications.value.copy(beforeClassEnabled = false)
+            blocked.value = true
+        }
+        composeTestRule.onNodeWithText("Włączone: 1 z 2").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Zablokowane przez system").assertIsDisplayed()
+
+        composeTestRule.runOnIdle {
+            notifications.value = notifications.value.copy(enabled = false, eveningEnabled = false)
+            blocked.value = false
+        }
+        composeTestRule.onNodeWithText("Wyłączone").assertIsDisplayed()
+    }
+
+    @Test
+    fun notificationKindsAreVisibleWhenAllAreOffAt320Dp() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
+                    SettingsNotificationsScreen(
+                        state = SettingsUiState(
+                            notifications = NotificationSettingsUi(
+                                enabled = false,
+                                eveningEnabled = false,
+                                beforeClassEnabled = false,
+                                eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
+                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
+                            )
+                        ),
+                        notificationsBlocked = false,
+                        onNotificationsEnabled = {},
+                        onEveningNotificationsEnabled = {},
+                        onBeforeClassNotificationsEnabled = {},
+                        onEveningHourSelected = {},
+                        onBeforeClassLeadSelected = {},
+                        onRequestNotificationPermission = {},
+                        onOpenAppSettings = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Powiadomienie wieczorne").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Powiadomienie przed zajęciami").assertIsDisplayed()
     }
 
     @Test

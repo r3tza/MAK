@@ -56,15 +56,29 @@ class DataStoreSettingsPreferences(
     }
 
     override suspend fun setCollisionNotificationsEnabled(enabled: Boolean) {
-        dataStore.edit { preferences -> preferences[notificationsEnabledKey] = enabled }
+        dataStore.edit { preferences ->
+            preferences[notificationsEnabledKey] = enabled
+            preferences[eveningEnabledKey] = enabled
+            preferences[beforeClassEnabledKey] = enabled
+        }
     }
 
     override suspend fun setEveningNotificationsEnabled(enabled: Boolean) {
-        dataStore.edit { preferences -> preferences[eveningEnabledKey] = enabled }
+        dataStore.edit { preferences ->
+            val beforeClass = preferences.beforeClassNotificationsEnabled()
+            preferences[eveningEnabledKey] = enabled
+            preferences[beforeClassEnabledKey] = beforeClass
+            preferences[notificationsEnabledKey] = enabled || beforeClass
+        }
     }
 
     override suspend fun setBeforeClassNotificationsEnabled(enabled: Boolean) {
-        dataStore.edit { preferences -> preferences[beforeClassEnabledKey] = enabled }
+        dataStore.edit { preferences ->
+            val evening = preferences.eveningNotificationsEnabled()
+            preferences[beforeClassEnabledKey] = enabled
+            preferences[eveningEnabledKey] = evening
+            preferences[notificationsEnabledKey] = evening || enabled
+        }
     }
 
     override suspend fun setEveningHour(hour: LocalTime) {
@@ -111,13 +125,25 @@ class DataStoreSettingsPreferences(
     }
 }
 
+/**
+ * A kind is on only while the main switch is on. Older versions kept the kind defaults `true` while the feature
+ * was off, so a missing or false main switch turns every kind off. No migration is needed.
+ */
+private fun Preferences.eveningNotificationsEnabled(): Boolean =
+    (this[notificationsEnabledKey] ?: false) && (this[eveningEnabledKey] ?: true)
+
+private fun Preferences.beforeClassNotificationsEnabled(): Boolean =
+    (this[notificationsEnabledKey] ?: false) && (this[beforeClassEnabledKey] ?: true)
+
 private fun Preferences.toNotificationPreferences(): CollisionNotificationPreferences {
     val eveningMinutes = (this[eveningHourKey] ?: defaultEveningHourMinutes)
         .coerceIn(0, 23 * 60 + 59)
+    val eveningEnabled = eveningNotificationsEnabled()
+    val beforeClassEnabled = beforeClassNotificationsEnabled()
     return CollisionNotificationPreferences(
-        enabled = this[notificationsEnabledKey] ?: false,
-        eveningEnabled = this[eveningEnabledKey] ?: true,
-        beforeClassEnabled = this[beforeClassEnabledKey] ?: true,
+        enabled = eveningEnabled || beforeClassEnabled,
+        eveningEnabled = eveningEnabled,
+        beforeClassEnabled = beforeClassEnabled,
         eveningHour = LocalTime.ofSecondOfDay(eveningMinutes * 60L),
         leadMinutes = (this[leadMinutesKey] ?: defaultLeadMinutes).coerceIn(5, 120).toLong()
     )
