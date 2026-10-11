@@ -3,6 +3,7 @@ package dev.retza.mak.ui
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
@@ -101,17 +102,19 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
         val occurrenceViewModel: OccurrenceViewModel = koinViewModel()
         OccurrenceEffects(occurrenceViewModel, navController)
         val details = occurrenceViewModel.details.collectAsStateWithLifecycle().value
-        val actions: List<Pair<String, () -> Unit>> = listOfNotNull(
-            if (details.canCancelOccurrence) "Odwołaj termin" to occurrenceViewModel::cancelOccurrence else null,
-            if (details.canEditBaseClass) {
-                "Edytuj wszystkie terminy" to {
-                    occurrenceViewModel.selectedClassId.value?.let { id ->
-                        navController.navigate(editRoute(id, details.targetDateDraft))
+        val actions: List<Pair<String, () -> Unit>> = remember(details.canCancelOccurrence, details.canEditBaseClass, details.canDeleteBaseClass) {
+            listOfNotNull(
+                if (details.canCancelOccurrence) "Odwołaj termin" to { occurrenceViewModel.cancelOccurrence() } else null,
+                if (details.canEditBaseClass) {
+                    "Edytuj wszystkie terminy" to {
+                        occurrenceViewModel.selectedClassId.value?.let { id ->
+                            navController.navigate(editRoute(id, occurrenceViewModel.details.value.targetDateDraft))
+                        }
                     }
-                }
-            } else null,
-            if (details.canDeleteBaseClass) "Usuń zajęcia" to occurrenceViewModel::requestClassDeletion else null
-        )
+                } else null,
+                if (details.canDeleteBaseClass) "Usuń zajęcia" to { occurrenceViewModel.requestClassDeletion() } else null
+            )
+        }
         DeclareTopBar(topBar, TopBarSpec(MakRoutes.Occurrence, actions = actions))
         OccurrenceDetailsScreen(
             state = details,

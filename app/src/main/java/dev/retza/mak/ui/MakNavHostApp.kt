@@ -68,9 +68,7 @@ fun MakApp(
     val currentRoute = navController.currentBackStackEntryAsState().value
         ?.destination
         ?.route
-    val topBar = remember { TopBarState() }
-    val topBarSpec = topBar.specFor(currentRoute)
-    val topBarActions = topBarSpec?.actions.orEmpty()
+    val topBarState = remember { TopBarState() }
     val isRoot = currentRoute == MakRoutes.Today || currentRoute == MakRoutes.Schedule
     val showBack = currentRoute != null && !isRoot && !isSetupRoute(currentRoute)
     val navigationLayout = makNavigationLayout(LocalMakWidthClass.current, isRoot)
@@ -130,8 +128,10 @@ fun MakApp(
             MakSnackbarHost(feedback = feedback)
         },
         topBar = {
+            val spec = topBarState.specFor(currentRoute)
+            val topBarActions = spec?.actions.orEmpty()
             MakTopBar(
-                title = topBarSpec?.title ?: titleForRoute(currentRoute),
+                title = spec?.title ?: titleForRoute(currentRoute),
                 showBack = showBack,
                 showSettings = isRoot,
                 onBack = ::navigateBack,
@@ -206,11 +206,11 @@ fun MakApp(
                 classEditRoute(
                     navController = navController,
                     onBack = ::navigateBack,
-                    topBar = topBar
+                    topBar = topBarState
                 )
                 occurrenceDetailsRoute(
                     navController = navController,
-                    topBar = topBar
+                    topBar = topBarState
                 )
                 semesterRoutes(
                     navController = navController

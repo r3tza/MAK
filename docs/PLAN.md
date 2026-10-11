@@ -178,6 +178,8 @@ Kryterium zakończenia: testy przechodzą; `rg "DateOutsideSemester|DATE_OUTSIDE
 
 ## 4. Nie przebudowuj całej aplikacji przy każdym znaku w szczegółach terminu (I-92)
 
+Stan: zrobione. Wykonał subagent, recenzja i testy Android: agent planujący. Bez odchyleń w kodzie. Zrzutu i ręcznego sprawdzenia menu nie zrobiono; wygląd paska się nie zmienił, a menu akcji sprawdzają testy. Testy Android: `OccurrenceDetailsScreenTest` 7/7, `ClassEditScreenTest` 2/2, `MakNavigationChromeTest` 4/4.
+
 Cel: `occurrenceDetailsRoute` tworzy przy każdej rekompozycji nową listę akcji z nowymi lambdami, więc `TopBarSpec` jest za każdym razem inny, a `MakApp` czyta go w ciele funkcji. Każdy wpisany znak notatki przebudowuje cały `Scaffold` aplikacji. Po zmianie specyfikacja zmienia się tylko razem z dostępnymi akcjami, a pasek czyta ją we własnym slocie (I-92 punkt 5). Wygląd i działanie bez zmian.
 
 Pliki: `ui/ClassOccurrenceRoutes.kt` (`occurrenceDetailsRoute`), `ui/MakNavHostApp.kt` (`MakApp`).
