@@ -24,6 +24,8 @@ import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
+import dev.retza.mak.ui.freedays.freeDaysSummary
+import dev.retza.mak.ui.freedays.groupFreeDays
 import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
@@ -716,6 +718,7 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
                 )
             },
         overrideCount = overrides.size,
+        freeDaysSummary = freeDaysSummary(groupFreeDays(freeDays)),
         courseItems = courseItems,
         calendars = calendars.map { calendar ->
             SemesterCalendarUi(

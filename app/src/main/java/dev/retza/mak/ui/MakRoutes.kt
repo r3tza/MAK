@@ -13,6 +13,7 @@ object MakRoutes {
     const val SemesterCourseAdd = "semester/{semesterId}/course-new"
     const val SemesterCourseEdit = "semester/{semesterId}/course/{assignmentId}"
     const val SemesterOverrides = "semester/{semesterId}/week-overrides"
+    const val SemesterFreeDays = "semester/{semesterId}/free-days"
     const val SemesterCalendars = "semester/{semesterId}/calendars"
     const val Settings = "settings"
     const val SettingsSemesters = "settings/semesters"
@@ -55,6 +56,8 @@ fun semesterCourseEditRoute(semesterId: String, assignmentId: Long): String =
 
 fun semesterOverridesRoute(id: String): String = "semester/$id/week-overrides"
 
+fun semesterFreeDaysRoute(id: String): String = "semester/$id/free-days"
+
 fun semesterCalendarsRoute(id: String): String = "semester/$id/calendars"
 
 fun setupRoute(resumeExisting: Boolean): String = "${MakRoutes.Setup}?resume=$resumeExisting"
@@ -95,6 +98,7 @@ internal fun titleForRoute(route: String?): String = when (route) {
     MakRoutes.SemesterCourseAdd -> "Dodaj kierunek"
     MakRoutes.SemesterCourseEdit -> "Edytuj kierunek"
     MakRoutes.SemesterOverrides -> "Korekty tygodni"
+    MakRoutes.SemesterFreeDays -> "Dni wolne"
     MakRoutes.SemesterCalendars -> "Kalendarze"
     MakRoutes.Settings -> "Ustawienia"
     MakRoutes.SettingsSemesters -> "Semestry"

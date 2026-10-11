@@ -30,6 +30,18 @@ internal class FakeSemesterRepository(
 ) : SemesterRepository {
     var countClassesGate: CompletableDeferred<Unit>? = null
 
+    /** Every saveFreeDayGroup call in order, recorded before the write. */
+    val freeDayGroupSaves = mutableListOf<FreeDayGroupSave>()
+
+    data class FreeDayGroupSave(
+        val semesterId: Long,
+        val replacedIds: List<Long>,
+        val startDate: LocalDate,
+        val endDate: LocalDate,
+        val name: String?,
+        val calendarIds: List<Long>
+    )
+
     override fun observeSemesters(): Flow<List<SemesterRecord>> =
         delegate.observeSemesters().map { list -> list.map { it.toRecord() } }
 
@@ -95,6 +107,7 @@ internal class FakeSemesterRepository(
         name: String?,
         calendarIds: List<Long>
     ) {
+        freeDayGroupSaves += FreeDayGroupSave(semesterId, replacedIds, startDate, endDate, name, calendarIds)
         written {
             delegate.freeDays.removeAll { it.id in replacedIds }
             var nextId = (delegate.freeDays.maxOfOrNull { it.id } ?: 0L) + 1

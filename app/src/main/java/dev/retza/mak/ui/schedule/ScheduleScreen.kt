@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -136,6 +137,7 @@ fun ScheduleScreen(
     onCalendarDaySelected: (String) -> Unit,
     onShowCancelledChanged: (Boolean) -> Unit,
     onAddOneOff: () -> Unit,
+    onMarkFree: () -> Unit,
     onOpenClass: (String) -> Unit,
     onSaveWeekCorrection: (WeekType, WeekOverrideScope) -> Unit,
     onClearWeekCorrection: (WeekOverrideScope) -> Unit,
@@ -184,6 +186,7 @@ fun ScheduleScreen(
                 onCalendarDaySelected = onCalendarDaySelected,
                 onShowCancelledChanged = onShowCancelledChanged,
                 onAddOneOff = onAddOneOff,
+                onMarkFree = onMarkFree,
                 onOpenClass = onOpenClass
             )
         }
@@ -459,6 +462,7 @@ private fun CalendarView(
     onCalendarDaySelected: (String) -> Unit,
     onShowCancelledChanged: (Boolean) -> Unit,
     onAddOneOff: () -> Unit,
+    onMarkFree: () -> Unit,
     onOpenClass: (String) -> Unit
 ) {
     Column {
@@ -502,12 +506,21 @@ private fun CalendarView(
             modifier = Modifier.padding(bottom = MakSpacing.md)
         )
         MakRowTitle(title = state.calendarSelectedDayLabel, meta = state.calendarSelectedDayCountLabel)
-        MakSecondaryAction(
-            text = "Dodaj termin jednorazowy",
-            icon = Icons.Outlined.Add,
-            onClick = onAddOneOff,
+        Column(
+            verticalArrangement = Arrangement.spacedBy(MakSpacing.sm),
             modifier = Modifier.padding(bottom = MakSpacing.md)
-        )
+        ) {
+            MakSecondaryAction(
+                text = "Dodaj termin jednorazowy",
+                icon = Icons.Outlined.Add,
+                onClick = onAddOneOff
+            )
+            MakSecondaryAction(
+                text = "Oznacz jako wolny",
+                icon = Icons.Outlined.EventBusy,
+                onClick = onMarkFree
+            )
+        }
         if (state.calendarItems.isEmpty()) {
             MakEmptyState("Brak zajęć w tym dniu.")
         } else {

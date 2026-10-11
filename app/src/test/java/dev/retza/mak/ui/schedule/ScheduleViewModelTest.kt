@@ -570,6 +570,24 @@ class ScheduleViewModelTest {
     }
 
     @Test
+    fun markSelectedCalendarDayFreeOpensEditorForSelectedDay() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        val effects = mutableListOf<ScheduleEffect>()
+        backgroundScope.launch { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+
+        viewModel.selectCalendarDay("2026-10-05")
+        viewModel.markSelectedCalendarDayFree()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(ScheduleEffect.OpenFreeDayEditor(repository.activeSemesterId, LocalDate.of(2026, 10, 5))),
+            effects
+        )
+    }
+
+    @Test
     fun weekOverrideSaveRunsOnceWhileTheFirstIsPending() = runTest(mainDispatcher) {
         val repository = FakeRepository().apply { saveGate = CompletableDeferred() }
         val viewModel = viewModel(repository)

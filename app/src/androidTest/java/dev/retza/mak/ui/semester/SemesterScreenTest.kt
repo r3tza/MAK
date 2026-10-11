@@ -82,6 +82,7 @@ class SemesterScreenTest {
                         onSaveSemester = {},
                         onOpenCourses = { opened = "courses" },
                         onOpenOverrides = { opened = "overrides" },
+                        onOpenFreeDays = { opened = "free-days" },
                         onOpenCalendars = { opened = "calendars" },
                     )
                 }
@@ -124,6 +125,7 @@ class SemesterScreenTest {
                         onSaveSemester = {},
                         onOpenCourses = {},
                         onOpenOverrides = {},
+                        onOpenFreeDays = {},
                         onOpenCalendars = { opened = "calendars" },
                     )
                 }

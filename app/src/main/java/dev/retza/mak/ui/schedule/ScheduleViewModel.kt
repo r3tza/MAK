@@ -55,6 +55,7 @@ import org.koin.core.annotation.KoinViewModel
 
 sealed interface ScheduleEffect {
     data class OpenNewClassEditor(val date: LocalDate) : ScheduleEffect
+    data class OpenFreeDayEditor(val semesterId: Long, val date: LocalDate) : ScheduleEffect
 }
 
 private data class ScheduleControls(
@@ -167,6 +168,11 @@ class ScheduleViewModel(
 
     fun openNewClassForSelectedCalendarDay() {
         effectsChannel.trySend(ScheduleEffect.OpenNewClassEditor(controls.value.calendarDate))
+    }
+
+    fun markSelectedCalendarDayFree() {
+        val data = activePlan.value?.data ?: return
+        effectsChannel.trySend(ScheduleEffect.OpenFreeDayEditor(data.semester.id, controls.value.calendarDate))
     }
 
     fun saveVisibleWeekOverride(weekType: WeekType, scope: WeekOverrideScope) {

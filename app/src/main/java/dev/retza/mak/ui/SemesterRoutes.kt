@@ -17,6 +17,10 @@ import androidx.navigation.NavType
 import androidx.navigation.compose.composable
 import androidx.navigation.navArgument
 import androidx.navigation.compose.navigation
+import dev.retza.mak.ui.freedays.FreeDayDialog
+import dev.retza.mak.ui.freedays.FreeDayEditorViewModel
+import dev.retza.mak.ui.freedays.FreeDaysScreen
+import dev.retza.mak.ui.freedays.FreeDaysViewModel
 import dev.retza.mak.ui.semester.SemesterCalendarsScreen
 import dev.retza.mak.ui.semester.SemesterCourseAddScreen
 import dev.retza.mak.ui.semester.SemesterCourseEditScreen
@@ -58,6 +62,7 @@ internal fun NavGraphBuilder.semesterRoutes(navController: NavController) {
                 onSaveSemester = semesterViewModel::saveSemester,
                 onOpenCourses = { semesterId?.let { navController.navigate(semesterCoursesRoute(it)) } },
                 onOpenOverrides = { semesterId?.let { navController.navigate(semesterOverridesRoute(it)) } },
+                onOpenFreeDays = { semesterId?.let { navController.navigate(semesterFreeDaysRoute(it)) } },
                 onOpenCalendars = { semesterId?.let { navController.navigate(semesterCalendarsRoute(it)) } },
                 modifier = Modifier.fillMaxSize()
             )
@@ -204,6 +209,35 @@ internal fun NavGraphBuilder.semesterRoutes(navController: NavController) {
                 onCancelOverrideDeletion = semesterViewModel::cancelWeekOverrideDeletion,
                 onCancelOverrideEdit = semesterViewModel::cancelWeekOverrideEdit,
                 modifier = Modifier.fillMaxSize()
+            )
+        }
+
+        composable(
+            route = MakRoutes.SemesterFreeDays,
+            arguments = listOf(navArgument("semesterId") { type = NavType.StringType })
+        ) { entry ->
+            val semesterViewModel = semesterGraphViewModel(navController, entry)
+            SemesterEffects(semesterViewModel, navController)
+            val viewModel: FreeDaysViewModel = koinViewModel()
+            val editor: FreeDayEditorViewModel = koinViewModel()
+            val state = viewModel.freeDays.collectAsStateWithLifecycle().value
+            val editorState = editor.editor.collectAsStateWithLifecycle().value
+            FreeDaysScreen(
+                state = state,
+                onAdd = { state.semesterId?.let { editor.startNew(it, null) } },
+                onEdit = { ids -> state.semesterId?.let { editor.startEdit(it, ids) } },
+                onDelete = viewModel::requestDeletion,
+                onConfirmDeletion = viewModel::confirmDeletion,
+                onCancelDeletion = viewModel::cancelDeletion,
+                modifier = Modifier.fillMaxSize()
+            )
+            FreeDayDialog(
+                state = editorState,
+                onRangeChange = editor::updateRange,
+                onNameChange = editor::updateName,
+                onToggleCalendar = editor::toggleCalendar,
+                onSave = editor::save,
+                onCancel = editor::cancel
             )
         }
 

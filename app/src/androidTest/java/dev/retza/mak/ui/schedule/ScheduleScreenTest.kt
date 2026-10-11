@@ -438,6 +438,7 @@ class ScheduleScreenTest {
                             onCalendarDaySelected = {},
                             onShowCancelledChanged = onShowCancelledChanged,
                             onAddOneOff = onAddOneOff,
+                            onMarkFree = {},
                             onOpenClass = {},
                             onSaveWeekCorrection = { _, _ -> },
                             onClearWeekCorrection = {},

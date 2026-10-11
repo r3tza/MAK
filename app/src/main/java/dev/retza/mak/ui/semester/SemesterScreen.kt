@@ -151,6 +151,7 @@ data class SemesterScreenUiState(
     val overrides: List<WeekOverrideUi> = emptyList(),
     val overrideForm: WeekOverrideFormUiState = WeekOverrideFormUiState(),
     val overrideCount: Int = 0,
+    val freeDaysSummary: String = "Brak",
     val courseItems: List<SemesterCourseUi> = emptyList(),
     val calendars: List<SemesterCalendarUi> = emptyList(),
     val selectedCalendarId: Long? = null,
@@ -194,6 +195,7 @@ fun SemesterScreen(
     onSaveSemester: () -> Unit,
     onOpenCourses: () -> Unit,
     onOpenOverrides: () -> Unit,
+    onOpenFreeDays: () -> Unit,
     onOpenCalendars: () -> Unit,
     modifier: Modifier = Modifier
 ) {
@@ -234,6 +236,15 @@ fun SemesterScreen(
                 "$it ${polishPlural(it, "korekta", "korekty", "korekt")}"
             },
             onClick = onOpenOverrides
+        )
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = MakSpacing.md),
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+        SemesterNavigationRow(
+            title = "Dni wolne",
+            countLabel = state.freeDaysSummary,
+            onClick = onOpenFreeDays
         )
         if (state.calendars.size > 1) {
             HorizontalDivider(

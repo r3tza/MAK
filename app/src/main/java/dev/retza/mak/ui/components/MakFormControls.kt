@@ -17,6 +17,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.DatePicker
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
@@ -186,6 +188,140 @@ fun MakDatePickerField(
     }
 
     LaunchedFocusRestore(open = open, hasOpened = hasOpened, focusRequester = focusRequester)
+}
+
+/** A start and an end date as two read-only fields. Either field opens one range picker. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MakDateRangeFields(
+    startDate: LocalDate?,
+    endDate: LocalDate?,
+    onRangeChange: (LocalDate, LocalDate) -> Unit,
+    modifier: Modifier = Modifier,
+    minDate: LocalDate? = null,
+    maxDate: LocalDate? = null,
+    isError: Boolean = false
+) {
+    var open by remember { mutableStateOf(false) }
+    var hasOpened by remember { mutableStateOf(false) }
+    var startTapped by remember { mutableStateOf(true) }
+    val startFocus = remember { FocusRequester() }
+    val endFocus = remember { FocusRequester() }
+    val selectableDates = remember(minDate, maxDate) {
+        object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                val date = Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate()
+                return (minDate == null || !date.isBefore(minDate)) &&
+                    (maxDate == null || !date.isAfter(maxDate))
+            }
+        }
+    }
+    val openFrom: (Boolean) -> Unit = { fromStart ->
+        startTapped = fromStart
+        hasOpened = true
+        open = true
+    }
+
+    Row(
+        modifier = modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+    ) {
+        RangeDateField(
+            label = "Od",
+            date = startDate,
+            isError = isError,
+            focusRequester = startFocus,
+            onOpen = { openFrom(true) },
+            modifier = Modifier.weight(1f)
+        )
+        RangeDateField(
+            label = "Do",
+            date = endDate,
+            isError = isError,
+            focusRequester = endFocus,
+            onOpen = { openFrom(false) },
+            modifier = Modifier.weight(1f)
+        )
+    }
+
+    if (open) {
+        val pickerState = rememberDateRangePickerState(
+            initialSelectedStartDateMillis = startDate?.coerceToRange(minDate, maxDate)?.toUtcMillis(),
+            initialSelectedEndDateMillis = endDate?.coerceToRange(minDate, maxDate)?.toUtcMillis(),
+            selectableDates = selectableDates
+        )
+        DatePickerDialog(
+            onDismissRequest = { open = false },
+            confirmButton = {
+                TextButton(
+                    enabled = pickerState.selectedStartDateMillis != null,
+                    onClick = {
+                        val start = pickerState.selectedStartDateMillis?.toLocalDate()
+                        if (start != null) {
+                            val end = pickerState.selectedEndDateMillis?.toLocalDate() ?: start
+                            onRangeChange(start, end)
+                        }
+                        open = false
+                    }
+                ) {
+                    Text("Wybierz")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { open = false }) {
+                    Text("Anuluj")
+                }
+            }
+        ) {
+            DateRangePicker(state = pickerState)
+        }
+    }
+
+    LaunchedFocusRestore(
+        open = open,
+        hasOpened = hasOpened,
+        focusRequester = if (startTapped) startFocus else endFocus
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RangeDateField(
+    label: String,
+    date: LocalDate?,
+    isError: Boolean,
+    focusRequester: FocusRequester,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = rememberOpenOnTap(enabled = true, onTap = onOpen)
+    OutlinedTextField(
+        value = date?.format(polishDateFormatter).orEmpty(),
+        onValueChange = {},
+        modifier = modifier
+            .heightIn(min = 48.dp)
+            .focusRequester(focusRequester)
+            .clickable(role = Role.Button, onClick = onOpen)
+            .semantics {
+                onClick(label = "Wybierz zakres dat") {
+                    onOpen()
+                    true
+                }
+            },
+        readOnly = true,
+        isError = isError,
+        interactionSource = interactionSource,
+        label = { Text(label) },
+        trailingIcon = {
+            IconButton(onClick = onOpen) {
+                Icon(
+                    imageVector = Icons.Outlined.Event,
+                    contentDescription = "Wybierz zakres dat",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
