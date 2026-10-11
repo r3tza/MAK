@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.domain.WeekType
+import dev.retza.mak.ui.FreeDayNoteUi
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
@@ -63,6 +64,18 @@ class ScheduleScreenTest {
             .performClick()
         composeTestRule.onNodeWithText("Zmień tydzień A/B").assertIsDisplayed()
         composeTestRule.onAllNodesWithContentDescription("Więcej opcji").assertCountEquals(0)
+    }
+
+    @Test
+    fun listShowsFreeDayBannerInsteadOfEmptyMessageAt320Dp() {
+        setScheduleContent(
+            state = scheduleState().copy(
+                freeDay = FreeDayNoteUi("Dzień wolny: Rektorskie", "Zajęcia cykliczne się nie odbywają.")
+            )
+        )
+
+        composeTestRule.onNodeWithText("Dzień wolny: Rektorskie").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Brak zajęć w tym dniu dla wybranego kierunku.").assertDoesNotExist()
     }
 
     @Test

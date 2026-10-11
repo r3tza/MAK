@@ -1,12 +1,14 @@
 package dev.retza.mak.widget
 
 import dev.retza.mak.domain.ActivePlan
+import dev.retza.mak.domain.FreeDay
 import dev.retza.mak.domain.WeekStatus
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.uniqueCollisionCount
 import java.time.LocalDate
 import java.time.LocalTime
 import dev.retza.mak.ui.label
+import dev.retza.mak.ui.shortDateFormatter
 import dev.retza.mak.ui.todayTitleFormatter
 
 class WidgetPresenter {
@@ -23,6 +25,10 @@ class WidgetPresenter {
         }
         val weekLabel = weekStatus.label()
         if (plan.schedule.occurrences.isEmpty()) {
+            val freeDay = plan.schedule.freeDay
+            if (freeDay != null) {
+                return WidgetUiState.FreeDay(dateLabel, weekLabel, freeDayDetail(freeDay, date))
+            }
             return WidgetUiState.EmptyDay(dateLabel, weekLabel)
         }
 
@@ -61,3 +67,14 @@ class WidgetPresenter {
 }
 
 internal fun widgetDateLabel(date: LocalDate): String = date.format(todayTitleFormatter)
+
+/** The name and, for a range that goes on after [date], its last day. */
+internal fun freeDayDetail(freeDay: FreeDay, date: LocalDate): String? {
+    val until = if (freeDay.endDate.isAfter(date)) "do ${freeDay.endDate.format(shortDateFormatter)}" else null
+    return when {
+        freeDay.name != null && until != null -> "${freeDay.name}, $until"
+        freeDay.name != null -> freeDay.name
+        until != null -> until.replaceFirstChar { it.uppercase() }
+        else -> null
+    }
+}

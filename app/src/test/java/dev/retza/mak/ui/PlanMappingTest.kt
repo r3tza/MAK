@@ -1,6 +1,7 @@
 package dev.retza.mak.ui
 
 import dev.retza.mak.domain.ClassItem
+import dev.retza.mak.domain.FreeDay
 import dev.retza.mak.domain.OccurrenceNote
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.WeekStatus
@@ -60,6 +61,34 @@ class PlanMappingTest {
         assertEquals("Tydzień A", WeekStatus.Single(WeekType.A).label())
         assertEquals("Różne tygodnie", WeekStatus.Mixed.label())
         assertEquals("Poza semestrem", WeekStatus.OutsideSemester.label())
+    }
+
+    @Test
+    fun freeDayTodayNoteShowsRangeOnlyWhenItSpansSeveralDays() {
+        val single = FreeDay(1L, 1L, LocalDate.of(2026, 12, 24), LocalDate.of(2026, 12, 24), name = null)
+        assertEquals(
+            FreeDayNoteUi("Dzień wolny", "Zajęcia cykliczne się nie odbywają."),
+            single.todayNote()
+        )
+        val range = FreeDay(2L, 1L, LocalDate.of(2026, 12, 23), LocalDate.of(2027, 1, 1), name = "Przerwa")
+        assertEquals(
+            FreeDayNoteUi("Przerwa", "23 gru - 1 sty. Zajęcia cykliczne się nie odbywają."),
+            range.todayNote()
+        )
+    }
+
+    @Test
+    fun freeDayListNoteUsesNameInTitleWhenPresent() {
+        val named = FreeDay(1L, 1L, LocalDate.of(2026, 12, 24), LocalDate.of(2026, 12, 24), name = "Wigilia")
+        assertEquals(
+            FreeDayNoteUi("Dzień wolny: Wigilia", "Zajęcia cykliczne się nie odbywają."),
+            named.listNote()
+        )
+        val unnamed = FreeDay(2L, 1L, LocalDate.of(2026, 12, 24), LocalDate.of(2026, 12, 24), name = null)
+        assertEquals(
+            FreeDayNoteUi("Dzień wolny", "Zajęcia cykliczne się nie odbywają."),
+            unnamed.listNote()
+        )
     }
 
     private fun occurrence(

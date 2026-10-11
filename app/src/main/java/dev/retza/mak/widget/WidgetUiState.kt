@@ -22,6 +22,13 @@ sealed interface WidgetUiState {
         val weekLabel: String
     ) : WidgetUiState
 
+    /** A free day of every semester calendar without classes left (`FEATURES.md`, „Dni wolne”). */
+    data class FreeDay(
+        override val dateLabel: String,
+        val weekLabel: String,
+        val detail: String?
+    ) : WidgetUiState
+
     data class Ready(
         override val dateLabel: String,
         val weekLabel: String,

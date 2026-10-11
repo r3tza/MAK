@@ -113,6 +113,7 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
             is WidgetUiState.EmptyDay -> {
                 WidgetMessage("Brak zajęć na dziś")
             }
+            is WidgetUiState.FreeDay -> WidgetFreeDay(state)
             is WidgetUiState.Error -> WidgetMessage(state.message)
             is WidgetUiState.Ready -> {
                 WidgetOccurrenceList(
@@ -195,6 +196,7 @@ internal fun WidgetHeader(state: WidgetUiState) {
             )
             when (state) {
                 is WidgetUiState.EmptyDay -> WidgetHeaderDetails(state.weekLabel, 0, 0)
+                is WidgetUiState.FreeDay -> WidgetHeaderDetails(state.weekLabel, 0, 0)
                 is WidgetUiState.Ready -> WidgetHeaderDetails(
                     state.weekLabel,
                     state.items.size,
@@ -259,6 +261,31 @@ private fun WidgetMessage(message: String) {
         ),
         maxLines = 2
     )
+}
+
+@Composable
+private fun WidgetFreeDay(state: WidgetUiState.FreeDay) {
+    Column {
+        Text(
+            text = "Dzień wolny",
+            style = TextStyle(
+                color = GlanceTheme.colors.onBackground,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.Bold
+            ),
+            maxLines = 1
+        )
+        state.detail?.let { detail ->
+            Text(
+                text = detail,
+                style = TextStyle(
+                    color = GlanceTheme.colors.onSurfaceVariant,
+                    fontSize = 12.sp
+                ),
+                maxLines = 2
+            )
+        }
+    }
 }
 
 @Composable

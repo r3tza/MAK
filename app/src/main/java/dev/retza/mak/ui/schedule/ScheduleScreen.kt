@@ -39,6 +39,10 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.semantics.Role
@@ -65,6 +69,9 @@ import dev.retza.mak.ui.components.WeekTypeSelectField
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDialogAction
 import dev.retza.mak.ui.components.MakEmptyState
+import dev.retza.mak.ui.components.MakNoteBanner
+import dev.retza.mak.ui.components.MakNoteRole
+import dev.retza.mak.ui.FreeDayNoteUi
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakRoundButton
 import dev.retza.mak.ui.components.MakRowTitle
@@ -121,7 +128,10 @@ data class ScheduleUiState(
     // False when the filter shows several calendars, so a week correction would have no target.
     val canCorrectWeek: Boolean = true,
     // Every study program of the semester is hidden on this phone; the list gives way to a note.
-    val allProgramsHidden: Boolean = false
+    val allProgramsHidden: Boolean = false,
+    // Set when every calendar the view shows has a free day on the date; the classes are then not held.
+    val freeDay: FreeDayNoteUi? = null,
+    val calendarFreeDay: FreeDayNoteUi? = null
 )
 
 @Composable
@@ -231,8 +241,9 @@ private fun ListView(
             ScheduleFilterSection(filters = state.filters, onFilterSelected = onFilterSelected)
         }
         MakRowTitle(title = state.selectedDayLabel, meta = state.selectedDayCountLabel)
+        state.freeDay?.let { MakNoteBanner(title = it.title, subtitle = it.subtitle, role = MakNoteRole.Neutral) }
         if (state.items.isEmpty()) {
-            MakEmptyState("Brak zajęć w tym dniu dla wybranego kierunku.")
+            if (state.freeDay == null) MakEmptyState("Brak zajęć w tym dniu dla wybranego kierunku.")
         } else {
                 Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 state.items.forEach { item ->
@@ -521,8 +532,9 @@ private fun CalendarView(
                 onClick = onMarkFree
             )
         }
+        state.calendarFreeDay?.let { MakNoteBanner(title = it.title, subtitle = it.subtitle, role = MakNoteRole.Neutral) }
         if (state.calendarItems.isEmpty()) {
-            MakEmptyState("Brak zajęć w tym dniu.")
+            if (state.calendarFreeDay == null) MakEmptyState("Brak zajęć w tym dniu.")
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 state.calendarItems.forEach { item ->
@@ -543,11 +555,35 @@ private fun RowScope.CalendarDay(day: CalendarDayUi, onSelected: (String) -> Uni
         day.markers.size <= 3 && !day.hasMoreMarkers -> 8.dp
         else -> 6.dp
     }
+    val bandColor = MaterialTheme.colorScheme.secondaryContainer
     Column(
         modifier = Modifier
             .weight(1f)
             .heightIn(min = 48.dp)
             .clip(shape)
+            .then(
+                if (day.isFreeDay) {
+                    // A band across the cell; the rounded ends are dropped where it joins a free neighbour.
+                    Modifier.drawBehind {
+                        val bandHeight = 36.dp.toPx()
+                        val radius = 18.dp.toPx()
+                        val top = (size.height - bandHeight) / 2f
+                        drawRoundRect(
+                            color = bandColor,
+                            topLeft = Offset(0f, top),
+                            size = Size(size.width, bandHeight),
+                            cornerRadius = CornerRadius(radius)
+                        )
+                        // Where the band joins a free neighbour, the rounded end is squared off.
+                        if (day.joinsPrevious) {
+                            drawRect(bandColor, Offset(0f, top), Size(radius, bandHeight))
+                        }
+                        if (day.joinsNext) {
+                            drawRect(bandColor, Offset(size.width - radius, top), Size(radius, bandHeight))
+                        }
+                    }
+                } else Modifier
+            )
             .then(
                 if (day.isToday && !day.isSelected) {
                     Modifier.border(1.dp, MaterialTheme.colorScheme.primary, shape)
@@ -569,6 +605,7 @@ private fun RowScope.CalendarDay(day: CalendarDayUi, onSelected: (String) -> Uni
             fontSize = 13.sp,
             color = when {
                 day.isSelected -> MaterialTheme.colorScheme.onPrimary
+                day.isFreeDay -> MaterialTheme.colorScheme.onSecondaryContainer
                 day.isInCurrentMonth -> MaterialTheme.colorScheme.onSurface
                 else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
             },
@@ -639,10 +676,19 @@ private fun CalendarLegend(items: List<CalendarLegendUi>) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                CalendarMarker(
-                    color = if (item.isChange) MaterialTheme.colorScheme.onSurfaceVariant else courseMarkerTint(item.colorHex),
-                    changed = item.isChange
-                )
+                if (item.isFreeDay) {
+                    Box(
+                        Modifier
+                            .size(width = 12.dp, height = 10.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(MaterialTheme.colorScheme.secondaryContainer)
+                    )
+                } else {
+                    CalendarMarker(
+                        color = if (item.isChange) MaterialTheme.colorScheme.onSurfaceVariant else courseMarkerTint(item.colorHex),
+                        changed = item.isChange
+                    )
+                }
                 Text(
                     text = item.label,
                     style = MaterialTheme.typography.bodySmall,

@@ -46,7 +46,10 @@ data class CalendarDayUi(
     val isToday: Boolean = false,
     val isSelected: Boolean = false,
     val markers: List<CalendarMarkerUi> = emptyList(),
-    val hasMoreMarkers: Boolean = false
+    val hasMoreMarkers: Boolean = false,
+    val isFreeDay: Boolean = false,
+    val joinsPrevious: Boolean = false,
+    val joinsNext: Boolean = false
 )
 
 @Immutable
@@ -62,7 +65,8 @@ data class CalendarMarkerUi(
 data class CalendarLegendUi(
     val label: String,
     val colorHex: String? = null,
-    val isChange: Boolean = false
+    val isChange: Boolean = false,
+    val isFreeDay: Boolean = false
 )
 
 @Immutable

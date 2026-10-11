@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.schedule
 
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
@@ -26,6 +27,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -675,6 +677,65 @@ class ScheduleViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf(WeekOverrideScope.FROM_WEEK), repository.weekOverrides.map { it.scope })
+    }
+
+    @Test
+    fun freeDayMarksCalendarDaysAsBand() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.freeDays += FreeDayEntity(
+            id = 1L,
+            semesterId = 1L,
+            academicCalendarId = 1L,
+            startDate = LocalDate.of(2026, 9, 21),
+            endDate = LocalDate.of(2026, 9, 23),
+            name = "Rekolekcje"
+        )
+        val viewModel = viewModel(repository)
+        viewModel.selectView(ScheduleView.Calendar)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        val days = viewModel.schedule.value.calendarDays
+        val monday = days.single { it.id == "2026-09-21" }
+        val tuesday = days.single { it.id == "2026-09-22" }
+        val wednesday = days.single { it.id == "2026-09-23" }
+        assertTrue(monday.isFreeDay && tuesday.isFreeDay && wednesday.isFreeDay)
+        assertFalse(monday.joinsPrevious)
+        assertTrue(monday.joinsNext)
+        assertTrue(tuesday.joinsPrevious && tuesday.joinsNext)
+        assertTrue(wednesday.joinsPrevious)
+        assertFalse(wednesday.joinsNext)
+        assertTrue(viewModel.schedule.value.calendarLegend.any { it.label == "Dzień wolny" })
+    }
+
+    @Test
+    fun freeDayNoteFollowsTheFilter() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val second = repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(name = "Fizyka", color = "#000000"),
+            sourceCalendarId = 1L
+        )
+        repository.freeDays += FreeDayEntity(
+            id = 1L,
+            semesterId = 1L,
+            academicCalendarId = 1L,
+            startDate = LocalDate.of(2026, 9, 21),
+            endDate = LocalDate.of(2026, 9, 25),
+            name = "Rektorskie"
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+        assertNull(viewModel.schedule.value.freeDay)
+
+        viewModel.selectCourseFilter(second.semesterProgramId)
+        advanceUntilIdle()
+        assertNull(viewModel.schedule.value.freeDay)
+
+        viewModel.selectCourseFilter(1L)
+        advanceUntilIdle()
+        assertEquals("Dzień wolny: Rektorskie", viewModel.schedule.value.freeDay?.title)
     }
 }
 

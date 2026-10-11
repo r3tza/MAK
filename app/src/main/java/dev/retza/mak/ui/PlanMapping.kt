@@ -1,6 +1,7 @@
 package dev.retza.mak.ui
 
 import dev.retza.mak.text.polishPlural
+import dev.retza.mak.domain.FreeDay
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.WeekStatus
@@ -29,6 +30,22 @@ internal fun dateRangeWithYearLabel(start: LocalDate, end: LocalDate): String =
     } else {
         "${start.format(shortDateWithYearFormatter)} - ${end.format(shortDateWithYearFormatter)}"
     }
+
+/** A free day as a note above the classes of its day (`FEATURES.md`, „Dni wolne”). */
+data class FreeDayNoteUi(val title: String, val subtitle: String)
+
+internal fun FreeDay.todayNote(): FreeDayNoteUi = FreeDayNoteUi(
+    title = name ?: "Dzień wolny",
+    subtitle = if (startDate == endDate) FREE_DAY_RULE else
+        "${startDate.format(shortDateFormatter)} - ${endDate.format(shortDateFormatter)}. $FREE_DAY_RULE"
+)
+
+internal fun FreeDay.listNote(): FreeDayNoteUi = FreeDayNoteUi(
+    title = name?.let { "Dzień wolny: $it" } ?: "Dzień wolny",
+    subtitle = FREE_DAY_RULE
+)
+
+private const val FREE_DAY_RULE = "Zajęcia cykliczne się nie odbywają."
 
 internal val dayNames = linkedMapOf(
     DayOfWeek.MONDAY to "Poniedziałek",
