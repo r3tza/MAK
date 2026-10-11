@@ -10,12 +10,10 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterBackup
-import dev.retza.mak.data.repository.semesterCovering
 import dev.retza.mak.data.repository.withActiveSemester
 import dev.retza.mak.export.ExportImporter
 import dev.retza.mak.export.ExportSnapshot
 import dev.retza.mak.export.ImportSnapshotResult
-import java.time.LocalDate
 
 sealed interface PlanMergeResult {
     data class Ready(val data: BackupData) : PlanMergeResult
@@ -45,8 +43,7 @@ fun mergePlans(
     phone: BackupData,
     drive: BackupData,
     differences: List<PlanDifference>,
-    picks: Map<PlanDifference, PlanSide>,
-    today: LocalDate
+    picks: Map<PlanDifference, PlanSide>
 ): PlanMergeResult {
     require(picks.keys.containsAll(differences)) { "Every difference needs a picked side." }
     val phoneRows = phone.rows()
@@ -134,11 +131,8 @@ fun mergePlans(
 
     val activeId = phone.semesters.firstOrNull { it.semester.isActive }?.semester?.id
     val data = merged.toBackupData()
-    val withActive = if (activeId != null && merged.containsKey(PlanRowKey(PlanRowKind.SEMESTER, activeId))) {
-        data.withActiveSemester(activeId)
-    } else {
-        data.withActiveSemester(data.semesterCovering(today))
-    }
+    // Without a kept active semester the plan has none, and replaceAll picks the one covering today on save.
+    val withActive = data.withActiveSemester(activeId?.takeIf { merged.containsKey(PlanRowKey(PlanRowKind.SEMESTER, it)) })
     return when (val checked = ExportImporter.prepare(ExportSnapshot.from(withActive))) {
         is ImportSnapshotResult.Ready -> PlanMergeResult.Ready(withActive)
         is ImportSnapshotResult.Invalid -> PlanMergeResult.Invalid(checked.errors)

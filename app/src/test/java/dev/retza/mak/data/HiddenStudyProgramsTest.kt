@@ -1,4 +1,4 @@
-package dev.retza.mak.ui.settings
+package dev.retza.mak.data
 
 import dev.retza.mak.settings.InMemorySettingsPreferences
 import dev.retza.mak.data.repository.StudyProgramRecord

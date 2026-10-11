@@ -11,14 +11,14 @@ interface PlanSyncGateway {
 
     /**
      * Replaces the plan only while it still has [expectedFingerprint], in one transaction. The local
-     * active semester stays when [keepLocalActive] and its number exists in [data]; otherwise
-     * [fallbackActiveId] becomes active. False means the plan changed meanwhile and nothing was written.
+     * active semester stays when [keepLocalActive] and its number exists in [data]; otherwise no semester
+     * is marked active and `replaceAll` picks the fallback one in the same transaction. False means the
+     * plan changed meanwhile and nothing was written.
      */
     suspend fun replaceIfUnchanged(
         expectedFingerprint: String,
         data: BackupData,
-        keepLocalActive: Boolean,
-        fallbackActiveId: Long?
+        keepLocalActive: Boolean
     ): Boolean
 }
 
@@ -32,16 +32,13 @@ class RoomPlanSyncGateway(
     override suspend fun replaceIfUnchanged(
         expectedFingerprint: String,
         data: BackupData,
-        keepLocalActive: Boolean,
-        fallbackActiveId: Long?
+        keepLocalActive: Boolean
     ): Boolean {
         val replaced = backup.replaceIfCurrent { current ->
             if (SyncPlanFile.fingerprint(current) != expectedFingerprint) {
                 null
             } else {
-                data.withActiveSemester(
-                    activeSemesterAfterReplace(current.activeSemesterId, data, keepLocalActive, fallbackActiveId)
-                )
+                data.withActiveSemester(activeSemesterAfterReplace(current.activeSemesterId, data, keepLocalActive))
             }
         }
         // Like the active semester: program numbers mean the same programs only after the first download.
@@ -55,7 +52,5 @@ class RoomPlanSyncGateway(
 internal fun activeSemesterAfterReplace(
     localActiveId: Long?,
     data: BackupData,
-    keepLocalActive: Boolean,
-    fallbackActiveId: Long?
+    keepLocalActive: Boolean
 ): Long? = localActiveId?.takeIf { id -> keepLocalActive && data.semesters.any { it.semester.id == id } }
-    ?: fallbackActiveId

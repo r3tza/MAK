@@ -25,7 +25,7 @@ import org.junit.Test
 class PlanMergeTest {
     private fun merge(phone: BackupData, drive: BackupData, base: BackupData, pick: (PlanDifference) -> PlanSide): PlanMergeResult {
         val differences = planDifferences(phone, drive, base)
-        return mergePlans(phone, drive, differences, differences.associateWith(pick), TODAY)
+        return mergePlans(phone, drive, differences, differences.associateWith(pick))
     }
 
     private fun PlanMergeResult.data(): BackupData = when (this) {
@@ -166,6 +166,6 @@ class PlanMergeTest {
         val phone = basePlan(notes = listOf(noteRow(1, classId = 1, body = "Telefon")))
         val differences = planDifferences(phone, base, base)
 
-        mergePlans(phone, base, differences, emptyMap(), TODAY)
+        mergePlans(phone, base, differences, emptyMap())
     }
 }

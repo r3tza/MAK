@@ -74,7 +74,7 @@ class RoomPlanSyncGatewayTest {
         preferences.setStudyProgramHidden(1L, hidden = true)
 
         gateway.replaceIfUnchanged(
-            SyncPlanFile.fingerprint(gateway.snapshot()), plan("X"), keepLocalActive = false, fallbackActiveId = 1
+            SyncPlanFile.fingerprint(gateway.snapshot()), plan("X"), keepLocalActive = false
         )
 
         assertTrue(preferences.planDisplay.first().hiddenProgramIds.isEmpty())
@@ -86,7 +86,7 @@ class RoomPlanSyncGatewayTest {
         preferences.setStudyProgramHidden(1L, hidden = true)
 
         gateway.replaceIfUnchanged(
-            SyncPlanFile.fingerprint(gateway.snapshot()), plan("A", "B"), keepLocalActive = true, fallbackActiveId = 1
+            SyncPlanFile.fingerprint(gateway.snapshot()), plan("A", "B"), keepLocalActive = true
         )
 
         assertEquals(setOf(1L), preferences.planDisplay.first().hiddenProgramIds)
@@ -98,7 +98,7 @@ class RoomPlanSyncGatewayTest {
         val seen = SyncPlanFile.fingerprint(gateway.snapshot())
         backup.replaceAll(plan("A", "B", "Edytowany", active = 1))
 
-        val replaced = gateway.replaceIfUnchanged(seen, plan("Z Dysku"), keepLocalActive = true, fallbackActiveId = 1)
+        val replaced = gateway.replaceIfUnchanged(seen, plan("Z Dysku"), keepLocalActive = true)
 
         assertFalse(replaced)
         assertEquals(listOf("A", "B", "Edytowany"), gateway.snapshot().semesters.map { it.semester.name })
@@ -142,8 +142,7 @@ class RoomPlanSyncGatewayTest {
                 blockingGateway.replaceIfUnchanged(
                     expected,
                     downloaded,
-                    keepLocalActive = true,
-                    fallbackActiveId = 1
+                    keepLocalActive = true
                 )
             }
         }
@@ -188,8 +187,7 @@ class RoomPlanSyncGatewayTest {
                 RoomPlanSyncGateway(blockingBackup, preferences).replaceIfUnchanged(
                     expected,
                     replacementPlan,
-                    keepLocalActive = true,
-                    fallbackActiveId = 1
+                    keepLocalActive = true
                 )
             }
         }
@@ -264,7 +262,7 @@ class RoomPlanSyncGatewayTest {
         backup.replaceAll(plan("A", "B", active = 2))
 
         val replaced = gateway.replaceIfUnchanged(
-            SyncPlanFile.fingerprint(gateway.snapshot()), plan("A", "B", "C"), keepLocalActive = true, fallbackActiveId = 3
+            SyncPlanFile.fingerprint(gateway.snapshot()), plan("A", "B", "C"), keepLocalActive = true
         )
 
         assertTrue(replaced)
@@ -272,14 +270,25 @@ class RoomPlanSyncGatewayTest {
     }
 
     @Test
-    fun firstReplacementUsesTheFallbackSemester() = runBlocking {
+    fun firstReplacementActivatesTheSemesterCoveringToday() = runBlocking {
         backup.replaceAll(plan("A", "B", active = 1))
-
-        gateway.replaceIfUnchanged(
-            SyncPlanFile.fingerprint(gateway.snapshot()), plan("X", "Y", "Z"), keepLocalActive = false, fallbackActiveId = 3
+        // Only the second semester covers the backup clock's day, 2026-10-10.
+        val base = plan("X", "Y", "Z")
+        val remote = base.copy(
+            semesters = base.semesters.mapIndexed { index, semester ->
+                if (index == 1) semester else semester.copy(
+                    calendars = listOf(
+                        AcademicCalendarEntity(
+                            index + 1L, index + 1L, LocalDate.of(2025, 10, 1), LocalDate.of(2026, 1, 31), WeekType.A
+                        ).toRecord()
+                    )
+                )
+            }
         )
 
-        assertEquals(3L, gateway.snapshot().activeSemesterId)
+        gateway.replaceIfUnchanged(SyncPlanFile.fingerprint(gateway.snapshot()), remote, keepLocalActive = false)
+
+        assertEquals(2L, gateway.snapshot().activeSemesterId)
     }
 
     @Test

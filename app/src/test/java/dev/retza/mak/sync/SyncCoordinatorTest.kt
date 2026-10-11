@@ -149,6 +149,19 @@ class SyncCoordinatorTest {
     }
 
     @Test
+    fun echoOfADownloadIsNotADueChange() = runTest {
+        drive.put(plan("Dysk"))
+        coordinator.synchronize()
+
+        assertFalse(coordinator.recordLocalChange(Instant.parse("2026-09-30T10:00:00Z").toEpochMilli()))
+    }
+
+    @Test
+    fun localChangeIsDue() = runTest {
+        assertTrue(coordinator.recordLocalChange(Instant.parse("2026-09-30T10:00:00Z").toEpochMilli()))
+    }
+
+    @Test
     fun changeBackToTheSyncedPlanIsNotRecorded() = runTest {
         phone.data = plan("Telefon")
         coordinator.synchronize()
@@ -624,15 +637,14 @@ private class FakeGateway : PlanSyncGateway {
     override suspend fun replaceIfUnchanged(
         expectedFingerprint: String,
         data: BackupData,
-        keepLocalActive: Boolean,
-        fallbackActiveId: Long?
+        keepLocalActive: Boolean
     ): Boolean {
         beforeReplace()
         beforeReplace = {}
         if (SyncPlanFile.fingerprint(this.data) != expectedFingerprint) return false
-        this.data = data.withActiveSemester(
-            activeSemesterAfterReplace(this.data.activeSemesterId, data, keepLocalActive, fallbackActiveId)
-        )
+        val active = activeSemesterAfterReplace(this.data.activeSemesterId, data, keepLocalActive)
+        // Like RoomPlanBackupGateway.replaceAll: a plan without a kept active semester gets the one covering today.
+        this.data = data.withActiveSemester(active ?: data.semesterCovering(LocalDate.of(2026, 9, 30)))
         return true
     }
 }

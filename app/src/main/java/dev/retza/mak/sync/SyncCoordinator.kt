@@ -1,7 +1,6 @@
 package dev.retza.mak.sync
 
 import dev.retza.mak.data.repository.BackupData
-import dev.retza.mak.data.repository.semesterCovering
 import dev.retza.mak.export.NewerExportVersionException
 import java.io.IOException
 import java.time.Clock
@@ -110,11 +109,14 @@ class SyncCoordinator(
     /**
      * Remembers when the plan on this phone last changed, for the version choice. A plan equal to the
      * one last synchronized is not a change: it is the echo of a download or a change taken back.
+     *
+     * @return true when the plan differs from the one last synchronized, so a run is due.
      */
-    suspend fun recordLocalChange(changedAtMillis: Long) = serialized {
-        if (current.value.account == null) return@serialized
-        if (SyncPlanFile.fingerprint(gateway.snapshot()) == current.value.localFingerprint) return@serialized
+    suspend fun recordLocalChange(changedAtMillis: Long): Boolean = serialized {
+        if (current.value.account == null) return@serialized false
+        if (SyncPlanFile.fingerprint(gateway.snapshot()) == current.value.localFingerprint) return@serialized false
         save(current.value.copy(localChangedAtMillis = changedAtMillis))
+        true
     }
 
     private suspend fun <T> serialized(block: suspend () -> T): T =
@@ -250,8 +252,7 @@ class SyncCoordinator(
         differences: List<PlanDifference>,
         picks: Map<PlanDifference, PlanSide>
     ): SyncOutcome? {
-        val today = clock.instant().atZone(clock.zone).toLocalDate()
-        val merged = when (val result = mergePlans(local, remoteData, differences, picks, today)) {
+        val merged = when (val result = mergePlans(local, remoteData, differences, picks)) {
             is PlanMergeResult.Problems -> return SyncOutcome.MergeProblems(result.problems)
             is PlanMergeResult.Invalid -> return SyncOutcome.MergeInvalid(result.errors)
             is PlanMergeResult.Ready -> result.data
@@ -261,7 +262,7 @@ class SyncCoordinator(
         val replacement = editTracker.withReplacement {
             archive.add(localBytes, ArchiveSource.PHONE, clock.millis())
             archive.add(remoteBytes, ArchiveSource.DRIVE, clock.millis())
-            gateway.replaceIfUnchanged(localFingerprint, merged, keepLocalActive = true, merged.semesterCovering(today))
+            gateway.replaceIfUnchanged(localFingerprint, merged, keepLocalActive = true)
         }
         val replaced = when (replacement) {
             PlanReplacementResult.Editing -> return waitForEditor()
@@ -301,12 +302,11 @@ class SyncCoordinator(
         // A plan this phone only followed was built on by the other phone. Only a rejected plan or one
         // that another upload may have overwritten could be lost, so only those go to the archive.
         val mayBeLost = rejectsLocal || current.value.lastRunUploaded
-        val fallbackActive = remoteData.semesterCovering(clock.instant().atZone(clock.zone).toLocalDate())
         val replacement = editTracker.withReplacement {
             if (mayBeLost && !SyncPlanFile.isEmpty(local)) {
                 archive.add(localBytes, ArchiveSource.PHONE, clock.millis())
             }
-            gateway.replaceIfUnchanged(localFingerprint, remoteData, keepLocalActive = !firstRun, fallbackActive)
+            gateway.replaceIfUnchanged(localFingerprint, remoteData, keepLocalActive = !firstRun)
         }
         val replaced = when (replacement) {
             PlanReplacementResult.Editing -> return waitForEditor()

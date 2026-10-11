@@ -83,6 +83,8 @@ Kryterium zakończenia: testy przechodzą, zrzuty są identyczne; `rg "WeekTypeU
 
 ## 2. Nie uruchamiaj synchronizacji po echu pobranego planu i wybieraj semestr zastępczy tylko w data (I-92)
 
+Stan: zrobione. Wykonał subagent, recenzja i testy Android: agent planujący. Bez odchyleń od planu. Testy Android: `RoomPlanSyncGatewayTest` 10/10, `SyncViewModelTest` 12/12, `KoinGraphTest` 3/3.
+
 Cel: po pobraniu planu z Dysku zapis w Room wywołuje dziś `recordLocalChange`, który rozpoznaje echo, a mimo to `SyncRoomChangeObserver` zleca kolejny przebieg z zapytaniem do Dysku (I-92 punkt 7). Po zmianie echo nie zleca przebiegu. Semestr zastępczy wybiera tylko `replaceAll` w transakcji `data`; synchronizacja przekazuje najwyżej zachowany lokalny aktywny semestr (I-94 punkt 1). Reguła wyboru się nie zmienia (`SYNC.md`, „Przebieg synchronizacji”, punkt 2). `retainExistingHiddenPrograms` przechodzi z `ui` do `data` (I-94 punkt 5).
 
 Pliki: `sync/SyncCoordinator.kt`, `sync/SyncWork.kt` (`SyncRoomChangeObserver`), `sync/PlanSyncGateway.kt`, `sync/PlanMerge.kt`, `ui/settings/HiddenStudyPrograms.kt` (przeniesienie do `data/HiddenStudyPrograms.kt`), `MakApplication.kt`; testy JVM `sync/SyncCoordinatorTest.kt`, `sync/PlanMergeTest.kt`, `sync/GoogleAuthorizationFailureTest.kt`, `ui/settings/HiddenStudyProgramsTest.kt` (przeniesienie do `data/HiddenStudyProgramsTest.kt`); testy Android `sync/RoomPlanSyncGatewayTest.kt`, `ui/settings/SyncViewModelTest.kt`.

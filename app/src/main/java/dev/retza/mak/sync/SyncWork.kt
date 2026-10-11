@@ -119,8 +119,8 @@ class SyncWorkScheduler(
 }
 
 /**
- * Starts a run after each plan change and after the last open editor closes if a run was waiting for it, and records when the
- * plan last changed, which the version choice shows.
+ * Starts a run after each plan change that is not the echo of the last synchronization, and after the last open editor
+ * closes if a run was waiting for it. Also records when the plan last changed, which the version choice shows.
  */
 @Single
 class SyncRoomChangeObserver(
@@ -138,14 +138,15 @@ class SyncRoomChangeObserver(
                 .map { clock.millis() }
                 .debounce(1_000L)
                 .collect { changedAt ->
-                    try {
+                    val due = try {
                         coordinator.recordLocalChange(changedAt)
                     } catch (error: CancellationException) {
                         throw error
                     } catch (_: Exception) {
-                        // Only a label in the version choice depends on it.
+                        // Only a label in the version choice depends on the time; the run still checks the plan.
+                        true
                     }
-                    scheduler.enqueueImmediate()
+                    if (due) scheduler.enqueueImmediate()
                 }
         }
         scope.launch {
