@@ -2,6 +2,14 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-11: Dni wolne, decyzje przed implementacją (I-81, I-82)
+
+- Decyzja użytkownika z 2026-10-11: wygląd dni wolnych według makiet ze strony „Dni wolne (I-81, I-82)” w artefakcie „MAK: dni wolne”, bez poprawek.
+- Decyzja użytkownika z 2026-10-11: termin przeniesiony z dnia wolnego na inny dzień zostaje, bo to odrabianie; pomijany jest termin, który bez przeniesienia odbyłby się w dniu wolnym, także ze zmienioną godziną lub salą. Odrzucone: pomijanie każdego terminu, którego pierwotna data jest dniem wolnym.
+- Decyzja użytkownika z 2026-10-11: zakresy o tej samej nazwie i datach w kilku kalendarzach są jedną kartą na ekranie „Dni wolne”; edycja i usuwanie dotyczą całej karty. Odrzucone: osobna karta dla każdego kalendarza.
+- Decyzja użytkownika z 2026-10-11: pole „Po przerwie zacznij od tygodnia” pojawia się, gdy zakres obejmuje co najmniej jeden pełny tydzień od poniedziałku do piątku. Odrzucone: wymóg pełnego tygodnia od poniedziałku do niedzieli.
+- Wykonanie (agent na zlecenie użytkownika): dni wolne są tabelą `free_days` z kluczem kalendarza, jak korekty tygodni; format eksportu ma wersję 4 z polem `freeDays` w semestrze, a import przyjmuje wersje 2, 3 i 4. Dialog dni wolnych ma jeden ViewModel edytora używany przez „Plan” i ekran „Dni wolne”.
+
 ## 2026-10-11: Archiwum zakończonych zadań i porządki w dokumentacji
 
 - Fakty: `QUEUE.md` miał 90 KB, z czego 76 KB to 91 zakończonych zadań, które agent przewijał przy każdym zadaniu. `PLAN.md` zawierał wyłącznie zrobione kroki, a `ARCHITECTURE.md` i `FEATURES.md` opisywały jako otwarte rzeczy już rozstrzygnięte.
@@ -158,9 +166,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja użytkownika: publiczne repozytorium przyjmuje zgłoszenia błędów i pomysłów, ale nie pull requesty od innych osób. `CONTRIBUTING.md` jest po polsku i opisuje zgłoszenia, pomysły, brak pull requestów, forki na licencji Apache 2.0 oraz prywatność danych w zgłoszeniach. `.github/ISSUE_TEMPLATE/blad.yml` to formularz zgłoszenia błędu z wersją MAK, wersją Androida, krokami, wynikiem i zgodą na brak prywatnych danych. README odsyła do `CONTRIBUTING.md`, a `scripts/check_map.py` sprawdza też jego odnośniki.
 - Decyzja użytkownika (wariant zaproponowany przez agenta): `AGENTS.md` zawiera tylko rdzeń zasad. Zasady widgetu i powiadomień przeszły do `ARCHITECTURE.md`, sekcja 7, bo `AGENTS.md` odsyłał do nieistniejących tam sekcji. Zakres i sposób testowania przeszły do `STACK.md`, sekcja 5, a polecenia testów pojedynczej klasy, zrzutów, szerokości 320 dp, motywu ciemnego i skali czcionki do sekcji 6. Preferencje projektowe użytkownika przeszły do `ARCHITECTURE.md`, sekcje 4 i 5, bez powtórzeń z istniejącymi zasadami; sprzeczne z zakazem pilli sformułowanie „preferuj pille” usunięto. Szablon kroku planu, podział refaktoru na etapy i proces istotnej zmiany wyglądu przeszły do `WORKFLOW.md`, sekcja „Planowanie”. Usunięto nieaktualne zdanie o przykładowych testach szablonu.
 - Nowe zasady w `AGENTS.md`: wpis w logu podaje, kto podjął decyzję; pytanie użytkownika o zdanie agenta nie jest akceptacją (korekta użytkownika z 2026-09-28).
-
-## 2026-09-28: Rewizja zasad po korektach użytkownika
-
-- Fakty: Podczas planowania poprawek interfejsu nowe ogólne zasady (redukcja środków wizualnych, reguła powtarzania stanu, zakaz osobnego przycisku powrotu, „Kolizja nie jest winą użytkownika”, ograniczona paleta kolorów) kłóciły się z wcześniej przyjętymi elementami i z korektami użytkownika. Agent traktował przyjęte elementy jak naruszenia.
-- Decyzja: `AGENTS.md` mówi, że nowa zasada nie unieważnia przyjętej decyzji, a sprzeczność między dokumentami agent zgłasza zamiast ją rozstrzygać. `ARCHITECTURE.md` dopuszcza role głębi, rytmu i rozpoznawalności, wymienia zaakceptowane elementy wyglądu, pozwala powtórzyć stan, który może zniknąć z ekranu albo dotyczy wiersza, zapewnia czytelność przy wyświetlaniu zamiast ograniczania wyboru, wyjaśnia „Wstecz” w kreatorze i rozdziela kolory kolizji: ostrzeżenie przy zajęciach jest pomarańczowe, liczba kolizji w podsumowaniu i nagłówku czerwona. Drugie zajęcia kolizji aplikacja wskazuje tam, gdzie jest miejsce, a widget pokazuje co najmniej zakres. `WORKFLOW.md` pomija zaakceptowane elementy w przeglądzie redukcyjnym i dodaje sprawdzenie brakującej informacji.
-- Powód: Korekty użytkownika dotyczyły zarówno nadmiernej redukcji (nagłówek podsumowania, cienie, separator, „Aktywny”, „Anuluj”), jak i brakującej informacji (stan „Jednorazowe”, dni z wieloma zajęciami, nazwa drugich zajęć).

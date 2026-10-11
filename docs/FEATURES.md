@@ -113,21 +113,22 @@ Widok kalendarza pokazuje jeden miesiąc i zawiera:
 
 ### Dni wolne
 
-Decyzja użytkownika z 2026-10-09, reguły w `DOMAIN.md`, sekcja „Dni wolne”. Wygląd wymaga wariantu do akceptacji przed implementacją.
+Decyzja użytkownika z 2026-10-09, reguły w `DOMAIN.md`, sekcja „Dni wolne”. Wygląd według makiet ze strony „Dni wolne (I-81, I-82)” w artefakcie „MAK: dni wolne”, zaakceptowanych 2026-10-11.
 
 Krok pierwszy (I-81):
 
-- dialog „Dodaj dni wolne”: zakres dat w `DateRangePicker` z Material 3, opcjonalna nazwa i wybór kalendarzy, domyślnie wszystkie kalendarze semestru;
+- dialog „Dodaj dni wolne” (przy edycji „Edytuj dni wolne”): pola „Od” i „Do”, które otwierają `DateRangePicker` z Material 3, pole „Nazwa (opcjonalnie)” i checkboxy „Kalendarze” z nazwami kierunków każdego kalendarza, domyślnie wszystkie kalendarze semestru; przy jednym kalendarzu checkboxów nie ma; pod polami liczba dni i zdanie „Zajęcia cykliczne w tym czasie się nie odbędą. Terminy jednorazowe i przeniesione zostaną.”; akcje „Anuluj” i „Zapisz”;
+- jeden zapis tworzy ten sam zakres w każdym wybranym kalendarzu; zakresy o tej samej nazwie i datach są na ekranie „Dni wolne” jedną kartą, a edycja i usuwanie dotyczą całej karty (decyzja użytkownika z 2026-10-11);
 - wejście z kalendarza „Planu”: akcja „Oznacz jako wolny” pod nagłówkiem wybranego dnia, obok „Dodaj termin jednorazowy”, otwiera dialog z tym dniem jako zakresem;
-- wejście z konfiguracji semestru: ekran „Dni wolne” obok korekt tygodni i kalendarzy, z listą zakresów (nazwa, daty, kalendarze), edycją i usuwaniem;
-- „Dzisiaj” w dniu wolnym pokazuje „Dzień wolny” i nazwę zamiast „Dziś bez zajęć”, z zajęciami jednorazowymi i przeniesionymi, jeśli są;
-- kalendarz „Planu” wyróżnia dni wolne bez znaczników pominiętych zajęć, a lista pokazuje w takim dniu komunikat z nazwą;
-- widget pokazuje „Wolne” i nazwę.
+- wejście z konfiguracji semestru: wiersz „Dni wolne” pod „Korekty tygodni” z liczbą zakresów i dni (na przykład „2 zakresy, 11 dni”, bez dni wolnych „Brak”) otwiera ekran „Dni wolne”: zdanie „W dni wolne zajęcia cykliczne się nie odbywają. Terminy jednorazowe i przeniesione zostają.”, obrysowana akcja „Dodaj dni wolne” i karty z nazwą (bez nazwy „Dni wolne”), datami („Czwartek, 12 lis 2026” albo „23 gru 2026 - 1 sty 2027, 10 dni”), kalendarzami („Kalendarz: …” albo „Kalendarze: …”) i akcjami „Edytuj” oraz „Usuń” z potwierdzeniem;
+- „Dzisiaj” w dniu wolnym ma w karcie podsumowania nagłówek „Dzień wolny”, a w sekcji „Zajęcia” baner z nazwą (bez nazwy „Dzień wolny”), zakresem dat i zdaniem „Zajęcia cykliczne się nie odbywają.”, nad zajęciami jednorazowymi i przeniesionymi, jeśli są;
+- kalendarz „Planu” wyróżnia dni wolne tłem łączącym kolejne dni w pas, bez znaczników pominiętych zajęć, a legenda ma pozycję „Dzień wolny”; lista pokazuje w takim dniu baner „Dzień wolny: {nazwa}” ze zdaniem „Zajęcia cykliczne się nie odbywają.”;
+- widget pokazuje „Dzień wolny” i nazwę z datą końca zakresu (na przykład „Przerwa świąteczna, do 1 sty”).
 
 Krok drugi (I-82):
 
-- akcja „Dodaj święta ustawowe” na ekranie „Dni wolne”: lista polskich świąt ustawowych w zakresie kalendarza, z datami ruchomymi liczonymi lokalnie, z checkboxami przed dodaniem;
-- w dialogu dni wolnych obejmujących cały tydzień pole „Po przerwie zacznij od tygodnia” (A albo B), które tworzy korektę „Od tego tygodnia”.
+- obrysowana akcja „Dodaj święta ustawowe” pod „Dodaj dni wolne” otwiera dialog „Święta ustawowe”: zdanie „Święta w czasie semestru, {od} - {do}. Odznacz te, w które uczelnia prowadzi zajęcia.”, checkboxy świąt z nazwą i datą (domyślnie zaznaczone; święto, które jest już dniem wolnym, jest wyłączone z dopiskiem „Już w „{nazwa}””), linia „Kalendarze: …” i akcje „Anuluj” oraz „Dodaj {n} dni”; każde zaznaczone święto staje się jednodniowym dniem wolnym z nazwą święta we wszystkich kalendarzach semestru; daty ruchome liczone lokalnie;
+- w dialogu dni wolnych obejmujących co najmniej jeden pełny tydzień od poniedziałku do piątku pole „Po przerwie zacznij od tygodnia” z opcjami „Bez zmiany” (domyślnie), „Tydzień A” i „Tydzień B”; przy A albo B pod polem zdanie „Od {data} tydzień {A/B}, potem na zmianę. Powstanie korekta „Od tego tygodnia”.”, a zapis tworzy tę korektę (`DOMAIN.md`, sekcja „Dni wolne”).
 
 Kalendarz pokazuje wynik `ScheduleResolver`, dlatego musi być zgodny z ekranem „Dzisiaj”, listą planu i widgetem. Odwołane zajęcia mogą pozostać widoczne jako przekreślone tylko wtedy, gdy użytkownik włączy opcję „Pokaż odwołane”. Lista odwołanych terminów pochodzi z domeny (`cancelledOccurrences`), stosuje ten sam filtr kierunku co plan i pomija odwołania z dni, w które zajęcia po edycji już się nie odbywają. Licznik zajęć dnia liczy tylko zajęcia, które się odbywają. Domyślnie kalendarz pokazuje plan aktywny.
 
