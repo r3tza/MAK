@@ -4,27 +4,27 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.foundation.layout.Arrangement
-import dev.retza.mak.ui.semester.WeekOverrideScopeUi
-import dev.retza.mak.ui.semester.WeekTypeUi
+import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.WeekType
 
-fun WeekTypeUi.label(): String = "Tydzień $name"
+fun WeekType.label(): String = "Tydzień $name"
 
-fun WeekOverrideScopeUi.label(): String = when (this) {
-    WeekOverrideScopeUi.ONE_WEEK -> "Tylko ten tydzień"
-    WeekOverrideScopeUi.FROM_WEEK -> "Od tego tygodnia w przyszłość"
+fun WeekOverrideScope.label(): String = when (this) {
+    WeekOverrideScope.ONE_WEEK -> "Tylko ten tydzień"
+    WeekOverrideScope.FROM_WEEK -> "Od tego tygodnia w przyszłość"
 }
 
 @Composable
 fun WeekTypeSelectField(
     label: String,
-    value: WeekTypeUi,
-    onSelected: (WeekTypeUi) -> Unit,
+    value: WeekType,
+    onSelected: (WeekType) -> Unit,
     modifier: Modifier = Modifier
 ) {
     MakSelectField(
         label = label,
         value = value.label(),
-        options = WeekTypeUi.entries,
+        options = WeekType.entries,
         onSelected = onSelected,
         modifier = modifier,
         optionLabel = { it.label() }
@@ -33,11 +33,11 @@ fun WeekTypeSelectField(
 
 @Composable
 fun WeekOverrideScopeChoice(
-    selected: WeekOverrideScopeUi,
-    onSelected: (WeekOverrideScopeUi) -> Unit
+    selected: WeekOverrideScope,
+    onSelected: (WeekOverrideScope) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
-        WeekOverrideScopeUi.entries.forEach { scope ->
+        WeekOverrideScope.entries.forEach { scope ->
             MakChoiceRow(
                 label = scope.label(),
                 selected = selected == scope,

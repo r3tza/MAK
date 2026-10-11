@@ -77,7 +77,7 @@ class ScheduleResolverTest {
         )
 
         assertEquals(setOf(2L, 4L), result.occurrences.map { it.classId }.toSet())
-        assertEquals(WeekType.B, result.weekType)
+        assertEquals(WeekStatus.Single(WeekType.B), result.weekStatus)
     }
 
     @Test

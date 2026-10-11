@@ -23,6 +23,8 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.theme.MAKTheme
 import dev.retza.mak.ui.programs.StudyProgramEditorUi
 import org.junit.Assert.assertEquals
@@ -68,7 +70,7 @@ class SemesterScreenTest {
                             ),
                             courseItems = listOf(course(1L, "Informatyka")),
                             overrides = listOf(
-                                WeekOverrideUi(7L, "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
+                                WeekOverrideUi(7L, "2026-10-05", WeekType.A, WeekOverrideScope.ONE_WEEK)
                             ),
                             overrideCount = 1
                         ),
@@ -481,7 +483,7 @@ class SemesterScreenTest {
         var state by mutableStateOf(
             SemesterScreenUiState(
                 overrides = listOf(
-                    WeekOverrideUi(7L, "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
+                    WeekOverrideUi(7L, "2026-10-05", WeekType.A, WeekOverrideScope.ONE_WEEK)
                 )
             )
         )
@@ -552,7 +554,7 @@ class SemesterScreenTest {
                     SemesterWeekOverridesScreen(
                         state = SemesterScreenUiState(
                             overrides = listOf(
-                                WeekOverrideUi(7L, "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
+                                WeekOverrideUi(7L, "2026-10-05", WeekType.A, WeekOverrideScope.ONE_WEEK)
                             ),
                             overrideForm = WeekOverrideFormUiState(
                                 id = 7L,
@@ -585,7 +587,7 @@ class SemesterScreenTest {
     fun weekOverrideDeletionAsksForConfirmationAt320Dp() {
         var confirmed = 0
         var cancelled = 0
-        val override = WeekOverrideUi(7L, "2026-10-05", WeekTypeUi.A, WeekOverrideScopeUi.ONE_WEEK)
+        val override = WeekOverrideUi(7L, "2026-10-05", WeekType.A, WeekOverrideScope.ONE_WEEK)
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
@@ -628,7 +630,7 @@ class SemesterScreenTest {
         id = id,
         startDate = startDate,
         endDate = endDate,
-        firstWeek = WeekTypeUi.A,
+        firstWeek = WeekType.A,
         courseNames = courseNames
     )
 }

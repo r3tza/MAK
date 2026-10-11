@@ -5,6 +5,7 @@ import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.ClassItem
 import dev.retza.mak.domain.PlanDisplaySettings
 import dev.retza.mak.domain.StudyProgram
+import dev.retza.mak.domain.WeekStatus
 import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.parseHexColor
 import java.time.DayOfWeek
@@ -90,7 +91,7 @@ class WidgetPresenterTest {
             date,
             PlanDisplaySettings.DEFAULT
         )
-        assertTrue(plan.schedule.hasMixedWeekTypes)
+        assertEquals(WeekStatus.Mixed, plan.schedule.weekStatus)
 
         val state = WidgetPresenter().present(date, semester.name, plan, LocalTime.of(0, 0)) as WidgetUiState.Ready
 

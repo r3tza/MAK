@@ -68,12 +68,12 @@ class SemesterViewModelTest {
         assertEquals("Semestr", state.semester.name)
         assertEquals("2026-09-01", state.semester.startDate)
         assertEquals("2026-10-31", state.semester.endDate)
-        assertEquals(WeekTypeUi.A, state.semester.firstWeek)
+        assertEquals(dev.retza.mak.domain.WeekType.A, state.semester.firstWeek)
         assertEquals(listOf(1L to "Informatyka"), state.courseItems.map { it.assignmentId to it.name })
         assertEquals(1, state.overrides.size)
         assertEquals("2026-10-05", state.overrides.single().weekStartDate)
-        assertEquals(WeekTypeUi.B, state.overrides.single().weekType)
-        assertEquals(WeekOverrideScopeUi.ONE_WEEK, state.overrides.single().scope)
+        assertEquals(dev.retza.mak.domain.WeekType.B, state.overrides.single().weekType)
+        assertEquals(dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK, state.overrides.single().scope)
     }
 
     @Test
@@ -412,8 +412,8 @@ class SemesterViewModelTest {
             it.copy(
                 overrideForm = it.overrideForm.copy(
                     weekStartDate = "2026-10-05",
-                    weekType = WeekTypeUi.B,
-                    scope = WeekOverrideScopeUi.FROM_WEEK
+                    weekType = dev.retza.mak.domain.WeekType.B,
+                    scope = dev.retza.mak.domain.WeekOverrideScope.FROM_WEEK
                 )
             )
         }
@@ -449,7 +449,7 @@ class SemesterViewModelTest {
         advanceUntilIdle()
         assertEquals(5L, viewModel.semester.value.overrideForm.id)
 
-        viewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekType = WeekTypeUi.B)) }
+        viewModel.update { it.copy(overrideForm = it.overrideForm.copy(weekType = dev.retza.mak.domain.WeekType.B)) }
         viewModel.saveWeekOverride()
         advanceUntilIdle()
 

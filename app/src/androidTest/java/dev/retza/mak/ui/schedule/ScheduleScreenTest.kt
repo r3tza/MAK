@@ -23,11 +23,11 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
 import dev.retza.mak.ui.components.CalendarMarkerUi
-import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -457,7 +457,7 @@ class ScheduleScreenTest {
         weekSubtitle = "Bieżący tydzień",
         weekTypeLabel = "Tydzień A",
         weekSourceLabel = "Korekta ręczna",
-        weekType = WeekTypeUi.A,
+        weekType = WeekType.A,
         days = (1..7).map { day ->
             ScheduleDayUi(
                 id = "2026-09-${day.toString().padStart(2, '0')}",

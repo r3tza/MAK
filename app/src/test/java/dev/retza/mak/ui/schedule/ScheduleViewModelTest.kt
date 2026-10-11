@@ -12,8 +12,6 @@ import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
-import dev.retza.mak.ui.semester.WeekOverrideScopeUi
-import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.activePlanSource
 import dev.retza.mak.settings.InMemorySettingsPreferences
 import java.time.Clock
@@ -311,7 +309,7 @@ class ScheduleViewModelTest {
         advanceUntilIdle()
 
         viewModel.selectCourseFilter(result.semesterProgramId)
-        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         advanceUntilIdle()
 
         assertEquals(1, repository.weekOverrides.size)
@@ -335,7 +333,7 @@ class ScheduleViewModelTest {
         viewModel.selectCourseFilter(result.semesterProgramId)
 
         repository.failSaves = true
-        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         advanceUntilIdle()
 
         assertTrue(repository.weekOverrides.isEmpty())
@@ -369,6 +367,40 @@ class ScheduleViewModelTest {
     }
 
     @Test
+    fun filteredProgramShowsTheWeekOfItsCalendar() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val second = repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(name = "Fizyka", color = "#000000"),
+            sourceCalendarId = 1L
+        )
+        repository.weekOverrides += WeekOverrideEntity(
+            id = 50L,
+            semesterId = 1L,
+            academicCalendarId = second.academicCalendarId,
+            weekStartDate = LocalDate.of(2026, 9, 21),
+            weekType = WeekType.A,
+            scope = WeekOverrideScope.ONE_WEEK
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+        assertEquals("Różne tygodnie", viewModel.schedule.value.weekTypeLabel)
+        assertEquals("Różne kalendarze", viewModel.schedule.value.weekSourceLabel)
+
+        viewModel.selectCourseFilter(second.semesterProgramId)
+        advanceUntilIdle()
+        assertEquals("Tydzień A", viewModel.schedule.value.weekTypeLabel)
+        assertEquals("Korekta ręczna", viewModel.schedule.value.weekSourceLabel)
+        assertEquals(dev.retza.mak.domain.WeekType.A, viewModel.schedule.value.weekType)
+
+        viewModel.selectCourseFilter(1L)
+        advanceUntilIdle()
+        assertEquals("Tydzień B", viewModel.schedule.value.weekTypeLabel)
+        assertEquals("Wyliczony automatycznie", viewModel.schedule.value.weekSourceLabel)
+    }
+
+    @Test
     fun savingVisibleOverrideWithAllAndMultipleCalendarsIsIgnored() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         repository.addSeparatedSemesterProgram(
@@ -383,7 +415,7 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
-        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         advanceUntilIdle()
 
         assertTrue(repository.weekOverrides.isEmpty())
@@ -544,8 +576,8 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
-        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
-        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         repository.saveGate?.complete(Unit)
         advanceUntilIdle()
 
@@ -560,7 +592,7 @@ class ScheduleViewModelTest {
         advanceUntilIdle()
 
         repository.failSaves = true
-        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         advanceUntilIdle()
         assertEquals(
             listOf(UiFeedback("Nie udało się zapisać korekty tygodnia.", UiFeedbackKind.Error)),
@@ -568,7 +600,7 @@ class ScheduleViewModelTest {
         )
 
         repository.failSaves = false
-        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         advanceUntilIdle()
         assertTrue("saveWeekOverride" in repository.events)
     }
@@ -580,7 +612,7 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
-        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         advanceUntilIdle()
 
         val saved = repository.weekOverrides.single()
@@ -604,7 +636,7 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
-        viewModel.clearVisibleWeekOverride(WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.clearVisibleWeekOverride(dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         advanceUntilIdle()
 
         assertTrue(repository.weekOverrides.isEmpty())
@@ -617,11 +649,11 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
-        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         advanceUntilIdle()
-        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.FROM_WEEK)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.FROM_WEEK)
         advanceUntilIdle()
-        viewModel.clearVisibleWeekOverride(WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.clearVisibleWeekOverride(dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         advanceUntilIdle()
 
         assertEquals(listOf(WeekOverrideScope.FROM_WEEK), repository.weekOverrides.map { it.scope })

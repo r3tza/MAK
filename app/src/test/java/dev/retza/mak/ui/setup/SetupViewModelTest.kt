@@ -1,13 +1,13 @@
 package dev.retza.mak.ui.setup
 
 import androidx.lifecycle.SavedStateHandle
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
-import dev.retza.mak.ui.semester.WeekTypeUi
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
@@ -370,7 +370,7 @@ class SetupViewModelTest {
         assertEquals("Semestr drugi", state.semesterName)
         assertEquals("2027-02-01", state.startDate)
         assertEquals("2027-06-30", state.endDate)
-        assertEquals(WeekTypeUi.B, state.firstWeek)
+        assertEquals(WeekType.B, state.firstWeek)
 
         viewModel.update { it.copy(courseName = "Nowy kierunek") }
         viewModel.next()

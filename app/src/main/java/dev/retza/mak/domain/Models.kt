@@ -191,27 +191,13 @@ fun occurrenceId(classId: Long, originalDate: LocalDate): String = "$classId:$or
 data class ResolvedSchedule(
     val date: LocalDate,
     val semesterId: Long,
-    val week: WeekCalculation?,
     val occurrences: List<PlannedOccurrence>,
-    val hasMixedWeekTypes: Boolean = false,
+    val weekStatus: WeekStatus,
     val cancelled: List<PlannedOccurrence> = emptyList(),
     val weeksByCalendarId: Map<Long, WeekCalculation> = emptyMap()
 ) {
     val items: List<PlannedOccurrence>
         get() = occurrences
-
-    val weekStatus: WeekStatus
-        get() = when {
-            hasMixedWeekTypes -> WeekStatus.Mixed
-            week != null -> WeekStatus.Single(week.weekType)
-            else -> WeekStatus.OutsideSemester
-        }
-
-    val weekType: WeekType?
-        get() = week?.weekType
-
-    val correction: WeekOverride?
-        get() = week?.overrideSource
 }
 
 /** Two classes of one day that cannot both be attended comfortably (`DOMAIN.md`, „Kolizje”). */

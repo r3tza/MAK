@@ -50,6 +50,8 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.AllProgramsHiddenNote
 import dev.retza.mak.ui.shortDayNames
 import dev.retza.mak.ui.components.CalendarDayUi
@@ -72,8 +74,6 @@ import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.MakSpacing
 import dev.retza.mak.ui.components.MakViewSwitch
 import dev.retza.mak.ui.components.courseShapeColor
-import dev.retza.mak.ui.semester.WeekOverrideScopeUi
-import dev.retza.mak.ui.semester.WeekTypeUi
 
 enum class ScheduleView {
     List,
@@ -102,7 +102,7 @@ data class ScheduleUiState(
     val weekSubtitle: String,
     val weekTypeLabel: String,
     val weekSourceLabel: String,
-    val weekType: WeekTypeUi? = null,
+    val weekType: WeekType? = null,
     val days: List<ScheduleDayUi> = emptyList(),
     val filters: List<ScheduleFilterUi> = emptyList(),
     val selectedDayLabel: String = "",
@@ -137,8 +137,8 @@ fun ScheduleScreen(
     onShowCancelledChanged: (Boolean) -> Unit,
     onAddOneOff: () -> Unit,
     onOpenClass: (String) -> Unit,
-    onSaveWeekCorrection: (WeekTypeUi, WeekOverrideScopeUi) -> Unit,
-    onClearWeekCorrection: (WeekOverrideScopeUi) -> Unit,
+    onSaveWeekCorrection: (WeekType, WeekOverrideScope) -> Unit,
+    onClearWeekCorrection: (WeekOverrideScope) -> Unit,
     onStartSetup: () -> Unit,
     modifier: Modifier = Modifier,
     requiresSetup: Boolean = false,
@@ -190,7 +190,7 @@ fun ScheduleScreen(
     }
     if (showWeekDialog) {
         WeekCorrectionDialog(
-            currentType = state.weekType ?: WeekTypeUi.A,
+            currentType = state.weekType ?: WeekType.A,
             hasOneWeekCorrection = state.hasOneWeekCorrection,
             hasFromWeekCorrection = state.hasFromWeekCorrection,
             onDismiss = { showWeekDialog = false },
@@ -642,15 +642,15 @@ private fun CalendarLegend(items: List<CalendarLegendUi>) {
 
 @Composable
 private fun WeekCorrectionDialog(
-    currentType: WeekTypeUi,
+    currentType: WeekType,
     hasOneWeekCorrection: Boolean,
     hasFromWeekCorrection: Boolean,
     onDismiss: () -> Unit,
-    onSave: (WeekTypeUi, WeekOverrideScopeUi) -> Unit,
-    onClear: (WeekOverrideScopeUi) -> Unit
+    onSave: (WeekType, WeekOverrideScope) -> Unit,
+    onClear: (WeekOverrideScope) -> Unit
 ) {
     var type by remember { mutableStateOf(currentType) }
-    var scope by remember { mutableStateOf(WeekOverrideScopeUi.ONE_WEEK) }
+    var scope by remember { mutableStateOf(WeekOverrideScope.ONE_WEEK) }
     MakDialog(
         title = "Zmień tydzień A/B",
         description = "Wybierz oznaczenie i zakres zmiany. W każdym momencie możesz wrócić do automatycznego planu.",
@@ -667,7 +667,7 @@ private fun WeekCorrectionDialog(
         MakSecondaryAction(
             text = "Usuń korektę",
             onClick = { onClear(scope) },
-            enabled = if (scope == WeekOverrideScopeUi.ONE_WEEK) hasOneWeekCorrection else hasFromWeekCorrection
+            enabled = if (scope == WeekOverrideScope.ONE_WEEK) hasOneWeekCorrection else hasFromWeekCorrection
         )
     }
 }

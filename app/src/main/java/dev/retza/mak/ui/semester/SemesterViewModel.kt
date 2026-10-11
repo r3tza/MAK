@@ -153,15 +153,15 @@ class SemesterViewModel(
         update { it.copy(semester = it.semester.copy(endDate = value)) }
     }
 
-    fun updateSemesterFirstWeek(value: WeekTypeUi) = editSession.run {
+    fun updateSemesterFirstWeek(value: WeekType) = editSession.run {
         update { it.copy(semester = it.semester.copy(firstWeek = value)) }
     }
 
-    fun updateOverrideWeekType(value: WeekTypeUi) = editSession.run {
+    fun updateOverrideWeekType(value: WeekType) = editSession.run {
         update { it.copy(overrideForm = it.overrideForm.copy(weekType = value)) }
     }
 
-    fun updateOverrideScope(value: WeekOverrideScopeUi) = editSession.run {
+    fun updateOverrideScope(value: WeekOverrideScope) = editSession.run {
         update { it.copy(overrideForm = it.overrideForm.copy(scope = value)) }
     }
 
@@ -247,7 +247,7 @@ class SemesterViewModel(
                     semesterId = id,
                     startDate = start,
                     endDate = end,
-                    firstWeekType = WeekType.valueOf(form.firstWeek.name)
+                    firstWeekType = form.firstWeek
                 )
             )
             feedbackSink.publish(UiFeedback("Zapisano semestr", UiFeedbackKind.Success))
@@ -299,7 +299,7 @@ class SemesterViewModel(
                     semesterId = semester,
                     startDate = start,
                     endDate = end,
-                    firstWeekType = WeekType.valueOf(form.firstWeek.name)
+                    firstWeekType = form.firstWeek
                 )
             )
             feedbackSink.publish(UiFeedback("Zapisano kalendarz", UiFeedbackKind.Success))
@@ -634,8 +634,8 @@ class SemesterViewModel(
                     semesterId = semester,
                     academicCalendarId = currentCalendarId,
                     weekStartDate = date,
-                    weekType = WeekType.valueOf(form.weekType.name),
-                    scope = WeekOverrideScope.valueOf(form.scope.name)
+                    weekType = form.weekType,
+                    scope = form.scope
                 )
             )
             update { it.copy(overrideForm = WeekOverrideFormUiState()) }
@@ -699,7 +699,7 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
         name = semester.name,
         startDate = selected?.startDate?.toString().orEmpty(),
         endDate = selected?.endDate?.toString().orEmpty(),
-        firstWeek = selected?.let { WeekTypeUi.valueOf(it.firstWeekType.name) } ?: WeekTypeUi.A
+        firstWeek = selected?.firstWeekType ?: WeekType.A
     )
     return SemesterScreenUiState(
         semester = form,
@@ -710,8 +710,8 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
                 WeekOverrideUi(
                     override.id,
                     override.weekStartDate.toString(),
-                    WeekTypeUi.valueOf(override.weekType.name),
-                    WeekOverrideScopeUi.valueOf(override.scope.name)
+                    override.weekType,
+                    override.scope
                 )
             },
         overrideCount = overrides.size,
@@ -721,7 +721,7 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
                 id = calendar.id,
                 startDate = calendar.startDate.toString(),
                 endDate = calendar.endDate.toString(),
-                firstWeek = WeekTypeUi.valueOf(calendar.firstWeekType.name),
+                firstWeek = calendar.firstWeekType,
                 courseNames = programs
                     .filter { it.academicCalendarId == calendar.id }
                     .mapNotNull { assignment ->

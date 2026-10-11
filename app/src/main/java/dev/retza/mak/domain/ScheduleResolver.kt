@@ -60,16 +60,18 @@ class ScheduleResolver(
                 weekCalculator.calculate(calendar, date, weekOverrides)?.let { calendar.id to it }
             }
             .toMap()
-        val distinctWeekTypes = weeks.values.map { it.weekType }.distinct()
-        val hasMixedWeekTypes = distinctWeekTypes.size > 1
-        val sharedWeek = if (hasMixedWeekTypes) null else weeks.values.firstOrNull()
+        val weekTypes = weeks.values.map { it.weekType }.distinct()
+        val weekStatus = when {
+            weekTypes.isEmpty() -> WeekStatus.OutsideSemester
+            weekTypes.size > 1 -> WeekStatus.Mixed
+            else -> WeekStatus.Single(weekTypes.single())
+        }
 
         return ResolvedSchedule(
             date = date,
             semesterId = semester.id,
-            week = sharedWeek,
             occurrences = occurrences,
-            hasMixedWeekTypes = hasMixedWeekTypes,
+            weekStatus = weekStatus,
             cancelled = cancelled,
             weeksByCalendarId = weeks
         )

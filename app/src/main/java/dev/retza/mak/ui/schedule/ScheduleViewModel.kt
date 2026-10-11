@@ -34,8 +34,6 @@ import dev.retza.mak.ui.feedback.launchUiOperation
 import dev.retza.mak.ui.fullDateFormatter
 import dev.retza.mak.ui.label
 import dev.retza.mak.ui.monthFormatter
-import dev.retza.mak.ui.semester.WeekOverrideScopeUi
-import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.shortDateFormatter
 import dev.retza.mak.ui.shortDayNames
 import dev.retza.mak.ui.toLocalDateOrNull
@@ -171,12 +169,11 @@ class ScheduleViewModel(
         effectsChannel.trySend(ScheduleEffect.OpenNewClassEditor(controls.value.calendarDate))
     }
 
-    fun saveVisibleWeekOverride(weekType: WeekTypeUi, scope: WeekOverrideScopeUi) {
+    fun saveVisibleWeekOverride(weekType: WeekType, scope: WeekOverrideScope) {
         if (weekOverrideOperationRunning) return
         val data = activePlan.value?.data ?: return
         val calendarId = visibleWeekCalendarId(data) ?: return
         val monday = controls.value.scheduleDate.weekStart()
-        val entityScope = WeekOverrideScope.valueOf(scope.name)
         weekOverrideOperationRunning = true
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -189,26 +186,25 @@ class ScheduleViewModel(
                     semesterId = data.semester.id,
                     academicCalendarId = calendarId,
                     weekStartDate = monday,
-                    weekType = WeekType.valueOf(weekType.name),
-                    scope = entityScope
+                    weekType = weekType,
+                    scope = scope
                 )
             )
         }
     }
 
-    fun clearVisibleWeekOverride(scope: WeekOverrideScopeUi) {
+    fun clearVisibleWeekOverride(scope: WeekOverrideScope) {
         if (weekOverrideOperationRunning) return
         val data = activePlan.value?.data ?: return
         val calendarId = visibleWeekCalendarId(data) ?: return
         val monday = controls.value.scheduleDate.weekStart()
-        val entityScope = WeekOverrideScope.valueOf(scope.name)
         weekOverrideOperationRunning = true
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
             errorMessage = "Nie udało się usunąć korekty tygodnia.",
             onFinish = { weekOverrideOperationRunning = false }
         ) {
-            semesterRepository.deleteWeekOverride(calendarId, monday, entityScope)
+            semesterRepository.deleteWeekOverride(calendarId, monday, scope)
         }
     }
 
@@ -295,21 +291,25 @@ class ScheduleViewModel(
                 data.semesterPrograms.firstOrNull { it.id == activeFilter }?.academicCalendarId
             )
         }
+        // The week row follows the calendar of the active filter, or the single calendar when there is no filter.
+        val weekCalendarId = visibleWeekCalendarId(data, activeFilter)
+        val shownWeek = weekCalendarId?.let { selected.weeksByCalendarId[it] }
+        val relevantWeeks = selected.weeksByCalendarId.filterKeys { it in relevantCalendarIds }.values
         return ScheduleUiState(
             view = control.scheduleView,
             weekRangeLabel = "${monday.format(shortDateFormatter)} - ${monday.plusDays(6).format(shortDateFormatter)}",
             weekSubtitle = if (monday == currentWeekMonday) "Bieżący tydzień" else data.semester.name,
-            weekTypeLabel = selected.weekStatus.label(),
+            weekTypeLabel = when {
+                weekCalendarId == null -> selected.weekStatus.label()
+                shownWeek == null -> WeekStatus.OutsideSemester.label()
+                else -> WeekStatus.Single(shownWeek.weekType).label()
+            },
             weekSourceLabel = when {
-                selected.weekStatus == WeekStatus.Mixed -> "Różne kalendarze"
-                selected.correction == null -> "Wyliczony automatycznie"
-                else -> "Korekta ręczna"
+                weekCalendarId == null && selected.weekStatus == WeekStatus.Mixed -> "Różne kalendarze"
+                relevantWeeks.any { it.overrideSource != null } -> "Korekta ręczna"
+                else -> "Wyliczony automatycznie"
             },
-            weekType = if (selected.weekStatus == WeekStatus.Mixed) {
-                null
-            } else {
-                selected.weekType?.let { WeekTypeUi.valueOf(it.name) }
-            },
+            weekType = shownWeek?.weekType,
             days = (0L..6L).map { offset ->
                 val date = monday.plusDays(offset)
                 ScheduleDayUi(

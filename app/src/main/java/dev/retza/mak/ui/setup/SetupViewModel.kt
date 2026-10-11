@@ -15,7 +15,6 @@ import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.domain.WeekType
-import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.domain.shouldActivateNewSemester
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.sync.PlanEditTracker
@@ -73,7 +72,7 @@ data class SetupWizardUiState(
     val semesterName: String = "",
     val startDate: String = "",
     val endDate: String = "",
-    val firstWeek: WeekTypeUi = WeekTypeUi.A,
+    val firstWeek: WeekType = WeekType.A,
     val courseName: String = "",
     val courseColor: String = DefaultCourseColor,
     val programOptions: List<SetupProgramOptionUi> = emptyList(),
@@ -117,7 +116,7 @@ data class SetupSemesterResume(
     val name: String,
     val startDate: String,
     val endDate: String,
-    val firstWeek: WeekTypeUi
+    val firstWeek: WeekType
 )
 
 @KoinViewModel
@@ -234,7 +233,7 @@ class SetupViewModel(
                 name = semester.name,
                 startDate = calendar?.startDate?.toString().orEmpty(),
                 endDate = calendar?.endDate?.toString().orEmpty(),
-                firstWeek = calendar?.firstWeekType?.let { WeekTypeUi.valueOf(it.name) } ?: WeekTypeUi.A
+                firstWeek = calendar?.firstWeekType ?: WeekType.A
             )
         }
         start(resume, programOptions)
@@ -450,7 +449,7 @@ class SetupViewModel(
                     semesterId = existingSemester ?: 0L,
                     startDate = start,
                     endDate = end,
-                    firstWeekType = WeekType.valueOf(current.firstWeek.name)
+                    firstWeekType = current.firstWeek
                 ),
                 activate = activate
             )

@@ -13,6 +13,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.toLocalDateOrNull
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.MakCourseColorPicker
@@ -31,7 +32,6 @@ import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.WeekTypeSelectField
-import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.components.distinctLabels
 
 @Composable
@@ -40,7 +40,7 @@ fun SetupWizard(
     onSemesterNameChanged: (String) -> Unit,
     onStartDateChanged: (String) -> Unit,
     onEndDateChanged: (String) -> Unit,
-    onFirstWeekChanged: (WeekTypeUi) -> Unit,
+    onFirstWeekChanged: (WeekType) -> Unit,
     onCourseNameChanged: (String) -> Unit,
     onCourseColorChanged: (String) -> Unit,
     onProgramModeChanged: (SetupProgramMode) -> Unit,
@@ -135,7 +135,7 @@ private fun SemesterStep(
     onSemesterNameChanged: (String) -> Unit,
     onStartDateChanged: (String) -> Unit,
     onEndDateChanged: (String) -> Unit,
-    onFirstWeekChanged: (WeekTypeUi) -> Unit,
+    onFirstWeekChanged: (WeekType) -> Unit,
     onNext: () -> Unit,
     onReturnToSettings: () -> Unit,
     showReturnToSettings: Boolean

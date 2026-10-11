@@ -1,5 +1,7 @@
 package dev.retza.mak.ui.semester
 
+import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.components.DefaultCourseColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -63,21 +65,11 @@ import dev.retza.mak.ui.shortDateWithYearFormatter
 import dev.retza.mak.ui.toLocalDateOrNull
 import dev.retza.mak.ui.components.parseHexColor
 
-enum class WeekTypeUi {
-    A,
-    B
-}
-
-enum class WeekOverrideScopeUi {
-    ONE_WEEK,
-    FROM_WEEK
-}
-
 data class SemesterFormUiState(
     val name: String = "",
     val startDate: String = "",
     val endDate: String = "",
-    val firstWeek: WeekTypeUi = WeekTypeUi.A,
+    val firstWeek: WeekType = WeekType.A,
     val nameError: String? = null,
     val startDateError: String? = null,
     val endDateError: String? = null,
@@ -88,15 +80,15 @@ data class SemesterFormUiState(
 data class WeekOverrideUi(
     val id: Long,
     val weekStartDate: String,
-    val weekType: WeekTypeUi,
-    val scope: WeekOverrideScopeUi
+    val weekType: WeekType,
+    val scope: WeekOverrideScope
 )
 
 data class WeekOverrideFormUiState(
     val id: Long? = null,
     val weekStartDate: String = "",
-    val weekType: WeekTypeUi = WeekTypeUi.A,
-    val scope: WeekOverrideScopeUi = WeekOverrideScopeUi.ONE_WEEK,
+    val weekType: WeekType = WeekType.A,
+    val scope: WeekOverrideScope = WeekOverrideScope.ONE_WEEK,
     val weekStartDateError: String? = null,
     val isSaving: Boolean = false,
     val isOpen: Boolean = false
@@ -129,7 +121,7 @@ data class SemesterCalendarUi(
     val id: Long,
     val startDate: String,
     val endDate: String,
-    val firstWeek: WeekTypeUi,
+    val firstWeek: WeekType,
     val courseNames: List<String>
 )
 
@@ -198,7 +190,7 @@ fun SemesterScreen(
     onSemesterNameChanged: (String) -> Unit,
     onSemesterStartDateChanged: (String) -> Unit,
     onSemesterEndDateChanged: (String) -> Unit,
-    onSemesterFirstWeekChanged: (WeekTypeUi) -> Unit,
+    onSemesterFirstWeekChanged: (WeekType) -> Unit,
     onSaveSemester: () -> Unit,
     onOpenCourses: () -> Unit,
     onOpenOverrides: () -> Unit,
@@ -331,8 +323,8 @@ fun SemesterWeekOverridesScreen(
     state: SemesterScreenUiState,
     onCalendarSelected: (Long) -> Unit,
     onWeekStartDateChanged: (String) -> Unit,
-    onWeekTypeChanged: (WeekTypeUi) -> Unit,
-    onScopeChanged: (WeekOverrideScopeUi) -> Unit,
+    onWeekTypeChanged: (WeekType) -> Unit,
+    onScopeChanged: (WeekOverrideScope) -> Unit,
     onNewOverride: () -> Unit,
     onEditOverride: (Long) -> Unit,
     onSaveOverride: () -> Unit,
@@ -387,7 +379,7 @@ fun SemesterCalendarsScreen(
     onCalendarSelected: (Long) -> Unit,
     onStartDateChanged: (String) -> Unit,
     onEndDateChanged: (String) -> Unit,
-    onFirstWeekChanged: (WeekTypeUi) -> Unit,
+    onFirstWeekChanged: (WeekType) -> Unit,
     onSaveCalendar: () -> Unit,
     onDeleteCalendar: (Long) -> Unit,
     onConfirmCalendarDeletion: () -> Unit,
@@ -491,7 +483,7 @@ private fun CalendarDateFields(
     state: SemesterFormUiState,
     onStartDateChanged: (String) -> Unit,
     onEndDateChanged: (String) -> Unit,
-    onFirstWeekChanged: (WeekTypeUi) -> Unit
+    onFirstWeekChanged: (WeekType) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
         MakFieldPair(
@@ -535,7 +527,7 @@ private fun SemesterForm(
     onNameChanged: (String) -> Unit,
     onStartDateChanged: (String) -> Unit,
     onEndDateChanged: (String) -> Unit,
-    onFirstWeekChanged: (WeekTypeUi) -> Unit,
+    onFirstWeekChanged: (WeekType) -> Unit,
     onSave: () -> Unit
 ) {
     Column(
@@ -715,8 +707,8 @@ private fun WeekOverridesSection(
     overrides: List<WeekOverrideUi>,
     form: WeekOverrideFormUiState,
     onWeekStartDateChanged: (String) -> Unit,
-    onWeekTypeChanged: (WeekTypeUi) -> Unit,
-    onScopeChanged: (WeekOverrideScopeUi) -> Unit,
+    onWeekTypeChanged: (WeekType) -> Unit,
+    onScopeChanged: (WeekOverrideScope) -> Unit,
     onNewOverride: () -> Unit,
     onEditOverride: (Long) -> Unit,
     onSaveOverride: () -> Unit,
@@ -792,8 +784,8 @@ private fun WeekOverrideCard(
                     ?: item.weekStartDate
                 Text(
                     text = when (item.scope) {
-                        WeekOverrideScopeUi.ONE_WEEK -> "$weekStart, tylko ten tydzień"
-                        WeekOverrideScopeUi.FROM_WEEK -> "Od $weekStart"
+                        WeekOverrideScope.ONE_WEEK -> "$weekStart, tylko ten tydzień"
+                        WeekOverrideScope.FROM_WEEK -> "Od $weekStart"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -813,8 +805,8 @@ private fun WeekOverrideCard(
 private fun WeekOverrideForm(
     state: WeekOverrideFormUiState,
     onWeekStartDateChanged: (String) -> Unit,
-    onWeekTypeChanged: (WeekTypeUi) -> Unit,
-    onScopeChanged: (WeekOverrideScopeUi) -> Unit,
+    onWeekTypeChanged: (WeekType) -> Unit,
+    onScopeChanged: (WeekOverrideScope) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit
 ) {

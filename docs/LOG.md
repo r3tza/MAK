@@ -2,6 +2,12 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-11: Zakres poprawek po przeglądzie zmian z audytu (I-91 do I-94)
+
+- Fakty: Przegląd zmian z audytu z 2026-10-11 dał zadania I-91 do I-94. Agent ocenił każdy punkt w kodzie i rozpisał w `PLAN.md` tylko te, które naprawiają błąd albo usuwają zbędną pracę lub kopię reguły.
+- Decyzja użytkownika z 2026-10-11: odrzucone są I-93 w całości, I-91 punkt 5, I-92 punkty 2, 3 i 6, I-94 punkty 2 i 3 oraz zamiana `OccurrenceStatusUi` na enum domenowy z I-94 punktu 6. Nie proponuj ich ponownie bez nowego powodu.
+- Uzasadnienie: I-93 przebudowuje dopuszczanie edycji, które działa i nie ma znanego wyścigu; przebudowa niesie ryzyko nowego wyścigu bez korzyści dla użytkownika. Opisana w I-93 różnica między lambdą `hasDraft` a kolektorem w `SemesterViewModel` nie jest błędem, bo `releaseIfNoDraft()` sprawdza lambdę z `courseFormOpen`. Wspólny kalendarz z najniższym identyfikatorem ma trzy kopie na trzech różnych typach. Zysk wydajności z I-92 punktów 2, 3 i 6 jest niezauważalny przy wielkości planu. I-94 punkty 2 i 3 zmieniają wiele plików bez skutku dla użytkownika. `OccurrenceStatusUi` ma własne nazwy, etykiety i ikony.
+
 ## 2026-10-10: Wykonanie poprawek z audytu (I-84 do I-90)
 
 - Wykonanie (agent na zlecenie użytkownika, polecenie „wykonaj wszystkie poprawki z audytu”): ViewModele ekranów są pobierane w celach nawigacji, a w `MainActivity` zostały cztery ViewModele powłoki; `SemesterViewModel` żyje w podgrafie semestru i zbiera `observeSemesterConfiguration`. Dopuszczanie edycji wobec synchronizacji trzyma ViewModel przez `PlanEditSession` zamiast kompozycyjnego `TrackPlanEditing`; wpisany znak trafia do stanu od razu, a odświeżenie przed edycją zachowuje wpisany tekst (regresja znaleziona przy odbiorze: pierwszy znak trafiał na koniec tekstu). Górny pasek deklaruje cel nawigacji (`TopBarState`). Widget i synchronizacja obserwują jeden strumień `PlanChanges`, a własny zapis pobranego planu rozpoznaje skrót planu. Kontrakt kopii zapasowej używa rekordów zamiast encji Room, a sprawdzenie i zastąpienie planu to jedna transakcja `replaceIfCurrent` w `data`. Identyfikatory w domenie i stanie interfejsu są `Long`. Nowe pakiety `settings` i `text`; `ActivePlanSource` w `data`.
@@ -159,9 +165,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Fakty: Zasady UI opisywały czytelność, stałe odstępy, dostępność i zakaz statycznych pilli, ale nie mówiły wprost, kiedy zrezygnować z karty, ikony, koloru albo animacji. Audyt kodu wykazał jeden styl `MakNoteBanner` dla neutralnych informacji, ostrzeżeń i błędów oraz osobną kartę dla każdej grupy ekranu „O aplikacji”.
 - Decyzja: Każdy element wizualny musi przekazywać informację, budować hierarchię, wskazywać stan, wspierać nawigację albo działanie. Hierarchia najpierw używa typografii, odstępów, wyrównania i kontrastu. Karty grupują rzeczywiste obiekty, ikony wspierają rozpoznanie, status wpływa na decyzję, a animacja przedstawia rzeczywistą zmianę lub oczekiwanie. `WORKFLOW.md` wymaga przeglądu redukcyjnego przed zakończeniem zmiany UI.
 - Wynik audytu: I-54 rozdziela role komunikatów, a I-55 ogranicza karty na ekranie „O aplikacji”. Gradient podsumowania, kolory kierunków i animacja podczas rzeczywistego ładowania są zaakceptowanymi elementami funkcjonalnymi. Nie znaleziono tekstów marketingowych, fontu monospace, dekoracyjnych ikon ani ciągłej animacji poza oczekiwaniem na dane. Oględziny na urządzeniu nadal należą do O-05 i O-06.
-
-## 2026-09-28: Wydanie 0.2.2 i działająca aktualizacja (I-49, I-52, O-07)
-
-- Fakty: Tag `v0.2.2` zbudował się poprawnie w GitHub Actions, a użytkownik opublikował wydanie. Użytkownik potwierdził, że aktualizacja z aplikacji do 0.2.2 działa.
-- Decyzja: I-52 ma status `gotowe`. O-07 pozostaje otwarty dla niepotwierdzonych przypadków błędów i jawnego potwierdzenia zachowania danych. I-49 pozostaje w toku do sprawdzenia instalacji według README na drugim telefonie i domknięcia O-07.
-- Weryfikacja: Przed tagiem przeszły testy JVM, kompilacja testów urządzenia, lint i `assembleDebug`; workflow wydania zakończył się sukcesem. Główny przebieg aktualizacji potwierdził użytkownik 2026-09-28.

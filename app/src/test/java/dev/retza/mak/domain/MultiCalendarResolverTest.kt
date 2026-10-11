@@ -4,8 +4,6 @@ import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -83,8 +81,7 @@ class MultiCalendarResolverTest {
     fun mixedWeekTypesAreReportedInsteadOfOneLabel() {
         val plan = provider.resolve(data(emptyList()), monday, PlanDisplaySettings.DEFAULT)
 
-        assertTrue(plan.schedule.hasMixedWeekTypes)
-        assertNull(plan.schedule.week)
+        assertEquals(WeekStatus.Mixed, plan.schedule.weekStatus)
     }
 
     @Test
@@ -99,8 +96,7 @@ class MultiCalendarResolverTest {
 
         val plan = provider.resolve(singleData, monday, PlanDisplaySettings.DEFAULT)
 
-        assertFalse(plan.schedule.hasMixedWeekTypes)
-        assertEquals(WeekType.A, plan.schedule.weekType)
+        assertEquals(WeekStatus.Single(WeekType.A), plan.schedule.weekStatus)
     }
 
     @Test
