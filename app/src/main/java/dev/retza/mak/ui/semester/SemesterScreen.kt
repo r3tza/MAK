@@ -200,8 +200,6 @@ fun SemesterScreen(
     MakScreenContent(
         modifier = modifier.verticalScroll(rememberScrollState())
     ) {
-        MakScreenIntro("Zakres dat, pierwszy tydzień A/B, kierunki i ręczne korekty tygodni.")
-
         SemesterForm(
             state = state.semester,
             showDates = state.calendars.size <= 1,
@@ -345,7 +343,6 @@ fun SemesterWeekOverridesScreen(
         )
     }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
-        MakScreenIntro("Ustaw oznaczenie tylko dla jednego tygodnia albo od wybranego tygodnia w przyszłość.")
         if (state.calendars.size > 1) {
             MakSelectField(
                 label = "Kalendarz",
@@ -720,7 +717,6 @@ private fun WeekOverridesSection(
             Text("Zapisane korekty", fontWeight = FontWeight.SemiBold, fontSize = MaterialTheme.typography.titleMedium.fontSize)
             MakTextAction(text = "Dodaj", onClick = onNewOverride)
         }
-        MakHelperText("Każda korekta dotyczy poniedziałku wybranego tygodnia.")
         if (form.isOpen && form.id == null) {
             WeekOverrideForm(
                 state = form,

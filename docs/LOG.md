@@ -2,6 +2,15 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-11: Dodawanie kierunków na ekranie „Kierunki” (I-95)
+
+- Fakty: Po kreatorze kierunek dało się dodać tylko w konfiguracji semestru, czego użytkownik nie znalazł. Karta semestru pokazywała jedno długie zdanie bez roku, a podsumowanie powiadomień wyglądało tak samo bez względu na włączone rodzaje.
+- Decyzja użytkownika z 2026-10-11: ekran „Kierunki” w ustawieniach ma „Dodaj kierunek” z nazwą i kolorem; nowy kierunek trafia od razu do aktywnego semestru i dostaje jego wspólny kalendarz, a bez aktywnego semestru powstaje bez przypisania.
+- Decyzja użytkownika z 2026-10-11: ekran „Dodaj kierunek” w konfiguracji semestru zostaje bez zmian zachowania, ale traci teksty „Nazwa i kolor istniejącego kierunku są wspólne dla wszystkich semestrów.” i „Powstanie kopia dat, rytmu i korekt wybranego kalendarza.”.
+- Odrzucone: lista kierunków semestru z checkboxami zamiast formularza „Dodaj kierunek”, bo checkboxy miałyby na dwóch ekranach „Kierunki” dwa różne znaczenia.
+- Decyzja użytkownika z 2026-10-11: znikają opisy powtarzające interfejs na ekranach „Semestr” i „Korekty tygodni”.
+- Decyzja użytkownika z 2026-10-11: plan wykonuje się na jednej gałęzi od `main` po scaleniu I-79.
+
 ## 2026-10-11: Zakres poprawek po przeglądzie zmian z audytu (I-91 do I-94)
 
 - Fakty: Przegląd zmian z audytu z 2026-10-11 dał zadania I-91 do I-94. Agent ocenił każdy punkt w kodzie i rozpisał w `PLAN.md` tylko te, które naprawiają błąd albo usuwają zbędną pracę lub kopię reguły.
@@ -159,9 +168,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Korekta użytkownika tego dnia: alert kolizji w widgecie jest pomarańczowy, w kolorach ostrzeżenia aplikacji, a nie czerwony, zgodnie z zasadą „Kolizja nie jest winą użytkownika”. Wcześniejsza decyzja o czerwonym alercie przestaje obowiązywać.
 - Odrzucone: pięć znaczników z plusem; ostrzeżenie bez dopasowania koloru; blokada zapisu nieczytelnych kolorów.
 - Otwarte: obramowanie przycisków ikon w górnym pasku, trzy style zaznaczenia na „Planie” i jasność karty podsumowania w motywie ciemnym (`KNOWN_ISSUES.md`, pozycja „Czekają na decyzję użytkownika”).
-
-## 2026-09-28: Reguły redukcji interfejsu i audyt (I-54, I-55)
-
-- Fakty: Zasady UI opisywały czytelność, stałe odstępy, dostępność i zakaz statycznych pilli, ale nie mówiły wprost, kiedy zrezygnować z karty, ikony, koloru albo animacji. Audyt kodu wykazał jeden styl `MakNoteBanner` dla neutralnych informacji, ostrzeżeń i błędów oraz osobną kartę dla każdej grupy ekranu „O aplikacji”.
-- Decyzja: Każdy element wizualny musi przekazywać informację, budować hierarchię, wskazywać stan, wspierać nawigację albo działanie. Hierarchia najpierw używa typografii, odstępów, wyrównania i kontrastu. Karty grupują rzeczywiste obiekty, ikony wspierają rozpoznanie, status wpływa na decyzję, a animacja przedstawia rzeczywistą zmianę lub oczekiwanie. `WORKFLOW.md` wymaga przeglądu redukcyjnego przed zakończeniem zmiany UI.
-- Wynik audytu: I-54 rozdziela role komunikatów, a I-55 ogranicza karty na ekranie „O aplikacji”. Gradient podsumowania, kolory kierunków i animacja podczas rzeczywistego ładowania są zaakceptowanymi elementami funkcjonalnymi. Nie znaleziono tekstów marketingowych, fontu monospace, dekoracyjnych ikon ani ciągłej animacji poza oczekiwaniem na dane. Oględziny na urządzeniu nadal należą do O-05 i O-06.

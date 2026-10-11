@@ -253,7 +253,7 @@ class SemesterScreenTest {
         composeTestRule.onNodeWithText("Kolor kierunku").assertDoesNotExist()
         composeTestRule.onNodeWithText(
             "Nazwa i kolor istniejącego kierunku są wspólne dla wszystkich semestrów."
-        ).assertIsDisplayed()
+        ).assertDoesNotExist()
     }
 
     @Test

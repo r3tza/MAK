@@ -1,6 +1,7 @@
 package dev.retza.mak.ui.programs
 
 import dev.retza.mak.ui.components.DefaultCourseColor
+import dev.retza.mak.ui.components.suggestedCourseColor
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.retza.mak.data.repository.SemesterRepository
@@ -43,6 +44,8 @@ data class StudyProgramEditorUi(
     val id: Long? = null,
     val name: String = "",
     val color: String = DefaultCourseColor,
+    // Set only for a new program: it is added to this semester at once; null when no semester is active.
+    val activeSemesterName: String? = null,
     val nameError: String? = null,
     val isSaving: Boolean = false,
     // An assigned program is protected; the names explain where it is still used.
@@ -144,6 +147,27 @@ class StudyProgramsViewModel(
         }
     }
 
+    /** Opens the editor for a new program once; its color avoids the hues of the programs that exist. */
+    suspend fun openNewOnce() {
+        if (openState.value != StudyProgramEditOpenState.Opening) return
+        openState.value = if (editSession.admitForm()) {
+            val usedColors = semesterRepository.observeStudyPrograms().first().map { it.color }
+            val activeSemesterName = semesterRepository.observeActiveSemester().first()?.name
+            state.update {
+                it.copy(
+                    editor = StudyProgramEditorUi(
+                        id = null,
+                        color = suggestedCourseColor(usedColors),
+                        activeSemesterName = activeSemesterName
+                    )
+                )
+            }
+            StudyProgramEditOpenState.Open
+        } else {
+            StudyProgramEditOpenState.Missing
+        }
+    }
+
     override fun onCleared() {
         editSession.close()
     }
@@ -203,11 +227,15 @@ class StudyProgramsViewModel(
 
     fun save() {
         val editor = state.value.editor
-        val id = editor.id ?: return
         if (editor.isSaving) return
         val name = editor.name.trim()
         if (name.isBlank()) {
             state.update { it.copy(editor = it.editor.copy(nameError = FormErrorTexts.ProgramNameRequired)) }
+            return
+        }
+        val id = editor.id
+        if (id == null) {
+            createProgram(name, editor.color)
             return
         }
         state.update { it.copy(editor = it.editor.copy(isSaving = true)) }
@@ -219,6 +247,32 @@ class StudyProgramsViewModel(
             semesterRepository.saveStudyProgram(StudyProgramRecord(id = id, name = name, color = editor.color))
             state.update { it.copy(editor = StudyProgramEditorUi()) }
             feedbackSink.publish(UiFeedback("Zapisano kierunek", UiFeedbackKind.Success))
+            effectsChannel.trySend(StudyProgramsEffect.CloseEditor)
+        }
+    }
+
+    /** Adds a new program; with an active semester it is assigned to that semester's shared calendar at once. */
+    private fun createProgram(name: String, color: String) {
+        state.update { it.copy(editor = it.editor.copy(isSaving = true)) }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się dodać kierunku.",
+            onFinish = { state.update { it.copy(editor = it.editor.copy(isSaving = false)) } }
+        ) {
+            val semester = semesterRepository.observeActiveSemester().first()
+            // Same rule as sharedCalendar() in SemesterViewModel: the shared calendar is the lowest id.
+            val calendar = semester?.let { s ->
+                semesterRepository.observeCalendars(s.id).first().minByOrNull { it.id }
+            }
+            val program = StudyProgramRecord(id = 0L, name = name, color = color)
+            if (semester != null && calendar != null) {
+                semesterRepository.saveStudyProgramAssignment(semester.id, program, calendar.id)
+                feedbackSink.publish(UiFeedback("Dodano kierunek do semestru ${semester.name}", UiFeedbackKind.Success))
+            } else {
+                semesterRepository.saveStudyProgram(program)
+                feedbackSink.publish(UiFeedback("Dodano kierunek", UiFeedbackKind.Success))
+            }
+            state.update { it.copy(editor = StudyProgramEditorUi()) }
             effectsChannel.trySend(StudyProgramsEffect.CloseEditor)
         }
     }

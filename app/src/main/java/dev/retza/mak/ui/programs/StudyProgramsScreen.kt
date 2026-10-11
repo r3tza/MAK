@@ -11,6 +11,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -45,6 +46,7 @@ fun StudyProgramsScreen(
     state: StudyProgramsUiState,
     onOpenProgram: (Long) -> Unit,
     onVisibleChange: (id: Long, visible: Boolean) -> Unit,
+    onAddProgram: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
@@ -52,8 +54,14 @@ fun StudyProgramsScreen(
             "Odznacz kierunek, aby ukryć jego zajęcia na tym telefonie. " +
                 "Nazwa i kolor są wspólne dla wszystkich semestrów."
         )
+        MakSecondaryAction(
+            text = "Dodaj kierunek",
+            icon = Icons.Outlined.Add,
+            onClick = onAddProgram,
+            modifier = Modifier.padding(bottom = MakSpacing.lg)
+        )
         if (state.programs.isEmpty()) {
-            MakEmptyState("Kierunki pojawią się po skonfigurowaniu planu.")
+            MakEmptyState("Nie masz jeszcze kierunków.")
         } else {
             val labels = distinctLabels(state.programs.map { it.name })
             Column(modifier = Modifier.fillMaxWidth()) {
@@ -139,8 +147,18 @@ fun StudyProgramEditScreen(
     onCancelDelete: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    val isNew = editor.id == null
+    val activeSemesterName = editor.activeSemesterName
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
-        MakScreenIntro("Zmiana będzie widoczna we wszystkich semestrach, w planie i w widgecie.")
+        MakScreenIntro(
+            when {
+                !isNew -> "Zmiana będzie widoczna we wszystkich semestrach, w planie i w widgecie."
+                activeSemesterName != null ->
+                    "Kierunek trafi do semestru $activeSemesterName. " +
+                        "Nazwa i kolor są wspólne dla wszystkich semestrów."
+                else -> "Kierunek pojawi się w planie po dodaniu go w ustawieniach semestru."
+            }
+        )
         Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
             MakField(
                 label = "Nazwa kierunku",
@@ -154,25 +172,31 @@ fun StudyProgramEditScreen(
                 previewName = editor.name,
                 onColorSelected = onColorChanged
             )
-            MakPrimaryAction(text = "Zapisz kierunek", onClick = onSave, enabled = !editor.isSaving)
+            MakPrimaryAction(
+                text = if (isNew) "Dodaj kierunek" else "Zapisz kierunek",
+                onClick = onSave,
+                enabled = !editor.isSaving
+            )
             MakSecondaryAction(text = "Anuluj", onClick = onCancel, enabled = !editor.isSaving)
         }
-        // Deletion is a separate section, away from the form actions.
-        Column(
-            modifier = Modifier.padding(top = MakSpacing.xl),
-            verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
-        ) {
-            MakSecondaryAction(
-                text = "Usuń kierunek",
-                onClick = onRequestDelete,
-                enabled = editor.canDelete,
-                destructive = true
-            )
-            if (editor.usedInSemesters.isNotEmpty()) {
-                MakHelperText(
-                    "Kierunek jest używany w semestrach: ${editor.usedInSemesters.joinToString(", ")}. " +
-                        "Aby go usunąć, najpierw usuń go z tych semestrów na ekranie Kierunki semestru."
+        // Deletion is a separate section, away from the form actions. A new program has nothing to delete.
+        if (!isNew) {
+            Column(
+                modifier = Modifier.padding(top = MakSpacing.xl),
+                verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+            ) {
+                MakSecondaryAction(
+                    text = "Usuń kierunek",
+                    onClick = onRequestDelete,
+                    enabled = editor.canDelete,
+                    destructive = true
                 )
+                if (editor.usedInSemesters.isNotEmpty()) {
+                    MakHelperText(
+                        "Kierunek jest używany w semestrach: ${editor.usedInSemesters.joinToString(", ")}. " +
+                            "Aby go usunąć, najpierw usuń go z tych semestrów na ekranie Kierunki semestru."
+                    )
+                }
             }
         }
     }

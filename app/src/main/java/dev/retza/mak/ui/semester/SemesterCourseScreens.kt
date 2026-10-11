@@ -92,7 +92,6 @@ fun SemesterCourseAddScreen(
                     isError = state.courseNameError != null
                 )
                 FieldError(state.courseNameError?.let(::FieldErrorUi))
-                MakHelperText("Nazwa i kolor istniejącego kierunku są wspólne dla wszystkich semestrów.")
             }
 
             MakChoiceRow(
@@ -115,9 +114,6 @@ fun SemesterCourseAddScreen(
                 selected = state.courseCalendarMode == CourseCalendarModeUi.SEPARATE,
                 onClick = { onCourseModeChanged(CourseCalendarModeUi.SEPARATE) }
             )
-            if (state.courseCalendarMode == CourseCalendarModeUi.SEPARATE) {
-                MakHelperText("Powstanie kopia dat, rytmu i korekt wybranego kalendarza.")
-            }
 
             val canAddCourse = when (state.courseProgramMode) {
                 CourseProgramModeUi.NEW -> state.courseNameDraft.isNotBlank()

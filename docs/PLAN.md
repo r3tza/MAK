@@ -42,6 +42,8 @@ Przeczytaj tę sekcję przed każdym krokiem.
 
 ## 1. Dodaj „Dodaj kierunek” w ustawieniach i usuń zbędne opisy (I-95)
 
+Stan: zrobione. Różnice wobec planu: w `FEATURES.md` akapit o kolorze kierunku wymienia dodawanie i edycję kierunku w semestrze i w ustawieniach, bo formularz w semestrze nadal ma wybór koloru; trasy edycji i dodawania kierunku dzielą prywatny komponent `StudyProgramEditDestination`; test braku sekcji usuwania sprawdza liczbę węzłów (`assertCountEquals(0)`).
+
 Cel: z ekranu „Kierunki” w ustawieniach można utworzyć kierunek z nazwą i kolorem. Nowy kierunek trafia do aktywnego semestru ze wspólnym kalendarzem, więc od razu można dodać do niego zajęcia. Przy okazji formularz „Dodaj kierunek” w semestrze traci dwa zbędne teksty pomocnicze (decyzja 2).
 
 Pliki: `ui/programs/StudyProgramsScreen.kt`, `ui/programs/StudyProgramsViewModel.kt`, `ui/StudyProgramRoutes.kt`, `ui/MakRoutes.kt`, `ui/semester/SemesterCourseScreens.kt` (`SemesterCourseAddScreen`), `ui/semester/SemesterScreen.kt`; testy JVM `ui/programs/StudyProgramsViewModelTest.kt`; testy Android `ui/programs/StudyProgramsScreenTest.kt`, `ui/semester/SemesterScreenTest.kt`; `docs/FEATURES.md`, `docs/LOG.md`, `docs/log_archive/`, `docs/QUEUE.md`.
