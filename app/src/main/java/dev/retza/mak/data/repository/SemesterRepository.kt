@@ -2,9 +2,17 @@ package dev.retza.mak.data.repository
 
 import androidx.room.withTransaction
 import dev.retza.mak.data.database.AppDatabase
+import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.domain.SemesterSpan
+import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.fallbackActiveSemester
+import java.time.Clock
 import java.time.DayOfWeek
+import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 
 interface SemesterRepository {
@@ -25,17 +33,17 @@ interface SemesterRepository {
 
     fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>>
 
-    suspend fun saveSemester(record: SemesterRecord): Long
+    /** The semester with its programs, calendars and week overrides, or null when it does not exist. */
+    fun observeSemesterConfiguration(id: Long): Flow<SemesterConfiguration?>
 
-    suspend fun updateSemester(record: SemesterRecord): Long
+    suspend fun saveSemester(record: SemesterRecord): Long
 
     suspend fun setActiveSemester(id: Long)
 
-    suspend fun clearActiveSemester()
-
-    suspend fun deleteSemester(id: Long)
-
     suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult
+
+    /** Activates the fallback semester when there is none and some semester exists; a no-op otherwise. */
+    suspend fun ensureActiveSemester()
 
     suspend fun saveStudyProgram(record: StudyProgramRecord): Long
 
@@ -56,8 +64,6 @@ interface SemesterRepository {
     suspend fun saveCalendar(record: AcademicCalendarRecord): Long
 
     suspend fun updateSemesterWithCalendar(semester: SemesterRecord, calendar: AcademicCalendarRecord)
-
-    suspend fun deleteCalendarIfUnused(id: Long)
 
     suspend fun deleteCalendar(id: Long)
 
@@ -86,11 +92,14 @@ interface SemesterRepository {
     suspend fun saveWeekOverride(record: WeekOverrideRecord): Long
 
     suspend fun deleteWeekOverride(id: Long)
+
+    suspend fun deleteWeekOverride(calendarId: Long, weekStartDate: LocalDate, scope: WeekOverrideScope)
 }
 
 @org.koin.core.annotation.Single(binds = [SemesterRepository::class])
 class RoomSemesterRepository(
-    private val database: AppDatabase
+    private val database: AppDatabase,
+    private val clock: Clock
 ) : SemesterRepository {
     private val semesters = database.semesterDao()
     private val studyPrograms = database.studyProgramDao()
@@ -123,6 +132,21 @@ class RoomSemesterRepository(
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>> =
         weekOverrides.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }
 
+    override fun observeSemesterConfiguration(id: Long): Flow<SemesterConfiguration?> =
+        combine(semesters.observeWithData(id), studyPrograms.observeAll()) { data, programs ->
+            data?.let {
+                SemesterConfiguration(
+                    semester = it.semester.toRecord(),
+                    programs = it.semesterPrograms.map { program -> program.toRecord() },
+                    studyPrograms = programs.map { program -> program.toRecord() },
+                    calendars = it.academicCalendars.map { calendar -> calendar.toRecord() },
+                    overrides = it.weekOverrides.map { week -> week.toRecord() }
+                )
+            }
+        }
+            // The query also covers classes and notes; their writes must not reset an unsaved semester form.
+            .distinctUntilChanged()
+
     override suspend fun saveSemester(record: SemesterRecord): Long {
         val entity = record.toEntity()
         require(entity.name.isNotBlank()) { "Semester name cannot be blank" }
@@ -140,17 +164,6 @@ class RoomSemesterRepository(
         }
     }
 
-    override suspend fun updateSemester(record: SemesterRecord): Long {
-        val entity = record.toEntity()
-        require(entity.name.isNotBlank()) { "Semester name cannot be blank" }
-        require(entity.id != 0L) { "Use saveSemester to create a semester" }
-        return database.withTransaction {
-            val existing = semesters.findById(entity.id) ?: error("Semester does not exist")
-            semesters.update(entity.copy(isActive = existing.isActive))
-            entity.id
-        }
-    }
-
     override suspend fun setActiveSemester(id: Long) {
         database.withTransaction {
             require(semesters.findById(id) != null) { "Semester does not exist" }
@@ -159,34 +172,29 @@ class RoomSemesterRepository(
         }
     }
 
-    override suspend fun clearActiveSemester() = semesters.clearActive()
-
-    override suspend fun deleteSemester(id: Long) = semesters.deleteById(id)
-
     override suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult =
         database.withTransaction {
-            val target = semesters.findById(id) ?: error("Semester does not exist")
-            val wasActive = target.isActive
+            require(semesters.findById(id) != null) { "Semester does not exist" }
             semesters.deleteById(id)
-            val remaining = semesters.getAll()
-            if (remaining.isEmpty()) {
-                semesters.clearActive()
-                return@withTransaction SemesterDeletionResult(null)
-            }
-            val fallbackId = if (wasActive) {
-                val chosen = remaining.first()
-                semesters.clearActive()
-                semesters.markActive(chosen.id)
-                chosen.id
-            } else {
-                remaining.firstOrNull { it.isActive }?.id ?: run {
-                    val chosen = remaining.first()
-                    semesters.markActive(chosen.id)
-                    chosen.id
-                }
-            }
-            SemesterDeletionResult(fallbackId)
+            SemesterDeletionResult(activateFallbackIfNone())
         }
+
+    override suspend fun ensureActiveSemester() {
+        database.withTransaction { activateFallbackIfNone() }
+    }
+
+    /** Inside a transaction: when no semester is active, activates [fallbackActiveSemester] and returns its id. */
+    private suspend fun activateFallbackIfNone(): Long? {
+        val all = semesters.getAllWithData()
+        all.firstOrNull { it.semester.isActive }?.let { return it.semester.id }
+        val chosen = fallbackActiveSemester(
+            all.map { data -> SemesterSpan(data.semester.id, data.academicCalendars.map { it.startDate..it.endDate }) },
+            LocalDate.now(clock)
+        ) ?: return null
+        semesters.clearActive()
+        semesters.markActive(chosen)
+        return chosen
+    }
 
     override suspend fun saveStudyProgram(record: StudyProgramRecord): Long {
         val entity = record.toEntity()
@@ -239,10 +247,8 @@ class RoomSemesterRepository(
                 semesterPrograms.update(existing.copy(academicCalendarId = academicCalendarId))
                 // Like the other reassignments, a calendar left without programs is removed.
                 val previousCalendarId = existing.academicCalendarId
-                if (previousCalendarId != academicCalendarId &&
-                    calendars.countAssignments(previousCalendarId) == 0
-                ) {
-                    calendars.deleteById(previousCalendarId)
+                if (previousCalendarId != academicCalendarId) {
+                    deleteCalendarIfOrphaned(previousCalendarId)
                 }
                 existing.id
             }
@@ -269,17 +275,7 @@ class RoomSemesterRepository(
                 }
                 programEntity.id
             }
-            val calendarId = calendars.insert(
-                dev.retza.mak.data.entity.AcademicCalendarEntity(
-                    semesterId = semesterId,
-                    startDate = source.startDate,
-                    endDate = source.endDate,
-                    firstWeekType = source.firstWeekType
-                )
-            )
-            weekOverrides.getForCalendar(source.id).forEach { override ->
-                weekOverrides.insert(override.copy(id = 0, academicCalendarId = calendarId))
-            }
+            val calendarId = copyCalendarWithOverrides(source)
             val semesterProgramId = semesterPrograms.insert(
                 SemesterProgramEntity(
                     semesterId = semesterId,
@@ -328,14 +324,6 @@ class RoomSemesterRepository(
         }
     }
 
-    override suspend fun deleteCalendarIfUnused(id: Long) {
-        database.withTransaction {
-            if (calendars.countAssignments(id) == 0) {
-                calendars.deleteById(id)
-            }
-        }
-    }
-
     override suspend fun deleteCalendar(id: Long) {
         database.withTransaction {
             require(calendars.findById(id) != null) { "Calendar does not exist" }
@@ -352,17 +340,7 @@ class RoomSemesterRepository(
                 ?: error("Assignment does not exist")
             val source = calendars.findById(assignment.academicCalendarId)
                 ?: error("Calendar does not exist")
-            val newCalendarId = calendars.insert(
-                dev.retza.mak.data.entity.AcademicCalendarEntity(
-                    semesterId = source.semesterId,
-                    startDate = source.startDate,
-                    endDate = source.endDate,
-                    firstWeekType = source.firstWeekType
-                )
-            )
-            weekOverrides.getForCalendar(source.id).forEach { override ->
-                weekOverrides.insert(override.copy(id = 0, academicCalendarId = newCalendarId))
-            }
+            val newCalendarId = copyCalendarWithOverrides(source)
             semesterPrograms.update(assignment.copy(academicCalendarId = newCalendarId))
             SetupConfigurationIds(
                 semesterId = assignment.semesterId,
@@ -384,8 +362,8 @@ class RoomSemesterRepository(
         }
         val previousCalendarId = assignment.academicCalendarId
         semesterPrograms.update(assignment.copy(academicCalendarId = calendarId))
-        if (previousCalendarId != calendarId && calendars.countAssignments(previousCalendarId) == 0) {
-            calendars.deleteById(previousCalendarId)
+        if (previousCalendarId != calendarId) {
+            deleteCalendarIfOrphaned(previousCalendarId)
         }
         SetupConfigurationIds(
             semesterId = assignment.semesterId,
@@ -416,10 +394,8 @@ class RoomSemesterRepository(
                 "Calendar must belong to the semester"
             }
             semesterPrograms.update(entity)
-            if (existing.academicCalendarId != entity.academicCalendarId &&
-                calendars.countAssignments(existing.academicCalendarId) == 0
-            ) {
-                calendars.deleteById(existing.academicCalendarId)
+            if (existing.academicCalendarId != entity.academicCalendarId) {
+                deleteCalendarIfOrphaned(existing.academicCalendarId)
             }
         }
         return entity.id
@@ -429,9 +405,7 @@ class RoomSemesterRepository(
         database.withTransaction {
             val existing = semesterPrograms.findById(id) ?: return@withTransaction
             semesterPrograms.deleteById(id)
-            if (calendars.countAssignments(existing.academicCalendarId) == 0) {
-                calendars.deleteById(existing.academicCalendarId)
-            }
+            deleteCalendarIfOrphaned(existing.academicCalendarId)
         }
     }
 
@@ -495,10 +469,8 @@ class RoomSemesterRepository(
             } else {
                 val previousCalendarId = existingAssignment.academicCalendarId
                 semesterPrograms.update(existingAssignment.copy(academicCalendarId = calendarId))
-                if (previousCalendarId != calendarId &&
-                    calendars.countAssignments(previousCalendarId) == 0
-                ) {
-                    calendars.deleteById(previousCalendarId)
+                if (previousCalendarId != calendarId) {
+                    deleteCalendarIfOrphaned(previousCalendarId)
                 }
                 existingAssignment.id
             }
@@ -542,4 +514,35 @@ class RoomSemesterRepository(
     }
 
     override suspend fun deleteWeekOverride(id: Long) = weekOverrides.deleteById(id)
+
+    override suspend fun deleteWeekOverride(
+        calendarId: Long,
+        weekStartDate: LocalDate,
+        scope: WeekOverrideScope
+    ) = weekOverrides.deleteForWeek(
+        calendarId,
+        weekStartDate,
+        dev.retza.mak.data.entity.WeekOverrideScope.valueOf(scope.name)
+    )
+
+    /** A new calendar with the dates, rhythm and week overrides of [source] (`ARCHITECTURE.md`, section 7). */
+    private suspend fun copyCalendarWithOverrides(source: AcademicCalendarEntity): Long {
+        val calendarId = calendars.insert(
+            AcademicCalendarEntity(
+                semesterId = source.semesterId,
+                startDate = source.startDate,
+                endDate = source.endDate,
+                firstWeekType = source.firstWeekType
+            )
+        )
+        weekOverrides.getForCalendar(source.id).forEach { override ->
+            weekOverrides.insert(override.copy(id = 0, academicCalendarId = calendarId))
+        }
+        return calendarId
+    }
+
+    /** Removes a calendar no study program uses any more, with its week overrides. */
+    private suspend fun deleteCalendarIfOrphaned(calendarId: Long) {
+        if (calendars.countAssignments(calendarId) == 0) calendars.deleteById(calendarId)
+    }
 }

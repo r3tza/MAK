@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.widthIn
 import dev.retza.mak.ui.MakContentMaxWidth
+import dev.retza.mak.domain.toLocalDateOrNull
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -13,23 +14,20 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.runtime.Composable
-import dev.retza.mak.ui.components.oneOffTint
-import dev.retza.mak.ui.components.modifiedTint
+import dev.retza.mak.ui.components.OccurrenceStatusUi
+import dev.retza.mak.ui.components.label
+import dev.retza.mak.ui.components.occurrenceStatusIcon
 import androidx.compose.ui.Alignment
 import androidx.compose.foundation.layout.size
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.material3.Icon
-import androidx.compose.material.icons.outlined.LooksOne
-import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material.icons.outlined.Event
-import androidx.compose.material.icons.outlined.EditCalendar
 import androidx.compose.material.icons.Icons
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import java.time.LocalDate
 import dev.retza.mak.ui.components.MakFieldPair
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
@@ -79,7 +77,7 @@ fun OccurrenceDetailsScreen(
                 .weight(1f)
                 .verticalScroll(rememberScrollState())
         ) {
-            OccurrenceHeader(title = state.subjectName.ifBlank { state.title })
+            OccurrenceHeader(title = state.subjectName.ifBlank { "Szczegóły terminu" })
             StatusSummary(state)
             state.conflictLabel?.let { label ->
                 MakConflictNote(
@@ -121,8 +119,7 @@ fun OccurrenceDetailsScreen(
             title = "Usuń zajęcia",
             text = "Usunięcie wpisu usunie wszystkie jego wystąpienia. Tej operacji nie można cofnąć.",
             confirmLabel = "Usuń zajęcia",
-            // The screen has no in-progress deletion state: success closes the screen, failure the dialog.
-            isDeleting = false,
+            isDeleting = state.isDeletingClass,
             onConfirm = onDeleteBaseClass,
             onCancel = onDismissDeleteConfirmation
         )
@@ -135,7 +132,7 @@ private fun OccurrenceBottomActions(
     onOpenOccurrenceEdit: () -> Unit,
     onRestoreOccurrence: () -> Unit
 ) {
-    val canChange = state.canChangeOccurrence || state.canMoveOccurrence
+    val canChange = state.canChangeOccurrence
     if (!state.canRestoreOccurrence && !canChange) return
     // The action stands outside the scrolling content, so it gets the same width limit.
     Box(modifier = Modifier.fillMaxWidth(), contentAlignment = Alignment.TopCenter) {
@@ -243,12 +240,8 @@ private fun OccurrenceHeader(title: String) {
 private fun StatusSummary(state: OccurrenceDetailsUiState) {
     val changeLines = state.changeLines()
     if (state.status == OccurrenceStatusUi.Scheduled && changeLines.isEmpty()) return
-    val (icon, tint) = when (state.status) {
-        OccurrenceStatusUi.Cancelled -> Icons.Outlined.EventBusy to MaterialTheme.colorScheme.error
-        OccurrenceStatusUi.Changed, OccurrenceStatusUi.Moved -> Icons.Outlined.EditCalendar to modifiedTint()
-        OccurrenceStatusUi.OneOff -> Icons.Outlined.LooksOne to oneOffTint()
-        OccurrenceStatusUi.Scheduled -> Icons.Outlined.Event to MaterialTheme.colorScheme.onSurfaceVariant
-    }
+    val (icon, tint) = occurrenceStatusIcon(state.status)
+        ?: (Icons.Outlined.Event to MaterialTheme.colorScheme.onSurfaceVariant)
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -262,7 +255,7 @@ private fun StatusSummary(state: OccurrenceDetailsUiState) {
         ) {
             Icon(imageVector = icon, contentDescription = null, tint = tint, modifier = Modifier.size(20.dp))
             Text(
-                text = state.statusLabel ?: state.status.label(),
+                text = state.status.label(),
                 color = tint,
                 fontWeight = FontWeight.SemiBold,
                 style = MaterialTheme.typography.bodyMedium
@@ -354,4 +347,3 @@ private fun NotesBlock(
     }
 }
 
-private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()

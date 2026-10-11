@@ -4,11 +4,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.saveable.rememberSaveable
-import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import org.koin.compose.viewmodel.koinViewModel
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.NavType
@@ -31,7 +29,7 @@ internal fun openSetup(navController: NavController, resumeExisting: Boolean = f
 }
 
 internal fun NavGraphBuilder.setupRoute(
-    setupViewModel: SetupViewModel,
+    navController: NavController,
     settingsViewModel: SettingsViewModel
 ) {
     composable(
@@ -40,24 +38,15 @@ internal fun NavGraphBuilder.setupRoute(
             type = NavType.BoolType
             defaultValue = false
         })
-    ) { entry ->
-        val editing = TrackPlanEditing()
-        if (!editing.ready) {
-            PlanEditingWait()
-            return@composable
-        }
-        var opened by rememberSaveable { mutableStateOf(false) }
-        val resumeExisting = entry.arguments?.getBoolean("resume") ?: false
-        LaunchedEffect(editing.ready, opened) {
-            if (!opened) {
-                setupViewModel.startFromRoom(resumeExisting)
-                opened = true
-            }
-        }
+    ) { _ ->
+        val setupViewModel: SetupViewModel = koinViewModel()
+        LaunchedEffect(Unit) { setupViewModel.openOnce() }
+        val opened = setupViewModel.opened.collectAsStateWithLifecycle().value
         if (!opened) {
             PlanEditingWait()
             return@composable
         }
+        SetupEffects(setupViewModel, navController)
         val setupState by setupViewModel.setup.collectAsStateWithLifecycle()
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
         SetupWizard(
@@ -65,7 +54,7 @@ internal fun NavGraphBuilder.setupRoute(
             onSemesterNameChanged = { value -> setupViewModel.update { it.copy(semesterName = value) } },
             onStartDateChanged = { value -> setupViewModel.update { it.copy(startDate = value) } },
             onEndDateChanged = { value -> setupViewModel.update { it.copy(endDate = value) } },
-            onFirstWeekChanged = { value -> setupViewModel.update { it.copy(firstWeekLabel = value) } },
+            onFirstWeekChanged = { value -> setupViewModel.update { it.copy(firstWeek = value) } },
             onCourseNameChanged = { value -> setupViewModel.update { it.copy(courseName = value) } },
             onCourseColorChanged = { value -> setupViewModel.update { it.copy(courseColor = value) } },
             onProgramModeChanged = setupViewModel::selectProgramMode,
@@ -77,7 +66,6 @@ internal fun NavGraphBuilder.setupRoute(
             onFinish = setupViewModel::finish,
             onReturnToSettings = setupViewModel::returnToSettings,
             showReturnToSettings = settingsState.semesters.isNotEmpty(),
-            onRetry = {},
             onAddAnotherProgram = setupViewModel::startAnotherProgram,
             onCalendarModeChanged = setupViewModel::selectCalendarMode,
             modifier = Modifier.fillMaxSize()

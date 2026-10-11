@@ -18,6 +18,9 @@ import dev.retza.mak.sync.SyncIssue
 import dev.retza.mak.sync.SyncOutcome
 import dev.retza.mak.sync.SyncState
 import dev.retza.mak.sync.SyncWorkScheduler
+import dev.retza.mak.ui.AppLocale
+import dev.retza.mak.ui.dayMonthFormatter
+import dev.retza.mak.ui.timeFormatter
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
@@ -26,7 +29,6 @@ import java.io.OutputStream
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
-import java.util.Locale
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
@@ -125,6 +127,11 @@ class SyncViewModel(
     val sync: StateFlow<SyncUiState> = combine(coordinator.state, local) { state, localState ->
         state.toUi(localState, coordinator.archivedPlans().map { it.toUi() })
     }.flowOn(Dispatchers.IO).stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), SyncUiState())
+
+    // Only the banner's question; unlike sync, it does not list the archive.
+    val attention: StateFlow<SyncAttentionUi?> = coordinator.state.map { it.attentionUi() }
+        .distinctUntilChanged()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), null)
 
     val changes: StateFlow<SyncChangesUi> = local.map { localState ->
         SyncChangesUi(
@@ -345,18 +352,16 @@ class SyncViewModel(
 
 private fun Exception.toMessage(): String = when {
     this is IOException -> "Brak połączenia z internetem. Aplikacja spróbuje ponownie później."
-    this is AccountMismatchException ->
-        "Google zwrócił inne konto niż połączone. Wyłącz synchronizację i połącz konto ponownie."
+    this is AccountMismatchException -> ACCOUNT_MISMATCH_TEXT
     else -> "Nie udało się zsynchronizować planu."
 }
 
+private const val ACCOUNT_MISMATCH_TEXT =
+    "Telefon ma inne konto Google niż połączone. Wyłącz synchronizację i połącz konto ponownie."
+
 private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemUi>) = SyncUiState(
     accountEmail = account?.email,
-    attention = if (account == null) null else issueText()?.let { text ->
-        val fix = issueFix()
-        SyncAttentionUi(text, if (fix == SyncIssueFix.UPDATE) "Zaktualizuj" else "Otwórz", fix)
-    }
-        ?: pendingChoice?.let { SyncAttentionUi(CHOICE_TITLE, "Wybierz wersję") },
+    attention = attentionUi(),
     lastSyncLabel = account?.let {
         lastSyncedAtMillis?.let { millis -> "Ostatnia synchronizacja: ${formatMillis(millis)}" }
             ?: "Jeszcze nie zsynchronizowano"
@@ -379,6 +384,12 @@ private fun SyncState.toUi(local: SyncLocalState, archive: List<SyncArchiveItemU
     showDisconnectDialog = local.showDisconnectDialog && account != null
 )
 
+private fun SyncState.attentionUi(): SyncAttentionUi? = if (account == null) null else issueText()?.let { text ->
+    val fix = issueFix()
+    SyncAttentionUi(text, if (fix == SyncIssueFix.UPDATE) "Zaktualizuj" else "Otwórz", fix)
+}
+    ?: pendingChoice?.let { SyncAttentionUi(CHOICE_TITLE, "Wybierz wersję") }
+
 private fun SyncState.issueFix(): SyncIssueFix? = when (issue) {
     SyncIssue.AUTHORIZATION_REQUIRED -> SyncIssueFix.RECONNECT
     SyncIssue.NEWER_REMOTE_PLAN -> SyncIssueFix.UPDATE
@@ -389,8 +400,11 @@ private fun SyncState.issueText(): String? = when (issue) {
     SyncIssue.AUTHORIZATION_REQUIRED -> "Google wymaga ponownego potwierdzenia dostępu do Dysku."
     SyncIssue.INVALID_REMOTE_PLAN -> issueMessage ?: "Plik planu na Dysku jest niepoprawny."
     SyncIssue.NEWER_REMOTE_PLAN -> "Plan na Dysku pochodzi z nowszej wersji MAK. Zaktualizuj aplikację."
-    SyncIssue.LOCAL_PLAN_TOO_LARGE -> issueMessage ?: "Lokalny plan przekracza limit 8 MiB i nie może zostać wysłany."
-    SyncIssue.FAILED -> issueMessage ?: "Nie udało się zsynchronizować planu."
+    SyncIssue.LOCAL_PLAN_TOO_LARGE -> "Lokalny plan przekracza limit 8 MiB i nie może zostać wysłany."
+    SyncIssue.STORAGE_FULL -> "Na Dysku Google brakuje miejsca. Zwolnij miejsce i synchronizuj ponownie."
+    SyncIssue.ACCESS_DENIED -> "Dysk Google odmówił dostępu. Jeśli to się powtarza, połącz konto ponownie."
+    SyncIssue.ACCOUNT_MISMATCH -> ACCOUNT_MISMATCH_TEXT
+    SyncIssue.FAILED -> "Nie udało się zsynchronizować planu."
     null -> null
 }
 
@@ -398,8 +412,6 @@ internal const val CHOICE_TITLE = "Plan różni się na telefonie i na Dysku"
 
 private const val GENERIC_MERGE_PROBLEM = "Wybrane zmiany wykluczają się. Wybierz tę samą wersję przy powiązanych pozycjach."
 
-private val changeTimeFormatter = DateTimeFormatter.ofPattern("HH:mm")
-private val changeDayFormatter = DateTimeFormatter.ofPattern("d MMMM", Locale.forLanguageTag("pl-PL"))
 
 /** „Zmieniony dziś o 12:20”, „Zmieniony wczoraj o 9:05” or „Zmieniony 7 października o 18:05”. */
 internal fun changeLabel(millis: Long?, zone: ZoneId = ZoneId.systemDefault(), today: java.time.LocalDate = java.time.LocalDate.now(zone)): String {
@@ -408,9 +420,9 @@ internal fun changeLabel(millis: Long?, zone: ZoneId = ZoneId.systemDefault(), t
     val day = when (moment.toLocalDate()) {
         today -> "dziś"
         today.minusDays(1) -> "wczoraj"
-        else -> changeDayFormatter.format(moment)
+        else -> dayMonthFormatter.format(moment)
     }
-    return "Zmieniony $day o ${changeTimeFormatter.format(moment)}"
+    return "Zmieniony $day o ${timeFormatter.format(moment)}"
 }
 
 private fun PlanSummary.label() = listOf(
@@ -428,7 +440,7 @@ private fun dev.retza.mak.sync.ArchivedPlan.toUi() = SyncArchiveItemUi(
     fileName = "mak-poprzednia-wersja-${fileDate.format(Instant.ofEpochMilli(createdAtMillis))}.json"
 )
 
-private val displayFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy, HH:mm", Locale.forLanguageTag("pl-PL"))
+private val displayFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy, HH:mm", AppLocale)
 private val fileDate = DateTimeFormatter.ofPattern("yyyy-MM-dd-HHmm").withZone(ZoneId.systemDefault())
 
 private fun formatMillis(millis: Long): String =

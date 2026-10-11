@@ -44,18 +44,12 @@ import dev.retza.mak.ui.areSystemAnimationsOn
 import dev.retza.mak.ui.makWidthClassFor
 import dev.retza.mak.ui.shouldLockPortrait
 import dev.retza.mak.ui.withAppLocale
-import dev.retza.mak.ui.edit.ClassEditViewModel
+import dev.retza.mak.sync.SyncWorkScheduler
 import dev.retza.mak.ui.feedback.FeedbackController
-import dev.retza.mak.ui.occurrence.OccurrenceViewModel
-import dev.retza.mak.ui.schedule.ScheduleViewModel
-import dev.retza.mak.ui.programs.StudyProgramsViewModel
-import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.settings.SyncViewModel
-import dev.retza.mak.ui.settings.ThemeMode
-import dev.retza.mak.ui.setup.SetupViewModel
+import dev.retza.mak.settings.ThemeMode
 import dev.retza.mak.ui.theme.MAKTheme
-import dev.retza.mak.ui.today.TodayViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.receiveAsFlow
@@ -67,17 +61,11 @@ import dev.retza.mak.update.UpdateViewModel
 
 class MainActivity : ComponentActivity() {
     private val appViewModel: AppViewModel by viewModel()
-    private val occurrenceViewModel: OccurrenceViewModel by viewModel()
-    private val classEditViewModel: ClassEditViewModel by viewModel()
-    private val semesterViewModel: SemesterViewModel by viewModel()
-    private val setupViewModel: SetupViewModel by viewModel()
     private val settingsViewModel: SettingsViewModel by viewModel()
     private val syncViewModel: SyncViewModel by viewModel()
-    private val studyProgramsViewModel: StudyProgramsViewModel by viewModel()
-    private val scheduleViewModel: ScheduleViewModel by viewModel()
-    private val todayViewModel: TodayViewModel by viewModel()
     private val updateViewModel: UpdateViewModel by viewModel()
     private val feedbackController: FeedbackController by inject()
+    private val syncWorkScheduler: SyncWorkScheduler by inject()
     private val openTodayRequests = Channel<Unit>(Channel.CONFLATED)
     private val openPlanRequests = Channel<String>(Channel.CONFLATED)
     private var splashReleased by mutableStateOf(false)
@@ -88,6 +76,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // A recreated activity (theme change, rotation) does not start a run; only a cold start of the app does.
+        if (savedInstanceState == null) syncWorkScheduler.scheduleForAppOpen()
         requestedOrientation = if (shouldLockPortrait(resources.configuration.smallestScreenWidthDp)) {
             ActivityInfo.SCREEN_ORIENTATION_PORTRAIT
         } else {
@@ -128,8 +118,6 @@ class MainActivity : ComponentActivity() {
                         DisposableEffect(lifecycleOwner) {
                             val observer = LifecycleEventObserver { _, event ->
                                 if (event == Lifecycle.Event.ON_RESUME) {
-                                    todayViewModel.refreshToday()
-                                    scheduleViewModel.refreshToday()
                                     notificationsBlocked =
                                         !NotificationManagerCompat.from(this@MainActivity).areNotificationsEnabled()
                                 }
@@ -185,15 +173,8 @@ class MainActivity : ComponentActivity() {
                         ) { updateViewModel.resumeInstallationAfterPermission() }
                         MakApp(
                             viewModel = appViewModel,
-                            occurrenceViewModel = occurrenceViewModel,
-                            classEditViewModel = classEditViewModel,
-                            semesterViewModel = semesterViewModel,
-                            setupViewModel = setupViewModel,
                             settingsViewModel = settingsViewModel,
                             syncViewModel = syncViewModel,
-                            studyProgramsViewModel = studyProgramsViewModel,
-                            scheduleViewModel = scheduleViewModel,
-                            todayViewModel = todayViewModel,
                             updateViewModel = updateViewModel,
                             feedback = feedbackController.feedback,
                             openTodayRequests = openTodayRequests.receiveAsFlow(),

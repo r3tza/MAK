@@ -12,4 +12,18 @@ fun shouldActivateNewSemester(
     calendarStart: LocalDate,
     calendarEnd: LocalDate,
     hasActiveSemester: Boolean
-): Boolean = !hasActiveSemester || (!today.isBefore(calendarStart) && !today.isAfter(calendarEnd))
+): Boolean = !hasActiveSemester || today in calendarStart..calendarEnd
+
+/** A semester with the date ranges of its calendars, enough to pick a fallback. */
+data class SemesterSpan(val id: Long, val calendars: List<ClosedRange<LocalDate>>)
+
+/**
+ * The semester to make active when none is: the one whose calendar covers [today], otherwise the one
+ * that starts last, otherwise the first one without calendars.
+ */
+fun fallbackActiveSemester(semesters: List<SemesterSpan>, today: LocalDate): Long? {
+    val withCalendars = semesters.filter { it.calendars.isNotEmpty() }
+    val covering = withCalendars.filter { span -> span.calendars.any { today in it } }
+    return covering.ifEmpty { withCalendars }.maxByOrNull { span -> span.calendars.minOf { it.start } }?.id
+        ?: semesters.firstOrNull()?.id
+}

@@ -35,34 +35,34 @@ fun SemesterWithData.toActivePlanData(): ActivePlanData = ActivePlanData(
 )
 
 private fun SemesterEntity.toDomain() = Semester(
-    id = id.toString(),
+    id = id,
     name = name
 )
 
 private fun StudyProgramEntity.toDomain() = StudyProgram(
-    id = id.toString(),
+    id = id,
     name = name,
     color = color
 )
 
 private fun AcademicCalendarEntity.toDomain() = AcademicCalendar(
-    id = id.toString(),
+    id = id,
     startDate = startDate,
     endDate = endDate,
     firstWeekType = WeekType.valueOf(firstWeekType.name)
 )
 
 private fun SemesterProgramEntity.toDomain() = SemesterProgram(
-    id = id.toString(),
-    semesterId = semesterId.toString(),
-    studyProgramId = studyProgramId.toString(),
-    academicCalendarId = academicCalendarId.toString()
+    id = id,
+    semesterId = semesterId,
+    studyProgramId = studyProgramId,
+    academicCalendarId = academicCalendarId
 )
 
 private fun ClassEntity.toDomain() = ClassItem(
-    id = id.toString(),
-    semesterId = semesterId.toString(),
-    semesterProgramId = semesterProgramId.toString(),
+    id = id,
+    semesterId = semesterId,
+    semesterProgramId = semesterProgramId,
     name = name,
     type = type,
     teacherName = teacherName,
@@ -78,23 +78,23 @@ private fun ClassEntity.toDomain() = ClassItem(
 )
 
 private fun WeekOverrideEntity.toDomain() = WeekOverride(
-    id = id.toString(),
-    academicCalendarId = academicCalendarId.toString(),
+    id = id,
+    academicCalendarId = academicCalendarId,
     weekStartDate = weekStartDate,
     weekType = WeekType.valueOf(weekType.name),
     scope = WeekOverrideScope.valueOf(scope.name)
 )
 
 private fun OccurrenceNoteEntity.toDomain() = OccurrenceNote(
-    id = id.toString(),
-    classId = classId.toString(),
+    id = id,
+    classId = classId,
     occurrenceDate = occurrenceDate,
     body = body
 )
 
 private fun OccurrenceChangeEntity.toDomain() = OccurrenceChange(
-    id = id.toString(),
-    classId = classId.toString(),
+    id = id,
+    classId = classId,
     originalDate = originalDate,
     kind = OccurrenceChangeKind.valueOf(kind.name),
     targetDate = targetDate,
@@ -179,9 +179,9 @@ internal fun WeekOverrideRecord.toEntity() = WeekOverrideEntity(
 )
 
 internal fun ClassItem.toRecord() = ClassRecord(
-    id = id.toLong(),
-    semesterId = semesterId.toLong(),
-    semesterProgramId = semesterProgramId.toLong(),
+    id = id,
+    semesterId = semesterId,
+    semesterProgramId = semesterProgramId,
     name = name,
     type = type,
     teacherName = teacherName,

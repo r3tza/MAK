@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.MakCourseColorPicker
 import dev.retza.mak.ui.components.FieldErrorUi
+import dev.retza.mak.ui.components.MakCheckbox
 import dev.retza.mak.ui.components.MakColorDot
 import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakEmptyState
@@ -43,10 +44,14 @@ import dev.retza.mak.ui.components.distinctLabels
 fun StudyProgramsScreen(
     state: StudyProgramsUiState,
     onOpenProgram: (Long) -> Unit,
+    onVisibleChange: (id: Long, visible: Boolean) -> Unit,
     modifier: Modifier = Modifier
 ) {
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
-        MakScreenIntro("Nazwa i kolor kierunku są wspólne dla wszystkich semestrów.")
+        MakScreenIntro(
+            "Odznacz kierunek, aby ukryć jego zajęcia na tym telefonie. " +
+                "Nazwa i kolor są wspólne dla wszystkich semestrów."
+        )
         if (state.programs.isEmpty()) {
             MakEmptyState("Kierunki pojawią się po skonfigurowaniu planu.")
         } else {
@@ -57,6 +62,8 @@ fun StudyProgramsScreen(
                     StudyProgramRow(
                         label = labels[index],
                         color = program.color,
+                        isHidden = program.isHidden,
+                        onVisibleChange = { visible -> onVisibleChange(program.id, visible) },
                         onClick = { onOpenProgram(program.id) }
                     )
                 }
@@ -65,37 +72,58 @@ fun StudyProgramsScreen(
     }
 }
 
+/** The checkbox shows or hides the program on this phone; the rest of the row opens its editor. */
 @Composable
 private fun StudyProgramRow(
     label: String,
     color: String,
+    isHidden: Boolean,
+    onVisibleChange: (Boolean) -> Unit,
     onClick: () -> Unit
 ) {
     Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp)
-            .clickable(onClick = onClick)
-            .clearAndSetSemantics {
-                contentDescription = "$label, edytuj"
-                role = Role.Button
-            }
-            .padding(vertical = MakSpacing.sm),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically
     ) {
-        MakColorDot(color = color)
-        Text(
-            text = label,
-            modifier = Modifier.weight(1f),
-            style = MaterialTheme.typography.bodyMedium,
-            fontWeight = FontWeight.SemiBold
+        MakCheckbox(
+            checked = !isHidden,
+            onCheckedChange = onVisibleChange,
+            contentDescription = "Pokazuj $label"
         )
-        Icon(
-            imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
-            contentDescription = null,
-            tint = MaterialTheme.colorScheme.onSurfaceVariant
-        )
+        Row(
+            modifier = Modifier
+                .weight(1f)
+                .heightIn(min = 48.dp)
+                .clickable(onClick = onClick)
+                .clearAndSetSemantics {
+                    contentDescription = if (isHidden) "$label, ukryty na tym telefonie, edytuj" else "$label, edytuj"
+                    role = Role.Button
+                }
+                .padding(vertical = MakSpacing.sm),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+        ) {
+            MakColorDot(color = color)
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = label,
+                    style = MaterialTheme.typography.bodyMedium,
+                    fontWeight = FontWeight.SemiBold
+                )
+                if (isHidden) {
+                    Text(
+                        text = "Ukryty na tym telefonie",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Outlined.ArrowForward,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 

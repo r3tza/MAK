@@ -12,9 +12,8 @@ import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
-import dev.retza.mak.ui.semester.WeekOverrideScopeUi
-import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.activePlanSource
+import dev.retza.mak.settings.InMemorySettingsPreferences
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -22,6 +21,7 @@ import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
@@ -43,9 +43,13 @@ class ScheduleViewModelTest {
 
     private val feedback = mutableListOf<UiFeedback>()
 
-    private fun viewModel(repository: FakeRepository, clock: Clock = this.clock) = ScheduleViewModel(
+    private fun viewModel(
+        repository: FakeRepository,
+        clock: Clock = this.clock,
+        preferences: InMemorySettingsPreferences = InMemorySettingsPreferences()
+    ) = ScheduleViewModel(
         FakeSemesterRepository(repository),
-        activePlanSource(repository),
+        activePlanSource(repository, preferences),
         clock,
         ActivePlanProvider(),
         feedbackSink = object : FeedbackSink {
@@ -97,11 +101,63 @@ class ScheduleViewModelTest {
 
         val state = viewModel.schedule.value
         assertEquals(ScheduleView.List, state.view)
-        assertEquals(listOf("all", "1"), state.filters.map { it.id })
-        assertTrue(state.filters.first { it.id == "all" }.isSelected)
+        assertEquals(listOf(null, 1L), state.filters.map { it.id })
+        assertTrue(state.filters.first { it.id == null }.isSelected)
         assertEquals(7, state.days.size)
         assertEquals("1 zajęcie", state.selectedDayCountLabel)
         assertEquals("Programowanie", state.items.single().name)
+    }
+
+    @Test
+    fun hiddenStudyProgramIsNeitherFilterOptionNorClassNorMarker() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val preferences = InMemorySettingsPreferences()
+        preferences.setStudyProgramHidden(1L, hidden = true)
+        val viewModel = viewModel(repository, preferences = preferences)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        viewModel.selectView(ScheduleView.Calendar)
+        advanceUntilIdle()
+
+        val state = viewModel.schedule.value
+        assertEquals(listOf(null), state.filters.map { it.id })
+        assertTrue(state.items.isEmpty())
+        assertTrue(state.calendarDays.single { it.id == "2026-09-21" }.markers.isEmpty())
+        assertTrue(state.allProgramsHidden)
+        assertTrue(state.weekTypeLabel.isNotBlank())
+    }
+
+    @Test
+    fun cancelledTermOfHiddenProgramIsNotShown() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.occurrenceChanges += OccurrenceChangeEntity(
+            id = 1L,
+            semesterId = 1L,
+            classId = 1L,
+            originalDate = LocalDate.of(2026, 9, 21),
+            kind = dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED,
+            targetDate = null,
+            newStartTime = null,
+            newEndTime = null,
+            newRoom = null,
+            newBuilding = null,
+            newTeacherName = null,
+            newNote = null
+        )
+        val preferences = InMemorySettingsPreferences()
+        preferences.setStudyProgramHidden(1L, hidden = true)
+        val viewModel = viewModel(repository, preferences = preferences)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        viewModel.selectView(ScheduleView.Calendar)
+        viewModel.setShowCancelled(true)
+        advanceUntilIdle()
+
+        val state = viewModel.schedule.value
+        assertTrue(state.items.isEmpty())
+        assertTrue(state.calendarItems.isEmpty())
     }
 
     @Test
@@ -111,16 +167,33 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
-        viewModel.selectCourseFilter("1")
+        viewModel.selectCourseFilter(1L)
         advanceUntilIdle()
-        assertTrue(viewModel.schedule.value.filters.any { it.id == "1" && it.isSelected })
+        assertTrue(viewModel.schedule.value.filters.any { it.id == 1L && it.isSelected })
 
         repository.setActiveSemester(2)
         advanceUntilIdle()
 
         val filters = viewModel.schedule.value.filters
-        assertTrue(filters.any { it.id == "all" && it.isSelected })
-        assertTrue(filters.none { it.id == "1" })
+        assertTrue(filters.any { it.id == null && it.isSelected })
+        assertTrue(filters.none { it.id == 1L })
+    }
+
+    @Test
+    fun allProgramsFilterIsNull() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        viewModel.selectCourseFilter(1L)
+        advanceUntilIdle()
+        viewModel.selectCourseFilter(null)
+        advanceUntilIdle()
+
+        val state = viewModel.schedule.value
+        assertTrue(state.filters.first { it.id == null }.isSelected)
+        assertEquals("Programowanie", state.items.single().name)
     }
 
     @Test
@@ -209,8 +282,9 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
+        viewModel.selectView(ScheduleView.Calendar)
         viewModel.setShowCancelled(true)
-        viewModel.selectCourseFilter(second.semesterProgramId.toString())
+        viewModel.selectCourseFilter(second.semesterProgramId)
         advanceUntilIdle()
 
         val state = viewModel.schedule.value
@@ -234,8 +308,8 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
-        viewModel.selectCourseFilter(result.semesterProgramId.toString())
-        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.selectCourseFilter(result.semesterProgramId)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         advanceUntilIdle()
 
         assertEquals(1, repository.weekOverrides.size)
@@ -256,10 +330,10 @@ class ScheduleViewModelTest {
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
-        viewModel.selectCourseFilter(result.semesterProgramId.toString())
+        viewModel.selectCourseFilter(result.semesterProgramId)
 
         repository.failSaves = true
-        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         advanceUntilIdle()
 
         assertTrue(repository.weekOverrides.isEmpty())
@@ -287,9 +361,43 @@ class ScheduleViewModelTest {
         advanceUntilIdle()
         assertFalse("two calendars, all courses", viewModel.schedule.value.canCorrectWeek)
 
-        viewModel.selectCourseFilter(second.semesterProgramId.toString())
+        viewModel.selectCourseFilter(second.semesterProgramId)
         advanceUntilIdle()
         assertTrue("two calendars, one course", viewModel.schedule.value.canCorrectWeek)
+    }
+
+    @Test
+    fun filteredProgramShowsTheWeekOfItsCalendar() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val second = repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(name = "Fizyka", color = "#000000"),
+            sourceCalendarId = 1L
+        )
+        repository.weekOverrides += WeekOverrideEntity(
+            id = 50L,
+            semesterId = 1L,
+            academicCalendarId = second.academicCalendarId,
+            weekStartDate = LocalDate.of(2026, 9, 21),
+            weekType = WeekType.A,
+            scope = WeekOverrideScope.ONE_WEEK
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+        assertEquals("Różne tygodnie", viewModel.schedule.value.weekTypeLabel)
+        assertEquals("Różne kalendarze", viewModel.schedule.value.weekSourceLabel)
+
+        viewModel.selectCourseFilter(second.semesterProgramId)
+        advanceUntilIdle()
+        assertEquals("Tydzień A", viewModel.schedule.value.weekTypeLabel)
+        assertEquals("Korekta ręczna", viewModel.schedule.value.weekSourceLabel)
+        assertEquals(dev.retza.mak.domain.WeekType.A, viewModel.schedule.value.weekType)
+
+        viewModel.selectCourseFilter(1L)
+        advanceUntilIdle()
+        assertEquals("Tydzień B", viewModel.schedule.value.weekTypeLabel)
+        assertEquals("Wyliczony automatycznie", viewModel.schedule.value.weekSourceLabel)
     }
 
     @Test
@@ -307,7 +415,7 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
-        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         advanceUntilIdle()
 
         assertTrue(repository.weekOverrides.isEmpty())
@@ -320,6 +428,7 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
+        viewModel.selectView(ScheduleView.Calendar)
         viewModel.selectCalendarDay("2026-10-05")
         advanceUntilIdle()
 
@@ -334,6 +443,7 @@ class ScheduleViewModelTest {
         val repository = FakeRepository()
         addMondayClasses(repository, 3)
         val viewModel = viewModel(repository)
+        viewModel.selectView(ScheduleView.Calendar)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
@@ -347,6 +457,7 @@ class ScheduleViewModelTest {
         val repository = FakeRepository()
         addMondayClasses(repository, 5)
         val viewModel = viewModel(repository)
+        viewModel.selectView(ScheduleView.Calendar)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
@@ -360,6 +471,7 @@ class ScheduleViewModelTest {
         val repository = FakeRepository()
         addMondayClasses(repository, 6)
         val viewModel = viewModel(repository)
+        viewModel.selectView(ScheduleView.Calendar)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
@@ -387,6 +499,7 @@ class ScheduleViewModelTest {
             newNote = null
         )
         val viewModel = viewModel(repository)
+        viewModel.selectView(ScheduleView.Calendar)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
@@ -397,6 +510,48 @@ class ScheduleViewModelTest {
             mapOf("1:2026-09-21" to true, "2:2026-09-21" to false),
             markers.associate { it.id to it.isChanged }
         )
+    }
+
+    @Test
+    fun listViewDoesNotBuildTheCalendarGrid() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        assertTrue(viewModel.schedule.value.calendarDays.isEmpty())
+    }
+
+    @Test
+    fun selectingACalendarDayKeepsTheGrid() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        viewModel.selectView(ScheduleView.Calendar)
+        advanceUntilIdle()
+        val before = viewModel.schedule.value.calendarDays
+
+        viewModel.selectCalendarDay("2026-09-22")
+        advanceUntilIdle()
+
+        val after = viewModel.schedule.value.calendarDays
+        assertEquals(before.map { it.copy(isSelected = false) }, after.map { it.copy(isSelected = false) })
+        assertEquals(listOf("2026-09-22"), after.filter { it.isSelected }.map { it.id })
+    }
+
+    @Test
+    fun gridFollowsPlanChanges() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        viewModel.selectView(ScheduleView.Calendar)
+        advanceUntilIdle()
+        val markersBefore = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }.markers.size
+
+        addMondayClasses(repository, markersBefore + 1)
+        repository.notifyDataChanged()
+        advanceUntilIdle()
+
+        val markersAfter = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }.markers.size
+        assertEquals(markersBefore + 1, markersAfter)
     }
 
     @Test
@@ -415,13 +570,49 @@ class ScheduleViewModelTest {
     }
 
     @Test
+    fun weekOverrideSaveRunsOnceWhileTheFirstIsPending() = runTest(mainDispatcher) {
+        val repository = FakeRepository().apply { saveGate = CompletableDeferred() }
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "saveWeekOverride" })
+    }
+
+    @Test
+    fun weekOverrideFailurePublishesErrorAndAllowsRetry() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        repository.failSaves = true
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
+        advanceUntilIdle()
+        assertEquals(
+            listOf(UiFeedback("Nie udało się zapisać korekty tygodnia.", UiFeedbackKind.Error)),
+            feedback
+        )
+
+        repository.failSaves = false
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
+        advanceUntilIdle()
+        assertTrue("saveWeekOverride" in repository.events)
+    }
+
+    @Test
     fun saveVisibleWeekOverrideWritesSelectedWeek() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
-        viewModel.saveVisibleWeekOverride(WeekTypeUi.B, WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         advanceUntilIdle()
 
         val saved = repository.weekOverrides.single()
@@ -445,10 +636,27 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
-        viewModel.clearVisibleWeekOverride(WeekOverrideScopeUi.ONE_WEEK)
+        viewModel.clearVisibleWeekOverride(dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
         advanceUntilIdle()
 
         assertTrue(repository.weekOverrides.isEmpty())
+    }
+
+    @Test
+    fun clearingWeekOverrideDeletesByWeekAndScope() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
+        advanceUntilIdle()
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.FROM_WEEK)
+        advanceUntilIdle()
+        viewModel.clearVisibleWeekOverride(dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
+        advanceUntilIdle()
+
+        assertEquals(listOf(WeekOverrideScope.FROM_WEEK), repository.weekOverrides.map { it.scope })
     }
 }
 

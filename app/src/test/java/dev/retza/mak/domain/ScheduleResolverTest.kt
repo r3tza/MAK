@@ -9,19 +9,19 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class ScheduleResolverTest {
-    private val semester = Semester(id = "semester-1", name = "Winter")
+    private val semester = Semester(id = 1L, name = "Winter")
     private val calendar = AcademicCalendar(
-        id = "calendar-1",
+        id = 1L,
         startDate = LocalDate.of(2026, 1, 1),
         endDate = LocalDate.of(2026, 1, 31),
         firstWeekType = WeekType.A
     )
-    private val course = StudyProgram("course-1", "Computer science", "#123456")
-    private val assignment = SemesterProgram("assignment-1", semester.id, course.id, calendar.id)
+    private val course = StudyProgram(1L, "Computer science", "#123456")
+    private val assignment = SemesterProgram(1L, semester.id, course.id, calendar.id)
     private val resolver = ScheduleResolver()
 
     private fun classItem(
-        id: String = "class-1",
+        id: Long = 1L,
         recurrence: Recurrence = Recurrence.EVERY_WEEK,
         day: DayOfWeek = DayOfWeek.MONDAY,
         date: LocalDate? = null,
@@ -70,27 +70,27 @@ class ScheduleResolverTest {
         val result = resolve(
             date = date,
             classes = listOf(
-                classItem(id = "every"),
-                classItem(id = "a", recurrence = Recurrence.A_WEEK),
-                classItem(id = "b", recurrence = Recurrence.B_WEEK)
+                classItem(id = 2L),
+                classItem(id = 3L, recurrence = Recurrence.A_WEEK),
+                classItem(id = 4L, recurrence = Recurrence.B_WEEK)
             )
         )
 
-        assertEquals(setOf("every", "b"), result.occurrences.map { it.classId }.toSet())
-        assertEquals(WeekType.B, result.weekType)
+        assertEquals(setOf(2L, 4L), result.occurrences.map { it.classId }.toSet())
+        assertEquals(WeekStatus.Single(WeekType.B), result.weekStatus)
     }
 
     @Test
     fun oneTimeClassIsResolvedOnlyOnItsDate() {
         val onceDate = LocalDate.of(2026, 1, 7)
         val once = classItem(
-            id = "once",
+            id = 5L,
             recurrence = Recurrence.ONCE,
             day = DayOfWeek.WEDNESDAY,
             date = onceDate
         )
 
-        assertEquals(listOf("once"), resolve(onceDate, listOf(once)).occurrences.map { it.classId })
+        assertEquals(listOf(5L), resolve(onceDate, listOf(once)).occurrences.map { it.classId })
         assertTrue(resolve(LocalDate.of(2026, 1, 8), listOf(once)).occurrences.isEmpty())
     }
 
@@ -98,8 +98,8 @@ class ScheduleResolverTest {
     fun modifiedOccurrenceUsesOnlyItsNewData() {
         val date = LocalDate.of(2026, 1, 5)
         val change = OccurrenceChange(
-            id = "modify",
-            classId = "class-1",
+            id = 1L,
+            classId = 1L,
             originalDate = date,
             kind = OccurrenceChangeKind.MODIFIED,
             startTime = LocalTime.of(12, 0),
@@ -119,8 +119,8 @@ class ScheduleResolverTest {
         val date = LocalDate.of(2026, 1, 5)
         val baseWithRoom = classItem(room = "L204")
         val cleared = OccurrenceChange(
-            id = "clear-room",
-            classId = "class-1",
+            id = 2L,
+            classId = 1L,
             originalDate = date,
             kind = OccurrenceChangeKind.MODIFIED,
             room = ""
@@ -137,8 +137,8 @@ class ScheduleResolverTest {
         val source = LocalDate.of(2026, 1, 5)
         val target = LocalDate.of(2026, 1, 7)
         val change = OccurrenceChange(
-            id = "move",
-            classId = "class-1",
+            id = 3L,
+            classId = 1L,
             originalDate = source,
             kind = OccurrenceChangeKind.MODIFIED,
             targetDate = target
@@ -156,8 +156,8 @@ class ScheduleResolverTest {
         val source = LocalDate.of(2026, 1, 5)
         val target = LocalDate.of(2026, 1, 12)
         val change = OccurrenceChange(
-            id = "move",
-            classId = "class-1",
+            id = 3L,
+            classId = 1L,
             originalDate = source,
             kind = OccurrenceChangeKind.MODIFIED,
             targetDate = target,
@@ -168,7 +168,7 @@ class ScheduleResolverTest {
         val schedule = resolve(target, listOf(classItem(day = DayOfWeek.MONDAY)), changes = listOf(change))
 
         assertEquals(2, schedule.occurrences.size)
-        assertEquals(setOf("class-1:$target", "class-1:$source"), schedule.occurrences.map { it.id }.toSet())
+        assertEquals(setOf("1:$target", "1:$source"), schedule.occurrences.map { it.id }.toSet())
     }
 
     @Test
@@ -176,8 +176,8 @@ class ScheduleResolverTest {
         val source = LocalDate.of(2026, 1, 5)
         val target = LocalDate.of(2026, 1, 12)
         val change = OccurrenceChange(
-            id = "move",
-            classId = "class-1",
+            id = 3L,
+            classId = 1L,
             originalDate = source,
             kind = OccurrenceChangeKind.MODIFIED,
             targetDate = target,
@@ -196,10 +196,10 @@ class ScheduleResolverTest {
     fun occurrenceNoteFollowsMovedOccurrenceAndReturnsAfterRestore() {
         val source = LocalDate.of(2026, 1, 5)
         val target = LocalDate.of(2026, 1, 7)
-        val note = OccurrenceNote("note", "class-1", source, "Oddać projekt")
+        val note = OccurrenceNote(1L, 1L, source, "Oddać projekt")
         val change = OccurrenceChange(
-            id = "move",
-            classId = "class-1",
+            id = 3L,
+            classId = 1L,
             originalDate = source,
             kind = OccurrenceChangeKind.MODIFIED,
             targetDate = target
@@ -217,7 +217,7 @@ class ScheduleResolverTest {
     @Test
     fun removingOccurrenceChangeRestoresBaseOccurrence() {
         val date = LocalDate.of(2026, 1, 5)
-        val cancelled = OccurrenceChange("cancel", "class-1", date, OccurrenceChangeKind.CANCELLED)
+        val cancelled = OccurrenceChange(4L, 1L, date, OccurrenceChangeKind.CANCELLED)
 
         assertTrue(resolve(date, listOf(classItem()), changes = listOf(cancelled)).occurrences.isEmpty())
         assertEquals(1, resolve(date, listOf(classItem())).occurrences.size)
@@ -226,7 +226,7 @@ class ScheduleResolverTest {
     @Test
     fun commonAndOccurrenceNotesRemainSeparate() {
         val date = LocalDate.of(2026, 1, 5)
-        val note = OccurrenceNote("note", "class-1", date, "Exam today")
+        val note = OccurrenceNote(1L, 1L, date, "Exam today")
 
         val occurrence = resolve(date, listOf(classItem()), notes = listOf(note)).occurrences.single()
         assertEquals("Bring a laptop", occurrence.classNote)
@@ -235,9 +235,69 @@ class ScheduleResolverTest {
 
     @Test
     fun classesFromAnotherSemesterAreIgnored() {
-        val otherSemesterClass = classItem().copy(semesterId = "semester-2", id = "other")
+        val otherSemesterClass = classItem().copy(semesterId = 2L, id = 6L)
 
         val result = resolve(LocalDate.of(2026, 1, 5), listOf(classItem(), otherSemesterClass))
-        assertFalse(result.occurrences.any { it.classId == "other" })
+        assertFalse(result.occurrences.any { it.classId == 6L })
+    }
+
+    @Test
+    fun movedTermStatusIsMovedAndChangedTermIsModified() {
+        val monday = LocalDate.of(2026, 1, 5)
+        val tuesday = LocalDate.of(2026, 1, 6)
+        val nextMonday = LocalDate.of(2026, 1, 12)
+        val moved = OccurrenceChange(3L, 1L, monday, OccurrenceChangeKind.MODIFIED, targetDate = tuesday)
+        val retimed = OccurrenceChange(
+            5L,
+            1L,
+            nextMonday,
+            OccurrenceChangeKind.MODIFIED,
+            startTime = LocalTime.of(12, 0)
+        )
+        val changes = listOf(moved, retimed)
+        val once = classItem(id = 5L, recurrence = Recurrence.ONCE, date = monday)
+
+        assertEquals(
+            OccurrenceStatus.MOVED,
+            resolve(tuesday, listOf(classItem()), changes = changes).occurrences.single().status
+        )
+        assertEquals(
+            OccurrenceStatus.MODIFIED,
+            resolve(nextMonday, listOf(classItem()), changes = changes).occurrences.single().status
+        )
+        assertEquals(
+            OccurrenceStatus.SCHEDULED,
+            resolve(LocalDate.of(2026, 1, 19), listOf(classItem()), changes = changes).occurrences.single().status
+        )
+        assertEquals(OccurrenceStatus.ONE_OFF, resolve(monday, listOf(once)).occurrences.single().status)
+    }
+
+    @Test
+    fun weekStatusReportsMixedAndOutsideSemester() {
+        val date = LocalDate.of(2026, 1, 5)
+        val otherCalendar = AcademicCalendar(
+            id = 2L,
+            startDate = LocalDate.of(2026, 1, 1),
+            endDate = LocalDate.of(2026, 1, 31),
+            firstWeekType = WeekType.B
+        )
+        val otherAssignment = SemesterProgram(2L, semester.id, course.id, otherCalendar.id)
+
+        val mixed = resolver.resolve(
+            date = date,
+            semester = semester,
+            classes = emptyList(),
+            courses = listOf(course),
+            semesterPrograms = listOf(assignment, otherAssignment),
+            calendars = listOf(calendar, otherCalendar)
+        )
+
+        assertEquals(WeekStatus.Mixed, mixed.weekStatus)
+        assertEquals(setOf(1L, 2L), mixed.weeksByCalendarId.keys)
+        assertEquals(WeekStatus.Single(WeekType.A), resolve(LocalDate.of(2026, 1, 1), emptyList()).weekStatus)
+        assertEquals(
+            WeekStatus.OutsideSemester,
+            resolve(LocalDate.of(2026, 2, 10), emptyList()).weekStatus
+        )
     }
 }

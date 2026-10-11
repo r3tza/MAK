@@ -17,17 +17,19 @@ data class ClassItemUi(
     val weekLabel: String? = null,
     val classNote: String? = null,
     val occurrenceNote: String? = null,
-    val statusBadge: String? = null,
-    val isCancelled: Boolean = false,
-    val isModified: Boolean = false,
-    val isOneOff: Boolean = false,
+    val status: OccurrenceStatusUi = OccurrenceStatusUi.Scheduled,
     val conflictLabel: String? = null,
     val conflictWith: String? = null
-)
+) {
+    val isCancelled: Boolean
+        get() = status == OccurrenceStatusUi.Cancelled
+    val statusBadge: String?
+        get() = status.cardBadge()
+}
 
 @Immutable
 data class SemesterUi(
-    val id: String,
+    val id: Long,
     val name: String,
     val dateRangeLabel: String,
     val firstWeekLabel: String,
@@ -69,8 +71,3 @@ data class FieldErrorUi(
     val message: String
 )
 
-sealed interface ScreenStatus {
-    data object Ready : ScreenStatus
-    data object Loading : ScreenStatus
-    data class Error(val message: String) : ScreenStatus
-}

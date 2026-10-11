@@ -30,6 +30,7 @@ import androidx.compose.foundation.text.BasicText
 import androidx.compose.foundation.text.TextAutoSize
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
@@ -37,7 +38,6 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
-import androidx.compose.material3.DropdownMenu
 import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.ExposedDropdownMenuAnchorType
@@ -54,18 +54,11 @@ import androidx.compose.material3.VerticalDivider
 import androidx.compose.material.icons.Icons
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.material.icons.outlined.StickyNote2
-import androidx.compose.material.icons.outlined.LooksOne
-import androidx.compose.material.icons.outlined.EventBusy
-import androidx.compose.material.icons.outlined.EditCalendar
-import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material.icons.outlined.ArrowBack
-import androidx.compose.material.icons.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.ExpandLess
 import androidx.compose.material.icons.outlined.ExpandMore
-import androidx.compose.material.icons.outlined.MoreVert
 import androidx.compose.material.icons.outlined.Today
 import androidx.compose.material.icons.outlined.WarningAmber
 import androidx.compose.material.icons.outlined.ErrorOutline
@@ -88,6 +81,7 @@ import androidx.compose.ui.graphics.luminance
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.graphics.PathEffect
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.semantics.Role
@@ -109,7 +103,6 @@ import androidx.compose.ui.window.Dialog
 import dev.retza.mak.ui.theme.MakModified
 import dev.retza.mak.ui.theme.MakOnce
 import dev.retza.mak.ui.theme.MakOrangeMark
-import dev.retza.mak.ui.theme.MakInk
 import dev.retza.mak.ui.theme.MakSummaryEnd
 import dev.retza.mak.ui.theme.MakSummaryEndDark
 import dev.retza.mak.ui.theme.MakSummaryStart
@@ -141,7 +134,9 @@ fun MakScreenContent(
 fun MakSectionHeader(
     title: String,
     modifier: Modifier = Modifier,
-    subtitle: String? = null
+    subtitle: String? = null,
+    // A short line under the subtitle, such as the study programs hidden on this phone.
+    supportingContent: (@Composable () -> Unit)? = null
 ) {
     Column(modifier = modifier.fillMaxWidth()) {
         Spacer(modifier = Modifier.height(MakSpacing.sm))
@@ -156,11 +151,15 @@ fun MakSectionHeader(
                 text = subtitle,
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-                modifier = Modifier.padding(start = MakSpacing.xs, end = MakSpacing.xs, top = MakSpacing.sm, bottom = MakSpacing.lg)
+                modifier = Modifier.padding(start = MakSpacing.xs, end = MakSpacing.xs, top = MakSpacing.sm)
             )
-        } else {
-            Spacer(modifier = Modifier.height(MakSpacing.lg))
         }
+        if (supportingContent != null) {
+            Box(modifier = Modifier.padding(start = MakSpacing.xs, end = MakSpacing.xs, top = MakSpacing.sm)) {
+                supportingContent()
+            }
+        }
+        Spacer(modifier = Modifier.height(MakSpacing.lg))
     }
 }
 
@@ -418,6 +417,10 @@ fun ClassCard(
     onClick: (() -> Unit)? = null
 ) {
     val accent = classAccentColor(item)
+    val surface = MaterialTheme.colorScheme.surface
+    val barColor = remember(accent, surface) {
+        courseShapeColor(accent, surface)
+    }
     val shape = RoundedCornerShape(16.dp)
     var focused by remember { mutableStateOf(false) }
     val clickable = if (onClick != null) {
@@ -448,7 +451,7 @@ fun ClassCard(
                 .fillMaxHeight()
                 .background(
                     if (item.isCancelled) MaterialTheme.colorScheme.error
-                    else courseShapeColor(accent, MaterialTheme.colorScheme.surface)
+                    else barColor
                 )
         )
         Row(
@@ -474,7 +477,7 @@ fun ClassCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     maxLines = 1
                 )
-                classStatusIcon(item)?.let { (icon, tint) ->
+                occurrenceStatusIcon(item.status)?.let { (icon, tint) ->
                     // The card's own description already reads the status.
                     Icon(
                         imageVector = icon,
@@ -606,10 +609,11 @@ internal fun CourseNameText(
     modifier: Modifier = Modifier
 ) {
     val surface = MaterialTheme.colorScheme.surface
+    val textColor = remember(accent, surface) { Color(courseTextColor(accent.toArgb(), surface.toArgb())) }
     Text(
         text = name,
         modifier = modifier,
-        color = Color(courseTextColor(accent.toArgb(), surface.toArgb())),
+        color = textColor,
         style = MaterialTheme.typography.bodySmall,
         fontWeight = FontWeight.Bold,
         maxLines = 1,
@@ -654,15 +658,6 @@ internal fun modifiedTint(): Color =
 internal fun oneOffTint(): Color =
     if (isDarkSurface()) lerp(MakOnce, Color.White, 0.55f) else MakOnce
 
-/** Icon and color for a class state that changes the plan or marks a one-off date; null otherwise. */
-@Composable
-internal fun classStatusIcon(item: ClassItemUi): Pair<ImageVector, Color>? = when {
-    item.isCancelled -> Icons.Outlined.EventBusy to MaterialTheme.colorScheme.error
-    item.isModified -> Icons.Outlined.EditCalendar to modifiedTint()
-    item.isOneOff -> Icons.Outlined.LooksOne to oneOffTint()
-    else -> null
-}
-
 @Composable
 fun MakEmptyState(message: String, modifier: Modifier = Modifier) {
     val outline = MaterialTheme.colorScheme.outlineVariant
@@ -693,40 +688,14 @@ fun MakEmptyState(message: String, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun MakStateMessage(
-    status: ScreenStatus,
-    modifier: Modifier = Modifier,
-    emptyMessage: String? = null,
-    onRetry: (() -> Unit)? = null
-) {
-    when (status) {
-        ScreenStatus.Loading -> Column(
-            modifier = modifier.fillMaxWidth().padding(MakSpacing.xl),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
-        ) {
-            CircularProgressIndicator()
-            Text("Ładowanie", style = MaterialTheme.typography.bodyMedium)
-        }
-
-        is ScreenStatus.Error -> Column(
-            modifier = modifier
-                .fillMaxWidth()
-                .clip(RoundedCornerShape(16.dp))
-                .background(MaterialTheme.colorScheme.errorContainer)
-                .padding(MakSpacing.lg),
-            verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
-        ) {
-            Text("Nie udało się wczytać danych", fontWeight = FontWeight.SemiBold)
-            Text(status.message, color = MaterialTheme.colorScheme.onErrorContainer)
-            if (onRetry != null) {
-                MakSecondaryAction(text = "Spróbuj ponownie", onClick = onRetry)
-            }
-        }
-
-        ScreenStatus.Ready -> if (emptyMessage != null) {
-            MakEmptyState(emptyMessage, modifier)
-        }
+fun MakLoadingMessage(modifier: Modifier = Modifier) {
+    Column(
+        modifier = modifier.fillMaxWidth().padding(MakSpacing.xl),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
+    ) {
+        CircularProgressIndicator()
+        Text("Ładowanie", style = MaterialTheme.typography.bodyMedium)
     }
 }
 
@@ -1142,34 +1111,6 @@ fun MakField(
 }
 
 @Composable
-fun MakReadOnlyField(
-    label: String,
-    value: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-    isError: Boolean = false
-) {
-    OutlinedTextField(
-        value = value,
-        onValueChange = {},
-        modifier = modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp)
-            .clickable(role = Role.Button, onClick = onClick),
-        readOnly = true,
-        isError = isError,
-        label = { Text(label) },
-        trailingIcon = {
-            Icon(
-                imageVector = Icons.Filled.ArrowDropDown,
-                contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    )
-}
-
-@Composable
 fun MakExpandableSection(
     label: String,
     expanded: Boolean,
@@ -1243,7 +1184,8 @@ fun <T> MakSelectField(
     modifier: Modifier = Modifier,
     isError: Boolean = false,
     optionLabel: (T) -> String = { it.toString() },
-    optionLeading: (@Composable (T) -> Unit)? = null
+    optionLeading: (@Composable (T) -> Unit)? = null,
+    optionTrailing: (@Composable (T) -> Unit)? = null
 ) {
     var expanded by remember { mutableStateOf(false) }
     ExposedDropdownMenuBox(
@@ -1268,6 +1210,7 @@ fun <T> MakSelectField(
                 DropdownMenuItem(
                     text = { Text(optionLabel(option), style = MaterialTheme.typography.bodyLarge) },
                     leadingIcon = optionLeading?.let { leading -> { leading(option) } },
+                    trailingIcon = optionTrailing?.let { trailing -> { trailing(option) } },
                     onClick = {
                         onSelected(option)
                         expanded = false
@@ -1346,29 +1289,58 @@ fun MakCheckbox(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
-        val shape = RoundedCornerShape(4.dp)
-        Box(
-            modifier = Modifier
-                .size(20.dp)
-                .clip(shape)
-                .border(
-                    1.dp,
-                    if (focused || checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
-                    shape
-                )
-                .background(if (checked) MaterialTheme.colorScheme.primary else Color.Transparent),
-            contentAlignment = Alignment.Center
-        ) {
-            if (checked) {
-                Icon(
-                    imageVector = Icons.Filled.Check,
-                    contentDescription = null,
-                    tint = MaterialTheme.colorScheme.onPrimary,
-                    modifier = Modifier.size(16.dp)
-                )
-            }
-        }
+        MakCheckboxBox(checked = checked, focused = focused)
         Text(label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+    }
+}
+
+/** The checkbox alone in a 48 dp target, for a row whose other part has its own action. */
+@Composable
+fun MakCheckbox(
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    contentDescription: String,
+    modifier: Modifier = Modifier
+) {
+    var focused by remember { mutableStateOf(false) }
+    Box(
+        modifier = modifier
+            .size(48.dp)
+            .onFocusChanged { focused = it.isFocused }
+            .toggleable(value = checked, role = Role.Checkbox, onValueChange = onCheckedChange)
+            .semantics {
+                this.contentDescription = contentDescription
+                stateDescription = if (checked) "Zaznaczone" else "Niezaznaczone"
+            },
+        contentAlignment = Alignment.Center
+    ) {
+        MakCheckboxBox(checked = checked, focused = focused)
+    }
+}
+
+@Composable
+private fun MakCheckboxBox(checked: Boolean, focused: Boolean) {
+    val shape = RoundedCornerShape(4.dp)
+    Box(
+        modifier = Modifier
+            .size(20.dp)
+            .clip(shape)
+            .border(
+                1.dp,
+                if (focused || checked) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline,
+                shape
+            )
+            .background(if (checked) MaterialTheme.colorScheme.primary else Color.Transparent),
+        contentAlignment = Alignment.Center
+    ) {
+        if (checked) {
+            Icon(
+                imageVector = Icons.Filled.Check,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onPrimary,
+                modifier = Modifier.size(16.dp)
+            )
+        }
     }
 }
 
@@ -1477,15 +1449,33 @@ fun MakConfirmDeletionDialog(
 }
 
 @Composable
-fun MakHelperText(text: String, modifier: Modifier = Modifier) {
-    Text(
-        text = text,
-        modifier = modifier.fillMaxWidth(),
-        fontSize = 12.sp,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        lineHeight = 16.sp
-    )
+fun MakHelperText(
+    text: String,
+    modifier: Modifier = Modifier,
+    icon: ImageVector? = null,
+    style: TextStyle = MakHelperTextStyle
+) {
+    Row(modifier = modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+        if (icon != null) {
+            // Centered on the first line of the text.
+            val lineHeight = with(LocalDensity.current) { style.lineHeight.toDp() }
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.padding(top = ((lineHeight - 16.dp) / 2).coerceAtLeast(0.dp)).size(16.dp)
+            )
+        }
+        Text(
+            text = text,
+            modifier = Modifier.weight(1f),
+            style = style,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+    }
 }
+
+private val MakHelperTextStyle = TextStyle(fontSize = 12.sp, lineHeight = 16.sp)
 
 @Composable
 fun FieldError(

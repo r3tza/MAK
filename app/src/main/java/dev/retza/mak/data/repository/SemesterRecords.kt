@@ -39,3 +39,12 @@ data class WeekOverrideRecord(
     val weekType: WeekType,
     val scope: WeekOverrideScope
 )
+
+/** One semester with everything its configuration screens show, read in one transaction. */
+data class SemesterConfiguration(
+    val semester: SemesterRecord,
+    val programs: List<SemesterProgramRecord>,
+    val studyPrograms: List<StudyProgramRecord>,
+    val calendars: List<AcademicCalendarRecord>,
+    val overrides: List<WeekOverrideRecord>
+)

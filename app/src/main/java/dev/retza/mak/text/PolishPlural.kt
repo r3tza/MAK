@@ -1,4 +1,4 @@
-package dev.retza.mak.ui
+package dev.retza.mak.text
 
 internal fun polishPlural(count: Int, one: String, few: String, many: String): String {
     val lastDigit = count % 10

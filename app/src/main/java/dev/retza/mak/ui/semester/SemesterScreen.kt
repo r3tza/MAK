@@ -1,5 +1,7 @@
 package dev.retza.mak.ui.semester
 
+import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.components.DefaultCourseColor
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -18,12 +20,10 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Add
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Icon
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -36,10 +36,11 @@ import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakActionMenu
-import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakColorDot
 import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDatePickerField
+import dev.retza.mak.ui.components.MakDialog
+import dev.retza.mak.ui.components.MakDialogAction
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakFieldPair
@@ -54,31 +55,20 @@ import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.MakSpacing
-import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakTextAction
+import dev.retza.mak.ui.components.WeekOverrideScopeChoice
+import dev.retza.mak.ui.components.WeekTypeSelectField
 import dev.retza.mak.ui.components.makRowFocus
-import dev.retza.mak.ui.polishPlural
-import dev.retza.mak.ui.components.ScreenStatus
+import dev.retza.mak.ui.longDateFormatter
+import dev.retza.mak.text.polishPlural
+import dev.retza.mak.domain.toLocalDateOrNull
 import dev.retza.mak.ui.components.parseHexColor
-import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-
-enum class WeekTypeUi {
-    A,
-    B
-}
-
-enum class WeekOverrideScopeUi {
-    ONE_WEEK,
-    FROM_WEEK
-}
 
 data class SemesterFormUiState(
     val name: String = "",
     val startDate: String = "",
     val endDate: String = "",
-    val firstWeek: WeekTypeUi = WeekTypeUi.A,
+    val firstWeek: WeekType = WeekType.A,
     val nameError: String? = null,
     val startDateError: String? = null,
     val endDateError: String? = null,
@@ -87,17 +77,17 @@ data class SemesterFormUiState(
 )
 
 data class WeekOverrideUi(
-    val id: String,
+    val id: Long,
     val weekStartDate: String,
-    val weekType: WeekTypeUi,
-    val scope: WeekOverrideScopeUi
+    val weekType: WeekType,
+    val scope: WeekOverrideScope
 )
 
 data class WeekOverrideFormUiState(
-    val id: String? = null,
+    val id: Long? = null,
     val weekStartDate: String = "",
-    val weekType: WeekTypeUi = WeekTypeUi.A,
-    val scope: WeekOverrideScopeUi = WeekOverrideScopeUi.ONE_WEEK,
+    val weekType: WeekType = WeekType.A,
+    val scope: WeekOverrideScope = WeekOverrideScope.ONE_WEEK,
     val weekStartDateError: String? = null,
     val isSaving: Boolean = false,
     val isOpen: Boolean = false
@@ -117,38 +107,39 @@ enum class CourseProgramModeUi {
 }
 
 data class SemesterCourseUi(
-    val assignmentId: String,
-    val programId: String,
+    val assignmentId: Long,
+    val programId: Long,
     val name: String,
     val color: String,
-    val calendarId: String,
+    val calendarId: Long?,
     val calendarLabel: String,
     val sharesCalendar: Boolean
 )
 
 data class SemesterCalendarUi(
-    val id: String,
+    val id: Long,
     val startDate: String,
     val endDate: String,
-    val firstWeek: WeekTypeUi,
+    val rangeLabel: String,
+    val firstWeek: WeekType,
     val courseNames: List<String>
 )
 
 data class SemesterProgramOptionUi(
-    val id: String,
+    val id: Long,
     val name: String,
     val color: String
 )
 
 data class CourseDeletionUi(
-    val assignmentId: String,
+    val assignmentId: Long,
     val programName: String,
     val classCount: Int
 )
 
 data class ReconnectCalendarUi(
-    val assignmentId: String,
-    val calendarId: String,
+    val assignmentId: Long,
+    val calendarId: Long,
     val programName: String,
     val sourceBecomesUnused: Boolean
 )
@@ -162,13 +153,13 @@ data class SemesterScreenUiState(
     val overrideCount: Int = 0,
     val courseItems: List<SemesterCourseUi> = emptyList(),
     val calendars: List<SemesterCalendarUi> = emptyList(),
-    val selectedCalendarId: String? = null,
+    val selectedCalendarId: Long? = null,
     val courseNameDraft: String = "",
     val courseColorDraft: String = DefaultCourseColor,
     val courseCalendarMode: CourseCalendarModeUi = CourseCalendarModeUi.SHARED,
-    val courseCalendarId: String? = null,
+    val courseCalendarId: Long? = null,
     val courseProgramMode: CourseProgramModeUi = CourseProgramModeUi.NEW,
-    val courseProgramId: String? = null,
+    val courseProgramId: Long? = null,
     val courseProgramOptions: List<SemesterProgramOptionUi> = emptyList(),
     val courseNameError: String? = null,
     val isAddingCourse: Boolean = false,
@@ -183,7 +174,6 @@ data class SemesterScreenUiState(
     val pendingOverrideDeletion: WeekOverrideUi? = null,
     val pendingCalendarDeletion: SemesterCalendarUi? = null,
     val reconnectError: String? = null,
-    val status: ScreenStatus = ScreenStatus.Ready
 )
 
 /** An unsaved draft or open confirmation that a downloaded plan must not replace. */
@@ -200,12 +190,11 @@ fun SemesterScreen(
     onSemesterNameChanged: (String) -> Unit,
     onSemesterStartDateChanged: (String) -> Unit,
     onSemesterEndDateChanged: (String) -> Unit,
-    onSemesterFirstWeekChanged: (WeekTypeUi) -> Unit,
+    onSemesterFirstWeekChanged: (WeekType) -> Unit,
     onSaveSemester: () -> Unit,
     onOpenCourses: () -> Unit,
     onOpenOverrides: () -> Unit,
     onOpenCalendars: () -> Unit,
-    onRetry: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     MakScreenContent(
@@ -213,59 +202,53 @@ fun SemesterScreen(
     ) {
         MakScreenIntro("Zakres dat, pierwszy tydzień A/B, kierunki i ręczne korekty tygodni.")
 
-        when (state.status) {
-            ScreenStatus.Ready -> {
-                SemesterForm(
-                    state = state.semester,
-                    showDates = state.calendars.size <= 1,
-                    onNameChanged = onSemesterNameChanged,
-                    onStartDateChanged = onSemesterStartDateChanged,
-                    onEndDateChanged = onSemesterEndDateChanged,
-                    onFirstWeekChanged = onSemesterFirstWeekChanged,
-                    onSave = onSaveSemester
-                )
-                if (state.calendars.size > 1) {
-                    MakNoteBanner(
-                        title = "Różne kalendarze",
-                        subtitle = "Kierunki używają różnych zakresów dat i rytmów A/B. " +
-                            "Zmień daty na ekranie Kalendarze.",
-                        role = MakNoteRole.Neutral
-                    )
-                }
-                SemesterNavigationRow(
-                    title = "Kierunki",
-                    countLabel = state.courseItems.size.let {
-                        "$it ${polishPlural(it, "kierunek", "kierunki", "kierunków")}"
-                    },
-                    onClick = onOpenCourses
-                )
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = MakSpacing.md),
-                    color = MaterialTheme.colorScheme.outlineVariant
-                )
-                SemesterNavigationRow(
-                    title = "Korekty tygodni",
-                    countLabel = state.overrideCount.let {
-                        "$it ${polishPlural(it, "korekta", "korekty", "korekt")}"
-                    },
-                    onClick = onOpenOverrides
-                )
-                if (state.calendars.size > 1) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(horizontal = MakSpacing.md),
-                        color = MaterialTheme.colorScheme.outlineVariant
-                    )
-                    SemesterNavigationRow(
-                        title = "Kalendarze",
-                        countLabel = state.calendars.size.let {
-                            "$it ${polishPlural(it, "kalendarz", "kalendarze", "kalendarzy")}"
-                        },
-                        onClick = onOpenCalendars
-                    )
-                }
-            }
-
-            else -> MakStateMessage(status = state.status, onRetry = onRetry)
+        SemesterForm(
+            state = state.semester,
+            showDates = state.calendars.size <= 1,
+            onNameChanged = onSemesterNameChanged,
+            onStartDateChanged = onSemesterStartDateChanged,
+            onEndDateChanged = onSemesterEndDateChanged,
+            onFirstWeekChanged = onSemesterFirstWeekChanged,
+            onSave = onSaveSemester
+        )
+        if (state.calendars.size > 1) {
+            MakNoteBanner(
+                title = "Różne kalendarze",
+                subtitle = "Kierunki używają różnych zakresów dat i rytmów A/B. " +
+                    "Zmień daty na ekranie Kalendarze.",
+                role = MakNoteRole.Neutral
+            )
+        }
+        SemesterNavigationRow(
+            title = "Kierunki",
+            countLabel = state.courseItems.size.let {
+                "$it ${polishPlural(it, "kierunek", "kierunki", "kierunków")}"
+            },
+            onClick = onOpenCourses
+        )
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = MakSpacing.md),
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+        SemesterNavigationRow(
+            title = "Korekty tygodni",
+            countLabel = state.overrideCount.let {
+                "$it ${polishPlural(it, "korekta", "korekty", "korekt")}"
+            },
+            onClick = onOpenOverrides
+        )
+        if (state.calendars.size > 1) {
+            HorizontalDivider(
+                modifier = Modifier.padding(horizontal = MakSpacing.md),
+                color = MaterialTheme.colorScheme.outlineVariant
+            )
+            SemesterNavigationRow(
+                title = "Kalendarze",
+                countLabel = state.calendars.size.let {
+                    "$it ${polishPlural(it, "kalendarz", "kalendarze", "kalendarzy")}"
+                },
+                onClick = onOpenCalendars
+            )
         }
     }
 }
@@ -310,8 +293,8 @@ private fun SemesterNavigationRow(
 fun SemesterCoursesScreen(
     state: SemesterScreenUiState,
     onAddCourse: () -> Unit,
-    onEditCourse: (String) -> Unit,
-    onDeleteCourse: (String) -> Unit,
+    onEditCourse: (Long) -> Unit,
+    onDeleteCourse: (Long) -> Unit,
     onConfirmCourseDeletion: () -> Unit,
     onCancelCourseDeletion: () -> Unit,
     modifier: Modifier = Modifier
@@ -338,14 +321,14 @@ fun SemesterCoursesScreen(
 @Composable
 fun SemesterWeekOverridesScreen(
     state: SemesterScreenUiState,
-    onCalendarSelected: (String) -> Unit,
+    onCalendarSelected: (Long) -> Unit,
     onWeekStartDateChanged: (String) -> Unit,
-    onWeekTypeChanged: (WeekTypeUi) -> Unit,
-    onScopeChanged: (WeekOverrideScopeUi) -> Unit,
+    onWeekTypeChanged: (WeekType) -> Unit,
+    onScopeChanged: (WeekOverrideScope) -> Unit,
     onNewOverride: () -> Unit,
-    onEditOverride: (String) -> Unit,
+    onEditOverride: (Long) -> Unit,
     onSaveOverride: () -> Unit,
-    onDeleteOverride: (String) -> Unit,
+    onDeleteOverride: (Long) -> Unit,
     onCancelOverrideEdit: () -> Unit,
     onConfirmOverrideDeletion: () -> Unit,
     onCancelOverrideDeletion: () -> Unit,
@@ -393,12 +376,12 @@ fun SemesterWeekOverridesScreen(
 @Composable
 fun SemesterCalendarsScreen(
     state: SemesterScreenUiState,
-    onCalendarSelected: (String) -> Unit,
+    onCalendarSelected: (Long) -> Unit,
     onStartDateChanged: (String) -> Unit,
     onEndDateChanged: (String) -> Unit,
-    onFirstWeekChanged: (WeekTypeUi) -> Unit,
+    onFirstWeekChanged: (WeekType) -> Unit,
     onSaveCalendar: () -> Unit,
-    onDeleteCalendar: (String) -> Unit,
+    onDeleteCalendar: (Long) -> Unit,
     onConfirmCalendarDeletion: () -> Unit,
     onCancelCalendarDeletion: () -> Unit,
     modifier: Modifier = Modifier
@@ -406,7 +389,7 @@ fun SemesterCalendarsScreen(
     state.pendingCalendarDeletion?.let { calendar ->
         MakConfirmDeletionDialog(
             title = "Usunąć kalendarz?",
-            text = "Kalendarz ${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()} " +
+            text = "Kalendarz ${calendar.rangeLabel} " +
                 "nie jest używany przez żaden kierunek i zostanie usunięty razem ze swoimi korektami.",
             isDeleting = state.isDeletingCalendar,
             onConfirm = onConfirmCalendarDeletion,
@@ -470,7 +453,7 @@ private fun CalendarCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()}",
+                    calendar.rangeLabel,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
@@ -500,7 +483,7 @@ private fun CalendarDateFields(
     state: SemesterFormUiState,
     onStartDateChanged: (String) -> Unit,
     onEndDateChanged: (String) -> Unit,
-    onFirstWeekChanged: (WeekTypeUi) -> Unit
+    onFirstWeekChanged: (WeekType) -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
         MakFieldPair(
@@ -529,11 +512,10 @@ private fun CalendarDateFields(
                 }
             }
         )
-        MakSelectField(
+        WeekTypeSelectField(
             label = "Pierwszy tydzień",
-            value = "Tydzień ${state.firstWeek.name}",
-            options = listOf("Tydzień A", "Tydzień B"),
-            onSelected = { onFirstWeekChanged(if (it.endsWith("B")) WeekTypeUi.B else WeekTypeUi.A) }
+            value = state.firstWeek,
+            onSelected = onFirstWeekChanged
         )
     }
 }
@@ -545,7 +527,7 @@ private fun SemesterForm(
     onNameChanged: (String) -> Unit,
     onStartDateChanged: (String) -> Unit,
     onEndDateChanged: (String) -> Unit,
-    onFirstWeekChanged: (WeekTypeUi) -> Unit,
+    onFirstWeekChanged: (WeekType) -> Unit,
     onSave: () -> Unit
 ) {
     Column(
@@ -580,8 +562,8 @@ private fun SemesterForm(
 private fun CoursesBlock(
     state: SemesterScreenUiState,
     onAddCourse: () -> Unit,
-    onEditCourse: (String) -> Unit,
-    onDeleteCourse: (String) -> Unit
+    onEditCourse: (Long) -> Unit,
+    onDeleteCourse: (Long) -> Unit
 ) {
     Column(
         modifier = Modifier.padding(bottom = 22.dp),
@@ -665,28 +647,21 @@ internal fun ReconnectCalendarDialog(
     onConfirm: () -> Unit,
     onCancel: () -> Unit
 ) {
-    AlertDialog(
-        onDismissRequest = { if (!isSaving) onCancel() },
-        title = { Text("Połączyć kalendarze?") },
-        text = {
-            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
-                Text("Kierunek ${reconnect.programName} będzie używał wybranego kalendarza.")
-                if (reconnect.sourceBecomesUnused) {
-                    Text(
-                        "Dotychczasowy kalendarz nie będzie już używany i zostanie usunięty " +
-                            "razem ze swoimi korektami. Korekty nie zostaną przeniesione."
-                    )
-                }
-                error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
-            }
-        },
-        confirmButton = {
-            TextButton(onClick = onConfirm, enabled = !isSaving) { Text("Połącz") }
-        },
-        dismissButton = {
-            TextButton(onClick = onCancel, enabled = !isSaving) { Text("Anuluj") }
+    MakDialog(
+        title = "Połączyć kalendarze?",
+        onDismiss = { if (!isSaving) onCancel() },
+        dismissAction = MakDialogAction("Anuluj", onCancel, enabled = !isSaving),
+        confirmAction = MakDialogAction("Połącz", onConfirm, enabled = !isSaving)
+    ) {
+        Text("Kierunek ${reconnect.programName} będzie używał wybranego kalendarza.")
+        if (reconnect.sourceBecomesUnused) {
+            Text(
+                "Dotychczasowy kalendarz nie będzie już używany i zostanie usunięty " +
+                    "razem ze swoimi korektami. Korekty nie zostaną przeniesione."
+            )
         }
-    )
+        error?.let { Text(it, color = MaterialTheme.colorScheme.error) }
+    }
 }
 
 @Composable
@@ -716,30 +691,24 @@ internal fun courseDeletionMessage(deletion: CourseDeletionUi): String = buildSt
 internal fun calendarLabel(calendar: SemesterCalendarUi): String {
     val courses = distinctLabels(calendar.courseNames)
     val coursePart = if (courses.isEmpty()) "brak kierunków" else courses.joinToString(", ")
-    val range = "${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()}"
-    return "$range, tydzień ${calendar.firstWeek.name}, $coursePart"
+    return "${calendar.rangeLabel}, tydzień ${calendar.firstWeek.name}, $coursePart"
 }
 
 private fun String.asLongDate(): String =
-    toLocalDateOrNull()?.format(polishShortDateFormatter) ?: this
+    toLocalDateOrNull()?.format(longDateFormatter) ?: this
 
-private fun String.asCalendarDate(): String =
-    toLocalDateOrNull()?.format(calendarDateFormatter) ?: this
-
-private val calendarDateFormatter =
-    java.time.format.DateTimeFormatter.ofPattern("d MMM yyyy", java.util.Locale.forLanguageTag("pl-PL"))
 
 @Composable
 private fun WeekOverridesSection(
     overrides: List<WeekOverrideUi>,
     form: WeekOverrideFormUiState,
     onWeekStartDateChanged: (String) -> Unit,
-    onWeekTypeChanged: (WeekTypeUi) -> Unit,
-    onScopeChanged: (WeekOverrideScopeUi) -> Unit,
+    onWeekTypeChanged: (WeekType) -> Unit,
+    onScopeChanged: (WeekOverrideScope) -> Unit,
     onNewOverride: () -> Unit,
-    onEditOverride: (String) -> Unit,
+    onEditOverride: (Long) -> Unit,
     onSaveOverride: () -> Unit,
-    onDeleteOverride: (String) -> Unit,
+    onDeleteOverride: (Long) -> Unit,
     onCancelEdit: () -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
@@ -807,12 +776,12 @@ private fun WeekOverrideCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text("Tydzień ${item.weekType.name}", fontWeight = FontWeight.SemiBold)
-                val weekStart = item.weekStartDate.toLocalDateOrNull()?.format(polishShortDateFormatter)
+                val weekStart = item.weekStartDate.toLocalDateOrNull()?.format(longDateFormatter)
                     ?: item.weekStartDate
                 Text(
                     text = when (item.scope) {
-                        WeekOverrideScopeUi.ONE_WEEK -> "$weekStart, tylko ten tydzień"
-                        WeekOverrideScopeUi.FROM_WEEK -> "Od $weekStart"
+                        WeekOverrideScope.ONE_WEEK -> "$weekStart, tylko ten tydzień"
+                        WeekOverrideScope.FROM_WEEK -> "Od $weekStart"
                     },
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
@@ -832,8 +801,8 @@ private fun WeekOverrideCard(
 private fun WeekOverrideForm(
     state: WeekOverrideFormUiState,
     onWeekStartDateChanged: (String) -> Unit,
-    onWeekTypeChanged: (WeekTypeUi) -> Unit,
-    onScopeChanged: (WeekOverrideScopeUi) -> Unit,
+    onWeekTypeChanged: (WeekType) -> Unit,
+    onScopeChanged: (WeekOverrideScope) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit
 ) {
@@ -852,27 +821,14 @@ private fun WeekOverrideForm(
         )
         FieldError(state.weekStartDateError?.let(::FieldErrorUi))
         state.weekStartDate.toLocalDateOrNull()?.let { monday ->
-            MakHelperText("Korekta obejmuje tydzień od poniedziałku ${monday.format(polishShortDateFormatter)}.")
+            MakHelperText("Korekta obejmuje tydzień od poniedziałku ${monday.format(longDateFormatter)}.")
         }
-        MakSelectField(
+        WeekTypeSelectField(
             label = "Oznaczenie tygodnia",
-            value = "Tydzień ${state.weekType.name}",
-            options = listOf("Tydzień A", "Tydzień B"),
-            onSelected = { onWeekTypeChanged(if (it.endsWith("B")) WeekTypeUi.B else WeekTypeUi.A) }
+            value = state.weekType,
+            onSelected = onWeekTypeChanged
         )
-        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
-            WeekOverrideScopeUi.entries.forEach { scope ->
-                val label = when (scope) {
-                    WeekOverrideScopeUi.ONE_WEEK -> "Tylko ten tydzień"
-                    WeekOverrideScopeUi.FROM_WEEK -> "Od tego tygodnia w przyszłość"
-                }
-                MakChoiceRow(
-                    label = label,
-                    selected = state.scope == scope,
-                    onClick = { onScopeChanged(scope) }
-                )
-            }
-        }
+        WeekOverrideScopeChoice(selected = state.scope, onSelected = onScopeChanged)
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
@@ -893,7 +849,4 @@ private fun WeekOverrideForm(
     }
 }
 
-private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
 
-private val polishShortDateFormatter =
-    DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.forLanguageTag("pl-PL"))

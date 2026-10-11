@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.settings.ThemeMode
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
@@ -14,6 +15,7 @@ import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dev.retza.mak.export.ImportSummary
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
@@ -28,7 +30,7 @@ class SettingsScreenTest {
     val composeTestRule = createComposeRule()
 
     private val semester = SemesterUi(
-        id = "1",
+        id = 1L,
         name = "Semestr zimowy",
         dateRangeLabel = "1 paź - 28 lut",
         firstWeekLabel = "pierwszy tydzień A",
@@ -47,8 +49,8 @@ class SettingsScreenTest {
                     SettingsScreen(
                         state = SettingsUiState(
                             semesters = listOf(semester),
-                            activeSemesterId = "1",
-                            themeOptions = listOf(SettingsOptionUi("system", "Systemowy", true)),
+                            activeSemesterId = 1L,
+                            theme = ThemeMode.System,
                             gapThresholdOptions = listOf(SettingsOptionUi("30", "30 min", true)),
                             minimumBreakOptions = listOf(SettingsOptionUi("0", "0 min", true)),
                             notifications = NotificationSettingsUi(
@@ -68,7 +70,6 @@ class SettingsScreenTest {
                         onGapThresholdSelected = {},
                         onMinimumBreakSelected = {},
                         notificationsBlocked = false,
-                        onRetry = {}
                     )
                 }
             }
@@ -158,8 +159,8 @@ class SettingsScreenTest {
                     SettingsScreen(
                         state = SettingsUiState(
                             semesters = listOf(semester),
-                            activeSemesterId = "1",
-                            themeOptions = listOf(SettingsOptionUi("system", "Systemowy", true)),
+                            activeSemesterId = 1L,
+                            theme = ThemeMode.System,
                             gapThresholdOptions = listOf(SettingsOptionUi("30", "30 min", true))
                         ),
                         onOpenSemesters = {},
@@ -172,7 +173,6 @@ class SettingsScreenTest {
                         onGapThresholdSelected = {},
                         onMinimumBreakSelected = {},
                         notificationsBlocked = false,
-                        onRetry = {},
                         updates = updates,
                         onCheckUpdates = onCheck,
                         onOpenUpdate = onOpenUpdate,
@@ -202,7 +202,6 @@ class SettingsScreenTest {
                         onGapThresholdSelected = {},
                         onMinimumBreakSelected = {},
                         notificationsBlocked = false,
-                        onRetry = {}
                     )
                 }
             }
@@ -214,14 +213,14 @@ class SettingsScreenTest {
 
     @Test
     fun activeSemesterFieldSelectsRepeatedNameByIdAt320Dp() {
-        var selected = ""
+        var selected = 0L
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SettingsSemestersScreen(
                         state = SettingsUiState(
-                            semesters = listOf(semester, semester.copy(id = "2", isActive = false)),
-                            activeSemesterId = "1"
+                            semesters = listOf(semester, semester.copy(id = 2L, isActive = false)),
+                            activeSemesterId = 1L
                         ),
                         onSemesterSelected = { selected = it },
                         onAddSemester = {},
@@ -237,7 +236,7 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithText("Semestr zimowy (1)").performClick()
         composeTestRule.onNodeWithText("Semestr zimowy (2)").performClick()
 
-        assertEquals("2", selected)
+        assertEquals(2L, selected)
     }
 
     @Test
@@ -272,7 +271,7 @@ class SettingsScreenTest {
                     SettingsSemestersScreen(
                         state = SettingsUiState(
                             semesters = listOf(semester),
-                            activeSemesterId = "1"
+                            activeSemesterId = 1L
                         ),
                         onSemesterSelected = {},
                         onAddSemester = {},
@@ -430,7 +429,7 @@ class SettingsScreenTest {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     ImportPreviewScreen(
                         state = SettingsUiState(
-                            importPreview = ImportPreviewUi(
+                            importPreview = ImportSummary(
                                 semesterCount = 2,
                                 programCount = 3,
                                 classCount = 10,

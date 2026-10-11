@@ -1,4 +1,4 @@
-package dev.retza.mak.ui.settings
+package dev.retza.mak.settings
 
 import dev.retza.mak.domain.PlanDisplaySettings
 import java.time.LocalTime
@@ -8,12 +8,10 @@ import kotlinx.coroutines.flow.MutableStateFlow
 class InMemorySettingsPreferences(
     initialTheme: ThemeMode = ThemeMode.System,
     initialNotifications: CollisionNotificationPreferences = CollisionNotificationPreferences(),
-    initialGapThresholdMinutes: Int = 30,
     initialPlanDisplay: PlanDisplaySettings = PlanDisplaySettings.DEFAULT
 ) : SettingsPreferences {
     private val state = MutableStateFlow(initialTheme)
     private val notifications = MutableStateFlow(initialNotifications)
-    private val gapThreshold = MutableStateFlow(initialGapThresholdMinutes)
     private val display = MutableStateFlow(initialPlanDisplay)
 
     var failNextWrite = false
@@ -21,8 +19,6 @@ class InMemorySettingsPreferences(
     override val theme: Flow<ThemeMode> = state
 
     override val collisionNotifications: Flow<CollisionNotificationPreferences> = notifications
-
-    override val gapThresholdMinutes: Flow<Int> = gapThreshold
 
     override val planDisplay: Flow<PlanDisplaySettings> = display
 
@@ -33,12 +29,28 @@ class InMemorySettingsPreferences(
 
     override suspend fun setGapThresholdMinutes(minutes: Int) {
         awaitWrite()
-        gapThreshold.value = minutes
+        display.value = display.value.copy(gapThresholdMinutes = minutes)
     }
 
     override suspend fun setMinimumBreakMinutes(minutes: Int) {
         awaitWrite()
         display.value = display.value.copy(minimumBreakMinutes = minutes)
+    }
+
+    override suspend fun setStudyProgramHidden(id: Long, hidden: Boolean) {
+        awaitWrite()
+        val current = display.value.hiddenProgramIds
+        display.value = display.value.copy(hiddenProgramIds = if (hidden) current + id else current - id)
+    }
+
+    override suspend fun clearHiddenStudyPrograms() {
+        awaitWrite()
+        display.value = display.value.copy(hiddenProgramIds = emptySet())
+    }
+
+    override suspend fun retainHiddenStudyPrograms(existingIds: Set<Long>) {
+        awaitWrite()
+        display.value = display.value.copy(hiddenProgramIds = display.value.hiddenProgramIds intersect existingIds)
     }
 
     override suspend fun setCollisionNotificationsEnabled(enabled: Boolean) {

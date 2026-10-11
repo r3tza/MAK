@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.settings.ThemeMode
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -27,7 +28,6 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -49,19 +49,17 @@ import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.MakSpacing
-import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.SemesterUi
-import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.makRowFocus
-import dev.retza.mak.ui.polishPlural
+import dev.retza.mak.export.ImportSummary
 
 @Composable
 private fun ActiveSemesterField(
     semesters: List<SemesterUi>,
-    activeSemesterId: String?,
-    onSemesterSelected: (String) -> Unit
+    activeSemesterId: Long?,
+    onSemesterSelected: (Long) -> Unit
 ) {
     val labels = distinctLabels(semesters.map { it.name })
     val labelById = semesters.map { it.id }.zip(labels).toMap()
@@ -89,32 +87,19 @@ data class NotificationSettingsUi(
     val leadOptions: List<SettingsOptionUi> = emptyList()
 )
 
-data class ImportPreviewUi(
-    val semesterCount: Int,
-    val programCount: Int,
-    val classCount: Int,
-    val overrideCount: Int,
-    val noteCount: Int,
-    val changeCount: Int,
-    val activeSemesterName: String?
-)
-
 data class SettingsUiState(
     val semesters: List<SemesterUi> = emptyList(),
-    val activeSemesterId: String? = null,
-    val themeOptions: List<SettingsOptionUi> = emptyList(),
+    val activeSemesterId: Long? = null,
+    val theme: ThemeMode = ThemeMode.System,
     val gapThresholdOptions: List<SettingsOptionUi> = emptyList(),
     val minimumBreakOptions: List<SettingsOptionUi> = emptyList(),
-    val notificationsDetails: String =
-        "Android może opóźnić powiadomienie o kilkanaście minut, aby oszczędzać baterię.",
-    val semesterToDeleteId: String? = null,
+    val semesterToDeleteId: Long? = null,
     val isDeletingSemester: Boolean = false,
-    val importPreview: ImportPreviewUi? = null,
+    val importPreview: ImportSummary? = null,
     val importErrorMessage: String? = null,
     val isPreparingImport: Boolean = false,
     val isReplacingData: Boolean = false,
     val notifications: NotificationSettingsUi = NotificationSettingsUi(),
-    val status: ScreenStatus = ScreenStatus.Ready
 )
 
 @Composable
@@ -124,13 +109,12 @@ fun SettingsScreen(
     onOpenPrograms: () -> Unit,
     onOpenNotifications: () -> Unit,
     onOpenData: () -> Unit,
-    onSemesterSelected: (String) -> Unit,
+    onSemesterSelected: (Long) -> Unit,
     onAddSemester: () -> Unit,
-    onThemeSelected: (String) -> Unit,
+    onThemeSelected: (ThemeMode) -> Unit,
     onGapThresholdSelected: (String) -> Unit,
     onMinimumBreakSelected: (String) -> Unit,
     notificationsBlocked: Boolean,
-    onRetry: () -> Unit,
     updates: UpdateSettingsUi = UpdateSettingsUi(),
     onCheckUpdates: () -> Unit = {},
     onOpenUpdate: () -> Unit = {},
@@ -142,127 +126,122 @@ fun SettingsScreen(
 ) {
     val active = state.semesters.firstOrNull { it.id == state.activeSemesterId }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
-        when (state.status) {
-            ScreenStatus.Ready -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.lg)) {
-                SettingsListSection("Plan") {
-                    if (state.semesters.isEmpty()) {
-                        SettingsFieldItem {
-                            MakEmptyState("Dodaj semestr, aby rozpocząć pracę z planem.")
-                            MakPrimaryAction(text = "Dodaj semestr", onClick = onAddSemester)
-                        }
-                    } else {
-                        SettingsFieldItem {
-                            ActiveSemesterField(
-                                semesters = state.semesters,
-                                activeSemesterId = state.activeSemesterId,
-                                onSemesterSelected = onSemesterSelected
-                            )
-                        }
-                        SettingsNavigationRow(
-                            title = "Zarządzaj semestrami",
-                            value = active
-                                ?.let { "${it.dateRangeLabel}, ${it.firstWeekLabel}" }
-                                .orEmpty(),
-                            onClick = onOpenSemesters
+        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.lg)) {
+            SettingsListSection("Plan") {
+                if (state.semesters.isEmpty()) {
+                    SettingsFieldItem {
+                        MakEmptyState("Dodaj semestr, aby rozpocząć pracę z planem.")
+                        MakPrimaryAction(text = "Dodaj semestr", onClick = onAddSemester)
+                    }
+                } else {
+                    SettingsFieldItem {
+                        ActiveSemesterField(
+                            semesters = state.semesters,
+                            activeSemesterId = state.activeSemesterId,
+                            onSemesterSelected = onSemesterSelected
                         )
-                        SettingsRowDivider()
                     }
                     SettingsNavigationRow(
-                        title = "Kierunki",
-                        value = "",
-                        onClick = onOpenPrograms
+                        title = "Zarządzaj semestrami",
+                        value = active
+                            ?.let { "${it.dateRangeLabel}, ${it.firstWeekLabel}" }
+                            .orEmpty(),
+                        onClick = onOpenSemesters
                     )
                     SettingsRowDivider()
-                    SettingsFieldItem {
+                }
+                SettingsNavigationRow(
+                    title = "Kierunki",
+                    value = "",
+                    onClick = onOpenPrograms
+                )
+                SettingsRowDivider()
+                SettingsFieldItem {
+                    MakSelectField(
+                        label = "Próg okienka",
+                        value = state.gapThresholdOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
+                        options = state.gapThresholdOptions,
+                        onSelected = { onGapThresholdSelected(it.id) },
+                        optionLabel = { it.label }
+                    )
+                }
+                SettingsFieldItem {
+                    Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
                         MakSelectField(
-                            label = "Próg okienka",
-                            value = state.gapThresholdOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                            options = state.gapThresholdOptions,
-                            onSelected = { onGapThresholdSelected(it.id) },
+                            label = "Minimalna przerwa",
+                            value = state.minimumBreakOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
+                            options = state.minimumBreakOptions,
+                            onSelected = { onMinimumBreakSelected(it.id) },
                             optionLabel = { it.label }
                         )
-                    }
-                    SettingsFieldItem {
-                        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
-                            MakSelectField(
-                                label = "Minimalna przerwa",
-                                value = state.minimumBreakOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                                options = state.minimumBreakOptions,
-                                onSelected = { onMinimumBreakSelected(it.id) },
-                                optionLabel = { it.label }
-                            )
-                            MakHelperText("Zajęcia z krótszą lub równą przerwą są kolizją.")
-                        }
+                        MakHelperText("Zajęcia z krótszą lub równą przerwą są kolizją.")
                     }
                 }
-                SettingsListSection("Wygląd") {
-                    SettingsFieldItem {
-                        MakSelectField(
-                            label = "Motyw",
-                            value = state.themeOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                            options = state.themeOptions.map { it.label },
-                            onSelected = { label ->
-                                state.themeOptions.firstOrNull { it.label == label }?.id?.let(onThemeSelected)
-                            }
-                        )
-                    }
-                }
-                SettingsListSection("Powiadomienia") {
-                    val notificationsStatus = notificationsStatus(state.notifications, notificationsBlocked)
-                    SettingsNavigationRow(
-                        title = "Powiadomienia o kolizjach",
-                        value = notificationsStatus.first,
-                        details = notificationsStatus.second,
-                        onClick = onOpenNotifications
-                    )
-                }
-                SettingsListSection("Dane") {
-                    SettingsNavigationRow(
-                        title = "Synchronizacja Google",
-                        value = syncSummary,
-                        onClick = onOpenSync
-                    )
-                    SettingsRowDivider()
-                    SettingsNavigationRow(
-                        title = "Kopia zapasowa i import",
-                        value = "",
-                        onClick = onOpenData
-                    )
-                }
-                SettingsListSection("Aktualizacje") {
-                    SettingsActionRow(
-                        title = "Sprawdź aktualizacje",
-                        value = updates.checkSummary,
-                        enabled = updates.canCheck,
-                        onClick = onCheckUpdates
-                    )
-                    updates.pendingVersion?.let { version ->
-                        SettingsRowDivider()
-                        SettingsNavigationRow(
-                            title = "Aktualizacja do $version",
-                            value = "Pobieranie i instalacja",
-                            onClick = onOpenUpdate
-                        )
-                    }
-                    SettingsRowDivider()
-                    SettingsSwitchRow(
-                        title = "Sprawdzaj przy uruchomieniu",
-                        // How the check reaches GitHub belongs to the privacy policy, not to this row.
-                        details = if (updates.automaticChecks) "Sprawdzanie raz dziennie." else "Nowe wersje nie pojawią się same.",
-                        checked = updates.automaticChecks,
-                        onCheckedChange = onAutomaticChecksChanged
-                    )
-                }
-                SettingsListSection("O aplikacji") {
-                    SettingsNavigationRow(
-                        title = "Wersja",
-                        value = updates.installedVersion,
-                        onClick = onOpenAbout
+            }
+            SettingsListSection("Wygląd") {
+                SettingsFieldItem {
+                    MakSelectField(
+                        label = "Motyw",
+                        value = state.theme.label(),
+                        options = ThemeMode.entries,
+                        onSelected = onThemeSelected,
+                        optionLabel = { it.label() }
                     )
                 }
             }
-
-            else -> MakStateMessage(status = state.status, onRetry = onRetry)
+            SettingsListSection("Powiadomienia") {
+                val notificationsStatus = notificationsStatus(state.notifications, notificationsBlocked)
+                SettingsNavigationRow(
+                    title = "Powiadomienia o kolizjach",
+                    value = notificationsStatus.first,
+                    details = notificationsStatus.second,
+                    onClick = onOpenNotifications
+                )
+            }
+            SettingsListSection("Dane") {
+                SettingsNavigationRow(
+                    title = "Synchronizacja Google",
+                    value = syncSummary,
+                    onClick = onOpenSync
+                )
+                SettingsRowDivider()
+                SettingsNavigationRow(
+                    title = "Kopia zapasowa i import",
+                    value = "",
+                    onClick = onOpenData
+                )
+            }
+            SettingsListSection("Aktualizacje") {
+                SettingsActionRow(
+                    title = "Sprawdź aktualizacje",
+                    value = updates.checkSummary,
+                    enabled = updates.canCheck,
+                    onClick = onCheckUpdates
+                )
+                updates.pendingVersion?.let { version ->
+                    SettingsRowDivider()
+                    SettingsNavigationRow(
+                        title = "Aktualizacja do $version",
+                        value = "Pobieranie i instalacja",
+                        onClick = onOpenUpdate
+                    )
+                }
+                SettingsRowDivider()
+                SettingsSwitchRow(
+                    title = "Sprawdzaj przy uruchomieniu",
+                    // How the check reaches GitHub belongs to the privacy policy, not to this row.
+                    details = if (updates.automaticChecks) "Sprawdzanie raz dziennie." else "Nowe wersje nie pojawią się same.",
+                    checked = updates.automaticChecks,
+                    onCheckedChange = onAutomaticChecksChanged
+                )
+            }
+            SettingsListSection("O aplikacji") {
+                SettingsNavigationRow(
+                    title = "Wersja",
+                    value = updates.installedVersion,
+                    onClick = onOpenAbout
+                )
+            }
         }
     }
 }
@@ -419,10 +398,10 @@ private fun notificationsStatus(
 @Composable
 fun SettingsSemestersScreen(
     state: SettingsUiState,
-    onSemesterSelected: (String) -> Unit,
+    onSemesterSelected: (Long) -> Unit,
     onAddSemester: () -> Unit,
-    onConfigureSemester: (String) -> Unit,
-    onDeleteSemester: (String) -> Unit,
+    onConfigureSemester: (Long) -> Unit,
+    onDeleteSemester: (Long) -> Unit,
     onConfirmDelete: () -> Unit,
     onCancelDelete: () -> Unit,
     modifier: Modifier = Modifier
@@ -615,7 +594,7 @@ fun SettingsNotificationsScreen(
                 }
             }
         }
-        if (notifications.enabled) MakHelperText(state.notificationsDetails)
+        if (notifications.enabled) MakHelperText(NOTIFICATION_DELAY_NOTE)
     }
 }
 
@@ -729,3 +708,6 @@ private fun ImportStatRow(label: String, value: Int) {
         Text(value.toString(), fontWeight = FontWeight.SemiBold)
     }
 }
+
+private const val NOTIFICATION_DELAY_NOTE =
+    "Android może opóźnić powiadomienie o kilkanaście minut, aby oszczędzać baterię."

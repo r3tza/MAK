@@ -1,25 +1,31 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.settings.CollisionNotificationPreferences
+import dev.retza.mak.settings.ThemeMode
+import dev.retza.mak.settings.SettingsPreferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
-import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.ActivePlanData
+import dev.retza.mak.domain.PlanDisplayLimits
 import dev.retza.mak.export.ImportHandle
 import dev.retza.mak.export.ImportPreparation
 import dev.retza.mak.export.ImportSummary
 import dev.retza.mak.export.PlanBackupService
+import dev.retza.mak.sync.PlanEditTracker
+import dev.retza.mak.data.ActivePlanSource
+import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.classCountLabel
-import dev.retza.mak.ui.polishPlural
+import dev.retza.mak.ui.shortDateFormatter
+import dev.retza.mak.text.polishPlural
+import dev.retza.mak.ui.sharedCalendar
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -28,9 +34,9 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
-import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -51,12 +57,12 @@ private data class PreferencesSnapshot(
 )
 
 private data class SettingsLocalState(
-    val semesterToDeleteId: String? = null,
+    val semesterToDeleteId: Long? = null,
     val isDeletingSemester: Boolean = false,
     val isSelectingSemester: Boolean = false,
     val isSavingTheme: Boolean = false,
     val isExporting: Boolean = false,
-    val importPreview: ImportPreviewUi? = null,
+    val importPreview: ImportSummary? = null,
     val importErrorMessage: String? = null,
     val isPreparingImport: Boolean = false,
     val isReplacingData: Boolean = false,
@@ -69,10 +75,11 @@ private data class SettingsLocalState(
 @KoinViewModel
 class SettingsViewModel(
     private val semesterRepository: SemesterRepository,
-    private val scheduleRepository: ScheduleRepository,
+    private val activePlanSource: ActivePlanSource,
     private val planBackupService: PlanBackupService,
     private val preferences: SettingsPreferences,
     private val feedbackSink: FeedbackSink,
+    planEditTracker: PlanEditTracker,
     private val backgroundDispatcher: CoroutineDispatcher = Dispatchers.Default
 ) : ViewModel() {
     private val local = MutableStateFlow(SettingsLocalState())
@@ -82,12 +89,7 @@ class SettingsViewModel(
 
     private var pendingImport: ImportHandle? = null
 
-    private val activePlanData = semesterRepository.observeActiveSemester().flatMapLatest { semester ->
-        if (semester == null) flowOf(null) else scheduleRepository.observeActivePlanData(semester.id)
-    }
-
-    val themeMode: StateFlow<ThemeMode> = preferences.theme
-        .stateIn(viewModelScope, SharingStarted.Eagerly, ThemeMode.System)
+    private val activePlanData = activePlanSource.observeActive().map { it?.data }
 
     /** Null until the stored theme is read, so the first frame never uses a guessed theme. */
     val loadedThemeMode: StateFlow<ThemeMode?> = preferences.theme
@@ -96,10 +98,9 @@ class SettingsViewModel(
     private val preferencesSnapshot = combine(
         preferences.theme,
         preferences.collisionNotifications,
-        preferences.gapThresholdMinutes,
         preferences.planDisplay
-    ) { theme, notifications, gapThresholdMinutes, display ->
-        PreferencesSnapshot(theme, notifications, gapThresholdMinutes, display.minimumBreakMinutes)
+    ) { theme, notifications, display ->
+        PreferencesSnapshot(theme, notifications, display.gapThresholdMinutes, display.minimumBreakMinutes)
     }
 
     val settings: StateFlow<SettingsUiState> = combine(
@@ -115,39 +116,58 @@ class SettingsViewModel(
         initialValue = SettingsUiState()
     )
 
-    fun selectSemester(id: String) {
+    // The deletion confirmation holds the edit key while a semester is selected for deletion.
+    private val editSession = PlanEditSession(
+        tracker = planEditTracker,
+        scope = viewModelScope,
+        refreshBase = { true },
+        hasDraft = { local.value.semesterToDeleteId != null }
+    )
+
+    init {
+        viewModelScope.launch {
+            local.map { it.semesterToDeleteId != null }.distinctUntilChanged().collect { hasDraft ->
+                if (!hasDraft) editSession.releaseIfNoDraft()
+            }
+        }
+    }
+
+    override fun onCleared() {
+        editSession.close()
+    }
+
+    fun selectSemester(id: Long) {
         if (local.value.isSelectingSemester) return
-        val semesterId = id.toLongOrNull() ?: return
         local.update { it.copy(isSelectingSemester = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
             errorMessage = "Nie udało się zmienić aktywnego semestru.",
             onFinish = { local.update { it.copy(isSelectingSemester = false) } }
         ) {
-            semesterRepository.setActiveSemester(semesterId)
+            semesterRepository.setActiveSemester(id)
             feedbackSink.publish(UiFeedback("Zmieniono aktywny semestr", UiFeedbackKind.Success))
         }
     }
 
-    fun requestSemesterDeletion(id: String) {
-        local.update { it.copy(semesterToDeleteId = id) }
+    /** Opens the deletion confirmation; a semester that no longer exists is dropped instead (`PlanEditSession`). */
+    fun requestSemesterDeletion(id: Long) = editSession.run {
+        if (canRequestSemesterDeletion(id)) local.update { it.copy(semesterToDeleteId = id) }
     }
 
-    suspend fun canRequestSemesterDeletion(id: String): Boolean {
-        val semesterId = id.toLongOrNull() ?: return false
-        val exists = semesterRepository.observeSemesters().first().any { it.id == semesterId }
+    suspend fun canRequestSemesterDeletion(id: Long): Boolean {
+        val exists = semesterRepository.observeSemesters().first().any { it.id == id }
         if (!exists) local.update { it.copy(semesterToDeleteId = null) }
         return exists
     }
 
-    fun cancelSemesterDeletion() {
-        if (local.value.isDeletingSemester) return
+    fun cancelSemesterDeletion() = editSession.run {
+        if (local.value.isDeletingSemester) return@run
         local.update { it.copy(semesterToDeleteId = null) }
     }
 
-    fun confirmSemesterDeletion() {
-        if (local.value.isDeletingSemester) return
-        val id = local.value.semesterToDeleteId?.toLongOrNull() ?: return
+    fun confirmSemesterDeletion() = editSession.run {
+        if (local.value.isDeletingSemester) return@run
+        val id = local.value.semesterToDeleteId ?: return@run
         local.update { it.copy(isDeletingSemester = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -160,9 +180,8 @@ class SettingsViewModel(
         }
     }
 
-    fun selectTheme(id: String) {
+    fun selectTheme(mode: ThemeMode) {
         if (local.value.isSavingTheme) return
-        val mode = themeModeFromId(id)
         local.update { it.copy(isSavingTheme = true) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -277,7 +296,7 @@ class SettingsViewModel(
 
                 is ImportPreparation.Ready -> {
                     pendingImport = preparation.handle
-                    local.update { it.copy(importPreview = preparation.summary.toImportPreviewUi()) }
+                    local.update { it.copy(importPreview = preparation.summary) }
                     effectsChannel.trySend(SettingsEffect.OpenImportPreview)
                 }
             }
@@ -320,16 +339,6 @@ class SettingsViewModel(
     }
 }
 
-private fun ImportSummary.toImportPreviewUi(): ImportPreviewUi = ImportPreviewUi(
-    semesterCount = semesterCount,
-    programCount = programCount,
-    classCount = classCount,
-    overrideCount = overrideCount,
-    noteCount = noteCount,
-    changeCount = changeCount,
-    activeSemesterName = activeSemesterName
-)
-
 private fun buildSettingsState(
     semesterList: List<SemesterRecord>,
     activeData: ActivePlanData?,
@@ -337,10 +346,10 @@ private fun buildSettingsState(
     local: SettingsLocalState
 ): SettingsUiState = SettingsUiState(
     semesters = semesterList.map { semester ->
-        val isActive = semester.id.toString() == activeData?.semester?.id
-        val calendar = activeData?.calendars?.firstOrNull()
+        val isActive = semester.id == activeData?.semester?.id
+        val calendar = activeData?.sharedCalendar()
         SemesterUi(
-            id = semester.id.toString(),
+            id = semester.id,
             name = semester.name,
             dateRangeLabel = if (isActive && calendar != null) {
                 "${calendar.startDate.format(shortDateFormatter)} - " +
@@ -360,19 +369,15 @@ private fun buildSettingsState(
         )
     },
     activeSemesterId = activeData?.semester?.id,
-    themeOptions = listOf(
-        SettingsOptionUi("system", "Systemowy", preferences.theme == ThemeMode.System),
-        SettingsOptionUi("light", "Jasny", preferences.theme == ThemeMode.Light),
-        SettingsOptionUi("dark", "Ciemny", preferences.theme == ThemeMode.Dark)
-    ),
-    gapThresholdOptions = gapThresholdOptions.map { minutes ->
+    theme = preferences.theme,
+    gapThresholdOptions = PlanDisplayLimits.gapThresholdOptions.map { minutes ->
         SettingsOptionUi(
             id = minutes.toString(),
             label = "$minutes min",
             isSelected = preferences.gapThresholdMinutes == minutes
         )
     },
-    minimumBreakOptions = minimumBreakOptions.map { minutes ->
+    minimumBreakOptions = PlanDisplayLimits.minimumBreakOptions.map { minutes ->
         SettingsOptionUi(
             id = minutes.toString(),
             label = "$minutes min",
@@ -405,7 +410,4 @@ private fun buildSettingsState(
 
 private val notificationHourOptions = listOf(18, 19, 20, 21, 22)
 private val notificationLeadOptions = listOf(15L, 30L, 45L, 60L)
-private val gapThresholdOptions = listOf(20, 30, 45, 60)
-private val minimumBreakOptions = listOf(0, 5, 10, 15, 20)
 
-private val shortDateFormatter = DateTimeFormatter.ofPattern("d MMM", Locale.forLanguageTag("pl-PL"))

@@ -14,8 +14,8 @@ import dev.retza.mak.data.repository.toActivePlanData
 import dev.retza.mak.data.repository.toRecord
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.PlanDisplaySettings
-import dev.retza.mak.ui.ActivePlanSource
-import dev.retza.mak.ui.settings.InMemorySettingsPreferences
+import dev.retza.mak.data.ActivePlanSource
+import dev.retza.mak.settings.InMemorySettingsPreferences
 import java.lang.reflect.Proxy
 import java.time.Clock
 import java.time.DayOfWeek
@@ -24,8 +24,10 @@ import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.CancellationException
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.test.TestScope
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -54,7 +56,7 @@ class WidgetPlanLoaderTest {
 
     @Test
     fun loaderUsesProviderAndReturnsTheSameOccurrenceIdsAsActivePlan() = runTest {
-        val state = loader(repositoryReturning(semester, planData(programming))).load()
+        val state = loader(repositoryReturning(semester, planData(programming))).states().first()
 
         assertTrue(state is WidgetUiState.Ready)
         assertEquals(listOf("3:2026-09-21"), (state as WidgetUiState.Ready).items.map { it.id })
@@ -67,14 +69,36 @@ class WidgetPlanLoaderTest {
         val state = loader(
             repositoryReturning(semester, planData(programming, analysis)),
             InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings(minimumBreakMinutes = 5))
-        ).load()
+        ).states().first()
 
         assertEquals(1, (state as WidgetUiState.Ready).collisionCount)
     }
 
     @Test
+    fun loaderLeavesOutHiddenStudyPrograms() = runTest {
+        val management = programming.copy(id = 4, semesterProgramId = 2, name = "Zarządzanie projektami")
+
+        val state = loader(
+            repositoryReturning(semester, planData(programming, management)),
+            InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf(2L)))
+        ).states().first()
+
+        assertEquals(listOf("Zarządzanie projektami"), (state as WidgetUiState.Ready).items.map { it.name })
+    }
+
+    @Test
+    fun loaderSaysWhenEveryStudyProgramIsHidden() = runTest {
+        val state = loader(
+            repositoryReturning(semester, planData(programming)),
+            InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf(2L, 3L)))
+        ).states().first()
+
+        assertTrue(state is WidgetUiState.AllProgramsHidden)
+    }
+
+    @Test
     fun loaderReturnsNoActiveSemesterState() = runTest {
-        val state = loader(repositoryReturning(null, null)).load()
+        val state = loader(repositoryReturning(null, null)).states().first()
 
         assertTrue(state is WidgetUiState.NoActiveSemester)
     }
@@ -83,7 +107,7 @@ class WidgetPlanLoaderTest {
     fun loaderMapsReadFailureToErrorState() = runTest {
         val repository = repositoryFailingWith(IllegalStateException("database closed"))
 
-        val state = loader(repository).load()
+        val state = loader(repository).states().first()
 
         assertTrue(state is WidgetUiState.Error)
     }
@@ -93,7 +117,7 @@ class WidgetPlanLoaderTest {
         val repository = repositoryFailingWith(CancellationException("widget update cancelled"))
 
         val cancelled = try {
-            loader(repository).load()
+            loader(repository).states().first()
             false
         } catch (error: CancellationException) {
             true
@@ -110,19 +134,16 @@ class WidgetPlanLoaderTest {
             endDate = date.plusDays(7),
             firstWeekType = WeekType.A
         )
-        val studyProgram = StudyProgramEntity(id = 2, name = "Informatyka", color = "#137B71")
+        val informatics = StudyProgramEntity(id = 2, name = "Informatyka", color = "#137B71")
+        val management = StudyProgramEntity(id = 3, name = "Zarządzanie", color = "#7B1371")
         return SemesterWithData(
             semester = semester,
             semesterPrograms = listOf(
-                SemesterProgramEntity(
-                    id = 1,
-                    semesterId = semester.id,
-                    studyProgramId = studyProgram.id,
-                    academicCalendarId = calendar.id
-                )
+                SemesterProgramEntity(id = 1, semesterId = semester.id, studyProgramId = informatics.id, academicCalendarId = calendar.id),
+                SemesterProgramEntity(id = 2, semesterId = semester.id, studyProgramId = management.id, academicCalendarId = calendar.id)
             ),
             academicCalendars = listOf(calendar),
-            studyPrograms = listOf(studyProgram),
+            studyPrograms = listOf(informatics, management),
             classes = classes.toList(),
             weekOverrides = emptyList(),
             occurrenceNotes = emptyList(),
@@ -130,12 +151,12 @@ class WidgetPlanLoaderTest {
         )
     }
 
-    private fun loader(
+    private fun TestScope.loader(
         repository: Any,
         preferences: InMemorySettingsPreferences = InMemorySettingsPreferences()
     ) = WidgetPlanLoader(
         semesterRepository = repository as SemesterRepository,
-        activePlanSource = ActivePlanSource(repository, repository as ScheduleRepository, preferences),
+        activePlanSource = ActivePlanSource(repository, repository as ScheduleRepository, preferences, backgroundScope),
         activePlanProvider = ActivePlanProvider(),
         clock = Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), ZoneId.of("UTC"))
     )

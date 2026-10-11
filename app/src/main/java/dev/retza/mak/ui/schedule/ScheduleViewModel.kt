@@ -7,48 +7,50 @@ import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanInputs
 import dev.retza.mak.domain.ActivePlanProvider
-import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.PlannedOccurrence
-import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.WeekStatus
 import dev.retza.mak.domain.WeekType
-import dev.retza.mak.domain.cancelledOccurrences
+import dev.retza.mak.domain.weekStart
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
-import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.domain.SemesterProgram
+import dev.retza.mak.domain.allProgramsHidden
+import dev.retza.mak.domain.visibleAssignments
+import dev.retza.mak.domain.visibleTo
+import dev.retza.mak.domain.VisiblePlanData
+import dev.retza.mak.data.ActivePlanSource
+import dev.retza.mak.ui.AppLocale
 import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
 import dev.retza.mak.ui.components.CalendarMarkerUi
 import dev.retza.mak.ui.components.ClassItemUi
-import dev.retza.mak.ui.components.ScreenStatus
+import dev.retza.mak.ui.components.cardBadge
+import dev.retza.mak.ui.components.toUi
 import dev.retza.mak.ui.dayNames
 import dev.retza.mak.ui.feedback.FeedbackSink
-import dev.retza.mak.ui.feedback.UiFeedback
-import dev.retza.mak.ui.feedback.UiFeedbackKind
+import dev.retza.mak.ui.feedback.launchUiOperation
 import dev.retza.mak.ui.fullDateFormatter
+import dev.retza.mak.ui.label
 import dev.retza.mak.ui.monthFormatter
-import dev.retza.mak.ui.polishLocale
-import dev.retza.mak.ui.semester.WeekOverrideScopeUi
-import dev.retza.mak.ui.semester.WeekTypeUi
 import dev.retza.mak.ui.shortDateFormatter
 import dev.retza.mak.ui.shortDayNames
+import dev.retza.mak.domain.toLocalDateOrNull
 import dev.retza.mak.ui.toUi
 import java.time.Clock
-import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
-import java.time.temporal.TemporalAdjusters
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.launch
 import org.koin.core.annotation.KoinViewModel
 
 sealed interface ScheduleEffect {
@@ -61,9 +63,11 @@ private data class ScheduleControls(
     val calendarMonth: YearMonth,
     val calendarDate: LocalDate,
     val scheduleView: ScheduleView = ScheduleView.List,
-    val courseFilterId: String = "all",
+    val courseFilterId: Long? = null,
     val showCancelled: Boolean = false
 )
+
+private data class GridKey(val month: YearMonth, val filter: Long?, val today: LocalDate, val view: ScheduleView)
 
 @KoinViewModel
 class ScheduleViewModel(
@@ -73,6 +77,8 @@ class ScheduleViewModel(
     private val activePlanProvider: ActivePlanProvider,
     private val feedbackSink: FeedbackSink
 ) : ViewModel() {
+    // Not in ScheduleUiState: the week dialog closes as soon as the user taps a button.
+    private var weekOverrideOperationRunning = false
     private val controls = LocalDate.now(clock).let { today ->
         MutableStateFlow(
             ScheduleControls(
@@ -87,8 +93,21 @@ class ScheduleViewModel(
     private val activePlan = activePlanSource.observeActive()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
-    val schedule: StateFlow<ScheduleUiState> = combine(activePlan, controls) { inputs, control ->
-        buildSchedule(inputs, control)
+    // The grid resolves 42 days, so it is rebuilt only when what it shows changes, and only in the calendar view.
+    private val calendarGrid: StateFlow<List<CalendarDayUi>> = combine(
+        activePlan,
+        controls.map { GridKey(it.calendarMonth, it.courseFilterId, it.today, it.scheduleView) }.distinctUntilChanged()
+    ) { inputs, key ->
+        if (inputs == null || key.view != ScheduleView.Calendar) {
+            emptyList()
+        } else {
+            val visible = inputs.data.visibleTo(inputs.display)
+            calendarGrid(visible, key.month, activeFilter(inputs, key.filter), key.today)
+        }
+    }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
+
+    val schedule: StateFlow<ScheduleUiState> = combine(activePlan, controls, calendarGrid) { inputs, control, grid ->
+        buildSchedule(inputs, control, grid)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -123,7 +142,7 @@ class ScheduleViewModel(
         id.toLocalDateOrNull()?.let { date -> controls.update { it.copy(scheduleDate = date) } }
     }
 
-    fun selectCourseFilter(id: String) = controls.update { it.copy(courseFilterId = id) }
+    fun selectCourseFilter(id: Long?) = controls.update { it.copy(courseFilterId = id) }
 
     fun changeMonth(amount: Long) = controls.update { control ->
         val month = control.calendarMonth.plusMonths(amount)
@@ -150,145 +169,147 @@ class ScheduleViewModel(
         effectsChannel.trySend(ScheduleEffect.OpenNewClassEditor(controls.value.calendarDate))
     }
 
-    fun saveVisibleWeekOverride(weekType: WeekTypeUi, scope: WeekOverrideScopeUi) {
+    fun saveVisibleWeekOverride(weekType: WeekType, scope: WeekOverrideScope) {
+        if (weekOverrideOperationRunning) return
         val data = activePlan.value?.data ?: return
         val calendarId = visibleWeekCalendarId(data) ?: return
-        val monday = controls.value.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val entityScope = WeekOverrideScope.valueOf(scope.name)
-        val existing = data.weekOverrides.firstOrNull {
-            it.academicCalendarId == calendarId.toString() &&
-                it.weekStartDate == monday && it.scope == entityScope
-        }
-        viewModelScope.launch {
-            runReportingFailure("Nie udało się zapisać korekty tygodnia.") {
-                semesterRepository.saveWeekOverride(
-                    WeekOverrideRecord(
-                        id = existing?.id?.toLongOrNull() ?: 0,
-                        semesterId = data.semester.id.toLong(),
-                        academicCalendarId = calendarId,
-                        weekStartDate = monday,
-                        weekType = WeekType.valueOf(weekType.name),
-                        scope = entityScope
-                    )
+        val monday = controls.value.scheduleDate.weekStart()
+        weekOverrideOperationRunning = true
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać korekty tygodnia.",
+            onFinish = { weekOverrideOperationRunning = false }
+        ) {
+            semesterRepository.saveWeekOverride(
+                WeekOverrideRecord(
+                    id = 0,
+                    semesterId = data.semester.id,
+                    academicCalendarId = calendarId,
+                    weekStartDate = monday,
+                    weekType = weekType,
+                    scope = scope
                 )
-            }
+            )
         }
     }
 
-    fun clearVisibleWeekOverride(scope: WeekOverrideScopeUi) {
+    fun clearVisibleWeekOverride(scope: WeekOverrideScope) {
+        if (weekOverrideOperationRunning) return
         val data = activePlan.value?.data ?: return
         val calendarId = visibleWeekCalendarId(data) ?: return
-        val monday = controls.value.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val entityScope = WeekOverrideScope.valueOf(scope.name)
-        val existing = data.weekOverrides.firstOrNull {
-            it.academicCalendarId == calendarId.toString() &&
-                it.weekStartDate == monday && it.scope == entityScope
-        } ?: return
-        viewModelScope.launch {
-            runReportingFailure("Nie udało się usunąć korekty tygodnia.") {
-                semesterRepository.deleteWeekOverride(existing.id.toLong())
-            }
-        }
-    }
-
-    private suspend fun runReportingFailure(message: String, block: suspend () -> Unit) {
-        try {
-            block()
-        } catch (error: CancellationException) {
-            throw error
-        } catch (error: Exception) {
-            feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Error))
+        val monday = controls.value.scheduleDate.weekStart()
+        weekOverrideOperationRunning = true
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się usunąć korekty tygodnia.",
+            onFinish = { weekOverrideOperationRunning = false }
+        ) {
+            semesterRepository.deleteWeekOverride(calendarId, monday, scope)
         }
     }
 
     private fun visibleWeekCalendarId(
         data: ActivePlanData,
-        filterId: String = controls.value.courseFilterId
+        filterId: Long? = controls.value.courseFilterId
     ): Long? {
-        if (filterId == "all") return data.calendars.singleOrNull()?.id?.toLongOrNull()
+        if (filterId == null) return data.calendars.singleOrNull()?.id
         val assignment = data.semesterPrograms.firstOrNull { it.id == filterId } ?: return null
-        return data.calendars.firstOrNull { it.id == assignment.academicCalendarId }?.id?.toLongOrNull()
+        return data.calendars.firstOrNull { it.id == assignment.academicCalendarId }?.id
+    }
+
+    private fun matchesFilter(occurrence: PlannedOccurrence, activeFilter: Long?): Boolean =
+        activeFilter == null || occurrence.classItem.semesterProgramId == activeFilter
+
+    private fun activeFilter(inputs: ActivePlanInputs, requested: Long?): Long? {
+        val visible = inputs.data.visibleTo(inputs.display)
+        val programs = visible.data.visibleAssignments(inputs.display)
+        return requested?.takeIf { id -> programs.any { it.id == id } }
+    }
+
+    private fun calendarGrid(
+        visible: VisiblePlanData,
+        month: YearMonth,
+        activeFilter: Long?,
+        today: LocalDate
+    ): List<CalendarDayUi> = calendarDates(month).map { date ->
+        // Days of the grid show only markers, so their collisions are not needed.
+        val occurrences = activePlanProvider.schedule(visible, date).occurrences.filter {
+            matchesFilter(it, activeFilter)
+        }
+        CalendarDayUi(
+            id = date.toString(),
+            dayLabel = date.dayOfMonth.toString(),
+            accessibilityLabel = calendarAccessibilityLabel(date, occurrences),
+            isInCurrentMonth = YearMonth.from(date) == month,
+            isToday = date == today,
+            isSelected = false,
+            markers = occurrences.take(if (occurrences.size > 5) 4 else 5).map {
+                CalendarMarkerUi(
+                    id = it.id,
+                    contentDescription = calendarOccurrenceLabel(it),
+                    isChanged = it.occurrenceChange != null,
+                    colorHex = it.studyProgram?.color
+                )
+            },
+            hasMoreMarkers = occurrences.size > 5
+        )
     }
 
     private fun buildSchedule(
         inputs: ActivePlanInputs?,
-        control: ScheduleControls
+        control: ScheduleControls,
+        grid: List<CalendarDayUi>
     ): ScheduleUiState {
         if (inputs == null) return emptyScheduleState()
-        val data = inputs.data
-        val activeFilter = control.courseFilterId.takeIf { id ->
-            id == "all" || data.semesterPrograms.any { it.id == id }
-        } ?: "all"
-        val selectedPlan = activePlanProvider.resolve(inputs, control.scheduleDate)
+        // Hidden study programs are neither filter options, legend entries, cancelled classes nor markers.
+        val visible = inputs.data.visibleTo(inputs.display)
+        val data = visible.data
+        val programs = data.visibleAssignments(inputs.display)
+        val activeFilter = activeFilter(inputs, control.courseFilterId)
+        val selectedPlan = activePlanProvider.resolve(visible, control.scheduleDate, inputs.display)
         val selected = selectedPlan.schedule
-        val filtered = selected.occurrences.filter {
-            activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
-        }
-        val cancelled = if (control.showCancelled) cancelledItems(data, control.scheduleDate, activeFilter) else emptyList()
+        val filtered = selected.occurrences.filter { matchesFilter(it, activeFilter) }
+        val cancelled = if (control.showCancelled) cancelledItems(selected.cancelled, activeFilter) else emptyList()
         val labels = collisionLabels(selectedPlan.collisions)
         val names = collisionPartnerNames(selectedPlan.collisions)
-        val monday = control.scheduleDate.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val currentWeekMonday = control.today.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
-        val calendarDays = calendarDates(control.calendarMonth).map { date ->
-            // Days of the grid show only markers, so their collisions are not needed.
-            val occurrences = activePlanProvider.schedule(data, date).occurrences.filter {
-                activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
-            }
-            CalendarDayUi(
-                id = date.toString(),
-                dayLabel = date.dayOfMonth.toString(),
-                accessibilityLabel = calendarAccessibilityLabel(date, occurrences),
-                isInCurrentMonth = YearMonth.from(date) == control.calendarMonth,
-                isToday = date == control.today,
-                isSelected = date == control.calendarDate,
-                markers = occurrences.take(if (occurrences.size > 5) 4 else 5).map {
-                    CalendarMarkerUi(
-                        id = it.id,
-                        contentDescription = calendarOccurrenceLabel(it),
-                        isChanged = it.occurrenceChange != null,
-                        colorHex = it.studyProgram?.color
-                    )
-                },
-                hasMoreMarkers = occurrences.size > 5
-            )
+        val monday = control.scheduleDate.weekStart()
+        val currentWeekMonday = control.today.weekStart()
+        val calendarDays = grid.map { it.copy(isSelected = it.id == control.calendarDate.toString()) }
+        // The selected day's classes are built only in the calendar view.
+        val calendarPlan = when {
+            control.scheduleView != ScheduleView.Calendar -> null
+            control.calendarDate == control.scheduleDate -> selectedPlan
+            else -> activePlanProvider.resolve(visible, control.calendarDate, inputs.display)
         }
-        val calendarPlan = if (control.calendarDate == control.scheduleDate) {
-            selectedPlan
-        } else {
-            activePlanProvider.resolve(inputs, control.calendarDate)
-        }
-        val calendarSchedule = calendarPlan.schedule
-        val calendarFiltered = calendarSchedule.occurrences.filter {
-            activeFilter == "all" || it.classItem.semesterProgramId == activeFilter
-        }
-        val calendarLabels = collisionLabels(calendarPlan.collisions)
-        val calendarNames = collisionPartnerNames(calendarPlan.collisions)
-        val relevantCalendarIds = if (activeFilter == "all") {
+        val calendarFiltered = calendarPlan?.schedule?.occurrences?.filter { matchesFilter(it, activeFilter) }.orEmpty()
+        val calendarLabels = calendarPlan?.let { collisionLabels(it.collisions) }.orEmpty()
+        val calendarNames = calendarPlan?.let { collisionPartnerNames(it.collisions) }.orEmpty()
+        val relevantCalendarIds = if (activeFilter == null) {
             data.calendars.mapTo(mutableSetOf()) { it.id }
         } else {
             setOfNotNull(
                 data.semesterPrograms.firstOrNull { it.id == activeFilter }?.academicCalendarId
             )
         }
+        // The week row follows the calendar of the active filter, or the single calendar when there is no filter.
+        val weekCalendarId = visibleWeekCalendarId(data, activeFilter)
+        val shownWeek = weekCalendarId?.let { selected.weeksByCalendarId[it] }
+        val relevantWeeks = selected.weeksByCalendarId.filterKeys { it in relevantCalendarIds }.values
         return ScheduleUiState(
             view = control.scheduleView,
             weekRangeLabel = "${monday.format(shortDateFormatter)} - ${monday.plusDays(6).format(shortDateFormatter)}",
             weekSubtitle = if (monday == currentWeekMonday) "Bieżący tydzień" else data.semester.name,
-            weekTypeLabel = if (selected.hasMixedWeekTypes) {
-                "Różne tygodnie"
-            } else {
-                selected.weekType?.let { "Tydzień ${it.name}" } ?: "Poza semestrem"
+            weekTypeLabel = when {
+                weekCalendarId == null -> selected.weekStatus.label()
+                shownWeek == null -> WeekStatus.OutsideSemester.label()
+                else -> WeekStatus.Single(shownWeek.weekType).label()
             },
             weekSourceLabel = when {
-                selected.hasMixedWeekTypes -> "Różne kalendarze"
-                selected.correction == null -> "Wyliczony automatycznie"
-                else -> "Korekta ręczna"
+                weekCalendarId == null && selected.weekStatus == WeekStatus.Mixed -> "Różne kalendarze"
+                relevantWeeks.any { it.overrideSource != null } -> "Korekta ręczna"
+                else -> "Wyliczony automatycznie"
             },
-            weekType = if (selected.hasMixedWeekTypes) {
-                null
-            } else {
-                selected.weekType?.let { WeekTypeUi.valueOf(it.name) }
-            },
+            weekType = shownWeek?.weekType,
             days = (0L..6L).map { offset ->
                 val date = monday.plusDays(offset)
                 ScheduleDayUi(
@@ -298,12 +319,12 @@ class ScheduleViewModel(
                     accessibilityLabel = date.format(fullDateFormatter),
                     isSelected = date == control.scheduleDate,
                     isEnabled = data.calendars.any { calendar ->
-                        !date.isBefore(calendar.startDate) && !date.isAfter(calendar.endDate)
+                        date in calendar
                     }
                 )
             },
-            filters = listOf(ScheduleFilterUi("all", "Wszystkie", activeFilter == "all")) +
-                data.semesterPrograms.map { assignment ->
+            filters = listOf(ScheduleFilterUi(null, "Wszystkie", activeFilter == null)) +
+                programs.map { assignment ->
                     val program = data.courses.firstOrNull { it.id == assignment.studyProgramId }
                     ScheduleFilterUi(
                         assignment.id,
@@ -317,13 +338,18 @@ class ScheduleViewModel(
             items = filtered.map { it.toUi(labels[it.id], names[it.id]) } + cancelled,
             calendarMonthLabel = control.calendarMonth.format(monthFormatter),
             calendarDays = calendarDays,
-            calendarLegend = calendarLegend(data, activeFilter),
+            calendarLegend = calendarLegend(data, programs, activeFilter),
+            allProgramsHidden = inputs.data.allProgramsHidden(inputs.display),
             // Capitalized like the list heading; fullDateFormatter stays lowercase for screen readers.
             calendarSelectedDayLabel = control.calendarDate.format(fullDateFormatter)
-                .replaceFirstChar { it.titlecase(polishLocale) },
+                .replaceFirstChar { it.titlecase(AppLocale) },
             calendarSelectedDayCountLabel = classCountLabel(calendarFiltered.size),
-            calendarItems = calendarFiltered.map { it.toUi(calendarLabels[it.id], calendarNames[it.id]) } +
-                if (control.showCancelled) cancelledItems(data, control.calendarDate, activeFilter) else emptyList(),
+            calendarItems = if (calendarPlan == null) {
+                emptyList()
+            } else {
+                calendarFiltered.map { it.toUi(calendarLabels[it.id], calendarNames[it.id]) } +
+                    if (control.showCancelled) cancelledItems(calendarPlan.schedule.cancelled, activeFilter) else emptyList()
+            },
             showCancelled = control.showCancelled,
             hasOneWeekCorrection = data.weekOverrides.any {
                 it.academicCalendarId in relevantCalendarIds &&
@@ -337,48 +363,31 @@ class ScheduleViewModel(
         )
     }
 
-    private fun cancelledItems(data: ActivePlanData, date: LocalDate, activeFilter: String): List<ClassItemUi> =
-        cancelledOccurrences(data, date)
-            .filter { activeFilter == "all" || it.classItem.semesterProgramId == activeFilter }
-            .map { cancelled ->
-                val item = cancelled.classItem
-                ClassItemUi(
-                    id = "${item.id}:$date",
-                    name = item.name,
-                    type = item.type,
-                    courseName = cancelled.studyProgram?.name.orEmpty(),
-                    courseColor = cancelled.studyProgram?.color,
-                    startTime = item.startTime.toString(),
-                    endTime = item.endTime.toString(),
-                    room = item.room?.trim()?.ifEmpty { null },
-                    building = item.building,
-                    teacherName = item.teacherName,
-                    classNote = item.classNote?.takeIf { it.isNotBlank() },
-                    occurrenceNote = cancelled.occurrenceNote?.body?.takeIf { it.isNotBlank() },
-                    statusBadge = "Odwołane",
-                    isCancelled = true
-                )
-            }
+    private fun cancelledItems(cancelled: List<PlannedOccurrence>, activeFilter: Long?): List<ClassItemUi> =
+        cancelled
+            .filter { matchesFilter(it, activeFilter) }
+            .map { it.toUi(conflictLabel = null) }
 }
 
-private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
 
 private fun emptyScheduleState() = ScheduleUiState(
     weekRangeLabel = "",
     weekSubtitle = "",
     weekTypeLabel = "",
-    weekSourceLabel = "",
-    status = ScreenStatus.Ready
+    weekSourceLabel = ""
 )
 
-private fun calendarLegend(data: ActivePlanData, activeFilter: String): List<CalendarLegendUi> {
-    val courses = data.semesterPrograms
-        .filter { activeFilter == "all" || it.id == activeFilter }
+private fun calendarLegend(
+    data: ActivePlanData,
+    programs: List<SemesterProgram>,
+    activeFilter: Long?
+): List<CalendarLegendUi> =
+    programs
+        .filter { activeFilter == null || it.id == activeFilter }
         .mapNotNull { assignment -> data.courses.firstOrNull { it.id == assignment.studyProgramId } }
         .distinctBy { it.id }
-        .map { CalendarLegendUi(label = it.name, colorHex = it.color) }
-    return courses + CalendarLegendUi(label = "Zmieniony termin", isChange = true)
-}
+        .map { CalendarLegendUi(label = it.name, colorHex = it.color) } +
+        CalendarLegendUi(label = "Zmieniony termin", isChange = true)
 
 private fun calendarAccessibilityLabel(
     date: LocalDate,
@@ -397,16 +406,11 @@ private fun calendarAccessibilityLabel(
 }
 
 private fun calendarOccurrenceLabel(occurrence: PlannedOccurrence): String {
-    val status = when {
-        occurrence.occurrenceChange?.kind == OccurrenceChangeKind.CANCELLED -> ", odwołane"
-        occurrence.occurrenceChange?.kind == OccurrenceChangeKind.MODIFIED -> ", zmienione"
-        occurrence.classItem.recurrence == Recurrence.ONCE -> ", jednorazowe"
-        else -> ""
-    }
+    val status = occurrence.status.toUi().cardBadge()?.let { ", ${it.lowercase()}" }.orEmpty()
     return "${occurrence.name}, ${occurrence.startTime} - ${occurrence.endTime}$status"
 }
 
 private fun calendarDates(month: YearMonth): List<LocalDate> {
-    val first = month.atDay(1).with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
+    val first = month.atDay(1).weekStart()
     return (0L until 42L).map(first::plusDays)
 }

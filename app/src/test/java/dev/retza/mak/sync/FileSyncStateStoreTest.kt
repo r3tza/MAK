@@ -25,4 +25,15 @@ class FileSyncStateStoreTest {
         assertEquals(emptyList<PlanDifference>(), state.pendingChoice?.differences)
         assertEquals(null, state.localChangedAtMillis)
     }
+
+    @Test
+    fun storedFailedMessageFromOlderVersionStillLoads() {
+        val file = File(folder.root, "state.json")
+        file.writeText("""{"issue":"FAILED","issueMessage":"stary tekst"}""")
+
+        val state = FileSyncStateStore(file).load()
+
+        assertEquals(SyncIssue.FAILED, state.issue)
+        assertEquals("stary tekst", state.issueMessage)
+    }
 }

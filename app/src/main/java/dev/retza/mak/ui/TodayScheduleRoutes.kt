@@ -4,11 +4,12 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
-import dev.retza.mak.ui.edit.ClassEditViewModel
+import org.koin.compose.viewmodel.koinViewModel
 import dev.retza.mak.ui.schedule.ScheduleEffect
 import dev.retza.mak.ui.schedule.ScheduleScreen
 import dev.retza.mak.ui.schedule.ScheduleViewModel
@@ -16,45 +17,68 @@ import dev.retza.mak.ui.settings.SyncAttentionUi
 import dev.retza.mak.ui.today.TodayScreen
 import dev.retza.mak.ui.today.TodayViewModel
 import dev.retza.mak.update.UpdateViewModel
+import kotlinx.coroutines.flow.StateFlow
 
 internal fun NavGraphBuilder.todayRoute(
     appState: AppUiState,
-    todayViewModel: TodayViewModel,
     updateViewModel: UpdateViewModel,
     navController: NavController,
     onOpenOccurrence: (String) -> Unit,
     startSetup: () -> Unit,
     openSync: () -> Unit,
-    syncAttention: () -> SyncAttentionUi?
+    syncAttention: StateFlow<SyncAttentionUi?>
 ) {
     composable(MakRoutes.Today) {
+        val todayViewModel: TodayViewModel = koinViewModel()
+        LifecycleResumeEffect(todayViewModel) {
+            todayViewModel.refreshToday()
+            onPauseOrDispose { }
+        }
         val todayState = todayViewModel.today.collectAsStateWithLifecycle().value
         val updateState = updateViewModel.state.collectAsStateWithLifecycle().value
+        val attention = syncAttention.collectAsStateWithLifecycle().value
         TodayScreen(
             state = todayState,
             onOpenClass = onOpenOccurrence,
             onStartSetup = startSetup,
             onOpenSync = openSync,
-            onRetry = {},
             requiresSetup = appState.requiresSetup,
             availableUpdateVersion = updateState.availableUpdate?.versionName.takeIf { updateState.showUpdateBanner },
             onViewUpdate = { navController.navigate(MakRoutes.SettingsUpdate) },
             onDismissUpdate = updateViewModel::dismissAvailableUpdate,
             modifier = Modifier.fillMaxSize(),
             twoColumns = LocalMakWidthClass.current == MakWidthClass.Expanded,
-            syncAttention = syncAttention()
+            syncAttention = attention,
+            onOpenPrograms = { navController.navigate(MakRoutes.StudyPrograms) }
         )
     }
 }
 
 internal fun NavGraphBuilder.scheduleRoute(
     appState: AppUiState,
-    scheduleViewModel: ScheduleViewModel,
+    navController: NavController,
+    // Read while composing: the graph keeps the arguments it was built with, so a plain value would stay stale.
+    pendingPlanDate: () -> String?,
+    onPlanDateShown: () -> Unit,
     onOpenOccurrence: (String) -> Unit,
     startSetup: () -> Unit,
-    openSync: () -> Unit
+    openSync: () -> Unit,
+    openPrograms: () -> Unit
 ) {
     composable(MakRoutes.Schedule) {
+        val scheduleViewModel: ScheduleViewModel = koinViewModel()
+        LifecycleResumeEffect(scheduleViewModel) {
+            scheduleViewModel.refreshToday()
+            onPauseOrDispose { }
+        }
+        val planDate = pendingPlanDate()
+        LaunchedEffect(planDate) {
+            planDate?.let { date ->
+                scheduleViewModel.showDate(date)
+                onPlanDateShown()
+            }
+        }
+        ScheduleEffects(scheduleViewModel, navController)
         val scheduleState = scheduleViewModel.schedule.collectAsStateWithLifecycle().value
         ScheduleScreen(
             state = scheduleState,
@@ -73,7 +97,7 @@ internal fun NavGraphBuilder.scheduleRoute(
             onClearWeekCorrection = scheduleViewModel::clearVisibleWeekOverride,
             onStartSetup = startSetup,
             onOpenSync = openSync,
-            onRetry = {},
+            onOpenPrograms = openPrograms,
             requiresSetup = appState.requiresSetup,
             modifier = Modifier.fillMaxSize()
         )

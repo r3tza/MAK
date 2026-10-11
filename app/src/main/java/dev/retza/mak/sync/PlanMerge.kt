@@ -1,19 +1,19 @@
 package dev.retza.mak.sync
 
-import dev.retza.mak.data.entity.AcademicCalendarEntity
-import dev.retza.mak.data.entity.ClassEntity
-import dev.retza.mak.data.entity.OccurrenceChangeEntity
-import dev.retza.mak.data.entity.OccurrenceNoteEntity
-import dev.retza.mak.data.entity.SemesterEntity
-import dev.retza.mak.data.entity.SemesterProgramEntity
-import dev.retza.mak.data.entity.StudyProgramEntity
-import dev.retza.mak.data.entity.WeekOverrideEntity
+import dev.retza.mak.data.repository.AcademicCalendarRecord
+import dev.retza.mak.data.repository.ClassRecord
+import dev.retza.mak.data.repository.OccurrenceChangeRecord
+import dev.retza.mak.data.repository.OccurrenceNoteRecord
+import dev.retza.mak.data.repository.SemesterRecord
+import dev.retza.mak.data.repository.SemesterProgramRecord
+import dev.retza.mak.data.repository.StudyProgramRecord
+import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterBackup
+import dev.retza.mak.data.repository.withActiveSemester
 import dev.retza.mak.export.ExportImporter
 import dev.retza.mak.export.ExportSnapshot
 import dev.retza.mak.export.ImportSnapshotResult
-import java.time.LocalDate
 
 sealed interface PlanMergeResult {
     data class Ready(val data: BackupData) : PlanMergeResult
@@ -43,8 +43,7 @@ fun mergePlans(
     phone: BackupData,
     drive: BackupData,
     differences: List<PlanDifference>,
-    picks: Map<PlanDifference, PlanSide>,
-    today: LocalDate
+    picks: Map<PlanDifference, PlanSide>
 ): PlanMergeResult {
     require(picks.keys.containsAll(differences)) { "Every difference needs a picked side." }
     val phoneRows = phone.rows()
@@ -73,8 +72,8 @@ fun mergePlans(
                 // The row keeps the phone's number and references; only the picked field may come from Drive.
                 differenceOf.putIfAbsent(Origin(key, PlanSide.PHONE), difference)
                 if (side == PlanSide.DRIVE) {
-                    val current = result.getValue(key) as ClassEntity
-                    result[key] = difference.field.copy(from = driveRows.getValue(key) as ClassEntity, into = current)
+                    val current = result.getValue(key) as ClassRecord
+                    result[key] = difference.field.copy(from = driveRows.getValue(key) as ClassRecord, into = current)
                 }
             }
             difference.collision -> {
@@ -132,11 +131,8 @@ fun mergePlans(
 
     val activeId = phone.semesters.firstOrNull { it.semester.isActive }?.semester?.id
     val data = merged.toBackupData()
-    val withActive = if (activeId != null && merged.containsKey(PlanRowKey(PlanRowKind.SEMESTER, activeId))) {
-        data.withActiveSemester(activeId)
-    } else {
-        data.withActiveSemester(data.semesterCovering(today))
-    }
+    // Without a kept active semester the plan has none, and replaceAll picks the one covering today on save.
+    val withActive = data.withActiveSemester(activeId?.takeIf { merged.containsKey(PlanRowKey(PlanRowKind.SEMESTER, it)) })
     return when (val checked = ExportImporter.prepare(ExportSnapshot.from(withActive))) {
         is ImportSnapshotResult.Ready -> PlanMergeResult.Ready(withActive)
         is ImportSnapshotResult.Invalid -> PlanMergeResult.Invalid(checked.errors)
@@ -146,73 +142,59 @@ fun mergePlans(
 private data class Origin(val key: PlanRowKey, val side: PlanSide)
 
 private fun Any.withId(id: Long): Any = when (this) {
-    is StudyProgramEntity -> copy(id = id)
-    is SemesterEntity -> copy(id = id)
-    is AcademicCalendarEntity -> copy(id = id)
-    is SemesterProgramEntity -> copy(id = id)
-    is ClassEntity -> copy(id = id)
-    is WeekOverrideEntity -> copy(id = id)
-    is OccurrenceNoteEntity -> copy(id = id)
-    is OccurrenceChangeEntity -> copy(id = id)
+    is StudyProgramRecord -> copy(id = id)
+    is SemesterRecord -> copy(id = id)
+    is AcademicCalendarRecord -> copy(id = id)
+    is SemesterProgramRecord -> copy(id = id)
+    is ClassRecord -> copy(id = id)
+    is WeekOverrideRecord -> copy(id = id)
+    is OccurrenceNoteRecord -> copy(id = id)
+    is OccurrenceChangeRecord -> copy(id = id)
     else -> error("Unknown plan row ${this::class.simpleName}")
 }
 
 private fun Any.withReferences(map: (PlanRowKind, Long) -> Long): Any = when (this) {
-    is StudyProgramEntity, is SemesterEntity -> this
-    is AcademicCalendarEntity -> copy(semesterId = map(PlanRowKind.SEMESTER, semesterId))
-    is SemesterProgramEntity -> copy(
+    is StudyProgramRecord, is SemesterRecord -> this
+    is AcademicCalendarRecord -> copy(semesterId = map(PlanRowKind.SEMESTER, semesterId))
+    is SemesterProgramRecord -> copy(
         semesterId = map(PlanRowKind.SEMESTER, semesterId),
         studyProgramId = map(PlanRowKind.STUDY_PROGRAM, studyProgramId),
         academicCalendarId = map(PlanRowKind.CALENDAR, academicCalendarId)
     )
-    is ClassEntity -> copy(
+    is ClassRecord -> copy(
         semesterId = map(PlanRowKind.SEMESTER, semesterId),
         semesterProgramId = map(PlanRowKind.SEMESTER_PROGRAM, semesterProgramId)
     )
-    is WeekOverrideEntity -> copy(
+    is WeekOverrideRecord -> copy(
         semesterId = map(PlanRowKind.SEMESTER, semesterId),
         academicCalendarId = map(PlanRowKind.CALENDAR, academicCalendarId)
     )
-    is OccurrenceNoteEntity -> copy(semesterId = map(PlanRowKind.SEMESTER, semesterId), classId = map(PlanRowKind.CLASS, classId))
-    is OccurrenceChangeEntity -> copy(semesterId = map(PlanRowKind.SEMESTER, semesterId), classId = map(PlanRowKind.CLASS, classId))
+    is OccurrenceNoteRecord -> copy(semesterId = map(PlanRowKind.SEMESTER, semesterId), classId = map(PlanRowKind.CLASS, classId))
+    is OccurrenceChangeRecord -> copy(semesterId = map(PlanRowKind.SEMESTER, semesterId), classId = map(PlanRowKind.CLASS, classId))
     else -> error("Unknown plan row ${this::class.simpleName}")
 }
 
-/** The rows this row needs in the plan. */
-internal fun Any.references(): List<PlanRowKey> = when (this) {
-    is StudyProgramEntity, is SemesterEntity -> emptyList()
-    is AcademicCalendarEntity -> listOf(PlanRowKey(PlanRowKind.SEMESTER, semesterId))
-    is SemesterProgramEntity -> listOf(
-        PlanRowKey(PlanRowKind.SEMESTER, semesterId),
-        PlanRowKey(PlanRowKind.STUDY_PROGRAM, studyProgramId),
-        PlanRowKey(PlanRowKind.CALENDAR, academicCalendarId)
-    )
-    is ClassEntity -> listOf(
-        PlanRowKey(PlanRowKind.SEMESTER, semesterId),
-        PlanRowKey(PlanRowKind.SEMESTER_PROGRAM, semesterProgramId)
-    )
-    is WeekOverrideEntity -> listOf(
-        PlanRowKey(PlanRowKind.SEMESTER, semesterId),
-        PlanRowKey(PlanRowKind.CALENDAR, academicCalendarId)
-    )
-    is OccurrenceNoteEntity -> listOf(PlanRowKey(PlanRowKind.SEMESTER, semesterId), PlanRowKey(PlanRowKind.CLASS, classId))
-    is OccurrenceChangeEntity -> listOf(PlanRowKey(PlanRowKind.SEMESTER, semesterId), PlanRowKey(PlanRowKind.CLASS, classId))
-    else -> error("Unknown plan row ${this::class.simpleName}")
+/** The rows this row needs in the plan, read from the same table as [withReferences]. */
+internal fun Any.references(): List<PlanRowKey> = buildList {
+    this@references.withReferences { kind, id ->
+        add(PlanRowKey(kind, id))
+        id
+    }
 }
 
 private fun Map<PlanRowKey, Any>.toBackupData(): BackupData {
     val all = values
     return BackupData(
-        studyPrograms = all.filterIsInstance<StudyProgramEntity>().sortedBy { it.id },
-        semesters = all.filterIsInstance<SemesterEntity>().sortedBy { it.id }.map { semester ->
+        studyPrograms = all.filterIsInstance<StudyProgramRecord>().sortedBy { it.id },
+        semesters = all.filterIsInstance<SemesterRecord>().sortedBy { it.id }.map { semester ->
             SemesterBackup(
                 semester = semester,
-                calendars = all.filterIsInstance<AcademicCalendarEntity>().filter { it.semesterId == semester.id }.sortedBy { it.id },
-                programs = all.filterIsInstance<SemesterProgramEntity>().filter { it.semesterId == semester.id }.sortedBy { it.id },
-                classes = all.filterIsInstance<ClassEntity>().filter { it.semesterId == semester.id }.sortedBy { it.id },
-                weekOverrides = all.filterIsInstance<WeekOverrideEntity>().filter { it.semesterId == semester.id }.sortedBy { it.id },
-                occurrenceNotes = all.filterIsInstance<OccurrenceNoteEntity>().filter { it.semesterId == semester.id }.sortedBy { it.id },
-                occurrenceChanges = all.filterIsInstance<OccurrenceChangeEntity>().filter { it.semesterId == semester.id }.sortedBy { it.id }
+                calendars = all.filterIsInstance<AcademicCalendarRecord>().filter { it.semesterId == semester.id }.sortedBy { it.id },
+                programs = all.filterIsInstance<SemesterProgramRecord>().filter { it.semesterId == semester.id }.sortedBy { it.id },
+                classes = all.filterIsInstance<ClassRecord>().filter { it.semesterId == semester.id }.sortedBy { it.id },
+                weekOverrides = all.filterIsInstance<WeekOverrideRecord>().filter { it.semesterId == semester.id }.sortedBy { it.id },
+                occurrenceNotes = all.filterIsInstance<OccurrenceNoteRecord>().filter { it.semesterId == semester.id }.sortedBy { it.id },
+                occurrenceChanges = all.filterIsInstance<OccurrenceChangeRecord>().filter { it.semesterId == semester.id }.sortedBy { it.id }
             )
         }
     )

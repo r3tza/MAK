@@ -13,17 +13,25 @@ import dev.retza.mak.data.entity.SemesterProgramEntity
 import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
+import dev.retza.mak.data.repository.ClassRecord
 import dev.retza.mak.data.repository.RoomPlanBackupGateway
 import dev.retza.mak.data.repository.PlanBackupGateway
 import dev.retza.mak.data.repository.SemesterBackup
+import dev.retza.mak.data.repository.toRecord
+import dev.retza.mak.settings.DataStoreSettingsPreferences
+import dev.retza.mak.settings.SettingsPreferences
+import dev.retza.mak.ui.settings.TestPreferencesFile
 import java.time.LocalDate
 import java.time.Clock
 import java.time.Instant
+import java.time.ZoneId
 import java.time.ZoneOffset
 import java.io.File
 import java.time.DayOfWeek
 import java.time.LocalTime
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.CoroutineStart
 import kotlinx.coroutines.async
@@ -42,17 +50,47 @@ class RoomPlanSyncGatewayTest {
     private lateinit var database: AppDatabase
     private lateinit var backup: RoomPlanBackupGateway
     private lateinit var gateway: RoomPlanSyncGateway
+    private lateinit var preferences: SettingsPreferences
+    private val preferencesFile = TestPreferencesFile(ApplicationProvider.getApplicationContext<Context>())
 
     @Before
     fun setUp() {
         val context = ApplicationProvider.getApplicationContext<Context>()
         database = Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
-        backup = RoomPlanBackupGateway(database)
-        gateway = RoomPlanSyncGateway(database, backup)
+        backup = RoomPlanBackupGateway(database, Clock.fixed(Instant.parse("2026-10-10T10:00:00Z"), ZoneId.of("Europe/Warsaw")))
+        preferences = DataStoreSettingsPreferences(preferencesFile.open())
+        gateway = RoomPlanSyncGateway(backup, preferences)
     }
 
     @After
-    fun tearDown() = database.close()
+    fun tearDown() {
+        database.close()
+        preferencesFile.delete()
+    }
+
+    @Test
+    fun firstDownloadShowsTheHiddenProgramsAgain() = runBlocking {
+        backup.replaceAll(plan("A", active = 1))
+        preferences.setStudyProgramHidden(1L, hidden = true)
+
+        gateway.replaceIfUnchanged(
+            SyncPlanFile.fingerprint(gateway.snapshot()), plan("X"), keepLocalActive = false
+        )
+
+        assertTrue(preferences.planDisplay.first().hiddenProgramIds.isEmpty())
+    }
+
+    @Test
+    fun laterDownloadKeepsTheHiddenPrograms() = runBlocking {
+        backup.replaceAll(plan("A", active = 1))
+        preferences.setStudyProgramHidden(1L, hidden = true)
+
+        gateway.replaceIfUnchanged(
+            SyncPlanFile.fingerprint(gateway.snapshot()), plan("A", "B"), keepLocalActive = true
+        )
+
+        assertEquals(setOf(1L), preferences.planDisplay.first().hiddenProgramIds)
+    }
 
     @Test
     fun planChangedSinceTheReadIsNotReplaced() = runBlocking {
@@ -60,10 +98,21 @@ class RoomPlanSyncGatewayTest {
         val seen = SyncPlanFile.fingerprint(gateway.snapshot())
         backup.replaceAll(plan("A", "B", "Edytowany", active = 1))
 
-        val replaced = gateway.replaceIfUnchanged(seen, plan("Z Dysku"), keepLocalActive = true, fallbackActiveId = 1)
+        val replaced = gateway.replaceIfUnchanged(seen, plan("Z Dysku"), keepLocalActive = true)
 
         assertFalse(replaced)
         assertEquals(listOf("A", "B", "Edytowany"), gateway.snapshot().semesters.map { it.semester.name })
+    }
+
+    @Test
+    fun replaceIfCurrentWritesNothingWhenPrepareReturnsNull() = runBlocking {
+        backup.replaceAll(plan("Lokalny", active = 1))
+        val before = backup.snapshot()
+
+        val replaced = backup.replaceIfCurrent { null }
+
+        assertFalse(replaced)
+        assertEquals(before, backup.snapshot())
     }
 
     @Test
@@ -77,22 +126,23 @@ class RoomPlanSyncGatewayTest {
         val blockingBackup = object : PlanBackupGateway {
             override suspend fun snapshot() = backup.snapshot()
 
-            override suspend fun replaceAll(data: BackupData): Long? {
+            override suspend fun replaceAll(data: BackupData): Long? = backup.replaceAll(data)
+
+            override suspend fun replaceIfCurrent(prepare: (current: BackupData) -> BackupData?): Boolean {
                 replacementEntered.complete(Unit)
                 finishReplacement.await()
-                return backup.replaceAll(data)
+                return backup.replaceIfCurrent(prepare)
             }
         }
-        val blockingGateway = RoomPlanSyncGateway(database, blockingBackup)
-        val tracker = PlanEditTracker(kotlinx.coroutines.CoroutineScope(Dispatchers.Default))
+        val blockingGateway = RoomPlanSyncGateway(blockingBackup, preferences)
+        val tracker = PlanEditTracker(CoroutineScope(Dispatchers.Default))
 
         val replacement = async(Dispatchers.IO) {
             tracker.withReplacement {
                 blockingGateway.replaceIfUnchanged(
                     expected,
                     downloaded,
-                    keepLocalActive = true,
-                    fallbackActiveId = 1
+                    keepLocalActive = true
                 )
             }
         }
@@ -124,26 +174,26 @@ class RoomPlanSyncGatewayTest {
         val finishReplacement = CompletableDeferred<Unit>()
         val blockingBackup = object : PlanBackupGateway {
             override suspend fun snapshot() = backup.snapshot()
-            override suspend fun replaceAll(data: BackupData): Long? {
+            override suspend fun replaceAll(data: BackupData): Long? = backup.replaceAll(data)
+            override suspend fun replaceIfCurrent(prepare: (current: BackupData) -> BackupData?): Boolean {
                 replacementEntered.complete(Unit)
                 finishReplacement.await()
-                return backup.replaceAll(data)
+                return backup.replaceIfCurrent(prepare)
             }
         }
-        val tracker = PlanEditTracker(kotlinx.coroutines.CoroutineScope(Dispatchers.Default))
+        val tracker = PlanEditTracker(CoroutineScope(Dispatchers.Default))
         val replacement = async(Dispatchers.IO) {
             tracker.withReplacement {
-                RoomPlanSyncGateway(database, blockingBackup).replaceIfUnchanged(
+                RoomPlanSyncGateway(blockingBackup, preferences).replaceIfUnchanged(
                     expected,
                     replacementPlan,
-                    keepLocalActive = true,
-                    fallbackActiveId = 1
+                    keepLocalActive = true
                 )
             }
         }
         replacementEntered.await()
 
-        var classesBeforeCommit: List<ClassEntity>? = null
+        var classesBeforeCommit: List<ClassRecord>? = null
         val editor = async(start = CoroutineStart.UNDISPATCHED) {
             tracker.beginEdit("class-form")
             classesBeforeCommit = backup.snapshot().semesters.flatMap { it.classes }
@@ -155,7 +205,7 @@ class RoomPlanSyncGatewayTest {
         replacement.await()
         editor.await()
 
-        assertEquals(emptyList<ClassEntity>(), classesBeforeCommit)
+        assertEquals(emptyList<ClassRecord>(), classesBeforeCommit)
         assertTrue(backup.snapshot().semesters.flatMap { it.classes }.isEmpty())
     }
 
@@ -183,7 +233,7 @@ class RoomPlanSyncGatewayTest {
             "room-edit-first-${System.nanoTime()}"
         )
         val archive = SyncArchive(archiveDirectory)
-        val tracker = PlanEditTracker(kotlinx.coroutines.CoroutineScope(Dispatchers.Unconfined))
+        val tracker = PlanEditTracker(CoroutineScope(Dispatchers.Unconfined))
         val coordinator = SyncCoordinator(
             gateway = gateway,
             transport = transport,
@@ -212,7 +262,7 @@ class RoomPlanSyncGatewayTest {
         backup.replaceAll(plan("A", "B", active = 2))
 
         val replaced = gateway.replaceIfUnchanged(
-            SyncPlanFile.fingerprint(gateway.snapshot()), plan("A", "B", "C"), keepLocalActive = true, fallbackActiveId = 3
+            SyncPlanFile.fingerprint(gateway.snapshot()), plan("A", "B", "C"), keepLocalActive = true
         )
 
         assertTrue(replaced)
@@ -220,14 +270,25 @@ class RoomPlanSyncGatewayTest {
     }
 
     @Test
-    fun firstReplacementUsesTheFallbackSemester() = runBlocking {
+    fun firstReplacementActivatesTheSemesterCoveringToday() = runBlocking {
         backup.replaceAll(plan("A", "B", active = 1))
-
-        gateway.replaceIfUnchanged(
-            SyncPlanFile.fingerprint(gateway.snapshot()), plan("X", "Y", "Z"), keepLocalActive = false, fallbackActiveId = 3
+        // Only the second semester covers the backup clock's day, 2026-10-10.
+        val base = plan("X", "Y", "Z")
+        val remote = base.copy(
+            semesters = base.semesters.mapIndexed { index, semester ->
+                if (index == 1) semester else semester.copy(
+                    calendars = listOf(
+                        AcademicCalendarEntity(
+                            index + 1L, index + 1L, LocalDate.of(2025, 10, 1), LocalDate.of(2026, 1, 31), WeekType.A
+                        ).toRecord()
+                    )
+                )
+            }
         )
 
-        assertEquals(3L, gateway.snapshot().activeSemesterId)
+        gateway.replaceIfUnchanged(SyncPlanFile.fingerprint(gateway.snapshot()), remote, keepLocalActive = false)
+
+        assertEquals(2L, gateway.snapshot().activeSemesterId)
     }
 
     @Test
@@ -239,7 +300,7 @@ class RoomPlanSyncGatewayTest {
             transport = transport,
             store = TestStore(SyncState(account = account)),
             archive = SyncArchive(ApplicationProvider.getApplicationContext<Context>().cacheDir.resolve("room-sync-archive")),
-            editTracker = PlanEditTracker(kotlinx.coroutines.CoroutineScope(Dispatchers.Unconfined)),
+            editTracker = PlanEditTracker(CoroutineScope(Dispatchers.Unconfined)),
             clock = Clock.fixed(Instant.parse("2026-10-02T10:00:00Z"), ZoneOffset.UTC),
             ioDispatcher = Dispatchers.Unconfined
         )
@@ -269,13 +330,13 @@ class RoomPlanSyncGatewayTest {
     }
 
     private fun plan(vararg names: String, active: Long? = null) = BackupData(
-        studyPrograms = listOf(StudyProgramEntity(id = 1, name = "Informatyka", color = "#137B71")),
+        studyPrograms = listOf(StudyProgramEntity(id = 1, name = "Informatyka", color = "#137B71").toRecord()),
         semesters = names.mapIndexed { index, name ->
             val id = index + 1L
             SemesterBackup(
-                semester = SemesterEntity(id = id, name = name, isActive = id == active),
-                calendars = listOf(AcademicCalendarEntity(id, id, LocalDate.of(2026, 10, 1), LocalDate.of(2027, 1, 31), WeekType.A)),
-                programs = listOf(SemesterProgramEntity(id, id, 1, id)),
+                semester = SemesterEntity(id = id, name = name, isActive = id == active).toRecord(),
+                calendars = listOf(AcademicCalendarEntity(id, id, LocalDate.of(2026, 10, 1), LocalDate.of(2027, 1, 31), WeekType.A).toRecord()),
+                programs = listOf(SemesterProgramEntity(id, id, 1, id).toRecord()),
                 classes = emptyList(),
                 weekOverrides = emptyList(),
                 occurrenceNotes = emptyList(),
@@ -304,7 +365,7 @@ class RoomPlanSyncGatewayTest {
                         recurrence = Recurrence.EVERY_WEEK,
                         date = null,
                         classNote = null
-                    )
+                    ).toRecord()
                 )
             )
         }

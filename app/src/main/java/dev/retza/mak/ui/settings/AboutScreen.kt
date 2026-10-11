@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import dev.retza.mak.update.ReleaseHistoryEntry
+import dev.retza.mak.ui.longDateFormatter
 import dev.retza.mak.ui.components.MakDot
 import dev.retza.mak.ui.components.MakNoteBanner
 import dev.retza.mak.ui.components.MakNoteRole
@@ -35,9 +36,7 @@ import dev.retza.mak.ui.components.MakPoppyMark
 import dev.retza.mak.ui.components.MakScreenContent
 import dev.retza.mak.ui.components.MakSpacing
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
 import java.time.format.DateTimeParseException
-import java.util.Locale
 
 private val appFeatures = listOf(
     "plan kilku kierunków i semestrów",
@@ -233,10 +232,8 @@ internal fun BulletList(items: List<String>) {
     }
 }
 
-private val releaseDateFormat = DateTimeFormatter.ofPattern("d MMMM yyyy", Locale.forLanguageTag("pl"))
-
 internal fun formatReleaseDate(isoDate: String): String = try {
-    LocalDate.parse(isoDate).format(releaseDateFormat)
+    LocalDate.parse(isoDate).format(longDateFormatter)
 } catch (_: DateTimeParseException) {
     isoDate
 }

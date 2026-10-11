@@ -7,6 +7,9 @@ import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
+import dev.retza.mak.settings.InMemorySettingsPreferences
+import dev.retza.mak.sync.PlanEditTracker
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -32,8 +35,10 @@ class StudyProgramsViewModelTest {
         }
     }
 
+    private val preferences = InMemorySettingsPreferences()
+
     private fun viewModel(repository: FakeRepository, sink: FeedbackSink = RecordingFeedbackSink()) =
-        StudyProgramsViewModel(FakeSemesterRepository(repository), sink)
+        StudyProgramsViewModel(FakeSemesterRepository(repository), sink, preferences, PlanEditTracker(CoroutineScope(UnconfinedTestDispatcher())))
 
     @Test
     fun listsGlobalPrograms() = runTest(mainDispatcher) {
@@ -54,7 +59,7 @@ class StudyProgramsViewModelTest {
         val program = repository.studyPrograms.first()
         advanceUntilIdle()
 
-        viewModel.openEditIfNeeded(program.id)
+        viewModel.openOnce(program.id)
         advanceUntilIdle()
         viewModel.updateName("  Informatyka stosowana ")
         viewModel.updateColor("#334FCE")
@@ -74,7 +79,7 @@ class StudyProgramsViewModelTest {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openEditIfNeeded(repository.studyPrograms.first().id)
+        viewModel.openOnce(repository.studyPrograms.first().id)
         advanceUntilIdle()
 
         viewModel.updateName("   ")
@@ -90,7 +95,7 @@ class StudyProgramsViewModelTest {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openEditIfNeeded(repository.studyPrograms.first().id)
+        viewModel.openOnce(repository.studyPrograms.first().id)
         advanceUntilIdle()
 
         repository.saveGate = CompletableDeferred()
@@ -103,52 +108,32 @@ class StudyProgramsViewModelTest {
     }
 
     @Test
-    fun reopeningSameProgramKeepsDraft() = runTest(mainDispatcher) {
+    fun secondOpenOnceKeepsDraft() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         val id = repository.studyPrograms.first().id
         advanceUntilIdle()
-        viewModel.openEditIfNeeded(id)
+        viewModel.openOnce(id)
         advanceUntilIdle()
         viewModel.updateName("Szkic")
 
-        viewModel.openEditIfNeeded(id)
+        viewModel.openOnce(id)
         advanceUntilIdle()
 
         assertEquals("Szkic", viewModel.programs.value.editor.name)
     }
 
     @Test
-    fun explicitOpenDiscardsAbandonedDraft() = runTest(mainDispatcher) {
+    fun openOnceForMissingProgramReportsMissing() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
-        val program = repository.studyPrograms.first()
-        advanceUntilIdle()
-        viewModel.openEdit(program.id)
-        advanceUntilIdle()
-        viewModel.updateName("Szkic")
-
-        viewModel.openEdit(program.id)
         advanceUntilIdle()
 
-        assertEquals(program.name, viewModel.programs.value.editor.name)
-        assertEquals(program.id, viewModel.programs.value.editor.id)
-    }
-
-    @Test
-    fun restoringRouteAfterExplicitOpenKeepsDraft() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val viewModel = viewModel(repository)
-        val id = repository.studyPrograms.first().id
-        advanceUntilIdle()
-        viewModel.openEdit(id)
-        advanceUntilIdle()
-        viewModel.updateName("Szkic")
-
-        viewModel.openEditIfNeeded(id)
+        viewModel.openOnce(999L)
         advanceUntilIdle()
 
-        assertEquals("Szkic", viewModel.programs.value.editor.name)
+        assertEquals(StudyProgramEditOpenState.Missing, viewModel.opened.value)
+        assertNull(viewModel.programs.value.editor.id)
     }
 
     @Test
@@ -159,7 +144,7 @@ class StudyProgramsViewModelTest {
         val effects = mutableListOf<StudyProgramsEffect>()
         backgroundScope.launch { viewModel.effects.collect { effects += it } }
         val unusedId = repository.saveStudyProgram(StudyProgramEntity(name = "Ekonomia", color = "#A65724"))
-        viewModel.openEditIfNeeded(unusedId)
+        viewModel.openOnce(unusedId)
         advanceUntilIdle()
 
         viewModel.requestDelete()
@@ -177,7 +162,7 @@ class StudyProgramsViewModelTest {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         val assigned = repository.studyPrograms.first()
-        viewModel.openEditIfNeeded(assigned.id)
+        viewModel.openOnce(assigned.id)
         advanceUntilIdle()
 
         viewModel.requestDelete()

@@ -96,8 +96,7 @@ class GoogleAuthorizationFailureTest {
         override suspend fun replaceIfUnchanged(
             expectedFingerprint: String,
             data: BackupData,
-            keepLocalActive: Boolean,
-            fallbackActiveId: Long?
+            keepLocalActive: Boolean
         ) = true
     }
 

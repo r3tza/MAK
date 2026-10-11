@@ -1,11 +1,12 @@
 package dev.retza.mak.ui.today
 
+import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.domain.ActivePlanProvider
+import dev.retza.mak.domain.PlanDisplaySettings
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.activePlanSource
-import dev.retza.mak.ui.components.ScreenStatus
-import dev.retza.mak.ui.settings.InMemorySettingsPreferences
+import dev.retza.mak.settings.InMemorySettingsPreferences
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalTime
@@ -70,7 +71,9 @@ class TodayViewModelTest {
             startTime = LocalTime.of(11, 1),
             endTime = LocalTime.of(12, 0)
         )
-        val preferences = InMemorySettingsPreferences(initialGapThresholdMinutes = 30)
+        val preferences = InMemorySettingsPreferences(
+            initialPlanDisplay = PlanDisplaySettings(minimumBreakMinutes = 0, gapThresholdMinutes = 30)
+        )
         val viewModel = todayViewModel(repository, preferences = preferences)
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
@@ -102,18 +105,57 @@ class TodayViewModelTest {
     }
 
     @Test
+    fun hiddenProgramIsNamedInTheHintAndItsClassesAreLeftOut() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val management = repository.saveStudyProgramAssignment(1L, StudyProgramEntity(name = "Zarządzanie", color = "#334FCE"), 1L)
+        repository.classes += repository.classes.single().copy(
+            id = 2L,
+            semesterProgramId = management.semesterProgramId,
+            name = "Marketing",
+            startTime = LocalTime.of(12, 0),
+            endTime = LocalTime.of(13, 0)
+        )
+        val preferences = InMemorySettingsPreferences()
+        preferences.setStudyProgramHidden(management.studyProgramId, hidden = true)
+        val viewModel = todayViewModel(repository, preferences = preferences)
+        backgroundScope.launch { viewModel.today.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.today.value
+        assertEquals(listOf("Zarządzanie"), state.hiddenProgramNames)
+        assertFalse(state.allProgramsHidden)
+        assertEquals(listOf("Programowanie"), state.items.map { it.name })
+    }
+
+    @Test
+    fun hidingEveryProgramKeepsTheWeekAndMarksAllHidden() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val preferences = InMemorySettingsPreferences()
+        preferences.setStudyProgramHidden(1L, hidden = true)
+        val viewModel = todayViewModel(repository, preferences = preferences)
+        backgroundScope.launch { viewModel.today.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.today.value
+        assertTrue(state.allProgramsHidden)
+        assertTrue(state.weekLabel.startsWith("Tydzień"))
+        assertEquals(0, state.classCount)
+        assertTrue(state.items.isEmpty())
+    }
+
+    @Test
     fun startsInLoadingStateInsteadOfEmptyState() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         repository.clearActiveSemester()
         val viewModel = todayViewModel(repository)
 
-        assertEquals(ScreenStatus.Loading, viewModel.today.value.status)
+        assertTrue(viewModel.today.value.isLoading)
         assertEquals("", viewModel.today.value.dateLabel)
 
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
 
-        assertEquals(ScreenStatus.Ready, viewModel.today.value.status)
+        assertFalse(viewModel.today.value.isLoading)
         assertEquals("Brak aktywnego semestru", viewModel.today.value.dateLabel)
     }
 
@@ -136,7 +178,6 @@ class TodayViewModelTest {
         preferences: InMemorySettingsPreferences = InMemorySettingsPreferences()
     ) = TodayViewModel(
         activePlanSource(repository, preferences),
-        preferences,
         clock,
         ActivePlanProvider()
     )

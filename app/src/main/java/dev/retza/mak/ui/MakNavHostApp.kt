@@ -19,6 +19,11 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.outlined.Settings
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.font.FontWeight
@@ -33,17 +38,10 @@ import dev.retza.mak.ui.components.MakActionMenu
 import dev.retza.mak.ui.components.MakIconButton
 import dev.retza.mak.ui.components.MakNavBar
 import dev.retza.mak.ui.components.MakNavRail
-import dev.retza.mak.ui.edit.ClassEditViewModel
 import dev.retza.mak.ui.feedback.MakSnackbarHost
 import dev.retza.mak.ui.feedback.UiFeedback
-import dev.retza.mak.ui.occurrence.OccurrenceViewModel
-import dev.retza.mak.ui.schedule.ScheduleViewModel
-import dev.retza.mak.ui.programs.StudyProgramsViewModel
-import dev.retza.mak.ui.semester.SemesterViewModel
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.settings.SyncViewModel
-import dev.retza.mak.ui.setup.SetupViewModel
-import dev.retza.mak.ui.today.TodayViewModel
 import dev.retza.mak.update.UpdateViewModel
 import kotlinx.coroutines.flow.Flow
 
@@ -51,15 +49,8 @@ import kotlinx.coroutines.flow.Flow
 @Composable
 fun MakApp(
     viewModel: AppViewModel,
-    occurrenceViewModel: OccurrenceViewModel,
-    classEditViewModel: ClassEditViewModel,
-    semesterViewModel: SemesterViewModel,
-    setupViewModel: SetupViewModel,
     settingsViewModel: SettingsViewModel,
     syncViewModel: SyncViewModel,
-    studyProgramsViewModel: StudyProgramsViewModel,
-    scheduleViewModel: ScheduleViewModel,
-    todayViewModel: TodayViewModel,
     updateViewModel: UpdateViewModel,
     feedback: Flow<UiFeedback>,
     openTodayRequests: Flow<Unit>,
@@ -72,12 +63,12 @@ fun MakApp(
     onGrantInstallPermission: () -> Unit = {}
 ) {
     val state = viewModel.uiState.collectAsStateWithLifecycle().value
-    val syncState = syncViewModel.sync.collectAsStateWithLifecycle().value
-    val editor = classEditViewModel.editor.collectAsStateWithLifecycle().value
     val navController = rememberNavController()
+    var pendingPlanDate by rememberSaveable { mutableStateOf<String?>(null) }
     val currentRoute = navController.currentBackStackEntryAsState().value
         ?.destination
         ?.route
+    val topBarState = remember { TopBarState() }
     val isRoot = currentRoute == MakRoutes.Today || currentRoute == MakRoutes.Schedule
     val showBack = currentRoute != null && !isRoot && !isSetupRoute(currentRoute)
     val navigationLayout = makNavigationLayout(LocalMakWidthClass.current, isRoot)
@@ -98,7 +89,7 @@ fun MakApp(
 
     val startSetup: () -> Unit = {
         if (state.hasLoadedData) {
-            openSetup(navController, resumeExisting = state.setupResume != null)
+            openSetup(navController, resumeExisting = state.canResumeSetup)
         }
     }
 
@@ -120,22 +111,14 @@ fun MakApp(
 
     LaunchedEffect(openPlanRequests, navController) {
         openPlanRequests.collect { date ->
-            scheduleViewModel.showDate(date)
+            pendingPlanDate = date
             openRoot(MakRoutes.Schedule)
         }
     }
 
-    OccurrenceEffects(occurrenceViewModel, navController)
-    ClassEditEffects(classEditViewModel, navController)
-    SemesterEffects(semesterViewModel, navController)
     SettingsEffects(settingsViewModel, navController)
-    StudyProgramEffects(studyProgramsViewModel, navController)
-    SetupEffects(setupViewModel, navController)
-    ScheduleEffects(scheduleViewModel, navController)
 
     BackHandler(enabled = showBack) { navigateBack() }
-
-    val occurrenceActions = occurrenceTopBarActions(occurrenceViewModel, navController)
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
@@ -145,18 +128,20 @@ fun MakApp(
             MakSnackbarHost(feedback = feedback)
         },
         topBar = {
+            val spec = topBarState.specFor(currentRoute)
+            val topBarActions = spec?.actions.orEmpty()
             MakTopBar(
-                title = titleForRoute(currentRoute, editor.title),
+                title = spec?.title ?: titleForRoute(currentRoute),
                 showBack = showBack,
                 showSettings = isRoot,
                 onBack = ::navigateBack,
                 onSettings = { openSettings(navController) },
-                actions = if (occurrenceActions.isEmpty()) {
+                actions = if (topBarActions.isEmpty()) {
                     null
                 } else {
                     {
                         MakActionMenu(
-                            actions = occurrenceActions,
+                            actions = topBarActions,
                             modifier = Modifier.padding(end = 4.dp)
                         )
                     }
@@ -201,27 +186,34 @@ fun MakApp(
             ) {
                 todayRoute(
                     appState = state,
-                    todayViewModel = todayViewModel,
                     updateViewModel = updateViewModel,
                     navController = navController,
                     onOpenOccurrence = openOccurrenceById,
                     startSetup = startSetup,
                     openSync = { navController.navigate(MakRoutes.SettingsSync) },
-                    syncAttention = { syncState.attention }
+                    syncAttention = syncViewModel.attention
                 )
                 scheduleRoute(
                     appState = state,
-                    scheduleViewModel = scheduleViewModel,
+                    navController = navController,
+                    pendingPlanDate = { pendingPlanDate },
+                    onPlanDateShown = { pendingPlanDate = null },
                     onOpenOccurrence = openOccurrenceById,
                     startSetup = startSetup,
-                    openSync = { navController.navigate(MakRoutes.SettingsSync) }
+                    openSync = { navController.navigate(MakRoutes.SettingsSync) },
+                    openPrograms = { navController.navigate(MakRoutes.StudyPrograms) }
                 )
-                classEditRoute(classEditViewModel = classEditViewModel, onBack = ::navigateBack)
-                occurrenceDetailsRoute(occurrenceViewModel = occurrenceViewModel)
-                semesterRoutes(
-                    semesterViewModel = semesterViewModel,
+                classEditRoute(
                     navController = navController,
-                    studyProgramsViewModel = studyProgramsViewModel
+                    onBack = ::navigateBack,
+                    topBar = topBarState
+                )
+                occurrenceDetailsRoute(
+                    navController = navController,
+                    topBar = topBarState
+                )
+                semesterRoutes(
+                    navController = navController
                 )
                 settingsRoute(
                     settingsViewModel = settingsViewModel,
@@ -242,11 +234,13 @@ fun MakApp(
                     onGrantInstallPermission = onGrantInstallPermission
                 )
                 studyProgramRoutes(
-                    studyProgramsViewModel = studyProgramsViewModel,
                     navController = navController,
                     onBack = ::navigateBack
                 )
-                setupRoute(setupViewModel = setupViewModel, settingsViewModel = settingsViewModel)
+                setupRoute(
+                    navController = navController,
+                    settingsViewModel = settingsViewModel
+                )
             }
         }
     }

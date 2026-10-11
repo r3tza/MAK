@@ -7,17 +7,22 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.SemanticsProperties
+import androidx.compose.ui.test.SemanticsMatcher
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import androidx.test.espresso.Espresso
 import dev.retza.mak.ui.components.FieldErrorUi
+import dev.retza.mak.ui.components.OccurrenceStatusUi
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -52,7 +57,6 @@ class OccurrenceDetailsScreenTest {
                 sharedNote = "Notatka wspólna",
                 occurrenceNoteDraft = "Notatka tylko dla tego terminu",
                 canChangeOccurrence = true,
-                canMoveOccurrence = true,
                 canRestoreOccurrence = false,
                 canSaveOccurrenceEdit = true
             )
@@ -161,11 +165,9 @@ class OccurrenceDetailsScreenTest {
                             startTime = "09:00",
                             endTime = "10:30",
                             sharedNote = "Wspólna",
-                            sharedNoteDraft = "Wspólna",
+                            sharedNoteDraft = "Wspólna zmieniona",
                             occurrenceNote = "Daty",
-                            occurrenceNoteDraft = "Daty",
-                            canSaveSharedNote = true,
-                            canSaveOccurrenceNote = true
+                            occurrenceNoteDraft = "Daty zmienione"
                         ),
                         onDeleteBaseClass = {},
                         onDismissDeleteConfirmation = {},
@@ -219,7 +221,6 @@ class OccurrenceDetailsScreenTest {
                             baseStartTime = "11:00",
                             baseEndTime = "12:30",
                             canChangeOccurrence = false,
-                            canMoveOccurrence = false,
                             canRestoreOccurrence = true
                         ),
                         onDeleteBaseClass = {},
@@ -354,5 +355,49 @@ class OccurrenceDetailsScreenTest {
         composeTestRule
             .onNodeWithText("Koniec musi być późniejszy niż początek tego samego dnia.")
             .assertIsDisplayed()
+    }
+
+    @Test
+    fun deleteDialogBlocksActionsWhileDeletingAt320Dp() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(
+                    modifier = Modifier
+                        .width(320.dp)
+                        .height(900.dp)
+                ) {
+                    OccurrenceDetailsScreen(
+                        state = OccurrenceDetailsUiState(
+                            subjectName = "Matematyka",
+                            dateLabel = "Poniedziałek, 21 września",
+                            currentDate = "2026-09-21",
+                            startTime = "09:00",
+                            endTime = "10:30",
+                            showDeleteConfirmation = true,
+                            isDeletingClass = true
+                        ),
+                        onDeleteBaseClass = {},
+                        onDismissDeleteConfirmation = {},
+                        onOpenOccurrenceEdit = {},
+                        onDismissOccurrenceEdit = {},
+                        onSaveOccurrenceChange = {},
+                        onRestoreOccurrence = {},
+                        onOccurrenceNoteDraftChanged = {},
+                        onSharedNoteDraftChanged = {},
+                        onTargetDateDraftChanged = {},
+                        onStartTimeDraftChanged = {},
+                        onEndTimeDraftChanged = {},
+                        onRoomDraftChanged = {},
+                        onSaveSharedNote = {},
+                        onSaveOccurrenceNote = {},
+                    )
+                }
+            }
+        }
+
+        // "Usuń zajęcia" is both the dialog title and the confirm button, so match the button by its role.
+        composeTestRule
+            .onNode(hasText("Usuń zajęcia") and SemanticsMatcher.expectValue(SemanticsProperties.Role, Role.Button))
+            .assertIsNotEnabled()
     }
 }

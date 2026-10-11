@@ -21,16 +21,23 @@ import dev.retza.mak.data.repository.AcademicCalendarRecord
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.StudyProgramRecord
+import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.data.repository.RoomPlanBackupGateway
+import dev.retza.mak.data.repository.RoomScheduleRepository
 import dev.retza.mak.data.repository.RoomSemesterRepository
 import dev.retza.mak.data.repository.SemesterBackup
+import dev.retza.mak.data.repository.toRecord
+import java.time.Clock
 import java.time.DayOfWeek
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.After
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Assert.fail
@@ -43,6 +50,7 @@ class RoomPersistenceTest {
     private lateinit var context: Context
     private lateinit var databaseFileName: String
     private var database: AppDatabase? = null
+    private val fixedClock: Clock = Clock.fixed(Instant.parse("2026-10-10T10:00:00Z"), ZoneId.of("Europe/Warsaw"))
 
     @Before
     fun setUp() {
@@ -135,6 +143,94 @@ class RoomPersistenceTest {
         assertEquals(overrideId, database!!.weekOverrideDao().findById(overrideId)?.id)
         assertEquals(changeId, database!!.occurrenceChangeDao().findById(changeId)?.id)
         assertEquals(noteId, database!!.occurrenceNoteDao().findById(noteId)?.id)
+    }
+
+    @Test
+    fun deleteByNaturalKeyRemovesOnlyThatRow() = runBlocking {
+        database = openDatabase()
+        val semesterId = database!!.semesterDao().insert(SemesterEntity(name = "Semestr zimowy", isActive = true))
+        val calendarId = database!!.academicCalendarDao().insert(
+            AcademicCalendarEntity(
+                semesterId = semesterId,
+                startDate = LocalDate.of(2026, 10, 1),
+                endDate = LocalDate.of(2027, 2, 28),
+                firstWeekType = WeekType.A
+            )
+        )
+        val programId = database!!.studyProgramDao().insert(
+            StudyProgramEntity(name = "Informatyka", color = "#112233")
+        )
+        val assignmentId = database!!.semesterProgramDao().insert(
+            SemesterProgramEntity(
+                semesterId = semesterId,
+                studyProgramId = programId,
+                academicCalendarId = calendarId
+            )
+        )
+        val classId = database!!.classDao().insert(
+            ClassEntity(
+                semesterId = semesterId,
+                semesterProgramId = assignmentId,
+                name = "Programowanie",
+                type = "Wykład",
+                teacherName = "Jan Kowalski",
+                dayOfWeek = DayOfWeek.MONDAY,
+                startTime = LocalTime.of(8, 0),
+                endTime = LocalTime.of(9, 30),
+                room = null,
+                building = null,
+                group = null,
+                recurrence = Recurrence.EVERY_WEEK,
+                date = null,
+                classNote = null
+            )
+        )
+        val monday = LocalDate.of(2026, 10, 5)
+        val nextMonday = monday.plusWeeks(1)
+        listOf(monday, nextMonday).forEach { date ->
+            database!!.occurrenceChangeDao().insert(
+                OccurrenceChangeEntity(
+                    semesterId = semesterId,
+                    classId = classId,
+                    originalDate = date,
+                    kind = OccurrenceChangeKind.CANCELLED,
+                    targetDate = null,
+                    newStartTime = null,
+                    newEndTime = null,
+                    newRoom = null,
+                    newBuilding = null,
+                    newTeacherName = null,
+                    newNote = null
+                )
+            )
+            database!!.occurrenceNoteDao().insert(
+                OccurrenceNoteEntity(semesterId = semesterId, classId = classId, occurrenceDate = date, body = "Kolokwium")
+            )
+        }
+        listOf(WeekOverrideScope.ONE_WEEK, WeekOverrideScope.FROM_WEEK).forEach { scope ->
+            database!!.weekOverrideDao().insert(
+                WeekOverrideEntity(
+                    semesterId = semesterId,
+                    academicCalendarId = calendarId,
+                    weekStartDate = monday,
+                    weekType = WeekType.B,
+                    scope = scope
+                )
+            )
+        }
+
+        database!!.occurrenceChangeDao().deleteForOccurrence(classId, monday)
+        database!!.occurrenceNoteDao().deleteForOccurrence(classId, monday)
+        database!!.weekOverrideDao().deleteForWeek(calendarId, monday, WeekOverrideScope.ONE_WEEK)
+
+        assertNull(database!!.occurrenceChangeDao().findForOccurrence(classId, monday))
+        assertNotNull(database!!.occurrenceChangeDao().findForOccurrence(classId, nextMonday))
+        assertNull(database!!.occurrenceNoteDao().findForOccurrence(classId, monday))
+        assertNotNull(database!!.occurrenceNoteDao().findForOccurrence(classId, nextMonday))
+        assertEquals(
+            listOf(WeekOverrideScope.FROM_WEEK),
+            database!!.weekOverrideDao().getForCalendar(calendarId).map { it.scope }
+        )
     }
 
     @Test
@@ -237,6 +333,42 @@ class RoomPersistenceTest {
     }
 
     @Test
+    fun deletingActiveSemesterActivatesTheOneCoveringToday() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val earlier = database!!.semesterDao().insert(semester("Wcześniejszy", false))
+        val covering = database!!.semesterDao().insert(semester("Bieżący", false))
+        val last = database!!.semesterDao().insert(semester("Następny", false))
+        database!!.semesterDao().markActive(last)
+        insertCalendar(earlier, LocalDate.of(2026, 2, 1), LocalDate.of(2026, 6, 30))
+        insertCalendar(covering, LocalDate.of(2026, 9, 1), LocalDate.of(2026, 12, 31))
+        insertCalendar(last, LocalDate.of(2027, 2, 1), LocalDate.of(2027, 6, 30))
+
+        val result = repository.deleteSemesterAndSelectFallback(last)
+
+        assertEquals(covering, result.activeSemesterId)
+        assertEquals(covering, repository.observeActiveSemester().first()?.id)
+    }
+
+    @Test
+    fun importWithoutActiveSemesterActivatesOne() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val data = BackupData(
+            studyPrograms = emptyList(),
+            semesters = listOf(
+                semesterBackup(601, "Wcześniejszy", LocalDate.of(2026, 2, 1), LocalDate.of(2026, 6, 30)),
+                semesterBackup(602, "Bieżący", LocalDate.of(2026, 9, 1), LocalDate.of(2026, 12, 31))
+            )
+        )
+
+        val activeId = RoomPlanBackupGateway(database!!, fixedClock).replaceAll(data)
+
+        assertEquals(602L, activeId)
+        assertEquals(602L, repository.observeActiveSemester().first()?.id)
+    }
+
+    @Test
     fun deleteTransactionRollsBackWhenFallbackWriteFails() = runBlocking {
         database = openDatabase()
         val repository = repository()
@@ -332,13 +464,13 @@ class RoomPersistenceTest {
             classNote = null
         )
         val data = BackupData(
-            studyPrograms = listOf(newProgram),
+            studyPrograms = listOf(newProgram.toRecord()),
             semesters = listOf(
                 SemesterBackup(
-                    semester = newSemester,
-                    calendars = listOf(newCalendar),
-                    programs = listOf(newAssignment),
-                    classes = listOf(newClass),
+                    semester = newSemester.toRecord(),
+                    calendars = listOf(newCalendar.toRecord()),
+                    programs = listOf(newAssignment.toRecord()),
+                    classes = listOf(newClass.toRecord()),
                     weekOverrides = emptyList(),
                     occurrenceNotes = emptyList(),
                     occurrenceChanges = emptyList()
@@ -346,13 +478,13 @@ class RoomPersistenceTest {
             )
         )
 
-        val activeId = RoomPlanBackupGateway(database!!).replaceAll(data)
+        val activeId = RoomPlanBackupGateway(database!!, fixedClock).replaceAll(data)
 
         assertEquals(500L, activeId)
         assertNull(database!!.semesterDao().findById(oldSemesterId))
         assertEquals(listOf(500L), repository.observeSemesters().first().map { it.id })
         assertEquals(listOf(500L), repository.observeStudyPrograms().first().map { it.id })
-        assertEquals(1, database!!.classDao().observeForSemester(500).first().size)
+        assertEquals(1, RoomScheduleRepository(database!!).observeActivePlanData(500).first()!!.classes.size)
     }
 
     @Test
@@ -366,10 +498,10 @@ class RoomPersistenceTest {
                 "BEGIN SELECT RAISE(ABORT, 'insert failed'); END"
         )
         val data = BackupData(
-            studyPrograms = listOf(StudyProgramEntity(id = 900, name = "Nowy", color = "#111111")),
+            studyPrograms = listOf(StudyProgramEntity(id = 900, name = "Nowy", color = "#111111").toRecord()),
             semesters = listOf(
                 SemesterBackup(
-                    semester = SemesterEntity(id = 900, name = "Nowy", isActive = true),
+                    semester = SemesterEntity(id = 900, name = "Nowy", isActive = true).toRecord(),
                     calendars = emptyList(),
                     programs = emptyList(),
                     classes = emptyList(),
@@ -381,7 +513,7 @@ class RoomPersistenceTest {
         )
 
         try {
-            RoomPlanBackupGateway(database!!).replaceAll(data)
+            RoomPlanBackupGateway(database!!, fixedClock).replaceAll(data)
             fail("Expected replaceAllData to fail")
         } catch (_: Exception) {
         }
@@ -627,6 +759,32 @@ class RoomPersistenceTest {
         assertEquals(calendarId, database!!.academicCalendarDao().findById(calendarId)?.id)
     }
 
+    @Test
+    fun semesterConfigurationEmitsAfterAWrite() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val calendarId = insertCalendar(semesterId)
+        val monday = LocalDate.of(2026, 10, 5)
+
+        val configurations = repository.observeSemesterConfiguration(semesterId)
+        assertTrue(configurations.first()?.overrides?.isEmpty() == true)
+
+        repository.saveWeekOverride(
+            WeekOverrideRecord(
+                semesterId = semesterId,
+                academicCalendarId = calendarId,
+                weekStartDate = monday,
+                weekType = dev.retza.mak.domain.WeekType.B,
+                scope = dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK
+            )
+        )
+
+        val updated = configurations.first { it?.overrides?.isNotEmpty() == true }
+        assertEquals(monday, updated?.overrides?.single()?.weekStartDate)
+        assertEquals(dev.retza.mak.domain.WeekType.B, updated?.overrides?.single()?.weekType)
+    }
+
     private suspend fun insertCalendar(semesterId: Long): Long =
         database!!.academicCalendarDao().insert(
             AcademicCalendarEntity(
@@ -652,7 +810,36 @@ class RoomPersistenceTest {
         )
     )
 
-    private fun repository(): RoomSemesterRepository = RoomSemesterRepository(database!!)
+    private fun repository(): RoomSemesterRepository = RoomSemesterRepository(database!!, fixedClock)
+
+    private suspend fun insertCalendar(semesterId: Long, startDate: LocalDate, endDate: LocalDate) {
+        database!!.academicCalendarDao().insert(
+            AcademicCalendarEntity(
+                semesterId = semesterId,
+                startDate = startDate,
+                endDate = endDate,
+                firstWeekType = WeekType.A
+            )
+        )
+    }
+
+    private fun semesterBackup(id: Long, name: String, startDate: LocalDate, endDate: LocalDate) = SemesterBackup(
+        semester = SemesterEntity(id = id, name = name, isActive = false).toRecord(),
+        calendars = listOf(
+            AcademicCalendarEntity(
+                id = id * 10,
+                semesterId = id,
+                startDate = startDate,
+                endDate = endDate,
+                firstWeekType = WeekType.A
+            ).toRecord()
+        ),
+        programs = emptyList(),
+        classes = emptyList(),
+        weekOverrides = emptyList(),
+        occurrenceNotes = emptyList(),
+        occurrenceChanges = emptyList()
+    )
 
     private fun semester(name: String, active: Boolean) = SemesterEntity(
         name = name,

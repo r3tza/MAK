@@ -2,15 +2,18 @@ package dev.retza.mak.widget
 
 import android.content.Context
 import androidx.glance.appwidget.updateAll
-import androidx.room.InvalidationTracker
-import dev.retza.mak.data.database.AppDatabase
-import dev.retza.mak.data.database.PLAN_TABLES
 import dev.retza.mak.domain.PlanDisplaySettings
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.FlowPreview
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.debounce
 import kotlinx.coroutines.flow.drop
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.merge
 import kotlinx.coroutines.launch
+
+private const val WIDGET_REFRESH_DEBOUNCE_MILLIS = 1_000L
 
 fun interface WidgetRefreshRequester {
     fun request()
@@ -36,19 +39,17 @@ class GlanceWidgetRefreshRequester(
 }
 
 /** Refreshes the widget after a change of the plan in Room or of the settings that change how it resolves. */
+@OptIn(FlowPreview::class)
 fun registerMakWidgetRefresh(
-    database: AppDatabase,
+    planChanges: Flow<Unit>,
     planDisplay: Flow<PlanDisplaySettings>,
     scope: CoroutineScope,
     requester: WidgetRefreshRequester
 ) {
-    database.invalidationTracker.addObserver(
-        object : InvalidationTracker.Observer(PLAN_TABLES) {
-            override fun onInvalidated(tables: Set<String>) {
-                requester.request()
-            }
-        }
-    )
-    // The first value is the stored setting, already shown by the widget.
-    scope.launch { planDisplay.drop(1).collect { requester.request() } }
+    scope.launch {
+        // The first settings value is the stored one, already shown by the widget.
+        merge(planChanges, planDisplay.drop(1).map { })
+            .debounce(WIDGET_REFRESH_DEBOUNCE_MILLIS)
+            .collect { requester.request() }
+    }
 }

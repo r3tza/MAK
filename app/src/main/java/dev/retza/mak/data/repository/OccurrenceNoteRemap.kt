@@ -1,7 +1,7 @@
 package dev.retza.mak.data.repository
 
-import dev.retza.mak.data.entity.OccurrenceChangeKind
-import dev.retza.mak.data.entity.Recurrence
+import dev.retza.mak.domain.OccurrenceChangeKind
+import dev.retza.mak.domain.Recurrence
 import java.time.DayOfWeek
 import java.time.LocalDate
 

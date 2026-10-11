@@ -1,18 +1,11 @@
 package dev.retza.mak.ui.occurrence
 
 import androidx.compose.runtime.Immutable
+import dev.retza.mak.domain.noteContentChanged
 import dev.retza.mak.ui.components.FieldErrorUi
+import dev.retza.mak.ui.components.OccurrenceStatusUi
+import dev.retza.mak.ui.dayMonthFormatter
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-
-enum class OccurrenceStatusUi {
-    Scheduled,
-    Cancelled,
-    Changed,
-    Moved,
-    OneOff
-}
 
 enum class OccurrenceEditField {
     Date,
@@ -22,7 +15,6 @@ enum class OccurrenceEditField {
 
 @Immutable
 data class OccurrenceDetailsUiState(
-    val title: String = "Szczegóły terminu",
     val subjectName: String = "",
     val courseName: String = "",
     val typeLabel: String = "",
@@ -37,7 +29,6 @@ data class OccurrenceDetailsUiState(
     val originalDateLabel: String? = null,
     val targetDateLabel: String? = null,
     val status: OccurrenceStatusUi = OccurrenceStatusUi.Scheduled,
-    val statusLabel: String? = null,
     val conflictLabel: String? = null,
     val conflictWith: String? = null,
     val sharedNote: String? = null,
@@ -64,32 +55,26 @@ data class OccurrenceDetailsUiState(
     val canSaveOccurrenceEdit: Boolean = false,
     val isSavingSharedNote: Boolean = false,
     val isSavingOccurrenceNote: Boolean = false,
-    val canSaveSharedNote: Boolean = false,
-    val canSaveOccurrenceNote: Boolean = false,
     val showDeleteConfirmation: Boolean = false,
+    val isDeletingClass: Boolean = false,
     val canEditBaseClass: Boolean = true,
     val canDeleteBaseClass: Boolean = true,
     // The route points to a class that no longer exists in the active semester.
     val notFound: Boolean = false,
     val canCancelOccurrence: Boolean = true,
     val canChangeOccurrence: Boolean = true,
-    val canMoveOccurrence: Boolean = true,
     val canRestoreOccurrence: Boolean = false
-)
+) {
+    val canSaveSharedNote: Boolean
+        get() = noteContentChanged(sharedNoteDraft, sharedNote)
+    val canSaveOccurrenceNote: Boolean
+        get() = noteContentChanged(occurrenceNoteDraft, occurrenceNote)
+}
 
 /** Details block a downloaded plan only while the user has typed or opened something to confirm. */
 fun OccurrenceDetailsUiState.hasPlanDraft(): Boolean =
     canSaveSharedNote || canSaveOccurrenceNote || isSaving || isSavingSharedNote ||
-        isSavingOccurrenceNote || showEditDialog || showDeleteConfirmation
-
-/** The status word shown with its icon on the details screen. */
-fun OccurrenceStatusUi.label(): String = when (this) {
-    OccurrenceStatusUi.Scheduled -> "Zaplanowane"
-    OccurrenceStatusUi.Cancelled -> "Odwołane"
-    OccurrenceStatusUi.Changed -> "Zmienione"
-    OccurrenceStatusUi.Moved -> "Przeniesione"
-    OccurrenceStatusUi.OneOff -> "Jednorazowe"
-}
+        isSavingOccurrenceNote || showEditDialog || showDeleteConfirmation || isDeletingClass
 
 /**
  * What differs from the base occurrence, one line per change; the class card shows only an icon,
@@ -116,7 +101,5 @@ fun OccurrenceDetailsUiState.changeLines(): List<String> {
     }
 }
 
-private val changeDateFormatter = DateTimeFormatter.ofPattern("d MMMM", Locale.forLanguageTag("pl"))
-
 private fun changeDate(iso: String): String =
-    runCatching { LocalDate.parse(iso).format(changeDateFormatter) }.getOrDefault(iso)
+    runCatching { LocalDate.parse(iso).format(dayMonthFormatter) }.getOrDefault(iso)

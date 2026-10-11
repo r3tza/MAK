@@ -44,7 +44,7 @@ internal fun NavGraphBuilder.settingsRoute(
     updateViewModel: UpdateViewModel,
     navController: NavController,
     onAddSemester: () -> Unit,
-    onConfigureSemester: (String) -> Unit,
+    onConfigureSemester: (Long) -> Unit,
     onExport: () -> Unit,
     onImport: () -> Unit,
     notificationsBlocked: Boolean,
@@ -71,7 +71,6 @@ internal fun NavGraphBuilder.settingsRoute(
             onGapThresholdSelected = settingsViewModel::setGapThresholdMinutes,
             onMinimumBreakSelected = settingsViewModel::setMinimumBreakMinutes,
             notificationsBlocked = notificationsBlocked,
-            onRetry = {},
             updates = updateState.toSettingsUi(),
             onCheckUpdates = updateViewModel::checkNow,
             onOpenUpdate = { navController.navigate(MakRoutes.SettingsUpdate) },
@@ -104,22 +103,14 @@ internal fun NavGraphBuilder.settingsRoute(
 
     composable(MakRoutes.SettingsSemesters) {
         val settingsState by settingsViewModel.settings.collectAsStateWithLifecycle()
-        val editing = TrackPlanEditing(
-            active = settingsState.semesterToDeleteId != null,
-            isActiveNow = { settingsViewModel.settings.value.semesterToDeleteId != null }
-        )
         SettingsSemestersScreen(
             state = settingsState,
             onSemesterSelected = settingsViewModel::selectSemester,
             onAddSemester = onAddSemester,
             onConfigureSemester = onConfigureSemester,
-            onDeleteSemester = { id ->
-                editing.run(refreshBeforeFirstEdit = { settingsViewModel.canRequestSemesterDeletion(id) }) {
-                    settingsViewModel.requestSemesterDeletion(id)
-                }
-            },
-            onConfirmDelete = editing.callback(action = settingsViewModel::confirmSemesterDeletion),
-            onCancelDelete = editing.callback(action = settingsViewModel::cancelSemesterDeletion),
+            onDeleteSemester = settingsViewModel::requestSemesterDeletion,
+            onConfirmDelete = settingsViewModel::confirmSemesterDeletion,
+            onCancelDelete = settingsViewModel::cancelSemesterDeletion,
             modifier = Modifier.fillMaxSize()
         )
     }

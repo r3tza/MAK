@@ -3,6 +3,8 @@ package dev.retza.mak.ui
 import dev.retza.mak.domain.ClassItem
 import dev.retza.mak.domain.OccurrenceNote
 import dev.retza.mak.domain.PlannedOccurrence
+import dev.retza.mak.domain.WeekStatus
+import dev.retza.mak.domain.WeekType
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -32,14 +34,26 @@ class PlanMappingTest {
         assertEquals("Matematyka", ui.conflictWith)
     }
 
+    @Test
+    fun dayMonthFormatterUsesPolishMonthName() {
+        assertEquals("7 października", LocalDate.of(2026, 10, 7).format(dayMonthFormatter))
+    }
+
+    @Test
+    fun weekStatusLabels() {
+        assertEquals("Tydzień A", WeekStatus.Single(WeekType.A).label())
+        assertEquals("Różne tygodnie", WeekStatus.Mixed.label())
+        assertEquals("Poza semestrem", WeekStatus.OutsideSemester.label())
+    }
+
     private fun occurrence(
         classNote: String? = null,
         occurrenceBody: String? = null
     ) = PlannedOccurrence(
         classItem = ClassItem(
-            id = "class",
-            semesterId = "semester",
-            semesterProgramId = "assignment",
+            id = 1L,
+            semesterId = 1L,
+            semesterProgramId = 1L,
             name = "Programowanie",
             type = "Wykład",
             dayOfWeek = DayOfWeek.MONDAY,
@@ -57,7 +71,7 @@ class PlanMappingTest {
         studyProgram = null,
         classNote = classNote,
         occurrenceNote = occurrenceBody?.let {
-            OccurrenceNote(id = "note", classId = "class", occurrenceDate = date, body = it)
+            OccurrenceNote(id = 1L, classId = 1L, occurrenceDate = date, body = it)
         }
     )
 }

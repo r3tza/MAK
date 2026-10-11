@@ -1,7 +1,7 @@
 package dev.retza.mak.notifications
 
 import dev.retza.mak.domain.CollisionNotificationSettings
-import dev.retza.mak.ui.settings.CollisionNotificationPreferences
+import dev.retza.mak.settings.CollisionNotificationPreferences
 
 const val COLLISION_NOTIFICATION_CHANNEL_ID = "collision_notifications"
 const val COLLISION_ALARM_ACTION = "dev.retza.mak.action.COLLISION_ALARM"

@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.occurrence
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
@@ -8,6 +9,7 @@ import dev.retza.mak.data.repository.OccurrenceNoteRecord
 import dev.retza.mak.data.repository.ScheduleRepository
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.toRecord
+import dev.retza.mak.domain.AcademicCalendar
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.ActivePlanInputs
 import dev.retza.mak.domain.ActivePlanProvider
@@ -15,32 +17,45 @@ import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
 import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.OccurrenceEditDecision
+import dev.retza.mak.domain.OccurrenceDraftError
 import dev.retza.mak.domain.OccurrenceEditResult
 import dev.retza.mak.domain.OccurrenceSlot
-import dev.retza.mak.domain.Recurrence
+import dev.retza.mak.domain.WeekStatus
 import dev.retza.mak.domain.decideOccurrenceEdit
 import dev.retza.mak.domain.noteContentChanged
+import dev.retza.mak.domain.normalizeNote
+import dev.retza.mak.domain.normalizeRoom
 import dev.retza.mak.domain.occurrenceId
 import dev.retza.mak.domain.occurrenceRoomOverride
-import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.domain.validateOccurrenceDraft
+import dev.retza.mak.sync.PlanEditTracker
+import dev.retza.mak.data.ActivePlanSource
+import dev.retza.mak.ui.PlanEditSession
+import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.calendarForAssignment
+import dev.retza.mak.ui.programForAssignment
+import dev.retza.mak.ui.fullDateFormatter
+import dev.retza.mak.domain.toLocalDateOrNull
+import dev.retza.mak.domain.toLocalTimeOrNull
 import dev.retza.mak.ui.components.FieldErrorUi
+import dev.retza.mak.ui.components.OccurrenceStatusUi
+import dev.retza.mak.ui.components.toUi
+import dev.retza.mak.ui.label
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
 import java.time.LocalDate
-import java.time.format.DateTimeFormatter
-import java.util.Locale
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.flow.update
@@ -56,7 +71,9 @@ class OccurrenceViewModel(
     private val scheduleRepository: ScheduleRepository,
     private val activePlanProvider: ActivePlanProvider,
     private val feedbackSink: FeedbackSink,
-    private val activePlanSource: ActivePlanSource
+    private val activePlanSource: ActivePlanSource,
+    planEditTracker: PlanEditTracker,
+    savedState: SavedStateHandle
 ) : ViewModel() {
     private val state = MutableStateFlow(OccurrenceDetailsUiState())
     val details: StateFlow<OccurrenceDetailsUiState> = state.asStateFlow()
@@ -70,24 +87,51 @@ class OccurrenceViewModel(
     private val activePlan = activePlanSource.observeActive()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
 
+    // Every edit action below runs through the session: it reloads the shown occurrence before the first draft.
+    private val editSession = PlanEditSession(
+        tracker = planEditTracker,
+        scope = viewModelScope,
+        refreshBase = { shownArgs()?.let { refreshForEdit(it) } ?: false },
+        hasDraft = { state.value.hasPlanDraft() }
+    )
+
     private var originalDate: LocalDate? = null
-    private var noteDate: LocalDate? = null
     private var openJob: Job? = null
     private var occurrenceStateOperationRunning = false
     private var editPlanData: ActivePlanData? = null
     // The occurrence shown now; a move in the details points it at the new date.
     private var currentArgs: OccurrenceArgs? = null
 
-    fun open(routeId: String) {
-        val args = OccurrenceArgs.parse(routeId) ?: return
-        open(args)
+    // The destination's arguments are read once; the view model lives only as long as its destination.
+    init {
+        val args = OccurrenceArgs.from(savedState.get<String>("classId"), savedState.get<String>("date"))
+        if (args != null) {
+            open(args)
+        } else {
+            state.value = derive(emptyOccurrenceDetails().copy(notFound = true))
+        }
+        viewModelScope.launch {
+            state.map { it.hasPlanDraft() }.distinctUntilChanged().collect { hasDraft ->
+                if (!hasDraft) editSession.releaseIfNoDraft()
+            }
+        }
     }
 
-    fun open(args: OccurrenceArgs) {
+    override fun onCleared() {
+        editSession.close()
+    }
+
+    /** The occurrence the details show now, reloaded before an edit. */
+    private fun shownArgs(): OccurrenceArgs? {
+        val classId = selectedClassIdState.value ?: return null
+        val date = details.value.baseDate.toLocalDateOrNull() ?: return null
+        return OccurrenceArgs(classId, date)
+    }
+
+    internal fun open(args: OccurrenceArgs) {
         openJob?.cancel()
         selectedClassIdState.value = null
         originalDate = null
-        noteDate = null
         state.value = derive(emptyOccurrenceDetails())
         currentArgs = args
         openJob = viewModelScope.launch {
@@ -106,14 +150,12 @@ class OccurrenceViewModel(
                     }
                 } else if (first) {
                     originalDate = built.baseDate.toLocalDateOrNull()
-                    noteDate = built.baseDate.toLocalDateOrNull()
                     selectedClassIdState.value = shown.classId
                     state.value = derive(built)
                 } else {
                     val current = state.value
                     if (!current.showEditDialog) {
                         originalDate = built.baseDate.toLocalDateOrNull()
-                        noteDate = built.baseDate.toLocalDateOrNull()
                     }
                     selectedClassIdState.value = shown.classId
                     state.value = derive(current.withFreshData(built))
@@ -124,9 +166,9 @@ class OccurrenceViewModel(
     }
 
     /** Reloads the source data after edit admission, before a preview starts a draft or confirmation. */
-    suspend fun refreshForEdit(routeId: String): Boolean {
-        val args = OccurrenceArgs.parse(routeId) ?: return false
-        val inputs = activePlanSource.observeActive().first()
+    suspend fun refreshForEdit(args: OccurrenceArgs): Boolean {
+        val semester = semesterRepository.observeActiveSemester().first()
+        val inputs = semester?.let { activePlanSource.observe(it.id).first() }
         val built = inputs?.let { buildDetails(it, args) }
         if (inputs == null || built == null) {
             clearMissingOccurrence()
@@ -135,16 +177,15 @@ class OccurrenceViewModel(
         editPlanData = inputs.data
         currentArgs = args
         originalDate = built.baseDate.toLocalDateOrNull()
-        noteDate = built.baseDate.toLocalDateOrNull()
         selectedClassIdState.value = args.classId
-        state.value = derive(built)
+        // Keeps what the user already typed: the first keystroke admits the screen before this refresh.
+        state.value = derive(state.value.withFreshData(built))
         return true
     }
 
     private fun clearMissingOccurrence() {
         selectedClassIdState.value = null
         originalDate = null
-        noteDate = null
         state.value = derive(emptyOccurrenceDetails().copy(notFound = true))
     }
 
@@ -158,47 +199,49 @@ class OccurrenceViewModel(
         }
     }
 
-    fun openEditDialog() = update {
-        it.copy(
-            showEditDialog = true,
-            targetDateDraft = it.currentDate,
-            startTimeDraft = it.startTime,
-            endTimeDraft = it.endTime,
-            roomDraft = it.room.orEmpty(),
-            draftErrors = emptyMap(),
-            draftError = null
-        )
-    }
-
-    fun dismissEditDialog() {
-        if (state.value.isSaving) return
-        update { it.copy(showEditDialog = false, draftErrors = emptyMap(), draftError = null) }
-    }
-
-    fun requestClassDeletion() = update { it.copy(showDeleteConfirmation = true) }
-
-    fun cancelClassDeletion() = update { it.copy(showDeleteConfirmation = false) }
-
-    fun deleteSelectedClass() {
-        val classId = selectedClassIdState.value ?: return
-        viewModelScope.launch {
-            try {
-                scheduleRepository.deleteClass(classId)
-                effectsChannel.trySend(OccurrenceEffect.CloseDetails)
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                update { it.copy(showDeleteConfirmation = false) }
-                feedbackSink.publish(UiFeedback("Nie udało się usunąć zajęć.", UiFeedbackKind.Error))
-            }
+    fun openEditDialog() = editSession.run {
+        update {
+            it.copy(
+                showEditDialog = true,
+                targetDateDraft = it.currentDate,
+                startTimeDraft = it.startTime,
+                endTimeDraft = it.endTime,
+                roomDraft = it.room.orEmpty(),
+                draftErrors = emptyMap(),
+                draftError = null
+            )
         }
     }
 
-    fun cancelOccurrence() {
-        if (occurrenceStateOperationRunning) return
-        val data = editPlanData ?: activePlan.value?.data ?: return
-        val classId = selectedClassIdState.value ?: return
-        val original = originalDate ?: return
+    fun dismissEditDialog() = editSession.run {
+        if (state.value.isSaving) return@run
+        update { it.copy(showEditDialog = false, draftErrors = emptyMap(), draftError = null) }
+    }
+
+    fun requestClassDeletion() = editSession.run { update { it.copy(showDeleteConfirmation = true) } }
+
+    fun cancelClassDeletion() = editSession.run { update { it.copy(showDeleteConfirmation = false) } }
+
+    fun deleteSelectedClass() = editSession.run {
+        if (state.value.isDeletingClass) return@run
+        val classId = selectedClassIdState.value ?: return@run
+        update { it.copy(isDeletingClass = true) }
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się usunąć zajęć.",
+            onFinish = { update { it.copy(isDeletingClass = false) } },
+            onError = { update { it.copy(showDeleteConfirmation = false) } }
+        ) {
+            scheduleRepository.deleteClass(classId)
+            effectsChannel.trySend(OccurrenceEffect.CloseDetails)
+        }
+    }
+
+    fun cancelOccurrence() = editSession.run {
+        if (occurrenceStateOperationRunning) return@run
+        val data = editPlanData ?: activePlan.value?.data ?: return@run
+        val classId = selectedClassIdState.value ?: return@run
+        val original = originalDate ?: return@run
         occurrenceStateOperationRunning = true
         update { it.copy(isSaving = true, draftError = null) }
         viewModelScope.launchUiOperation(
@@ -210,13 +253,10 @@ class OccurrenceViewModel(
             },
             onError = { update { it.copy(draftError = "Nie udało się odwołać terminu.") } }
         ) {
-            val existing = freshPlanData()?.occurrenceChanges?.firstOrNull {
-                it.classId == classId.toString() && it.originalDate == original
-            }
             scheduleRepository.saveOccurrenceChange(
                 OccurrenceChangeRecord(
-                    id = existing?.id?.toLongOrNull() ?: 0,
-                    semesterId = data.semester.id.toLong(),
+                    id = 0,
+                    semesterId = data.semester.id,
                     classId = classId,
                     originalDate = original,
                     kind = OccurrenceChangeKind.CANCELLED,
@@ -229,16 +269,16 @@ class OccurrenceViewModel(
                     note = null
                 )
             )
-            reload(data.semester.id.toLong(), classId, original)
+            reload(data.semester.id, classId, original)
             feedbackSink.publish(UiFeedback("Odwołano termin", UiFeedbackKind.Success))
         }
     }
 
-    fun restoreOccurrence() {
-        if (occurrenceStateOperationRunning) return
-        val data = editPlanData ?: activePlan.value?.data ?: return
-        val classId = selectedClassIdState.value ?: return
-        val original = originalDate ?: return
+    fun restoreOccurrence() = editSession.run {
+        if (occurrenceStateOperationRunning) return@run
+        val data = editPlanData ?: activePlan.value?.data ?: return@run
+        val classId = selectedClassIdState.value ?: return@run
+        val original = originalDate ?: return@run
         occurrenceStateOperationRunning = true
         update { it.copy(isSaving = true, draftError = null) }
         viewModelScope.launchUiOperation(
@@ -249,29 +289,42 @@ class OccurrenceViewModel(
                 update { it.copy(isSaving = false) }
             }
         ) {
-            val change = freshPlanData()?.occurrenceChanges?.firstOrNull {
-                it.classId == classId.toString() && it.originalDate == original
-            } ?: return@launchUiOperation
-            scheduleRepository.deleteOccurrenceChange(change.id.toLong())
-            reload(data.semester.id.toLong(), classId, original)
+            scheduleRepository.deleteOccurrenceChange(classId, original)
+            reload(data.semester.id, classId, original)
             feedbackSink.publish(UiFeedback("Przywrócono termin", UiFeedbackKind.Success))
         }
     }
 
-    fun updateSharedNoteDraft(value: String) = update {
-        it.copy(sharedNoteDraft = value, sharedNoteError = null)
+    fun updateSharedNoteDraft(value: String) = editSession.edit {
+        update { it.copy(sharedNoteDraft = value, sharedNoteError = null) }
     }
 
-    fun updateOccurrenceNoteDraft(value: String) = update {
-        it.copy(occurrenceNoteDraft = value, occurrenceNoteError = null)
+    fun updateOccurrenceNoteDraft(value: String) = editSession.edit {
+        update { it.copy(occurrenceNoteDraft = value, occurrenceNoteError = null) }
     }
 
-    fun saveSharedNote() {
-        if (state.value.isSavingSharedNote) return
-        val classId = selectedClassIdState.value ?: return
+    fun updateTargetDateDraft(value: String) = editSession.run {
+        updateDraft { it.copy(targetDateDraft = value) }
+    }
+
+    fun updateStartTimeDraft(value: String) = editSession.run {
+        updateDraft { it.copy(startTimeDraft = value) }
+    }
+
+    fun updateEndTimeDraft(value: String) = editSession.run {
+        updateDraft { it.copy(endTimeDraft = value) }
+    }
+
+    fun updateRoomDraft(value: String) = editSession.run {
+        updateDraft { it.copy(roomDraft = value) }
+    }
+
+    fun saveSharedNote() = editSession.run {
+        if (state.value.isSavingSharedNote) return@run
+        val classId = selectedClassIdState.value ?: return@run
         val draft = state.value
-        val note = draft.sharedNoteDraft.trim().ifEmpty { null }
-        if (!noteContentChanged(draft.sharedNoteDraft, draft.sharedNote)) return
+        val note = normalizeNote(draft.sharedNoteDraft)
+        if (!noteContentChanged(draft.sharedNoteDraft, draft.sharedNote)) return@run
         update { it.copy(isSavingSharedNote = true, sharedNoteError = null) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -283,7 +336,7 @@ class OccurrenceViewModel(
                 }
             }
         ) {
-            val base = freshPlanData()?.classes?.firstOrNull { it.id == classId.toString() }
+            val base = freshPlanData()?.classes?.firstOrNull { it.id == classId }
                 ?: return@launchUiOperation
             scheduleRepository.saveClass(base.copy(classNote = note).toRecord())
             update { current ->
@@ -303,14 +356,14 @@ class OccurrenceViewModel(
         }
     }
 
-    fun saveOccurrenceNote() {
-        if (state.value.isSavingOccurrenceNote) return
-        val data = editPlanData ?: activePlan.value?.data ?: return
-        val classId = selectedClassIdState.value ?: return
-        val date = noteDate ?: return
+    fun saveOccurrenceNote() = editSession.run {
+        if (state.value.isSavingOccurrenceNote) return@run
+        val data = editPlanData ?: activePlan.value?.data ?: return@run
+        val classId = selectedClassIdState.value ?: return@run
+        val date = originalDate ?: return@run
         val draft = state.value
-        val note = draft.occurrenceNoteDraft.trim().ifEmpty { null }
-        if (!noteContentChanged(draft.occurrenceNoteDraft, draft.occurrenceNote)) return
+        val note = normalizeNote(draft.occurrenceNoteDraft)
+        if (!noteContentChanged(draft.occurrenceNoteDraft, draft.occurrenceNote)) return@run
         update { it.copy(isSavingOccurrenceNote = true, occurrenceNoteError = null) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -322,16 +375,13 @@ class OccurrenceViewModel(
                 }
             }
         ) {
-            val existing = freshPlanData()?.occurrenceNotes?.firstOrNull {
-                it.classId == classId.toString() && it.occurrenceDate == date
-            }
             if (note == null) {
-                existing?.let { scheduleRepository.deleteOccurrenceNote(it.id.toLong()) }
+                scheduleRepository.deleteOccurrenceNote(classId, date)
             } else {
                 scheduleRepository.saveOccurrenceNote(
                     OccurrenceNoteRecord(
-                        id = existing?.id?.toLongOrNull() ?: 0,
-                        semesterId = data.semester.id.toLong(),
+                        id = 0,
+                        semesterId = data.semester.id,
                         classId = classId,
                         occurrenceDate = date,
                         body = note
@@ -355,17 +405,17 @@ class OccurrenceViewModel(
         }
     }
 
-    fun saveOccurrenceChange() {
-        if (state.value.isSaving) return
-        val data = editPlanData ?: activePlan.value?.data ?: return
-        val classId = selectedClassIdState.value ?: return
-        val original = originalDate ?: return
+    fun saveOccurrenceChange() = editSession.run {
+        if (state.value.isSaving) return@run
+        val data = editPlanData ?: activePlan.value?.data ?: return@run
+        val classId = selectedClassIdState.value ?: return@run
+        val original = originalDate ?: return@run
         val draft = state.value
         val base = draft.toBaseSlot()
         val current = draft.toCurrentSlot()
         if (base == null || current == null) {
-            update { it.copy(draftErrors = mapOf(OccurrenceEditField.Date to FieldErrorUi("Podaj poprawną datę."))) }
-            return
+            update { it.copy(draftErrors = mapOf(OccurrenceEditField.Date to FieldErrorUi(FormErrorTexts.DateRequired))) }
+            return@run
         }
         val decision = decideOccurrenceEdit(
             base = base,
@@ -378,15 +428,16 @@ class OccurrenceViewModel(
         )
         when (decision) {
             is OccurrenceEditDecision.InvalidDateTime -> update {
-                it.copy(draftErrors = mapOf(OccurrenceEditField.Date to FieldErrorUi("Podaj poprawną datę.")))
+                it.copy(draftErrors = mapOf(OccurrenceEditField.Date to FieldErrorUi(FormErrorTexts.DateRequired)))
             }
 
             is OccurrenceEditDecision.Ready -> {
-                if (decision.result == OccurrenceEditResult.NoChange) return
-                val errors = occurrenceDraftErrors(decision.slot, draft)
+                if (decision.result == OccurrenceEditResult.NoChange) return@run
+                val calendar = data.calendarForAssignment(data.classes.firstOrNull { it.id == classId }?.semesterProgramId)
+                val errors = occurrenceDraftErrors(decision.slot, calendar)
                 if (errors.isNotEmpty()) {
                     update { it.copy(draftErrors = errors) }
-                    return
+                    return@run
                 }
                 update { it.copy(isSaving = true, draftErrors = emptyMap(), draftError = null) }
                 viewModelScope.launchUiOperation(
@@ -395,19 +446,16 @@ class OccurrenceViewModel(
                     onFinish = { update { it.copy(isSaving = false) } },
                     onError = { update { it.copy(isSaving = false, draftError = "Nie udało się zapisać zmian.") } }
                 ) {
-                    val existing = freshPlanData()?.occurrenceChanges?.firstOrNull {
-                        it.classId == classId.toString() && it.originalDate == original
-                    }
                     when (decision.result) {
                         OccurrenceEditResult.NoChange -> Unit
                         OccurrenceEditResult.Restored ->
-                            existing?.let { scheduleRepository.deleteOccurrenceChange(it.id.toLong()) }
+                            scheduleRepository.deleteOccurrenceChange(classId, original)
 
                         OccurrenceEditResult.Modified,
                         OccurrenceEditResult.Moved -> scheduleRepository.saveOccurrenceChange(
                             OccurrenceChangeRecord(
-                                id = existing?.id?.toLongOrNull() ?: 0,
-                                semesterId = data.semester.id.toLong(),
+                                id = 0,
+                                semesterId = data.semester.id,
                                 classId = classId,
                                 originalDate = original,
                                 kind = OccurrenceChangeKind.MODIFIED,
@@ -421,7 +469,7 @@ class OccurrenceViewModel(
                             )
                         )
                     }
-                    reload(data.semester.id.toLong(), classId, original)
+                    reload(data.semester.id, classId, original)
                     val message = when (decision.result) {
                         OccurrenceEditResult.Restored -> "Przywrócono termin"
                         OccurrenceEditResult.Moved -> "Przeniesiono termin"
@@ -445,7 +493,6 @@ class OccurrenceViewModel(
         val built = buildDetails(fresh, args) ?: return
         currentArgs = args
         originalDate = built.baseDate.toLocalDateOrNull()
-        noteDate = built.baseDate.toLocalDateOrNull()
         selectedClassIdState.value = classId
         state.value = derive(built)
     }
@@ -457,72 +504,61 @@ class OccurrenceViewModel(
         val data = inputs.data
         val classId = args.classId
         val originalDate = args.originalDate
-        val base = data.classes.firstOrNull { it.id == classId.toString() } ?: return null
+        val id = occurrenceId(classId, originalDate)
         val change = data.occurrenceChanges.firstOrNull {
-            it.classId == classId.toString() && it.originalDate == originalDate
+            it.classId == classId && it.originalDate == originalDate
         }
         val effectiveDate = change?.targetDate ?: originalDate
         val plan = activePlanProvider.resolve(inputs, effectiveDate)
-        val id = occurrenceId(classId.toString(), originalDate)
-        val effectiveStart = change?.startTime ?: base.startTime
-        val effectiveEnd = change?.endTime ?: base.endTime
-        val effectiveRoom = (change?.room ?: base.room)?.trim()?.ifEmpty { null }
-        val existingNote = data.occurrenceNotes.firstOrNull {
-            it.classId == classId.toString() && it.occurrenceDate == originalDate
-        }
-        val status = when {
-            change?.kind == OccurrenceChangeKind.CANCELLED -> OccurrenceStatusUi.Cancelled
-            base.recurrence == Recurrence.ONCE -> OccurrenceStatusUi.OneOff
-            change?.targetDate != null && change.targetDate != change.originalDate -> OccurrenceStatusUi.Moved
-            change != null -> OccurrenceStatusUi.Changed
-            else -> OccurrenceStatusUi.Scheduled
-        }
-        val canEdit = base.recurrence != Recurrence.ONCE &&
+        val occurrence = (plan.schedule.occurrences + plan.schedule.cancelled).firstOrNull { it.id == id }
+            ?: return null
+        val base = occurrence.classItem
+        val status = occurrence.status.toUi()
+        val canEdit = status != OccurrenceStatusUi.OneOff &&
             status != OccurrenceStatusUi.Cancelled
         return OccurrenceDetailsUiState(
             subjectName = base.name,
             courseName = data.studyProgramName(base.semesterProgramId),
             typeLabel = base.type,
-            dateLabel = effectiveDate.format(occurrenceDateFormatter),
-            currentDate = effectiveDate.toString(),
-            startTime = effectiveStart.toString(),
-            endTime = effectiveEnd.toString(),
-            room = effectiveRoom,
-            building = change?.building ?: base.building,
-            teacherName = change?.teacherName ?: base.teacherName,
+            dateLabel = occurrence.date.format(fullDateFormatter),
+            currentDate = occurrence.date.toString(),
+            startTime = occurrence.startTime.toString(),
+            endTime = occurrence.endTime.toString(),
+            room = occurrence.room,
+            building = occurrence.building,
+            teacherName = occurrence.teacherName,
             groupName = base.group,
-            weekLabel = plan.schedule.weekType?.let { "Tydzień ${it.name}" },
+            weekLabel = data.calendarForAssignment(base.semesterProgramId)
+                ?.let { plan.schedule.weeksByCalendarId[it.id] }
+                ?.let { WeekStatus.Single(it.weekType).label() },
             conflictLabel = collisionLabels(plan.collisions)[id],
             conflictWith = collisionPartnerNames(plan.collisions)[id],
-            originalDateLabel = change?.originalDate?.toString(),
-            targetDateLabel = change?.targetDate?.toString(),
+            originalDateLabel = occurrence.occurrenceChange?.originalDate?.toString(),
+            targetDateLabel = occurrence.occurrenceChange?.targetDate?.toString(),
             status = status,
-            sharedNote = base.classNote,
-            occurrenceNote = existingNote?.body,
-            occurrenceNoteDraft = existingNote?.body.orEmpty(),
-            targetDateDraft = effectiveDate.toString(),
-            startTimeDraft = effectiveStart.toString(),
-            endTimeDraft = effectiveEnd.toString(),
-            roomDraft = effectiveRoom.orEmpty(),
+            sharedNote = occurrence.classNote,
+            occurrenceNote = occurrence.occurrenceNoteBody,
+            occurrenceNoteDraft = occurrence.occurrenceNoteBody.orEmpty(),
+            targetDateDraft = occurrence.date.toString(),
+            startTimeDraft = occurrence.startTime.toString(),
+            endTimeDraft = occurrence.endTime.toString(),
+            roomDraft = occurrence.room.orEmpty(),
             baseDate = originalDate.toString(),
             baseStartTime = base.startTime.toString(),
             baseEndTime = base.endTime.toString(),
-            baseRoom = base.room?.trim()?.ifEmpty { null },
+            baseRoom = normalizeRoom(base.room),
             semesterStartDate = data.calendarForAssignment(base.semesterProgramId)
                 ?.startDate?.toString().orEmpty(),
             semesterEndDate = data.calendarForAssignment(base.semesterProgramId)
                 ?.endDate?.toString().orEmpty(),
-            canCancelOccurrence = canEdit && change == null,
+            canCancelOccurrence = canEdit && occurrence.occurrenceChange == null,
             canChangeOccurrence = canEdit,
-            canMoveOccurrence = canEdit,
-            canRestoreOccurrence = change != null
+            canRestoreOccurrence = occurrence.occurrenceChange != null
         )
     }
 
-    private fun ActivePlanData.studyProgramName(assignmentId: String): String {
-        val assignment = semesterPrograms.firstOrNull { it.id == assignmentId } ?: return ""
-        return courses.firstOrNull { it.id == assignment.studyProgramId }?.name.orEmpty()
-    }
+    private fun ActivePlanData.studyProgramName(assignmentId: Long): String =
+        programForAssignment(assignmentId)?.name.orEmpty()
 
     /**
      * Takes the stored values from [fresh] and keeps what the user is doing: a note draft that
@@ -546,21 +582,19 @@ class OccurrenceViewModel(
             isSaving = isSaving,
             isSavingSharedNote = isSavingSharedNote,
             isSavingOccurrenceNote = isSavingOccurrenceNote,
-            showDeleteConfirmation = showDeleteConfirmation
+            showDeleteConfirmation = showDeleteConfirmation,
+            isDeletingClass = isDeletingClass
         )
     }
 
     private fun derive(value: OccurrenceDetailsUiState): OccurrenceDetailsUiState = value.copy(
-        canSaveOccurrenceEdit = canSaveOccurrenceEdit(value),
-        canSaveSharedNote = noteContentChanged(value.sharedNoteDraft, value.sharedNote),
-        canSaveOccurrenceNote = noteContentChanged(value.occurrenceNoteDraft, value.occurrenceNote)
+        canSaveOccurrenceEdit = canSaveOccurrenceEdit(value)
     )
 }
 
 private fun emptyOccurrenceDetails(): OccurrenceDetailsUiState = OccurrenceDetailsUiState(
     canCancelOccurrence = false,
     canChangeOccurrence = false,
-    canMoveOccurrence = false,
     canEditBaseClass = false,
     canDeleteBaseClass = false
 )
@@ -583,17 +617,14 @@ private fun canSaveOccurrenceEdit(state: OccurrenceDetailsUiState): Boolean {
 
 private fun occurrenceDraftErrors(
     slot: OccurrenceSlot,
-    state: OccurrenceDetailsUiState
+    calendar: AcademicCalendar?
 ): Map<OccurrenceEditField, FieldErrorUi> = buildMap {
-    val semesterStart = state.semesterStartDate?.toLocalDateOrNull()
-    val semesterEnd = state.semesterEndDate?.toLocalDateOrNull()
-    if ((semesterStart != null && slot.date.isBefore(semesterStart)) ||
-        (semesterEnd != null && slot.date.isAfter(semesterEnd))
-    ) {
-        put(OccurrenceEditField.Date, FieldErrorUi("Data musi należeć do aktywnego semestru."))
+    val errors = validateOccurrenceDraft(slot, calendar)
+    if (OccurrenceDraftError.DATE_OUTSIDE_CALENDAR in errors) {
+        put(OccurrenceEditField.Date, FieldErrorUi(FormErrorTexts.DateOutsideCalendar))
     }
-    if (!slot.endTime.isAfter(slot.startTime)) {
-        put(OccurrenceEditField.EndTime, FieldErrorUi("Koniec musi być późniejszy niż początek tego samego dnia."))
+    if (OccurrenceDraftError.END_NOT_AFTER_START in errors) {
+        put(OccurrenceEditField.EndTime, FieldErrorUi(FormErrorTexts.EndNotAfterStart))
     }
 }
 
@@ -611,10 +642,3 @@ private fun OccurrenceDetailsUiState.toCurrentSlot(): OccurrenceSlot? {
     return OccurrenceSlot(date, start, end, room)
 }
 
-private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
-
-private fun String.toLocalTimeOrNull(): java.time.LocalTime? =
-    runCatching { java.time.LocalTime.parse(this) }.getOrNull()
-
-private val occurrenceDateFormatter =
-    DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", Locale.forLanguageTag("pl-PL"))

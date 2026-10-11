@@ -3,6 +3,8 @@ package dev.retza.mak.widget
 import android.content.Context
 import android.content.Intent
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
@@ -44,26 +46,33 @@ import androidx.glance.text.FontWeight
 import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import dev.retza.mak.MainActivity
+import dev.retza.mak.ui.classCountLabel
 import dev.retza.mak.ui.components.courseShapeColor
+import dev.retza.mak.ui.components.parseHexColor
 import dev.retza.mak.ui.theme.MakOrange
 import dev.retza.mak.ui.theme.MakOrangeDark
 import dev.retza.mak.ui.theme.MakOrangeSoft
 import dev.retza.mak.ui.theme.MakOrangeSoftDark
+import kotlinx.coroutines.coroutineScope
+import kotlinx.coroutines.flow.stateIn
 import org.koin.core.context.GlobalContext
 
 class MakTodayWidget : GlanceAppWidget() {
     override val sizeMode = SizeMode.Responsive(MakWidgetSizes.responsiveSizes)
 
-    override suspend fun provideGlance(context: Context, id: GlanceId) {
+    override suspend fun provideGlance(context: Context, id: GlanceId) = coroutineScope {
         val koin = GlobalContext.get()
-        val state = WidgetPlanLoader(
+        // An update during a running session only recomposes, so the session follows the data itself.
+        // The first state is read before the content, so the widget never draws an empty frame.
+        val states = WidgetPlanLoader(
             semesterRepository = koin.get(),
             activePlanSource = koin.get(),
             activePlanProvider = koin.get(),
             clock = koin.get()
-        ).load()
+        ).states().stateIn(this)
 
         provideContent {
+            val state by states.collectAsState()
             GlanceTheme {
                 MakTodayWidgetContent(context, state)
             }
@@ -96,10 +105,11 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
         horizontalAlignment = Alignment.Start
     ) {
         WidgetHeader(state)
-        Spacer(GlanceModifier.height(layoutPolicy.headerSpacing))
+        Spacer(GlanceModifier.height(WidgetHeaderSpacing))
         when (state) {
             is WidgetUiState.NoActiveSemester -> WidgetMessage("Brak aktywnego semestru")
             is WidgetUiState.OutsideSemester -> WidgetMessage("Poza zakresem semestru")
+            is WidgetUiState.AllProgramsHidden -> WidgetMessage("Wszystkie kierunki są ukryte na tym telefonie.")
             is WidgetUiState.EmptyDay -> {
                 WidgetMessage("Brak zajęć na dziś")
             }
@@ -204,7 +214,7 @@ private fun WidgetHeaderDetails(weekLabel: String, count: Int, collisionCount: I
         WidgetWeekLabel(weekLabel)
         Spacer(GlanceModifier.width(4.dp))
         Text(
-            text = widgetCountLabel(count),
+            text = classCountLabel(count),
             style = TextStyle(
                 color = GlanceTheme.colors.onSurfaceVariant,
                 fontSize = 11.sp
@@ -269,7 +279,7 @@ private fun WidgetOccurrenceRow(
                 .width(4.dp)
                 .height(layoutPolicy.accentHeight)
                 .then(
-                    parseWidgetColor(item.courseColor)
+                    item.courseColor?.let(::parseHexColor)
                         ?.let { GlanceModifier.background(widgetCourseColor(it)) }
                         ?: GlanceModifier.background(Color.Transparent)
                 )
@@ -317,7 +327,7 @@ private fun WidgetOccurrenceRow(
                     maxLines = 1
                 )
             }
-            if (widgetShouldShowConflict(item, layoutPolicy)) {
+            if (widgetShouldShowConflict(item)) {
                 WidgetConflictAlert(item)
             }
             if (widgetShouldShowNotes(item, layoutPolicy)) {
@@ -443,14 +453,3 @@ private fun widgetCourseColor(color: Color): androidx.glance.unit.ColorProvider 
 
 private val WidgetDayBackground = 0xFFFFFFFF.toInt()
 private val WidgetNightBackground = 0xFF202B40.toInt()
-
-internal fun parseWidgetColor(value: String?): Color? = runCatching {
-    val hex = value?.trim()?.removePrefix("#") ?: return null
-    val argb = when (hex.length) {
-        6 -> hex.toLong(16) or 0xFF000000L
-        8 -> hex.toLong(16)
-        else -> return null
-    }
-    Color(argb.toInt())
-}.getOrNull()
-

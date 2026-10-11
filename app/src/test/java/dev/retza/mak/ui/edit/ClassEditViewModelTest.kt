@@ -2,14 +2,19 @@ package dev.retza.mak.ui.edit
 
 import androidx.lifecycle.SavedStateHandle
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
+import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
+import dev.retza.mak.ui.activePlanSource
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
+import dev.retza.mak.settings.InMemorySettingsPreferences
 import java.time.LocalDate
+import dev.retza.mak.sync.PlanEditTracker
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -29,11 +34,26 @@ class ClassEditViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
+    private val preferences = InMemorySettingsPreferences()
+
     private fun viewModel(repository: FakeRepository, savedState: SavedStateHandle = SavedStateHandle()) =
-        ClassEditViewModel(FakeSemesterRepository(repository), repository, FeedbackController(), savedState)
+        ClassEditViewModel(FakeSemesterRepository(repository), repository, FeedbackController(), savedState, activePlanSource(repository, preferences), PlanEditTracker(CoroutineScope(UnconfinedTestDispatcher())))
 
     private fun recordingViewModel(repository: FakeRepository, sink: RecordingFeedbackSink) =
-        ClassEditViewModel(FakeSemesterRepository(repository), repository, sink, SavedStateHandle())
+        ClassEditViewModel(FakeSemesterRepository(repository), repository, sink, SavedStateHandle(), activePlanSource(repository, preferences), PlanEditTracker(CoroutineScope(UnconfinedTestDispatcher())))
+
+    @Test
+    fun hiddenStudyProgramStaysAnOptionMarkedAsHidden() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        preferences.setStudyProgramHidden(1L, hidden = true)
+        val viewModel = viewModel(repository)
+        viewModel.openNewFromFreshPlan()
+        advanceUntilIdle()
+
+        val option = viewModel.editor.value.courseOptions.single()
+        assertEquals("Informatyka", option.label)
+        assertTrue(option.isHidden)
+    }
 
     @Test
     fun newClassDraftSurvivesRecreationFromSavedState() = runTest(mainDispatcher) {
@@ -41,9 +61,9 @@ class ClassEditViewModelTest {
         val savedState = SavedStateHandle()
         val first = viewModel(repository, savedState)
         advanceUntilIdle()
-        first.openNew()
+        first.openNewFromFreshPlan()
         first.update { it.copy(name = "Algebra", room = "C12", teacher = "dr Nowak", startTime = "08:15") }
-        first.update { it.copy(recurrenceId = "a_week") }
+        first.update { it.copy(recurrence = Recurrence.A_WEEK) }
         advanceUntilIdle()
 
         val restored = viewModel(repository, savedState)
@@ -54,25 +74,36 @@ class ClassEditViewModelTest {
         assertEquals("C12", editor.room)
         assertEquals("dr Nowak", editor.teacher)
         assertEquals("08:15", editor.startTime)
-        assertEquals("a_week", editor.recurrenceId)
-        assertEquals("Tydzień A", editor.recurrenceLabel)
+        assertEquals(Recurrence.A_WEEK, editor.recurrence)
         assertEquals(listOf("Informatyka"), editor.courseOptions.map { it.label }.take(1))
     }
 
     @Test
-    fun editDraftSurvivesRecreationAndReopeningTheRoute() = runTest(mainDispatcher) {
+    fun oldDraftWithRecurrenceIdIsRestored() = runTest(mainDispatcher) {
+        val savedState = SavedStateHandle(
+            mapOf(
+                "class_edit_draft" to true,
+                "class_edit_draft.recurrenceId" to "b_week"
+            )
+        )
+        val viewModel = viewModel(FakeRepository(), savedState)
+        advanceUntilIdle()
+
+        assertEquals(Recurrence.B_WEEK, viewModel.editor.value.recurrence)
+    }
+
+    @Test
+    fun editDraftSurvivesRecreationFromSavedState() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val savedState = SavedStateHandle()
         val first = viewModel(repository, savedState)
         advanceUntilIdle()
-        first.openEdit("1:2026-09-21")
+        first.openEditFromFreshPlan(1L)
         advanceUntilIdle()
         first.update { it.copy(name = "Programowanie obiektowe") }
         advanceUntilIdle()
 
         val restored = viewModel(repository, savedState)
-        advanceUntilIdle()
-        restored.openEditIfNeeded("1:2026-09-21")
         advanceUntilIdle()
 
         assertEquals("Edytuj zajęcia", restored.editor.value.title)
@@ -84,12 +115,12 @@ class ClassEditViewModelTest {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openEdit("1:2026-09-21")
+        viewModel.openEditFromFreshPlan(1L)
         advanceUntilIdle()
         viewModel.update { it.copy(name = "Nieaktualny szkic") }
         repository.classes.clear()
 
-        val opened = viewModel.openEditFromFreshPlan("1:2026-09-21")
+        val opened = viewModel.openEditFromFreshPlan(1L)
 
         assertFalse(opened)
         assertEquals("Dodaj zajęcia", viewModel.editor.value.title)
@@ -109,7 +140,7 @@ class ClassEditViewModelTest {
             repository.calendars.first { it.id == 1L }.copy(startDate = LocalDate.of(2026, 10, 1))
         )
 
-        assertTrue(viewModel.openEditFromFreshPlan("1:2026-09-21"))
+        assertTrue(viewModel.openEditFromFreshPlan(1L))
         assertEquals("Kierunek świeży", viewModel.editor.value.courseOptions.single().label)
         assertEquals("2026-10-01", viewModel.editor.value.semesterStartDate)
         viewModel.update { it.copy(name = "Zapis po odświeżeniu") }
@@ -117,6 +148,51 @@ class ClassEditViewModelTest {
         advanceUntilIdle()
 
         assertEquals("Zapis po odświeżeniu", repository.classes.single().name)
+    }
+
+    @Test
+    fun openOnceLoadsTheClassFromArguments() = runTest(mainDispatcher) {
+        val viewModel = viewModel(
+            FakeRepository(),
+            SavedStateHandle(mapOf("classId" to "1", "date" to "2026-09-21"))
+        )
+        advanceUntilIdle()
+
+        viewModel.openOnce()
+
+        assertEquals(ClassEditOpenState.Open, viewModel.opened.value)
+        assertEquals("Programowanie", viewModel.editor.value.name)
+    }
+
+    @Test
+    fun openOnceKeepsARestoredDraft() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val savedState = SavedStateHandle(mapOf("classId" to "1", "date" to "2026-09-21"))
+        val first = viewModel(repository, savedState)
+        advanceUntilIdle()
+        first.openOnce()
+        first.update { it.copy(name = "Szkic po obrocie") }
+        advanceUntilIdle()
+
+        val restored = viewModel(repository, savedState)
+        advanceUntilIdle()
+        restored.openOnce()
+
+        assertEquals(ClassEditOpenState.Open, restored.opened.value)
+        assertEquals("Szkic po obrocie", restored.editor.value.name)
+    }
+
+    @Test
+    fun openOnceForMissingClassReportsMissing() = runTest(mainDispatcher) {
+        val viewModel = viewModel(
+            FakeRepository(),
+            SavedStateHandle(mapOf("classId" to "999", "date" to "2026-09-21"))
+        )
+        advanceUntilIdle()
+
+        viewModel.openOnce()
+
+        assertEquals(ClassEditOpenState.Missing, viewModel.opened.value)
     }
 
     private fun repositoryWithNoteOnMonday(): FakeRepository = FakeRepository().apply {
@@ -134,7 +210,7 @@ class ClassEditViewModelTest {
         val repository = repositoryWithNoteOnMonday()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openEdit("1:2026-09-21")
+        viewModel.openEditFromFreshPlan(1L)
         advanceUntilIdle()
 
         viewModel.update { it.copy(dayLabel = "Wtorek") }
@@ -150,7 +226,7 @@ class ClassEditViewModelTest {
         val repository = repositoryWithNoteOnMonday()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openEdit("1:2026-09-21")
+        viewModel.openEditFromFreshPlan(1L)
         advanceUntilIdle()
         viewModel.update { it.copy(dayLabel = "Wtorek") }
         viewModel.save()
@@ -169,7 +245,7 @@ class ClassEditViewModelTest {
         val repository = repositoryWithNoteOnMonday()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openEdit("1:2026-09-21")
+        viewModel.openEditFromFreshPlan(1L)
         advanceUntilIdle()
         viewModel.update { it.copy(dayLabel = "Wtorek") }
         viewModel.save()
@@ -188,7 +264,7 @@ class ClassEditViewModelTest {
         val repository = repositoryWithNoteOnMonday()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openEdit("1:2026-09-21")
+        viewModel.openEditFromFreshPlan(1L)
         advanceUntilIdle()
 
         viewModel.update { it.copy(startTime = "08:00") }
@@ -211,30 +287,16 @@ class ClassEditViewModelTest {
     }
 
     @Test
-    fun openEditIfNeededLoadsAnotherClass() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val viewModel = viewModel(repository)
-        advanceUntilIdle()
-        viewModel.openNew()
-        viewModel.update { it.copy(name = "Szkic") }
-
-        viewModel.openEditIfNeeded("1:2026-09-21")
-        advanceUntilIdle()
-
-        assertEquals("Programowanie", viewModel.editor.value.name)
-    }
-
-    @Test
     fun openNewUsesWeeklyRecurrence() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
 
-        viewModel.openNew()
+        viewModel.openNewFromFreshPlan()
 
         val editor = viewModel.editor.value
         assertEquals("Dodaj zajęcia", editor.title)
-        assertEquals("every_week", editor.recurrenceId)
+        assertEquals(Recurrence.EVERY_WEEK, editor.recurrence)
         assertEquals("", editor.occurrenceDate)
         assertEquals(listOf("Informatyka"), editor.courseOptions.map { it.label })
         assertEquals("2026-09-01", editor.semesterStartDate)
@@ -247,10 +309,10 @@ class ClassEditViewModelTest {
         val viewModel = viewModel(repository)
         advanceUntilIdle()
 
-        viewModel.openNew(LocalDate.of(2026, 9, 25))
+        viewModel.openNewFromFreshPlan(LocalDate.of(2026, 9, 25))
 
         val editor = viewModel.editor.value
-        assertEquals("once", editor.recurrenceId)
+        assertEquals(Recurrence.ONCE, editor.recurrence)
         assertEquals("2026-09-25", editor.occurrenceDate)
     }
 
@@ -260,7 +322,7 @@ class ClassEditViewModelTest {
         val viewModel = viewModel(repository)
         advanceUntilIdle()
 
-        viewModel.openEdit("1:2026-09-21")
+        viewModel.openEditFromFreshPlan(1L)
 
         val editor = viewModel.editor.value
         assertEquals("Edytuj zajęcia", editor.title)
@@ -280,34 +342,15 @@ class ClassEditViewModelTest {
         val viewModel = viewModel(repository)
         advanceUntilIdle()
 
-        viewModel.openEdit("1:2026-09-21")
+        val opening = launch { viewModel.openEditFromFreshPlan(1L) }
         advanceUntilIdle()
         assertEquals("", viewModel.editor.value.name)
 
         repository.occurrenceDataGate?.complete(Unit)
-        advanceUntilIdle()
+        opening.join()
 
         assertEquals("Edytuj zajęcia", viewModel.editor.value.title)
         assertEquals("Programowanie", viewModel.editor.value.name)
-    }
-
-    @Test
-    fun lastOpenEditWinsWhenDataArrivesLate() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        repository.classes += repository.classes.single().copy(id = 2L, name = "Matematyka")
-        repository.occurrenceDataGate = kotlinx.coroutines.CompletableDeferred()
-        val viewModel = viewModel(repository)
-        advanceUntilIdle()
-
-        viewModel.openEdit("1:2026-09-21")
-        viewModel.openEdit("2:2026-09-21")
-        advanceUntilIdle()
-        assertEquals("", viewModel.editor.value.name)
-
-        repository.occurrenceDataGate?.complete(Unit)
-        advanceUntilIdle()
-
-        assertEquals("Matematyka", viewModel.editor.value.name)
     }
 
     @Test
@@ -315,11 +358,11 @@ class ClassEditViewModelTest {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openNew()
+        viewModel.openNewFromFreshPlan()
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                semesterProgramId = "1",
+                semesterProgramId = 1L,
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "11:00",
@@ -341,15 +384,15 @@ class ClassEditViewModelTest {
     }
 
     @Test
-    fun saveRejectsOneOffDateOutsideSemester() = runTest(mainDispatcher) {
+    fun saveRejectsOneOffDateOutsideCalendar() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openNew(LocalDate.of(2026, 12, 1))
+        viewModel.openNewFromFreshPlan(LocalDate.of(2026, 12, 1))
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                semesterProgramId = "1",
+                semesterProgramId = 1L,
                 type = "Wykład",
                 dayLabel = "Wtorek",
                 startTime = "12:00",
@@ -366,15 +409,40 @@ class ClassEditViewModelTest {
     }
 
     @Test
+    fun invalidCourseSelectionDoesNotInsert() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan()
+        viewModel.update {
+            it.copy(
+                name = "Analiza",
+                type = "Wykład",
+                dayLabel = "Poniedziałek",
+                startTime = "10:00",
+                endTime = "11:30"
+            )
+        }
+        viewModel.selectCourse(999L)
+        advanceUntilIdle()
+
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertFalse("saveClass" in repository.events)
+        assertEquals(1, repository.classes.size)
+    }
+
+    @Test
     fun savePersistsNewClassAndResetsEditor() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openNew()
+        viewModel.openNewFromFreshPlan()
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                semesterProgramId = "1",
+                semesterProgramId = 1L,
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "12:00",
@@ -402,11 +470,11 @@ class ClassEditViewModelTest {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openNew()
+        viewModel.openNewFromFreshPlan()
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                semesterProgramId = "1",
+                semesterProgramId = 1L,
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "12:00",
@@ -437,11 +505,11 @@ class ClassEditViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.openNew()
+        viewModel.openNewFromFreshPlan()
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                semesterProgramId = "1",
+                semesterProgramId = 1L,
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "12:00",
@@ -465,7 +533,7 @@ class ClassEditViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.openEdit("1:2026-09-21")
+        viewModel.openEditFromFreshPlan(1L)
         advanceUntilIdle()
         viewModel.update { it.copy(name = "Programowanie zaawansowane") }
         advanceUntilIdle()
@@ -497,10 +565,10 @@ class ClassEditViewModelTest {
         )
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openNew()
+        viewModel.openNewFromFreshPlan()
         advanceUntilIdle()
 
-        viewModel.selectCourse(result.semesterProgramId.toString())
+        viewModel.selectCourse(result.semesterProgramId)
         advanceUntilIdle()
 
         assertEquals("2026-12-20", viewModel.editor.value.semesterEndDate)
@@ -529,7 +597,7 @@ class ClassEditViewModelTest {
         val viewModel = viewModel(repository)
         advanceUntilIdle()
 
-        viewModel.openEdit("2:2026-09-21")
+        viewModel.openEditFromFreshPlan(2L)
         advanceUntilIdle()
 
         assertEquals("2026-12-20", viewModel.editor.value.semesterEndDate)
@@ -550,9 +618,9 @@ class ClassEditViewModelTest {
         )
         val viewModel = viewModel(repository)
         advanceUntilIdle()
-        viewModel.openNew()
+        viewModel.openNewFromFreshPlan()
         val secondOption = viewModel.editor.value.courseOptions.first {
-            it.id == secondAssignmentId.toString()
+            it.id == secondAssignmentId
         }
         assertEquals("Informatyka", secondOption.label)
         viewModel.selectCourse(secondOption.id)
@@ -579,11 +647,11 @@ class ClassEditViewModelTest {
         val sink = RecordingFeedbackSink()
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
-        viewModel.openNew()
+        viewModel.openNewFromFreshPlan()
         viewModel.update {
             it.copy(
                 name = "Analiza",
-                semesterProgramId = "1",
+                semesterProgramId = 1L,
                 type = "Wykład",
                 dayLabel = "Poniedziałek",
                 startTime = "11:00",

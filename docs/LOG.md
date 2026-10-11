@@ -2,6 +2,37 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-11: Zakres poprawek po przeglądzie zmian z audytu (I-91 do I-94)
+
+- Fakty: Przegląd zmian z audytu z 2026-10-11 dał zadania I-91 do I-94. Agent ocenił każdy punkt w kodzie i rozpisał w `PLAN.md` tylko te, które naprawiają błąd albo usuwają zbędną pracę lub kopię reguły.
+- Decyzja użytkownika z 2026-10-11: odrzucone są I-93 w całości, I-91 punkt 5, I-92 punkty 2, 3 i 6, I-94 punkty 2 i 3 oraz zamiana `OccurrenceStatusUi` na enum domenowy z I-94 punktu 6. Nie proponuj ich ponownie bez nowego powodu.
+- Uzasadnienie: I-93 przebudowuje dopuszczanie edycji, które działa i nie ma znanego wyścigu; przebudowa niesie ryzyko nowego wyścigu bez korzyści dla użytkownika. Opisana w I-93 różnica między lambdą `hasDraft` a kolektorem w `SemesterViewModel` nie jest błędem, bo `releaseIfNoDraft()` sprawdza lambdę z `courseFormOpen`. Wspólny kalendarz z najniższym identyfikatorem ma trzy kopie na trzech różnych typach. Zysk wydajności z I-92 punktów 2, 3 i 6 jest niezauważalny przy wielkości planu. I-94 punkty 2 i 3 zmieniają wiele plików bez skutku dla użytkownika. `OccurrenceStatusUi` ma własne nazwy, etykiety i ikony.
+
+## 2026-10-10: Wykonanie poprawek z audytu (I-84 do I-90)
+
+- Wykonanie (agent na zlecenie użytkownika, polecenie „wykonaj wszystkie poprawki z audytu”): ViewModele ekranów są pobierane w celach nawigacji, a w `MainActivity` zostały cztery ViewModele powłoki; `SemesterViewModel` żyje w podgrafie semestru i zbiera `observeSemesterConfiguration`. Dopuszczanie edycji wobec synchronizacji trzyma ViewModel przez `PlanEditSession` zamiast kompozycyjnego `TrackPlanEditing`; wpisany znak trafia do stanu od razu, a odświeżenie przed edycją zachowuje wpisany tekst (regresja znaleziona przy odbiorze: pierwszy znak trafiał na koniec tekstu). Górny pasek deklaruje cel nawigacji (`TopBarState`). Widget i synchronizacja obserwują jeden strumień `PlanChanges`, a własny zapis pobranego planu rozpoznaje skrót planu. Kontrakt kopii zapasowej używa rekordów zamiast encji Room, a sprawdzenie i zastąpienie planu to jedna transakcja `replaceIfCurrent` w `data`. Identyfikatory w domenie i stanie interfejsu są `Long`. Nowe pakiety `settings` i `text`; `ActivePlanSource` w `data`.
+- Decyzje agenta przy planowaniu, zatwierdzone przez użytkownika: komunikaty dat w kreatorze ujednolicone z ekranem semestru („Podaj poprawną datę.”, „Koniec nie może być wcześniejszy od początku.”; zgoda 2026-10-11); semestr zastępczy po usunięciu, imporcie i synchronizacji to semestr obejmujący dziś, a bez takiego najpóźniej zaczynający się; B6 zrobione tylko dla kart (zgoda na te dwie decyzje 2026-10-10) (kropka koloru i znaczniki kalendarza czytają motyw w funkcji `@Composable`).
+- Decyzja użytkownika z 2026-10-10: widget zachowuje wszystkie rozmiary z `FEATURES.md`. Odrzucone: zmniejszenie liczby rozmiarów (druga część G1 z audytu), bo użytkownik woli więcej możliwości dopasowania widgetu niż niewielki zysk wydajności.
+
+## 2026-10-10: Decyzje po audycie jakości kodu (I-84 do I-90)
+
+- Fakty: Audyt z 2026-10-09 (`docs/audit_09102026.md`) wskazał reguły planu liczone poza `ScheduleResolver`, wszystkie ViewModele w zakresie `MainActivity`, encje Room w kontrakcie kopii zapasowej, nadmiarowe uruchomienia synchronizacji, martwy kod i kilka odstępstw od zapisanych zasad.
+- Decyzje użytkownika:
+  - Reguły planu przechodzą do `ScheduleResolver` przed I-81. `ResolvedSchedule` zwraca odwołane terminy, status terminu i stan tygodnia, a szczegóły terminu, „Plan”, „Dzisiaj” i widget biorą je z wyniku resolvera (I-85).
+  - Próg okienek trafia do `PlanDisplaySettings`, a liczbę okienek zwraca `ActivePlan`, aby widget i powiadomienia mogły je kiedyś pokazać bez osobnego strumienia ustawień. Granice „minimalna przerwa do 20 minut” i „próg okienka od 20 minut” są w jednym obiekcie domenowym (I-85).
+  - Zakres ViewModeli: `AppViewModel`, `SettingsViewModel`, `UpdateViewModel` i `SyncViewModel` zostają w `MainActivity`, bo obsługują powłokę aplikacji. `TodayViewModel`, `ScheduleViewModel`, `OccurrenceViewModel`, `ClassEditViewModel`, `SetupViewModel` i `StudyProgramsViewModel` są pobierane w celu nawigacji przez `koinViewModel()`. `SemesterViewModel` żyje w zakresie podgrafu semestru, bo ekran semestru i jego podekrany dzielą szkic (I-86).
+  - Kontrakt kopii zapasowej i synchronizacji używa zwykłego modelu zamiast encji Room, a sprawdzenie i zastąpienie planu przy synchronizacji są jedną transakcją w `data` (I-87, przed I-81).
+  - Wyzwalacze synchronizacji są węższe: próba „po otwarciu aplikacji” startuje z `MainActivity`, a nie przy każdym starcie procesu; po zamknięciu formularza tylko wtedy, gdy poprzednia próba czekała na formularz. Własny zapis pobranego planu rozpoznaje skrót planu zamiast okna 2 sekund (I-88).
+  - Poprawki z audytu (I-84 do I-90) są wykonywane na gałęzi I-79 (`task/I-79-hide-study-programs`), a nie na osobnych gałęziach od `main`, bo zmieniają te same pliki co I-79.
+  - Pozostałe propozycje audytu są zaakceptowane i rozpisane w I-84, I-88, I-89 i I-90. Zmniejszenie liczby rozmiarów widgetu (G1) wymaga osobnego wariantu, bo progi opisuje `FEATURES.md`.
+
+## 2026-10-09: Wykonanie I-79 (ukrywanie kierunków)
+
+- Decyzja użytkownika: gdy na telefonie są ukryte wszystkie kierunki aktywnego semestru, widget pokazuje datę i tekst „Wszystkie kierunki są ukryte na tym telefonie.”, tak jak „Dzisiaj”. Odrzucone: widget jak w dniu bez zajęć, bo sugerowałby wolny dzień.
+- Wykonanie (agent na zlecenie użytkownika): filtr ukrytych kierunków usuwa tylko ich zajęcia, a przypisania zostawia, aby przy wszystkich ukrytych „Dzisiaj” dalej pokazywało tydzień semestru, jak na makiecie D7. Opcje pola „Kierunek” i legenda kalendarza w „Planie” pomijają ukryte kierunki przez `visibleAssignments`.
+- Decyzja użytkownika po przeglądzie kodu I-79: przefiltrowany plan ma osobny typ `VisiblePlanData`, który tworzy tylko `visibleTo`; `ActivePlanProvider.schedule` i wariant `resolve` dla wielu dni przyjmują ten typ, więc „Plan” i planer powiadomień filtrują raz, a siatka kalendarza nie dostanie ukrytych zajęć przez pomyłkę. Odrzucone: filtrowanie już w `ActivePlanSource`, bo szczegóły terminu i formularz potrzebują pełnych danych. Zapominanie ukrycia kierunków, których już nie ma, robi jeden obserwator listy kierunków (`retainExistingHiddenPrograms` w `MakApplication`) zamiast `StudyProgramsViewModel` i bramki synchronizacji; czyszczenie po pierwszym pobraniu i imporcie zostaje jawne. Przeniesienie `SettingsPreferences` poza pakiet `ui` trafiło do pomysłów w `QUEUE.md`.
+- Naprawa przy odbiorze I-79 (agent na zlecenie użytkownika): widget nie odświeżał się po zmianie danych albo ustawień w ciągu około 45 sekund od poprzedniego odświeżenia, bo aktualizacja działającej sesji Glance tylko przerysowuje treść, a dane były wczytywane raz przed `provideContent`. Widget obserwuje teraz dane w sesji przez `WidgetPlanLoader.states()`.
+
 ## 2026-10-09: Włączanie kierunków, zajęcia bez przerwy i dni wolne (I-79 do I-83)
 
 - Decyzja użytkownika: checkbox przy każdym globalnym kierunku na ekranie „Kierunki” w ustawieniach. Wyłączony kierunek znika z „Dzisiaj”, „Planu”, widgetu i powiadomień i nie wchodzi do kolizji ani okienek. Formularz zajęć, ekrany kierunków i eksport nadal widzą wszystkie kierunki.
@@ -134,26 +165,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Fakty: Zasady UI opisywały czytelność, stałe odstępy, dostępność i zakaz statycznych pilli, ale nie mówiły wprost, kiedy zrezygnować z karty, ikony, koloru albo animacji. Audyt kodu wykazał jeden styl `MakNoteBanner` dla neutralnych informacji, ostrzeżeń i błędów oraz osobną kartę dla każdej grupy ekranu „O aplikacji”.
 - Decyzja: Każdy element wizualny musi przekazywać informację, budować hierarchię, wskazywać stan, wspierać nawigację albo działanie. Hierarchia najpierw używa typografii, odstępów, wyrównania i kontrastu. Karty grupują rzeczywiste obiekty, ikony wspierają rozpoznanie, status wpływa na decyzję, a animacja przedstawia rzeczywistą zmianę lub oczekiwanie. `WORKFLOW.md` wymaga przeglądu redukcyjnego przed zakończeniem zmiany UI.
 - Wynik audytu: I-54 rozdziela role komunikatów, a I-55 ogranicza karty na ekranie „O aplikacji”. Gradient podsumowania, kolory kierunków i animacja podczas rzeczywistego ładowania są zaakceptowanymi elementami funkcjonalnymi. Nie znaleziono tekstów marketingowych, fontu monospace, dekoracyjnych ikon ani ciągłej animacji poza oczekiwaniem na dane. Oględziny na urządzeniu nadal należą do O-05 i O-06.
-
-## 2026-09-28: Wydanie 0.2.2 i działająca aktualizacja (I-49, I-52, O-07)
-
-- Fakty: Tag `v0.2.2` zbudował się poprawnie w GitHub Actions, a użytkownik opublikował wydanie. Użytkownik potwierdził, że aktualizacja z aplikacji do 0.2.2 działa.
-- Decyzja: I-52 ma status `gotowe`. O-07 pozostaje otwarty dla niepotwierdzonych przypadków błędów i jawnego potwierdzenia zachowania danych. I-49 pozostaje w toku do sprawdzenia instalacji według README na drugim telefonie i domknięcia O-07.
-- Weryfikacja: Przed tagiem przeszły testy JVM, kompilacja testów urządzenia, lint i `assembleDebug`; workflow wydania zakończył się sukcesem. Główny przebieg aktualizacji potwierdził użytkownik 2026-09-28.
-
-## 2026-09-28: Treść notatek w widgetcie (I-53)
-
-- Fakty: Rozszerzony widget pokazywał przy metadanych tylko ikonę, że zajęcia mają notatkę. Nie pokazywał treści ani nie rozróżniał notatki do zajęć od notatki do terminu, mimo wolnego miejsca w dużych rozmiarach.
-- Decyzja: W rozszerzonym widgetcie każda notatka ma osobny wiersz z ikoną i treścią, jak na karcie w aplikacji. Notatka do zajęć używa ikony notatki, a notatka do terminu ikony kalendarza. Wariant kompaktowy pomija notatki, aby zachować czas i nazwę zajęć. Użytkownik zlecił wariant 2026-09-28.
-- Weryfikacja: Test prezentera sprawdza treść notatki, a test kompozycji Glance oba rodzaje, ikony i treść. Odbiór rozmiarów i motywów na launcherze należy do O-06.
-
-## 2026-09-28: Bez strzałek i pilli (I-53)
-
-- Fakty: Opis zmian w szczegółach terminu używał strzałek („Sala: L205 → C12”), a `WRITING.md` sam opisywał wzór ostrzeżeń strzałkami. Poza kartą zajęć pille zostały przy aktywnym semestrze, w kalendarzach i korektach tygodni oraz w „O aplikacji”.
-- Decyzja: `AGENTS.md` i `WRITING.md` zakazują strzałek obok `·` i em dash. `AGENTS.md` i `ARCHITECTURE.md` zakazują pilli i chipów jako statycznych etykiet; stan, kategorię i wersję pokazuje tekst, ikona z tekstem albo kropka koloru. Opis zmian terminu to zwykłe zdania („Sala zmieniona z L205 na C12”). „Aktywny” i „Zainstalowana” mają ikonę i tekst, korekta tygodnia ma tydzień w tytule, powtórzony tag tygodnia w kalendarzu zniknął, a wersja w „O aplikacji” jest tekstem. `MakTag` i nieużywane kolory pilli usunięto. Widget zostaje do osobnej decyzji. Użytkownik zlecił zmianę 2026-09-28.
-
-## 2026-09-28: Karta zajęć bez pilli (I-53)
-
-- Fakty: Karta pokazywała kierunek, stan i etykiety notatek w wypełnionych pillach. Kolor kierunku powtarzał się w pasku i pillu, etykiety notatek wyglądały jak przyciski, a przy skali czcionki 2,0 pille zajmowały pół szerokości karty. Przegląd innych aplikacji: kalendarze oznaczają kategorię paskiem albo kropką przy zwykłym tekście, Todoist używa linii metadanych z ikonami, a Material 3 przeznacza chipy do interakcji.
-- Decyzja: Nazwa kierunku jako tekst w odcieniu kierunku z kontrastem 4,5:1, stan terminu jako ikona pod godzinami (odwołane także z przekreśleniem), notatki jako wiersze z ikoną bez etykiety. Opis zmiany terminu jest w szczegółach terminu. Kolizja zostaje pomarańczowym wierszem. Użytkownik wybrał wariant 2026-09-28 w artefakcie z pięcioma wariantami (`FEATURES.md`, `ARCHITECTURE.md`).
-- Odrzucone: Wspólny blok notatek, jasne bloki dla każdej notatki, tagi obrysowe i podpisy nad notatkami.

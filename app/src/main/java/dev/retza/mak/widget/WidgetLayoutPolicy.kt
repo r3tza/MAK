@@ -2,7 +2,7 @@ package dev.retza.mak.widget
 
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
-import dev.retza.mak.ui.polishPlural
+import dev.retza.mak.text.polishPlural
 
 internal enum class WidgetStatusMode {
     ConflictOnly,
@@ -12,60 +12,50 @@ internal enum class WidgetStatusMode {
 
 internal data class WidgetLayoutPolicy(
     val accentHeight: Dp,
-    val headerSpacing: Dp,
+    val wide: Boolean,
     val nameMaxLines: Int,
     val nameCharacterLimit: Int,
     val rowSpacing: Dp,
     val statusMode: WidgetStatusMode,
-    val includeTeacher: Boolean,
     val metadataCharacterLimit: Int,
     val noteCharacterLimit: Int
-)
+) {
+    // The teacher fits only next to the room in a wide widget.
+    val includeTeacher: Boolean get() = wide
+}
+
+internal val WidgetHeaderSpacing = 6.dp
 
 internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
     val wide = mode.width == WidgetWidthMode.Wide
     val policy = when (mode.height) {
         WidgetHeightMode.Compact -> WidgetLayoutPolicy(
             accentHeight = 28.dp,
-            headerSpacing = 6.dp,
+            wide = wide,
             nameMaxLines = 1,
             nameCharacterLimit = if (wide) 36 else 28,
             rowSpacing = 0.dp,
             statusMode = WidgetStatusMode.ConflictOnly,
-            includeTeacher = wide,
             metadataCharacterLimit = if (wide) 36 else 28,
             noteCharacterLimit = if (wide) 44 else 34
         )
         WidgetHeightMode.Medium -> WidgetLayoutPolicy(
             accentHeight = 42.dp,
-            headerSpacing = 6.dp,
+            wide = wide,
             nameMaxLines = 1,
             nameCharacterLimit = if (wide) 50 else 42,
             rowSpacing = 4.dp,
             statusMode = WidgetStatusMode.Primary,
-            includeTeacher = wide,
             metadataCharacterLimit = if (wide) 42 else 34,
             noteCharacterLimit = if (wide) 52 else 40
         )
-        WidgetHeightMode.Large -> WidgetLayoutPolicy(
+        WidgetHeightMode.Large, WidgetHeightMode.ExtraLarge -> WidgetLayoutPolicy(
             accentHeight = 52.dp,
-            headerSpacing = 6.dp,
+            wide = wide,
             nameMaxLines = if (wide) 2 else 1,
             nameCharacterLimit = if (wide) 56 else 42,
             rowSpacing = 6.dp,
             statusMode = WidgetStatusMode.All,
-            includeTeacher = wide,
-            metadataCharacterLimit = if (wide) 52 else 42,
-            noteCharacterLimit = if (wide) 64 else 48
-        )
-        WidgetHeightMode.ExtraLarge -> WidgetLayoutPolicy(
-            accentHeight = 52.dp,
-            headerSpacing = 6.dp,
-            nameMaxLines = if (wide) 2 else 1,
-            nameCharacterLimit = if (wide) 56 else 42,
-            rowSpacing = 6.dp,
-            statusMode = WidgetStatusMode.All,
-            includeTeacher = wide,
             metadataCharacterLimit = if (wide) 52 else 42,
             noteCharacterLimit = if (wide) 64 else 48
         )
@@ -76,24 +66,11 @@ internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
 internal fun widgetNameMaxLines(mode: WidgetLayoutMode): Int =
     widgetLayoutPolicy(mode).nameMaxLines
 
-internal fun widgetNameCharacterLimit(mode: WidgetLayoutMode): Int =
-    widgetLayoutPolicy(mode).nameCharacterLimit
-
-internal fun widgetCountLabel(count: Int): String =
-    "$count ${polishPlural(count, "zajęcie", "zajęcia", "zajęć")}"
-
 internal fun truncateWidgetText(value: String, maxCharacters: Int): String =
     if (value.length <= maxCharacters) value
     else value.take((maxCharacters - 1).coerceAtLeast(1)) + "…"
 
-internal fun widgetShouldShowConflict(
-    item: WidgetOccurrenceUi,
-    policy: WidgetLayoutPolicy
-): Boolean = when (policy.statusMode) {
-    WidgetStatusMode.ConflictOnly,
-    WidgetStatusMode.Primary,
-    WidgetStatusMode.All -> item.conflictLabel != null
-}
+internal fun widgetShouldShowConflict(item: WidgetOccurrenceUi): Boolean = item.conflictLabel != null
 
 internal fun widgetShouldShowNotes(
     item: WidgetOccurrenceUi,

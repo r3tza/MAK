@@ -2,7 +2,6 @@ package dev.retza.mak.update
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
-import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -52,7 +51,7 @@ class UpdateViewModel(
     private val verifier: ApkVerifier,
     private val installer: UpdateInstaller,
     installEvents: InstallEventStore,
-    private val preferences: UpdatePreferences?,
+    private val preferences: UpdatePreferences,
     private val clock: Clock,
     releaseNotes: ReleaseNotesProvider
 ) : ViewModel() {
@@ -70,13 +69,12 @@ class UpdateViewModel(
     private var verifiedFile: File? = null
 
     init {
-        if (preferences != null) viewModelScope.launch {
+        viewModelScope.launch {
             preferences.state.collect { preferenceState ->
                 mutableState.update { current ->
                     current.copy(
                         automaticChecks = preferenceState.automaticChecks,
-                        showUpdateBanner = current.availableUpdate?.versionCode?.toLong()
-                            ?.let { it != preferenceState.dismissedVersionCode } == true
+                        showUpdateBanner = showsBanner(current.availableUpdate, preferenceState.dismissedVersionCode)
                     )
                 }
             }
@@ -97,31 +95,29 @@ class UpdateViewModel(
     }
 
     fun checkAutomatically() {
-        val updatePreferences = preferences ?: return
         if (checkJob?.isActive == true) return
         checkJob = viewModelScope.launch {
-            val pref = updatePreferences.state.first()
+            val pref = preferences.state.first()
             val now = clock.millis()
             if (!shouldCheckAutomatically(pref, now)) return@launch
-            updatePreferences.recordAutomaticCheck(now)
+            preferences.recordAutomaticCheck(now)
             val result = checker.check()
             mutableState.update { current ->
                 val checked = current.withCheckResult(result, hideAutomaticError = true)
                 checked.copy(
-                    showUpdateBanner = checked.availableUpdate?.versionCode?.toLong()
-                        ?.let { it != pref.dismissedVersionCode } == true
+                    showUpdateBanner = showsBanner(checked.availableUpdate, pref.dismissedVersionCode)
                 )
             }
         }
     }
 
     fun setAutomaticChecks(enabled: Boolean) {
-        preferences?.let { viewModelScope.launch { it.setAutomaticChecks(enabled) } }
+        viewModelScope.launch { preferences.setAutomaticChecks(enabled) }
     }
 
     fun dismissAvailableUpdate() {
         val code = mutableState.value.availableUpdate?.versionCode?.toLong() ?: return
-        preferences?.let { viewModelScope.launch { it.dismiss(code) } }
+        viewModelScope.launch { preferences.dismiss(code) }
     }
 
     fun checkNow() {
@@ -134,11 +130,7 @@ class UpdateViewModel(
                     requiredMinSdk = null
                 )
             }
-            val result = try {
-                checker.check()
-            } catch (cancelled: CancellationException) {
-                throw cancelled
-            }
+            val result = checker.check()
             mutableState.update { current -> current.withCheckResult(result) }
         }
     }
@@ -210,3 +202,7 @@ private fun UpdateUiState.withCheckResult(result: UpdateCheckResult, hideAutomat
         )
     }
 }
+
+/** The banner offers an available update until the user dismisses that version. */
+private fun showsBanner(update: UpdateInfo?, dismissedVersionCode: Long?): Boolean =
+    update != null && update.versionCode.toLong() != dismissedVersionCode

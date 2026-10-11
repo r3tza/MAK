@@ -1,7 +1,10 @@
 package dev.retza.mak.ui.setup
 
+import dev.retza.mak.domain.validateDateRange
+import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.components.DefaultCourseColor
 import dev.retza.mak.ui.components.suggestedCourseColor
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
@@ -12,7 +15,9 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.domain.WeekType
 import dev.retza.mak.domain.shouldActivateNewSemester
 import dev.retza.mak.ui.components.FieldErrorUi
-import dev.retza.mak.ui.components.ScreenStatus
+import dev.retza.mak.sync.PlanEditTracker
+import dev.retza.mak.ui.PlanEditSession
+import dev.retza.mak.domain.toLocalDateOrNull
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
@@ -20,7 +25,6 @@ import dev.retza.mak.ui.feedback.launchUiOperation
 import java.time.Clock
 import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.Job
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -66,7 +70,7 @@ data class SetupWizardUiState(
     val semesterName: String = "",
     val startDate: String = "",
     val endDate: String = "",
-    val firstWeekLabel: String = "A",
+    val firstWeek: WeekType = WeekType.A,
     val courseName: String = "",
     val courseColor: String = DefaultCourseColor,
     val programOptions: List<SetupProgramOptionUi> = emptyList(),
@@ -79,20 +83,20 @@ data class SetupWizardUiState(
     val isSemesterActive: Boolean = true,
     val isActivating: Boolean = false,
     val errors: Map<SetupField, FieldErrorUi> = emptyMap(),
-    val status: ScreenStatus = ScreenStatus.Ready,
-    val canSkipClasses: Boolean = true,
     val isSaving: Boolean = false,
     // True while the course step adds a further program to the already saved semester.
     val isAddingAnotherProgram: Boolean = false,
     val calendarMode: SetupCalendarMode = SetupCalendarMode.Shared,
     // Programs saved in this wizard session, in the order they were added.
-    val semesterProgramNames: List<String> = emptyList(),
-    val semesterProgramIds: List<Long> = emptyList()
+    val semesterPrograms: List<SetupProgramOptionUi> = emptyList()
 ) {
+    val semesterProgramNames: List<String>
+        get() = semesterPrograms.map { it.name }
+
     /** Existing programs the course step may offer; one already in the semester cannot be added twice. */
     val availableProgramOptions: List<SetupProgramOptionUi>
         get() = if (isAddingAnotherProgram) {
-            programOptions.filterNot { it.id in semesterProgramIds }
+            programOptions.filterNot { option -> semesterPrograms.any { it.id == option.id } }
         } else {
             programOptions
         }
@@ -110,17 +114,27 @@ data class SetupSemesterResume(
     val name: String,
     val startDate: String,
     val endDate: String,
-    val firstWeekLabel: String
+    val firstWeek: WeekType
 )
 
 @KoinViewModel
 class SetupViewModel(
     private val semesterRepository: SemesterRepository,
     private val feedbackSink: FeedbackSink,
-    private val clock: Clock
+    private val clock: Clock,
+    planEditTracker: PlanEditTracker,
+    private val savedState: SavedStateHandle
 ) : ViewModel() {
     private val state = MutableStateFlow(SetupWizardUiState())
     val setup: StateFlow<SetupWizardUiState> = state.asStateFlow()
+
+    // The wizard is a draft from its start, so it holds the edit key until the view model is cleared.
+    private val editSession = PlanEditSession(
+        tracker = planEditTracker,
+        scope = viewModelScope,
+        refreshBase = { true },
+        hasDraft = { true }
+    )
 
     private val effectsChannel = Channel<SetupEffect>(Channel.BUFFERED)
     val effects = effectsChannel.receiveAsFlow()
@@ -128,14 +142,15 @@ class SetupViewModel(
     private var semesterId: Long? = null
     private var courseId: Long? = null
     private var calendarId: Long? = null
-    private var saveJob: Job? = null
-    private var sessionToken = 0L
+
+    // The wizard loads its semester once per destination; a rotation keeps the typed values.
+    private val openedState = MutableStateFlow(false)
+
+    /** True once the wizard holds its edit key and has started for this destination. */
+    val opened: StateFlow<Boolean> = openedState.asStateFlow()
 
     // The first program's draft, restored when the further program form closes.
     private var firstProgramDraft: SetupWizardUiState? = null
-
-    // Colors of the programs saved in this session, so a further program starts with a distinct one.
-    private var semesterProgramColors: List<String> = emptyList()
 
     init {
         viewModelScope.launch {
@@ -163,15 +178,20 @@ class SetupViewModel(
         if (it.isProgramChoiceLocked) it else it.copy(selectedProgramId = id)
     }
 
-    fun start(resume: SetupSemesterResume? = null) {
-        start(resume, state.value.programOptions)
+    /** Starts the wizard for this destination once; `resume` comes from the route argument. */
+    suspend fun openOnce() {
+        if (openedState.value) return
+        editSession.admitForm()
+        openedState.value = true
+        startFromRoom(savedState.get<Boolean>("resume") ?: false)
+    }
+
+    override fun onCleared() {
+        editSession.close()
     }
 
     private fun start(resume: SetupSemesterResume?, programOptions: List<SetupProgramOptionUi>) {
-        sessionToken += 1
-        saveJob?.cancel()
         firstProgramDraft = null
-        semesterProgramColors = emptyList()
         if (resume == null) {
             semesterId = null
             courseId = null
@@ -186,7 +206,7 @@ class SetupViewModel(
                 semesterName = resume.name,
                 startDate = resume.startDate,
                 endDate = resume.endDate,
-                firstWeekLabel = resume.firstWeekLabel
+                firstWeek = resume.firstWeek
             ).withProgramOptions(programOptions)
         }
     }
@@ -211,7 +231,7 @@ class SetupViewModel(
                 name = semester.name,
                 startDate = calendar?.startDate?.toString().orEmpty(),
                 endDate = calendar?.endDate?.toString().orEmpty(),
-                firstWeekLabel = calendar?.firstWeekType?.name ?: "A"
+                firstWeek = calendar?.firstWeekType ?: WeekType.A
             )
         }
         start(resume, programOptions)
@@ -252,7 +272,7 @@ class SetupViewModel(
             step = SetupStep.Course,
             isAddingAnotherProgram = true,
             courseName = "",
-            courseColor = suggestedCourseColor(semesterProgramColors),
+            courseColor = suggestedCourseColor(current.semesterPrograms.map { it.color }),
             programMode = SetupProgramMode.New,
             selectedProgramId = null,
             isProgramChoiceLocked = false,
@@ -261,7 +281,7 @@ class SetupViewModel(
         )
     }
 
-    private fun closeAnotherProgram(savedName: String? = null, savedId: Long? = null) {
+    private fun closeAnotherProgram(saved: SetupProgramOptionUi? = null) {
         val draft = firstProgramDraft ?: return
         firstProgramDraft = null
         val current = state.value
@@ -270,8 +290,7 @@ class SetupViewModel(
             isAddingAnotherProgram = false,
             programOptions = current.programOptions,
             isSemesterActive = current.isSemesterActive,
-            semesterProgramNames = current.semesterProgramNames + listOfNotNull(savedName),
-            semesterProgramIds = current.semesterProgramIds + listOfNotNull(savedId),
+            semesterPrograms = current.semesterPrograms + listOfNotNull(saved),
             errors = emptyMap()
         )
     }
@@ -283,16 +302,10 @@ class SetupViewModel(
         val calendar = calendarId ?: return
         val program = programRecordFor(current, id = 0L) ?: return
         state.update { it.copy(isSaving = true, errors = emptyMap()) }
-        val token = sessionToken
-        saveJob = viewModelScope.launchUiOperation(
+        viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
             errorMessage = "Nie udało się dodać kierunku.",
-            onFinish = {
-                if (token == sessionToken) {
-                    state.update { it.copy(isSaving = false) }
-                }
-            },
-            isCurrent = { token == sessionToken }
+            onFinish = { state.update { it.copy(isSaving = false) } }
         ) {
             val ids = when (current.calendarMode) {
                 SetupCalendarMode.Shared -> semesterRepository.saveStudyProgramAssignment(
@@ -306,10 +319,8 @@ class SetupViewModel(
                     sourceCalendarId = calendar
                 )
             }
-            if (token != sessionToken) return@launchUiOperation
-            semesterProgramColors = semesterProgramColors + program.color
             state.update { it.copy(isSaving = false) }
-            closeAnotherProgram(savedName = program.name, savedId = ids.studyProgramId)
+            closeAnotherProgram(SetupProgramOptionUi(ids.studyProgramId, program.name, program.color))
             feedbackSink.publish(UiFeedback("Dodano kierunek", UiFeedbackKind.Success))
         }
     }
@@ -321,7 +332,7 @@ class SetupViewModel(
                 val name = current.courseName.trim()
                 if (name.isBlank()) {
                     state.update {
-                        it.copy(errors = mapOf(SetupField.CourseName to FieldErrorUi("Podaj nazwę kierunku.")))
+                        it.copy(errors = mapOf(SetupField.CourseName to FieldErrorUi(FormErrorTexts.ProgramNameRequired)))
                     }
                     null
                 } else {
@@ -337,7 +348,7 @@ class SetupViewModel(
                 val selected = current.availableProgramOptions.firstOrNull { it.id == current.selectedProgramId }
                 if (selected == null) {
                     state.update {
-                        it.copy(errors = mapOf(SetupField.CourseProgram to FieldErrorUi("Wybierz kierunek.")))
+                        it.copy(errors = mapOf(SetupField.CourseProgram to FieldErrorUi(FormErrorTexts.ProgramRequired)))
                     }
                     null
                 } else {
@@ -356,31 +367,24 @@ class SetupViewModel(
         val id = semesterId ?: return
         if (state.value.isActivating) return
         state.update { it.copy(isActivating = true) }
-        val token = sessionToken
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
             errorMessage = "Nie udało się ustawić aktywnego semestru.",
-            onFinish = {
-                if (token == sessionToken) {
-                    state.update { it.copy(isActivating = false) }
-                }
-            },
-            isCurrent = { token == sessionToken }
+            onFinish = { state.update { it.copy(isActivating = false) } }
         ) {
             semesterRepository.setActiveSemester(id)
-            if (token != sessionToken) return@launchUiOperation
             state.update { it.copy(isSemesterActive = true) }
             effectsChannel.trySend(SetupEffect.OpenNewClassEditor)
         }
     }
 
     fun finish() {
-        start()
+        start(resume = null, programOptions = state.value.programOptions)
         effectsChannel.trySend(SetupEffect.FinishToToday)
     }
 
     fun returnToSettings() {
-        start()
+        start(resume = null, programOptions = state.value.programOptions)
         effectsChannel.trySend(SetupEffect.ReturnToSettings)
     }
 
@@ -388,14 +392,14 @@ class SetupViewModel(
         val current = state.value
         val start = current.startDate.toLocalDateOrNull()
         val end = current.endDate.toLocalDateOrNull()
+        val dateErrors = validateDateRange(start, end)
         val errors = buildMap {
             if (current.semesterName.isBlank()) {
-                put(SetupField.SemesterName, FieldErrorUi("Podaj nazwę semestru."))
+                put(SetupField.SemesterName, FieldErrorUi(FormErrorTexts.SemesterNameRequired))
             }
-            if (start == null) put(SetupField.StartDate, FieldErrorUi("Wybierz poprawną datę."))
-            if (end == null || start != null && end.isBefore(start)) {
-                put(SetupField.EndDate, FieldErrorUi("Data końca nie może być wcześniejsza od początku."))
-            }
+            val texts = FormErrorTexts.dateRange(dateErrors)
+            texts.start?.let { put(SetupField.StartDate, FieldErrorUi(it)) }
+            (texts.range ?: texts.end)?.let { put(SetupField.EndDate, FieldErrorUi(it)) }
         }
         if (errors.isNotEmpty() || start == null || end == null) {
             state.update { it.copy(errors = errors) }
@@ -414,16 +418,10 @@ class SetupViewModel(
         val existingCalendar = calendarId
         val isUpdate = existingSemester != null
         state.update { it.copy(isSaving = true, errors = emptyMap()) }
-        val token = sessionToken
-        saveJob = viewModelScope.launchUiOperation(
+        viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
             errorMessage = "Nie udało się zapisać konfiguracji.",
-            onFinish = {
-                if (token == sessionToken) {
-                    state.update { it.copy(isSaving = false) }
-                }
-            },
-            isCurrent = { token == sessionToken }
+            onFinish = { state.update { it.copy(isSaving = false) } }
         ) {
             val activate = existingSemester == null && shouldActivateNewSemester(
                 today = LocalDate.now(clock),
@@ -443,14 +441,12 @@ class SetupViewModel(
                     semesterId = existingSemester ?: 0L,
                     startDate = start,
                     endDate = end,
-                    firstWeekType = WeekType.valueOf(current.firstWeekLabel)
+                    firstWeekType = current.firstWeek
                 ),
                 activate = activate
             )
-            if (token != sessionToken) return@launchUiOperation
             semesterId = ids.semesterId
             courseId = ids.studyProgramId
-            semesterProgramColors = listOf(program.color) + semesterProgramColors.drop(1)
             calendarId = ids.academicCalendarId
             state.update {
                 it.copy(
@@ -458,8 +454,8 @@ class SetupViewModel(
                     errors = emptyMap(),
                     isProgramChoiceLocked = true,
                     isSemesterActive = ids.semesterIsActive,
-                    semesterProgramNames = listOf(program.name) + it.semesterProgramNames.drop(1),
-                    semesterProgramIds = listOf(ids.studyProgramId) + it.semesterProgramIds.drop(1)
+                    semesterPrograms = listOf(SetupProgramOptionUi(ids.studyProgramId, program.name, program.color)) +
+                        it.semesterPrograms.drop(1)
                 )
             }
             val message = when {
@@ -482,4 +478,3 @@ private fun SetupWizardUiState.withProgramOptions(options: List<SetupProgramOpti
     )
 }
 
-private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()

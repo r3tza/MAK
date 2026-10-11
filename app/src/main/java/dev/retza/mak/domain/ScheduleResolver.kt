@@ -37,7 +37,7 @@ class ScheduleResolver(
             .groupBy { it.classId to it.occurrenceDate }
             .mapValues { (_, notes) -> notes.last() }
 
-        val occurrences = semesterClasses
+        val resolved = semesterClasses
             .mapNotNull { classItem ->
                 val calendar = calendarFor(classItem) ?: return@mapNotNull null
                 resolveClass(
@@ -53,46 +53,29 @@ class ScheduleResolver(
             }
             .flatten()
             .sortedWith(compareBy<PlannedOccurrence> { it.startTime }.thenBy { it.name }.thenBy { it.id })
+        val (cancelled, occurrences) = resolved.partition { it.status == OccurrenceStatus.CANCELLED }
 
         val weeks = semesterCalendars
             .mapNotNull { calendar ->
                 weekCalculator.calculate(calendar, date, weekOverrides)?.let { calendar.id to it }
             }
             .toMap()
-        val distinctWeekTypes = weeks.values.map { it.weekType }.distinct()
-        val hasMixedWeekTypes = distinctWeekTypes.size > 1
-        val sharedWeek = if (hasMixedWeekTypes) null else weeks.values.firstOrNull()
+        val weekTypes = weeks.values.map { it.weekType }.distinct()
+        val weekStatus = when {
+            weekTypes.isEmpty() -> WeekStatus.OutsideSemester
+            weekTypes.size > 1 -> WeekStatus.Mixed
+            else -> WeekStatus.Single(weekTypes.single())
+        }
 
         return ResolvedSchedule(
             date = date,
             semesterId = semester.id,
-            week = sharedWeek,
             occurrences = occurrences,
-            hasMixedWeekTypes = hasMixedWeekTypes
+            weekStatus = weekStatus,
+            cancelled = cancelled,
+            weeksByCalendarId = weeks
         )
     }
-
-    fun resolveOccurrences(
-        date: LocalDate,
-        semester: Semester,
-        classes: Collection<ClassItem>,
-        courses: Collection<StudyProgram> = emptyList(),
-        semesterPrograms: Collection<SemesterProgram> = emptyList(),
-        calendars: Collection<AcademicCalendar> = emptyList(),
-        weekOverrides: Collection<WeekOverride> = emptyList(),
-        occurrenceChanges: Collection<OccurrenceChange> = emptyList(),
-        occurrenceNotes: Collection<OccurrenceNote> = emptyList()
-    ): List<PlannedOccurrence> = resolve(
-        date,
-        semester,
-        classes,
-        courses,
-        semesterPrograms,
-        calendars,
-        weekOverrides,
-        occurrenceChanges,
-        occurrenceNotes
-    ).occurrences
 
     private fun resolveClass(
         classItem: ClassItem,
@@ -100,9 +83,9 @@ class ScheduleResolver(
         date: LocalDate,
         weekOverrides: Collection<WeekOverride>,
         changesByDate: Map<LocalDate, OccurrenceChange>,
-        studyPrograms: Map<String, StudyProgram>,
-        assignments: Map<String, SemesterProgram>,
-        notesByOccurrence: Map<Pair<String, LocalDate>, OccurrenceNote>
+        studyPrograms: Map<Long, StudyProgram>,
+        assignments: Map<Long, SemesterProgram>,
+        notesByOccurrence: Map<Pair<Long, LocalDate>, OccurrenceNote>
     ): List<PlannedOccurrence> {
         if (classItem.recurrence == Recurrence.ONCE) {
             if (!classItem.hasBaseOccurrenceOn(date, calendar, weekOverrides, weekCalculator)) return emptyList()
@@ -130,8 +113,6 @@ class ScheduleResolver(
 
         return sourceDates.mapNotNull { sourceDate ->
             val change = changesByDate[sourceDate]
-            if (change?.kind == OccurrenceChangeKind.CANCELLED) return@mapNotNull null
-
             val actualDate = change?.targetDate ?: sourceDate
             if (actualDate != date) return@mapNotNull null
 
@@ -152,9 +133,9 @@ class ScheduleResolver(
         actualDate: LocalDate,
         originalDate: LocalDate,
         change: OccurrenceChange?,
-        studyPrograms: Map<String, StudyProgram>,
-        assignments: Map<String, SemesterProgram>,
-        notesByOccurrence: Map<Pair<String, LocalDate>, OccurrenceNote>
+        studyPrograms: Map<Long, StudyProgram>,
+        assignments: Map<Long, SemesterProgram>,
+        notesByOccurrence: Map<Pair<Long, LocalDate>, OccurrenceNote>
     ): PlannedOccurrence {
         // Occurrence notes belong to the occurrence, so they follow it when it is moved.
         val occurrenceNote = notesByOccurrence[classItem.id to originalDate]

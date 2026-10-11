@@ -50,13 +50,17 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.WeekType
+import dev.retza.mak.ui.AllProgramsHiddenNote
 import dev.retza.mak.ui.shortDayNames
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
 import dev.retza.mak.ui.components.ClassCard
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.MakCheckbox
-import dev.retza.mak.ui.components.MakChoiceRow
+import dev.retza.mak.ui.components.WeekOverrideScopeChoice
+import dev.retza.mak.ui.components.WeekTypeSelectField
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDialogAction
 import dev.retza.mak.ui.components.MakEmptyState
@@ -68,12 +72,8 @@ import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.MakSpacing
-import dev.retza.mak.ui.components.MakStateMessage
 import dev.retza.mak.ui.components.MakViewSwitch
-import dev.retza.mak.ui.components.ScreenStatus
 import dev.retza.mak.ui.components.courseShapeColor
-import dev.retza.mak.ui.semester.WeekOverrideScopeUi
-import dev.retza.mak.ui.semester.WeekTypeUi
 
 enum class ScheduleView {
     List,
@@ -90,7 +90,8 @@ data class ScheduleDayUi(
 )
 
 data class ScheduleFilterUi(
-    val id: String,
+    // Null means "all programs".
+    val id: Long?,
     val label: String,
     val isSelected: Boolean = false
 )
@@ -101,7 +102,7 @@ data class ScheduleUiState(
     val weekSubtitle: String,
     val weekTypeLabel: String,
     val weekSourceLabel: String,
-    val weekType: WeekTypeUi? = null,
+    val weekType: WeekType? = null,
     val days: List<ScheduleDayUi> = emptyList(),
     val filters: List<ScheduleFilterUi> = emptyList(),
     val selectedDayLabel: String = "",
@@ -118,8 +119,8 @@ data class ScheduleUiState(
     val hasFromWeekCorrection: Boolean = false,
     // False when the filter shows several calendars, so a week correction would have no target.
     val canCorrectWeek: Boolean = true,
-    val status: ScreenStatus = ScreenStatus.Ready,
-    val emptyMessage: String = "Brak zajęć w tym dniu dla wybranego kierunku."
+    // Every study program of the semester is hidden on this phone; the list gives way to a note.
+    val allProgramsHidden: Boolean = false
 )
 
 @Composable
@@ -129,20 +130,20 @@ fun ScheduleScreen(
     onPreviousWeek: () -> Unit,
     onNextWeek: () -> Unit,
     onDaySelected: (String) -> Unit,
-    onFilterSelected: (String) -> Unit,
+    onFilterSelected: (Long?) -> Unit,
     onPreviousMonth: () -> Unit,
     onNextMonth: () -> Unit,
     onCalendarDaySelected: (String) -> Unit,
     onShowCancelledChanged: (Boolean) -> Unit,
     onAddOneOff: () -> Unit,
     onOpenClass: (String) -> Unit,
-    onSaveWeekCorrection: (WeekTypeUi, WeekOverrideScopeUi) -> Unit,
-    onClearWeekCorrection: (WeekOverrideScopeUi) -> Unit,
+    onSaveWeekCorrection: (WeekType, WeekOverrideScope) -> Unit,
+    onClearWeekCorrection: (WeekOverrideScope) -> Unit,
     onStartSetup: () -> Unit,
-    onRetry: () -> Unit,
     modifier: Modifier = Modifier,
     requiresSetup: Boolean = false,
-    onOpenSync: () -> Unit = {}
+    onOpenSync: () -> Unit = {},
+    onOpenPrograms: () -> Unit = {}
 ) {
     var showWeekDialog by remember { mutableStateOf(false) }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
@@ -155,14 +156,16 @@ fun ScheduleScreen(
             modifier = Modifier.padding(top = MakSpacing.sm, bottom = MakSpacing.xs)
         )
         when {
-            state.status != ScreenStatus.Ready ->
-                MakStateMessage(status = state.status, onRetry = onRetry)
-
             requiresSetup -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 MakEmptyState("Nie masz jeszcze aktywnego planu. Skonfiguruj semestr i kierunek.")
                 MakPrimaryAction(text = "Skonfiguruj plan", onClick = onStartSetup)
                 MakSecondaryAction(text = "Pobierz plan z konta Google", onClick = onOpenSync)
             }
+
+            state.allProgramsHidden -> AllProgramsHiddenNote(
+                onOpenPrograms = onOpenPrograms,
+                modifier = Modifier.padding(top = MakSpacing.md)
+            )
 
             state.view == ScheduleView.List -> ListView(
                 state = state,
@@ -187,7 +190,7 @@ fun ScheduleScreen(
     }
     if (showWeekDialog) {
         WeekCorrectionDialog(
-            currentType = state.weekType ?: WeekTypeUi.A,
+            currentType = state.weekType ?: WeekType.A,
             hasOneWeekCorrection = state.hasOneWeekCorrection,
             hasFromWeekCorrection = state.hasFromWeekCorrection,
             onDismiss = { showWeekDialog = false },
@@ -209,7 +212,7 @@ private fun ListView(
     onPreviousWeek: () -> Unit,
     onNextWeek: () -> Unit,
     onDaySelected: (String) -> Unit,
-    onFilterSelected: (String) -> Unit,
+    onFilterSelected: (Long?) -> Unit,
     onOpenClass: (String) -> Unit,
     onEditWeek: () -> Unit
 ) {
@@ -226,7 +229,7 @@ private fun ListView(
         }
         MakRowTitle(title = state.selectedDayLabel, meta = state.selectedDayCountLabel)
         if (state.items.isEmpty()) {
-            MakEmptyState(state.emptyMessage)
+            MakEmptyState("Brak zajęć w tym dniu dla wybranego kierunku.")
         } else {
                 Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 state.items.forEach { item ->
@@ -383,7 +386,7 @@ private fun WeekTypeBadge(
 @Composable
 private fun ScheduleFilterSection(
     filters: List<ScheduleFilterUi>,
-    onFilterSelected: (String) -> Unit
+    onFilterSelected: (Long?) -> Unit
 ) {
     val selectedFilter = filters.firstOrNull { it.isSelected } ?: filters.first()
     val labelById = filters.map { it.id }.zip(distinctLabels(filters.map { it.label })).toMap()
@@ -639,15 +642,15 @@ private fun CalendarLegend(items: List<CalendarLegendUi>) {
 
 @Composable
 private fun WeekCorrectionDialog(
-    currentType: WeekTypeUi,
+    currentType: WeekType,
     hasOneWeekCorrection: Boolean,
     hasFromWeekCorrection: Boolean,
     onDismiss: () -> Unit,
-    onSave: (WeekTypeUi, WeekOverrideScopeUi) -> Unit,
-    onClear: (WeekOverrideScopeUi) -> Unit
+    onSave: (WeekType, WeekOverrideScope) -> Unit,
+    onClear: (WeekOverrideScope) -> Unit
 ) {
     var type by remember { mutableStateOf(currentType) }
-    var scope by remember { mutableStateOf(WeekOverrideScopeUi.ONE_WEEK) }
+    var scope by remember { mutableStateOf(WeekOverrideScope.ONE_WEEK) }
     MakDialog(
         title = "Zmień tydzień A/B",
         description = "Wybierz oznaczenie i zakres zmiany. W każdym momencie możesz wrócić do automatycznego planu.",
@@ -655,30 +658,16 @@ private fun WeekCorrectionDialog(
         dismissAction = MakDialogAction("Anuluj", onDismiss),
         confirmAction = MakDialogAction("Zapisz", { onSave(type, scope) })
     ) {
-        MakSelectField(
+        WeekTypeSelectField(
             label = "Oznaczenie tygodnia",
-            value = "Tydzień ${type.name}",
-            options = listOf("Tydzień A", "Tydzień B"),
-            onSelected = { type = if (it.endsWith("B")) WeekTypeUi.B else WeekTypeUi.A }
+            value = type,
+            onSelected = { type = it }
         )
-        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
-            WeekOverrideScopeUi.entries.forEach { item ->
-                val label = if (item == WeekOverrideScopeUi.ONE_WEEK) {
-                    "Tylko ten tydzień"
-                } else {
-                    "Od tego tygodnia w przyszłość"
-                }
-                MakChoiceRow(
-                    label = label,
-                    selected = scope == item,
-                    onClick = { scope = item }
-                )
-            }
-        }
+        WeekOverrideScopeChoice(selected = scope, onSelected = { scope = it })
         MakSecondaryAction(
             text = "Usuń korektę",
             onClick = { onClear(scope) },
-            enabled = if (scope == WeekOverrideScopeUi.ONE_WEEK) hasOneWeekCorrection else hasFromWeekCorrection
+            enabled = if (scope == WeekOverrideScope.ONE_WEEK) hasOneWeekCorrection else hasFromWeekCorrection
         )
     }
 }

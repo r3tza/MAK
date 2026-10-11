@@ -109,9 +109,6 @@ interface AcademicCalendarDao {
     @Query("SELECT * FROM academic_calendars WHERE semester_id = :semesterId ORDER BY start_date, id")
     fun observeForSemester(semesterId: Long): Flow<List<AcademicCalendarEntity>>
 
-    @Query("SELECT * FROM academic_calendars WHERE semester_id = :semesterId ORDER BY start_date, id")
-    suspend fun getForSemester(semesterId: Long): List<AcademicCalendarEntity>
-
     @Query("SELECT * FROM academic_calendars WHERE id = :id")
     suspend fun findById(id: Long): AcademicCalendarEntity?
 
@@ -160,15 +157,8 @@ interface SemesterProgramDao {
 
 @Dao
 interface ClassDao {
-    @Query("SELECT * FROM classes WHERE semester_id = :semesterId ORDER BY day_of_week, start_time, id")
-    fun observeForSemester(semesterId: Long): Flow<List<ClassEntity>>
-
     @Query("SELECT * FROM classes WHERE id = :id")
     suspend fun findById(id: Long): ClassEntity?
-
-    @Transaction
-    @Query("SELECT * FROM classes WHERE semester_id = :semesterId ORDER BY day_of_week, start_time, id")
-    fun observeWithDetailsForSemester(semesterId: Long): Flow<List<ClassWithDetails>>
 
     @Insert(onConflict = OnConflictStrategy.ABORT)
     suspend fun insert(entity: ClassEntity): Long
@@ -184,10 +174,6 @@ interface ClassDao {
 
     @Query("DELETE FROM classes")
     suspend fun deleteAll()
-
-    @Transaction
-    @Query("SELECT * FROM classes WHERE id = :id")
-    fun observeWithDetails(id: Long): Flow<ClassWithDetails?>
 }
 
 @Dao
@@ -197,12 +183,6 @@ interface WeekOverrideDao {
             "WHERE semester_id = :semesterId ORDER BY week_start_date, scope, id"
     )
     fun observeForSemester(semesterId: Long): Flow<List<WeekOverrideEntity>>
-
-    @Query(
-        "SELECT * FROM week_overrides " +
-            "WHERE academic_calendar_id = :calendarId ORDER BY week_start_date, scope, id"
-    )
-    fun observeForCalendar(calendarId: Long): Flow<List<WeekOverrideEntity>>
 
     @Query(
         "SELECT * FROM week_overrides " +
@@ -232,21 +212,22 @@ interface WeekOverrideDao {
     @Query("DELETE FROM week_overrides WHERE id = :id")
     suspend fun deleteById(id: Long)
 
+    @Query(
+        "DELETE FROM week_overrides WHERE academic_calendar_id = :calendarId " +
+            "AND week_start_date = :weekStartDate AND scope = :scope"
+    )
+    suspend fun deleteForWeek(
+        calendarId: Long,
+        weekStartDate: LocalDate,
+        scope: dev.retza.mak.data.entity.WeekOverrideScope
+    )
+
     @Query("DELETE FROM week_overrides")
     suspend fun deleteAll()
 }
 
 @Dao
 interface OccurrenceNoteDao {
-    @Query(
-        "SELECT * FROM occurrence_notes " +
-            "WHERE semester_id = :semesterId ORDER BY occurrence_date, class_id, id"
-    )
-    fun observeForSemester(semesterId: Long): Flow<List<OccurrenceNoteEntity>>
-
-    @Query("SELECT * FROM occurrence_notes WHERE class_id = :classId ORDER BY occurrence_date")
-    fun observeForClass(classId: Long): Flow<List<OccurrenceNoteEntity>>
-
     @Query("SELECT * FROM occurrence_notes WHERE id = :id")
     suspend fun findById(id: Long): OccurrenceNoteEntity?
 
@@ -259,8 +240,8 @@ interface OccurrenceNoteDao {
     @Update
     suspend fun update(entity: OccurrenceNoteEntity)
 
-    @Query("DELETE FROM occurrence_notes WHERE id = :id")
-    suspend fun deleteById(id: Long)
+    @Query("DELETE FROM occurrence_notes WHERE class_id = :classId AND occurrence_date = :date")
+    suspend fun deleteForOccurrence(classId: Long, date: LocalDate)
 
     @Query("DELETE FROM occurrence_notes")
     suspend fun deleteAll()
@@ -268,15 +249,6 @@ interface OccurrenceNoteDao {
 
 @Dao
 interface OccurrenceChangeDao {
-    @Query(
-        "SELECT * FROM occurrence_changes " +
-            "WHERE semester_id = :semesterId ORDER BY original_date, class_id, id"
-    )
-    fun observeForSemester(semesterId: Long): Flow<List<OccurrenceChangeEntity>>
-
-    @Query("SELECT * FROM occurrence_changes WHERE class_id = :classId ORDER BY original_date")
-    fun observeForClass(classId: Long): Flow<List<OccurrenceChangeEntity>>
-
     @Query("SELECT * FROM occurrence_changes WHERE id = :id")
     suspend fun findById(id: Long): OccurrenceChangeEntity?
 
@@ -289,8 +261,8 @@ interface OccurrenceChangeDao {
     @Update
     suspend fun update(entity: OccurrenceChangeEntity)
 
-    @Query("DELETE FROM occurrence_changes WHERE id = :id")
-    suspend fun deleteById(id: Long)
+    @Query("DELETE FROM occurrence_changes WHERE class_id = :classId AND original_date = :date")
+    suspend fun deleteForOccurrence(classId: Long, date: LocalDate)
 
     @Query("DELETE FROM occurrence_changes")
     suspend fun deleteAll()

@@ -5,10 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.StudyProgramRecord
+import dev.retza.mak.sync.PlanEditTracker
+import dev.retza.mak.ui.FormErrorTexts
+import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
+import dev.retza.mak.settings.SettingsPreferences
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.channels.Channel
@@ -16,6 +20,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flatMapLatest
@@ -29,7 +34,9 @@ import org.koin.core.annotation.KoinViewModel
 data class StudyProgramUi(
     val id: Long,
     val name: String,
-    val color: String
+    val color: String,
+    // Hidden on this phone only (`DOMAIN.md`, „Kierunki”); the program and its classes stay in the plan.
+    val isHidden: Boolean = false
 )
 
 data class StudyProgramEditorUi(
@@ -51,6 +58,8 @@ data class StudyProgramsUiState(
     val editor: StudyProgramEditorUi = StudyProgramEditorUi()
 )
 
+enum class StudyProgramEditOpenState { Opening, Open, Missing }
+
 sealed interface StudyProgramsEffect {
     data object CloseEditor : StudyProgramsEffect
 }
@@ -60,7 +69,9 @@ sealed interface StudyProgramsEffect {
 @KoinViewModel
 class StudyProgramsViewModel(
     private val semesterRepository: SemesterRepository,
-    private val feedbackSink: FeedbackSink
+    private val feedbackSink: FeedbackSink,
+    private val preferences: SettingsPreferences,
+    planEditTracker: PlanEditTracker
 ) : ViewModel() {
     private val state = MutableStateFlow(StudyProgramsUiState())
     val programs: StateFlow<StudyProgramsUiState> = state.asStateFlow()
@@ -68,13 +79,25 @@ class StudyProgramsViewModel(
     private val effectsChannel = Channel<StudyProgramsEffect>(Channel.BUFFERED)
     val effects = effectsChannel.receiveAsFlow()
 
+    private val openState = MutableStateFlow(StudyProgramEditOpenState.Opening)
+    val opened: StateFlow<StudyProgramEditOpenState> = openState.asStateFlow()
+
+    // The edit form is a draft from its start, so it holds the edit key until the view model is cleared.
+    private val editSession = PlanEditSession(
+        tracker = planEditTracker,
+        scope = viewModelScope,
+        refreshBase = { true },
+        hasDraft = { true }
+    )
+
     init {
         viewModelScope.launch {
             try {
-                semesterRepository.observeStudyPrograms().collect { records ->
-                    state.update { current ->
-                        current.copy(programs = records.map { StudyProgramUi(it.id, it.name, it.color) })
-                    }
+                val hiddenIds = preferences.planDisplay.map { it.hiddenProgramIds }.distinctUntilChanged()
+                combine(semesterRepository.observeStudyPrograms(), hiddenIds) { records, hidden ->
+                    records.map { StudyProgramUi(it.id, it.name, it.color, isHidden = it.id in hidden) }
+                }.collect { programs ->
+                    state.update { current -> current.copy(programs = programs) }
                 }
             } catch (error: CancellationException) {
                 throw error
@@ -100,15 +123,33 @@ class StudyProgramsViewModel(
         }
     }
 
-    /** Starts a fresh edit of the program: discards any earlier draft, then loads the saved values. */
-    fun openEdit(id: Long) {
-        state.update { it.copy(editor = StudyProgramEditorUi()) }
-        loadEditor(id)
+    /** Shows or hides the program's classes on this phone; the stored choice updates the list. */
+    fun setVisible(id: Long, visible: Boolean) {
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać wyboru kierunku.",
+            onFinish = {}
+        ) {
+            preferences.setStudyProgramHidden(id, hidden = !visible)
+        }
     }
 
-    /** Starts a new route edit from the latest Room row after the route has acquired its edit key. */
-    suspend fun openEditFromRoom(id: Long): Boolean {
-        state.update { it.copy(editor = StudyProgramEditorUi()) }
+    /** Loads the program for this destination once; a rotation keeps the typed values. */
+    suspend fun openOnce(id: Long) {
+        if (openState.value != StudyProgramEditOpenState.Opening) return
+        openState.value = if (editSession.admitForm() && loadEditorFromRoom(id)) {
+            StudyProgramEditOpenState.Open
+        } else {
+            StudyProgramEditOpenState.Missing
+        }
+    }
+
+    override fun onCleared() {
+        editSession.close()
+    }
+
+    /** Loads the latest Room row of the program into the editor; false when it no longer exists. */
+    private suspend fun loadEditorFromRoom(id: Long): Boolean {
         val program = semesterRepository.observeStudyPrograms().first()
             .firstOrNull { it.id == id }
             ?.let { StudyProgramUi(it.id, it.name, it.color) }
@@ -117,40 +158,6 @@ class StudyProgramsViewModel(
             it.copy(editor = StudyProgramEditorUi(id = program.id, name = program.name, color = program.color))
         }
         return true
-    }
-
-    /**
-     * Restores the screen after rotation or process death: keeps the current draft when the route
-     * is shown again for the same program.
-     */
-    fun openEditIfNeeded(id: Long) {
-        if (state.value.editor.id == id) return
-        loadEditor(id)
-    }
-
-    private fun loadEditor(id: Long) {
-        viewModelScope.launch {
-            val program = semesterRepository.observeStudyPrograms().first()
-                .firstOrNull { it.id == id }
-                ?.let { StudyProgramUi(it.id, it.name, it.color) } ?: return@launch
-            state.update {
-                val current = it.editor
-                if (current.id == id && (current.name != program.name || current.color != program.color)) {
-                    it
-                } else {
-                    // Same program: the usage observer does not emit again, so its names are kept.
-                    val usedIn = if (current.id == id) current.usedInSemesters else emptyList()
-                    it.copy(
-                        editor = StudyProgramEditorUi(
-                            id = program.id,
-                            name = program.name,
-                            color = program.color,
-                            usedInSemesters = usedIn
-                        )
-                    )
-                }
-            }
-        }
     }
 
     fun updateName(value: String) = state.update {
@@ -200,7 +207,7 @@ class StudyProgramsViewModel(
         if (editor.isSaving) return
         val name = editor.name.trim()
         if (name.isBlank()) {
-            state.update { it.copy(editor = it.editor.copy(nameError = "Podaj nazwę kierunku.")) }
+            state.update { it.copy(editor = it.editor.copy(nameError = FormErrorTexts.ProgramNameRequired)) }
             return
         }
         state.update { it.copy(editor = it.editor.copy(isSaving = true)) }

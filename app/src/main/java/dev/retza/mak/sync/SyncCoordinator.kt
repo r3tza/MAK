@@ -8,6 +8,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
@@ -62,13 +63,14 @@ class SyncCoordinator(
 ) {
     private val lock = Mutex()
 
-    // Room reports the plan replaced by a download as a change; edits this soon after it are ignored.
-    @Volatile
-    private var lastReplacementMillis = Long.MIN_VALUE / 2
-
     // Read on first use, so creating the coordinator during app start does no file access.
     private val current by lazy { MutableStateFlow(store.load()) }
     val state: StateFlow<SyncState> get() = current
+
+    private val waitingForEditor = MutableStateFlow(false)
+
+    /** True when the last run ended waiting for an open editor; the next run is due when the editor closes. */
+    val waitsForEditor: StateFlow<Boolean> = waitingForEditor.asStateFlow()
 
     suspend fun synchronize(): SyncOutcome = serialized { run(resolution = null) }
 
@@ -104,11 +106,17 @@ class SyncCoordinator(
         save(SyncState())
     }
 
-    /** Remembers when the plan on this phone last changed, for the version choice. */
-    suspend fun recordLocalChange() = serialized {
-        val now = clock.millis()
-        if (current.value.account == null || now - lastReplacementMillis < REPLACEMENT_ECHO_MILLIS) return@serialized
-        save(current.value.copy(localChangedAtMillis = now))
+    /**
+     * Remembers when the plan on this phone last changed, for the version choice. A plan equal to the
+     * one last synchronized is not a change: it is the echo of a download or a change taken back.
+     *
+     * @return true when the plan differs from the one last synchronized, so a run is due.
+     */
+    suspend fun recordLocalChange(changedAtMillis: Long): Boolean = serialized {
+        if (current.value.account == null) return@serialized false
+        if (SyncPlanFile.fingerprint(gateway.snapshot()) == current.value.localFingerprint) return@serialized false
+        save(current.value.copy(localChangedAtMillis = changedAtMillis))
+        true
     }
 
     private suspend fun <T> serialized(block: suspend () -> T): T =
@@ -119,40 +127,42 @@ class SyncCoordinator(
     fun archivedPlan(id: String): ByteArray? = archive.read(id)
 
     private suspend fun run(resolution: Resolution?): SyncOutcome {
+        waitingForEditor.value = false
         val account = current.value.account ?: return SyncOutcome.NoAccount
         return try {
             repeat(MAX_PASSES) { pass(account, resolution)?.let { return it } }
             SyncOutcome.RetryLater
         } catch (_: NewerExportVersionException) {
-            issue(SyncIssue.NEWER_REMOTE_PLAN, message = null)
+            issue(SyncIssue.NEWER_REMOTE_PLAN)
         } catch (error: InvalidRemotePlanException) {
             issue(SyncIssue.INVALID_REMOTE_PLAN, error.message)
         } catch (_: UserActionRequiredException) {
-            authorizationRequired()
+            issue(SyncIssue.AUTHORIZATION_REQUIRED)
         } catch (_: AccountMismatchException) {
-            failed(ACCOUNT_MISMATCH)
+            issue(SyncIssue.ACCOUNT_MISMATCH)
         } catch (error: DriveHttpException) {
             when {
                 error.isTransient() -> throw error
-                error.statusCode == 401 -> authorizationRequired()
-                error.isStorageFull() -> failed("Na Dysku Google brakuje miejsca. Zwolnij miejsce i synchronizuj ponownie.")
-                error.statusCode == 403 -> failed("Dysk Google odmówił dostępu. Jeśli to się powtarza, połącz konto ponownie.")
-                else -> failed(GENERIC_FAILURE)
+                error.statusCode == 401 -> issue(SyncIssue.AUTHORIZATION_REQUIRED)
+                error.isStorageFull() -> issue(SyncIssue.STORAGE_FULL)
+                error.statusCode == 403 -> issue(SyncIssue.ACCESS_DENIED)
+                else -> issue(SyncIssue.FAILED)
             }
         } catch (error: CancellationException) {
             throw error
         } catch (error: IOException) {
             throw error
         } catch (_: Exception) {
-            failed(GENERIC_FAILURE)
+            issue(SyncIssue.FAILED)
         }
     }
 
-    private fun authorizationRequired() = issue(SyncIssue.AUTHORIZATION_REQUIRED, message = null)
+    private fun waitForEditor(): SyncOutcome {
+        waitingForEditor.value = true
+        return SyncOutcome.WaitingForEditor
+    }
 
-    private fun failed(message: String) = issue(SyncIssue.FAILED, message)
-
-    private fun issue(issue: SyncIssue, message: String?): SyncOutcome {
+    private fun issue(issue: SyncIssue, message: String? = null): SyncOutcome {
         save(current.value.copy(issue = issue, issueMessage = message))
         return SyncOutcome.NeedsAttention
     }
@@ -238,8 +248,7 @@ class SyncCoordinator(
         differences: List<PlanDifference>,
         picks: Map<PlanDifference, PlanSide>
     ): SyncOutcome? {
-        val today = clock.instant().atZone(clock.zone).toLocalDate()
-        val merged = when (val result = mergePlans(local, remoteData, differences, picks, today)) {
+        val merged = when (val result = mergePlans(local, remoteData, differences, picks)) {
             is PlanMergeResult.Problems -> return SyncOutcome.MergeProblems(result.problems)
             is PlanMergeResult.Invalid -> return SyncOutcome.MergeInvalid(result.errors)
             is PlanMergeResult.Ready -> result.data
@@ -249,11 +258,10 @@ class SyncCoordinator(
         val replacement = editTracker.withReplacement {
             archive.add(localBytes, ArchiveSource.PHONE, clock.millis())
             archive.add(remoteBytes, ArchiveSource.DRIVE, clock.millis())
-            gateway.replaceIfUnchanged(localFingerprint, merged, keepLocalActive = true, merged.semesterCovering(today))
-                .also { lastReplacementMillis = clock.millis() }
+            gateway.replaceIfUnchanged(localFingerprint, merged, keepLocalActive = true)
         }
         val replaced = when (replacement) {
-            PlanReplacementResult.Editing -> return SyncOutcome.WaitingForEditor
+            PlanReplacementResult.Editing -> return waitForEditor()
             is PlanReplacementResult.Applied -> replacement.value
         }
         if (!replaced) return null
@@ -290,16 +298,14 @@ class SyncCoordinator(
         // A plan this phone only followed was built on by the other phone. Only a rejected plan or one
         // that another upload may have overwritten could be lost, so only those go to the archive.
         val mayBeLost = rejectsLocal || current.value.lastRunUploaded
-        val fallbackActive = remoteData.semesterCovering(clock.instant().atZone(clock.zone).toLocalDate())
         val replacement = editTracker.withReplacement {
             if (mayBeLost && !SyncPlanFile.isEmpty(local)) {
                 archive.add(localBytes, ArchiveSource.PHONE, clock.millis())
             }
-            gateway.replaceIfUnchanged(localFingerprint, remoteData, keepLocalActive = !firstRun, fallbackActive)
-                .also { lastReplacementMillis = clock.millis() }
+            gateway.replaceIfUnchanged(localFingerprint, remoteData, keepLocalActive = !firstRun)
         }
         val replaced = when (replacement) {
-            PlanReplacementResult.Editing -> return SyncOutcome.WaitingForEditor
+            PlanReplacementResult.Editing -> return waitForEditor()
             is PlanReplacementResult.Applied -> replacement.value
         }
         if (!replaced) return null
@@ -341,18 +347,13 @@ class SyncCoordinator(
 
     private fun localSizeIssue(bytes: ByteArray): SyncOutcome? =
         if (bytes.size > SyncPlanFile.MAX_BYTES) {
-            issue(SyncIssue.LOCAL_PLAN_TOO_LARGE, LOCAL_PLAN_TOO_LARGE_MESSAGE)
+            issue(SyncIssue.LOCAL_PLAN_TOO_LARGE)
         } else {
             null
         }
 
     private companion object {
         const val MAX_PASSES = 3
-        const val REPLACEMENT_ECHO_MILLIS = 2_000L
-        const val GENERIC_FAILURE = "Nie udało się zsynchronizować planu."
-        const val LOCAL_PLAN_TOO_LARGE_MESSAGE = "Lokalny plan przekracza limit 8 MiB i nie może zostać wysłany."
-        const val ACCOUNT_MISMATCH =
-            "Telefon ma inne konto Google niż połączone. Wyłącz synchronizację i połącz konto ponownie."
     }
 }
 

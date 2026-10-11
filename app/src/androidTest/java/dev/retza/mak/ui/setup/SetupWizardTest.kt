@@ -19,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.width
 import androidx.test.espresso.Espresso
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.theme.MAKTheme
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -34,7 +35,7 @@ class SetupWizardTest {
     @Test
     fun emptyWizardShowsSemesterStepAndAcceptsBasicActionsAt320Dp() {
         var nextClicks = 0
-        var selectedWeek = ""
+        var selectedWeek = WeekType.A
 
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
@@ -58,7 +59,6 @@ class SetupWizardTest {
                         onAddClass = {},
                         onActivateAndAddClass = {},
                         onFinish = {},
-                        onRetry = {}
                     )
                 }
             }
@@ -71,7 +71,7 @@ class SetupWizardTest {
         // The step title repeats the button label, so target the clickable node.
         composeTestRule.onNode(hasText("Utwórz semestr") and hasClickAction()).performClick()
 
-        assertEquals("B", selectedWeek)
+        assertEquals(WeekType.B, selectedWeek)
         assertEquals(1, nextClicks)
     }
 
@@ -79,7 +79,7 @@ class SetupWizardTest {
     fun classesStepListsProgramsAndOffersAnotherProgramAt320Dp() {
         var anotherClicks = 0
         showWizard(
-            SetupWizardUiState(step = SetupStep.Classes, semesterProgramNames = listOf("Informatyka", "Fizyka")),
+            SetupWizardUiState(step = SetupStep.Classes, semesterPrograms = listOf(program(1, "Informatyka"), program(2, "Fizyka"))),
             onAddAnotherProgram = { anotherClicks += 1 }
         )
 
@@ -98,7 +98,7 @@ class SetupWizardTest {
                 step = SetupStep.Course,
                 semesterName = "Zimowy",
                 isAddingAnotherProgram = true,
-                semesterProgramNames = listOf("Informatyka")
+                semesterPrograms = listOf(program(1, "Informatyka"))
             ),
             onCalendarModeChanged = { mode = it }
         )
@@ -219,7 +219,6 @@ class SetupWizardTest {
                         onFinish = {},
                         onReturnToSettings = onReturnToSettings,
                         showReturnToSettings = showReturnToSettings,
-                        onRetry = {},
                         onAddAnotherProgram = onAddAnotherProgram,
                         onCalendarModeChanged = onCalendarModeChanged
                     )
@@ -255,7 +254,6 @@ class SetupWizardTest {
                         onAddClass = { addClicks += 1 },
                         onActivateAndAddClass = { activations += 1 },
                         onFinish = {},
-                        onRetry = {}
                     )
                 }
             }
@@ -303,7 +301,6 @@ class SetupWizardTest {
                         onAddClass = {},
                         onActivateAndAddClass = {},
                         onFinish = {},
-                        onRetry = {}
                     )
                 }
             }
@@ -318,3 +315,5 @@ class SetupWizardTest {
         assertEquals(1L, selectedProgram)
     }
 }
+
+private fun program(id: Long, name: String) = SetupProgramOptionUi(id, name, "#137B71")

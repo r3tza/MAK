@@ -1,5 +1,7 @@
 package dev.retza.mak.ui.setup
 
+import androidx.lifecycle.SavedStateHandle
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
@@ -9,6 +11,8 @@ import dev.retza.mak.ui.feedback.UiFeedback
 import java.time.Clock
 import java.time.Instant
 import java.time.ZoneOffset
+import dev.retza.mak.sync.PlanEditTracker
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -16,7 +20,6 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -34,8 +37,9 @@ class SetupViewModelTest {
     private fun viewModel(
         repository: FakeRepository,
         sink: FeedbackSink = FeedbackController(),
-        clock: Clock = insideSemester
-    ) = SetupViewModel(FakeSemesterRepository(repository), sink, clock)
+        clock: Clock = insideSemester,
+        savedState: SavedStateHandle = SavedStateHandle()
+    ) = SetupViewModel(FakeSemesterRepository(repository), sink, clock, PlanEditTracker(CoroutineScope(UnconfinedTestDispatcher())), savedState)
 
     private fun SetupViewModel.fillValidSemester() {
         update { it.copy(semesterName = "Nowy", startDate = "2026-09-01", endDate = "2026-10-01") }
@@ -229,28 +233,6 @@ class SetupViewModelTest {
     }
 
     @Test
-    fun startDuringSaveResetsTheWizardWithoutFeedback() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        repository.saveGate = CompletableDeferred()
-        val sink = RecordingFeedbackSink()
-        val viewModel = viewModel(repository, sink)
-        viewModel.fillValidSemester()
-        viewModel.next()
-        advanceUntilIdle()
-        viewModel.update { it.copy(courseName = "Informatyka") }
-        viewModel.next()
-        advanceUntilIdle()
-        assertTrue(viewModel.setup.value.isSaving)
-
-        viewModel.start()
-        advanceUntilIdle()
-
-        assertEquals(SetupWizardUiState(), viewModel.setup.value.copy(programOptions = emptyList()))
-        assertFalse(viewModel.setup.value.isSaving)
-        assertTrue(sink.published.isEmpty())
-    }
-
-    @Test
     fun validationDoesNotPublishFeedback() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink()
@@ -375,35 +357,40 @@ class SetupViewModelTest {
     }
 
     @Test
-    fun startResumesExistingSemesterAtCourseStep() = runTest(mainDispatcher) {
+    fun openOnceResumesActiveSemesterWithoutProgramsAtCourseStep() = runTest(mainDispatcher) {
         val repository = FakeRepository()
-        val viewModel = viewModel(repository)
+        // The second semester has a calendar and no programs yet; the first one has a program.
+        repository.setActiveSemester(repository.secondSemester.id)
+        val viewModel = viewModel(repository, savedState = SavedStateHandle(mapOf("resume" to true)))
 
-        viewModel.start(
-            SetupSemesterResume(
-                semesterId = repository.semester.id,
-                calendarId = repository.calendar.id,
-                name = repository.semester.name,
-                startDate = repository.calendar.startDate.toString(),
-                endDate = repository.calendar.endDate.toString(),
-                firstWeekLabel = repository.calendar.firstWeekType.name
-            )
-        )
+        viewModel.openOnce()
 
         val state = viewModel.setup.value
         assertEquals(SetupStep.Course, state.step)
-        assertEquals("Semestr", state.semesterName)
-        assertEquals("2026-09-01", state.startDate)
-        assertEquals("2026-10-31", state.endDate)
-        assertEquals("A", state.firstWeekLabel)
+        assertEquals("Semestr drugi", state.semesterName)
+        assertEquals("2027-02-01", state.startDate)
+        assertEquals("2027-06-30", state.endDate)
+        assertEquals(WeekType.B, state.firstWeek)
 
         viewModel.update { it.copy(courseName = "Nowy kierunek") }
         viewModel.next()
         advanceUntilIdle()
 
-        assertEquals(repository.semester.id, repository.lastSetupSemester?.id)
+        assertEquals(repository.secondSemester.id, repository.lastSetupSemester?.id)
         assertEquals(1, repository.events.count { it == "saveSetupConfiguration" })
         assertEquals(SetupStep.Classes, viewModel.setup.value.step)
+    }
+
+    @Test
+    fun openOnceLoadsTheWizardOnlyOnce() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+
+        viewModel.openOnce()
+        viewModel.update { it.copy(semesterName = "Wpisana nazwa") }
+        viewModel.openOnce()
+
+        assertEquals("Wpisana nazwa", viewModel.setup.value.semesterName)
     }
 
     @Test

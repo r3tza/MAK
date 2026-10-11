@@ -19,23 +19,26 @@ import dev.retza.mak.data.repository.RoomSemesterRepository
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.CollisionNotificationPlanner
 import dev.retza.mak.domain.PlanDisplaySettings
-import dev.retza.mak.ui.settings.CollisionNotificationPreferences
-import dev.retza.mak.ui.settings.SettingsPreferences
-import dev.retza.mak.ui.settings.ThemeMode
-import dev.retza.mak.ui.ActivePlanSource
+import dev.retza.mak.settings.CollisionNotificationPreferences
+import dev.retza.mak.settings.SettingsPreferences
+import dev.retza.mak.settings.ThemeMode
+import dev.retza.mak.data.ActivePlanSource
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.runBlocking
+import kotlinx.coroutines.SupervisorJob
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -48,6 +51,7 @@ class CollisionAlarmSchedulerTest {
     private val clock = Clock.fixed(Instant.parse("2026-09-21T06:00:00Z"), ZoneId.of("Europe/Warsaw"))
     private lateinit var database: AppDatabase
     private lateinit var context: Context
+    private val sourceScope = CoroutineScope(SupervisorJob() + Dispatchers.Default)
 
     @Before
     fun setUp() {
@@ -63,6 +67,7 @@ class CollisionAlarmSchedulerTest {
 
     @After
     fun tearDown() {
+        sourceScope.cancel()
         database.close()
         context.getSharedPreferences(ALARMS, Context.MODE_PRIVATE).edit().clear().commit()
     }
@@ -70,11 +75,11 @@ class CollisionAlarmSchedulerTest {
     @Test
     fun parallelRefreshesStoreExactlyThePlannedAlarms() = runBlocking {
         val semesterId = seedCollidingClasses()
-        val semesterRepository = RoomSemesterRepository(database)
+        val semesterRepository = RoomSemesterRepository(database, Clock.fixed(Instant.parse("2026-10-10T10:00:00Z"), ZoneId.of("Europe/Warsaw")))
         val scheduleRepository = RoomScheduleRepository(database)
         val planner = CollisionNotificationPlanner(ActivePlanProvider(), clock)
         val preferences = EnabledNotifications()
-        val activePlanSource = ActivePlanSource(semesterRepository, scheduleRepository, preferences)
+        val activePlanSource = ActivePlanSource(semesterRepository, scheduleRepository, preferences, sourceScope)
         val scheduler = CollisionAlarmScheduler(
             context,
             activePlanSource,
@@ -103,6 +108,56 @@ class CollisionAlarmSchedulerTest {
             scheduler.cancelAll()
         }
     }
+
+    @Test
+    fun disabledSettingsCancelStoredAlarms() = runBlocking {
+        val semesterId = seedCollidingClasses()
+        val semesterRepository = RoomSemesterRepository(database, Clock.fixed(Instant.parse("2026-10-10T10:00:00Z"), ZoneId.of("Europe/Warsaw")))
+        val scheduleRepository = RoomScheduleRepository(database)
+        val planner = CollisionNotificationPlanner(ActivePlanProvider(), clock)
+        val preferences = EnabledNotifications()
+        val activePlanSource = ActivePlanSource(semesterRepository, scheduleRepository, preferences, sourceScope)
+        val scheduler = CollisionAlarmScheduler(context, activePlanSource, planner, preferences, clock)
+        val enabledSettings = preferences.collisionNotifications.first()
+        val inputs = activePlanSource.observe(semesterId).first()!!
+
+        try {
+            scheduler.refresh(enabledSettings, inputs)
+            assertTrue(storedAlarmIds().isNotEmpty())
+
+            scheduler.refresh(enabledSettings.copy(enabled = false), null)
+            assertEquals(emptySet<String>(), storedAlarmIds())
+        } finally {
+            scheduler.cancelAll()
+        }
+    }
+
+    @Test
+    fun sameInputsKeepStoredIds() = runBlocking {
+        val semesterId = seedCollidingClasses()
+        val semesterRepository = RoomSemesterRepository(database, Clock.fixed(Instant.parse("2026-10-10T10:00:00Z"), ZoneId.of("Europe/Warsaw")))
+        val scheduleRepository = RoomScheduleRepository(database)
+        val planner = CollisionNotificationPlanner(ActivePlanProvider(), clock)
+        val preferences = EnabledNotifications()
+        val activePlanSource = ActivePlanSource(semesterRepository, scheduleRepository, preferences, sourceScope)
+        val scheduler = CollisionAlarmScheduler(context, activePlanSource, planner, preferences, clock)
+        val settings = preferences.collisionNotifications.first()
+        val inputs = activePlanSource.observe(semesterId).first()!!
+
+        try {
+            scheduler.refresh(settings, inputs)
+            val firstIds = storedAlarmIds()
+            assertTrue(firstIds.isNotEmpty())
+
+            scheduler.refresh(settings, inputs)
+            assertEquals(firstIds, storedAlarmIds())
+        } finally {
+            scheduler.cancelAll()
+        }
+    }
+
+    private fun storedAlarmIds(): Set<String> =
+        context.getSharedPreferences(ALARMS, Context.MODE_PRIVATE).getStringSet(IDS, emptySet()).orEmpty()
 
     private suspend fun seedCollidingClasses(): Long {
         val semesterId = database.semesterDao().insert(SemesterEntity(name = "Semestr", isActive = true))
@@ -146,11 +201,13 @@ class CollisionAlarmSchedulerTest {
         override val theme: Flow<ThemeMode> = flowOf(ThemeMode.System)
         override val collisionNotifications: Flow<CollisionNotificationPreferences> =
             flowOf(CollisionNotificationPreferences(enabled = true))
-        override val gapThresholdMinutes: Flow<Int> = flowOf(30)
         override val planDisplay: Flow<PlanDisplaySettings> = flowOf(PlanDisplaySettings.DEFAULT)
         override suspend fun setTheme(mode: ThemeMode) = Unit
         override suspend fun setGapThresholdMinutes(minutes: Int) = Unit
         override suspend fun setMinimumBreakMinutes(minutes: Int) = Unit
+        override suspend fun setStudyProgramHidden(id: Long, hidden: Boolean) = Unit
+        override suspend fun clearHiddenStudyPrograms() = Unit
+        override suspend fun retainHiddenStudyPrograms(existingIds: Set<Long>) = Unit
         override suspend fun setCollisionNotificationsEnabled(enabled: Boolean) = Unit
         override suspend fun setEveningNotificationsEnabled(enabled: Boolean) = Unit
         override suspend fun setBeforeClassNotificationsEnabled(enabled: Boolean) = Unit

@@ -10,10 +10,13 @@ import dev.retza.mak.data.entity.SemesterEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
 import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
+import dev.retza.mak.data.entity.WeekOverrideScope
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.PlanBackupGateway
 import dev.retza.mak.data.repository.SemesterBackup
+import dev.retza.mak.data.repository.toEntity
+import dev.retza.mak.data.repository.toRecord
 import dev.retza.mak.data.repository.ClassRecord
 import dev.retza.mak.data.repository.OccurrenceChangeRecord
 import dev.retza.mak.data.repository.OccurrenceNoteRecord
@@ -93,6 +96,7 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
     val events = mutableListOf<String>()
     var saveGate: CompletableDeferred<Unit>? = null
     var occurrenceDataGate: CompletableDeferred<Unit>? = null
+    var semesterProgramsGate: CompletableDeferred<Unit>? = null
     var failSaves = false
     var failSetupConfiguration = false
     var setActiveCount = 0
@@ -159,38 +163,35 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         )
     }
 
-    override fun observeActivePlanData(semesterId: Long): Flow<ActivePlanData?> =
-        observeSemesterData(semesterId).map { it?.toActivePlanData() }
+    var activePlanDataQueries = 0
+        private set
+
+    override fun observeActivePlanData(semesterId: Long): Flow<ActivePlanData?> {
+        activePlanDataQueries++
+        return observeSemesterData(semesterId).map { it?.toActivePlanData() }
+    }
 
     fun observeStudyPrograms(): Flow<List<StudyProgramEntity>> = studyProgramState
-    fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramEntity>> =
-        flowOf(semesterPrograms.filter { it.semesterId == semesterId })
+    fun observeSemesterPrograms(semesterId: Long): Flow<List<SemesterProgramEntity>> = flow {
+        semesterProgramsGate?.await()
+        emit(semesterPrograms.filter { it.semesterId == semesterId })
+    }
     fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarEntity>> =
         flowOf(calendars.filter { it.semesterId == semesterId })
     fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideEntity>> =
         flowOf(weekOverrides.filter { it.semesterId == semesterId })
-    override fun observeClasses(semesterId: Long): Flow<List<ClassRecord>> =
-        flowOf(classes.map { it.toRecord() })
-    override fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteRecord>> =
-        flowOf(occurrenceNotes.map { it.toRecord() })
-    override fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeRecord>> =
-        flowOf(occurrenceChanges.map { it.toRecord() })
-    override fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteRecord>> =
-        flowOf(occurrenceNotes.filter { it.classId == classId }.map { it.toRecord() })
-    override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeRecord>> =
-        flowOf(occurrenceChanges.filter { it.classId == classId }.map { it.toRecord() })
     override suspend fun snapshot(): BackupData {
         return BackupData(
-            studyPrograms = studyPrograms,
+            studyPrograms = studyPrograms.map { it.toRecord() },
             semesters = semesterFlow.value.map { semester ->
                 SemesterBackup(
-                    semester = semester,
-                    calendars = calendars.filter { it.semesterId == semester.id },
-                    programs = semesterPrograms.filter { it.semesterId == semester.id },
-                    classes = classes.filter { it.semesterId == semester.id },
-                    weekOverrides = weekOverrides.filter { it.semesterId == semester.id },
-                    occurrenceNotes = occurrenceNotes,
-                    occurrenceChanges = occurrenceChanges
+                    semester = semester.toRecord(),
+                    calendars = calendars.filter { it.semesterId == semester.id }.map { it.toRecord() },
+                    programs = semesterPrograms.filter { it.semesterId == semester.id }.map { it.toRecord() },
+                    classes = classes.filter { it.semesterId == semester.id }.map { it.toRecord() },
+                    weekOverrides = weekOverrides.filter { it.semesterId == semester.id }.map { it.toRecord() },
+                    occurrenceNotes = occurrenceNotes.map { it.toRecord() },
+                    occurrenceChanges = occurrenceChanges.map { it.toRecord() }
                 )
             }
         )
@@ -203,12 +204,6 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         return entity.id
     }
 
-    suspend fun updateSemester(entity: SemesterEntity): Long {
-        awaitSave()
-        events += "updateSemester"
-        return entity.id
-    }
-
     suspend fun setActiveSemester(id: Long) {
         setActiveCount += 1
         if (semesterById(id) != null) activeSemesterFlow.value = id
@@ -218,10 +213,10 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         activeSemesterFlow.value = 0L
     }
 
-    suspend fun deleteSemester(id: Long) {
-        awaitSave()
-        events += "deleteSemester"
-        semesterFlow.value = semesterFlow.value.filterNot { it.id == id }
+    suspend fun ensureActiveSemester() {
+        if (semesterById(activeSemesterFlow.value) == null) {
+            semesterFlow.value.firstOrNull()?.let { activeSemesterFlow.value = it.id }
+        }
     }
 
     suspend fun deleteSemesterAndSelectFallback(
@@ -360,14 +355,6 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         events += "updateSemesterWithCalendar"
         semesterFlow.value = semesterFlow.value.map { if (it.id == semester.id) semester else it }
         calendarState.value = calendars.map { if (it.id == calendar.id) calendar else it }
-    }
-
-    suspend fun deleteCalendarIfUnused(id: Long) {
-        awaitSave()
-        events += "deleteCalendarIfUnused"
-        if (semesterPrograms.none { it.academicCalendarId == id }) {
-            calendarState.value = calendars.filterNot { it.id == id }
-        }
     }
 
     suspend fun saveSemesterProgram(entity: SemesterProgramEntity): Long {
@@ -521,12 +508,20 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
     suspend fun saveWeekOverride(entity: WeekOverrideEntity): Long {
         awaitSave()
         events += "saveWeekOverride"
-        if (entity.id == 0L) {
-            weekOverrides += entity.copy(id = (weekOverrides.size + 1).toLong())
+        val index = if (entity.id == 0L) {
+            weekOverrides.indexOfFirst {
+                it.academicCalendarId == entity.academicCalendarId &&
+                    it.weekStartDate == entity.weekStartDate && it.scope == entity.scope
+            }
         } else {
-            val index = weekOverrides.indexOfFirst { it.id == entity.id }
-            if (index >= 0) weekOverrides[index] = entity else weekOverrides += entity
+            weekOverrides.indexOfFirst { it.id == entity.id }
         }
+        if (index >= 0) {
+            weekOverrides[index] = entity.copy(id = weekOverrides[index].id)
+        } else {
+            weekOverrides += entity.copy(id = (weekOverrides.size + 1).toLong())
+        }
+        notifyDataChanged()
         return entity.id
     }
 
@@ -534,6 +529,20 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         awaitSave()
         events += "deleteWeekOverride"
         weekOverrides.removeAll { it.id == id }
+        notifyDataChanged()
+    }
+
+    suspend fun deleteWeekOverride(
+        calendarId: Long,
+        weekStartDate: LocalDate,
+        scope: WeekOverrideScope
+    ) {
+        awaitSave()
+        events += "deleteWeekOverride"
+        weekOverrides.removeAll {
+            it.academicCalendarId == calendarId && it.weekStartDate == weekStartDate && it.scope == scope
+        }
+        notifyDataChanged()
     }
 
     override suspend fun saveOccurrenceNote(record: OccurrenceNoteRecord): Long =
@@ -553,10 +562,10 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         return entity.id
     }
 
-    override suspend fun deleteOccurrenceNote(id: Long) {
+    override suspend fun deleteOccurrenceNote(classId: Long, occurrenceDate: LocalDate) {
         awaitSave()
         events += "deleteOccurrenceNote"
-        occurrenceNotes.removeAll { it.id == id }
+        occurrenceNotes.removeAll { it.classId == classId && it.occurrenceDate == occurrenceDate }
     }
 
     override suspend fun saveOccurrenceChange(record: OccurrenceChangeRecord): Long =
@@ -576,29 +585,35 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         return entity.id
     }
 
-    override suspend fun deleteOccurrenceChange(id: Long) {
+    override suspend fun deleteOccurrenceChange(classId: Long, originalDate: LocalDate) {
         awaitSave()
         events += "deleteOccurrenceChange"
-        occurrenceChanges.removeAll { it.id == id }
+        occurrenceChanges.removeAll { it.classId == classId && it.originalDate == originalDate }
     }
 
     override suspend fun replaceAll(data: BackupData): Long? {
         awaitSave()
         events += "replaceAllData"
-        semesterFlow.value = data.semesters.map { it.semester }
+        semesterFlow.value = data.semesters.map { it.semester.toEntity() }
         activeSemesterFlow.value = data.activeSemesterId ?: 0L
-        studyProgramState.value = data.studyPrograms
-        calendarState.value = data.semesters.flatMap { it.calendars }
-        semesterProgramState.value = data.semesters.flatMap { it.programs }
+        studyProgramState.value = data.studyPrograms.map { it.toEntity() }
+        calendarState.value = data.semesters.flatMap { s -> s.calendars.map { it.toEntity() } }
+        semesterProgramState.value = data.semesters.flatMap { s -> s.programs.map { it.toEntity() } }
         classes.clear()
-        classes += data.semesters.flatMap { it.classes }
+        classes += data.semesters.flatMap { s -> s.classes.map { it.toEntity() } }
         weekOverrides.clear()
-        weekOverrides += data.semesters.flatMap { it.weekOverrides }
+        weekOverrides += data.semesters.flatMap { s -> s.weekOverrides.map { it.toEntity() } }
         occurrenceNotes.clear()
-        occurrenceNotes += data.semesters.flatMap { it.occurrenceNotes }
+        occurrenceNotes += data.semesters.flatMap { s -> s.occurrenceNotes.map { it.toEntity() } }
         occurrenceChanges.clear()
-        occurrenceChanges += data.semesters.flatMap { it.occurrenceChanges }
+        occurrenceChanges += data.semesters.flatMap { s -> s.occurrenceChanges.map { it.toEntity() } }
         return data.activeSemesterId
+    }
+
+    override suspend fun replaceIfCurrent(prepare: (current: BackupData) -> BackupData?): Boolean {
+        val next = prepare(snapshot()) ?: return false
+        replaceAll(next)
+        return true
     }
 
     private suspend fun awaitSave() {

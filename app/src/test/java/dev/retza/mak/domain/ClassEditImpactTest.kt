@@ -11,7 +11,7 @@ import org.junit.Test
 class ClassEditImpactTest {
     // January 2026 starts on Thursday, so Mondays 5 and 19 are week B, 12 and 26 are week A.
     private val calendar = AcademicCalendar(
-        id = "calendar-1",
+        id = 1L,
         startDate = LocalDate.of(2026, 1, 1),
         endDate = LocalDate.of(2026, 1, 31),
         firstWeekType = WeekType.A
@@ -21,9 +21,9 @@ class ClassEditImpactTest {
     private val laterWeekB = LocalDate.of(2026, 1, 19)
 
     private val weekly = ClassItem(
-        id = "class-1",
-        semesterId = "semester-1",
-        semesterProgramId = "assignment-1",
+        id = 1L,
+        semesterId = 1L,
+        semesterProgramId = 1L,
         name = "Programming",
         type = "lecture",
         dayOfWeek = DayOfWeek.MONDAY,
@@ -31,15 +31,15 @@ class ClassEditImpactTest {
         endTime = LocalTime.of(11, 0)
     )
 
-    private fun change(date: LocalDate, classId: String = weekly.id) = OccurrenceChange(
-        id = "change-$date",
+    private fun change(date: LocalDate, classId: Long = weekly.id) = OccurrenceChange(
+        id = date.toEpochDay(),
         classId = classId,
         originalDate = date,
         kind = OccurrenceChangeKind.CANCELLED
     )
 
-    private fun note(date: LocalDate, classId: String = weekly.id) =
-        OccurrenceNote(id = "note-$date", classId = classId, occurrenceDate = date, body = "Kolokwium")
+    private fun note(date: LocalDate, classId: Long = weekly.id) =
+        OccurrenceNote(id = date.toEpochDay(), classId = classId, occurrenceDate = date, body = "Kolokwium")
 
     private fun impact(
         before: ClassItem,
@@ -101,11 +101,11 @@ class ClassEditImpactTest {
     @Test
     fun calendarWithDifferentRhythmHidesShiftedWeeks() {
         val weekAClass = weekly.copy(recurrence = Recurrence.A_WEEK)
-        val otherCalendar = calendar.copy(id = "calendar-2", firstWeekType = WeekType.B)
+        val otherCalendar = calendar.copy(id = 2L, firstWeekType = WeekType.B)
 
         val result = impact(
             weekAClass,
-            weekAClass.copy(semesterProgramId = "assignment-2"),
+            weekAClass.copy(semesterProgramId = 2L),
             changes = listOf(change(weekA)),
             afterCalendar = otherCalendar
         )
@@ -120,8 +120,8 @@ class ClassEditImpactTest {
         val result = impact(
             weekly,
             weekly.copy(dayOfWeek = DayOfWeek.TUESDAY),
-            changes = listOf(change(outsideCalendar), change(weekA, classId = "class-2")),
-            notes = listOf(note(LocalDate.of(2026, 1, 6)), note(weekB, classId = "class-2"))
+            changes = listOf(change(outsideCalendar), change(weekA, classId = 2L)),
+            notes = listOf(note(LocalDate.of(2026, 1, 6)), note(weekB, classId = 2L))
         )
 
         assertTrue(result.isEmpty)

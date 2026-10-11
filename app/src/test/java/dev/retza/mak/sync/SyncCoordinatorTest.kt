@@ -7,6 +7,10 @@ import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.SemesterBackup
+import dev.retza.mak.data.repository.semesterCovering
+import dev.retza.mak.data.repository.withActiveSemester
+import dev.retza.mak.data.repository.toEntity
+import dev.retza.mak.data.repository.toRecord
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -14,6 +18,7 @@ import java.time.ZoneOffset
 import kotlinx.coroutines.asCoroutineDispatcher
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -108,12 +113,12 @@ class SyncCoordinatorTest {
         val base = basePlan()
         phone.data = base
         coordinator.synchronize()
-        phone.data = basePlan(classes = base.semesters[0].classes + classRow(2, "Bazy danych", java.time.DayOfWeek.MONDAY, 12))
+        phone.data = basePlan(classes = base.semesters[0].classes.map { it.toEntity() } + classRow(2, "Bazy danych", java.time.DayOfWeek.MONDAY, 12))
         drive.put(
             basePlan(
-                programs = base.studyPrograms + dev.retza.mak.data.entity.StudyProgramEntity(id = 2, name = "Ekonometria", color = "#A65724"),
-                assignments = base.semesters[0].programs + dev.retza.mak.data.entity.SemesterProgramEntity(id = 2, semesterId = 1, studyProgramId = 2, academicCalendarId = 1),
-                classes = base.semesters[0].classes + classRow(3, "Statystyka", java.time.DayOfWeek.TUESDAY, 10, semesterProgramId = 2)
+                programs = base.studyPrograms.map { it.toEntity() } + dev.retza.mak.data.entity.StudyProgramEntity(id = 2, name = "Ekonometria", color = "#A65724"),
+                assignments = base.semesters[0].programs.map { it.toEntity() } + dev.retza.mak.data.entity.SemesterProgramEntity(id = 2, semesterId = 1, studyProgramId = 2, academicCalendarId = 1),
+                classes = base.semesters[0].classes.map { it.toEntity() } + classRow(3, "Statystyka", java.time.DayOfWeek.TUESDAY, 10, semesterProgramId = 2)
             )
         )
         coordinator.synchronize()
@@ -132,14 +137,50 @@ class SyncCoordinatorTest {
 
     @Test
     fun localChangesAreRecordedButNotTheEchoOfADownload() = runTest {
-        coordinator.recordLocalChange()
-        assertEquals(Instant.parse("2026-09-30T10:00:00Z").toEpochMilli(), coordinator.state.value.localChangedAtMillis)
+        val now = Instant.parse("2026-09-30T10:00:00Z").toEpochMilli()
+        coordinator.recordLocalChange(now)
+        assertEquals(now, coordinator.state.value.localChangedAtMillis)
 
         drive.put(plan("Dysk"))
         coordinator.synchronize()
-        coordinator.recordLocalChange()
+        coordinator.recordLocalChange(now)
 
         assertEquals(null, coordinator.state.value.localChangedAtMillis)
+    }
+
+    @Test
+    fun echoOfADownloadIsNotADueChange() = runTest {
+        drive.put(plan("Dysk"))
+        coordinator.synchronize()
+
+        assertFalse(coordinator.recordLocalChange(Instant.parse("2026-09-30T10:00:00Z").toEpochMilli()))
+    }
+
+    @Test
+    fun localChangeIsDue() = runTest {
+        assertTrue(coordinator.recordLocalChange(Instant.parse("2026-09-30T10:00:00Z").toEpochMilli()))
+    }
+
+    @Test
+    fun changeBackToTheSyncedPlanIsNotRecorded() = runTest {
+        phone.data = plan("Telefon")
+        coordinator.synchronize()
+
+        phone.data = plan("Telefon", "Zmiana")
+        phone.data = plan("Telefon")
+        coordinator.recordLocalChange(Instant.parse("2026-09-30T10:05:00Z").toEpochMilli())
+
+        assertNull(coordinator.state.value.localChangedAtMillis)
+    }
+
+    @Test
+    fun lateEchoOfADownloadIsNotRecorded() = runTest {
+        drive.put(plan("Dysk"))
+        coordinator.synchronize()
+
+        coordinator.recordLocalChange(Instant.parse("2026-09-30T10:00:10Z").toEpochMilli())
+
+        assertNull(coordinator.state.value.localChangedAtMillis)
     }
 
     @Test
@@ -317,7 +358,7 @@ class SyncCoordinatorTest {
         assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
 
         assertEquals(SyncIssue.LOCAL_PLAN_TOO_LARGE, coordinator.state.value.issue)
-        assertTrue(coordinator.state.value.issueMessage.orEmpty().lowercase().contains("lokal"))
+        assertNull(coordinator.state.value.issueMessage)
         assertNull(drive.file)
         assertEquals(0, drive.uploads)
         assertEquals(fingerprint.length, 64)
@@ -358,6 +399,21 @@ class SyncCoordinatorTest {
 
         editors.release("form").join()
         assertEquals(SyncOutcome.Downloaded, coordinator.synchronize())
+    }
+
+    @Test
+    fun waitingForEditorIsRememberedUntilTheNextRun() = runTest {
+        phone.data = plan("Wspólny")
+        coordinator.synchronize()
+        drive.put(plan("Wspólny", "Z Dysku"))
+        editors.beginEdit("form")
+
+        assertEquals(SyncOutcome.WaitingForEditor, coordinator.synchronize())
+        assertTrue(coordinator.waitsForEditor.value)
+
+        editors.release("form").join()
+        assertEquals(SyncOutcome.Downloaded, coordinator.synchronize())
+        assertFalse(coordinator.waitsForEditor.value)
     }
 
     @Test
@@ -438,7 +494,18 @@ class SyncCoordinatorTest {
         drive.failure = DriveHttpException(403, "quota")
 
         assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
+        assertEquals(SyncIssue.ACCESS_DENIED, coordinator.state.value.issue)
+        assertNull(coordinator.state.value.issueMessage)
+    }
+
+    @Test
+    fun otherDriveErrorIsFailedWithoutMessage() = runTest {
+        phone.data = plan("Telefon")
+        drive.failure = DriveHttpException(400, "bad")
+
+        assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
         assertEquals(SyncIssue.FAILED, coordinator.state.value.issue)
+        assertNull(coordinator.state.value.issueMessage)
     }
 
     @Test
@@ -458,7 +525,8 @@ class SyncCoordinatorTest {
         drive.failure = DriveHttpException(403, "full", reason = "storageQuotaExceeded")
 
         assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
-        assertTrue(coordinator.state.value.issueMessage!!.contains("brakuje miejsca"))
+        assertEquals(SyncIssue.STORAGE_FULL, coordinator.state.value.issue)
+        assertNull(coordinator.state.value.issueMessage)
     }
 
     @Test
@@ -477,8 +545,8 @@ class SyncCoordinatorTest {
         drive.failure = AccountMismatchException()
 
         assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
-        assertEquals(SyncIssue.FAILED, coordinator.state.value.issue)
-        assertEquals(true, coordinator.state.value.issueMessage.orEmpty().contains("Wyłącz synchronizację"))
+        assertEquals(SyncIssue.ACCOUNT_MISMATCH, coordinator.state.value.issue)
+        assertNull(coordinator.state.value.issueMessage)
     }
 
     @Test
@@ -527,18 +595,18 @@ class SyncCoordinatorTest {
 private fun BackupData.names() = semesters.map { it.semester.name }
 
 private fun plan(vararg names: String, active: Long? = null, starts: List<LocalDate> = emptyList()): BackupData = BackupData(
-    studyPrograms = listOf(StudyProgramEntity(id = 1, name = "Informatyka", color = "#137B71")),
+    studyPrograms = listOf(StudyProgramEntity(id = 1, name = "Informatyka", color = "#137B71").toRecord()),
     semesters = names.mapIndexed { index, name ->
         val id = index + 1L
         SemesterBackup(
-            semester = SemesterEntity(id = id, name = name, isActive = id == (active ?: 1L)),
+            semester = SemesterEntity(id = id, name = name, isActive = id == (active ?: 1L)).toRecord(),
             calendars = listOf(
                 starts.getOrNull(index).let { start ->
                     val from = start ?: LocalDate.of(2026, 10, 1)
-                    AcademicCalendarEntity(id, id, from, from.plusMonths(4), WeekType.A)
+                    AcademicCalendarEntity(id, id, from, from.plusMonths(4), WeekType.A).toRecord()
                 }
             ),
-            programs = listOf(SemesterProgramEntity(id, id, 1, id)),
+            programs = listOf(SemesterProgramEntity(id, id, 1, id).toRecord()),
             classes = emptyList(),
             weekOverrides = emptyList(),
             occurrenceNotes = emptyList(),
@@ -569,15 +637,14 @@ private class FakeGateway : PlanSyncGateway {
     override suspend fun replaceIfUnchanged(
         expectedFingerprint: String,
         data: BackupData,
-        keepLocalActive: Boolean,
-        fallbackActiveId: Long?
+        keepLocalActive: Boolean
     ): Boolean {
         beforeReplace()
         beforeReplace = {}
         if (SyncPlanFile.fingerprint(this.data) != expectedFingerprint) return false
-        this.data = data.withActiveSemester(
-            activeSemesterAfterReplace(this.data.activeSemesterId, data, keepLocalActive, fallbackActiveId)
-        )
+        val active = activeSemesterAfterReplace(this.data.activeSemesterId, data, keepLocalActive)
+        // Like RoomPlanBackupGateway.replaceAll: a plan without a kept active semester gets the one covering today.
+        this.data = data.withActiveSemester(active ?: data.semesterCovering(LocalDate.of(2026, 9, 30)))
         return true
     }
 }

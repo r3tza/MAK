@@ -7,9 +7,9 @@ import org.junit.Assert.assertNull
 import org.junit.Test
 
 class WeekCalculatorTest {
-    private val semester = Semester(id = "semester", name = "Winter")
+    private val semester = Semester(id = 1L, name = "Winter")
     private val calendar = AcademicCalendar(
-        id = "calendar-semester",
+        id = 1L,
         startDate = LocalDate.of(2026, 1, 7),
         endDate = LocalDate.of(2026, 2, 28),
         firstWeekType = WeekType.A
@@ -22,6 +22,11 @@ class WeekCalculatorTest {
 
         assertEquals(LocalDate.of(2026, 1, 5), result?.weekStartDate)
         assertEquals(WeekType.A, result?.weekType)
+    }
+
+    @Test
+    fun weekStartOfSundayIsPreviousMonday() {
+        assertEquals(LocalDate.of(2026, 1, 5), LocalDate.of(2026, 1, 11).weekStart())
     }
 
     @Test
@@ -41,7 +46,7 @@ class WeekCalculatorTest {
     fun oneWeekOverrideDoesNotShiftFollowingWeeks() {
         val overrides = listOf(
             WeekOverride(
-                id = "one",
+                id = 1L,
                 academicCalendarId = calendar.id,
                 weekStartDate = LocalDate.of(2026, 1, 12),
                 weekType = WeekType.A,
@@ -58,7 +63,7 @@ class WeekCalculatorTest {
     fun fromWeekOverrideStartsANewAlternatingSequence() {
         val overrides = listOf(
             WeekOverride(
-                id = "from",
+                id = 2L,
                 academicCalendarId = calendar.id,
                 weekStartDate = LocalDate.of(2026, 1, 12),
                 weekType = WeekType.A,
@@ -74,9 +79,9 @@ class WeekCalculatorTest {
     @Test
     fun laterFromWeekAndOneWeekOverridesHaveExpectedPrecedence() {
         val overrides = listOf(
-            WeekOverride("from-1", calendar.id, LocalDate.of(2026, 1, 12), WeekType.B, WeekOverrideScope.FROM_WEEK),
-            WeekOverride("from-2", calendar.id, LocalDate.of(2026, 1, 19), WeekType.A, WeekOverrideScope.FROM_WEEK),
-            WeekOverride("one", calendar.id, LocalDate.of(2026, 1, 26), WeekType.A, WeekOverrideScope.ONE_WEEK)
+            WeekOverride(1L, calendar.id, LocalDate.of(2026, 1, 12), WeekType.B, WeekOverrideScope.FROM_WEEK),
+            WeekOverride(2L, calendar.id, LocalDate.of(2026, 1, 19), WeekType.A, WeekOverrideScope.FROM_WEEK),
+            WeekOverride(3L, calendar.id, LocalDate.of(2026, 1, 26), WeekType.A, WeekOverrideScope.ONE_WEEK)
         )
 
         assertEquals(WeekType.A, calculator.calculateWeekType(calendar, LocalDate.of(2026, 1, 19), overrides))

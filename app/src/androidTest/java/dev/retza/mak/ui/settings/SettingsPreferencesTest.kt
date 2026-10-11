@@ -1,22 +1,17 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.settings.DataStoreSettingsPreferences
+import dev.retza.mak.settings.ThemeMode
+import dev.retza.mak.settings.SettingsPreferences
 import android.content.Context
 import androidx.datastore.core.DataStore
-import androidx.datastore.preferences.core.PreferenceDataStoreFactory
 import androidx.datastore.preferences.core.Preferences
-import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
-import androidx.datastore.preferences.core.intPreferencesKey
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import java.io.File
 import java.io.IOException
 import java.util.concurrent.atomic.AtomicBoolean
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.Job
-import kotlinx.coroutines.cancel
-import kotlinx.coroutines.job
 import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
@@ -30,27 +25,15 @@ import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.fail
-import org.junit.Before
 import org.junit.Test
 import org.junit.runner.RunWith
 
 @RunWith(AndroidJUnit4::class)
 class SettingsPreferencesTest {
-    private lateinit var context: Context
-    private lateinit var file: File
-    private var scope: CoroutineScope? = null
-
-    @Before
-    fun setUp() {
-        context = ApplicationProvider.getApplicationContext()
-        file = File(context.filesDir, "settings-${System.nanoTime()}.preferences_pb")
-    }
+    private val preferencesFile = TestPreferencesFile(ApplicationProvider.getApplicationContext<Context>())
 
     @After
-    fun tearDown() {
-        scope?.cancel()
-        file.delete()
-    }
+    fun tearDown() = preferencesFile.delete()
 
     @Test
     fun themeRoundTripsAcrossInstances() = runBlocking {
@@ -58,10 +41,24 @@ class SettingsPreferencesTest {
         first.setTheme(ThemeMode.Dark)
         assertEquals(ThemeMode.Dark, first.theme.first())
 
-        // DataStore releases the file only after its scope completes, so wait for it.
-        scope?.coroutineContext?.job?.cancelAndJoin()
+        preferencesFile.close()
         val second = preferences(openDataStore())
         assertEquals(ThemeMode.Dark, second.theme.first())
+    }
+
+    @Test
+    fun otherKeyDoesNotReemitTheme() = runBlocking {
+        val preferences = preferences(openDataStore())
+        val themes = mutableListOf<ThemeMode>()
+        val collector = launch(Dispatchers.Default) { preferences.theme.collect { themes.add(it) } }
+        try {
+            preferences.setGapThresholdMinutes(45)
+            preferences.planDisplay.first { it.gapThresholdMinutes == 45 }
+            delay(200)
+        } finally {
+            collector.cancelAndJoin()
+        }
+        assertEquals(1, themes.size)
     }
 
     @Test
@@ -77,11 +74,31 @@ class SettingsPreferencesTest {
     }
 
     @Test
-    fun storedGapThresholdBelowTwentyIsReadAsTwenty() = runBlocking {
-        val dataStore = openDataStore()
-        dataStore.edit { it[intPreferencesKey("gap_threshold_minutes")] = 15 }
+    fun hiddenStudyProgramsAreSavedClearedAndPrunedToExistingOnes() = runBlocking {
+        val preferences = preferences(openDataStore())
+        assertEquals(emptySet<Long>(), preferences.planDisplay.first().hiddenProgramIds)
 
-        assertEquals(20, preferences(dataStore).gapThresholdMinutes.first())
+        preferences.setStudyProgramHidden(1L, hidden = true)
+        preferences.setStudyProgramHidden(2L, hidden = true)
+        preferences.setStudyProgramHidden(2L, hidden = false)
+        preferences.setStudyProgramHidden(3L, hidden = true)
+        assertEquals(setOf(1L, 3L), preferences.planDisplay.first().hiddenProgramIds)
+
+        preferences.retainHiddenStudyPrograms(setOf(1L, 2L))
+        assertEquals(setOf(1L), preferences.planDisplay.first().hiddenProgramIds)
+
+        preferences.clearHiddenStudyPrograms()
+        assertEquals(emptySet<Long>(), preferences.planDisplay.first().hiddenProgramIds)
+    }
+
+    @Test
+    fun storedGapThresholdIsClampedToTwentyAndKeptAboveIt() = runBlocking {
+        val preferences = preferences(openDataStore())
+        preferences.setGapThresholdMinutes(15)
+        assertEquals(20, preferences.planDisplay.first().gapThresholdMinutes)
+
+        preferences.setGapThresholdMinutes(45)
+        assertEquals(45, preferences.planDisplay.first().gapThresholdMinutes)
     }
 
     @Test
@@ -122,11 +139,7 @@ class SettingsPreferencesTest {
     private fun preferences(dataStore: DataStore<Preferences>): SettingsPreferences =
         DataStoreSettingsPreferences(dataStore)
 
-    private fun openDataStore(): DataStore<Preferences> {
-        val dataStoreScope = CoroutineScope(Dispatchers.IO + Job())
-        scope = dataStoreScope
-        return PreferenceDataStoreFactory.create(scope = dataStoreScope, produceFile = { file })
-    }
+    private fun openDataStore(): DataStore<Preferences> = preferencesFile.open()
 }
 
 private class ThrowingDataStore(private val error: Throwable) : DataStore<Preferences> {

@@ -1,19 +1,17 @@
 package dev.retza.mak.ui.occurrence
 
+import dev.retza.mak.domain.toLocalDateOrNull
 import java.time.LocalDate
 
 data class OccurrenceArgs(
     val classId: Long,
     val originalDate: LocalDate
 ) {
-    fun toRouteId(): String = "$classId:$originalDate"
-
     companion object {
-        fun parse(routeId: String): OccurrenceArgs? {
-            val classId = routeId.substringBefore(':').toLongOrNull() ?: return null
-            val date = runCatching { LocalDate.parse(routeId.substringAfter(':', "")) }.getOrNull()
-                ?: return null
-            return OccurrenceArgs(classId, date)
+        fun from(classId: String?, date: String?): OccurrenceArgs? {
+            val id = classId?.toLongOrNull() ?: return null
+            val day = date?.toLocalDateOrNull() ?: return null
+            return OccurrenceArgs(id, day)
         }
     }
 }

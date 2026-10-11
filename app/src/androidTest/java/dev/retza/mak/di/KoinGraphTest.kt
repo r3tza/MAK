@@ -14,7 +14,7 @@ import dev.retza.mak.ui.occurrence.OccurrenceViewModel
 import dev.retza.mak.ui.schedule.ScheduleViewModel
 import dev.retza.mak.ui.programs.StudyProgramsViewModel
 import dev.retza.mak.ui.semester.SemesterViewModel
-import dev.retza.mak.ui.settings.SettingsPreferences
+import dev.retza.mak.settings.SettingsPreferences
 import dev.retza.mak.ui.settings.SettingsViewModel
 import dev.retza.mak.ui.setup.SetupViewModel
 import dev.retza.mak.ui.today.TodayViewModel
@@ -63,11 +63,11 @@ class KoinGraphTest {
         assertNotNull(koin.get<UpdateInstaller>())
 
         assertNotNull(koin.get<AppViewModel>())
-        assertNotNull(koin.get<OccurrenceViewModel>())
         // Hosts get SavedStateHandle from viewModel(); resolving directly must pass it in.
+        assertNotNull(koin.get<OccurrenceViewModel> { parametersOf(SavedStateHandle()) })
         assertNotNull(koin.get<ClassEditViewModel> { parametersOf(SavedStateHandle()) })
-        assertNotNull(koin.get<SemesterViewModel>())
-        assertNotNull(koin.get<SetupViewModel>())
+        assertNotNull(koin.get<SemesterViewModel> { parametersOf(SavedStateHandle()) })
+        assertNotNull(koin.get<SetupViewModel> { parametersOf(SavedStateHandle()) })
         assertNotNull(koin.get<SettingsViewModel>())
         assertNotNull(koin.get<StudyProgramsViewModel>())
         assertNotNull(koin.get<ScheduleViewModel>())

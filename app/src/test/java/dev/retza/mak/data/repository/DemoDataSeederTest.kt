@@ -65,19 +65,27 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>> =
         flowOf(weekOverrides.filter { it.semesterId == semesterId })
 
+    override fun observeSemesterConfiguration(id: Long): Flow<SemesterConfiguration?> = flowOf(
+        semesters.find { it.id == id }?.let { semester ->
+            SemesterConfiguration(
+                semester = semester,
+                programs = semesterPrograms.filter { it.semesterId == id },
+                studyPrograms = studyPrograms.toList(),
+                calendars = calendars.filter { it.semesterId == id },
+                overrides = weekOverrides.filter { it.semesterId == id }
+            )
+        }
+    )
+
     override suspend fun saveSemester(record: SemesterRecord): Long {
         val id = record.id.takeIf { it != 0L } ?: nextId++
         semesters += record.copy(id = id)
         return id
     }
 
-    override suspend fun updateSemester(record: SemesterRecord): Long = record.id
-
     override suspend fun setActiveSemester(id: Long) = Unit
 
-    override suspend fun clearActiveSemester() = Unit
-
-    override suspend fun deleteSemester(id: Long) = Unit
+    override suspend fun ensureActiveSemester() = Unit
 
     override suspend fun deleteSemesterAndSelectFallback(id: Long): SemesterDeletionResult =
         SemesterDeletionResult(null)
@@ -113,8 +121,6 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
         calendar: AcademicCalendarRecord
     ) = Unit
 
-    override suspend fun deleteCalendarIfUnused(id: Long) = Unit
-
     override suspend fun deleteCalendar(id: Long) = Unit
 
     override suspend fun separateSemesterProgramCalendar(assignmentId: Long): SetupConfigurationIds =
@@ -149,23 +155,14 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
 
     override suspend fun deleteWeekOverride(id: Long) = Unit
 
+    override suspend fun deleteWeekOverride(
+        calendarId: Long,
+        weekStartDate: java.time.LocalDate,
+        scope: dev.retza.mak.domain.WeekOverrideScope
+    ) = Unit
+
     override fun observeActivePlanData(semesterId: Long): Flow<dev.retza.mak.domain.ActivePlanData?> =
         flowOf(null)
-
-    override fun observeClasses(semesterId: Long): Flow<List<ClassRecord>> =
-        flowOf(classes.filter { it.semesterId == semesterId })
-
-    override fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteRecord>> =
-        flowOf(occurrenceNotes.filter { it.semesterId == semesterId })
-
-    override fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeRecord>> =
-        flowOf(occurrenceChanges.filter { it.semesterId == semesterId })
-
-    override fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteRecord>> =
-        flowOf(occurrenceNotes.filter { it.classId == classId })
-
-    override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeRecord>> =
-        flowOf(occurrenceChanges.filter { it.classId == classId })
 
     override suspend fun saveClass(record: ClassRecord): Long {
         val id = record.id.takeIf { it != 0L } ?: nextId++
@@ -180,12 +177,12 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
         return nextId++
     }
 
-    override suspend fun deleteOccurrenceNote(id: Long) = Unit
+    override suspend fun deleteOccurrenceNote(classId: Long, occurrenceDate: java.time.LocalDate) = Unit
 
     override suspend fun saveOccurrenceChange(record: OccurrenceChangeRecord): Long {
         occurrenceChanges += record
         return nextId++
     }
 
-    override suspend fun deleteOccurrenceChange(id: Long) = Unit
+    override suspend fun deleteOccurrenceChange(classId: Long, originalDate: java.time.LocalDate) = Unit
 }

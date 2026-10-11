@@ -1,5 +1,11 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.settings.InMemorySettingsPreferences
+import dev.retza.mak.settings.themeModeFromStored
+import dev.retza.mak.settings.ThemeMode
+import dev.retza.mak.settings.SettingsPreferences
+import dev.retza.mak.data.entity.AcademicCalendarEntity
+import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.export.AcademicCalendarSnapshot
 import dev.retza.mak.export.ClassSnapshot
 import dev.retza.mak.export.ExportSnapshot
@@ -11,9 +17,14 @@ import dev.retza.mak.export.StudyProgramSnapshot
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
+import dev.retza.mak.ui.activePlanSource
+import dev.retza.mak.ui.shortDateFormatter
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
+import java.time.LocalDate
 import java.time.LocalTime
+import dev.retza.mak.sync.PlanEditTracker
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.launch
@@ -39,10 +50,11 @@ class SettingsViewModelTest {
         sink: FeedbackSink = RecordingFeedbackSink()
     ) = SettingsViewModel(
         FakeSemesterRepository(repository),
-        repository,
-        PlanBackupService(repository),
+        activePlanSource(repository, preferences),
+        PlanBackupService(repository, preferences),
         preferences,
         sink,
+        PlanEditTracker(CoroutineScope(UnconfinedTestDispatcher())),
         mainDispatcher
     )
 
@@ -55,16 +67,36 @@ class SettingsViewModelTest {
 
         val state = viewModel.settings.value
         assertEquals(2, state.semesters.size)
-        assertEquals("1", state.activeSemesterId)
-        assertEquals("Semestr", state.semesters.first { it.id == "1" }.name)
-        val activeSemester = state.semesters.first { it.id == "1" }
+        assertEquals(1L, state.activeSemesterId)
+        assertEquals("Semestr", state.semesters.first { it.id == 1L }.name)
+        val activeSemester = state.semesters.first { it.id == 1L }
         assertTrue(activeSemester.firstWeekLabel.startsWith("pierwszy tydzień "))
-        val inactiveSemester = state.semesters.first { it.id != "1" }
+        val inactiveSemester = state.semesters.first { it.id != 1L }
         assertEquals("", inactiveSemester.dateRangeLabel)
         assertEquals("", inactiveSemester.firstWeekLabel)
         assertEquals("", inactiveSemester.courseCountLabel)
         assertEquals("", inactiveSemester.classCountLabel)
-        assertEquals("system", state.themeOptions.first { it.isSelected }.id)
+        assertEquals(ThemeMode.System, state.theme)
+    }
+
+    @Test
+    fun activeSemesterCardShowsLowestIdCalendar() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.saveCalendar(
+            AcademicCalendarEntity(
+                semesterId = 1L,
+                startDate = LocalDate.of(2026, 11, 1),
+                endDate = LocalDate.of(2027, 1, 31),
+                firstWeekType = WeekType.B
+            )
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        val expected = "${LocalDate.of(2026, 9, 1).format(shortDateFormatter)} - " +
+            LocalDate.of(2026, 10, 31).format(shortDateFormatter)
+        assertEquals(expected, viewModel.settings.value.semesters.first { it.id == 1L }.dateRangeLabel)
     }
 
     @Test
@@ -82,22 +114,11 @@ class SettingsViewModelTest {
         val viewModel = viewModel(repository, preferences)
         backgroundScope.launch { viewModel.settings.collect {} }
 
-        viewModel.selectTheme("dark")
+        viewModel.selectTheme(ThemeMode.Dark)
         advanceUntilIdle()
 
-        assertEquals(ThemeMode.Dark, viewModel.themeMode.value)
-        assertEquals("dark", viewModel.settings.value.themeOptions.first { it.isSelected }.id)
-    }
-
-    @Test
-    fun selectingUnknownThemeIdKeepsSystem() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val viewModel = viewModel(repository)
-
-        viewModel.selectTheme("neon")
-        advanceUntilIdle()
-
-        assertEquals(ThemeMode.System, viewModel.themeMode.value)
+        assertEquals(ThemeMode.Dark, viewModel.loadedThemeMode.value)
+        assertEquals(ThemeMode.Dark, viewModel.settings.value.theme)
     }
 
     @Test
@@ -115,7 +136,7 @@ class SettingsViewModelTest {
         backgroundScope.launch { viewModel.settings.collect {} }
         advanceUntilIdle()
 
-        viewModel.selectSemester("2")
+        viewModel.selectSemester(2L)
         advanceUntilIdle()
 
         assertEquals(2L, repository.activeSemesterId)
@@ -130,12 +151,12 @@ class SettingsViewModelTest {
         backgroundScope.launch { viewModel.settings.collect {} }
         advanceUntilIdle()
 
-        viewModel.requestSemesterDeletion("2")
+        viewModel.requestSemesterDeletion(2L)
         viewModel.confirmSemesterDeletion()
         advanceUntilIdle()
 
         assertEquals(1L, repository.activeSemesterId)
-        assertEquals(listOf("1"), viewModel.settings.value.semesters.map { it.id })
+        assertEquals(listOf(1L), viewModel.settings.value.semesters.map { it.id })
         assertEquals(listOf("Usunięto semestr"), sink.published.map { it.message })
     }
 
@@ -146,7 +167,7 @@ class SettingsViewModelTest {
         advanceUntilIdle()
         repository.deleteSemesterAndSelectFallback(2L)
 
-        val exists = viewModel.canRequestSemesterDeletion("2")
+        val exists = viewModel.canRequestSemesterDeletion(2L)
 
         assertFalse(exists)
         assertEquals(null, viewModel.settings.value.semesterToDeleteId)
@@ -254,7 +275,7 @@ class SettingsViewModelTest {
         viewModel.setGapThresholdMinutes("45")
         advanceUntilIdle()
 
-        assertEquals(45, preferences.gapThresholdMinutes.first())
+        assertEquals(45, preferences.planDisplay.first().gapThresholdMinutes)
         assertTrue(viewModel.settings.value.gapThresholdOptions.first { it.id == "45" }.isSelected)
     }
 

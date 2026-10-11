@@ -2,21 +2,12 @@ package dev.retza.mak.data.repository
 
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.domain.ActivePlanData
+import java.time.LocalDate
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 
 interface ScheduleRepository {
     fun observeActivePlanData(semesterId: Long): Flow<ActivePlanData?>
-
-    fun observeClasses(semesterId: Long): Flow<List<ClassRecord>>
-
-    fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteRecord>>
-
-    fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeRecord>>
-
-    fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteRecord>>
-
-    fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeRecord>>
 
     suspend fun saveClass(record: ClassRecord): Long
 
@@ -24,11 +15,11 @@ interface ScheduleRepository {
 
     suspend fun saveOccurrenceNote(record: OccurrenceNoteRecord): Long
 
-    suspend fun deleteOccurrenceNote(id: Long)
+    suspend fun deleteOccurrenceNote(classId: Long, occurrenceDate: LocalDate)
 
     suspend fun saveOccurrenceChange(record: OccurrenceChangeRecord): Long
 
-    suspend fun deleteOccurrenceChange(id: Long)
+    suspend fun deleteOccurrenceChange(classId: Long, originalDate: LocalDate)
 }
 
 @org.koin.core.annotation.Single(binds = [ScheduleRepository::class])
@@ -43,21 +34,6 @@ class RoomScheduleRepository(
 
     override fun observeActivePlanData(semesterId: Long): Flow<ActivePlanData?> =
         semesters.observeWithData(semesterId).map { it?.toActivePlanData() }
-
-    override fun observeClasses(semesterId: Long): Flow<List<ClassRecord>> =
-        classes.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }
-
-    override fun observeOccurrenceNotes(semesterId: Long): Flow<List<OccurrenceNoteRecord>> =
-        occurrenceNotes.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }
-
-    override fun observeOccurrenceChanges(semesterId: Long): Flow<List<OccurrenceChangeRecord>> =
-        occurrenceChanges.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }
-
-    override fun observeOccurrenceNotesForClass(classId: Long): Flow<List<OccurrenceNoteRecord>> =
-        occurrenceNotes.observeForClass(classId).map { list -> list.map { it.toRecord() } }
-
-    override fun observeOccurrenceChangesForClass(classId: Long): Flow<List<OccurrenceChangeRecord>> =
-        occurrenceChanges.observeForClass(classId).map { list -> list.map { it.toRecord() } }
 
     override suspend fun saveClass(record: ClassRecord): Long {
         val entity = record.toEntity()
@@ -101,7 +77,8 @@ class RoomScheduleRepository(
         return entity.id
     }
 
-    override suspend fun deleteOccurrenceNote(id: Long) = occurrenceNotes.deleteById(id)
+    override suspend fun deleteOccurrenceNote(classId: Long, occurrenceDate: LocalDate) =
+        occurrenceNotes.deleteForOccurrence(classId, occurrenceDate)
 
     override suspend fun saveOccurrenceChange(record: OccurrenceChangeRecord): Long {
         val entity = record.toEntity()
@@ -129,7 +106,8 @@ class RoomScheduleRepository(
         return entity.id
     }
 
-    override suspend fun deleteOccurrenceChange(id: Long) = occurrenceChanges.deleteById(id)
+    override suspend fun deleteOccurrenceChange(classId: Long, originalDate: LocalDate) =
+        occurrenceChanges.deleteForOccurrence(classId, originalDate)
 
     private suspend fun validateClassOwnership(classId: Long, semesterId: Long) {
         require(semesters.findById(semesterId) != null) { "Semester does not exist" }

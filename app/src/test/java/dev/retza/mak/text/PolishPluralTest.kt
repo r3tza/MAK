@@ -1,4 +1,4 @@
-package dev.retza.mak.ui
+package dev.retza.mak.text
 
 import org.junit.Assert.assertEquals
 import org.junit.Test

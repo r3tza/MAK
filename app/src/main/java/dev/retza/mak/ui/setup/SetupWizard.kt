@@ -13,7 +13,8 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
-import java.time.LocalDate
+import dev.retza.mak.domain.WeekType
+import dev.retza.mak.domain.toLocalDateOrNull
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.MakCourseColorPicker
 import dev.retza.mak.ui.components.MakChoiceRow
@@ -30,8 +31,7 @@ import dev.retza.mak.ui.components.MakSecondaryAction
 import dev.retza.mak.ui.components.MakSectionHeader
 import dev.retza.mak.ui.components.MakSelectField
 import dev.retza.mak.ui.components.MakTextAction
-import dev.retza.mak.ui.components.MakStateMessage
-import dev.retza.mak.ui.components.ScreenStatus
+import dev.retza.mak.ui.components.WeekTypeSelectField
 import dev.retza.mak.ui.components.distinctLabels
 
 @Composable
@@ -40,7 +40,7 @@ fun SetupWizard(
     onSemesterNameChanged: (String) -> Unit,
     onStartDateChanged: (String) -> Unit,
     onEndDateChanged: (String) -> Unit,
-    onFirstWeekChanged: (String) -> Unit,
+    onFirstWeekChanged: (WeekType) -> Unit,
     onCourseNameChanged: (String) -> Unit,
     onCourseColorChanged: (String) -> Unit,
     onProgramModeChanged: (SetupProgramMode) -> Unit,
@@ -53,7 +53,6 @@ fun SetupWizard(
     modifier: Modifier = Modifier,
     onReturnToSettings: () -> Unit = {},
     showReturnToSettings: Boolean = false,
-    onRetry: () -> Unit,
     onAddAnotherProgram: () -> Unit = {},
     onCalendarModeChanged: (SetupCalendarMode) -> Unit = {}
 ) {
@@ -73,7 +72,7 @@ fun SetupWizard(
     // The system back gesture does what the step's visible exit action does. On the first step
     // without "Wróć do ustawień" it stays with navigation, which closes the wizard.
     val exitsWizard = state.step == SetupStep.Semester && !state.isAddingAnotherProgram
-    BackHandler(enabled = state.status == ScreenStatus.Ready && (!exitsWizard || showReturnToSettings)) {
+    BackHandler(enabled = (!exitsWizard || showReturnToSettings)) {
         when {
             state.isSaving || state.isActivating -> Unit
             exitsWizard -> onReturnToSettings()
@@ -85,52 +84,47 @@ fun SetupWizard(
             title = title,
             subtitle = subtitle
         )
-        when (state.status) {
-            ScreenStatus.Ready -> when (state.step) {
-                SetupStep.Semester -> SemesterStep(
-                    state = state,
-                    onSemesterNameChanged = onSemesterNameChanged,
-                    onStartDateChanged = onStartDateChanged,
-                    onEndDateChanged = onEndDateChanged,
-                    onFirstWeekChanged = onFirstWeekChanged,
-                    onNext = onNext,
-                    onReturnToSettings = onReturnToSettings,
-                    showReturnToSettings = showReturnToSettings
-                )
+        when (state.step) {
+            SetupStep.Semester -> SemesterStep(
+                state = state,
+                onSemesterNameChanged = onSemesterNameChanged,
+                onStartDateChanged = onStartDateChanged,
+                onEndDateChanged = onEndDateChanged,
+                onFirstWeekChanged = onFirstWeekChanged,
+                onNext = onNext,
+                onReturnToSettings = onReturnToSettings,
+                showReturnToSettings = showReturnToSettings
+            )
 
-                SetupStep.Course -> CourseStep(
-                    state = state,
-                    onCourseNameChanged = onCourseNameChanged,
-                    onCourseColorChanged = onCourseColorChanged,
-                    onProgramModeChanged = onProgramModeChanged,
-                    onProgramSelected = onProgramSelected,
-                    onCalendarModeChanged = onCalendarModeChanged,
-                    onNext = onNext,
+            SetupStep.Course -> CourseStep(
+                state = state,
+                onCourseNameChanged = onCourseNameChanged,
+                onCourseColorChanged = onCourseColorChanged,
+                onProgramModeChanged = onProgramModeChanged,
+                onProgramSelected = onProgramSelected,
+                onCalendarModeChanged = onCalendarModeChanged,
+                onNext = onNext,
+                onBack = onBack
+            )
+
+            SetupStep.Classes -> if (state.isSemesterActive) {
+                ClassesStep(
+                    programNames = state.semesterProgramNames,
+                    onAddClass = onAddClass,
+                    onAddAnotherProgram = onAddAnotherProgram,
+                    onFinish = onFinish,
                     onBack = onBack
                 )
-
-                SetupStep.Classes -> if (state.isSemesterActive) {
-                    ClassesStep(
-                        programNames = state.semesterProgramNames,
-                        canSkip = state.canSkipClasses,
-                        onAddClass = onAddClass,
-                        onAddAnotherProgram = onAddAnotherProgram,
-                        onFinish = onFinish,
-                        onBack = onBack
-                    )
-                } else {
-                    InactiveSemesterClassesStep(
-                        programNames = state.semesterProgramNames,
-                        isActivating = state.isActivating,
-                        onActivateAndAddClass = onActivateAndAddClass,
-                        onAddAnotherProgram = onAddAnotherProgram,
-                        onFinish = onReturnToSettings,
-                        onBack = onBack
-                    )
-                }
+            } else {
+                InactiveSemesterClassesStep(
+                    programNames = state.semesterProgramNames,
+                    isActivating = state.isActivating,
+                    onActivateAndAddClass = onActivateAndAddClass,
+                    onAddAnotherProgram = onAddAnotherProgram,
+                    onFinish = onReturnToSettings,
+                    onBack = onBack
+                )
             }
-
-            else -> MakStateMessage(status = state.status, onRetry = onRetry)
         }
     }
 }
@@ -141,7 +135,7 @@ private fun SemesterStep(
     onSemesterNameChanged: (String) -> Unit,
     onStartDateChanged: (String) -> Unit,
     onEndDateChanged: (String) -> Unit,
-    onFirstWeekChanged: (String) -> Unit,
+    onFirstWeekChanged: (WeekType) -> Unit,
     onNext: () -> Unit,
     onReturnToSettings: () -> Unit,
     showReturnToSettings: Boolean
@@ -180,12 +174,10 @@ private fun SemesterStep(
                 }
             }
         )
-        MakSelectField(
+        WeekTypeSelectField(
             label = "Pierwszy tydzień",
-            value = "Tydzień ${state.firstWeekLabel}",
-            options = listOf("Tydzień A", "Tydzień B"),
-            // The wizard state keeps only the letter.
-            onSelected = { onFirstWeekChanged(it.last().toString()) }
+            value = state.firstWeek,
+            onSelected = onFirstWeekChanged
         )
         MakPrimaryAction(text = "Utwórz semestr", onClick = onNext)
         if (showReturnToSettings) {
@@ -194,7 +186,6 @@ private fun SemesterStep(
     }
 }
 
-private fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(this) }.getOrNull()
 
 @Composable
 private fun CourseStep(
@@ -364,7 +355,6 @@ private fun InactiveSemesterClassesStep(
 @Composable
 private fun ClassesStep(
     programNames: List<String>,
-    canSkip: Boolean,
     onAddClass: () -> Unit,
     onAddAnotherProgram: () -> Unit,
     onFinish: () -> Unit,
@@ -374,9 +364,7 @@ private fun ClassesStep(
         SemesterProgramsNote(programNames)
         MakPrimaryAction(text = "Dodaj zajęcia", onClick = onAddClass)
         MakSecondaryAction(text = "Dodaj kolejny kierunek", onClick = onAddAnotherProgram)
-        if (canSkip) {
-            MakSecondaryAction(text = "Przejdź do Dzisiaj", onClick = onFinish)
-        }
+        MakSecondaryAction(text = "Przejdź do Dzisiaj", onClick = onFinish)
         MakTextAction(text = "Wstecz", onClick = onBack)
     }
 }

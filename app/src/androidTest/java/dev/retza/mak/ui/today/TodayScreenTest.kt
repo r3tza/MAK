@@ -5,6 +5,9 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.requiredWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.semantics.SemanticsProperties
 import androidx.compose.ui.test.SemanticsMatcher
@@ -65,7 +68,6 @@ class TodayScreenTest {
                             ),
                             onOpenClass = {},
                             onStartSetup = {},
-                            onRetry = {},
                             availableUpdateVersion = "0.2.1",
                             onViewUpdate = { viewed = true },
                             onDismissUpdate = { dismissed = true }
@@ -99,7 +101,6 @@ class TodayScreenTest {
                         ),
                         onOpenClass = {},
                         onStartSetup = {},
-                        onRetry = {},
                         onViewUpdate = { viewedUpdate = true },
                         onOpenSync = { openedSync = true },
                         syncAttention = SyncAttentionUi(
@@ -116,6 +117,41 @@ class TodayScreenTest {
         composeTestRule.onNodeWithText("Zaktualizuj").assertIsDisplayed().performClick()
         assertTrue(viewedUpdate)
         assertFalse(openedSync)
+    }
+
+    @Test
+    fun hiddenProgramsHintAndAllHiddenNoteAt320Dp() {
+        var openedPrograms = false
+        var allHidden by mutableStateOf(false)
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(1400.dp)) {
+                    TodayScreen(
+                        state = TodayUiState(
+                            dateLabel = "Czwartek, 8 października",
+                            semesterLabel = "Semestr zimowy",
+                            weekLabel = "Tydzień B",
+                            hasActiveSemester = true,
+                            // The view model leaves the names out once every program is hidden.
+                            hiddenProgramNames = if (allHidden) emptyList() else listOf("Zarządzanie i inżynieria produkcji", "Ekonomia"),
+                            allProgramsHidden = allHidden
+                        ),
+                        onOpenClass = {},
+                        onStartSetup = {},
+                        onOpenPrograms = { openedPrograms = true }
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Ukryte kierunki: Zarządzanie i inżynieria produkcji, Ekonomia").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Kierunki").assertDoesNotExist()
+
+        allHidden = true
+        composeTestRule.onNodeWithText("Wszystkie kierunki są ukryte na tym telefonie.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Ukryte kierunki", substring = true).assertDoesNotExist()
+        composeTestRule.onNodeWithText("Kierunki").assertIsDisplayed().performClick()
+        assertTrue(openedPrograms)
     }
 
     @Test
@@ -144,7 +180,6 @@ class TodayScreenTest {
                             ),
                             onOpenClass = {},
                             onStartSetup = {},
-                            onRetry = {}
                         )
                     }
                 }
@@ -204,7 +239,6 @@ class TodayScreenTest {
                         ),
                         onOpenClass = { openedClassId = it },
                         onStartSetup = {},
-                        onRetry = {}
                     )
                 }
             }
@@ -245,7 +279,6 @@ class TodayScreenTest {
                         ),
                         onOpenClass = {},
                         onStartSetup = {},
-                        onRetry = {}
                     )
                 }
             }
@@ -274,7 +307,6 @@ class TodayScreenTest {
                         ),
                         onOpenClass = {},
                         onStartSetup = {},
-                        onRetry = {},
                         requiresSetup = true
                     )
                 }
@@ -310,7 +342,6 @@ class TodayScreenTest {
                         ),
                         onOpenClass = {},
                         onStartSetup = {},
-                        onRetry = {},
                         twoColumns = true
                     )
                 }
@@ -341,7 +372,6 @@ class TodayScreenTest {
                         ),
                         onOpenClass = {},
                         onStartSetup = {},
-                        onRetry = {},
                         requiresSetup = true,
                         twoColumns = true
                     )

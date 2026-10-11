@@ -4,7 +4,17 @@ import java.io.File
 import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 
-enum class SyncIssue { AUTHORIZATION_REQUIRED, INVALID_REMOTE_PLAN, NEWER_REMOTE_PLAN, LOCAL_PLAN_TOO_LARGE, FAILED }
+/** The cause of a problem; the text for the user is built in the UI layer, not here. */
+enum class SyncIssue {
+    AUTHORIZATION_REQUIRED,
+    INVALID_REMOTE_PLAN,
+    NEWER_REMOTE_PLAN,
+    LOCAL_PLAN_TOO_LARGE,
+    FAILED,
+    STORAGE_FULL,
+    ACCESS_DENIED,
+    ACCOUNT_MISMATCH
+}
 
 /** Both versions changed; the user chooses which one to keep. Bound to the versions it described. */
 @Serializable
@@ -36,6 +46,8 @@ data class SyncState(
     // archived before the next download. Runs without a transfer keep the value.
     val lastRunUploaded: Boolean = false,
     val issue: SyncIssue? = null,
+    // Only the detail of a file error set by INVALID_REMOTE_PLAN: the one user-facing text that comes from sync.
+    // Other issues leave it null. The name stays so that state files from older versions still load.
     val issueMessage: String? = null,
     val pendingChoice: PendingSyncChoice? = null,
     // The last edit on this phone since the last run; a run clears it.

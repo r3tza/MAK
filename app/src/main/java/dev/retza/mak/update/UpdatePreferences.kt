@@ -5,6 +5,7 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.longPreferencesKey
+import dev.retza.mak.di.readWithRetry
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import org.koin.core.annotation.Single
@@ -24,7 +25,7 @@ interface UpdatePreferences {
 
 @Single(binds = [UpdatePreferences::class])
 class DataStoreUpdatePreferences(private val dataStore: DataStore<Preferences>) : UpdatePreferences {
-    override val state = dataStore.data.map { values ->
+    override val state = dataStore.readWithRetry().map { values ->
         UpdatePreferenceState(
             automaticChecks = values[AUTOMATIC] ?: false,
             lastAutomaticCheckMillis = values[LAST_CHECK],

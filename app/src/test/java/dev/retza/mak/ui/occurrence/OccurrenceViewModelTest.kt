@@ -1,7 +1,12 @@
 package dev.retza.mak.ui.occurrence
 
+import androidx.lifecycle.SavedStateHandle
+import dev.retza.mak.data.entity.AcademicCalendarEntity
+import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.ui.FakeRepository
+import dev.retza.mak.ui.components.OccurrenceStatusUi
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.feedback.FeedbackController
@@ -9,7 +14,12 @@ import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.activePlanSource
+import dev.retza.mak.settings.InMemorySettingsPreferences
+import dev.retza.mak.settings.SettingsPreferences
 import java.time.LocalDate
+import java.time.LocalTime
+import dev.retza.mak.sync.PlanEditTracker
+import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
@@ -29,13 +39,42 @@ class OccurrenceViewModelTest {
     @get:Rule
     val mainDispatcherRule = MainDispatcherRule(mainDispatcher)
 
-    private fun occurrenceViewModel(repository: FakeRepository) =
-        OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = FeedbackController(), activePlanSource = activePlanSource(repository))
+    private fun occurrenceViewModel(
+        repository: FakeRepository,
+        preferences: SettingsPreferences = InMemorySettingsPreferences(),
+        savedState: SavedStateHandle = SavedStateHandle(),
+        planEditTracker: PlanEditTracker = PlanEditTracker(CoroutineScope(UnconfinedTestDispatcher()))
+    ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = FeedbackController(), activePlanSource = activePlanSource(repository, preferences), planEditTracker = planEditTracker, savedState = savedState)
 
     private fun recordingViewModel(
         repository: FakeRepository,
         sink: RecordingFeedbackSink
-    ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = sink, activePlanSource = activePlanSource(repository))
+    ) = OccurrenceViewModel(FakeSemesterRepository(repository), repository, ActivePlanProvider(), feedbackSink = sink, activePlanSource = activePlanSource(repository), planEditTracker = PlanEditTracker(CoroutineScope(UnconfinedTestDispatcher())), savedState = SavedStateHandle())
+
+    // Invalid route ids are ignored, as the removed public overload did.
+    private fun OccurrenceViewModel.open(routeId: String) {
+        OccurrenceArgs.from(routeId.substringBefore(':'), routeId.substringAfter(':', ""))?.let { open(it) }
+    }
+
+    @Test
+    fun detailsOpenFromSavedStateArguments() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = occurrenceViewModel(
+            repository,
+            savedState = SavedStateHandle(mapOf("classId" to "1", "date" to "2026-09-21"))
+        )
+        advanceUntilIdle()
+
+        assertFalse(viewModel.details.value.notFound)
+        assertEquals("Programowanie", viewModel.details.value.subjectName)
+    }
+
+    @Test
+    fun missingArgumentsShowNotFound() {
+        val viewModel = occurrenceViewModel(FakeRepository())
+
+        assertTrue(viewModel.details.value.notFound)
+    }
 
     @Test
     fun openValidOccurrenceBuildsDetails() = runTest(mainDispatcher) {
@@ -86,6 +125,41 @@ class OccurrenceViewModelTest {
         assertEquals("B204", state.room)
         assertEquals("Niezapisana notatka", state.sharedNoteDraft)
         assertTrue(state.canSaveSharedNote)
+    }
+
+    @Test
+    fun noteDraftHoldsTheKeyUntilSaved() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val tracker = PlanEditTracker(CoroutineScope(mainDispatcher))
+        val viewModel = occurrenceViewModel(repository, planEditTracker = tracker)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.updateOccurrenceNoteDraft("Notatka do terminu")
+        advanceUntilIdle()
+        assertTrue(tracker.isEditing)
+
+        viewModel.saveOccurrenceNote()
+        advanceUntilIdle()
+        assertEquals("Notatka do terminu", viewModel.details.value.occurrenceNote)
+        assertFalse(tracker.isEditing)
+    }
+
+    @Test
+    fun firstTypedCharacterSurvivesTheAdmissionRefresh() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.updateOccurrenceNoteDraft("K")
+        assertEquals("K", viewModel.details.value.occurrenceNoteDraft)
+        viewModel.updateOccurrenceNoteDraft("Ko")
+        advanceUntilIdle()
+
+        assertEquals("Ko", viewModel.details.value.occurrenceNoteDraft)
     }
 
     @Test
@@ -176,7 +250,7 @@ class OccurrenceViewModelTest {
         advanceUntilIdle()
 
         repository.classes.clear()
-        val refreshed = viewModel.refreshForEdit("1:2026-09-21")
+        val refreshed = viewModel.refreshForEdit(OccurrenceArgs(1L, LocalDate.of(2026, 9, 21)))
 
         assertFalse(refreshed)
         assertTrue(viewModel.details.value.notFound)
@@ -451,7 +525,9 @@ class OccurrenceViewModelTest {
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
 
-        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "12:30") }
+        viewModel.openEditDialog()
+        viewModel.updateStartTimeDraft("11:00")
+        viewModel.updateEndTimeDraft("12:30")
         advanceUntilIdle()
         assertTrue(viewModel.details.value.canSaveOccurrenceEdit)
 
@@ -483,11 +559,36 @@ class OccurrenceViewModelTest {
 
         assertTrue(effects.isEmpty())
         assertFalse(viewModel.details.value.showDeleteConfirmation)
+        assertFalse(viewModel.details.value.isDeletingClass)
         assertEquals(1, repository.classes.size)
         assertEquals(
             UiFeedback("Nie udało się usunąć zajęć.", UiFeedbackKind.Error),
             sink.published.single()
         )
+    }
+
+    @Test
+    fun deleteSelectedClassRunsOnceWhileTheFirstIsPending() = runTest(mainDispatcher) {
+        val repository = FakeRepository().apply { saveGate = CompletableDeferred() }
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        val effects = mutableListOf<OccurrenceEffect>()
+        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+
+        viewModel.deleteSelectedClass()
+        viewModel.deleteSelectedClass()
+        advanceUntilIdle()
+        assertTrue(viewModel.details.value.isDeletingClass)
+
+        repository.saveGate?.complete(Unit)
+        advanceUntilIdle()
+
+        assertEquals(1, repository.events.count { it == "deleteClass" })
+        assertEquals(listOf(OccurrenceEffect.CloseDetails), effects)
     }
 
     @Test
@@ -535,7 +636,9 @@ class OccurrenceViewModelTest {
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
 
-        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "12:30") }
+        viewModel.openEditDialog()
+        viewModel.updateStartTimeDraft("11:00")
+        viewModel.updateEndTimeDraft("12:30")
         advanceUntilIdle()
         viewModel.saveOccurrenceChange()
         advanceUntilIdle()
@@ -556,7 +659,8 @@ class OccurrenceViewModelTest {
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
 
-        viewModel.updateDraft { it.copy(targetDateDraft = "2026-09-23") }
+        viewModel.openEditDialog()
+        viewModel.updateTargetDateDraft("2026-09-23")
         advanceUntilIdle()
         viewModel.saveOccurrenceChange()
         advanceUntilIdle()
@@ -591,6 +695,22 @@ class OccurrenceViewModelTest {
     }
 
     @Test
+    fun restoreWithoutChangeDoesNothing() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.restoreOccurrence()
+        advanceUntilIdle()
+
+        assertTrue(sink.published.none { it.kind == UiFeedbackKind.Error })
+        assertEquals(OccurrenceStatusUi.Scheduled, viewModel.details.value.status)
+    }
+
+    @Test
     fun invalidTimeRangeIsRejectedWithoutSaveOrFeedback() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
@@ -599,7 +719,9 @@ class OccurrenceViewModelTest {
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
 
-        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "10:30") }
+        viewModel.openEditDialog()
+        viewModel.updateStartTimeDraft("11:00")
+        viewModel.updateEndTimeDraft("10:30")
         advanceUntilIdle()
         viewModel.saveOccurrenceChange()
         advanceUntilIdle()
@@ -610,7 +732,7 @@ class OccurrenceViewModelTest {
     }
 
     @Test
-    fun outOfSemesterDateIsRejectedWithoutSaveOrFeedback() = runTest(mainDispatcher) {
+    fun dateOutsideProgramCalendarIsRejectedWithoutSaveOrFeedback() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
@@ -618,12 +740,17 @@ class OccurrenceViewModelTest {
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
 
-        viewModel.updateDraft { it.copy(targetDateDraft = "2026-12-01") }
+        viewModel.openEditDialog()
+        viewModel.updateTargetDateDraft("2026-12-01")
         advanceUntilIdle()
         viewModel.saveOccurrenceChange()
         advanceUntilIdle()
 
         assertNotNull(viewModel.details.value.draftErrors[OccurrenceEditField.Date])
+        assertEquals(
+            "Data musi należeć do kalendarza kierunku.",
+            viewModel.details.value.draftErrors[OccurrenceEditField.Date]?.message
+        )
         assertTrue(repository.occurrenceChanges.isEmpty())
         assertTrue(sink.published.isEmpty())
     }
@@ -637,7 +764,9 @@ class OccurrenceViewModelTest {
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
 
-        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "12:30") }
+        viewModel.openEditDialog()
+        viewModel.updateStartTimeDraft("11:00")
+        viewModel.updateEndTimeDraft("12:30")
         advanceUntilIdle()
         repository.failSaves = true
         viewModel.saveOccurrenceChange()
@@ -725,7 +854,9 @@ class OccurrenceViewModelTest {
         advanceUntilIdle()
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
-        viewModel.updateDraft { it.copy(startTimeDraft = "11:00", endTimeDraft = "12:30") }
+        viewModel.openEditDialog()
+        viewModel.updateStartTimeDraft("11:00")
+        viewModel.updateEndTimeDraft("12:30")
         advanceUntilIdle()
 
         repository.saveGate = CompletableDeferred()
@@ -758,6 +889,52 @@ class OccurrenceViewModelTest {
         assertEquals(1, repository.events.count { it == "saveOccurrenceChange" })
         assertEquals(1, sink.published.size)
         assertEquals("Odwołano termin", sink.published.single().message)
+    }
+    @Test
+    fun detailsOfHiddenProgramAreNotFound() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val preferences = InMemorySettingsPreferences()
+        preferences.setStudyProgramHidden(1L, hidden = true)
+        val viewModel = occurrenceViewModel(repository, preferences)
+        advanceUntilIdle()
+
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        assertTrue(viewModel.details.value.notFound)
+    }
+
+    @Test
+    fun detailsWeekComesFromTheClassCalendar() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val calendarB = repository.saveCalendar(
+            AcademicCalendarEntity(
+                id = 0L,
+                semesterId = 1L,
+                startDate = LocalDate.of(2026, 9, 1),
+                endDate = LocalDate.of(2026, 10, 31),
+                firstWeekType = WeekType.B
+            )
+        )
+        val programB = repository.saveSemesterProgram(
+            SemesterProgramEntity(id = 0L, semesterId = 1L, studyProgramId = 1L, academicCalendarId = calendarB)
+        )
+        repository.classes += repository.classes.single().copy(
+            id = 2L,
+            name = "Matematyka",
+            semesterProgramId = programB,
+            startTime = LocalTime.of(12, 0),
+            endTime = LocalTime.of(13, 0),
+            room = null
+        )
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+
+        // On 2026-09-14 the first calendar has week A and this class's calendar has week B.
+        viewModel.open("2:2026-09-14")
+        advanceUntilIdle()
+
+        assertEquals("Tydzień B", viewModel.details.value.weekLabel)
     }
 }
 

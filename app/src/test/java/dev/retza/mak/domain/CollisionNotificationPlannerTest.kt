@@ -15,16 +15,16 @@ class CollisionNotificationPlannerTest {
         Instant.parse("2026-09-21T05:00:00Z"),
         ZoneId.of("Europe/Warsaw")
     )
-    private val semester = Semester(id = "semester", name = "Semestr")
+    private val semester = Semester(id = 1L, name = "Semestr")
     private val calendar = AcademicCalendar(
-        id = "calendar",
+        id = 1L,
         startDate = LocalDate.of(2026, 9, 1),
         endDate = LocalDate.of(2026, 12, 31),
         firstWeekType = WeekType.A
     )
-    private val course = StudyProgram(id = "course", name = "Informatyka", color = "#137B71")
+    private val course = StudyProgram(id = 1L, name = "Informatyka", color = "#137B71")
     private val assignment = SemesterProgram(
-        id = "assignment",
+        id = 1L,
         semesterId = semester.id,
         studyProgramId = course.id,
         academicCalendarId = calendar.id
@@ -42,7 +42,7 @@ class CollisionNotificationPlannerTest {
     @Test
     fun disabledProducesNothing() {
         val plan = planner().plan(
-            data(item("a", monday, LocalTime.of(9, 0), LocalTime.of(10, 0))),
+            data(item(1L, monday, LocalTime.of(9, 0), LocalTime.of(10, 0))),
             settings.copy(enabled = false),
             PlanDisplaySettings.DEFAULT
         )
@@ -54,8 +54,8 @@ class CollisionNotificationPlannerTest {
     fun noCollisionProducesNothing() {
         val plan = planner().plan(
             data(
-                item("a", monday, LocalTime.of(9, 0), LocalTime.of(10, 0)),
-                item("b", monday, LocalTime.of(10, 15), LocalTime.of(11, 0))
+                item(1L, monday, LocalTime.of(9, 0), LocalTime.of(10, 0)),
+                item(2L, monday, LocalTime.of(10, 15), LocalTime.of(11, 0))
             ),
             settings,
             PlanDisplaySettings.DEFAULT
@@ -65,11 +65,25 @@ class CollisionNotificationPlannerTest {
     }
 
     @Test
+    fun hiddenStudyProgramProducesNoNotification() {
+        val plan = planner().plan(
+            data(
+                item(1L, tuesday, LocalTime.of(9, 0), LocalTime.of(10, 0)),
+                item(2L, tuesday, LocalTime.of(9, 30), LocalTime.of(10, 30))
+            ),
+            settings,
+            PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf(course.id))
+        )
+
+        assertTrue(plan.isEmpty())
+    }
+
+    @Test
     fun classesWithoutBreakGetNotificationDescribingTheBreak() {
         val plan = planner().plan(
             data(
-                item("a", tuesday, LocalTime.of(8, 15), LocalTime.of(9, 45)),
-                item("b", tuesday, LocalTime.of(9, 55), LocalTime.of(11, 15))
+                item(1L, tuesday, LocalTime.of(8, 15), LocalTime.of(9, 45)),
+                item(2L, tuesday, LocalTime.of(9, 55), LocalTime.of(11, 15))
             ),
             settings,
             PlanDisplaySettings(minimumBreakMinutes = 10)
@@ -83,8 +97,8 @@ class CollisionNotificationPlannerTest {
     fun overlapGroupLabelIsItsRange() {
         val plan = planner().plan(
             data(
-                item("a", tuesday, LocalTime.of(9, 0), LocalTime.of(10, 0)),
-                item("b", tuesday, LocalTime.of(9, 30), LocalTime.of(10, 30))
+                item(1L, tuesday, LocalTime.of(9, 0), LocalTime.of(10, 0)),
+                item(2L, tuesday, LocalTime.of(9, 30), LocalTime.of(10, 30))
             ),
             settings,
             PlanDisplaySettings.DEFAULT
@@ -98,10 +112,10 @@ class CollisionNotificationPlannerTest {
     fun schedulesEveningAndBeforeClassWithinHorizon() {
         val plan = planner().plan(
             data(
-                item("a", monday, LocalTime.of(9, 0), LocalTime.of(10, 0)),
-                item("b", monday, LocalTime.of(9, 30), LocalTime.of(10, 30)),
-                item("c", tuesday, LocalTime.of(12, 0), LocalTime.of(13, 0)),
-                item("d", tuesday, LocalTime.of(12, 30), LocalTime.of(13, 30))
+                item(1L, monday, LocalTime.of(9, 0), LocalTime.of(10, 0)),
+                item(2L, monday, LocalTime.of(9, 30), LocalTime.of(10, 30)),
+                item(3L, tuesday, LocalTime.of(12, 0), LocalTime.of(13, 0)),
+                item(4L, tuesday, LocalTime.of(12, 30), LocalTime.of(13, 30))
             ),
             settings,
             PlanDisplaySettings.DEFAULT
@@ -110,7 +124,7 @@ class CollisionNotificationPlannerTest {
         val mondayBefore = plan.single { it.kind == CollisionNotificationKind.BEFORE_CLASS && it.date == monday }
         assertEquals(LocalDateTime.of(2026, 9, 21, 8, 15), mondayBefore.triggerFrom)
         assertEquals(LocalDateTime.of(2026, 9, 21, 8, 30), mondayBefore.triggerUntil)
-        assertEquals(listOf("a:2026-09-21", "b:2026-09-21"), mondayBefore.groups.single().occurrenceIds)
+        assertEquals(listOf("1:2026-09-21", "2:2026-09-21"), mondayBefore.groups.single().occurrenceIds)
         assertTrue(plan.none { it.kind == CollisionNotificationKind.EVENING && it.date == monday })
 
         val evening = plan.single { it.kind == CollisionNotificationKind.EVENING && it.date == tuesday }
@@ -127,9 +141,9 @@ class CollisionNotificationPlannerTest {
     fun mergesTransitiveOverlapIntoOneGroup() {
         val plan = planner().plan(
             data(
-                item("a", wednesday, LocalTime.of(9, 0), LocalTime.of(10, 0)),
-                item("b", wednesday, LocalTime.of(9, 30), LocalTime.of(10, 30)),
-                item("c", wednesday, LocalTime.of(10, 0), LocalTime.of(11, 0))
+                item(1L, wednesday, LocalTime.of(9, 0), LocalTime.of(10, 0)),
+                item(2L, wednesday, LocalTime.of(9, 30), LocalTime.of(10, 30)),
+                item(3L, wednesday, LocalTime.of(10, 0), LocalTime.of(11, 0))
             ),
             settings,
             PlanDisplaySettings.DEFAULT
@@ -138,7 +152,7 @@ class CollisionNotificationPlannerTest {
         val before = plan.filter { it.kind == CollisionNotificationKind.BEFORE_CLASS }
         assertEquals(1, before.size)
         assertEquals(
-            listOf("a:2026-09-23", "b:2026-09-23", "c:2026-09-23"),
+            listOf("1:2026-09-23", "2:2026-09-23", "3:2026-09-23"),
             before.single().groups.single().occurrenceIds
         )
     }
@@ -147,10 +161,10 @@ class CollisionNotificationPlannerTest {
     fun keepsIndependentGroupsSeparate() {
         val plan = planner().plan(
             data(
-                item("a", wednesday, LocalTime.of(9, 0), LocalTime.of(10, 0)),
-                item("b", wednesday, LocalTime.of(9, 30), LocalTime.of(10, 30)),
-                item("c", wednesday, LocalTime.of(12, 0), LocalTime.of(13, 0)),
-                item("d", wednesday, LocalTime.of(12, 30), LocalTime.of(13, 30))
+                item(1L, wednesday, LocalTime.of(9, 0), LocalTime.of(10, 0)),
+                item(2L, wednesday, LocalTime.of(9, 30), LocalTime.of(10, 30)),
+                item(3L, wednesday, LocalTime.of(12, 0), LocalTime.of(13, 0)),
+                item(4L, wednesday, LocalTime.of(12, 30), LocalTime.of(13, 30))
             ),
             settings,
             PlanDisplaySettings.DEFAULT
@@ -167,8 +181,8 @@ class CollisionNotificationPlannerTest {
     fun ignoresCollisionsBeyondHorizon() {
         val plan = planner().plan(
             data(
-                item("a", LocalDate.of(2026, 10, 10), LocalTime.of(9, 0), LocalTime.of(10, 0)),
-                item("b", LocalDate.of(2026, 10, 10), LocalTime.of(9, 30), LocalTime.of(10, 30))
+                item(1L, LocalDate.of(2026, 10, 10), LocalTime.of(9, 0), LocalTime.of(10, 0)),
+                item(2L, LocalDate.of(2026, 10, 10), LocalTime.of(9, 30), LocalTime.of(10, 30))
             ),
             settings,
             PlanDisplaySettings.DEFAULT
@@ -180,8 +194,8 @@ class CollisionNotificationPlannerTest {
     @Test
     fun idsAreStableAcrossRuns() {
         val data = data(
-            item("a", wednesday, LocalTime.of(9, 0), LocalTime.of(10, 0)),
-            item("b", wednesday, LocalTime.of(9, 30), LocalTime.of(10, 30))
+            item(1L, wednesday, LocalTime.of(9, 0), LocalTime.of(10, 0)),
+            item(2L, wednesday, LocalTime.of(9, 30), LocalTime.of(10, 30))
         )
 
         val first = planner().plan(data, settings, PlanDisplaySettings.DEFAULT).map { it.id }
@@ -194,8 +208,8 @@ class CollisionNotificationPlannerTest {
     fun eveningCanBeDisabledIndependently() {
         val plan = planner().plan(
             data(
-                item("a", tuesday, LocalTime.of(12, 0), LocalTime.of(13, 0)),
-                item("b", tuesday, LocalTime.of(12, 30), LocalTime.of(13, 30))
+                item(1L, tuesday, LocalTime.of(12, 0), LocalTime.of(13, 0)),
+                item(2L, tuesday, LocalTime.of(12, 30), LocalTime.of(13, 30))
             ),
             settings.copy(eveningEnabled = false),
             PlanDisplaySettings.DEFAULT
@@ -215,11 +229,11 @@ class CollisionNotificationPlannerTest {
         calendars = listOf(calendar)
     )
 
-    private fun item(id: String, date: LocalDate, start: LocalTime, end: LocalTime) = ClassItem(
+    private fun item(id: Long, date: LocalDate, start: LocalTime, end: LocalTime) = ClassItem(
         id = id,
         semesterId = semester.id,
         semesterProgramId = assignment.id,
-        name = id,
+        name = "Class $id",
         type = "Wykład",
         dayOfWeek = date.dayOfWeek,
         startTime = start,

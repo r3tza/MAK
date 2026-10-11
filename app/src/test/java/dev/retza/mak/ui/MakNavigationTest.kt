@@ -13,7 +13,6 @@ class MakNavigationTest {
         assertEquals("edit?classId=42&date=2026-09-19", editRoute(42, "2026-09-19"))
         assertEquals("edit", newClassRoute())
         assertEquals("edit?date=2026-09-19", newClassRoute(LocalDate.of(2026, 9, 19)))
-        assertEquals("semester/7", semesterRoute("7"))
         assertEquals("semester/7/courses", semesterCoursesRoute("7"))
         assertEquals("semester/7/week-overrides", semesterOverridesRoute("7"))
         assertEquals("setup?resume=true", setupRoute(resumeExisting = true))
@@ -21,10 +20,9 @@ class MakNavigationTest {
     }
 
     @Test
-    fun editorRouteUsesDynamicEditorTitle() {
-        assertEquals("Dodaj zajęcia", titleForRoute(MakRoutes.Edit, "Dodaj zajęcia"))
-        assertEquals("Edytuj zajęcia", titleForRoute(MakRoutes.Edit, "Edytuj zajęcia"))
-        assertEquals("Plan", titleForRoute(MakRoutes.Schedule, "Dodaj zajęcia"))
+    fun editorRouteUsesFixedFallbackTitle() {
+        assertEquals("Zajęcia", titleForRoute(MakRoutes.Edit))
+        assertEquals("Plan", titleForRoute(MakRoutes.Schedule))
     }
 
     @Test
