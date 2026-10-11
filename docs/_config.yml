@@ -2,5 +2,6 @@
 exclude:
   - "*.md"
   - log_archive
+  - queue_archive
 include:
   - PRIVACY.md

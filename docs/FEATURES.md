@@ -342,14 +342,8 @@ Import powinien:
 
 ## Odbiór na urządzeniu
 
-Odbiór na urządzeniu jest odrębnym kryterium od kompilacji testów Android.
+Odbiór na urządzeniu jest odrębnym kryterium od kompilacji testów Android. Lista zawiera tylko otwarte scenariusze; zamknięte są w archiwum `QUEUE.md`.
 
-- Uruchomić test migracji Room i sprawdzić otwarcie bazy z wersji 1 oraz zachowanie danych.
-- Sprawdzić rozdzielanie i ponowne łączenie kalendarzy, wybór kalendarza korekty oraz plan dwóch kierunków z różnych uczelni.
-- Sprawdzić import poprawnego i błędnego pliku, anulowanie oraz rollback po błędzie zapisu.
-- Sprawdzić zgodę na powiadomienia, alarm wieczorny i przed zajęciami, restart, zmianę czasu, anulowanie kolizji i kliknięcie powiadomienia.
-- Sprawdzić kolizję bez przerwy (I-80): zajęcia stykające się przy minimalnej przerwie 0 min i z przerwą 5 min przy 10 min, opis na karcie, w szczegółach i na widgecie na ekranie głównym, odświeżenie widgetu po zmianie ustawienia oraz powiadomienie wieczorne z opisem przerwy.
-- Sprawdzić zimny start w motywie jasnym, ciemnym i systemowym, także gdy motyw aplikacji różni się od systemowego: ekran startowy i ekran ładowania mają kolor motywu aplikacji, a „Dzisiaj” nie pokazuje stanu pustego przed danymi.
+- Sprawdzić zgodę na powiadomienia, alarm wieczorny i przed zajęciami, restart, zmianę czasu, anulowanie kolizji i kliknięcie powiadomienia (O-04).
 - Sprawdzić tablet (O-08) w pionie, w poziomie i w podzielonym ekranie: boczny pasek nawigacji od 600 dp, dolny pasek poniżej, treść nie szersza niż 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp, wybór daty i godziny w całości i po polsku, zachowanie bieżącego ekranu i wpisanych danych po obrocie.
-- Sprawdzić nawigację i powrót systemowy, insety, TalkBack, klawiaturę, focus, motyw ciemny, długie treści i szerokość 320 dp. Potwierdzić, że po błędzie formularz zachowuje dane i pokazuje bezpieczny komunikat.
-- Sprawdzić widget na launcherze w małym, pośrednim i dużym rozmiarze, w obu motywach, po zmianie danych i po kliknięciu. Zweryfikować jego stany puste, kolizje i długie nazwy.
+- Scenariusze I-95 do I-98 zapisane w ich wierszach w `QUEUE.md`.

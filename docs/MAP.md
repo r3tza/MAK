@@ -11,7 +11,7 @@ Zacznij od pytania, które rozwiązuje zadanie. Otwórz wskazany dokument i potr
 | Jakich narzędzi i testów używać? | [STACK.md](STACK.md): wersje bibliotek, środowisko, rodzaje kontroli i odrzucone alternatywy |
 | Jak przygotować OAuth Google i co sprawdzić na prawdziwym koncie? | [STACK.md](STACK.md): „Konfiguracja synchronizacji Google”; zależność od udziału użytkownika i odbiór I-69 w [QUEUE.md](QUEUE.md) |
 | Jak działa opcjonalna synchronizacja Google? | [SYNC.md](SYNC.md): jeden plik planu, tabela przypadków, wybór wersji, archiwum, konto, praca w tle i testy. Odbiór rzeczywistego konta to I-69 |
-| Co wykonać teraz? | [PLAN.md](PLAN.md): najwyżej pięć najbliższych kroków z kryteriami zakończenia. [QUEUE.md](QUEUE.md) zawiera pozostałe zadania, zależności i statusy; zakończone są w osobnej tabeli na końcu |
+| Co wykonać teraz? | [PLAN.md](PLAN.md): najwyżej pięć najbliższych kroków z kryteriami zakończenia. [QUEUE.md](QUEUE.md) zawiera otwarte zadania, zależności i statusy; zakończone są w [archiwum](queue_archive/2026.md) |
 | Co jest gotowe w kodzie, ale czeka na urządzenie? | [QUEUE.md](QUEUE.md): osobne pozycje odbioru; szczegółowe scenariusze w [FEATURES.md](FEATURES.md) |
 | Jak rozpocząć, sprawdzić i zakończyć zadanie? | [WORKFLOW.md](WORKFLOW.md): kolejność pracy, szablon kroku planu i znaczenie statusów |
 | Jak prowadzić gałąź i pull request? | [WORKFLOW.md](WORKFLOW.md): sekcja „Gałąź i pull request”; zasady ogólne w [AGENTS.md](../AGENTS.md), sekcja „Git” |
@@ -23,7 +23,7 @@ Zacznij od pytania, które rozwiązuje zadanie. Otwórz wskazany dokument i potr
 | Jakie braki potwierdzono w obecnym kodzie? | [KNOWN_ISSUES.md](KNOWN_ISSUES.md): otwarte problemy i brakujący odbiór, nie docelowa specyfikacja |
 | Jak pisać komunikaty i dokumentację? | [WRITING.md](WRITING.md): język, styl i zasady redakcyjne |
 | Jakie dane obejmuje opcjonalna synchronizacja i co opublikować do konfiguracji Google? | [PRIVACY.md](PRIVACY.md): polityka prywatności aplikacji, publikowana przez GitHub Pages pod https://r3tza.github.io/MAK/PRIVACY.html; konfigurację Google opisuje [STACK.md](STACK.md), „Konfiguracja synchronizacji Google” |
-| Jak recenzować commit albo etap planu? | [mak-code-review](../.cursor/skills/mak-code-review/SKILL.md): kryteria recenzji i podział pracy z Composerem |
+| Jak recenzować commit albo etap planu? | [WORKFLOW.md](WORKFLOW.md): „Wykonanie i sprawdzenie”; kryteriami są zasady z [AGENTS.md](../AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md) i [STACK.md](STACK.md) oraz kroki z [PLAN.md](PLAN.md) |
 | Czy dokumenty są spójne (linki, limity planu i logu, kolejka)? | `scripts/check_map.py`; testy `scripts/test_check_map.py`. Uruchomienie: [AGENTS.md](../AGENTS.md) i [WORKFLOW.md](WORKFLOW.md) |
 
 `AGENTS.md` zawiera zasady pracy, `README.md` jest krótkim punktem wejścia, a `KNOWN_ISSUES.md` opisuje potwierdzone braki. Mapa nie zastępuje żadnego z tych dokumentów.
