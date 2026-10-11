@@ -329,7 +329,7 @@ Automatyczne sprawdzanie jest domyślnie wyłączone. Przy wyłączonym przełą
 
 Ekrany podrzędne mają własne trasy w jednym `NavHost`, przewidywalny systemowy powrót i tytuł w topbarze. Stan ekranu głównego po powrocie nie może się resetować ani automatycznie otwierać innej sekcji.
 
-Eksport i import używają lokalnego pliku JSON z polem `schemaVersion`. Eksport zapisuje wersję 3 formatu. Import przyjmuje wersje 2 i 3, a plik z wyższą wersją odrzuca komunikatem „Plik pochodzi z nowszej wersji MAK. Zaktualizuj aplikację.” (I-83); w pliku w wersji 2 notatki do przeniesionych terminów są przepinane na datę oryginalną tą samą regułą co migracja bazy. Zgodność z wersją 1 nie jest wymagana.
+Eksport i import używają lokalnego pliku JSON z polem `schemaVersion`. Eksport zapisuje wersję 4 formatu, z polem `freeDays` w każdym semestrze (I-81). Import przyjmuje wersje 2, 3 i 4 (w plikach 2 i 3 nie ma dni wolnych), a plik z wyższą wersją odrzuca komunikatem „Plik pochodzi z nowszej wersji MAK. Zaktualizuj aplikację.” (I-83); w pliku w wersji 2 notatki do przeniesionych terminów są przepinane na datę oryginalną tą samą regułą co migracja bazy. Zgodność z wersją 1 nie jest wymagana.
 
 Użytkownik wybiera plik przez systemowy wybór dokumentu. Format zawiera globalne kierunki, semestry, przypisania, kalendarze akademickie, zajęcia z tekstem prowadzącego, korekty, notatki i zmiany wystąpień, a od I-81 także dni wolne.
 
