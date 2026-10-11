@@ -14,6 +14,8 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.data.repository.toEntity
 import dev.retza.mak.data.repository.toRecord
+import dev.retza.mak.domain.Holiday
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.settings.InMemorySettingsPreferences
 import dev.retza.mak.settings.SettingsPreferences
 import java.time.LocalDate
@@ -33,12 +35,22 @@ internal class FakeSemesterRepository(
     /** Every saveFreeDayGroup call in order, recorded before the write. */
     val freeDayGroupSaves = mutableListOf<FreeDayGroupSave>()
 
+    /** Every addHolidays call in order, recorded before the write. */
+    val holidayAdds = mutableListOf<HolidayAdd>()
+
     data class FreeDayGroupSave(
         val semesterId: Long,
         val replacedIds: List<Long>,
         val startDate: LocalDate,
         val endDate: LocalDate,
         val name: String?,
+        val calendarIds: List<Long>,
+        val weekAfterBreak: WeekType? = null
+    )
+
+    data class HolidayAdd(
+        val semesterId: Long,
+        val holidays: List<Holiday>,
         val calendarIds: List<Long>
     )
 
@@ -105,9 +117,12 @@ internal class FakeSemesterRepository(
         startDate: LocalDate,
         endDate: LocalDate,
         name: String?,
-        calendarIds: List<Long>
+        calendarIds: List<Long>,
+        weekAfterBreak: WeekType?
     ) {
-        freeDayGroupSaves += FreeDayGroupSave(semesterId, replacedIds, startDate, endDate, name, calendarIds)
+        freeDayGroupSaves += FreeDayGroupSave(
+            semesterId, replacedIds, startDate, endDate, name, calendarIds, weekAfterBreak
+        )
         written {
             delegate.freeDays.removeAll { it.id in replacedIds }
             var nextId = (delegate.freeDays.maxOfOrNull { it.id } ?: 0L) + 1
@@ -120,6 +135,25 @@ internal class FakeSemesterRepository(
                     endDate = endDate,
                     name = name?.trim()?.takeIf { it.isNotEmpty() }
                 )
+            }
+        }
+    }
+
+    override suspend fun addHolidays(semesterId: Long, holidays: List<Holiday>, calendarIds: List<Long>) {
+        holidayAdds += HolidayAdd(semesterId, holidays, calendarIds)
+        written {
+            var nextId = (delegate.freeDays.maxOfOrNull { it.id } ?: 0L) + 1
+            calendarIds.forEach { calendarId ->
+                holidays.forEach { holiday ->
+                    delegate.freeDays += FreeDayEntity(
+                        id = nextId++,
+                        semesterId = semesterId,
+                        academicCalendarId = calendarId,
+                        startDate = holiday.date,
+                        endDate = holiday.date,
+                        name = holiday.name
+                    )
+                }
             }
         }
     }

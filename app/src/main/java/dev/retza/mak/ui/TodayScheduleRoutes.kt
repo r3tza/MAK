@@ -111,6 +111,7 @@ internal fun NavGraphBuilder.scheduleRoute(
             onRangeChange = freeDayEditor::updateRange,
             onNameChange = freeDayEditor::updateName,
             onToggleCalendar = freeDayEditor::toggleCalendar,
+            onWeekAfterBreakChange = freeDayEditor::updateWeekAfterBreak,
             onSave = freeDayEditor::save,
             onCancel = freeDayEditor::cancel
         )

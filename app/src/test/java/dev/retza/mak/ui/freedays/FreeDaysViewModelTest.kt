@@ -18,6 +18,7 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -110,5 +111,71 @@ class FreeDaysViewModelTest {
         assertTrue(semesters.observeFreeDays(1L).first().isEmpty())
         assertTrue(viewModel.freeDays.value.groups.isEmpty())
         assertEquals(null, viewModel.freeDays.value.pendingDeletion)
+    }
+
+    /** Stretches the seeded calendar of semester 1 over the 2026/2027 holidays and returns its id. */
+    private suspend fun stretchSemesterCalendar(): Long {
+        val calendarId = semesters.observeCalendars(1L).first().single().id
+        semesters.saveCalendar(
+            AcademicCalendarRecord(
+                id = calendarId,
+                semesterId = 1L,
+                startDate = LocalDate.of(2026, 9, 7),
+                endDate = LocalDate.of(2027, 2, 14),
+                firstWeekType = WeekType.A
+            )
+        )
+        return calendarId
+    }
+
+    @Test
+    fun holidaysListsHolidaysOfTheSemesterAndSkipsCoveredOnes() = runTest(mainDispatcher) {
+        val calendarId = stretchSemesterCalendar()
+        semesters.saveFreeDayGroup(
+            1L,
+            emptyList(),
+            LocalDate.of(2026, 12, 23),
+            LocalDate.of(2027, 1, 1),
+            "Przerwa świąteczna",
+            listOf(calendarId)
+        )
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.openHolidays()
+        advanceUntilIdle()
+
+        val dialog = viewModel.freeDays.value.holidays!!
+        val allSaints = dialog.options.single { it.name == "Wszystkich Świętych" }
+        assertTrue(allSaints.checked && allSaints.enabled)
+        val christmas = dialog.options.filter { it.name == "Boże Narodzenie" }
+        assertTrue(christmas.isNotEmpty())
+        christmas.forEach {
+            assertFalse(it.checked)
+            assertFalse(it.enabled)
+            assertEquals("Już w „Przerwa świąteczna”", it.detail)
+        }
+        assertEquals(dialog.options.count { it.enabled }, dialog.checkedCount)
+        assertTrue(dialog.confirmLabel.startsWith("Dodaj ${dialog.checkedCount} "))
+    }
+
+    @Test
+    fun addHolidaysAddsCheckedOnesToAllCalendars() = runTest(mainDispatcher) {
+        val calendarId = stretchSemesterCalendar()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.openHolidays()
+        advanceUntilIdle()
+        viewModel.toggleHoliday(LocalDate.of(2026, 11, 1))
+        val expectedDates = viewModel.freeDays.value.holidays!!.options.filter { it.checked }.map { it.date }
+
+        viewModel.addHolidays()
+        advanceUntilIdle()
+
+        val add = semesters.holidayAdds.single()
+        assertEquals(expectedDates, add.holidays.map { it.date })
+        assertFalse(add.holidays.any { it.name == "Wszystkich Świętych" })
+        assertEquals(listOf(calendarId), add.calendarIds)
+        assertEquals(null, viewModel.freeDays.value.holidays)
     }
 }

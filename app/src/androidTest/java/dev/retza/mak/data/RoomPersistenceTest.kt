@@ -27,6 +27,7 @@ import dev.retza.mak.data.repository.RoomScheduleRepository
 import dev.retza.mak.data.repository.RoomSemesterRepository
 import dev.retza.mak.data.repository.SemesterBackup
 import dev.retza.mak.data.repository.toRecord
+import dev.retza.mak.domain.Holiday
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.Instant
@@ -857,6 +858,59 @@ class RoomPersistenceTest {
         assertEquals(LocalDate.of(2026, 11, 12), days.single().startDate)
         assertEquals(LocalDate.of(2026, 11, 13), days.single().endDate)
         assertEquals(null, days.single().name)
+    }
+
+    @Test
+    fun saveFreeDayGroupWithWeekAfterBreakAddsFromWeekOverride() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val calendarId = insertCalendar(semesterId)
+        repository.saveFreeDayGroup(
+            semesterId = semesterId,
+            replacedIds = emptyList(),
+            startDate = LocalDate.of(2026, 11, 2),
+            endDate = LocalDate.of(2026, 11, 15),
+            name = "Przerwa",
+            calendarIds = listOf(calendarId),
+            weekAfterBreak = dev.retza.mak.domain.WeekType.B
+        )
+
+        val overrides = repository.observeWeekOverrides(semesterId).first()
+        assertEquals(1, overrides.size)
+        assertEquals(LocalDate.of(2026, 11, 16), overrides.single().weekStartDate)
+        assertEquals("B", overrides.single().weekType.name)
+        assertEquals("FROM_WEEK", overrides.single().scope.name)
+    }
+
+    @Test
+    fun addHolidaysAddsOneDayFreeDaysInEachCalendar() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val firstCalendarId = insertCalendar(semesterId)
+        val secondCalendarId = insertCalendar(semesterId)
+        val holidays = listOf(
+            Holiday(LocalDate.of(2026, 11, 11), "Święto Niepodległości"),
+            Holiday(LocalDate.of(2026, 12, 25), "Boże Narodzenie")
+        )
+        repository.addHolidays(
+            semesterId = semesterId,
+            holidays = holidays,
+            calendarIds = listOf(firstCalendarId, secondCalendarId)
+        )
+
+        val days = repository.observeFreeDays(semesterId).first()
+        assertEquals(4, days.size)
+        assertTrue(days.all { it.startDate == it.endDate })
+        assertEquals(
+            listOf(firstCalendarId, firstCalendarId, secondCalendarId, secondCalendarId),
+            days.sortedBy { it.id }.map { it.academicCalendarId }
+        )
+        assertEquals(
+            listOf("Święto Niepodległości", "Boże Narodzenie"),
+            days.filter { it.academicCalendarId == firstCalendarId }.map { it.name }
+        )
     }
 
     @Test

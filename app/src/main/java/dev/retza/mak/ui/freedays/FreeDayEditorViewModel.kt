@@ -4,6 +4,9 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.retza.mak.data.repository.SemesterConfiguration
 import dev.retza.mak.data.repository.SemesterRepository
+import dev.retza.mak.domain.WeekType
+import dev.retza.mak.domain.coversWorkWeek
+import dev.retza.mak.domain.firstMondayAfter
 import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.text.polishPlural
 import dev.retza.mak.ui.PlanEditSession
@@ -11,6 +14,7 @@ import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
+import dev.retza.mak.ui.shortDateWithYearFormatter
 import java.time.LocalDate
 import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -38,10 +42,29 @@ data class FreeDayEditorUiState(
     val maxDate: LocalDate? = null,
     val rangeError: String? = null,
     val calendarError: String? = null,
-    val isSaving: Boolean = false
+    val isSaving: Boolean = false,
+    val weekAfterBreak: WeekType? = null
 ) {
     val title: String
         get() = if (isEditing) "Edytuj dni wolne" else "Dodaj dni wolne"
+
+    /** Offered only when the range covers at least one whole Monday-Friday week. */
+    val showsWeekAfterBreak: Boolean
+        get() {
+            val start = startDate ?: return false
+            val end = endDate ?: return false
+            return coversWorkWeek(start, end)
+        }
+
+    val weekAfterBreakDescription: String?
+        get() {
+            val end = endDate ?: return null
+            val type = weekAfterBreak ?: return null
+            if (!showsWeekAfterBreak) return null
+            val monday = firstMondayAfter(end).format(shortDateWithYearFormatter)
+            return "Od $monday tydzień ${type.name}, potem na zmianę. " +
+                "Powstanie korekta „Od tego tygodnia”."
+        }
 
     /** Null until both dates are chosen; counts both ends of the range. */
     val description: String?
@@ -129,6 +152,10 @@ class FreeDayEditorViewModel(
         }
     }
 
+    fun updateWeekAfterBreak(type: WeekType?) {
+        state.update { it.copy(weekAfterBreak = type) }
+    }
+
     fun cancel() {
         state.value = FreeDayEditorUiState()
         viewModelScope.launch { editSession.releaseIfNoDraft() }
@@ -163,7 +190,8 @@ class FreeDayEditorViewModel(
                 startDate = start,
                 endDate = end,
                 name = current.name.trim().ifEmpty { null },
-                calendarIds = checkedIds
+                calendarIds = checkedIds,
+                weekAfterBreak = current.weekAfterBreak.takeIf { current.showsWeekAfterBreak }
             )
             val message = if (current.isEditing) "Zapisano dni wolne" else "Dodano dni wolne"
             state.value = FreeDayEditorUiState()

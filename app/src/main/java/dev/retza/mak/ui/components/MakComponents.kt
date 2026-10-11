@@ -1319,7 +1319,7 @@ fun MakCheckbox(
 }
 
 @Composable
-private fun MakCheckboxBox(checked: Boolean, focused: Boolean) {
+internal fun MakCheckboxBox(checked: Boolean, focused: Boolean) {
     val shape = RoundedCornerShape(4.dp)
     Box(
         modifier = Modifier

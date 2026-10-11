@@ -5,11 +5,13 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.text.font.FontWeight
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.components.MakCheckbox
 import dev.retza.mak.ui.components.MakDateRangeFields
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDialogAction
 import dev.retza.mak.ui.components.MakField
+import dev.retza.mak.ui.components.MakSelectField
 import java.time.LocalDate
 
 @Composable
@@ -18,6 +20,7 @@ fun FreeDayDialog(
     onRangeChange: (LocalDate, LocalDate) -> Unit,
     onNameChange: (String) -> Unit,
     onToggleCalendar: (Long) -> Unit,
+    onWeekAfterBreakChange: (WeekType?) -> Unit,
     onSave: () -> Unit,
     onCancel: () -> Unit
 ) {
@@ -59,6 +62,22 @@ fun FreeDayDialog(
             }
             state.calendarError?.let { FreeDayErrorText(it) }
         }
+        if (state.showsWeekAfterBreak) {
+            MakSelectField(
+                label = "Po przerwie zacznij od tygodnia",
+                value = weekAfterBreakLabel(state.weekAfterBreak),
+                options = listOf(null, WeekType.A, WeekType.B),
+                onSelected = onWeekAfterBreakChange,
+                optionLabel = ::weekAfterBreakLabel
+            )
+            state.weekAfterBreakDescription?.let {
+                Text(
+                    it,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
         state.description?.let {
             Text(
                 it,
@@ -67,6 +86,12 @@ fun FreeDayDialog(
             )
         }
     }
+}
+
+private fun weekAfterBreakLabel(type: WeekType?): String = when (type) {
+    null -> "Bez zmiany"
+    WeekType.A -> "Tydzień A"
+    WeekType.B -> "Tydzień B"
 }
 
 @Composable

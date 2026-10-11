@@ -5,9 +5,14 @@ import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.data.entity.WeekOverrideEntity
+import dev.retza.mak.domain.Holiday
 import dev.retza.mak.domain.SemesterSpan
 import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.WeekType
+import dev.retza.mak.domain.coversWorkWeek
 import dev.retza.mak.domain.fallbackActiveSemester
+import dev.retza.mak.domain.firstMondayAfter
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -101,15 +106,22 @@ interface SemesterRepository {
 
     fun observeFreeDays(semesterId: Long): Flow<List<FreeDayRecord>>
 
-    /** Replaces [replacedIds] with the range in each calendar of [calendarIds], in one transaction. */
+    /**
+     * Replaces [replacedIds] with the range in each calendar of [calendarIds], in one transaction.
+     * With [weekAfterBreak], also starts that week type from the first Monday after the range in each of those calendars that covers the Monday.
+     */
     suspend fun saveFreeDayGroup(
         semesterId: Long,
         replacedIds: List<Long>,
         startDate: LocalDate,
         endDate: LocalDate,
         name: String?,
-        calendarIds: List<Long>
+        calendarIds: List<Long>,
+        weekAfterBreak: WeekType? = null
     )
+
+    /** Adds each holiday as a one-day free day named after it in every calendar of [calendarIds], in one transaction. */
+    suspend fun addHolidays(semesterId: Long, holidays: List<Holiday>, calendarIds: List<Long>)
 
     suspend fun deleteFreeDays(ids: List<Long>)
 }
@@ -561,7 +573,8 @@ class RoomSemesterRepository(
         startDate: LocalDate,
         endDate: LocalDate,
         name: String?,
-        calendarIds: List<Long>
+        calendarIds: List<Long>,
+        weekAfterBreak: WeekType?
     ) {
         database.withTransaction {
             require(semesters.findById(semesterId) != null) { "Semester does not exist" }
@@ -587,7 +600,63 @@ class RoomSemesterRepository(
                     )
                 )
             }
+            if (weekAfterBreak != null) {
+                require(coversWorkWeek(startDate, endDate)) { "A week after a break needs a whole working week off" }
+                val monday = firstMondayAfter(endDate)
+                calendarIds.forEach { calendarId ->
+                    val calendar = calendars.findById(calendarId) ?: error("Calendar must exist")
+                    if (monday.isBefore(calendar.startDate) || monday.isAfter(calendar.endDate)) return@forEach
+                    upsertFromWeekOverride(semesterId, calendarId, monday, weekAfterBreak)
+                }
+            }
         }
+    }
+
+    override suspend fun addHolidays(semesterId: Long, holidays: List<Holiday>, calendarIds: List<Long>) {
+        database.withTransaction {
+            require(semesters.findById(semesterId) != null) { "Semester does not exist" }
+            require(calendarIds.isNotEmpty()) { "Holidays need at least one calendar" }
+            require(holidays.isNotEmpty()) { "Holidays list must not be empty" }
+            calendarIds.forEach { id ->
+                require(calendars.findById(id)?.semesterId == semesterId) {
+                    "Calendar must belong to the semester"
+                }
+            }
+            calendarIds.forEach { calendarId ->
+                holidays.forEach { holiday ->
+                    freeDays.insert(
+                        FreeDayEntity(
+                            semesterId = semesterId,
+                            academicCalendarId = calendarId,
+                            startDate = holiday.date,
+                            endDate = holiday.date,
+                            name = holiday.name
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    /** Sets the week override starting on [weekStartDate] with the same upsert rule as [saveWeekOverride]. */
+    private suspend fun upsertFromWeekOverride(
+        semesterId: Long,
+        calendarId: Long,
+        weekStartDate: LocalDate,
+        weekType: WeekType
+    ) {
+        val scope = dev.retza.mak.data.entity.WeekOverrideScope.FROM_WEEK
+        val entityWeekType = dev.retza.mak.data.entity.WeekType.valueOf(weekType.name)
+        val existing = weekOverrides.findForWeek(calendarId, weekStartDate, scope)
+        val entity = WeekOverrideEntity(
+            id = existing?.id ?: 0,
+            semesterId = semesterId,
+            academicCalendarId = calendarId,
+            weekStartDate = weekStartDate,
+            weekType = entityWeekType,
+            scope = scope
+        )
+        if (existing == null) weekOverrides.insert(entity) else weekOverrides.update(entity)
     }
 
     override suspend fun deleteFreeDays(ids: List<Long>) = freeDays.deleteByIds(ids)

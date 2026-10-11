@@ -229,6 +229,10 @@ internal fun NavGraphBuilder.semesterRoutes(navController: NavController) {
                 onDelete = viewModel::requestDeletion,
                 onConfirmDeletion = viewModel::confirmDeletion,
                 onCancelDeletion = viewModel::cancelDeletion,
+                onOpenHolidays = viewModel::openHolidays,
+                onToggleHoliday = viewModel::toggleHoliday,
+                onAddHolidays = viewModel::addHolidays,
+                onCancelHolidays = viewModel::cancelHolidays,
                 modifier = Modifier.fillMaxSize()
             )
             FreeDayDialog(
@@ -236,6 +240,7 @@ internal fun NavGraphBuilder.semesterRoutes(navController: NavController) {
                 onRangeChange = editor::updateRange,
                 onNameChange = editor::updateName,
                 onToggleCalendar = editor::toggleCalendar,
+                onWeekAfterBreakChange = editor::updateWeekAfterBreak,
                 onSave = editor::save,
                 onCancel = editor::cancel
             )

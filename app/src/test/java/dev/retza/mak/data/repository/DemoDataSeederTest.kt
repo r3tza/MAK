@@ -1,5 +1,7 @@
 package dev.retza.mak.data.repository
 
+import dev.retza.mak.domain.Holiday
+import dev.retza.mak.domain.WeekType
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
@@ -89,8 +91,11 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
         startDate: LocalDate,
         endDate: LocalDate,
         name: String?,
-        calendarIds: List<Long>
+        calendarIds: List<Long>,
+        weekAfterBreak: WeekType?
     ) = Unit
+
+    override suspend fun addHolidays(semesterId: Long, holidays: List<Holiday>, calendarIds: List<Long>) = Unit
 
     override suspend fun deleteFreeDays(ids: List<Long>) = Unit
 
