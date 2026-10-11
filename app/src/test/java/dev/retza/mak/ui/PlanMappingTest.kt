@@ -40,6 +40,22 @@ class PlanMappingTest {
     }
 
     @Test
+    fun dateRangeInOneYearShowsYearOnce() {
+        assertEquals(
+            "22 lut - 15 cze 2027",
+            dateRangeWithYearLabel(LocalDate.of(2027, 2, 22), LocalDate.of(2027, 6, 15))
+        )
+    }
+
+    @Test
+    fun dateRangeAcrossYearsShowsBothYears() {
+        assertEquals(
+            "7 wrz 2026 - 14 lut 2027",
+            dateRangeWithYearLabel(LocalDate.of(2026, 9, 7), LocalDate.of(2027, 2, 14))
+        )
+    }
+
+    @Test
     fun weekStatusLabels() {
         assertEquals("Tydzień A", WeekStatus.Single(WeekType.A).label())
         assertEquals("Różne tygodnie", WeekStatus.Mixed.label())

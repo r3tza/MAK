@@ -32,9 +32,8 @@ class SettingsScreenTest {
     private val semester = SemesterUi(
         id = 1L,
         name = "Semestr zimowy",
-        dateRangeLabel = "1 paź - 28 lut",
-        firstWeekLabel = "pierwszy tydzień A",
-        courseCountLabel = "2 kierunki",
+        dateLabel = "1 paź - 28 lut 2027, pierwszy tydzień A",
+        programsLabel = "Informatyka, Zarządzanie",
         classCountLabel = "5 zajęć",
         isActive = true
     )
@@ -294,6 +293,34 @@ class SettingsScreenTest {
             "Konfiguracja przypisań, kalendarzy i korekt należy do wybranego semestru."
         ).assertIsDisplayed()
         composeTestRule.onNodeWithText("Dodaj semestr").assertIsDisplayed()
+    }
+
+    @Test
+    fun semesterCardShowsIconRowsAt320Dp() {
+        val longPrograms = "Informatyka, Zarządzanie, Ekonomia, Socjologia, Filologia angielska, " +
+            "Pedagogika opiekuńczo-wychowawcza, Gospodarka przestrzenna"
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(900.dp)) {
+                    SettingsSemestersScreen(
+                        state = SettingsUiState(
+                            semesters = listOf(semester.copy(programsLabel = longPrograms)),
+                            activeSemesterId = 1L
+                        ),
+                        onSemesterSelected = {},
+                        onAddSemester = {},
+                        onConfigureSemester = {},
+                        onDeleteSemester = {},
+                        onConfirmDelete = {},
+                        onCancelDelete = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("1 paź - 28 lut 2027, pierwszy tydzień A").assertIsDisplayed()
+        composeTestRule.onNodeWithText(longPrograms).assertIsDisplayed()
+        composeTestRule.onNodeWithText("5 zajęć").assertIsDisplayed()
     }
 
     @Test

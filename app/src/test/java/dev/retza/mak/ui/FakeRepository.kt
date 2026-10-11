@@ -119,6 +119,10 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
         activeSemesterFlow.value = 0L
     }
 
+    fun addSemester(entity: SemesterEntity) {
+        semesterFlow.value = semesterFlow.value + entity
+    }
+
     private fun semesterById(id: Long): SemesterEntity? =
         semesterFlow.value.firstOrNull { it.id == id }
 

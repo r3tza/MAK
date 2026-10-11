@@ -288,6 +288,42 @@ class RoomPersistenceTest {
     }
 
     @Test
+    fun sharedCalendarsMapLowestCalendarPerSemester() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val first = database!!.semesterDao().insert(semester("Pierwszy", true))
+        val second = database!!.semesterDao().insert(semester("Drugi", false))
+        val firstCalendar = database!!.academicCalendarDao().insert(
+            AcademicCalendarEntity(
+                semesterId = first,
+                startDate = LocalDate.of(2026, 9, 7),
+                endDate = LocalDate.of(2027, 2, 14),
+                firstWeekType = WeekType.A
+            )
+        )
+        val secondCalendar = database!!.academicCalendarDao().insert(
+            AcademicCalendarEntity(
+                semesterId = second,
+                startDate = LocalDate.of(2027, 2, 22),
+                endDate = LocalDate.of(2027, 6, 15),
+                firstWeekType = WeekType.A
+            )
+        )
+        database!!.academicCalendarDao().insert(
+            AcademicCalendarEntity(
+                semesterId = first,
+                startDate = LocalDate.of(2026, 10, 1),
+                endDate = LocalDate.of(2027, 1, 31),
+                firstWeekType = WeekType.B
+            )
+        )
+
+        val shared = repository.observeSharedCalendars().first()
+
+        assertEquals(mapOf(first to firstCalendar, second to secondCalendar), shared.mapValues { it.value.id })
+    }
+
+    @Test
     fun deletingInactiveSemesterKeepsActive() = runBlocking {
         database = openDatabase()
         val repository = repository()

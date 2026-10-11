@@ -7,6 +7,7 @@ import dev.retza.mak.domain.WeekStatus
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.toUi
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 internal val fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", AppLocale)
@@ -17,6 +18,17 @@ internal val shortDateWithYearFormatter = DateTimeFormatter.ofPattern("d MMM yyy
 internal val longDateFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy", AppLocale)
 internal val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 internal val monthFormatter = DateTimeFormatter.ofPattern("LLLL yyyy", AppLocale)
+
+/**
+ * Date range such as "22 lut - 15 cze 2027". The year is shown once when both dates
+ * fall in the same year; otherwise each date gets its own year.
+ */
+internal fun dateRangeWithYearLabel(start: LocalDate, end: LocalDate): String =
+    if (start.year == end.year) {
+        "${start.format(shortDateFormatter)} - ${end.format(shortDateFormatter)} ${end.year}"
+    } else {
+        "${start.format(shortDateWithYearFormatter)} - ${end.format(shortDateWithYearFormatter)}"
+    }
 
 internal val dayNames = linkedMapOf(
     DayOfWeek.MONDAY to "Poniedziałek",

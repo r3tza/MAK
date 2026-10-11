@@ -62,6 +62,8 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
     override fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarRecord>> =
         flowOf(calendars.filter { it.semesterId == semesterId })
 
+    override fun observeSharedCalendars(): Flow<Map<Long, AcademicCalendarRecord>> = flowOf(emptyMap())
+
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>> =
         flowOf(weekOverrides.filter { it.semesterId == semesterId })
 

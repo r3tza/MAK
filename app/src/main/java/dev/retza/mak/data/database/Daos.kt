@@ -109,6 +109,9 @@ interface AcademicCalendarDao {
     @Query("SELECT * FROM academic_calendars WHERE semester_id = :semesterId ORDER BY start_date, id")
     fun observeForSemester(semesterId: Long): Flow<List<AcademicCalendarEntity>>
 
+    @Query("SELECT * FROM academic_calendars ORDER BY id")
+    fun observeAll(): Flow<List<AcademicCalendarEntity>>
+
     @Query("SELECT * FROM academic_calendars WHERE id = :id")
     suspend fun findById(id: Long): AcademicCalendarEntity?
 

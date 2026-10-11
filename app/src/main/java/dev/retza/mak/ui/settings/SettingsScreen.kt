@@ -17,7 +17,11 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.School
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -143,9 +147,7 @@ fun SettingsScreen(
                     }
                     SettingsNavigationRow(
                         title = "Zarządzaj semestrami",
-                        value = active
-                            ?.let { "${it.dateRangeLabel}, ${it.firstWeekLabel}" }
-                            .orEmpty(),
+                        value = active?.dateLabel.orEmpty(),
                         onClick = onOpenSemesters
                     )
                     SettingsRowDivider()
@@ -482,22 +484,38 @@ private fun SemesterRow(
                 StatusText(text = "Aktywny")
             }
         }
-        listOf(
-            semester.dateRangeLabel,
-            semester.firstWeekLabel,
-            semester.courseCountLabel,
-            semester.classCountLabel
-        ).filter { it.isNotBlank() }.takeIf { it.isNotEmpty() }?.let { details ->
-            Text(
-                text = details.joinToString(", "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        val details = listOf(
+            Icons.Outlined.CalendarMonth to semester.dateLabel,
+            Icons.Outlined.School to semester.programsLabel,
+            Icons.AutoMirrored.Outlined.FormatListBulleted to semester.classCountLabel
+        ).filter { (_, text) -> text.isNotBlank() }
+        if (details.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                details.forEach { (icon, text) -> SemesterDetailRow(icon = icon, text = text) }
+            }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
             MakTextAction(text = "Konfiguruj", onClick = onConfigure)
             MakTextAction(text = "Usuń", onClick = onDelete, destructive = true)
         }
+    }
+}
+
+@Composable
+private fun SemesterDetailRow(icon: ImageVector, text: String) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp).padding(top = 1.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
     }
 }
 

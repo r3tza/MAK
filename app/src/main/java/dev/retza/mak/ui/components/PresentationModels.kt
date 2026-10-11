@@ -31,9 +31,8 @@ data class ClassItemUi(
 data class SemesterUi(
     val id: Long,
     val name: String,
-    val dateRangeLabel: String,
-    val firstWeekLabel: String,
-    val courseCountLabel: String,
+    val dateLabel: String,
+    val programsLabel: String,
     val classCountLabel: String,
     val isActive: Boolean = false
 )

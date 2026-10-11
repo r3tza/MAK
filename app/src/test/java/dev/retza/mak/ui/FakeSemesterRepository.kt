@@ -54,6 +54,14 @@ internal class FakeSemesterRepository(
     override fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarRecord>> =
         delegate.observeCalendars(semesterId).map { list -> list.map { it.toRecord() } }
 
+    override fun observeSharedCalendars(): Flow<Map<Long, AcademicCalendarRecord>> = flow {
+        emit(
+            delegate.calendars.map { it.toRecord() }
+                .groupBy { it.semesterId }
+                .mapValues { (_, records) -> records.minBy { it.id } }
+        )
+    }
+
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>> =
         delegate.observeWeekOverrides(semesterId).map { list -> list.map { it.toRecord() } }
 

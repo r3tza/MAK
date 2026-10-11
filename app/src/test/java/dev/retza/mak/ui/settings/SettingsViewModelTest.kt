@@ -5,6 +5,9 @@ import dev.retza.mak.settings.themeModeFromStored
 import dev.retza.mak.settings.ThemeMode
 import dev.retza.mak.settings.SettingsPreferences
 import dev.retza.mak.data.entity.AcademicCalendarEntity
+import dev.retza.mak.data.entity.SemesterEntity
+import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.export.AcademicCalendarSnapshot
 import dev.retza.mak.export.ClassSnapshot
@@ -70,12 +73,7 @@ class SettingsViewModelTest {
         assertEquals(1L, state.activeSemesterId)
         assertEquals("Semestr", state.semesters.first { it.id == 1L }.name)
         val activeSemester = state.semesters.first { it.id == 1L }
-        assertTrue(activeSemester.firstWeekLabel.startsWith("pierwszy tydzień "))
-        val inactiveSemester = state.semesters.first { it.id != 1L }
-        assertEquals("", inactiveSemester.dateRangeLabel)
-        assertEquals("", inactiveSemester.firstWeekLabel)
-        assertEquals("", inactiveSemester.courseCountLabel)
-        assertEquals("", inactiveSemester.classCountLabel)
+        assertTrue(activeSemester.dateLabel.endsWith(", pierwszy tydzień A"))
         assertEquals(ThemeMode.System, state.theme)
     }
 
@@ -95,8 +93,77 @@ class SettingsViewModelTest {
         advanceUntilIdle()
 
         val expected = "${LocalDate.of(2026, 9, 1).format(shortDateFormatter)} - " +
-            LocalDate.of(2026, 10, 31).format(shortDateFormatter)
-        assertEquals(expected, viewModel.settings.value.semesters.first { it.id == 1L }.dateRangeLabel)
+            "${LocalDate.of(2026, 10, 31).format(shortDateFormatter)} 2026, pierwszy tydzień A"
+        assertEquals(expected, viewModel.settings.value.semesters.first { it.id == 1L }.dateLabel)
+    }
+
+    @Test
+    fun semestersAreOrderedActiveFirstThenNewest() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.clearSemesters()
+        repository.addSemester(SemesterEntity(id = 11L, name = "2025/26"))
+        repository.addSemester(SemesterEntity(id = 12L, name = "2026/27"))
+        repository.addSemester(SemesterEntity(id = 13L, name = "Lato 2027"))
+        repository.saveCalendar(
+            AcademicCalendarEntity(
+                semesterId = 11L,
+                startDate = LocalDate.of(2025, 10, 1),
+                endDate = LocalDate.of(2026, 2, 14),
+                firstWeekType = WeekType.A
+            )
+        )
+        repository.saveCalendar(
+            AcademicCalendarEntity(
+                semesterId = 12L,
+                startDate = LocalDate.of(2026, 10, 1),
+                endDate = LocalDate.of(2027, 2, 14),
+                firstWeekType = WeekType.B
+            )
+        )
+        repository.saveCalendar(
+            AcademicCalendarEntity(
+                semesterId = 13L,
+                startDate = LocalDate.of(2027, 2, 22),
+                endDate = LocalDate.of(2027, 6, 15),
+                firstWeekType = WeekType.A
+            )
+        )
+        repository.setActiveSemester(12L)
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        val semesters = viewModel.settings.value.semesters
+        assertEquals(listOf("2026/27", "Lato 2027", "2025/26"), semesters.map { it.name })
+        assertEquals("Brak kierunków", semesters.first().programsLabel)
+    }
+
+    @Test
+    fun inactiveSemesterShowsDateRangeOnly() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        val inactiveSemester = viewModel.settings.value.semesters.first { it.id == 2L }
+        assertEquals("1 lut - 30 cze 2027", inactiveSemester.dateLabel)
+        assertEquals("", inactiveSemester.programsLabel)
+        assertEquals("", inactiveSemester.classCountLabel)
+    }
+
+    @Test
+    fun activeSemesterListsProgramNames() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val programId = repository.saveStudyProgram(StudyProgramEntity(name = "Zarządzanie", color = "#2D6A4F"))
+        repository.saveSemesterProgram(
+            SemesterProgramEntity(semesterId = 1L, studyProgramId = programId, academicCalendarId = 1L)
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        val activeSemester = viewModel.settings.value.semesters.first { it.id == 1L }
+        assertEquals("Informatyka, Zarządzanie", activeSemester.programsLabel)
     }
 
     @Test

@@ -10,6 +10,7 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 - Odrzucone: lista kierunków semestru z checkboxami zamiast formularza „Dodaj kierunek”, bo checkboxy miałyby na dwóch ekranach „Kierunki” dwa różne znaczenia.
 - Decyzja użytkownika z 2026-10-11: znikają opisy powtarzające interfejs na ekranach „Semestr” i „Korekty tygodni”.
 - Decyzja użytkownika z 2026-10-11: plan wykonuje się na jednej gałęzi od `main` po scaleniu I-79.
+- Decyzja użytkownika z 2026-10-11 (I-96): karta semestru w wariancie C z artefaktu „MAK: semestr i powiadomienia”, czyli wiersze z ikonami zamiast jednego zdania; daty z rokiem, a przy tym samym roku obu końców rok raz; aktywny semestr na górze, pozostałe od najnowszego.
 
 ## 2026-10-11: Zakres poprawek po przeglądzie zmian z audytu (I-91 do I-94)
 

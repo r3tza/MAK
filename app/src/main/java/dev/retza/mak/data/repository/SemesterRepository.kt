@@ -31,6 +31,9 @@ interface SemesterRepository {
 
     fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarRecord>>
 
+    /** The shared calendar of each semester by semester id: its lowest-id calendar, as `ActivePlanData.sharedCalendar()`. */
+    fun observeSharedCalendars(): Flow<Map<Long, AcademicCalendarRecord>>
+
     fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>>
 
     /** The semester with its programs, calendars and week overrides, or null when it does not exist. */
@@ -128,6 +131,13 @@ class RoomSemesterRepository(
 
     override fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarRecord>> =
         calendars.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }
+
+    override fun observeSharedCalendars(): Flow<Map<Long, AcademicCalendarRecord>> =
+        calendars.observeAll().map { list ->
+            list.map { it.toRecord() }
+                .groupBy { it.semesterId }
+                .mapValues { (_, records) -> records.minBy { it.id } }
+        }
 
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>> =
         weekOverrides.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }

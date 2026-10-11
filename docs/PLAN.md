@@ -88,6 +88,8 @@ Kryterium zakończenia: z ekranu „Kierunki” w ustawieniach da się dodać ki
 
 ## 2. Pokaż kartę semestru w wierszach z ikonami i ułóż semestry od najnowszego (I-96)
 
+Stan: zrobione. Różnice wobec planu: `dateRangeWithYearLabel` jest w `ui/PlanMapping.kt` obok `shortDateFormatter`; nazwy kierunków aktywnego semestru są bez powtórzeń, gdy dwa przypisania wskazują ten sam kierunek; fałszywe repozytorium testów dostało `addSemester`. Zrzut ekranu „Semestry” zrobiony z danymi demo z jednym semestrem; kolejność kilku semestrów sprawdza test JVM.
+
 Cel: karta semestru na ekranie „Semestry” pokazuje informacje w osobnych wierszach z ikonami (decyzja 5), daty z rokiem (decyzja 6), a lista ma aktywny semestr na górze i pozostałe od najnowszego (decyzja 7).
 
 Pliki: `data/database/Daos.kt` (DAO kalendarzy), `data/repository/SemesterRepository.kt`, `ui/components/PresentationModels.kt` (`SemesterUi`), `ui/settings/SettingsViewModel.kt` (`buildSettingsState`), `ui/settings/SettingsScreen.kt` (`SemesterRow` i podsumowanie wiersza „Zarządzaj semestrami”); testy JVM `ui/settings/SettingsViewModelTest.kt`, fałszywe repozytoria w `ui/` i `data/repository/DemoDataSeederTest.kt`; testy Android `ui/settings/SettingsScreenTest.kt`, `data/RoomPersistenceTest.kt`; `docs/FEATURES.md`, `docs/LOG.md`, `docs/QUEUE.md`.
