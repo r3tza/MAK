@@ -210,32 +210,50 @@ class CollisionAlarmSchedulerTest {
         override suspend fun clearHiddenStudyPrograms() = Unit
         override suspend fun retainHiddenStudyPrograms(existingIds: Set<Long>) = Unit
         override suspend fun setCollisionNotificationsEnabled(enabled: Boolean) {
-            notifications.value = notifications.value.copy(
-                enabled = enabled,
-                eveningEnabled = enabled,
-                beforeClassEnabled = enabled
+            notifications.value = notifications.value.withKinds(
+                evening = enabled,
+                beforeClass = enabled,
+                gapEvening = enabled,
+                gapBeforeClass = enabled
             )
         }
         override suspend fun setEveningNotificationsEnabled(enabled: Boolean) {
-            val current = notifications.value
-            val beforeClass = current.enabled && current.beforeClassEnabled
-            notifications.value = current.copy(
-                enabled = enabled || beforeClass,
-                eveningEnabled = enabled,
-                beforeClassEnabled = beforeClass
-            )
+            notifications.value = notifications.value.readKindsThroughMainSwitch().withKinds(evening = enabled)
         }
         override suspend fun setBeforeClassNotificationsEnabled(enabled: Boolean) {
-            val current = notifications.value
-            val evening = current.enabled && current.eveningEnabled
-            notifications.value = current.copy(
-                enabled = evening || enabled,
-                eveningEnabled = evening,
-                beforeClassEnabled = enabled
-            )
+            notifications.value = notifications.value.readKindsThroughMainSwitch().withKinds(beforeClass = enabled)
+        }
+        override suspend fun setGapEveningNotificationsEnabled(enabled: Boolean) {
+            notifications.value = notifications.value.readKindsThroughMainSwitch().withKinds(gapEvening = enabled)
+        }
+        override suspend fun setGapBeforeClassNotificationsEnabled(enabled: Boolean) {
+            notifications.value = notifications.value.readKindsThroughMainSwitch().withKinds(gapBeforeClass = enabled)
         }
         override suspend fun setEveningHour(hour: LocalTime) = Unit
         override suspend fun setBeforeClassLeadMinutes(minutes: Long) = Unit
+        override suspend fun setGapEveningHour(hour: LocalTime) = Unit
+        override suspend fun setGapLeadMinutes(minutes: Long) = Unit
+
+        private fun CollisionNotificationPreferences.readKindsThroughMainSwitch(): CollisionNotificationPreferences =
+            withKinds(
+                evening = enabled && eveningEnabled,
+                beforeClass = enabled && beforeClassEnabled,
+                gapEvening = enabled && gapEveningEnabled,
+                gapBeforeClass = enabled && gapBeforeClassEnabled
+            )
+
+        private fun CollisionNotificationPreferences.withKinds(
+            evening: Boolean = eveningEnabled,
+            beforeClass: Boolean = beforeClassEnabled,
+            gapEvening: Boolean = gapEveningEnabled,
+            gapBeforeClass: Boolean = gapBeforeClassEnabled
+        ): CollisionNotificationPreferences = copy(
+            enabled = evening || beforeClass || gapEvening || gapBeforeClass,
+            eveningEnabled = evening,
+            beforeClassEnabled = beforeClass,
+            gapEveningEnabled = gapEvening,
+            gapBeforeClassEnabled = gapBeforeClass
+        )
     }
 
     private companion object {

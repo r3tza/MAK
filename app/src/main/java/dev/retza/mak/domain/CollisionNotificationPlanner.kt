@@ -7,7 +7,9 @@ import java.time.LocalTime
 
 enum class CollisionNotificationKind {
     EVENING,
-    BEFORE_CLASS
+    BEFORE_CLASS,
+    GAP_EVENING,
+    GAP_BEFORE_CLASS
 }
 
 data class CollisionNotificationSettings(
@@ -16,6 +18,10 @@ data class CollisionNotificationSettings(
     val beforeClassEnabled: Boolean,
     val eveningHour: LocalTime = LocalTime.of(20, 0),
     val leadMinutes: Long = 30,
+    val gapEveningEnabled: Boolean = false,
+    val gapBeforeClassEnabled: Boolean = false,
+    val gapEveningHour: LocalTime = LocalTime.of(20, 0),
+    val gapLeadMinutes: Long = 30,
     val horizonDays: Long = 14,
     val eveningWindowMinutes: Long = 15,
     val beforeClassWindowMinutes: Long = 15
@@ -52,6 +58,10 @@ fun PlannedCollisionNotification.toAlarmPayload(): CollisionAlarmPayload =
         occurrenceIds = groups.flatMap { it.occurrenceIds }
     )
 
+/**
+ * Checks whether a planned notification is still valid. Gap kinds take the gap groups as [currentGroups],
+ * so they are checked against the current gaps the same way collision kinds are checked against collisions.
+ */
 fun shouldShowCollisionNotification(
     kind: CollisionNotificationKind,
     date: LocalDate,
@@ -62,13 +72,13 @@ fun shouldShowCollisionNotification(
 ): Boolean {
     if (requestedOccurrenceIds.isEmpty()) return false
     return when (kind) {
-        CollisionNotificationKind.EVENING -> {
+        CollisionNotificationKind.EVENING, CollisionNotificationKind.GAP_EVENING -> {
             if (now.toLocalDate() != date.minusDays(1)) return false
             val currentIds = currentGroups.flatMap { it.occurrenceIds }.toSet()
             currentIds.containsAll(requestedOccurrenceIds)
         }
 
-        CollisionNotificationKind.BEFORE_CLASS -> {
+        CollisionNotificationKind.BEFORE_CLASS, CollisionNotificationKind.GAP_BEFORE_CLASS -> {
             currentGroups.any { it.occurrenceIds.containsAll(requestedOccurrenceIds) } &&
                 now.isBefore(date.atTime(requestedLatestEnd))
         }
@@ -91,27 +101,65 @@ class CollisionNotificationPlanner(
         val visible = inputs.data.visibleTo(inputs.display)
         for (offset in 0 until settings.horizonDays) {
             val date = today.plusDays(offset)
-            val groups = collisionNotificationGroups(activePlanProvider.resolve(visible, date, inputs.display).collisions)
-            if (groups.isEmpty()) continue
-            if (settings.eveningEnabled) {
-                val from = date.minusDays(1).atTime(settings.eveningHour)
-                val until = from.plusMinutes(settings.eveningWindowMinutes)
-                if (until.isAfter(now)) {
-                    notifications += notification(CollisionNotificationKind.EVENING, date, from, until, groups)
+            val plan = activePlanProvider.resolve(visible, date, inputs.display)
+            val groups = collisionNotificationGroups(plan.collisions)
+            if (groups.isNotEmpty()) {
+                if (settings.eveningEnabled) {
+                    val from = date.minusDays(1).atTime(settings.eveningHour)
+                    val until = from.plusMinutes(settings.eveningWindowMinutes)
+                    if (until.isAfter(now)) {
+                        notifications += notification(CollisionNotificationKind.EVENING, date, from, until, groups)
+                    }
+                }
+                if (settings.beforeClassEnabled) {
+                    groups.forEach { group ->
+                        val until = date.atTime(group.earliestStart).minusMinutes(settings.leadMinutes)
+                        val from = until.minusMinutes(settings.beforeClassWindowMinutes)
+                        if (until.isAfter(now)) {
+                            notifications += notification(
+                                CollisionNotificationKind.BEFORE_CLASS,
+                                date,
+                                from,
+                                until,
+                                listOf(group)
+                            )
+                        }
+                    }
                 }
             }
-            if (settings.beforeClassEnabled) {
-                groups.forEach { group ->
-                    val until = date.atTime(group.earliestStart).minusMinutes(settings.leadMinutes)
-                    val from = until.minusMinutes(settings.beforeClassWindowMinutes)
-                    if (until.isAfter(now)) {
-                        notifications += notification(
-                            CollisionNotificationKind.BEFORE_CLASS,
-                            date,
-                            from,
-                            until,
-                            listOf(group)
-                        )
+            if (settings.gapEveningEnabled || settings.gapBeforeClassEnabled) {
+                val gapGroups = gapNotificationGroups(
+                    plan.schedule.occurrences,
+                    findGaps(plan.schedule.occurrences, inputs.display.gapThresholdMinutes.toLong())
+                )
+                if (gapGroups.isNotEmpty()) {
+                    if (settings.gapEveningEnabled) {
+                        val from = date.minusDays(1).atTime(settings.gapEveningHour)
+                        val until = from.plusMinutes(settings.eveningWindowMinutes)
+                        if (until.isAfter(now)) {
+                            notifications += notification(
+                                CollisionNotificationKind.GAP_EVENING,
+                                date,
+                                from,
+                                until,
+                                gapGroups
+                            )
+                        }
+                    }
+                    if (settings.gapBeforeClassEnabled) {
+                        gapGroups.forEach { group ->
+                            val until = date.atTime(group.earliestStart).minusMinutes(settings.gapLeadMinutes)
+                            val from = until.minusMinutes(settings.beforeClassWindowMinutes)
+                            if (until.isAfter(now)) {
+                                notifications += notification(
+                                    CollisionNotificationKind.GAP_BEFORE_CLASS,
+                                    date,
+                                    from,
+                                    until,
+                                    listOf(group)
+                                )
+                            }
+                        }
                     }
                 }
             }
@@ -178,6 +226,27 @@ fun collisionNotificationGroups(collisions: List<Collision>): List<CollisionNoti
             occurrenceIds = occurrences.map { it.id }.sorted(),
             earliestStart = occurrences.minOf { it.startTime },
             label = groupLabel(groupCollisions)
+        )
+    }
+}
+
+/**
+ * One group per gap: its occurrences are the classes before the gap, labelled with the gap's range.
+ * Gap groups reuse [CollisionNotificationGroup] so the same alarm payload and guard apply to both kinds.
+ */
+fun gapNotificationGroups(
+    occurrences: Collection<PlannedOccurrence>,
+    gaps: List<Gap>
+): List<CollisionNotificationGroup> {
+    if (gaps.isEmpty()) return emptyList()
+    val startById = occurrences.associate { it.id to it.startTime }
+    return gaps.map { gap ->
+        CollisionNotificationGroup(
+            occurrenceIds = gap.beforeOccurrenceIds,
+            earliestStart = gap.beforeOccurrenceIds.minOf { id ->
+                checkNotNull(startById[id]) { "Gap refers to an occurrence that is not planned: $id" }
+            },
+            label = rangeLabel(gap.start, gap.end)
         )
     }
 }

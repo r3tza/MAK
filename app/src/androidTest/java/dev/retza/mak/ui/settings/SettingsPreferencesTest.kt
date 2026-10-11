@@ -126,6 +126,8 @@ class SettingsPreferencesTest {
     fun turningOffLastKindTurnsMainOff() = runBlocking {
         val preferences = preferences(openDataStore())
         preferences.setCollisionNotificationsEnabled(true)
+        preferences.setGapEveningNotificationsEnabled(false)
+        preferences.setGapBeforeClassNotificationsEnabled(false)
 
         preferences.setEveningNotificationsEnabled(false)
         assertNotifications(preferences, enabled = true, evening = false, beforeClass = true)
@@ -154,6 +156,35 @@ class SettingsPreferencesTest {
         assertNotifications(preferences(dataStore), enabled = false, evening = false, beforeClass = false)
     }
 
+    @Test
+    fun mainSwitchCoversGapKinds() = runBlocking {
+        val preferences = preferences(openDataStore())
+
+        preferences.setCollisionNotificationsEnabled(true)
+        assertGapNotifications(preferences, gapEvening = true, gapBeforeClass = true)
+
+        preferences.setEveningNotificationsEnabled(false)
+        preferences.setBeforeClassNotificationsEnabled(false)
+        preferences.setGapEveningNotificationsEnabled(false)
+        assertNotifications(preferences, enabled = true, evening = false, beforeClass = false)
+        assertGapNotifications(preferences, gapEvening = false, gapBeforeClass = true)
+
+        preferences.setGapBeforeClassNotificationsEnabled(false)
+        assertNotifications(preferences, enabled = false, evening = false, beforeClass = false)
+        assertGapNotifications(preferences, gapEvening = false, gapBeforeClass = false)
+    }
+
+    @Test
+    fun gapKindsAreOffAfterUpdate() = runBlocking {
+        // Written straight into the store: the update stored only the main switch, so the gap kinds are missing.
+        val dataStore = openDataStore()
+        dataStore.edit { it[booleanPreferencesKey("collision_notifications_enabled")] = true }
+
+        val preferences = preferences(dataStore)
+        assertNotifications(preferences, enabled = true, evening = true, beforeClass = true)
+        assertGapNotifications(preferences, gapEvening = false, gapBeforeClass = false)
+    }
+
     private suspend fun assertNotifications(
         preferences: SettingsPreferences,
         enabled: Boolean,
@@ -164,6 +195,16 @@ class SettingsPreferencesTest {
         assertEquals(enabled, stored.enabled)
         assertEquals(evening, stored.eveningEnabled)
         assertEquals(beforeClass, stored.beforeClassEnabled)
+    }
+
+    private suspend fun assertGapNotifications(
+        preferences: SettingsPreferences,
+        gapEvening: Boolean,
+        gapBeforeClass: Boolean
+    ) {
+        val stored = preferences.collisionNotifications.first()
+        assertEquals(gapEvening, stored.gapEveningEnabled)
+        assertEquals(gapBeforeClass, stored.gapBeforeClassEnabled)
     }
 
     @Test

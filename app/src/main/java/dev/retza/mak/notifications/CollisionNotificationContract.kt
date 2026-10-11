@@ -4,6 +4,7 @@ import dev.retza.mak.domain.CollisionNotificationSettings
 import dev.retza.mak.settings.CollisionNotificationPreferences
 
 const val COLLISION_NOTIFICATION_CHANNEL_ID = "collision_notifications"
+const val GAP_NOTIFICATION_CHANNEL_ID = "gap_notifications"
 const val COLLISION_ALARM_ACTION = "dev.retza.mak.action.COLLISION_ALARM"
 const val COLLISION_MAINTENANCE_ACTION = "dev.retza.mak.action.COLLISION_MAINTENANCE"
 
@@ -18,5 +19,9 @@ fun CollisionNotificationPreferences.toPlannerSettings(): CollisionNotificationS
         eveningEnabled = eveningEnabled,
         beforeClassEnabled = beforeClassEnabled,
         eveningHour = eveningHour,
-        leadMinutes = leadMinutes
+        leadMinutes = leadMinutes,
+        gapEveningEnabled = gapEveningEnabled,
+        gapBeforeClassEnabled = gapBeforeClassEnabled,
+        gapEveningHour = gapEveningHour,
+        gapLeadMinutes = gapLeadMinutes
     )

@@ -309,6 +309,25 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun gapKindsAndValuesAreSaved() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val preferences = InMemorySettingsPreferences()
+        val viewModel = viewModel(repository, preferences)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+
+        viewModel.setGapEveningNotificationsEnabled(true)
+        viewModel.setGapEveningHour("19:00")
+        viewModel.setGapLeadMinutes("15")
+        advanceUntilIdle()
+
+        val notifications = viewModel.settings.value.notifications
+        assertTrue(notifications.gapEveningEnabled)
+        assertTrue(notifications.gapEveningHourOptions.first { it.id == "19:00" }.isSelected)
+        assertTrue(notifications.gapLeadOptions.first { it.id == "15" }.isSelected)
+    }
+
+    @Test
     fun notificationWriteFailurePublishesError() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val preferences = InMemorySettingsPreferences()

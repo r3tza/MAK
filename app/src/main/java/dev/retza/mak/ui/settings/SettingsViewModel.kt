@@ -238,6 +238,22 @@ class SettingsViewModel(
         saveNotifications { preferences.setBeforeClassLeadMinutes(minutes) }
     }
 
+    fun setGapEveningNotificationsEnabled(enabled: Boolean) =
+        saveNotifications { preferences.setGapEveningNotificationsEnabled(enabled) }
+
+    fun setGapBeforeClassNotificationsEnabled(enabled: Boolean) =
+        saveNotifications { preferences.setGapBeforeClassNotificationsEnabled(enabled) }
+
+    fun setGapEveningHour(id: String) {
+        val time = runCatching { java.time.LocalTime.parse(id) }.getOrNull() ?: return
+        saveNotifications { preferences.setGapEveningHour(time) }
+    }
+
+    fun setGapLeadMinutes(id: String) {
+        val minutes = id.toLongOrNull() ?: return
+        saveNotifications { preferences.setGapLeadMinutes(minutes) }
+    }
+
     fun setGapThresholdMinutes(id: String) {
         val minutes = id.toIntOrNull() ?: return
         if (local.value.isSavingGapThreshold) return
@@ -401,6 +417,8 @@ private fun buildSettingsState(
         enabled = preferences.notifications.enabled,
         eveningEnabled = preferences.notifications.eveningEnabled,
         beforeClassEnabled = preferences.notifications.beforeClassEnabled,
+        gapEveningEnabled = preferences.notifications.gapEveningEnabled,
+        gapBeforeClassEnabled = preferences.notifications.gapBeforeClassEnabled,
         eveningHourOptions = notificationHourOptions.map { hour ->
             val id = "%02d:00".format(hour)
             SettingsOptionUi(id, id, preferences.notifications.eveningHour.hour == hour)
@@ -410,6 +428,17 @@ private fun buildSettingsState(
                 id = minutes.toString(),
                 label = "$minutes min",
                 isSelected = preferences.notifications.leadMinutes == minutes
+            )
+        },
+        gapEveningHourOptions = notificationHourOptions.map { hour ->
+            val id = "%02d:00".format(hour)
+            SettingsOptionUi(id, id, preferences.notifications.gapEveningHour.hour == hour)
+        },
+        gapLeadOptions = notificationLeadOptions.map { minutes ->
+            SettingsOptionUi(
+                id = minutes.toString(),
+                label = "$minutes min",
+                isSelected = preferences.notifications.gapLeadMinutes == minutes
             )
         }
     )

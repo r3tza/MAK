@@ -213,6 +213,8 @@ Kryterium zakończenia: ekran wygląda jak wariant C, wartości zmienia się w d
 
 ## 5. Dodaj powiadomienia o okienkach dzień wcześniej i przed zajęciami (I-98)
 
+Stan: zrobione. Różnice wobec planu: grupy okienek używają `CollisionNotificationGroup` (zajęcia przed okienkiem i zakres okienka jako etykieta), więc alarm, jego dane i `shouldShowCollisionNotification` są wspólne dla kolizji i okienek; zapis rodzajów powiadomień w DataStore przechodzi przez jedną funkcję dla czterech rodzajów; sekcje „Kolizje” i „Okienka” rysuje wspólny `NotificationTopicSection`; treść powiadomienia przed zajęciami brzmi „Okienko {zakres} po zajęciach: {nazwa zajęć}” (decyzja użytkownika z 2026-10-11, bo aplikacja nie odmienia nazw); zmiana progu okienka już przeliczała alarmy, bo `ActivePlanInputs` zawiera ustawienia planu.
+
 Cel: dwa nowe rodzaje powiadomień w sekcji „Okienka” ekranu „Powiadomienia”, działające jak powiadomienia o kolizjach (decyzje 12 i 13). „Dzień wcześniej” o wybranej godzinie wymienia jutrzejsze okienka. „Przed zajęciami” przychodzi z wybranym wyprzedzeniem przed zajęciami, po których zaczyna się okienko. Okienko liczy się według `DOMAIN.md`, sekcja „Okienka”, z progiem z ustawień planu.
 
 Przeczytaj przed zmianą: `DOMAIN.md`, sekcja „Okienka”; `ARCHITECTURE.md`, sekcja 7, podsekcja „Zasady powiadomień”, i sekcja 8, punkt 12.

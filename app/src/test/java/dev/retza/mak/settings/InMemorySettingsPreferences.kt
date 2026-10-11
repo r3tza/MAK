@@ -55,29 +55,32 @@ class InMemorySettingsPreferences(
 
     override suspend fun setCollisionNotificationsEnabled(enabled: Boolean) {
         awaitWrite()
-        notifications.value = notifications.value.copy(
-            enabled = enabled,
-            eveningEnabled = enabled,
-            beforeClassEnabled = enabled
+        notifications.value = notifications.value.withKinds(
+            evening = enabled,
+            beforeClass = enabled,
+            gapEvening = enabled,
+            gapBeforeClass = enabled
         )
     }
 
     override suspend fun setEveningNotificationsEnabled(enabled: Boolean) {
         awaitWrite()
-        val stored = notifications.value.readKindsThroughMainSwitch()
-        notifications.value = stored.copy(
-            enabled = enabled || stored.beforeClassEnabled,
-            eveningEnabled = enabled
-        )
+        notifications.value = notifications.value.readKindsThroughMainSwitch().withKinds(evening = enabled)
     }
 
     override suspend fun setBeforeClassNotificationsEnabled(enabled: Boolean) {
         awaitWrite()
-        val stored = notifications.value.readKindsThroughMainSwitch()
-        notifications.value = stored.copy(
-            enabled = stored.eveningEnabled || enabled,
-            beforeClassEnabled = enabled
-        )
+        notifications.value = notifications.value.readKindsThroughMainSwitch().withKinds(beforeClass = enabled)
+    }
+
+    override suspend fun setGapEveningNotificationsEnabled(enabled: Boolean) {
+        awaitWrite()
+        notifications.value = notifications.value.readKindsThroughMainSwitch().withKinds(gapEvening = enabled)
+    }
+
+    override suspend fun setGapBeforeClassNotificationsEnabled(enabled: Boolean) {
+        awaitWrite()
+        notifications.value = notifications.value.readKindsThroughMainSwitch().withKinds(gapBeforeClass = enabled)
     }
 
     override suspend fun setEveningHour(hour: LocalTime) {
@@ -90,6 +93,16 @@ class InMemorySettingsPreferences(
         notifications.value = notifications.value.copy(leadMinutes = minutes)
     }
 
+    override suspend fun setGapEveningHour(hour: LocalTime) {
+        awaitWrite()
+        notifications.value = notifications.value.copy(gapEveningHour = hour)
+    }
+
+    override suspend fun setGapLeadMinutes(minutes: Long) {
+        awaitWrite()
+        notifications.value = notifications.value.copy(gapLeadMinutes = minutes)
+    }
+
     private suspend fun awaitWrite() {
         if (failNextWrite) {
             failNextWrite = false
@@ -99,8 +112,24 @@ class InMemorySettingsPreferences(
 }
 
 /** Same reading rule as DataStoreSettingsPreferences: a kind is on only while the main switch is on. */
-private fun CollisionNotificationPreferences.readKindsThroughMainSwitch(): CollisionNotificationPreferences {
-    val evening = enabled && eveningEnabled
-    val beforeClass = enabled && beforeClassEnabled
-    return copy(enabled = evening || beforeClass, eveningEnabled = evening, beforeClassEnabled = beforeClass)
-}
+private fun CollisionNotificationPreferences.readKindsThroughMainSwitch(): CollisionNotificationPreferences =
+    withKinds(
+        evening = enabled && eveningEnabled,
+        beforeClass = enabled && beforeClassEnabled,
+        gapEvening = enabled && gapEveningEnabled,
+        gapBeforeClass = enabled && gapBeforeClassEnabled
+    )
+
+/** Sets the kinds and the main switch, which is on exactly when some kind is on. */
+private fun CollisionNotificationPreferences.withKinds(
+    evening: Boolean = eveningEnabled,
+    beforeClass: Boolean = beforeClassEnabled,
+    gapEvening: Boolean = gapEveningEnabled,
+    gapBeforeClass: Boolean = gapBeforeClassEnabled
+): CollisionNotificationPreferences = copy(
+    enabled = evening || beforeClass || gapEvening || gapBeforeClass,
+    eveningEnabled = evening,
+    beforeClassEnabled = beforeClass,
+    gapEveningEnabled = gapEvening,
+    gapBeforeClassEnabled = gapBeforeClass
+)

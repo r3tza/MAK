@@ -35,6 +35,14 @@ class CollisionNotificationPlannerTest {
         beforeClassEnabled = true
     )
 
+    private val gapSettings = CollisionNotificationSettings(
+        enabled = true,
+        eveningEnabled = false,
+        beforeClassEnabled = false,
+        gapEveningEnabled = true,
+        gapBeforeClassEnabled = true
+    )
+
     private val monday = LocalDate.of(2026, 9, 21)
     private val tuesday = LocalDate.of(2026, 9, 22)
     private val wednesday = LocalDate.of(2026, 9, 23)
@@ -217,6 +225,126 @@ class CollisionNotificationPlannerTest {
 
         assertTrue(plan.none { it.kind == CollisionNotificationKind.EVENING })
         assertTrue(plan.any { it.kind == CollisionNotificationKind.BEFORE_CLASS })
+    }
+
+    @Test
+    fun gapEveningIsPlannedAtItsOwnHour() {
+        val plan = planner().plan(
+            data(
+                item(1L, tuesday, LocalTime.of(8, 0), LocalTime.of(9, 30)),
+                item(2L, tuesday, LocalTime.of(11, 0), LocalTime.of(12, 0))
+            ),
+            gapSettings.copy(gapBeforeClassEnabled = false, gapEveningHour = LocalTime.of(19, 0)),
+            PlanDisplaySettings.DEFAULT
+        )
+
+        val evening = plan.single()
+        assertEquals(CollisionNotificationKind.GAP_EVENING, evening.kind)
+        assertEquals(tuesday, evening.date)
+        assertEquals(LocalDateTime.of(2026, 9, 21, 19, 0), evening.triggerFrom)
+        assertEquals(LocalDateTime.of(2026, 9, 21, 19, 15), evening.triggerUntil)
+        assertEquals("09:30-11:00", evening.groups.single().label)
+    }
+
+    @Test
+    fun gapBeforeClassFiresLeadMinutesBeforeClassBeforeGap() {
+        val plan = planner().plan(
+            data(
+                item(1L, tuesday, LocalTime.of(8, 0), LocalTime.of(9, 30)),
+                item(2L, tuesday, LocalTime.of(11, 0), LocalTime.of(12, 0))
+            ),
+            gapSettings.copy(gapEveningEnabled = false, gapLeadMinutes = 15),
+            PlanDisplaySettings.DEFAULT
+        )
+
+        val beforeClass = plan.single()
+        assertEquals(CollisionNotificationKind.GAP_BEFORE_CLASS, beforeClass.kind)
+        assertEquals(LocalDateTime.of(2026, 9, 22, 7, 30), beforeClass.triggerFrom)
+        assertEquals(LocalDateTime.of(2026, 9, 22, 7, 45), beforeClass.triggerUntil)
+        assertEquals(listOf("1:2026-09-22"), beforeClass.groups.single().occurrenceIds)
+    }
+
+    @Test
+    fun cancelledClassDoesNotCreateGapNotification() {
+        val weeklyClass = item(2L, tuesday, LocalTime.of(11, 0), LocalTime.of(12, 0))
+            .copy(recurrence = Recurrence.EVERY_WEEK, date = null)
+        val base = data(item(1L, tuesday, LocalTime.of(8, 0), LocalTime.of(9, 30)), weeklyClass)
+        val cancellation = OccurrenceChange(
+            id = 1L,
+            classId = weeklyClass.id,
+            originalDate = tuesday,
+            kind = OccurrenceChangeKind.CANCELLED
+        )
+
+        val plan = planner().plan(
+            base.copy(occurrenceChanges = listOf(cancellation)),
+            gapSettings,
+            PlanDisplaySettings.DEFAULT
+        )
+
+        assertTrue(plan.none { it.date == tuesday })
+    }
+
+    @Test
+    fun hiddenProgramDoesNotCreateGapNotification() {
+        val otherProgram = StudyProgram(id = 2L, name = "Filologia", color = "#AA0000")
+        val otherAssignment = SemesterProgram(
+            id = 2L,
+            semesterId = semester.id,
+            studyProgramId = otherProgram.id,
+            academicCalendarId = calendar.id
+        )
+        val plan = planner().plan(
+            ActivePlanData(
+                semester = semester,
+                classes = listOf(
+                    item(1L, tuesday, LocalTime.of(8, 0), LocalTime.of(9, 30)),
+                    item(2L, tuesday, LocalTime.of(11, 0), LocalTime.of(12, 0))
+                        .copy(semesterProgramId = otherAssignment.id)
+                ),
+                courses = listOf(course, otherProgram),
+                semesterPrograms = listOf(assignment, otherAssignment),
+                calendars = listOf(calendar)
+            ),
+            gapSettings,
+            PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf(otherProgram.id))
+        )
+
+        assertTrue(plan.isEmpty())
+    }
+
+    @Test
+    fun gapKindsOffPlanNothingForGaps() {
+        val plan = planner().plan(
+            data(
+                item(1L, tuesday, LocalTime.of(8, 0), LocalTime.of(9, 30)),
+                item(2L, tuesday, LocalTime.of(11, 0), LocalTime.of(12, 0))
+            ),
+            settings.copy(eveningEnabled = false, beforeClassEnabled = false),
+            PlanDisplaySettings.DEFAULT
+        )
+
+        assertTrue(plan.isEmpty())
+    }
+
+    @Test
+    fun twoGapsGiveTwoBeforeClassAndOneEvening() {
+        val plan = planner().plan(
+            data(
+                item(1L, tuesday, LocalTime.of(8, 0), LocalTime.of(9, 0)),
+                item(2L, tuesday, LocalTime.of(10, 0), LocalTime.of(11, 0)),
+                item(3L, tuesday, LocalTime.of(13, 0), LocalTime.of(14, 0))
+            ),
+            gapSettings,
+            PlanDisplaySettings.DEFAULT
+        )
+
+        val beforeClass = plan.filter { it.kind == CollisionNotificationKind.GAP_BEFORE_CLASS }
+        assertEquals(2, beforeClass.size)
+        assertEquals(2, beforeClass.map { it.id }.toSet().size)
+        val evening = plan.single { it.kind == CollisionNotificationKind.GAP_EVENING }
+        assertEquals(2, evening.groups.size)
+        assertEquals(3, plan.size)
     }
 
     private fun planner() = CollisionNotificationPlanner(ActivePlanProvider(), clock)

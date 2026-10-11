@@ -94,11 +94,16 @@ data class NotificationSettingsUi(
     val enabled: Boolean = false,
     val eveningEnabled: Boolean = true,
     val beforeClassEnabled: Boolean = true,
+    val gapEveningEnabled: Boolean = false,
+    val gapBeforeClassEnabled: Boolean = false,
     val eveningHourOptions: List<SettingsOptionUi> = emptyList(),
-    val leadOptions: List<SettingsOptionUi> = emptyList()
+    val leadOptions: List<SettingsOptionUi> = emptyList(),
+    val gapEveningHourOptions: List<SettingsOptionUi> = emptyList(),
+    val gapLeadOptions: List<SettingsOptionUi> = emptyList()
 ) {
     // One entry per notification kind; the settings summary counts the enabled ones.
-    val kindStates: List<Boolean> get() = listOf(eveningEnabled, beforeClassEnabled)
+    val kindStates: List<Boolean>
+        get() = listOf(eveningEnabled, beforeClassEnabled, gapEveningEnabled, gapBeforeClassEnabled)
 }
 
 data class SettingsUiState(
@@ -558,12 +563,16 @@ fun SettingsNotificationsScreen(
     onBeforeClassNotificationsEnabled: (Boolean) -> Unit,
     onEveningHourSelected: (String) -> Unit,
     onBeforeClassLeadSelected: (String) -> Unit,
+    onGapEveningNotificationsEnabled: (Boolean) -> Unit,
+    onGapBeforeClassNotificationsEnabled: (Boolean) -> Unit,
+    onGapEveningHourSelected: (String) -> Unit,
+    onGapLeadSelected: (String) -> Unit,
     onRequestNotificationPermission: () -> Unit,
     onOpenAppSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val notifications = state.notifications
-    // "evening" or "lead" while a choice dialog is open.
+    // "evening", "lead", "gapEvening" or "gapLead" while a choice dialog is open.
     var openDialog by rememberSaveable { mutableStateOf<String?>(null) }
     MakScreenContent(
         modifier = modifier
@@ -591,31 +600,40 @@ fun SettingsNotificationsScreen(
                 }
             )
         }
-        SettingsListSection("Kolizje") {
-            NotificationKindRow(
-                sectionTitle = "Kolizje",
-                title = "Dzień wcześniej",
-                value = "O " + notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                checked = notifications.eveningEnabled,
-                onCheckedChange = { enabled ->
-                    onEveningNotificationsEnabled(enabled)
-                    if (enabled && notificationsBlocked) onRequestNotificationPermission()
-                },
-                onOpenValue = { openDialog = "evening" }
-            )
-            SettingsRowDivider()
-            NotificationKindRow(
-                sectionTitle = "Kolizje",
-                title = "Przed zajęciami",
-                value = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty() + " wcześniej",
-                checked = notifications.beforeClassEnabled,
-                onCheckedChange = { enabled ->
-                    onBeforeClassNotificationsEnabled(enabled)
-                    if (enabled && notificationsBlocked) onRequestNotificationPermission()
-                },
-                onOpenValue = { openDialog = "lead" }
-            )
-        }
+        NotificationTopicSection(
+            title = "Kolizje",
+            eveningValue = "O " + notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
+            eveningChecked = notifications.eveningEnabled,
+            onEveningCheckedChange = { enabled ->
+                onEveningNotificationsEnabled(enabled)
+                if (enabled && notificationsBlocked) onRequestNotificationPermission()
+            },
+            onOpenEvening = { openDialog = "evening" },
+            leadValue = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty() + " wcześniej",
+            leadChecked = notifications.beforeClassEnabled,
+            onLeadCheckedChange = { enabled ->
+                onBeforeClassNotificationsEnabled(enabled)
+                if (enabled && notificationsBlocked) onRequestNotificationPermission()
+            },
+            onOpenLead = { openDialog = "lead" }
+        )
+        NotificationTopicSection(
+            title = "Okienka",
+            eveningValue = "O " + notifications.gapEveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
+            eveningChecked = notifications.gapEveningEnabled,
+            onEveningCheckedChange = { enabled ->
+                onGapEveningNotificationsEnabled(enabled)
+                if (enabled && notificationsBlocked) onRequestNotificationPermission()
+            },
+            onOpenEvening = { openDialog = "gapEvening" },
+            leadValue = notifications.gapLeadOptions.firstOrNull { it.isSelected }?.label.orEmpty() + " wcześniej",
+            leadChecked = notifications.gapBeforeClassEnabled,
+            onLeadCheckedChange = { enabled ->
+                onGapBeforeClassNotificationsEnabled(enabled)
+                if (enabled && notificationsBlocked) onRequestNotificationPermission()
+            },
+            onOpenLead = { openDialog = "gapLead" }
+        )
         MakHelperText(NOTIFICATION_DELAY_NOTE)
         when (openDialog) {
             "evening" -> NotificationChoiceDialog(
@@ -632,7 +650,55 @@ fun SettingsNotificationsScreen(
                 onSave = onBeforeClassLeadSelected,
                 onDismiss = { openDialog = null }
             )
+            "gapEvening" -> NotificationChoiceDialog(
+                title = "Okienka: dzień wcześniej",
+                options = notifications.gapEveningHourOptions,
+                optionLabel = { "O ${it.label}" },
+                onSave = onGapEveningHourSelected,
+                onDismiss = { openDialog = null }
+            )
+            "gapLead" -> NotificationChoiceDialog(
+                title = "Okienka: przed zajęciami",
+                options = notifications.gapLeadOptions,
+                optionLabel = { "${it.label} wcześniej" },
+                onSave = onGapLeadSelected,
+                onDismiss = { openDialog = null }
+            )
         }
+    }
+}
+
+/** One topic of notification kinds (the evening and the before-class kind) in its own list section. */
+@Composable
+private fun NotificationTopicSection(
+    title: String,
+    eveningValue: String,
+    eveningChecked: Boolean,
+    onEveningCheckedChange: (Boolean) -> Unit,
+    onOpenEvening: () -> Unit,
+    leadValue: String,
+    leadChecked: Boolean,
+    onLeadCheckedChange: (Boolean) -> Unit,
+    onOpenLead: () -> Unit
+) {
+    SettingsListSection(title) {
+        NotificationKindRow(
+            sectionTitle = title,
+            title = "Dzień wcześniej",
+            value = eveningValue,
+            checked = eveningChecked,
+            onCheckedChange = onEveningCheckedChange,
+            onOpenValue = onOpenEvening
+        )
+        SettingsRowDivider()
+        NotificationKindRow(
+            sectionTitle = title,
+            title = "Przed zajęciami",
+            value = leadValue,
+            checked = leadChecked,
+            onCheckedChange = onLeadCheckedChange,
+            onOpenValue = onOpenLead
+        )
     }
 }
 

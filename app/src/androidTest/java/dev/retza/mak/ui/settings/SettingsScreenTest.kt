@@ -56,8 +56,12 @@ class SettingsScreenTest {
                             minimumBreakOptions = listOf(SettingsOptionUi("0", "0 min", true)),
                             notifications = NotificationSettingsUi(
                                 enabled = true,
+                                gapEveningEnabled = true,
+                                gapBeforeClassEnabled = true,
                                 eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
-                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
+                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true)),
+                                gapEveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
+                                gapLeadOptions = listOf(SettingsOptionUi("15", "15 min", true))
                             )
                         ),
                         onOpenSemesters = { opened = "semesters" },
@@ -333,7 +337,9 @@ class SettingsScreenTest {
                             notifications = NotificationSettingsUi(
                                 enabled = true,
                                 eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
-                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
+                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true)),
+                                gapEveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
+                                gapLeadOptions = listOf(SettingsOptionUi("15", "15 min", true))
                             )
                         ),
                         notificationsBlocked = true,
@@ -342,6 +348,10 @@ class SettingsScreenTest {
                         onBeforeClassNotificationsEnabled = {},
                         onEveningHourSelected = {},
                         onBeforeClassLeadSelected = {},
+                        onGapEveningNotificationsEnabled = {},
+                        onGapBeforeClassNotificationsEnabled = {},
+                        onGapEveningHourSelected = {},
+                        onGapLeadSelected = {},
                         onRequestNotificationPermission = {},
                         onOpenAppSettings = {}
                     )
@@ -351,8 +361,8 @@ class SettingsScreenTest {
 
         composeTestRule.onNodeWithText("Wszystkie powiadomienia").assertIsDisplayed()
         composeTestRule.onNodeWithText("Kolizje").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Dzień wcześniej").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Przed zajęciami").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Dzień wcześniej").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("Przed zajęciami").assertCountEquals(2)
         composeTestRule.onNodeWithText("O 20:00").assertIsDisplayed()
         composeTestRule.onNodeWithText("30 min wcześniej").assertIsDisplayed()
         composeTestRule.onAllNodesWithText("Godzina wieczorna").assertCountEquals(0)
@@ -373,6 +383,8 @@ class SettingsScreenTest {
                 enabled = true,
                 eveningEnabled = true,
                 beforeClassEnabled = true,
+                gapEveningEnabled = true,
+                gapBeforeClassEnabled = true,
                 eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
                 leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
             )
@@ -410,11 +422,20 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithText("Wszystkie włączone").assertIsDisplayed()
 
         composeTestRule.runOnIdle {
-            notifications.value = notifications.value.copy(beforeClassEnabled = false)
+            notifications.value = notifications.value.copy(
+                beforeClassEnabled = false,
+                gapBeforeClassEnabled = false,
+                gapEveningEnabled = true
+            )
             blocked.value = true
         }
-        composeTestRule.onNodeWithText("Włączone: 1 z 2").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Włączone: 2 z 4").assertIsDisplayed()
         composeTestRule.onNodeWithText("Zablokowane przez system").assertIsDisplayed()
+
+        composeTestRule.runOnIdle {
+            notifications.value = notifications.value.copy(gapEveningEnabled = false)
+        }
+        composeTestRule.onNodeWithText("Włączone: 1 z 4").assertIsDisplayed()
 
         composeTestRule.runOnIdle {
             notifications.value = notifications.value.copy(enabled = false, eveningEnabled = false)
@@ -435,7 +456,9 @@ class SettingsScreenTest {
                                 eveningEnabled = false,
                                 beforeClassEnabled = false,
                                 eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
-                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
+                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true)),
+                                gapEveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
+                                gapLeadOptions = listOf(SettingsOptionUi("15", "15 min", true))
                             )
                         ),
                         notificationsBlocked = false,
@@ -444,6 +467,10 @@ class SettingsScreenTest {
                         onBeforeClassNotificationsEnabled = {},
                         onEveningHourSelected = {},
                         onBeforeClassLeadSelected = {},
+                        onGapEveningNotificationsEnabled = {},
+                        onGapBeforeClassNotificationsEnabled = {},
+                        onGapEveningHourSelected = {},
+                        onGapLeadSelected = {},
                         onRequestNotificationPermission = {},
                         onOpenAppSettings = {}
                     )
@@ -451,8 +478,8 @@ class SettingsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Dzień wcześniej").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Przed zajęciami").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Dzień wcześniej").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("Przed zajęciami").assertCountEquals(2)
     }
 
     @Test
@@ -467,7 +494,9 @@ class SettingsScreenTest {
                                 eveningEnabled = false,
                                 beforeClassEnabled = true,
                                 eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
-                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
+                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true)),
+                                gapEveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
+                                gapLeadOptions = listOf(SettingsOptionUi("15", "15 min", true))
                             )
                         ),
                         notificationsBlocked = false,
@@ -476,6 +505,10 @@ class SettingsScreenTest {
                         onBeforeClassNotificationsEnabled = {},
                         onEveningHourSelected = {},
                         onBeforeClassLeadSelected = {},
+                        onGapEveningNotificationsEnabled = {},
+                        onGapBeforeClassNotificationsEnabled = {},
+                        onGapEveningHourSelected = {},
+                        onGapLeadSelected = {},
                         onRequestNotificationPermission = {},
                         onOpenAppSettings = {}
                     )
@@ -483,7 +516,7 @@ class SettingsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Dzień wcześniej").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Dzień wcześniej").assertCountEquals(2)
         composeTestRule.onNodeWithText("O 20:00").assertIsDisplayed()
         composeTestRule.onNodeWithText("30 min wcześniej").assertIsDisplayed()
     }
@@ -502,6 +535,10 @@ class SettingsScreenTest {
                         onBeforeClassNotificationsEnabled = {},
                         onEveningHourSelected = {},
                         onBeforeClassLeadSelected = {},
+                        onGapEveningNotificationsEnabled = {},
+                        onGapBeforeClassNotificationsEnabled = {},
+                        onGapEveningHourSelected = {},
+                        onGapLeadSelected = {},
                         onRequestNotificationPermission = { permissionRequested = true },
                         onOpenAppSettings = {}
                     )
@@ -545,6 +582,49 @@ class SettingsScreenTest {
         composeTestRule.onAllNodesWithText("Kolizje: dzień wcześniej").assertCountEquals(0)
     }
 
+    @Test
+    fun gapSectionShowsBothKindsAt320Dp() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
+                    SettingsNotificationsScreen(
+                        state = SettingsUiState(
+                            notifications = NotificationSettingsUi(
+                                enabled = true,
+                                eveningEnabled = true,
+                                beforeClassEnabled = true,
+                                gapEveningEnabled = true,
+                                gapBeforeClassEnabled = false,
+                                eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
+                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true)),
+                                gapEveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
+                                gapLeadOptions = listOf(SettingsOptionUi("15", "15 min", true))
+                            )
+                        ),
+                        notificationsBlocked = false,
+                        onNotificationsEnabled = {},
+                        onEveningNotificationsEnabled = {},
+                        onBeforeClassNotificationsEnabled = {},
+                        onEveningHourSelected = {},
+                        onBeforeClassLeadSelected = {},
+                        onGapEveningNotificationsEnabled = {},
+                        onGapBeforeClassNotificationsEnabled = {},
+                        onGapEveningHourSelected = {},
+                        onGapLeadSelected = {},
+                        onRequestNotificationPermission = {},
+                        onOpenAppSettings = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Okienka").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Okienka: Dzień wcześniej").assertIsDisplayed()
+        composeTestRule.onNodeWithContentDescription("Okienka: Przed zajęciami").assertIsDisplayed()
+        composeTestRule.onNodeWithText("O 21:00").assertIsDisplayed()
+        composeTestRule.onNodeWithText("15 min wcześniej").assertIsDisplayed()
+    }
+
     private fun setNotificationsContent(
         onEveningNotificationsEnabled: (Boolean) -> Unit = {},
         onBeforeClassLeadSelected: (String) -> Unit = {}
@@ -567,6 +647,16 @@ class SettingsScreenTest {
                                 ),
                                 leadOptions = listOf(15, 30, 45, 60).map { minutes ->
                                     SettingsOptionUi("$minutes", "$minutes min", minutes == 30)
+                                },
+                                gapEveningHourOptions = listOf(
+                                    SettingsOptionUi("18:00", "18:00"),
+                                    SettingsOptionUi("19:00", "19:00"),
+                                    SettingsOptionUi("20:00", "20:00"),
+                                    SettingsOptionUi("21:00", "21:00", true),
+                                    SettingsOptionUi("22:00", "22:00")
+                                ),
+                                gapLeadOptions = listOf(15, 30, 45, 60).map { minutes ->
+                                    SettingsOptionUi("$minutes", "$minutes min", minutes == 15)
                                 }
                             )
                         ),
@@ -576,6 +666,10 @@ class SettingsScreenTest {
                         onBeforeClassNotificationsEnabled = {},
                         onEveningHourSelected = {},
                         onBeforeClassLeadSelected = onBeforeClassLeadSelected,
+                        onGapEveningNotificationsEnabled = {},
+                        onGapBeforeClassNotificationsEnabled = {},
+                        onGapEveningHourSelected = {},
+                        onGapLeadSelected = {},
                         onRequestNotificationPermission = {},
                         onOpenAppSettings = {}
                     )
