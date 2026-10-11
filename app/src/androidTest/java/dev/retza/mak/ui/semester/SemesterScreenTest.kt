@@ -27,6 +27,7 @@ import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
 import dev.retza.mak.ui.theme.MAKTheme
 import dev.retza.mak.ui.programs.StudyProgramEditorUi
+import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -630,6 +631,7 @@ class SemesterScreenTest {
         id = id,
         startDate = startDate,
         endDate = endDate,
+        rangeLabel = calendarRangeLabel(LocalDate.parse(startDate), LocalDate.parse(endDate)),
         firstWeek = WeekType.A,
         courseNames = courseNames
     )

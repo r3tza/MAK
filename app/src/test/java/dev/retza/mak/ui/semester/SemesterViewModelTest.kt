@@ -782,6 +782,14 @@ class SemesterViewModelTest {
         assertEquals("Fizyka", viewModel.semester.value.courseNameDraft)
         assertEquals(1, viewModel.semester.value.overrides.size)
     }
+
+    @Test
+    fun calendarRangeLabelUsesShortDatesWithYear() {
+        assertEquals(
+            "1 lis 2026 - 15 mar 2027",
+            calendarRangeLabel(LocalDate.of(2026, 11, 1), LocalDate.of(2027, 3, 15))
+        )
+    }
 }
 
 private class RecordingFeedbackSink : FeedbackSink {

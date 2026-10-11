@@ -205,6 +205,8 @@ Kryterium zakończenia: testy przechodzą, zrzuty są identyczne; `rg "specFor" 
 
 ## 5. Usuń pozostałe kopie i nieużywany kod z przeglądu (I-91)
 
+Stan: zrobione. Wykonało dwóch subagentów (formularze i etykieta kalendarza oraz martwy kod, synchronizacja i widget), recenzja, kolejka i testy Android: agent planujący. Bez odchyleń od planu. Testy Android: `SemesterScreenTest` 14/14, `SettingsScreenTest` 14/14, `SetupWizardTest` 11/11, `KoinGraphTest` 3/3.
+
 Cel: drobne porządki bez zmiany zachowania: jedno mapowanie błędów zakresu dat, jedna etykieta zakresu kalendarza, brak martwego kodu. Na końcu kolejka zamyka I-91, I-92 i I-94.
 
 Pliki: `ui/FormErrorTexts.kt`, `domain/FormValidation.kt`, `ui/semester/SemesterViewModel.kt`, `ui/semester/SemesterScreen.kt`, `ui/setup/SetupViewModel.kt`, `ui/programs/StudyProgramsViewModel.kt`, `ui/MakRoutes.kt`, `ui/ClassOccurrenceRoutes.kt`, `export/ExportSnapshot.kt`, `ui/settings/SettingsScreen.kt`, `ui/components/MakComponents.kt`, `sync/SyncCoordinator.kt`, `widget/WidgetLayoutPolicy.kt`; testy JVM `domain/FormValidationTest.kt`, `ui/MakNavigationTest.kt`; test Android `ui/semester/SemesterScreenTest.kt`.

@@ -41,8 +41,6 @@ fun editRoute(classId: Long, date: String): String =
 fun newClassRoute(date: LocalDate? = null): String =
     date?.let { "edit?date=$it" } ?: "edit"
 
-fun semesterRoute(id: String): String = "semester/$id"
-
 fun semesterGraphRoute(id: String): String = "semester-graph/$id"
 
 fun studyProgramEditRoute(id: Long): String = "settings/programs/$id"

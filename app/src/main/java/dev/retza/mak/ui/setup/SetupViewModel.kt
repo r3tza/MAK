@@ -1,8 +1,6 @@
 package dev.retza.mak.ui.setup
 
-import dev.retza.mak.domain.DateRangeError
 import dev.retza.mak.domain.validateDateRange
-import dev.retza.mak.domain.validateRequiredName
 import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.components.DefaultCourseColor
 import dev.retza.mak.ui.components.suggestedCourseColor
@@ -332,7 +330,7 @@ class SetupViewModel(
         when (current.programMode) {
             SetupProgramMode.New -> {
                 val name = current.courseName.trim()
-                if (!validateRequiredName(name)) {
+                if (name.isBlank()) {
                     state.update {
                         it.copy(errors = mapOf(SetupField.CourseName to FieldErrorUi(FormErrorTexts.ProgramNameRequired)))
                     }
@@ -396,18 +394,12 @@ class SetupViewModel(
         val end = current.endDate.toLocalDateOrNull()
         val dateErrors = validateDateRange(start, end)
         val errors = buildMap {
-            if (!validateRequiredName(current.semesterName)) {
+            if (current.semesterName.isBlank()) {
                 put(SetupField.SemesterName, FieldErrorUi(FormErrorTexts.SemesterNameRequired))
             }
-            if (DateRangeError.START_REQUIRED in dateErrors) {
-                put(SetupField.StartDate, FieldErrorUi(FormErrorTexts.DateRequired))
-            }
-            if (DateRangeError.END_REQUIRED in dateErrors) {
-                put(SetupField.EndDate, FieldErrorUi(FormErrorTexts.DateRequired))
-            }
-            if (DateRangeError.END_BEFORE_START in dateErrors) {
-                put(SetupField.EndDate, FieldErrorUi(FormErrorTexts.EndBeforeStart))
-            }
+            val texts = FormErrorTexts.dateRange(dateErrors)
+            texts.start?.let { put(SetupField.StartDate, FieldErrorUi(it)) }
+            (texts.range ?: texts.end)?.let { put(SetupField.EndDate, FieldErrorUi(it)) }
         }
         if (errors.isNotEmpty() || start == null || end == null) {
             state.update { it.copy(errors = errors) }

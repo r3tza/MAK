@@ -28,7 +28,6 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
@@ -54,7 +53,6 @@ import dev.retza.mak.ui.components.MakTextAction
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.components.makRowFocus
-import dev.retza.mak.text.polishPlural
 import dev.retza.mak.export.ImportSummary
 
 @Composable

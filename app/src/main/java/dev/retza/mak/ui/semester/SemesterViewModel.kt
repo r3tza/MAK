@@ -11,11 +11,9 @@ import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
-import dev.retza.mak.domain.DateRangeError
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
 import dev.retza.mak.domain.validateDateRange
-import dev.retza.mak.domain.validateRequiredName
 import dev.retza.mak.domain.weekStart
 import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.FormErrorTexts
@@ -26,6 +24,7 @@ import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
+import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -204,15 +203,16 @@ class SemesterViewModel(
         val form = state.value.semester
         val start = form.startDate.toLocalDateOrNull()
         val end = form.endDate.toLocalDateOrNull()
-        val nameValid = validateRequiredName(form.name)
+        val nameValid = form.name.isNotBlank()
         val dateErrors = validateDateRange(start, end)
         if (!nameValid || dateErrors.isNotEmpty() || start == null || end == null) {
+            val texts = FormErrorTexts.dateRange(dateErrors)
             update {
                 it.copy(semester = form.copy(
                     nameError = if (nameValid) null else FormErrorTexts.SemesterNameRequired,
-                    startDateError = if (DateRangeError.START_REQUIRED in dateErrors) FormErrorTexts.DateRequired else null,
-                    endDateError = if (DateRangeError.END_REQUIRED in dateErrors) FormErrorTexts.DateRequired else null,
-                    dateRangeError = if (DateRangeError.END_BEFORE_START in dateErrors) FormErrorTexts.EndBeforeStart else null
+                    startDateError = texts.start,
+                    endDateError = texts.end,
+                    dateRangeError = texts.range
                 ))
             }
             return
@@ -264,11 +264,12 @@ class SemesterViewModel(
         val end = form.endDate.toLocalDateOrNull()
         val dateErrors = validateDateRange(start, end)
         if (dateErrors.isNotEmpty() || start == null || end == null) {
+            val texts = FormErrorTexts.dateRange(dateErrors)
             update {
                 it.copy(semester = form.copy(
-                    startDateError = if (DateRangeError.START_REQUIRED in dateErrors) FormErrorTexts.DateRequired else null,
-                    endDateError = if (DateRangeError.END_REQUIRED in dateErrors) FormErrorTexts.DateRequired else null,
-                    dateRangeError = if (DateRangeError.END_BEFORE_START in dateErrors) FormErrorTexts.EndBeforeStart else null
+                    startDateError = texts.start,
+                    endDateError = texts.end,
+                    dateRangeError = texts.range
                 ))
             }
             return
@@ -381,7 +382,7 @@ class SemesterViewModel(
         } else {
             draft.courseNameDraft.trim()
         }
-        if (!validateRequiredName(name)) {
+        if (name.isBlank()) {
             update { it.copy(courseNameError = FormErrorTexts.ProgramNameRequired) }
             return
         }
@@ -689,7 +690,7 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
             name = program.name,
             color = program.color,
             calendarId = calendar?.id,
-            calendarLabel = calendarLabel(calendar),
+            calendarLabel = calendar?.let { calendarRangeLabel(it.startDate, it.endDate) }.orEmpty(),
             sharesCalendar = programs.count {
                 it.academicCalendarId == assignment.academicCalendarId
             } > 1
@@ -721,6 +722,7 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
                 id = calendar.id,
                 startDate = calendar.startDate.toString(),
                 endDate = calendar.endDate.toString(),
+                rangeLabel = calendarRangeLabel(calendar.startDate, calendar.endDate),
                 firstWeek = calendar.firstWeekType,
                 courseNames = programs
                     .filter { it.academicCalendarId == calendar.id }
@@ -737,8 +739,6 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
     )
 }
 
-private fun calendarLabel(calendar: AcademicCalendarRecord?): String =
-    calendar?.let {
-        "${it.startDate.format(shortDateWithYearFormatter)} - ${it.endDate.format(shortDateWithYearFormatter)}"
-    }.orEmpty()
+internal fun calendarRangeLabel(start: LocalDate, end: LocalDate): String =
+    "${start.format(shortDateWithYearFormatter)} - ${end.format(shortDateWithYearFormatter)}"
 

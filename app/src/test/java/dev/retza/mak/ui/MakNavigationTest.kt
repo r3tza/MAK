@@ -13,7 +13,6 @@ class MakNavigationTest {
         assertEquals("edit?classId=42&date=2026-09-19", editRoute(42, "2026-09-19"))
         assertEquals("edit", newClassRoute())
         assertEquals("edit?date=2026-09-19", newClassRoute(LocalDate.of(2026, 9, 19)))
-        assertEquals("semester/7", semesterRoute("7"))
         assertEquals("semester/7/courses", semesterCoursesRoute("7"))
         assertEquals("semester/7/week-overrides", semesterOverridesRoute("7"))
         assertEquals("setup?resume=true", setupRoute(resumeExisting = true))

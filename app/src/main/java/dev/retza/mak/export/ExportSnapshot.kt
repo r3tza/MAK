@@ -6,7 +6,6 @@ import dev.retza.mak.data.repository.SemesterBackup
 import dev.retza.mak.data.repository.ClassRecord
 import dev.retza.mak.data.repository.OccurrenceChangeRecord
 import dev.retza.mak.data.repository.OccurrenceNoteRecord
-import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.SemesterProgramRecord
 import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord

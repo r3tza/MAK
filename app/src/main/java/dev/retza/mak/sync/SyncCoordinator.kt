@@ -133,27 +133,27 @@ class SyncCoordinator(
             repeat(MAX_PASSES) { pass(account, resolution)?.let { return it } }
             SyncOutcome.RetryLater
         } catch (_: NewerExportVersionException) {
-            issue(SyncIssue.NEWER_REMOTE_PLAN, message = null)
+            issue(SyncIssue.NEWER_REMOTE_PLAN)
         } catch (error: InvalidRemotePlanException) {
             issue(SyncIssue.INVALID_REMOTE_PLAN, error.message)
         } catch (_: UserActionRequiredException) {
-            authorizationRequired()
+            issue(SyncIssue.AUTHORIZATION_REQUIRED)
         } catch (_: AccountMismatchException) {
-            issue(SyncIssue.ACCOUNT_MISMATCH, message = null)
+            issue(SyncIssue.ACCOUNT_MISMATCH)
         } catch (error: DriveHttpException) {
             when {
                 error.isTransient() -> throw error
-                error.statusCode == 401 -> authorizationRequired()
-                error.isStorageFull() -> issue(SyncIssue.STORAGE_FULL, message = null)
-                error.statusCode == 403 -> issue(SyncIssue.ACCESS_DENIED, message = null)
-                else -> failed()
+                error.statusCode == 401 -> issue(SyncIssue.AUTHORIZATION_REQUIRED)
+                error.isStorageFull() -> issue(SyncIssue.STORAGE_FULL)
+                error.statusCode == 403 -> issue(SyncIssue.ACCESS_DENIED)
+                else -> issue(SyncIssue.FAILED)
             }
         } catch (error: CancellationException) {
             throw error
         } catch (error: IOException) {
             throw error
         } catch (_: Exception) {
-            failed()
+            issue(SyncIssue.FAILED)
         }
     }
 
@@ -162,11 +162,7 @@ class SyncCoordinator(
         return SyncOutcome.WaitingForEditor
     }
 
-    private fun authorizationRequired() = issue(SyncIssue.AUTHORIZATION_REQUIRED, message = null)
-
-    private fun failed() = issue(SyncIssue.FAILED, message = null)
-
-    private fun issue(issue: SyncIssue, message: String?): SyncOutcome {
+    private fun issue(issue: SyncIssue, message: String? = null): SyncOutcome {
         save(current.value.copy(issue = issue, issueMessage = message))
         return SyncOutcome.NeedsAttention
     }
@@ -351,7 +347,7 @@ class SyncCoordinator(
 
     private fun localSizeIssue(bytes: ByteArray): SyncOutcome? =
         if (bytes.size > SyncPlanFile.MAX_BYTES) {
-            issue(SyncIssue.LOCAL_PLAN_TOO_LARGE, message = null)
+            issue(SyncIssue.LOCAL_PLAN_TOO_LARGE)
         } else {
             null
         }

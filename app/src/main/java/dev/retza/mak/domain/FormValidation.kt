@@ -17,8 +17,6 @@ fun validateDateRange(start: LocalDate?, end: LocalDate?): Set<DateRangeError> {
     return errors
 }
 
-fun validateRequiredName(name: String): Boolean = name.isNotBlank()
-
 /** Without a calendar there is nothing to check the date against, so it is accepted. */
 fun dateInCalendar(date: LocalDate, calendar: AcademicCalendar?): Boolean =
     calendar == null || date in calendar

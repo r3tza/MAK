@@ -12,15 +12,17 @@ internal enum class WidgetStatusMode {
 
 internal data class WidgetLayoutPolicy(
     val accentHeight: Dp,
-    // The teacher fits only next to the room in a wide widget.
-    val includeTeacher: Boolean,
+    val wide: Boolean,
     val nameMaxLines: Int,
     val nameCharacterLimit: Int,
     val rowSpacing: Dp,
     val statusMode: WidgetStatusMode,
     val metadataCharacterLimit: Int,
     val noteCharacterLimit: Int
-)
+) {
+    // The teacher fits only next to the room in a wide widget.
+    val includeTeacher: Boolean get() = wide
+}
 
 internal val WidgetHeaderSpacing = 6.dp
 
@@ -29,7 +31,7 @@ internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
     val policy = when (mode.height) {
         WidgetHeightMode.Compact -> WidgetLayoutPolicy(
             accentHeight = 28.dp,
-            includeTeacher = wide,
+            wide = wide,
             nameMaxLines = 1,
             nameCharacterLimit = if (wide) 36 else 28,
             rowSpacing = 0.dp,
@@ -39,7 +41,7 @@ internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
         )
         WidgetHeightMode.Medium -> WidgetLayoutPolicy(
             accentHeight = 42.dp,
-            includeTeacher = wide,
+            wide = wide,
             nameMaxLines = 1,
             nameCharacterLimit = if (wide) 50 else 42,
             rowSpacing = 4.dp,
@@ -49,7 +51,7 @@ internal fun widgetLayoutPolicy(mode: WidgetLayoutMode): WidgetLayoutPolicy {
         )
         WidgetHeightMode.Large, WidgetHeightMode.ExtraLarge -> WidgetLayoutPolicy(
             accentHeight = 52.dp,
-            includeTeacher = wide,
+            wide = wide,
             nameMaxLines = if (wide) 2 else 1,
             nameCharacterLimit = if (wide) 56 else 42,
             rowSpacing = 6.dp,

@@ -40,13 +40,6 @@ class FormValidationTest {
     }
 
     @Test
-    fun blankNameIsRequired() {
-        assertFalse(validateRequiredName(""))
-        assertFalse(validateRequiredName("   "))
-        assertTrue(validateRequiredName(" Algebra "))
-    }
-
-    @Test
     fun dateOnCalendarBoundsIsAccepted() {
         val calendar = AcademicCalendar(
             id = 1L,

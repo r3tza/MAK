@@ -61,7 +61,6 @@ import dev.retza.mak.ui.components.WeekTypeSelectField
 import dev.retza.mak.ui.components.makRowFocus
 import dev.retza.mak.ui.longDateFormatter
 import dev.retza.mak.text.polishPlural
-import dev.retza.mak.ui.shortDateWithYearFormatter
 import dev.retza.mak.domain.toLocalDateOrNull
 import dev.retza.mak.ui.components.parseHexColor
 
@@ -121,6 +120,7 @@ data class SemesterCalendarUi(
     val id: Long,
     val startDate: String,
     val endDate: String,
+    val rangeLabel: String,
     val firstWeek: WeekType,
     val courseNames: List<String>
 )
@@ -389,7 +389,7 @@ fun SemesterCalendarsScreen(
     state.pendingCalendarDeletion?.let { calendar ->
         MakConfirmDeletionDialog(
             title = "Usunąć kalendarz?",
-            text = "Kalendarz ${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()} " +
+            text = "Kalendarz ${calendar.rangeLabel} " +
                 "nie jest używany przez żaden kierunek i zostanie usunięty razem ze swoimi korektami.",
             isDeleting = state.isDeletingCalendar,
             onConfirm = onConfirmCalendarDeletion,
@@ -453,7 +453,7 @@ private fun CalendarCard(
         ) {
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    "${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()}",
+                    calendar.rangeLabel,
                     fontWeight = FontWeight.SemiBold
                 )
                 Text(
@@ -691,15 +691,11 @@ internal fun courseDeletionMessage(deletion: CourseDeletionUi): String = buildSt
 internal fun calendarLabel(calendar: SemesterCalendarUi): String {
     val courses = distinctLabels(calendar.courseNames)
     val coursePart = if (courses.isEmpty()) "brak kierunków" else courses.joinToString(", ")
-    val range = "${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()}"
-    return "$range, tydzień ${calendar.firstWeek.name}, $coursePart"
+    return "${calendar.rangeLabel}, tydzień ${calendar.firstWeek.name}, $coursePart"
 }
 
 private fun String.asLongDate(): String =
     toLocalDateOrNull()?.format(longDateFormatter) ?: this
-
-private fun String.asCalendarDate(): String =
-    toLocalDateOrNull()?.format(shortDateWithYearFormatter) ?: this
 
 
 @Composable
