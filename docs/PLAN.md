@@ -1,30 +1,35 @@
 # Plan najbliższych prac
 
-Cel: wykonać wartościowe punkty przeglądu zmian z audytu z 2026-10-11 (I-91, I-92, I-94 w `QUEUE.md`). Plan powstał na polecenie użytkownika z 2026-10-11 („rozpisz plan, jeśli warto”). Najważniejszy jest krok 1: naprawia widoczny błąd tygodnia w „Planie” przy filtrze kierunku. Pozostałe kroki usuwają zbędną pracę (synchronizacja bez potrzeby, przebudowa całej aplikacji przy każdym znaku) i drobne kopie reguł.
+Cel: poprawki ustawień zgłoszone przez użytkownika 2026-10-11. Dodawanie kierunku po kreatorze jest zbyt schowane (I-95), karta semestru jest nieczytelna i nie pokazuje roku (I-96), a podsumowanie powiadomień pokazuje to samo bez względu na włączone rodzaje (I-97). Ekran „Powiadomienia” dostaje układ, który pomieści kolejne rodzaje, i powiadomienia o okienkach (I-98). Przy okazji znikają opisy, które powtarzają to, co widać na ekranie.
 
-## Zakres
+## Decyzje użytkownika z 2026-10-11
 
-W planie (punkty z wierszy `QUEUE.md`):
+1. „Dodaj kierunek” jest na ekranie „Kierunki” w ustawieniach. Formularz ma nazwę i kolor. Nowy kierunek trafia od razu do aktywnego semestru i dostaje jego wspólny kalendarz. Bez aktywnego semestru kierunek powstaje bez przypisania.
+2. Ekran „Dodaj kierunek” w konfiguracji semestru zostaje (nowy albo istniejący kierunek, wspólne albo osobne daty i tygodnie). Znikają z niego dwa teksty pomocnicze: „Nazwa i kolor istniejącego kierunku są wspólne dla wszystkich semestrów.” i „Powstanie kopia dat, rytmu i korekt wybranego kalendarza.”.
+3. Odrzucone: lista kierunków semestru z checkboxami zamiast formularza „Dodaj kierunek”. Obecny formularz wystarcza, a checkboxy miałyby na dwóch ekranach „Kierunki” dwa różne znaczenia.
+4. Znikają opisy: „Zakres dat, pierwszy tydzień A/B, kierunki i ręczne korekty tygodni.” (ekran „Semestr”), „Ustaw oznaczenie tylko dla jednego tygodnia albo od wybranego tygodnia w przyszłość.” i „Każda korekta dotyczy poniedziałku wybranego tygodnia.” (ekran „Korekty tygodni”). Interfejs sam pokazuje, co można zrobić.
+5. Karta semestru według wariantu C z artefaktu „MAK: semestr i powiadomienia”: wiersze z ikonami zamiast jednego zdania. Aktywny semestr: ikona kalendarza z zakresem dat i pierwszym tygodniem, ikona kierunku z nazwami kierunków, ikona listy z liczbą zajęć. Nieaktywny semestr: ikona kalendarza z zakresem dat. Wysokość karty nie jest ograniczeniem.
+6. Daty semestru pokazują rok: „7 wrz 2026 - 14 lut 2027”, a gdy oba końce są w tym samym roku, rok stoi raz: „22 lut - 15 cze 2027”.
+7. Kolejność semestrów w ustawieniach: aktywny na górze, pod nim pozostałe od najnowszego do najstarszego.
+8. Ekran „Powiadomienia” zawsze pokazuje wszystkie rodzaje powiadomień. Główny przełącznik włącza albo wyłącza wszystkie naraz: jest włączony, gdy włączony jest co najmniej jeden rodzaj, i wyłączony, gdy żaden.
 
-- I-91: punkty 1, 2, 3, 4, 6, 7, 8, 9, 10.
-- I-92: punkty 1, 4, 5, 7.
-- I-94: punkty 1, 4, 5 oraz 6 bez `OccurrenceStatusUi`.
+9. Podsumowanie powiadomień na głównym ekranie ustawień pokazuje liczbę włączonych rodzajów: „Wszystkie włączone”, „Włączone: 1 z 2” albo „Wyłączone”. Godzina i wyprzedzenie są tylko na ekranie „Powiadomienia”. Odrzucone: warianty A i C z drugiego rzędu artefaktu, bo przy kolejnych rodzajach stają się nieczytelne.
+10. Wiersz „Powiadomienia o kolizjach” na głównym ekranie ustawień nazywa się „Powiadomienia”, bo obejmie też inne rodzaje.
+11. Ekran „Powiadomienia” w wariancie C z artefaktu: przełącznik „Wszystkie powiadomienia”, sekcje tematów („Kolizje”, „Okienka”), w nich wiersze rodzajów z przełącznikiem i wartością pod nazwą, która otwiera dialog wyboru. Odrzucone: wariant A (pola wyboru pod każdym rodzajem) i B (grupowanie według pory ze wspólną godziną i wyprzedzeniem).
+12. Nowe powiadomienia o okienkach: „Dzień wcześniej” i „Przed zajęciami”, jak przy kolizjach, z własną godziną i wyprzedzeniem.
+13. Powiadomienie o okienku przed zajęciami przychodzi przed zajęciami, po których zaczyna się okienko, na przykład „Po Analizie masz okienko 10:30-12:00”.
+14. Plan wykonuje się na nowej gałęzi od `main` po scaleniu gałęzi I-79.
 
-Poza planem, odrzucone decyzją użytkownika z 2026-10-11 (`LOG.md`). Nie wykonuj ich:
+Bez zmian: kreator i ekran „Edytuj kierunek” w semestrze.
 
-- I-91 punkt 5 (wspólna reguła „wspólny kalendarz ma najniższy identyfikator”): trzy kopie działają na trzech różnych typach (`AcademicCalendar`, `AcademicCalendarRecord`, rekord w kreatorze). Wspólna funkcja wymagałaby abstrakcji większej niż kopie.
-- I-92 punkty 2, 3, 6: zysk wydajności niezauważalny przy wielkości planu studenta, a punkt 3 wymaga nowej relacji Room.
-- I-93 w całości: przebudowa dopuszczania edycji, które działa i nie ma znanego wyścigu, bez zmiany dla użytkownika. Opisana w przeglądzie różnica między lambdą `hasDraft` a kolektorem w `SemesterViewModel` nie jest błędem: kolektor woła `releaseIfNoDraft()`, a ta sprawdza lambdę z `courseFormOpen`. Wiersz usunięty z `QUEUE.md`.
-- I-94 punkty 2 i 3: `ActivePlanSource` z trzema stanami i `TopBarSpec` w każdym celu nawigacji to zmiany w wielu plikach bez skutku dla użytkownika.
-- I-94 punkt 6 w części `OccurrenceStatusUi`: ten typ ma własne nazwy, etykiety i ikony, więc nie jest kopią enuma domenowego z konwersją `valueOf`.
 ## Zasady dla wykonawcy
 
 Przeczytaj tę sekcję przed każdym krokiem.
 
-- Kroki wykonuj na gałęzi `task/I-79-hide-study-programs`, bo kod zależy od niescalonych zmian I-89 i I-90. Przed pierwszym krokiem sprawdź `git branch --show-current` i `git log --oneline origin/main -1`. Jeśli `origin/main` zawiera już scalone I-90 (commit `keep row ids as Long in ui state`), utwórz nową gałąź: `git fetch origin`, potem `git switch -c task/audit-review-fixes origin/main`. Jeśli jesteś na innej gałęzi i I-90 nie jest scalone, przełącz się poleceniem `git switch task/I-79-hide-study-programs`.
+- Kroki wykonuj na nowej gałęzi `task/settings-and-gap-notifications` od aktualnego `origin/main` (decyzja 14). Przed pierwszym krokiem: `git fetch origin` i sprawdź, że `origin/main` zawiera scaloną gałąź I-79 (`git log --oneline origin/main -5`, commit z I-79 i tym planem). Jeśli nie zawiera, zatrzymaj się i zapytaj użytkownika. Potem `git switch -c task/settings-and-gap-notifications origin/main`; przy kolejnych krokach `git switch task/settings-and-gap-notifications`.
 - Ścieżki kodu są względne wobec `app/src/main/java/dev/retza/mak/`, testów JVM wobec `app/src/test/java/dev/retza/mak/`, testów Android wobec `app/src/androidTest/java/dev/retza/mak/`.
 - Przed zmianą otwórz każdy plik z listy kroku i znajdź opisany fragment po nazwie funkcji, nie po numerze wiersza. Jeśli fragmentu nie ma albo wygląda inaczej niż w opisie, zrób zmianę zgodną z celem kroku i opisz różnicę w commicie. Zatrzymaj się tylko wtedy, gdy nie da się ustalić zamierzonego zachowania.
-- Polecenia uruchamiaj w katalogu repozytorium w PowerShellu. Testy JVM jednej klasy: `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.occurrence.OccurrenceViewModelTest"`. Kilka klas: powtórz `--tests` dla każdej. Jeśli Gradle zgłosi `No cached version ... available for offline mode`, uruchom to samo polecenie raz bez `--offline`, potem wróć do `--offline`.
+- Polecenia uruchamiaj w katalogu repozytorium w PowerShellu. Testy JVM jednej klasy: `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.semester.SemesterViewModelTest"`. Kilka klas: powtórz `--tests` dla każdej. Jeśli Gradle zgłosi `No cached version ... available for offline mode`, uruchom to samo polecenie raz bez `--offline`, potem wróć do `--offline`.
 - Po każdej zmianie kodu: `.\gradlew.bat --offline :app:compileDebugUnitTestKotlin :app:compileDebugAndroidTestKotlin`. Kompilacja testów Android nie oznacza ich uruchomienia.
 - Testy Android: najwyżej jeden emulator naraz, z 2048 MiB RAM. Obraz `Medium_Phone_A12` (`STACK.md`, sekcja 6); na komputerze, który go nie ma, `Medium_Phone` (testy używają aplikacji `dev.retza.mak.debug`, a dane odbioru synchronizacji są w `dev.retza.mak`; nie czyść ich). Jedna klasa na wywołanie: `.\gradlew.bat connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.retza.mak.di.KoinGraphTest"`; lista klas po przecinku w PowerShellu uruchamia tylko pierwszą. Przed testami Android cofnij zmiany ekranu ze zrzutów (`adb shell wm size reset`). Testy Android przeinstalowują aplikację debug i zerują jej dane, więc ręczne sprawdzenie i zrzuty rób po `installDebug`, przed testami Android.
 - Zrzuty przy 320 dp: procedura w `STACK.md`, sekcja 6. Zrzuty zapisuj poza repozytorium.
@@ -33,208 +38,212 @@ Przeczytaj tę sekcję przed każdym krokiem.
 - Nie wypychaj gałęzi, nie otwieraj pull requesta i nie scalaj bez wyraźnego polecenia użytkownika.
 - Po zmianie plików `docs/*.md` uruchom `py scripts/check_map.py`; wymagany kod 0.
 - Teksty interfejsu i dokumentacja po polsku, identyfikatory i komentarze w kodzie po angielsku. Bez znaków `·`, `—` i strzałek.
-- Nie używaj aliasów importu (`import x.Y as Z`). Gdy w jednym pliku testu potrzebne są dwa typy o tej samej nazwie (na przykład `dev.retza.mak.data.entity.WeekType` i `dev.retza.mak.domain.WeekType`), zostaw import tego, który już jest, a drugi pisz pełną nazwą (`dev.retza.mak.domain.WeekType.B`).
+- Nie używaj aliasów importu (`import x.Y as Z`).
 
-## 1. Pokazuj w „Planie” tydzień kalendarza wybranego kierunku (I-94)
+## 1. Dodaj „Dodaj kierunek” w ustawieniach i usuń zbędne opisy (I-95)
 
-Stan: zrobione. Wykonał subagent, recenzja i testy Android: agent planujący. Konwersje `valueOf` między typami encji i domeny w `data` zostały, bo to mapowania między warstwami. Zrzutów nie zrobiono: dane demo mają jeden kalendarz, a teksty wiersza tygodnia sprawdzają `ScheduleScreenTest` i nowy test JVM. Testy Android: `ScheduleScreenTest` 12/12, `SemesterScreenTest` 14/14, `SetupWizardTest` 11/11, `KoinGraphTest` 3/3.
+Cel: z ekranu „Kierunki” w ustawieniach można utworzyć kierunek z nazwą i kolorem. Nowy kierunek trafia do aktywnego semestru ze wspólnym kalendarzem, więc od razu można dodać do niego zajęcia. Przy okazji formularz „Dodaj kierunek” w semestrze traci dwa zbędne teksty pomocnicze (decyzja 2).
 
-Cel: wiersz tygodnia w „Planie” pokazuje tydzień kalendarza, którego dotyczy filtr kierunku, a nie wynik wszystkich kalendarzy. Dziś przy dwóch kalendarzach z różnym tygodniem i filtrze na jeden kierunek wiersz jest akcją „Zmień”, ale pokazuje „Różne tygodnie” i „Różne kalendarze”, a dialog korekty zaznacza zawsze A (`FEATURES.md`, sekcja „Widok „Lista””). Przy okazji `WeekStatus` staje się jedynym polem tygodnia w `ResolvedSchedule` (punkt 4), a stan interfejsu używa domenowych `WeekType` i `WeekOverrideScope` zamiast `WeekTypeUi` i `WeekOverrideScopeUi` (punkt 6). Punkt 4 dotyka pól, z których skorzysta I-81, więc idzie przed nim.
-
-Pliki: `domain/Models.kt` (`ResolvedSchedule`), `domain/ScheduleResolver.kt`, `ui/schedule/ScheduleViewModel.kt`, `ui/schedule/ScheduleScreen.kt`, `ui/semester/SemesterScreen.kt` (definicje `WeekTypeUi` i `WeekOverrideScopeUi`), `ui/semester/SemesterViewModel.kt`, `ui/semester/SemesterCourseScreens.kt`, `ui/components/WeekFields.kt`, `ui/setup/SetupViewModel.kt`, `ui/setup/SetupWizard.kt`; testy JVM `domain/MultiCalendarResolverTest.kt`, `domain/ScheduleResolverTest.kt`, `widget/WidgetPresenterTest.kt`, `ui/schedule/ScheduleViewModelTest.kt`, `ui/semester/SemesterViewModelTest.kt`, `ui/setup/SetupViewModelTest.kt`; testy Android `ui/schedule/ScheduleScreenTest.kt`, `ui/semester/SemesterScreenTest.kt`, `ui/setup/SetupWizardTest.kt`.
+Pliki: `ui/programs/StudyProgramsScreen.kt`, `ui/programs/StudyProgramsViewModel.kt`, `ui/StudyProgramRoutes.kt`, `ui/MakRoutes.kt`, `ui/semester/SemesterCourseScreens.kt` (`SemesterCourseAddScreen`), `ui/semester/SemesterScreen.kt`; testy JVM `ui/programs/StudyProgramsViewModelTest.kt`; testy Android `ui/programs/StudyProgramsScreenTest.kt`, `ui/semester/SemesterScreenTest.kt`; `docs/FEATURES.md`, `docs/LOG.md`, `docs/log_archive/`, `docs/QUEUE.md`.
 
 Zmiany:
 
-1. Zanim zmienisz kod, zrób zrzuty przy 320 dp: „Plan” w widoku listy z filtrem „Wszystkie” i z filtrem na jeden kierunek, dialog „Zmień tydzień”, konfiguracja semestru z listą korekt, krok kalendarza w kreatorze. Będą porównaniem w punkcie 9.
-2. Usuń `enum class WeekTypeUi` i `enum class WeekOverrideScopeUi` z `ui/semester/SemesterScreen.kt`. W całym `app/src` zamień `WeekTypeUi` na `dev.retza.mak.domain.WeekType`, a `WeekOverrideScopeUi` na `dev.retza.mak.domain.WeekOverrideScope` (importy `dev.retza.mak.ui.semester.WeekTypeUi` i `dev.retza.mak.ui.semester.WeekOverrideScopeUi` zamień na importy domenowe). Listę miejsc daje `rg -n "WeekTypeUi|WeekOverrideScopeUi" app/src`. Wartości są te same (`A`, `B`, `ONE_WEEK`, `FROM_WEEK`).
-3. Usuń konwersje, które po punkcie 2 nic nie robią: `WeekTypeUi.valueOf(x.name)` i `WeekType.valueOf(x.name)` oraz `WeekOverrideScope.valueOf(scope.name)` zastąp samą wartością `x` (`rg -n "valueOf\(.*\.name\)" app/src/main/java/dev/retza/mak/ui` i przejrzyj każde trafienie; zostaw konwersje innych typów, na przykład `ClassEditOpenState.valueOf`). W `ScheduleViewModel.saveVisibleWeekOverride` i `clearVisibleWeekOverride` usuń zmienną `entityScope` i używaj parametru `scope`.
-4. `ui/components/WeekFields.kt`: funkcje `WeekTypeUi.label()` i `WeekOverrideScopeUi.label()` stają się `WeekType.label()` i `WeekOverrideScope.label()` z tymi samymi tekstami. Sprawdź kompilację: jeśli nazwa `label` zderzy się z inną funkcją, zostaw nazwę i dodaj właściwy import.
-5. `domain/Models.kt`, klasa `ResolvedSchedule`: usuń pola `week` i `hasMixedWeekTypes` oraz właściwości `weekType` i `correction`. `weekStatus` staje się zwykłym polem konstruktora `val weekStatus: WeekStatus` (bez wartości domyślnej), umieszczonym po `occurrences`. Zostają `date`, `semesterId`, `occurrences`, `cancelled`, `weeksByCalendarId` i `items`.
-6. `domain/ScheduleResolver.kt`, funkcja `resolve`: po zbudowaniu `weeks` policz `val weekTypes = weeks.values.map { it.weekType }.distinct()` i `weekStatus`: `WeekStatus.OutsideSemester`, gdy `weekTypes` jest puste; `WeekStatus.Mixed`, gdy ma więcej niż jeden element; w przeciwnym razie `WeekStatus.Single(weekTypes.single())`. Usuń `hasMixedWeekTypes` i `sharedWeek`; przekaż `weekStatus` do konstruktora.
-7. `ui/schedule/ScheduleViewModel.kt`, funkcja `buildSchedule`: po wyliczeniu `relevantCalendarIds` dodaj:
-   - `val weekCalendarId = visibleWeekCalendarId(data, activeFilter)`,
-   - `val shownWeek = weekCalendarId?.let { selected.weeksByCalendarId[it] }`,
-   - `val relevantWeeks = selected.weeksByCalendarId.filterKeys { it in relevantCalendarIds }.values`.
-
-   Przenieś obliczenie `relevantCalendarIds` wyżej, jeśli stoi za miejscem użycia. Pola stanu:
-   - `weekTypeLabel`: gdy `weekCalendarId == null`, `selected.weekStatus.label()`; gdy `shownWeek == null`, `WeekStatus.OutsideSemester.label()`; w przeciwnym razie `WeekStatus.Single(shownWeek.weekType).label()`;
-   - `weekSourceLabel`: „Różne kalendarze”, gdy `weekCalendarId == null` i `selected.weekStatus == WeekStatus.Mixed`; „Korekta ręczna”, gdy `relevantWeeks.any { it.overrideSource != null }`; w przeciwnym razie „Wyliczony automatycznie”;
-   - `weekType = shownWeek?.weekType`.
-
-   Bez filtra przy jednym kalendarzu `visibleWeekCalendarId` zwraca ten kalendarz, więc wynik się nie zmienia. Przy kilku kalendarzach i „Wszystkie” etykiety zostają jak dziś, z jedną różnicą: „Korekta ręczna” pojawia się, gdy korektę ma którykolwiek z kalendarzy, a nie tylko pierwszy.
-8. Testy, które czytały usunięte pola: `assertTrue(x.hasMixedWeekTypes)` zastąp `assertEquals(WeekStatus.Mixed, x.weekStatus)`, `assertFalse(x.hasMixedWeekTypes)` razem z `assertEquals(WeekType.A, x.weekType)` zastąp `assertEquals(WeekStatus.Single(WeekType.A), x.weekStatus)`, `assertEquals(WeekType.B, result.weekType)` zastąp `assertEquals(WeekStatus.Single(WeekType.B), result.weekStatus)`, a `assertNull(x.week)` usuń. Miejsca: `rg -n "hasMixedWeekTypes|\.week\b|schedule\.weekType|result\.weekType" app/src/test`.
-9. Zainstaluj aplikację (`installDebug`) i zrób te same zrzuty co w punkcie 1. Mają być identyczne, bo dane demo mają jeden kalendarz.
+1. Zanim zmienisz kod, zrób zrzuty przy 320 dp: ekran „Kierunki” w ustawieniach z danymi demo, ekran „Edytuj kierunek” ekran „Dodaj kierunek” w semestrze z wybranym istniejącym kierunkiem i osobnymi datami, ekran „Semestr” i „Korekty tygodni”.
+2. `MakRoutes`: dodaj `const val StudyProgramAdd = "settings/program-new"` (osobna ścieżka, bo `settings/programs/{programId}` ma argument typu `Long`) i tytuł paska `MakRoutes.StudyProgramAdd -> "Dodaj kierunek"` obok `StudyProgramEdit`.
+3. `StudyProgramsScreen`: dodaj parametr `onAddProgram: () -> Unit`. Pod `MakScreenIntro` dodaj `MakSecondaryAction(text = "Dodaj kierunek", icon = Icons.Outlined.Add, onClick = onAddProgram)`, tak samo jak w `CoursesBlock` w `ui/semester/SemesterScreen.kt`. Przycisk jest widoczny także przy pustej liście. Tekst pustego stanu zmień na „Nie masz jeszcze kierunków.”.
+4. `StudyProgramsViewModel`:
+   - `StudyProgramEditorUi` dostaje pole `activeSemesterName: String? = null`;
+   - nowa funkcja `suspend fun openNewOnce()`: działa jak `openOnce`, ale zamiast `loadEditorFromRoom` ustawia `editor = StudyProgramEditorUi(id = null, color = suggestedCourseColor(<kolory wszystkich kierunków z observeStudyPrograms().first()>), activeSemesterName = <nazwa z semesterRepository.observeActiveSemester().first()>)` i zwraca `Open`;
+   - `save()`: gdy `editor.id == null`, po walidacji nazwy (jak dziś) wywołaj nową prywatną funkcję `createProgram(name, color)`. Ta funkcja pobiera aktywny semestr (`observeActiveSemester().first()`) i jego wspólny kalendarz (`observeCalendars(semester.id).first().minByOrNull { it.id }`, ta sama reguła co `sharedCalendar()` w `SemesterViewModel`). Gdy oba istnieją, woła `semesterRepository.saveStudyProgramAssignment(semesterId, StudyProgramRecord(id = 0L, name, color), calendarId)` i publikuje „Dodano kierunek do semestru {nazwa semestru}”. W przeciwnym razie woła `saveStudyProgram(StudyProgramRecord(id = 0L, name, color))` i publikuje „Dodano kierunek”. Błąd: „Nie udało się dodać kierunku.”, formularz zostaje z wpisanymi danymi. Po sukcesie `CloseEditor` jak przy edycji.
+5. `StudyProgramEditScreen`: gdy `editor.id == null`, nie pokazuj sekcji usuwania, akcja zapisu ma tekst „Dodaj kierunek”, a wstęp brzmi „Kierunek trafi do semestru {activeSemesterName}. Nazwa i kolor są wspólne dla wszystkich semestrów.”; bez aktywnego semestru „Kierunek pojawi się w planie po dodaniu go w ustawieniach semestru.”. Przy edycji wszystko zostaje jak dziś.
+6. Komunikat przy kierunku przypisanym do semestrów (sekcja usuwania): „Kierunek jest używany w semestrach: {nazwy}. Aby go usunąć, najpierw usuń go z tych semestrów na ekranie Kierunki semestru.” zostaje bez zmian.
+7. `StudyProgramRoutes`: nowy cel `composable(MakRoutes.StudyProgramAdd)` z tym samym przebiegiem co `StudyProgramEdit` (`openNewOnce` zamiast `openOnce`, `PlanEditingWait`, `StudyProgramEffects`). `StudyProgramEffects` zamyka ekran także dla `MakRoutes.StudyProgramAdd`. Ekran listy dostaje `onAddProgram = { navController.navigate(MakRoutes.StudyProgramAdd) }`.
+8. `SemesterCourseAddScreen`: usuń `MakHelperText("Nazwa i kolor istniejącego kierunku są wspólne dla wszystkich semestrów.")` i `MakHelperText("Powstanie kopia dat, rytmu i korekt wybranego kalendarza.")` razem z warunkiem `if`, który obejmuje tylko ten drugi tekst. Usuń import `MakHelperText`, jeśli nie ma innego użycia w pliku.
+9. `ui/semester/SemesterScreen.kt`: usuń `MakScreenIntro("Zakres dat, pierwszy tydzień A/B, kierunki i ręczne korekty tygodni.")`, `MakScreenIntro("Ustaw oznaczenie tylko dla jednego tygodnia albo od wybranego tygodnia w przyszłość.")` i `MakHelperText("Każda korekta dotyczy poniedziałku wybranego tygodnia.")` (decyzja 4). Tekst „Korekta obejmuje tydzień od poniedziałku {data}.” pod polem daty w formularzu korekty zostaje, bo pokazuje konkretną datę. Usuń nieużywane importy.
+10. `FEATURES.md`, sekcja „Ustawienia i dane”, akapit o ekranie „Kierunki” w ustawieniach: dopisz przycisk „Dodaj kierunek”, formularz, przypisanie do aktywnego semestru ze wspólnym kalendarzem i teksty z punktów 3 do 6. W akapicie o kolorze kierunku zamień „na ekranach dodawania i edycji kierunku w semestrze oraz w edycji kierunku w ustawieniach” na „przy dodawaniu i edycji kierunku w ustawieniach”. W sekcji kreatora ostatnie zdanie akapitu o „Dodaj kolejny kierunek” zmień na „Później kierunki dodaje się na ekranie „Kierunki” w ustawieniach albo w ustawieniach semestru.”. `LOG.md`: nowy wpis na górze „2026-10-11: Dodawanie kierunków na ekranie „Kierunki” (I-95)” z decyzjami użytkownika 1 do 4 i 14 z początku tego planu; log ma 20 wpisów, więc najstarszy przenieś do pliku w `docs/log_archive/` według wzoru plików, które tam są. `QUEUE.md`: I-95 `odbiór otwarty` z listą zrobionego i tym, co zostaje do sprawdzenia na telefonie użytkownika.
 
 Testy:
 
-- `ScheduleViewModelTest.filteredProgramShowsTheWeekOfItsCalendar`: `FakeRepository()`, drugi kierunek przez `repository.addSeparatedSemesterProgram(semesterId = 1L, studyProgram = StudyProgramEntity(name = "Fizyka", color = "#000000"), sourceCalendarId = 1L)` (wzór: `weekCanBeCorrectedOnlyWithOneVisibleCalendar`), potem przed utworzeniem ViewModelu `repository.weekOverrides += WeekOverrideEntity(id = 50L, semesterId = 1L, academicCalendarId = second.academicCalendarId, weekStartDate = LocalDate.of(2026, 9, 21), weekType = WeekType.A, scope = WeekOverrideScope.ONE_WEEK)`. W kalendarzu 1 tydzień od 2026-09-21 to B (pierwszy tydzień A zaczyna się 2026-08-31), a drugi kalendarz jest jego kopią, więc korekta A daje dwa różne tygodnie. Sprawdź kolejno: przy „Wszystkie” `weekTypeLabel == "Różne tygodnie"` i `weekSourceLabel == "Różne kalendarze"`; po `selectCourseFilter(second.semesterProgramId)` `weekTypeLabel == "Tydzień A"`, `weekSourceLabel == "Korekta ręczna"`, `weekType == dev.retza.mak.domain.WeekType.A`; po `selectCourseFilter(1L)` (przypisanie pierwszego kierunku w `FakeRepository`) `weekTypeLabel == "Tydzień B"` i `weekSourceLabel == "Wyliczony automatycznie"`.
-- `ScheduleResolverTest.weekStatusReportsMixedAndOutsideSemester` zostaje bez zmian i ma przejść.
+- `StudyProgramsViewModelTest.newProgramIsAssignedToSharedCalendarOfActiveSemester`: aktywny semestr z dwoma kalendarzami; po `openNewOnce`, `updateName("Fizyka")` i `save()` istnieje kierunek „Fizyka” przypisany do kalendarza o najniższym identyfikatorze.
+- `StudyProgramsViewModelTest.newProgramWithoutActiveSemesterIsOnlyCreated`: brak aktywnego semestru; po zapisie kierunek istnieje, a przypisań nie ma.
+- `StudyProgramsViewModelTest.newProgramRejectsBlankName`: pusta nazwa daje `FormErrorTexts.ProgramNameRequired` i nic nie zapisuje.
+- `StudyProgramsViewModelTest.newProgramSuggestsColorAwayFromExistingPrograms`: kolor w edytorze równa się `suggestedCourseColor` kolorów istniejących kierunków.
+- `StudyProgramsScreenTest.addActionIsVisibleWithAndWithoutProgramsAt320Dp` i `StudyProgramsScreenTest.newProgramFormHasNoDeleteSectionAt320Dp`. Popraw `emptyListExplainsWhereProgramsComeFrom` na nowy tekst pustego stanu.
+- Testy, które szukają usuniętych opisów ekranów „Semestr” i „Korekty tygodni” (`rg -n "Zakres dat, pierwszy|Ustaw oznaczenie tylko|Każda korekta dotyczy" app/src`), zmień na `assertDoesNotExist()` albo usuń te asercje.
+- `SemesterScreenTest.courseAddScreenExistingProgramShowsSelectionInsteadOfNameAndColorDraft`: zamień `assertIsDisplayed()` dla tekstu „Nazwa i kolor istniejącego kierunku...” na `assertDoesNotExist()`.
 
-Przypadki brzegowe: filtr na kierunek, którego kalendarz nie obejmuje przeglądanego tygodnia, pokazuje „Poza semestrem” i „Wyliczony automatycznie”, a dialog zaznacza A (jak dziś przy braku tygodnia); „Dzisiaj” i widget używają dalej `weekStatus` wszystkich kalendarzy.
+Przypadki brzegowe: aktywny semestr bez kalendarza (po usunięciu wszystkich jego kierunków) daje kierunek bez przypisania i komunikat „Dodano kierunek”; obrót ekranu w formularzu zachowuje wpisane dane (edytor żyje w ViewModelu); długa nazwa semestru we wstępie się zawija; kierunek o nazwie, która już istnieje, jest dozwolony jak dziś (lista pokazuje numery).
 
 Weryfikacja:
 
-1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.domain.*" --tests "dev.retza.mak.ui.*" --tests "dev.retza.mak.widget.*"`.
-2. `.\gradlew.bat --offline :app:compileDebugAndroidTestKotlin`.
-3. Zrzuty z punktów 1 i 9 identyczne.
-4. Na emulatorze klasy `dev.retza.mak.ui.schedule.ScheduleScreenTest`, `dev.retza.mak.ui.semester.SemesterScreenTest`, `dev.retza.mak.ui.setup.SetupWizardTest` i `dev.retza.mak.di.KoinGraphTest`.
+1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.programs.StudyProgramsViewModelTest"`.
+2. `installDebug`, dodanie kierunku z aktywnym semestrem: kierunek widać na „Planie” w polu „Kierunek” i w formularzu zajęć. Zrzuty ekranu „Kierunki” i formularza przy 320 dp w obu motywach.
+3. `installDebug`, ekrany „Dodaj kierunek” w semestrze, „Semestr” i „Korekty tygodni” przy 320 dp: bez usuniętych tekstów, odstępy między polami bez zmian poza miejscem po tekstach; porównaj ze zrzutem z punktu 1.
+4. Na emulatorze klasy `dev.retza.mak.ui.programs.StudyProgramsScreenTest`, `dev.retza.mak.ui.semester.SemesterScreenTest` i `dev.retza.mak.di.KoinGraphTest`.
+5. `py scripts/check_map.py` z kodem 0.
 
-Kryterium zakończenia: testy przechodzą, zrzuty są identyczne; `rg "WeekTypeUi|WeekOverrideScopeUi|hasMixedWeekTypes" app/src` nic nie znajduje; `rg "valueOf\(" app/src/main/java/dev/retza/mak/ui/schedule` nic nie znajduje. Commit: `fix: show the week of the filtered calendar in plan (I-94)`. W tym commicie w `QUEUE.md` zmień status I-94 na `w toku`.
+Kryterium zakończenia: z ekranu „Kierunki” w ustawieniach da się dodać kierunek, który od razu jest w aktywnym semestrze; formularz w semestrze nie ma obu tekstów, ekrany „Semestr” i „Korekty tygodni” nie mają opisów z decyzji 4; testy przechodzą. Commit: `feat: add study programs from the programs screen (I-95)`.
 
-## 2. Nie uruchamiaj synchronizacji po echu pobranego planu i wybieraj semestr zastępczy tylko w data (I-92)
+## 2. Pokaż kartę semestru w wierszach z ikonami i ułóż semestry od najnowszego (I-96)
 
-Stan: zrobione. Wykonał subagent, recenzja i testy Android: agent planujący. Bez odchyleń od planu. Testy Android: `RoomPlanSyncGatewayTest` 10/10, `SyncViewModelTest` 12/12, `KoinGraphTest` 3/3.
+Cel: karta semestru na ekranie „Semestry” pokazuje informacje w osobnych wierszach z ikonami (decyzja 5), daty z rokiem (decyzja 6), a lista ma aktywny semestr na górze i pozostałe od najnowszego (decyzja 7).
 
-Cel: po pobraniu planu z Dysku zapis w Room wywołuje dziś `recordLocalChange`, który rozpoznaje echo, a mimo to `SyncRoomChangeObserver` zleca kolejny przebieg z zapytaniem do Dysku (I-92 punkt 7). Po zmianie echo nie zleca przebiegu. Semestr zastępczy wybiera tylko `replaceAll` w transakcji `data`; synchronizacja przekazuje najwyżej zachowany lokalny aktywny semestr (I-94 punkt 1). Reguła wyboru się nie zmienia (`SYNC.md`, „Przebieg synchronizacji”, punkt 2). `retainExistingHiddenPrograms` przechodzi z `ui` do `data` (I-94 punkt 5).
-
-Pliki: `sync/SyncCoordinator.kt`, `sync/SyncWork.kt` (`SyncRoomChangeObserver`), `sync/PlanSyncGateway.kt`, `sync/PlanMerge.kt`, `ui/settings/HiddenStudyPrograms.kt` (przeniesienie do `data/HiddenStudyPrograms.kt`), `MakApplication.kt`; testy JVM `sync/SyncCoordinatorTest.kt`, `sync/PlanMergeTest.kt`, `sync/GoogleAuthorizationFailureTest.kt`, `ui/settings/HiddenStudyProgramsTest.kt` (przeniesienie do `data/HiddenStudyProgramsTest.kt`); testy Android `sync/RoomPlanSyncGatewayTest.kt`, `ui/settings/SyncViewModelTest.kt`.
+Pliki: `data/database/Daos.kt` (DAO kalendarzy), `data/repository/SemesterRepository.kt`, `ui/components/PresentationModels.kt` (`SemesterUi`), `ui/settings/SettingsViewModel.kt` (`buildSettingsState`), `ui/settings/SettingsScreen.kt` (`SemesterRow` i podsumowanie wiersza „Zarządzaj semestrami”); testy JVM `ui/settings/SettingsViewModelTest.kt`, fałszywe repozytoria w `ui/` i `data/repository/DemoDataSeederTest.kt`; testy Android `ui/settings/SettingsScreenTest.kt`, `data/RoomPersistenceTest.kt`; `docs/FEATURES.md`, `docs/LOG.md`, `docs/QUEUE.md`.
 
 Zmiany:
 
-1. `SyncCoordinator.recordLocalChange(changedAtMillis: Long): Boolean`. Zwraca `false` bez konta i gdy skrót planu równa się `localFingerprint` (echo albo cofnięta zmiana); po zapisie czasu zwraca `true`. Uzupełnij komentarz KDoc o znaczenie wyniku: „true when the plan differs from the one last synchronized, so a run is due”.
-2. `SyncRoomChangeObserver.observe`: zleć `scheduler.enqueueImmediate()` tylko wtedy, gdy `recordLocalChange` zwrócił `true`. Gdy rzuci wyjątek inny niż `CancellationException`, zleć przebieg jak dziś (nie wiadomo, czy plan się zmienił). Wzór:
-   ```kotlin
-   val due = try {
-       coordinator.recordLocalChange(changedAt)
-   } catch (error: CancellationException) {
-       throw error
-   } catch (_: Exception) {
-       // Only a label in the version choice depends on the time; the run still checks the plan.
-       true
-   }
-   if (due) scheduler.enqueueImmediate()
-   ```
-   Zaktualizuj KDoc klasy: przebieg startuje po zmianie planu, która nie jest echem ostatniej synchronizacji.
-3. `PlanSyncGateway.replaceIfUnchanged`: usuń parametr `fallbackActiveId`. Funkcja `activeSemesterAfterReplace(localActiveId, data, keepLocalActive)` zwraca `localActiveId`, gdy `keepLocalActive` i semestr o tym numerze jest w `data`, w przeciwnym razie `null`. Plan bez aktywnego semestru dostaje semestr zastępczy w `RoomPlanBackupGateway.replaceAll` (tam już jest ta reguła). Popraw KDoc interfejsu: „otherwise no semester is marked active and `replaceAll` picks the fallback one in the same transaction”.
-4. `SyncCoordinator`: w `download` usuń `fallbackActive` i przekaż trzy argumenty; w `merge` usuń `today` i argument `merged.semesterCovering(today)`; usuń import `semesterCovering`.
-5. `sync/PlanMerge.kt`, funkcja `mergePlans`: usuń parametr `today`. Aktywny semestr: `data.withActiveSemester(activeId?.takeIf { merged.containsKey(PlanRowKey(PlanRowKind.SEMESTER, it)) })`. Bez takiego semestru plan nie ma aktywnego, a wybór robi `replaceAll` przy zapisie. Pole aktywnego semestru nie trafia do pliku na Dysku (`SyncPlanFile.shared`), więc skrót się nie zmienia. Usuń import `semesterCovering` i nieużywany import `LocalDate`, jeśli zostanie. W `SyncCoordinator.merge` usuń argument `today` z wywołania.
-6. Przenieś `ui/settings/HiddenStudyPrograms.kt` do `data/HiddenStudyPrograms.kt` poleceniem `git mv`, zmień pakiet na `dev.retza.mak.data` i popraw import w `MakApplication.kt`. Tak samo przenieś test do `app/src/test/java/dev/retza/mak/data/HiddenStudyProgramsTest.kt` z pakietem `dev.retza.mak.data`.
-7. Testy z własną implementacją `PlanSyncGateway` (`SyncCoordinatorTest.FakeGateway`, `GoogleAuthorizationFailureTest.EmptyPlan`, `SyncViewModelTest.EmptyPlan`): usuń parametr `fallbackActiveId`. W `FakeGateway.replaceIfUnchanged` po ustaleniu aktywnego semestru dodaj to, co robi `replaceAll`: gdy wynik nie ma aktywnego semestru, `withActiveSemester(semesterCovering(LocalDate.of(2026, 9, 30)))` (data zegara testu), z komentarzem „Like RoomPlanBackupGateway.replaceAll”. `PlanMergeTest`: usuń argument `TODAY` z wywołań `mergePlans`; stałą `TODAY` zostaw, jeśli służy do dat w danych.
-8. `RoomPlanSyncGatewayTest`: w wywołaniach usuń `fallbackActiveId = ...`. Test `firstReplacementUsesTheFallbackSemester` zmień na `firstReplacementActivatesTheSemesterCoveringToday`: plan `plan("X", "Y", "Z")`, w którym semestry 1 i 3 dostają kalendarz od 2025-10-01 do 2026-01-31 (`copy` na `calendars`), a semestr 2 zostaje z kalendarzem obejmującym 2026-10-10 (dzień zegara `backup`). Oczekiwany aktywny semestr: 2.
+1. Zanim zmienisz kod, zrób zrzuty przy 320 dp: ekran „Semestry” z danymi demo i z dwoma dodatkowymi semestrami (jeden wcześniejszy, jeden późniejszy od demonstracyjnego) oraz główny ekran ustawień.
+2. Funkcja zakresu dat: w pliku z `shortDateFormatter` (znajdź przez `rg -n "val shortDateFormatter" app/src/main`) dodaj `fun dateRangeWithYearLabel(start: LocalDate, end: LocalDate): String`. Gdy `start.year == end.year`, wynik to obie daty w formacie `shortDateFormatter` i rok raz na końcu („22 lut - 15 cze 2027”); w przeciwnym razie rok stoi po każdej dacie („7 wrz 2026 - 14 lut 2027”).
+3. Dane dla wszystkich semestrów: dziś `buildSettingsState` zna kalendarz tylko aktywnego semestru. W DAO kalendarzy dodaj `@Query("SELECT * FROM academic_calendars ORDER BY id") fun observeAll(): Flow<List<AcademicCalendarEntity>>`. W `SemesterRepository` dodaj `fun observeSharedCalendars(): Flow<Map<Long, AcademicCalendarRecord>>`: dla każdego semestru kalendarz o najniższym identyfikatorze (ta sama reguła co `sharedCalendar()`), kluczem jest identyfikator semestru. Dodaj tę funkcję do fałszywych implementacji `SemesterRepository` w testach.
+4. `SemesterUi`: zamiast `dateRangeLabel`, `firstWeekLabel`, `courseCountLabel` i `classCountLabel` pola:
+   - `dateLabel: String`: zakres z punktu 2; przy aktywnym semestrze z dopiskiem „, pierwszy tydzień A” albo „B”; pusty, gdy semestr nie ma kalendarza;
+   - `programsLabel: String`: nazwy kierunków aktywnego semestru po przecinku, z `distinctLabels`; „Brak kierunków”, gdy nie ma żadnego; pusty dla nieaktywnego;
+   - `classCountLabel: String`: jak dziś; pusty dla nieaktywnego.
+
+   Zakres dat ma teraz też nieaktywny semestr. Użycia starych pól znajdzie `rg -n "dateRangeLabel|firstWeekLabel|courseCountLabel" app/src`; wiersz „Zarządzaj semestrami” na głównym ekranie ustawień pokazuje `dateLabel` aktywnego semestru.
+5. Kolejność w `buildSettingsState`: aktywny semestr pierwszy, potem pozostałe według daty początku wspólnego kalendarza malejąco, semestry bez kalendarza na końcu, przy równych datach wyższy identyfikator wyżej. Ta kolejność dotyczy listy na ekranie „Semestry” i opcji pola „Aktywny semestr”. Kolejności w DAO nie zmieniaj, bo używa jej wybór semestru zastępczego.
+6. `SemesterRow`: zamiast jednego tekstu z przecinkami kolumna wierszy z odstępem 6 dp. Wiersz to ikona 18 dp w kolorze `onSurfaceVariant` i tekst `bodyMedium` w kolorze `onSurface`, odstęp 10 dp, ikona wyrównana do pierwszej linii tekstu: `Icons.Outlined.CalendarMonth` z `dateLabel`, `Icons.Outlined.School` z `programsLabel`, `Icons.Outlined.FormatListBulleted` z `classCountLabel`. Pusty tekst ukrywa swój wiersz. Ikony mają `contentDescription = null`, bo tekst wystarcza. Nazwa, „Aktywny” i akcje zostają bez zmian.
+7. `FEATURES.md`, akapit o ekranie „Semestry”: zamiast „Semestr nieaktywny pokazuje samą nazwę i akcje.” opisz kartę według punktów 4 i 6, regułę roku i kolejność z punktu 5. Dopisz decyzje 5 do 7 do wpisu w `LOG.md` z kroku 1. `QUEUE.md`: I-96 `odbiór otwarty`.
 
 Testy:
 
-- `SyncCoordinatorTest.echoOfADownloadIsNotADueChange`: `drive.put(plan("Dysk"))`, `coordinator.synchronize()`, potem `assertFalse(coordinator.recordLocalChange(now))`.
-- `SyncCoordinatorTest.localChangeIsDue`: bez synchronizacji `assertTrue(coordinator.recordLocalChange(now))` (wzór: `localChangesAreRecordedButNotTheEchoOfADownload`).
-- Istniejące `firstDownloadActivatesTheSemesterOfToday` i `laterDownloadKeepsTheLocalActiveSemester` mają przejść.
+- `SettingsViewModelTest.semestersAreOrderedActiveFirstThenNewest`: trzy semestry (2025/26, aktywny 2026/27, letni 2027); kolejność 2026/27, 2027, 2025/26.
+- `SettingsViewModelTest.inactiveSemesterShowsDateRangeOnly`: nieaktywny ma `dateLabel` z rokiem, puste `programsLabel` i `classCountLabel`.
+- `SettingsViewModelTest.activeSemesterListsProgramNames`: `programsLabel == "Informatyka, Zarządzanie"`, a bez kierunków „Brak kierunków”.
+- Test JVM funkcji z punktu 2: ten sam rok i przejście roku.
+- `RoomPersistenceTest.sharedCalendarsMapLowestCalendarPerSemester`.
+- `SettingsScreenTest`: popraw testy, które szukają starego tekstu karty (`rg -n "pierwszy tydzień" app/src/androidTest`), i dodaj `semesterCardShowsIconRowsAt320Dp` z długą listą kierunków, która się zawija.
 
-Przypadki brzegowe: cofnięcie zmiany do planu z ostatniej synchronizacji nie zleca przebiegu; okresowa synchronizacja dalej sprawdza Dysk co godzinę; scalenie bez aktywnego semestru po stronie telefonu kończy się semestrem obejmującym dziś.
+Przypadki brzegowe: semestr z kilkoma kalendarzami pokazuje zakres wspólnego (najniższy identyfikator), jak dziś; długie nazwy kierunków zawijają się pod tekstem, nie pod ikoną; duża czcionka; brak aktywnego semestru (wszystkie według daty).
 
 Weryfikacja:
 
-1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.sync.*" --tests "dev.retza.mak.data.*"`.
-2. `.\gradlew.bat --offline :app:compileDebugAndroidTestKotlin`.
-3. Na emulatorze klasy `dev.retza.mak.sync.RoomPlanSyncGatewayTest`, `dev.retza.mak.ui.settings.SyncViewModelTest` i `dev.retza.mak.di.KoinGraphTest`.
+1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.settings.SettingsViewModelTest"` i klasa testu funkcji z punktu 2.
+2. `installDebug`, zrzuty z punktu 1 po zmianie w obu motywach; porównaj z wariantem C w artefakcie.
+3. Na emulatorze klasy `dev.retza.mak.ui.settings.SettingsScreenTest`, `dev.retza.mak.data.RoomPersistenceTest` i `dev.retza.mak.di.KoinGraphTest`.
 
-Kryterium zakończenia: testy przechodzą; `rg "semesterCovering|fallbackActive" app/src/main/java/dev/retza/mak/sync` nic nie znajduje; `rg "retainExistingHiddenPrograms" app/src/main/java/dev/retza/mak/ui` nic nie znajduje. Commit: `fix: skip sync run for echo of a download (I-92, I-94)`. W tym commicie w `QUEUE.md` zmień status I-92 na `w toku`.
+Kryterium zakończenia: karta wygląda jak wariant C, daty mają rok według reguły, kolejność zgadza się z decyzją 7, testy przechodzą. Commit: `feat: show semester cards with icon rows (I-96)`.
 
-## 3. Sprawdzaj datę terminu kalendarzem kierunku i uprość edycję terminu (I-91)
+## 3. Powiąż główny przełącznik z rodzajami powiadomień i licz włączone w podsumowaniu (I-97)
 
-Stan: zrobione. Wykonało dwóch subagentów (parsowanie dat oraz logika edycji), recenzja i testy Android: agent planujący. Test `ClassEditViewModelTest.saveRejectsOneOffDateOutsideSemester` ma nazwę `saveRejectsOneOffDateOutsideCalendar`, zgodną z regułą. Testy Android: `OccurrenceDetailsScreenTest` 7/7, `ClassEditScreenTest` 2/2, `KoinGraphTest` 3/3.
+Cel: główny przełącznik włącza albo wyłącza wszystkie rodzaje naraz i jest włączony wtedy i tylko wtedy, gdy włączony jest co najmniej jeden rodzaj (decyzja 8). Znika stan, w którym główny jest włączony, żaden rodzaj nie jest, powiadomienia nie przychodzą, a ustawienia pokazują „Włączone”. Wiersz na głównym ekranie ustawień nazywa się „Powiadomienia” i pokazuje liczbę włączonych rodzajów (decyzje 9 i 10).
 
-Cel: przeniesiony termin spoza kalendarza kierunku dostaje ten sam komunikat co zajęcia jednorazowe, „Data musi należeć do kalendarza kierunku.”, zamiast mylącego „Data musi należeć do aktywnego semestru.” (ViewModel i tak sprawdza zakres kalendarza kierunku). Edycja terminu i zajęć traci zbędne kroki: składanie i rozbieranie tekstu `"classId:date"`, własne parsowanie dat, ręczną normalizację tekstu i ponowne wczytanie planu po zapisie zajęć.
-
-Pliki: `ui/PlanMapping.kt`, nowy `domain/IsoText.kt`, `domain/OccurrenceEdit.kt`, `domain/SemesterActivation.kt`, `ui/FormErrorTexts.kt`, `ui/occurrence/OccurrenceArgs.kt`, `ui/occurrence/OccurrenceViewModel.kt`, `ui/edit/ClassEditViewModel.kt` oraz pliki importujące `dev.retza.mak.ui.toLocalDateOrNull` lub `dev.retza.mak.ui.toLocalTimeOrNull` (`rg -l "ui.toLocal(Date|Time)OrNull" app/src`); testy JVM `domain/FormValidationTest.kt`, `ui/PlanMappingTest.kt`, nowy `domain/IsoTextTest.kt`, `ui/occurrence/OccurrenceArgsTest.kt`, `ui/occurrence/OccurrenceViewModelTest.kt`, `ui/edit/ClassEditViewModelTest.kt`.
+Pliki: `settings/SettingsPreferences.kt`, `settings/DataStoreSettingsPreferences.kt`, `ui/settings/SettingsScreen.kt` (`SettingsNotificationsScreen`, `notificationsStatus`, wiersz „Powiadomienia o kolizjach” w sekcji „Powiadomienia”), `ui/settings/SettingsViewModel.kt` (`NotificationSettingsUi`); testy JVM `settings/InMemorySettingsPreferences.kt`, `ui/settings/SettingsViewModelTest.kt`; testy Android `ui/settings/SettingsPreferencesTest.kt`, `ui/settings/SettingsScreenTest.kt`, `notifications/CollisionAlarmSchedulerTest.kt` (`EnabledNotifications`); `docs/FEATURES.md`, `docs/LOG.md`, `docs/QUEUE.md`.
 
 Zmiany:
 
-1. Utwórz `domain/IsoText.kt` z publicznymi funkcjami `fun String.toLocalDateOrNull(): LocalDate? = runCatching { LocalDate.parse(trim()) }.getOrNull()` i `fun String.toLocalTimeOrNull(): LocalTime? = runCatching { LocalTime.parse(trim()) }.getOrNull()`, z KDoc: „ISO text from a form or a route; surrounding spaces are ignored, any other text gives null.” Usuń obie funkcje z `ui/PlanMapping.kt` i zmień importy w plikach z listy na `dev.retza.mak.domain.toLocalDateOrNull` i `dev.retza.mak.domain.toLocalTimeOrNull`. Prywatnych kopii w `export/ExportImporter.kt` nie ruszaj: import pliku ma zostać ścisły.
-2. `domain/OccurrenceEdit.kt`: usuń prywatne `parseDate` i `parseTime`; `decideOccurrenceEdit` używa `draftDate.toLocalDateOrNull()` i `draftStartTime.toLocalTimeOrNull()`. Zmień `private fun normalizeNote` na `internal fun normalizeNote`.
-3. `domain/OccurrenceEdit.kt`: `OccurrenceDraftError.DATE_OUTSIDE_SEMESTER` zmień na `DATE_OUTSIDE_CALENDAR`. `validateOccurrenceDraft(slot: OccurrenceSlot, calendar: AcademicCalendar?)` dodaje ten błąd, gdy `!dateInCalendar(slot.date, calendar)`. Usuń KDoc o granicach semestru i napisz: „Without a calendar the date is not restricted, like [dateInCalendar].”
-4. `ui/FormErrorTexts.kt`: usuń `DateOutsideSemester`.
-5. `OccurrenceViewModel`, funkcja `saveOccurrenceChange`: przed `occurrenceDraftErrors` ustal `val calendar = data.calendarForAssignment(data.classes.firstOrNull { it.id == classId }?.semesterProgramId)`. Funkcja `occurrenceDraftErrors(slot: OccurrenceSlot, calendar: AcademicCalendar?)` woła `validateOccurrenceDraft(slot, calendar)` i dla `DATE_OUTSIDE_CALENDAR` wstawia `FormErrorTexts.DateOutsideCalendar`. Pola stanu `semesterStartDate` i `semesterEndDate` zostają: ograniczają wybór daty w dialogu.
-6. `OccurrenceViewModel`: w `saveSharedNote` i `saveOccurrenceNote` zamiast `draft.xxxNoteDraft.trim().ifEmpty { null }` użyj `normalizeNote(draft.xxxNoteDraft)`; w `buildDetails` zamiast `base.room?.trim()?.ifEmpty { null }` użyj `normalizeRoom(base.room)`.
-7. `ui/occurrence/OccurrenceArgs.kt`: usuń `toRouteId()` i `parse(routeId)`. Dodaj w obiekcie towarzyszącym `fun from(classId: String?, date: String?): OccurrenceArgs?`, które zwraca `null`, gdy `classId?.toLongOrNull()` albo `date?.toLocalDateOrNull()` jest `null`.
-8. `OccurrenceViewModel`:
-   - `init` tworzy argumenty przez `OccurrenceArgs.from(savedState.get<String>("classId"), savedState.get<String>("date"))`;
-   - `shownRouteId()` zastąp `private fun shownArgs(): OccurrenceArgs?`, które bierze `selectedClassIdState.value` i `details.value.baseDate.toLocalDateOrNull()` (bez `runCatching`);
-   - `refreshForEdit(routeId: String)` zastąp `refreshForEdit(args: OccurrenceArgs)`;
-   - `refreshBase` sesji edycji woła `shownArgs()?.let { refreshForEdit(it) } ?: false`.
-9. `ClassEditViewModel`:
-   - `openEditFromFreshPlan(occurrenceId: String)` zastąp `openEditFromFreshPlan(classId: Long)`; `openOnce` woła `openEditFromFreshPlan(classId)`, gdy `classId != null && date != null`, i nie importuje już `OccurrenceArgs`;
-   - import `dev.retza.mak.domain.Recurrence as DomainRecurrence` zastąp zwykłym `import dev.retza.mak.domain.Recurrence` i zmień w pliku `DomainRecurrence` na `Recurrence`;
-   - w `save` pole `recurrence = DomainRecurrence.valueOf(recurrence.name)` zmień na `recurrence = recurrence`;
-   - po `scheduleRepository.saveClass(record)` usuń `val savedPlanData = freshActivePlanData()`, a stan ustaw jako `withActiveOptions(defaultClassEditState())`. Formularz i tak się zamyka efektem `CloseEditor`.
-10. `domain/SemesterActivation.kt`, `shouldActivateNewSemester`: warunek zakresu zapisz jako `today in calendarStart..calendarEnd`.
+1. Odczyt (`toNotificationPreferences`): zapisane `enabled == false` znaczy, że wszystkie rodzaje są wyłączone, bo starsze wersje zostawiały przy wyłączonej funkcji domyślne `true` rodzajów. Licz `eveningEnabled = zapisane enabled && zapisane evening`, `beforeClassEnabled = zapisane enabled && zapisane before`, `enabled = eveningEnabled || beforeClassEnabled`. Dane ze starszych wersji nie wymagają migracji.
+2. Zapis, każdy w jednym `dataStore.edit`:
+   - `setCollisionNotificationsEnabled(x)`: `enabled` i wszystkie rodzaje równe `x`;
+   - `setEveningNotificationsEnabled(x)`: policz pozostałe rodzaje regułą z punktu 1, zapisz `evening = x`, pozostałe rodzaje jawnie (usuwa starą wartość domyślną) i `enabled = x || którykolwiek pozostały`;
+   - `setBeforeClassNotificationsEnabled(x)`: symetrycznie.
+
+   Opisz regułę w KDoc `CollisionNotificationPreferences`. Te same reguły wprowadź w `InMemorySettingsPreferences` i `EnabledNotifications`. Krok 5 doda dwa rodzaje okienek według tej samej reguły.
+3. `SettingsNotificationsScreen`: sekcje rodzajów i tekst o opóźnieniu Androida są widoczne zawsze (usuń warunki `if (notifications.enabled)`). Godzina i wyprzedzenie zostają widoczne tylko przy włączonym danym rodzaju (krok 4 zmieni cały układ). Włączenie dowolnego przełącznika przy `notificationsBlocked` wywołuje `onRequestNotificationPermission()`, jak dziś główny. Komunikat „Zablokowane przez system” pokazuj jak dziś, gdy `notifications.enabled && notificationsBlocked`.
+4. `NotificationSettingsUi`: dodaj `kindStates: List<Boolean>` (dziś `[eveningEnabled, beforeClassEnabled]`; krok 5 dopisze okienka). `notificationsStatus` zwraca na podstawie tej listy:
+   - żaden włączony: „Wyłączone”;
+   - wszystkie włączone: „Wszystkie włączone”;
+   - część: „Włączone: {liczba włączonych} z {rozmiar listy}”, na przykład „Włączone: 1 z 2”;
+   - przy co najmniej jednym włączonym i blokadzie systemu druga linia „Zablokowane przez system”, jak dziś.
+
+   Druga linia z godziną i wyprzedzeniem znika.
+5. Wiersz na głównym ekranie ustawień: tytuł „Powiadomienia o kolizjach” zmień na „Powiadomienia”. Sprawdź `rg -n "Powiadomienia o kolizjach" app/src`: zmień też opis ekranu dla czytnika, jeśli go powtarza. Tytuł ekranu „Powiadomienia” i nazwa sekcji zostają.
+6. `FEATURES.md`: w sekcji „Ustawienia i dane”, punkt „Powiadomienia”, zastąp pozycję „Powiadomienia o kolizjach” i drugi wiersz podsumowania regułami z punktów 4 i 5. W akapicie o ekranie „Powiadomienia” zdanie „Sekcje obu rodzajów są widoczne tylko przy włączonej funkcji...” zastąp decyzją 8 i punktem 3. Dopisz decyzje 8 do 10 do wpisu w `LOG.md` z kroku 1. `QUEUE.md`: I-97 `w toku`.
 
 Testy:
 
-- `IsoTextTest`: przenieś z `PlanMappingTest` test `toLocalDateOrNullRejectsGarbage` (pakiet `dev.retza.mak.domain`) i dodaj `surroundingSpacesAreIgnored`: `" 2026-10-07 ".toLocalDateOrNull()` daje 2026-10-07, a `" 08:15".toLocalTimeOrNull()` daje 08:15.
-- `FormValidationTest`: `occurrenceDateOutsideSemesterIsReported` zmień na `occurrenceDateOutsideCalendarIsReported` z kalendarzem jak w `dateOnCalendarBoundsIsAccepted` i oczekiwanym `DATE_OUTSIDE_CALENDAR`; `missingSemesterBoundsDoNotRestrictOccurrenceDate` zmień na `missingCalendarDoesNotRestrictOccurrenceDate` z `validateOccurrenceDraft(slot(...), null)`; w `occurrenceEndNotAfterStartIsReported` przekaż `null` jako kalendarz.
-- `OccurrenceViewModelTest.outOfSemesterDateIsRejectedWithoutSaveOrFeedback` zmień na `dateOutsideProgramCalendarIsRejectedWithoutSaveOrFeedback` i dodaj asercję tekstu: `assertEquals("Data musi należeć do kalendarza kierunku.", viewModel.details.value.draftErrors[OccurrenceEditField.Date]?.message)` (nazwę pola tekstu sprawdź w `FieldErrorUi`). Data 2026-12-01 leży poza kalendarzem 1 w `FakeRepository` (2026-09-01 do 2026-10-31).
-- `OccurrenceViewModelTest`: pomocnik `open(routeId: String)` buduje argumenty przez `OccurrenceArgs.from(routeId.substringBefore(':'), routeId.substringAfter(':', ""))`; `refreshForEdit("1:2026-09-21")` zmień na `refreshForEdit(OccurrenceArgs(1L, LocalDate.of(2026, 9, 21)))`.
-- `OccurrenceArgsTest`: `fromRejectsInvalidInput` (`from("nope", "2026-10-05")`, `from("42", "not-a-date")`, `from(null, "2026-10-05")` i `from("42", null)` dają `null`) i `fromReadsRouteArguments` (`from("7", "2026-10-05") == OccurrenceArgs(7L, LocalDate.of(2026, 10, 5))`).
-- `ClassEditViewModelTest`: `openEditFromFreshPlan("1:2026-09-21")` zmień na `openEditFromFreshPlan(1L)`, a `"2:2026-09-21"` na `2L`.
+- `SettingsPreferencesTest`: `turningMainOnEnablesAllKinds`, `turningMainOffDisablesAllKinds`, `turningOffLastKindTurnsMainOff`, `turningOnOneKindTurnsMainOnAndLeavesOtherOff`, `legacyDisabledFunctionReadsAsAllKindsOff` (zapisane `enabled = false` bez kluczy rodzajów daje wszystko wyłączone).
+- `SettingsScreenTest.notificationSummaryCountsEnabledKinds`: oba („Wszystkie włączone”), jeden („Włączone: 1 z 2”), żaden („Wyłączone”), blokada („Zablokowane przez system”). Popraw testy szukające „Powiadomienia o kolizjach” albo „dzień wcześniej, ... przed zajęciami” (`rg -n "Powiadomienia o kolizjach|dzień wcześniej" app/src/androidTest`).
+- `SettingsScreenTest.notificationKindsAreVisibleWhenAllAreOffAt320Dp`.
+- `CollisionAlarmSchedulerTest` i test `CollisionNotificationPlanner` przechodzą bez zmian logiki.
 
-Przypadki brzegowe: wpisana data ze spacją na końcu jest przyjmowana jak bez spacji; zajęcia, których kierunek nie ma kalendarza, przyjmują każdą datę (jak `dateInCalendar` dla `null`); argument trasy niebędący liczbą albo datą daje stan „nie znaleziono”.
+Przypadki brzegowe: szybkie przełączanie blokuje `isSavingNotifications`, jak dziś; synchronizacja i kopia zapasowa nie przenoszą tych ustawień; po wyłączeniu wszystkiego alarmy są usuwane, jak dziś po wyłączeniu głównego.
 
 Weryfikacja:
 
-1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.domain.*" --tests "dev.retza.mak.ui.*"`.
-2. `.\gradlew.bat --offline :app:compileDebugAndroidTestKotlin`.
-3. Na emulatorze klasy `dev.retza.mak.ui.occurrence.OccurrenceDetailsScreenTest`, `dev.retza.mak.ui.edit.ClassEditScreenTest` i `dev.retza.mak.di.KoinGraphTest`.
+1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.settings.SettingsViewModelTest"` i test planera powiadomień (`rg -l "CollisionNotificationPlanner" app/src/test`).
+2. `installDebug`, ręcznie cztery reguły z decyzji 8; zrzuty wiersza „Powiadomienia” w trzech stanach przy 320 dp.
+3. Na emulatorze klasy `dev.retza.mak.ui.settings.SettingsPreferencesTest`, `dev.retza.mak.ui.settings.SettingsScreenTest` i `dev.retza.mak.notifications.CollisionAlarmSchedulerTest`.
 
-Kryterium zakończenia: testy przechodzą; `rg "DateOutsideSemester|DATE_OUTSIDE_SEMESTER|toRouteId|DomainRecurrence|parseDate|parseTime" app/src` nic nie znajduje; `rg "runCatching \{ LocalDate" app/src/main/java/dev/retza/mak/ui/occurrence` znajduje tylko `OccurrenceDetailsModels.kt`. Commit: `fix: check occurrence dates against the program calendar (I-91, I-92)`. W tym commicie w `QUEUE.md` zmień status I-91 na `w toku`.
+Kryterium zakończenia: nie da się ustawić głównego przełącznika włączonego przy wszystkich rodzajach wyłączonych; rodzaje są zawsze widoczne; podsumowanie liczy włączone rodzaje; testy przechodzą. Commit: `fix: tie the main notification switch to its kinds (I-97)`.
 
-## 4. Nie przebudowuj całej aplikacji przy każdym znaku w szczegółach terminu (I-92)
+## 4. Przebuduj ekran „Powiadomienia” na zwartą listę według tematu (I-97)
 
-Stan: zrobione. Wykonał subagent, recenzja i testy Android: agent planujący. Bez odchyleń w kodzie. Zrzutu i ręcznego sprawdzenia menu nie zrobiono; wygląd paska się nie zmienił, a menu akcji sprawdzają testy. Testy Android: `OccurrenceDetailsScreenTest` 7/7, `ClassEditScreenTest` 2/2, `MakNavigationChromeTest` 4/4.
+Cel: ekran „Powiadomienia” w wariancie C z artefaktu „MAK: semestr i powiadomienia” (decyzja 11): u góry przełącznik „Wszystkie powiadomienia”, niżej sekcje tematów, w każdej rodzaje jako wiersze z przełącznikiem i wartością pod nazwą. Wartość otwiera dialog wyboru zamiast rozwijanego pola. Układ ma pomieścić kolejne rodzaje bez wydłużania ekranu o pola wyboru.
 
-Cel: `occurrenceDetailsRoute` tworzy przy każdej rekompozycji nową listę akcji z nowymi lambdami, więc `TopBarSpec` jest za każdym razem inny, a `MakApp` czyta go w ciele funkcji. Każdy wpisany znak notatki przebudowuje cały `Scaffold` aplikacji. Po zmianie specyfikacja zmienia się tylko razem z dostępnymi akcjami, a pasek czyta ją we własnym slocie (I-92 punkt 5). Wygląd i działanie bez zmian.
-
-Pliki: `ui/ClassOccurrenceRoutes.kt` (`occurrenceDetailsRoute`), `ui/MakNavHostApp.kt` (`MakApp`).
+Pliki: `ui/settings/SettingsScreen.kt` (`SettingsNotificationsScreen`, `SettingsSwitchRow` albo nowy wiersz obok niego), `ui/SettingsRoutes.kt`; test Android `ui/settings/SettingsScreenTest.kt`; `docs/FEATURES.md`, `docs/ARCHITECTURE.md` (sekcja 4, jeśli nowy wiersz jest nowym wzorcem), `docs/QUEUE.md`.
 
 Zmiany:
 
-1. W `occurrenceDetailsRoute` zbuduj `actions` przez `remember(details.canCancelOccurrence, details.canEditBaseClass, details.canDeleteBaseClass) { listOfNotNull(...) }` z tymi samymi trzema pozycjami. Lambda „Edytuj wszystkie terminy” czyta datę w chwili kliknięcia: `occurrenceViewModel.details.value.targetDateDraft`, a nie zmienną `details` z kompozycji. Referencje `occurrenceViewModel::cancelOccurrence` i `occurrenceViewModel::requestClassDeletion` zastąp lambdami `{ occurrenceViewModel.cancelOccurrence() }` i `{ occurrenceViewModel.requestClassDeletion() }` wewnątrz `remember`, aby lista była tą samą instancją.
-2. `MakApp`: zmień nazwę zmiennej `topBar` na `topBarState` (przekazywana do `classEditRoute` i `occurrenceDetailsRoute` jako `topBar = topBarState`). Usuń z ciała funkcji `topBarSpec` i `topBarActions`. W slocie `topBar = { ... }` w `Scaffold` odczytaj `val spec = topBarState.specFor(currentRoute)` i `val actions = spec?.actions.orEmpty()`, a resztę `MakTopBar` zostaw bez zmian.
+1. Zanim zmienisz kod, zrób zrzut ekranu „Powiadomienia” przy 320 dp z włączonymi rodzajami.
+2. Układ od góry:
+   - karta bez nagłówka z wierszem przełącznika „Wszystkie powiadomienia” (dotychczasowy główny przełącznik; zmień tylko tekst);
+   - nagłówek „Kolizje” i karta z dwoma wierszami rodzajów oddzielonymi separatorem `outlineVariant`: „Dzień wcześniej” z wartością „O {godzina}” i „Przed zajęciami” z wartością „{n} min wcześniej”;
+   - komunikat „Zablokowane przez system” zostaje nad listą, jak dziś;
+   - tekst o opóźnieniu Androida pod sekcjami.
 
-Testy: zachowanie się nie zmienia, więc nie ma nowego testu JVM. Istniejące `TopBarStateTest` ma przejść.
-
-Przypadki brzegowe: po odwołaniu terminu znika akcja „Odwołaj termin” (zmienia się klucz `remember`); „Edytuj wszystkie terminy” otwiera formularz z datą terminu jak dotąd.
-
-Weryfikacja:
-
-1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.ui.TopBarStateTest" --tests "dev.retza.mak.ui.MakNavigationTest"`.
-2. `.\gradlew.bat --offline :app:compileDebugAndroidTestKotlin`.
-3. Zrzut przy 320 dp szczegółów terminu z otwartym menu akcji, przed zmianą i po niej; mają być identyczne.
-4. Na emulatorze klasy `dev.retza.mak.ui.occurrence.OccurrenceDetailsScreenTest`, `dev.retza.mak.ui.edit.ClassEditScreenTest` i `dev.retza.mak.ui.MakNavigationChromeTest`.
-5. Ręcznie po `installDebug`: otwórz szczegóły terminu, wpisz kilka znaków w notatce, otwórz menu akcji i wybierz „Edytuj wszystkie terminy”; formularz zajęć otwiera się z datą terminu.
-
-Kryterium zakończenia: testy przechodzą, zrzuty są identyczne; `rg "specFor" app/src/main` znajduje jedno wywołanie, wewnątrz slotu `topBar` w `MakNavHostApp.kt`. Commit: `fix: keep top bar spec stable while typing (I-92)`.
-
-## 5. Usuń pozostałe kopie i nieużywany kod z przeglądu (I-91)
-
-Stan: zrobione. Wykonało dwóch subagentów (formularze i etykieta kalendarza oraz martwy kod, synchronizacja i widget), recenzja, kolejka i testy Android: agent planujący. Bez odchyleń od planu. Testy Android: `SemesterScreenTest` 14/14, `SettingsScreenTest` 14/14, `SetupWizardTest` 11/11, `KoinGraphTest` 3/3.
-
-Cel: drobne porządki bez zmiany zachowania: jedno mapowanie błędów zakresu dat, jedna etykieta zakresu kalendarza, brak martwego kodu. Na końcu kolejka zamyka I-91, I-92 i I-94.
-
-Pliki: `ui/FormErrorTexts.kt`, `domain/FormValidation.kt`, `ui/semester/SemesterViewModel.kt`, `ui/semester/SemesterScreen.kt`, `ui/setup/SetupViewModel.kt`, `ui/programs/StudyProgramsViewModel.kt`, `ui/MakRoutes.kt`, `ui/ClassOccurrenceRoutes.kt`, `export/ExportSnapshot.kt`, `ui/settings/SettingsScreen.kt`, `ui/components/MakComponents.kt`, `sync/SyncCoordinator.kt`, `widget/WidgetLayoutPolicy.kt`; testy JVM `domain/FormValidationTest.kt`, `ui/MakNavigationTest.kt`; test Android `ui/semester/SemesterScreenTest.kt`.
-
-Zmiany:
-
-1. `ui/FormErrorTexts.kt`: dodaj `data class DateRangeErrorTexts(val start: String?, val end: String?, val range: String?)` i w obiekcie `FormErrorTexts` funkcję `fun dateRange(errors: Set<DateRangeError>): DateRangeErrorTexts`: `start` to `DateRequired`, gdy jest `START_REQUIRED`; `end` to `DateRequired`, gdy jest `END_REQUIRED`; `range` to `EndBeforeStart`, gdy jest `END_BEFORE_START`; inaczej `null`.
-2. `SemesterViewModel.saveSemester` i `saveCalendar`: zamiast trzech wyrażeń `if (DateRangeError.X in dateErrors) ...` użyj `val texts = FormErrorTexts.dateRange(dateErrors)` i pól `startDateError = texts.start`, `endDateError = texts.end`, `dateRangeError = texts.range`. `SetupViewModel.advanceFromSemester`: `texts.start` do `SetupField.StartDate`, a `texts.range ?: texts.end` do `SetupField.EndDate` (jak dziś: błąd kolejności nadpisuje brak daty, oba naraz nie występują).
-3. Usuń `validateRequiredName` z `domain/FormValidation.kt` i test `blankNameIsRequired`. Wywołania w `SemesterViewModel` i `SetupViewModel` zastąp `isNotBlank()` na tym samym tekście (`!validateRequiredName(x)` staje się `x.isBlank()`). `StudyProgramsViewModel` już używa `isBlank()`.
-4. Etykieta zakresu kalendarza: w `ui/semester/SemesterViewModel.kt` zamień prywatną `calendarLabel(calendar: AcademicCalendarRecord?)` na `internal fun calendarRangeLabel(start: LocalDate, end: LocalDate): String` z tym samym formatem (`shortDateWithYearFormatter`, separator `" - "`). Tam, gdzie była `calendarLabel(calendar)`, wstaw `calendar?.let { calendarRangeLabel(it.startDate, it.endDate) }.orEmpty()`. Do `SemesterCalendarUi` dodaj pole `val rangeLabel: String` (bez wartości domyślnej) wypełniane przez `calendarRangeLabel(calendar.startDate, calendar.endDate)`. W `SemesterScreen.kt` trzy miejsca `"${calendar.startDate.asCalendarDate()} - ${calendar.endDate.asCalendarDate()}"` zastąp `calendar.rangeLabel` i usuń `asCalendarDate`. W `SemesterScreenTest` pomocnik `calendar(...)` przekazuje `rangeLabel = calendarRangeLabel(LocalDate.parse(startDate), LocalDate.parse(endDate))`, więc asercje z tekstem „1 paź 2026 - 28 lut 2027” i „1 lis 2026 - 15 mar 2027” zostają bez zmian. Jeśli `internal` nie jest widoczne w testach Android, zrób `calendarRangeLabel` publiczną.
-5. Usuń `semesterRoute` z `ui/MakRoutes.kt` i jego asercję z `MakNavigationTest.routeArgumentsPreserveOccurrenceAndEditorContext`.
-6. Usuń nieużywane importy: `ui/ClassOccurrenceRoutes.kt`: `dev.retza.mak.ui.occurrence.hasPlanDraft`; `export/ExportSnapshot.kt`: `dev.retza.mak.data.repository.SemesterRecord`; `ui/settings/SettingsScreen.kt`: `androidx.compose.runtime.getValue` i `dev.retza.mak.text.polishPlural`; `ui/components/MakComponents.kt`: `androidx.compose.material3.DropdownMenu`, `androidx.compose.material.icons.filled.ArrowDropDown`, `androidx.compose.material.icons.outlined.ArrowBack`, `androidx.compose.material.icons.outlined.ArrowForward`, `androidx.compose.material.icons.outlined.MoreVert` i `dev.retza.mak.ui.theme.MakInk`. W `MakComponents.kt` zostaw `getValue` i `setValue`: używa ich `by remember`. Jeśli kompilacja zgłosi brak symbolu, przywróć tylko ten import.
-7. `SyncCoordinator`: `private fun issue(issue: SyncIssue, message: String? = null)`. Usuń `authorizationRequired()` i `failed()`; ich wywołania zastąp `issue(SyncIssue.AUTHORIZATION_REQUIRED)` i `issue(SyncIssue.FAILED)`, a `message = null` w pozostałych wywołaniach usuń.
-8. `widget/WidgetLayoutPolicy.kt`: usuń parametr konstruktora `includeTeacher` i trzy przypisania `includeTeacher = wide`. Dodaj do klasy `val wide: Boolean` jako parametr konstruktora i właściwość `val includeTeacher: Boolean get() = wide` z komentarzem „The teacher fits only next to the room in a wide widget.” W `widgetLayoutPolicy` przekaż `wide = wide` w trzech gałęziach.
-9. `docs/QUEUE.md`: I-91, I-92 i I-94 przenieś do tabeli „Zakończone” ze statusem `gotowe`. Każdy wiersz wymienia zrealizowane punkty, uruchomione testy JVM i klasy testów Android oraz zachowuje już zapisaną adnotację o punktach pominiętych decyzją użytkownika.
+   Nagłówki „Kolizje w planie” i „Dzień wcześniej”, „Przed zajęciami” jako sekcje znikają, a pola „Godzina wieczorna” i „Wyprzedzenie przed zajęciami” znikają z ekranu.
+3. Wiersz rodzaju: tytuł `bodyLarge` pogrubiony, pod nim wartość w kolorze `primary` z małą ikoną rozwinięcia (`Icons.Outlined.ExpandMore`), przełącznik po prawej. Wartość jest osobnym celem dotyku o wysokości co najmniej 48 dp z opisem dla czytnika „{tytuł sekcji} {tytuł wiersza}, {wartość}, zmień” i otwiera dialog. Przełącznik zostaje osobnym celem, jak w `SettingsSwitchRow`. Wartość jest widoczna i aktywna także przy wyłączonym rodzaju, aby można było ustawić ją przed włączeniem.
+4. Dialog wyboru: `MakDialog` z tytułem „{sekcja}: {wiersz}” (np. „Kolizje: przed zajęciami”), lista opcji jednokrotnego wyboru (istniejący komponent wyboru używany w formularzach, np. `MakChoiceRow`; znajdź przez `rg -n "fun MakChoiceRow|fun MakRadio" app/src/main`), akcje „Anuluj” i „Zapisz” według zasad dialogu z formularzem z `ARCHITECTURE.md`, sekcja 4. Opcje godziny: dotychczasowe `eveningHourOptions` z etykietą „O 20:00”; opcje wyprzedzenia: `leadOptions` z etykietą „{n} min wcześniej”. Zapis woła dotychczasowe `onEveningHourSelected` albo `onBeforeClassLeadSelected`. Stan otwartego dialogu trzymaj w `rememberSaveable`, aby przetrwał obrót.
+5. `FEATURES.md`: przepisz akapit o ekranie „Powiadomienia” według punktów 2 do 4. Dopisz decyzję 11 do wpisu w `LOG.md` z kroku 1. `QUEUE.md`: I-97 `odbiór otwarty`, z listą tego, co zostaje do sprawdzenia na telefonie.
 
 Testy:
 
-- `SemesterViewModelTest.calendarRangeLabelUsesShortDatesWithYear`: `assertEquals("1 lis 2026 - 15 mar 2027", calendarRangeLabel(LocalDate.of(2026, 11, 1), LocalDate.of(2027, 3, 15)))`. Ta reguła była dotąd sprawdzana tylko w `SemesterScreenTest`.
-- Istniejące testy formularzy (`SemesterViewModelTest`, `SetupViewModelTest`), `SyncCoordinatorTest`, testy widgetu i `MakNavigationTest` przechodzą bez zmian asercji poza punktami 3 i 5.
+- `SettingsScreenTest.notificationsScreenGroupsKindsByTopicAt320Dp`: przełącznik „Wszystkie powiadomienia”, nagłówek „Kolizje”, wiersze z wartościami „O 20:00” i „30 min wcześniej”, brak pól „Godzina wieczorna” i „Wyprzedzenie przed zajęciami”.
+- `SettingsScreenTest.kindValueOpensChoiceDialogAndSaves`: dotknięcie „30 min wcześniej”, wybór „45 min wcześniej”, „Zapisz” woła `onBeforeClassLeadSelected("45")`; „Anuluj” nic nie woła.
+- `SettingsScreenTest.kindValueAndSwitchAreSeparateTargets`.
+- Popraw testy, które szukają usuniętych nagłówków i pól.
 
-Przypadki brzegowe: komunikaty błędów dat w semestrze i kreatorze są identyczne jak przed zmianą; widget wąski nadal nie pokazuje prowadzącego.
+Przypadki brzegowe: duża czcionka (wartość i tytuł się zawijają, przełącznik nie zmienia rozmiaru); obrót przy otwartym dialogu; motyw jasny i ciemny; focus klawiatury przechodzi przez wartość, potem przełącznik.
 
 Weryfikacja:
 
-1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.domain.*" --tests "dev.retza.mak.ui.*" --tests "dev.retza.mak.sync.*" --tests "dev.retza.mak.widget.*"`.
-2. `.\gradlew.bat --offline :app:compileDebugAndroidTestKotlin`.
-3. Na emulatorze klasy `dev.retza.mak.ui.semester.SemesterScreenTest`, `dev.retza.mak.ui.settings.SettingsScreenTest`, `dev.retza.mak.ui.setup.SetupWizardTest` i `dev.retza.mak.di.KoinGraphTest`.
-4. `py scripts/check_map.py` z kodem 0.
+1. `installDebug`, zrzuty przy 320 dp w obu motywach: ekran, dialog godziny, dialog wyprzedzenia; porównaj z wariantem C w artefakcie i zrzutem z punktu 1.
+2. Na emulatorze klasy `dev.retza.mak.ui.settings.SettingsScreenTest` i `dev.retza.mak.di.KoinGraphTest`.
 
-Kryterium zakończenia: testy przechodzą; `rg "validateRequiredName|semesterRoute\(|asCalendarDate|fun failed\(|fun authorizationRequired\(" app/src` nic nie znajduje; `rg "includeTeacher = " app/src/main` nic nie znajduje. Commit: `chore: remove leftovers from the audit review (I-91)`.
+Kryterium zakończenia: ekran wygląda jak wariant C, wartości zmienia się w dialogu, testy przechodzą. Commit: `feat: group notification kinds by topic (I-97)`.
+
+## 5. Dodaj powiadomienia o okienkach dzień wcześniej i przed zajęciami (I-98)
+
+Cel: dwa nowe rodzaje powiadomień w sekcji „Okienka” ekranu „Powiadomienia”, działające jak powiadomienia o kolizjach (decyzje 12 i 13). „Dzień wcześniej” o wybranej godzinie wymienia jutrzejsze okienka. „Przed zajęciami” przychodzi z wybranym wyprzedzeniem przed zajęciami, po których zaczyna się okienko. Okienko liczy się według `DOMAIN.md`, sekcja „Okienka”, z progiem z ustawień planu.
+
+Przeczytaj przed zmianą: `DOMAIN.md`, sekcja „Okienka”; `ARCHITECTURE.md`, sekcja 7, podsekcja „Zasady powiadomień”, i sekcja 8, punkt 12.
+
+Pliki: `domain/GapCounter.kt`, `domain/ActivePlanProvider.kt`, `domain/CollisionNotificationPlanner.kt`, `notifications/CollisionAlarmReceiver.kt`, `notifications/CollisionAlarmScheduler.kt`, `notifications/CollisionNotificationContract.kt`, `settings/SettingsPreferences.kt`, `settings/DataStoreSettingsPreferences.kt`, `ui/settings/SettingsViewModel.kt`, `ui/settings/SettingsScreen.kt`, `ui/SettingsRoutes.kt`; testy JVM `domain/` (test licznika okienek i planera), `settings/InMemorySettingsPreferences.kt`, `ui/settings/SettingsViewModelTest.kt`; testy Android `ui/settings/SettingsPreferencesTest.kt`, `ui/settings/SettingsScreenTest.kt`, `notifications/CollisionAlarmSchedulerTest.kt`; `docs/DOMAIN.md`, `docs/FEATURES.md`, `docs/ARCHITECTURE.md`, `docs/LOG.md`, `docs/QUEUE.md`.
+
+Zmiany:
+
+1. `domain/GapCounter.kt`: dodaj `data class Gap(val start: LocalTime, val end: LocalTime, val beforeOccurrenceIds: List<String>)` i `fun findGaps(occurrences: Collection<PlannedOccurrence>, thresholdMinutes: Long): List<Gap>` z tym samym łączeniem nakładających się zajęć w bloki co dziś `countGaps`. `beforeOccurrenceIds` to identyfikatory zajęć bloku, który kończy się na początku okienka, a `start` to koniec tego bloku. `countGaps` zwraca `findGaps(...).size`, aby reguła była w jednym miejscu.
+2. `CollisionNotificationKind`: dodaj `GAP_EVENING` i `GAP_BEFORE_CLASS`. Zostaw istniejące `EVENING` i `BEFORE_CLASS` bez zmiany nazw, bo nazwa rodzaju jest zapisana w zaplanowanych alarmach (`EXTRA_KIND`). Nazwy klas z „Collision” zostają; zmiana nazw nie należy do tego kroku.
+3. `CollisionNotificationSettings` i preferencje: rodzaje `gapEveningEnabled`, `gapBeforeClassEnabled` (domyślnie `false`, nowe klucze w DataStore) oraz własne `gapEveningHour` (domyślnie 20:00) i `gapLeadMinutes` (domyślnie 30), z tymi samymi opcjami co kolizje. Reguła głównego przełącznika z kroku 3 obejmuje teraz cztery rodzaje; `kindStates` ma cztery elementy, więc podsumowanie pokazuje np. „Włączone: 2 z 4”.
+4. Planer (`CollisionNotificationPlanner.plan`): dla każdego dnia horyzontu, obok kolizji, policz `findGaps` z zajęć widocznego planu (ten sam `resolve` i te same ukryte kierunki co kolizje) i progu `inputs.display.gapThresholdMinutes`. Pomijaj odwołane zajęcia, jak `countGaps`.
+   - `GAP_EVENING`: jedno powiadomienie na dzień z okienkami, w oknie od `gapEveningHour` dnia poprzedniego, jak `EVENING`;
+   - `GAP_BEFORE_CLASS`: jedno powiadomienie na okienko, kończące się `gapLeadMinutes` przed początkiem pierwszych zajęć bloku przed okienkiem (najwcześniejszy `startTime` z `beforeOccurrenceIds`), z oknem `beforeClassWindowMinutes`, jak `BEFORE_CLASS`.
+
+   Stabilny identyfikator liczy się jak dziś z rodzaju, daty i identyfikatorów zajęć.
+5. Odbiornik (`CollisionAlarmReceiver`): przed pokazaniem sprawdź, że okienko nadal istnieje (analogicznie do `shouldShowCollisionNotification`: dla `GAP_EVENING` ten sam dzień poprzedni i nadal są okienka z tymi zajęciami; dla `GAP_BEFORE_CLASS` nadal jest okienko po tych zajęciach i zajęcia się nie skończyły). Teksty:
+   - `GAP_EVENING`: tytuł „Okienka jutro”, treść „{liczba} {okienko|okienka|okienek}: 10:30-12:00, 14:00-15:30”;
+   - `GAP_BEFORE_CLASS`: tytuł „Okienko po zajęciach”, treść „Po {nazwa zajęć} masz okienko {start}-{end}”.
+
+   Nazwę rodzaju z `EXTRA_KIND` odczytuj tak, aby nieznana wartość kończyła obsługę bez błędu.
+6. Kanał: osobny kanał „Okienka w planie” (`GAP_NOTIFICATION_CHANNEL_ID`, opis „Powiadomienia o przerwach między zajęciami.”), aby można go wyciszyć w systemie niezależnie od kolizji. Utwórz go tam, gdzie `ensureCollisionChannel`.
+7. Ekran „Powiadomienia”: sekcja „Okienka” pod „Kolizjami”, z wierszami „Dzień wcześniej” i „Przed zajęciami” w układzie z kroku 4 i dialogami wartości. Nowe zdarzenia w `SettingsRoutes` i `SettingsViewModel`: `setGapEveningNotificationsEnabled`, `setGapBeforeClassNotificationsEnabled`, `setGapEveningHour`, `setGapLeadMinutes`.
+8. Dokumentacja: `DOMAIN.md`, sekcja „Okienka”: reguła z punktów 1, 4 i 5 (które zajęcia wyznaczają powiadomienie, próg z ustawień, pominięcie odwołanych i ukrytych kierunków). `FEATURES.md`: sekcja „Okienka” na ekranie „Powiadomienia” i teksty powiadomień. `ARCHITECTURE.md`, sekcja 8, punkt 12: powiadomienia obejmują kolizje i okienka. `LOG.md`: dopisz decyzje 12 i 13 do wpisu z kroku 1. `QUEUE.md`: I-98 `odbiór otwarty` z listą do sprawdzenia na telefonie (alarm wieczorny i przed zajęciami, wyciszenie kanału).
+
+Testy:
+
+- `GapCounterTest` (albo istniejąca klasa testu `countGaps`): `findGapsReturnsRangeAndClassesBeforeGap`, `overlappingClassesFormOneBlockBeforeGap`, `breakEqualToThresholdIsNotGap` (przerwa równa progowi nie jest okienkiem, `DOMAIN.md`), `countGapsMatchesFindGaps`.
+- Test planera: `gapEveningIsPlannedAtItsOwnHour`, `gapBeforeClassFiresLeadMinutesBeforeClassBeforeGap`, `cancelledClassDoesNotCreateGapNotification`, `hiddenProgramDoesNotCreateGapNotification`, `gapKindsOffPlanNothingForGaps`.
+- Test funkcji sprawdzającej z punktu 5: okienko zniknęło po dodaniu zajęć, więc powiadomienie się nie pokazuje.
+- `SettingsPreferencesTest.mainSwitchCoversGapKinds` i `gapKindsAreOffAfterUpdate` (dane bez nowych kluczy dają wyłączone okienka, a kolizje bez zmian).
+- `SettingsScreenTest.gapSectionShowsBothKindsAt320Dp`, podsumowanie „Włączone: 2 z 4”.
+
+Przypadki brzegowe: dzień bez okienek nie planuje nic; okienko po ostatnich zajęciach nie istnieje (`DOMAIN.md`); dwa okienka jednego dnia dają dwa powiadomienia przed zajęciami i jedno wieczorne; zmiana progu okienka w ustawieniach planu przelicza alarmy (sprawdź, czy zmiana `PlanDisplaySettings` już wyzwala ponowne planowanie; jeśli nie, dodaj to); zajęcia przeniesione albo zmienione liczą się po zmianie.
+
+Weryfikacja:
+
+1. `.\gradlew.bat --offline :app:testDebugUnitTest --tests "dev.retza.mak.domain.*" --tests "dev.retza.mak.ui.settings.SettingsViewModelTest"`.
+2. `installDebug`, dane demo z okienkiem, wyprzedzenie 15 min i godzina wieczorna ustawiona na najbliższą pełną godzinę: oba powiadomienia przychodzą z poprawnym tekstem; zrzuty ekranu „Powiadomienia” przy 320 dp.
+3. Na emulatorze klasy `dev.retza.mak.ui.settings.SettingsPreferencesTest`, `dev.retza.mak.ui.settings.SettingsScreenTest`, `dev.retza.mak.notifications.CollisionAlarmSchedulerTest` i `dev.retza.mak.di.KoinGraphTest`.
+
+Kryterium zakończenia: oba rodzaje okienek można włączyć, ustawić i otrzymać na emulatorze; testy przechodzą; dokumenty opisują reguły. Commit: `feat: notify about gaps between classes (I-98)`.
