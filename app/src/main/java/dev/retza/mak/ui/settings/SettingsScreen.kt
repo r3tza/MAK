@@ -19,6 +19,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.ExpandMore
 import androidx.compose.material.icons.outlined.CalendarMonth
 import androidx.compose.material.icons.outlined.School
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -32,11 +33,16 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -44,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDialogAction
+import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakNoteBanner
@@ -254,15 +261,17 @@ fun SettingsScreen(
 /** Section whose rows reach the card edges, so the pressed state covers the whole row. */
 @Composable
 internal fun SettingsListSection(
-    title: String,
+    title: String?,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
+        if (title != null) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -554,6 +563,8 @@ fun SettingsNotificationsScreen(
     modifier: Modifier = Modifier
 ) {
     val notifications = state.notifications
+    // "evening" or "lead" while a choice dialog is open.
+    var openDialog by rememberSaveable { mutableStateOf<String?>(null) }
     MakScreenContent(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -570,9 +581,9 @@ fun SettingsNotificationsScreen(
                 MakSecondaryAction(text = "Otwórz ustawienia aplikacji", onClick = onOpenAppSettings)
             }
         }
-        SettingsListSection("Kolizje w planie") {
+        SettingsListSection(title = null) {
             SettingsSwitchRow(
-                title = "Powiadomienia o kolizjach",
+                title = "Wszystkie powiadomienia",
                 checked = notifications.enabled,
                 onCheckedChange = { enabled ->
                     onNotificationsEnabled(enabled)
@@ -580,49 +591,129 @@ fun SettingsNotificationsScreen(
                 }
             )
         }
-        SettingsListSection("Dzień wcześniej") {
-            SettingsSwitchRow(
-                title = "Powiadomienie wieczorne",
+        SettingsListSection("Kolizje") {
+            NotificationKindRow(
+                sectionTitle = "Kolizje",
+                title = "Dzień wcześniej",
+                value = "O " + notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
                 checked = notifications.eveningEnabled,
                 onCheckedChange = { enabled ->
                     onEveningNotificationsEnabled(enabled)
                     if (enabled && notificationsBlocked) onRequestNotificationPermission()
-                }
+                },
+                onOpenValue = { openDialog = "evening" }
             )
-            if (notifications.eveningEnabled) {
-                SettingsFieldItem {
-                    MakSelectField(
-                        label = "Godzina wieczorna",
-                        value = notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                        options = notifications.eveningHourOptions,
-                        onSelected = { onEveningHourSelected(it.id) },
-                        optionLabel = { it.label }
-                    )
-                }
-            }
-        }
-        SettingsListSection("Przed zajęciami") {
-            SettingsSwitchRow(
-                title = "Powiadomienie przed zajęciami",
+            SettingsRowDivider()
+            NotificationKindRow(
+                sectionTitle = "Kolizje",
+                title = "Przed zajęciami",
+                value = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty() + " wcześniej",
                 checked = notifications.beforeClassEnabled,
                 onCheckedChange = { enabled ->
                     onBeforeClassNotificationsEnabled(enabled)
                     if (enabled && notificationsBlocked) onRequestNotificationPermission()
-                }
+                },
+                onOpenValue = { openDialog = "lead" }
             )
-            if (notifications.beforeClassEnabled) {
-                SettingsFieldItem {
-                    MakSelectField(
-                        label = "Wyprzedzenie przed zajęciami",
-                        value = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                        options = notifications.leadOptions,
-                        onSelected = { onBeforeClassLeadSelected(it.id) },
-                        optionLabel = { it.label }
-                    )
-                }
-            }
         }
         MakHelperText(NOTIFICATION_DELAY_NOTE)
+        when (openDialog) {
+            "evening" -> NotificationChoiceDialog(
+                title = "Kolizje: dzień wcześniej",
+                options = notifications.eveningHourOptions,
+                optionLabel = { "O ${it.label}" },
+                onSave = onEveningHourSelected,
+                onDismiss = { openDialog = null }
+            )
+            "lead" -> NotificationChoiceDialog(
+                title = "Kolizje: przed zajęciami",
+                options = notifications.leadOptions,
+                optionLabel = { "${it.label} wcześniej" },
+                onSave = onBeforeClassLeadSelected,
+                onDismiss = { openDialog = null }
+            )
+        }
+    }
+}
+
+/** One notification kind: the title and its switch, with the value below that opens the choice dialog. */
+@Composable
+private fun NotificationKindRow(
+    sectionTitle: String,
+    title: String,
+    value: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    onOpenValue: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(SettingsRowPadding),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Row(
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .clickable(onClick = onOpenValue)
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = "$sectionTitle $title, $value, zmień"
+                    },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+            ) {
+                Text(
+                    text = value,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyMedium
+                )
+                Icon(
+                    imageVector = Icons.Outlined.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
+                )
+            }
+        }
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.semantics { contentDescription = "$sectionTitle: $title" }
+        )
+    }
+}
+
+/** Single choice from [options]; the picked id survives rotation and is saved only on „Zapisz”. */
+@Composable
+private fun NotificationChoiceDialog(
+    title: String,
+    options: List<SettingsOptionUi>,
+    optionLabel: (SettingsOptionUi) -> String,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var picked by rememberSaveable { mutableStateOf(options.firstOrNull { it.isSelected }?.id) }
+    MakDialog(
+        title = title,
+        onDismiss = onDismiss,
+        dismissAction = MakDialogAction("Anuluj", onDismiss),
+        confirmAction = MakDialogAction("Zapisz", {
+            picked?.let(onSave)
+            onDismiss()
+        })
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
+            options.forEach { option ->
+                MakChoiceRow(
+                    label = optionLabel(option),
+                    selected = option.id == picked,
+                    onClick = { picked = option.id }
+                )
+            }
+        }
     }
 }
 

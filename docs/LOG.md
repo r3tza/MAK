@@ -12,6 +12,7 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 - Decyzja użytkownika z 2026-10-11: plan wykonuje się na jednej gałęzi od `main` po scaleniu I-79.
 - Decyzja użytkownika z 2026-10-11 (I-96): karta semestru w wariancie C z artefaktu „MAK: semestr i powiadomienia”, czyli wiersze z ikonami zamiast jednego zdania; daty z rokiem, a przy tym samym roku obu końców rok raz; aktywny semestr na górze, pozostałe od najnowszego.
 - Decyzja użytkownika z 2026-10-11 (I-97): ekran „Powiadomienia” zawsze pokazuje wszystkie rodzaje; główny przełącznik włącza albo wyłącza wszystkie naraz i jest włączony, gdy włączony jest co najmniej jeden rodzaj. Wiersz w ustawieniach nazywa się „Powiadomienia” i pokazuje „Wszystkie włączone”, „Włączone: 1 z 2” albo „Wyłączone”, bez godziny i wyprzedzenia. Odrzucone: warianty A i C podsumowania z artefaktu, bo przy kolejnych rodzajach stają się nieczytelne.
+- Decyzja użytkownika z 2026-10-11 (I-97): ekran „Powiadomienia” w wariancie C z artefaktu, czyli przełącznik „Wszystkie powiadomienia”, sekcje tematów i wiersze rodzajów z przełącznikiem i wartością pod nazwą, która otwiera dialog wyboru. Odrzucone: wariant A (pola wyboru pod każdym rodzajem) i B (grupowanie według pory ze wspólną godziną i wyprzedzeniem).
 
 ## 2026-10-11: Zakres poprawek po przeglądzie zmian z audytu (I-91 do I-94)
 

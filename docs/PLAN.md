@@ -175,6 +175,8 @@ Kryterium zakończenia: nie da się ustawić głównego przełącznika włączon
 
 ## 4. Przebuduj ekran „Powiadomienia” na zwartą listę według tematu (I-97)
 
+Stan: zrobione. Różnice wobec planu: `SettingsListSection` przyjmuje pusty tytuł zamiast osobnej karty bez nagłówka; przełącznik rodzaju ma opis dla czytnika „{sekcja}: {wiersz}”; `ARCHITECTURE.md` bez zmian, bo wiersz rodzaju jest użyty tylko na tym ekranie. Zrzuty przy 320 dp w motywie jasnym (ekran i dialog wyprzedzenia); motywu ciemnego i dialogu godziny nie zrzucano.
+
 Cel: ekran „Powiadomienia” w wariancie C z artefaktu „MAK: semestr i powiadomienia” (decyzja 11): u góry przełącznik „Wszystkie powiadomienia”, niżej sekcje tematów, w każdej rodzaje jako wiersze z przełącznikiem i wartością pod nazwą. Wartość otwiera dialog wyboru zamiast rozwijanego pola. Układ ma pomieścić kolejne rodzaje bez wydłużania ekranu o pola wyboru.
 
 Pliki: `ui/settings/SettingsScreen.kt` (`SettingsNotificationsScreen`, `SettingsSwitchRow` albo nowy wiersz obok niego), `ui/SettingsRoutes.kt`; test Android `ui/settings/SettingsScreenTest.kt`; `docs/FEATURES.md`, `docs/ARCHITECTURE.md` (sekcja 4, jeśli nowy wiersz jest nowym wzorcem), `docs/QUEUE.md`.

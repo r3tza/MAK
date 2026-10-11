@@ -8,6 +8,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.assertCountEquals
@@ -323,7 +324,7 @@ class SettingsScreenTest {
     }
 
     @Test
-    fun notificationsScreenShowsTogglesAt320Dp() {
+    fun notificationsScreenGroupsKindsByTopicAt320Dp() {
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
@@ -348,17 +349,19 @@ class SettingsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Kolizje w planie").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Wszystkie powiadomienia").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Kolizje").assertIsDisplayed()
         composeTestRule.onNodeWithText("Dzień wcześniej").assertIsDisplayed()
         composeTestRule.onNodeWithText("Przed zajęciami").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Godzina wieczorna").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Wyprzedzenie przed zajęciami").assertIsDisplayed()
+        composeTestRule.onNodeWithText("O 20:00").assertIsDisplayed()
+        composeTestRule.onNodeWithText("30 min wcześniej").assertIsDisplayed()
+        composeTestRule.onAllNodesWithText("Godzina wieczorna").assertCountEquals(0)
+        composeTestRule.onAllNodesWithText("Wyprzedzenie przed zajęciami").assertCountEquals(0)
         composeTestRule.onNodeWithText("Zablokowane przez system").assertIsDisplayed()
         composeTestRule.onNodeWithText("Otwórz ustawienia aplikacji").assertIsDisplayed()
         composeTestRule.onNodeWithText(
             "Android może opóźnić powiadomienie o kilkanaście minut, aby oszczędzać baterię."
         ).performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Powiadomienia o kolizjach").assertIsDisplayed()
         composeTestRule.onAllNodesWithText("Włączone").assertCountEquals(0)
         composeTestRule.onAllNodesWithText("Wyłączone").assertCountEquals(0)
     }
@@ -448,12 +451,12 @@ class SettingsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Powiadomienie wieczorne").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Powiadomienie przed zajęciami").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dzień wcześniej").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Przed zajęciami").assertIsDisplayed()
     }
 
     @Test
-    fun notificationsScreenHidesSettingsOfDisabledKind() {
+    fun notificationsScreenKeepsValuesOfDisabledKind() {
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
@@ -480,9 +483,9 @@ class SettingsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Powiadomienie wieczorne").assertIsDisplayed()
-        composeTestRule.onNodeWithText("Godzina wieczorna").assertDoesNotExist()
-        composeTestRule.onNodeWithText("Wyprzedzenie przed zajęciami").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dzień wcześniej").assertIsDisplayed()
+        composeTestRule.onNodeWithText("O 20:00").assertIsDisplayed()
+        composeTestRule.onNodeWithText("30 min wcześniej").assertIsDisplayed()
     }
 
     @Test
@@ -506,8 +509,79 @@ class SettingsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Powiadomienia o kolizjach").performClick()
+        composeTestRule.onNodeWithText("Wszystkie powiadomienia").performClick()
         assertTrue(permissionRequested)
+    }
+
+    @Test
+    fun kindValueOpensChoiceDialogAndSaves() {
+        val savedLeads = mutableListOf<String>()
+        setNotificationsContent(onBeforeClassLeadSelected = { savedLeads.add(it) })
+
+        composeTestRule.onNodeWithText("30 min wcześniej").performClick()
+        composeTestRule.onNodeWithText("Kolizje: przed zajęciami").assertIsDisplayed()
+        composeTestRule.onNodeWithText("45 min wcześniej").performClick()
+        composeTestRule.onNodeWithText("Zapisz").performClick()
+        assertEquals(listOf("45"), savedLeads)
+
+        composeTestRule.onNodeWithText("30 min wcześniej").performClick()
+        composeTestRule.onNodeWithText("60 min wcześniej").performClick()
+        composeTestRule.onNodeWithText("Anuluj").performClick()
+        assertEquals(listOf("45"), savedLeads)
+    }
+
+    @Test
+    fun kindValueAndSwitchAreSeparateTargets() {
+        val eveningChanges = mutableListOf<Boolean>()
+        setNotificationsContent(onEveningNotificationsEnabled = { eveningChanges.add(it) })
+
+        composeTestRule.onNodeWithText("O 20:00").performClick()
+        assertTrue(eveningChanges.isEmpty())
+        composeTestRule.onNodeWithText("Kolizje: dzień wcześniej").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Anuluj").performClick()
+
+        composeTestRule.onNodeWithContentDescription("Kolizje: Dzień wcześniej").performClick()
+        assertEquals(listOf(false), eveningChanges)
+        composeTestRule.onAllNodesWithText("Kolizje: dzień wcześniej").assertCountEquals(0)
+    }
+
+    private fun setNotificationsContent(
+        onEveningNotificationsEnabled: (Boolean) -> Unit = {},
+        onBeforeClassLeadSelected: (String) -> Unit = {}
+    ) {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
+                    SettingsNotificationsScreen(
+                        state = SettingsUiState(
+                            notifications = NotificationSettingsUi(
+                                enabled = true,
+                                eveningEnabled = true,
+                                beforeClassEnabled = true,
+                                eveningHourOptions = listOf(
+                                    SettingsOptionUi("18:00", "18:00"),
+                                    SettingsOptionUi("19:00", "19:00"),
+                                    SettingsOptionUi("20:00", "20:00", true),
+                                    SettingsOptionUi("21:00", "21:00"),
+                                    SettingsOptionUi("22:00", "22:00")
+                                ),
+                                leadOptions = listOf(15, 30, 45, 60).map { minutes ->
+                                    SettingsOptionUi("$minutes", "$minutes min", minutes == 30)
+                                }
+                            )
+                        ),
+                        notificationsBlocked = false,
+                        onNotificationsEnabled = {},
+                        onEveningNotificationsEnabled = onEveningNotificationsEnabled,
+                        onBeforeClassNotificationsEnabled = {},
+                        onEveningHourSelected = {},
+                        onBeforeClassLeadSelected = onBeforeClassLeadSelected,
+                        onRequestNotificationPermission = {},
+                        onOpenAppSettings = {}
+                    )
+                }
+            }
+        }
     }
 
     @Test
