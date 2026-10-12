@@ -56,12 +56,18 @@ class SettingsScreenTest {
                             minimumBreakOptions = listOf(SettingsOptionUi("0", "0 min", true)),
                             notifications = NotificationSettingsUi(
                                 enabled = true,
-                                gapEveningEnabled = true,
-                                gapBeforeClassEnabled = true,
-                                eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
-                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true)),
-                                gapEveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
-                                gapLeadOptions = listOf(SettingsOptionUi("15", "15 min", true))
+                                collisions = NotificationTopicUi(
+                                    eveningEnabled = true,
+                                    beforeClassEnabled = true,
+                                    eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
+                                    leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
+                                ),
+                                gaps = NotificationTopicUi(
+                                    eveningEnabled = true,
+                                    beforeClassEnabled = true,
+                                    eveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
+                                    leadOptions = listOf(SettingsOptionUi("15", "15 min", true))
+                                )
                             )
                         ),
                         onOpenSemesters = { opened = "semesters" },
@@ -336,10 +342,18 @@ class SettingsScreenTest {
                         state = SettingsUiState(
                             notifications = NotificationSettingsUi(
                                 enabled = true,
-                                eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
-                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true)),
-                                gapEveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
-                                gapLeadOptions = listOf(SettingsOptionUi("15", "15 min", true))
+                                collisions = NotificationTopicUi(
+                                    eveningEnabled = true,
+                                    beforeClassEnabled = true,
+                                    eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
+                                    leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
+                                ),
+                                gaps = NotificationTopicUi(
+                                    eveningEnabled = false,
+                                    beforeClassEnabled = false,
+                                    eveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
+                                    leadOptions = listOf(SettingsOptionUi("15", "15 min", true))
+                                )
                             )
                         ),
                         notificationsBlocked = true,
@@ -381,12 +395,13 @@ class SettingsScreenTest {
         val notifications = mutableStateOf(
             NotificationSettingsUi(
                 enabled = true,
-                eveningEnabled = true,
-                beforeClassEnabled = true,
-                gapEveningEnabled = true,
-                gapBeforeClassEnabled = true,
-                eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
-                leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
+                collisions = NotificationTopicUi(
+                    eveningEnabled = true,
+                    beforeClassEnabled = true,
+                    eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
+                    leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
+                ),
+                gaps = NotificationTopicUi(eveningEnabled = true, beforeClassEnabled = true)
             )
         )
         val blocked = mutableStateOf(false)
@@ -423,9 +438,8 @@ class SettingsScreenTest {
 
         composeTestRule.runOnIdle {
             notifications.value = notifications.value.copy(
-                beforeClassEnabled = false,
-                gapBeforeClassEnabled = false,
-                gapEveningEnabled = true
+                collisions = notifications.value.collisions.copy(beforeClassEnabled = false),
+                gaps = notifications.value.gaps.copy(beforeClassEnabled = false, eveningEnabled = true)
             )
             blocked.value = true
         }
@@ -433,12 +447,12 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithText("Zablokowane przez system").assertIsDisplayed()
 
         composeTestRule.runOnIdle {
-            notifications.value = notifications.value.copy(gapEveningEnabled = false)
+            notifications.value = notifications.value.copy(gaps = notifications.value.gaps.copy(eveningEnabled = false))
         }
         composeTestRule.onNodeWithText("Włączone: 1 z 4").assertIsDisplayed()
 
         composeTestRule.runOnIdle {
-            notifications.value = notifications.value.copy(enabled = false, eveningEnabled = false)
+            notifications.value = notifications.value.copy(enabled = false, collisions = notifications.value.collisions.copy(eveningEnabled = false))
             blocked.value = false
         }
         composeTestRule.onNodeWithText("Wyłączone").assertIsDisplayed()
@@ -453,12 +467,18 @@ class SettingsScreenTest {
                         state = SettingsUiState(
                             notifications = NotificationSettingsUi(
                                 enabled = false,
-                                eveningEnabled = false,
-                                beforeClassEnabled = false,
-                                eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
-                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true)),
-                                gapEveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
-                                gapLeadOptions = listOf(SettingsOptionUi("15", "15 min", true))
+                                collisions = NotificationTopicUi(
+                                    eveningEnabled = false,
+                                    beforeClassEnabled = false,
+                                    eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
+                                    leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
+                                ),
+                                gaps = NotificationTopicUi(
+                                    eveningEnabled = false,
+                                    beforeClassEnabled = false,
+                                    eveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
+                                    leadOptions = listOf(SettingsOptionUi("15", "15 min", true))
+                                )
                             )
                         ),
                         notificationsBlocked = false,
@@ -491,12 +511,18 @@ class SettingsScreenTest {
                         state = SettingsUiState(
                             notifications = NotificationSettingsUi(
                                 enabled = true,
-                                eveningEnabled = false,
-                                beforeClassEnabled = true,
-                                eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
-                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true)),
-                                gapEveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
-                                gapLeadOptions = listOf(SettingsOptionUi("15", "15 min", true))
+                                collisions = NotificationTopicUi(
+                                    eveningEnabled = false,
+                                    beforeClassEnabled = true,
+                                    eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
+                                    leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
+                                ),
+                                gaps = NotificationTopicUi(
+                                    eveningEnabled = false,
+                                    beforeClassEnabled = false,
+                                    eveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
+                                    leadOptions = listOf(SettingsOptionUi("15", "15 min", true))
+                                )
                             )
                         ),
                         notificationsBlocked = false,
@@ -591,14 +617,18 @@ class SettingsScreenTest {
                         state = SettingsUiState(
                             notifications = NotificationSettingsUi(
                                 enabled = true,
-                                eveningEnabled = true,
-                                beforeClassEnabled = true,
-                                gapEveningEnabled = true,
-                                gapBeforeClassEnabled = false,
-                                eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
-                                leadOptions = listOf(SettingsOptionUi("30", "30 min", true)),
-                                gapEveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
-                                gapLeadOptions = listOf(SettingsOptionUi("15", "15 min", true))
+                                collisions = NotificationTopicUi(
+                                    eveningEnabled = true,
+                                    beforeClassEnabled = true,
+                                    eveningHourOptions = listOf(SettingsOptionUi("20:00", "20:00", true)),
+                                    leadOptions = listOf(SettingsOptionUi("30", "30 min", true))
+                                ),
+                                gaps = NotificationTopicUi(
+                                    eveningEnabled = true,
+                                    beforeClassEnabled = false,
+                                    eveningHourOptions = listOf(SettingsOptionUi("21:00", "21:00", true)),
+                                    leadOptions = listOf(SettingsOptionUi("15", "15 min", true))
+                                )
                             )
                         ),
                         notificationsBlocked = false,
@@ -636,28 +666,34 @@ class SettingsScreenTest {
                         state = SettingsUiState(
                             notifications = NotificationSettingsUi(
                                 enabled = true,
-                                eveningEnabled = true,
-                                beforeClassEnabled = true,
-                                eveningHourOptions = listOf(
-                                    SettingsOptionUi("18:00", "18:00"),
-                                    SettingsOptionUi("19:00", "19:00"),
-                                    SettingsOptionUi("20:00", "20:00", true),
-                                    SettingsOptionUi("21:00", "21:00"),
-                                    SettingsOptionUi("22:00", "22:00")
+                                collisions = NotificationTopicUi(
+                                    eveningEnabled = true,
+                                    beforeClassEnabled = true,
+                                    eveningHourOptions = listOf(
+                                        SettingsOptionUi("18:00", "18:00"),
+                                        SettingsOptionUi("19:00", "19:00"),
+                                        SettingsOptionUi("20:00", "20:00", true),
+                                        SettingsOptionUi("21:00", "21:00"),
+                                        SettingsOptionUi("22:00", "22:00")
+                                    ),
+                                    leadOptions = listOf(15, 30, 45, 60).map { minutes ->
+                                        SettingsOptionUi("$minutes", "$minutes min", minutes == 30)
+                                    }
                                 ),
-                                leadOptions = listOf(15, 30, 45, 60).map { minutes ->
-                                    SettingsOptionUi("$minutes", "$minutes min", minutes == 30)
-                                },
-                                gapEveningHourOptions = listOf(
-                                    SettingsOptionUi("18:00", "18:00"),
-                                    SettingsOptionUi("19:00", "19:00"),
-                                    SettingsOptionUi("20:00", "20:00"),
-                                    SettingsOptionUi("21:00", "21:00", true),
-                                    SettingsOptionUi("22:00", "22:00")
-                                ),
-                                gapLeadOptions = listOf(15, 30, 45, 60).map { minutes ->
-                                    SettingsOptionUi("$minutes", "$minutes min", minutes == 15)
-                                }
+                                gaps = NotificationTopicUi(
+                                    eveningEnabled = false,
+                                    beforeClassEnabled = false,
+                                    eveningHourOptions = listOf(
+                                        SettingsOptionUi("18:00", "18:00"),
+                                        SettingsOptionUi("19:00", "19:00"),
+                                        SettingsOptionUi("20:00", "20:00"),
+                                        SettingsOptionUi("21:00", "21:00", true),
+                                        SettingsOptionUi("22:00", "22:00")
+                                    ),
+                                    leadOptions = listOf(15, 30, 45, 60).map { minutes ->
+                                        SettingsOptionUi("$minutes", "$minutes min", minutes == 15)
+                                    }
+                                )
                             )
                         ),
                         notificationsBlocked = false,

@@ -302,7 +302,7 @@ class SettingsViewModelTest {
         assertEquals(LocalTime.of(21, 0), stored.eveningHour)
         assertEquals(45L, stored.leadMinutes)
         assertTrue(
-            viewModel.settings.value.notifications.eveningHourOptions
+            viewModel.settings.value.notifications.collisions.eveningHourOptions
                 .first { it.id == "21:00" }
                 .isSelected
         )
@@ -322,9 +322,9 @@ class SettingsViewModelTest {
         advanceUntilIdle()
 
         val notifications = viewModel.settings.value.notifications
-        assertTrue(notifications.gapEveningEnabled)
-        assertTrue(notifications.gapEveningHourOptions.first { it.id == "19:00" }.isSelected)
-        assertTrue(notifications.gapLeadOptions.first { it.id == "15" }.isSelected)
+        assertTrue(notifications.gaps.eveningEnabled)
+        assertTrue(notifications.gaps.eveningHourOptions.first { it.id == "19:00" }.isSelected)
+        assertTrue(notifications.gaps.leadOptions.first { it.id == "15" }.isSelected)
     }
 
     @Test

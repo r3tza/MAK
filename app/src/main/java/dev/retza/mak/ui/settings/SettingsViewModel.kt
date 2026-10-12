@@ -415,32 +415,36 @@ private fun buildSettingsState(
     isReplacingData = local.isReplacingData,
     notifications = NotificationSettingsUi(
         enabled = preferences.notifications.enabled,
-        eveningEnabled = preferences.notifications.eveningEnabled,
-        beforeClassEnabled = preferences.notifications.beforeClassEnabled,
-        gapEveningEnabled = preferences.notifications.gapEveningEnabled,
-        gapBeforeClassEnabled = preferences.notifications.gapBeforeClassEnabled,
-        eveningHourOptions = notificationHourOptions.map { hour ->
-            val id = "%02d:00".format(hour)
-            SettingsOptionUi(id, id, preferences.notifications.eveningHour.hour == hour)
-        },
-        leadOptions = notificationLeadOptions.map { minutes ->
-            SettingsOptionUi(
-                id = minutes.toString(),
-                label = "$minutes min",
-                isSelected = preferences.notifications.leadMinutes == minutes
-            )
-        },
-        gapEveningHourOptions = notificationHourOptions.map { hour ->
-            val id = "%02d:00".format(hour)
-            SettingsOptionUi(id, id, preferences.notifications.gapEveningHour.hour == hour)
-        },
-        gapLeadOptions = notificationLeadOptions.map { minutes ->
-            SettingsOptionUi(
-                id = minutes.toString(),
-                label = "$minutes min",
-                isSelected = preferences.notifications.gapLeadMinutes == minutes
-            )
-        }
+        collisions = NotificationTopicUi(
+            eveningEnabled = preferences.notifications.eveningEnabled,
+            beforeClassEnabled = preferences.notifications.beforeClassEnabled,
+            eveningHourOptions = notificationHourOptions.map { hour ->
+                val id = "%02d:00".format(hour)
+                SettingsOptionUi(id, id, preferences.notifications.eveningHour.hour == hour)
+            },
+            leadOptions = notificationLeadOptions.map { minutes ->
+                SettingsOptionUi(
+                    id = minutes.toString(),
+                    label = "$minutes min",
+                    isSelected = preferences.notifications.leadMinutes == minutes
+                )
+            }
+        ),
+        gaps = NotificationTopicUi(
+            eveningEnabled = preferences.notifications.gapEveningEnabled,
+            beforeClassEnabled = preferences.notifications.gapBeforeClassEnabled,
+            eveningHourOptions = notificationHourOptions.map { hour ->
+                val id = "%02d:00".format(hour)
+                SettingsOptionUi(id, id, preferences.notifications.gapEveningHour.hour == hour)
+            },
+            leadOptions = notificationLeadOptions.map { minutes ->
+                SettingsOptionUi(
+                    id = minutes.toString(),
+                    label = "$minutes min",
+                    isSelected = preferences.notifications.gapLeadMinutes == minutes
+                )
+            }
+        )
     )
 )
 

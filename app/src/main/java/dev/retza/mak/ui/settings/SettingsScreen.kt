@@ -90,21 +90,19 @@ data class SettingsOptionUi(
     val isSelected: Boolean = false
 )
 
+/** The evening and before-class kinds of one notification topic (collisions or gaps). */
+data class NotificationTopicUi(
+    val eveningEnabled: Boolean,
+    val beforeClassEnabled: Boolean,
+    val eveningHourOptions: List<SettingsOptionUi> = emptyList(),
+    val leadOptions: List<SettingsOptionUi> = emptyList()
+)
+
 data class NotificationSettingsUi(
     val enabled: Boolean = false,
-    val eveningEnabled: Boolean = true,
-    val beforeClassEnabled: Boolean = true,
-    val gapEveningEnabled: Boolean = false,
-    val gapBeforeClassEnabled: Boolean = false,
-    val eveningHourOptions: List<SettingsOptionUi> = emptyList(),
-    val leadOptions: List<SettingsOptionUi> = emptyList(),
-    val gapEveningHourOptions: List<SettingsOptionUi> = emptyList(),
-    val gapLeadOptions: List<SettingsOptionUi> = emptyList()
-) {
-    // One entry per notification kind; the settings summary counts the enabled ones.
-    val kindStates: List<Boolean>
-        get() = listOf(eveningEnabled, beforeClassEnabled, gapEveningEnabled, gapBeforeClassEnabled)
-}
+    val collisions: NotificationTopicUi = NotificationTopicUi(eveningEnabled = true, beforeClassEnabled = true),
+    val gaps: NotificationTopicUi = NotificationTopicUi(eveningEnabled = false, beforeClassEnabled = false)
+)
 
 data class SettingsUiState(
     val semesters: List<SemesterUi> = emptyList(),
@@ -403,16 +401,19 @@ private fun SettingsSwitchRow(
     }
 }
 
+private const val NOTIFICATION_KIND_COUNT = 4
+
 private fun notificationsStatus(
     notifications: NotificationSettingsUi,
     blocked: Boolean
 ): Pair<String, String?> {
-    val kinds = notifications.kindStates
-    val enabledCount = kinds.count { it }
+    // Two topics (collisions, gaps), each with an evening and a before-class kind.
+    val enabledCount = listOf(notifications.collisions, notifications.gaps)
+        .sumOf { listOf(it.eveningEnabled, it.beforeClassEnabled).count { enabled -> enabled } }
     val value = when (enabledCount) {
         0 -> return "Wyłączone" to null
-        kinds.size -> "Wszystkie włączone"
-        else -> "Włączone: $enabledCount z ${kinds.size}"
+        NOTIFICATION_KIND_COUNT -> "Wszystkie włączone"
+        else -> "Włączone: $enabledCount z $NOTIFICATION_KIND_COUNT"
     }
     return value to if (blocked) "Zablokowane przez system" else null
 }
@@ -570,8 +571,7 @@ fun SettingsNotificationsScreen(
     modifier: Modifier = Modifier
 ) {
     val notifications = state.notifications
-    // "evening", "lead", "gapEvening" or "gapLead" while a choice dialog is open.
-    var openDialog by rememberSaveable { mutableStateOf<String?>(null) }
+    var openDialog by rememberSaveable { mutableStateOf<NotificationDialog?>(null) }
     MakScreenContent(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -600,91 +600,75 @@ fun SettingsNotificationsScreen(
         }
         NotificationTopicSection(
             title = "Kolizje",
-            eveningValue = "O " + notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-            eveningChecked = notifications.eveningEnabled,
+            topic = notifications.collisions,
             onEveningCheckedChange = { enabled ->
                 onEveningNotificationsEnabled(enabled)
                 if (enabled && notificationsBlocked) onRequestNotificationPermission()
             },
-            onOpenEvening = { openDialog = "evening" },
-            leadValue = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty() + " wcześniej",
-            leadChecked = notifications.beforeClassEnabled,
+            onOpenEvening = { openDialog = NotificationDialog.CollisionEvening },
             onLeadCheckedChange = { enabled ->
                 onBeforeClassNotificationsEnabled(enabled)
                 if (enabled && notificationsBlocked) onRequestNotificationPermission()
             },
-            onOpenLead = { openDialog = "lead" }
+            onOpenLead = { openDialog = NotificationDialog.CollisionLead }
         )
         NotificationTopicSection(
             title = "Okienka",
-            eveningValue = "O " + notifications.gapEveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-            eveningChecked = notifications.gapEveningEnabled,
+            topic = notifications.gaps,
             onEveningCheckedChange = { enabled ->
                 onGapEveningNotificationsEnabled(enabled)
                 if (enabled && notificationsBlocked) onRequestNotificationPermission()
             },
-            onOpenEvening = { openDialog = "gapEvening" },
-            leadValue = notifications.gapLeadOptions.firstOrNull { it.isSelected }?.label.orEmpty() + " wcześniej",
-            leadChecked = notifications.gapBeforeClassEnabled,
+            onOpenEvening = { openDialog = NotificationDialog.GapEvening },
             onLeadCheckedChange = { enabled ->
                 onGapBeforeClassNotificationsEnabled(enabled)
                 if (enabled && notificationsBlocked) onRequestNotificationPermission()
             },
-            onOpenLead = { openDialog = "gapLead" }
+            onOpenLead = { openDialog = NotificationDialog.GapLead }
         )
         MakHelperText(NOTIFICATION_DELAY_NOTE)
-        when (openDialog) {
-            "evening" -> NotificationChoiceDialog(
-                title = "Kolizje: dzień wcześniej",
-                options = notifications.eveningHourOptions,
-                optionLabel = { "O ${it.label}" },
-                onSave = onEveningHourSelected,
-                onDismiss = { openDialog = null }
-            )
-            "lead" -> NotificationChoiceDialog(
-                title = "Kolizje: przed zajęciami",
-                options = notifications.leadOptions,
-                optionLabel = { "${it.label} wcześniej" },
-                onSave = onBeforeClassLeadSelected,
-                onDismiss = { openDialog = null }
-            )
-            "gapEvening" -> NotificationChoiceDialog(
-                title = "Okienka: dzień wcześniej",
-                options = notifications.gapEveningHourOptions,
-                optionLabel = { "O ${it.label}" },
-                onSave = onGapEveningHourSelected,
-                onDismiss = { openDialog = null }
-            )
-            "gapLead" -> NotificationChoiceDialog(
-                title = "Okienka: przed zajęciami",
-                options = notifications.gapLeadOptions,
-                optionLabel = { "${it.label} wcześniej" },
-                onSave = onGapLeadSelected,
+        openDialog?.let { dialog ->
+            val isCollision = dialog == NotificationDialog.CollisionEvening || dialog == NotificationDialog.CollisionLead
+            val topicTitle = if (isCollision) "Kolizje" else "Okienka"
+            val topic = if (isCollision) notifications.collisions else notifications.gaps
+            val isEvening = dialog == NotificationDialog.CollisionEvening || dialog == NotificationDialog.GapEvening
+            NotificationChoiceDialog(
+                title = if (isEvening) "$topicTitle: dzień wcześniej" else "$topicTitle: przed zajęciami",
+                options = if (isEvening) topic.eveningHourOptions else topic.leadOptions,
+                optionLabel = { option -> if (isEvening) "O ${option.label}" else "${option.label} wcześniej" },
+                onSave = when (dialog) {
+                    NotificationDialog.CollisionEvening -> onEveningHourSelected
+                    NotificationDialog.CollisionLead -> onBeforeClassLeadSelected
+                    NotificationDialog.GapEvening -> onGapEveningHourSelected
+                    NotificationDialog.GapLead -> onGapLeadSelected
+                },
                 onDismiss = { openDialog = null }
             )
         }
     }
 }
 
+/** The choice dialogs of the notification screen: evening hour or lead time, for collisions or gaps. */
+private enum class NotificationDialog { CollisionEvening, CollisionLead, GapEvening, GapLead }
+
 /** One topic of notification kinds (the evening and the before-class kind) in its own list section. */
 @Composable
 private fun NotificationTopicSection(
     title: String,
-    eveningValue: String,
-    eveningChecked: Boolean,
+    topic: NotificationTopicUi,
     onEveningCheckedChange: (Boolean) -> Unit,
     onOpenEvening: () -> Unit,
-    leadValue: String,
-    leadChecked: Boolean,
     onLeadCheckedChange: (Boolean) -> Unit,
     onOpenLead: () -> Unit
 ) {
+    val eveningValue = "O " + topic.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty()
+    val leadValue = topic.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty() + " wcześniej"
     SettingsListSection(title) {
         NotificationKindRow(
             sectionTitle = title,
             title = "Dzień wcześniej",
             value = eveningValue,
-            checked = eveningChecked,
+            checked = topic.eveningEnabled,
             onCheckedChange = onEveningCheckedChange,
             onOpenValue = onOpenEvening
         )
@@ -693,7 +677,7 @@ private fun NotificationTopicSection(
             sectionTitle = title,
             title = "Przed zajęciami",
             value = leadValue,
-            checked = leadChecked,
+            checked = topic.beforeClassEnabled,
             onCheckedChange = onLeadCheckedChange,
             onOpenValue = onOpenLead
         )
