@@ -5,7 +5,6 @@ import androidx.lifecycle.viewModelScope
 import dev.retza.mak.data.repository.SemesterConfiguration
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.WeekType
-import dev.retza.mak.domain.coversWorkWeek
 import dev.retza.mak.domain.firstMondayAfter
 import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.text.polishPlural
@@ -48,13 +47,9 @@ data class FreeDayEditorUiState(
     val title: String
         get() = if (isEditing) "Edytuj dni wolne" else "Dodaj dni wolne"
 
-    /** Offered only when the range covers at least one whole Monday-Friday week. */
+    /** Offered for any range, also a single day, once both dates are chosen. */
     val showsWeekAfterBreak: Boolean
-        get() {
-            val start = startDate ?: return false
-            val end = endDate ?: return false
-            return coversWorkWeek(start, end)
-        }
+        get() = startDate != null && endDate != null
 
     val weekAfterBreakDescription: String?
         get() {

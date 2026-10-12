@@ -36,7 +36,7 @@ W dniu wolnym kalendarza zajęcia cykliczne kierunków używających tego kalend
 
 Widok pokazuje dzień jako wolny, gdy dzień wolny mają wszystkie kalendarze, których dotyczy widok: wszystkie kalendarze semestru obejmujące tę datę albo kalendarz kierunku wybranego w filtrze „Planu”.
 
-Dni wolne nie zmieniają rytmu A/B. Gdy uczelnia po przerwie zaczyna inną literą, służy do tego korekta „Od tego tygodnia”; w kroku I-82 formularz dni wolnych obejmujących co najmniej jeden pełny tydzień od poniedziałku do piątku może ją utworzyć sam: korekta „Od tego tygodnia” zaczyna się w pierwszy poniedziałek po ostatnim dniu zakresu, w każdym wybranym kalendarzu, który obejmuje ten poniedziałek (decyzja użytkownika z 2026-10-11).
+Dni wolne nie zmieniają rytmu A/B. Gdy uczelnia po przerwie zaczyna inną literą, służy do tego korekta „Od tego tygodnia”; w kroku I-82 formularz dni wolnych może ją utworzyć sam dla każdego zakresu, także jednego dnia (decyzja użytkownika z 2026-10-12; wcześniej wymagany był pełny tydzień od poniedziałku do piątku): korekta „Od tego tygodnia” zaczyna się w pierwszy poniedziałek po ostatnim dniu zakresu, w każdym wybranym kalendarzu, który obejmuje ten poniedziałek (decyzja użytkownika z 2026-10-11).
 
 Dni wolne są częścią planu: trafiają do eksportu JSON i synchronizacji.
 

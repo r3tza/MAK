@@ -2,6 +2,13 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-12: Poprawki dni wolnych po pierwszym odbiorze (I-81, I-82)
+
+- Decyzja użytkownika z 2026-10-12: pole „Po przerwie zacznij od tygodnia” jest dostępne dla każdego zakresu dni wolnych, także jednego dnia. Zastępuje decyzję z 2026-10-11 o wymogu pełnego tygodnia od poniedziałku do piątku.
+- Decyzja użytkownika z 2026-10-12: w dialogu „Święta ustawowe” Wigilia, oba dni Bożego Narodzenia i Nowy Rok są jedną pozycją „Przerwa świąteczna” od 24 grudnia do 2 stycznia, przycinaną do semestru.
+- Decyzja użytkownika z 2026-10-12: `DateRangePicker` z Material 3 zostaje z pionowym przewijaniem miesięcy; poprawiamy tylko tytuł i nagłówek, które łamały się w dialogu. Odrzucone: zamiana na dwa zwykłe kalendarze.
+- Decyzja użytkownika z 2026-10-12: tekst o konfiguracji semestru na ekranie „Semestry” jest tekstem pomocniczym pod polem „Aktywny semestr”, nie kartą, bo karta z samym opisem nie występuje nigdzie indziej.
+
 ## 2026-10-11: Dni wolne, decyzje przed implementacją (I-81, I-82)
 
 - Decyzja użytkownika z 2026-10-11: wygląd dni wolnych według makiet ze strony „Dni wolne (I-81, I-82)” w artefakcie „MAK: dni wolne”, bez poprawek.
@@ -160,9 +167,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Powód: izolacja nieudanych kroków, jedno miejsce recenzji i testy przed scaleniem zamiast dopiero przy tagu wydania.
 - Odrzucone: gałąź `dev` z przenoszeniem na `main` przy wydaniu (stan wydania wyznacza tag); bezpośrednie commity małych poprawek dokumentacji na `main` (użytkownik najpierw je dopuścił, potem wybrał pełną ochronę gałęzi).
 - Ograniczenie: na komputerze użytkownika nie ma GitHub CLI (`gh`), więc do czasu jego instalacji i logowania agent podaje odnośnik do utworzenia pull requesta, a ochronę gałęzi użytkownik włącza w ustawieniach repozytorium.
-
-## 2026-09-28: Zgłoszenia od ludzi i uporządkowanie AGENTS.md
-
-- Decyzja użytkownika: publiczne repozytorium przyjmuje zgłoszenia błędów i pomysłów, ale nie pull requesty od innych osób. `CONTRIBUTING.md` jest po polsku i opisuje zgłoszenia, pomysły, brak pull requestów, forki na licencji Apache 2.0 oraz prywatność danych w zgłoszeniach. `.github/ISSUE_TEMPLATE/blad.yml` to formularz zgłoszenia błędu z wersją MAK, wersją Androida, krokami, wynikiem i zgodą na brak prywatnych danych. README odsyła do `CONTRIBUTING.md`, a `scripts/check_map.py` sprawdza też jego odnośniki.
-- Decyzja użytkownika (wariant zaproponowany przez agenta): `AGENTS.md` zawiera tylko rdzeń zasad. Zasady widgetu i powiadomień przeszły do `ARCHITECTURE.md`, sekcja 7, bo `AGENTS.md` odsyłał do nieistniejących tam sekcji. Zakres i sposób testowania przeszły do `STACK.md`, sekcja 5, a polecenia testów pojedynczej klasy, zrzutów, szerokości 320 dp, motywu ciemnego i skali czcionki do sekcji 6. Preferencje projektowe użytkownika przeszły do `ARCHITECTURE.md`, sekcje 4 i 5, bez powtórzeń z istniejącymi zasadami; sprzeczne z zakazem pilli sformułowanie „preferuj pille” usunięto. Szablon kroku planu, podział refaktoru na etapy i proces istotnej zmiany wyglądu przeszły do `WORKFLOW.md`, sekcja „Planowanie”. Usunięto nieaktualne zdanie o przykładowych testach szablonu.
-- Nowe zasady w `AGENTS.md`: wpis w logu podaje, kto podjął decyzję; pytanie użytkownika o zdanie agenta nie jest akceptacją (korekta użytkownika z 2026-09-28).

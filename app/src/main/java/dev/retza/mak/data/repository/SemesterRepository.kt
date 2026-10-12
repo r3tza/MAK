@@ -10,7 +10,6 @@ import dev.retza.mak.domain.Holiday
 import dev.retza.mak.domain.SemesterSpan
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
-import dev.retza.mak.domain.coversWorkWeek
 import dev.retza.mak.domain.fallbackActiveSemester
 import dev.retza.mak.domain.firstMondayAfter
 import java.time.Clock
@@ -601,7 +600,6 @@ class RoomSemesterRepository(
                 )
             }
             if (weekAfterBreak != null) {
-                require(coversWorkWeek(startDate, endDate)) { "A week after a break needs a whole working week off" }
                 val monday = firstMondayAfter(endDate)
                 calendarIds.forEach { calendarId ->
                     val calendar = calendars.findById(calendarId) ?: error("Calendar must exist")

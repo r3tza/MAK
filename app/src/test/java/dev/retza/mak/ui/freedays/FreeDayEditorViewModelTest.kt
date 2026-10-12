@@ -17,8 +17,6 @@ import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
-import org.junit.Assert.assertFalse
-import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -132,21 +130,18 @@ class FreeDayEditorViewModelTest {
     }
 
     @Test
-    fun weekAfterBreakIsOfferedOnlyForWholeWorkWeek() = runTest(mainDispatcher) {
+    fun weekAfterBreakShownForOneDay() = runTest(mainDispatcher) {
         addSecondProgramWithCalendar()
         val viewModel = viewModel()
         viewModel.startNew(semesterId = 1L, date = LocalDate.of(2026, 10, 5))
         advanceUntilIdle()
 
-        viewModel.updateRange(LocalDate.of(2026, 10, 7), LocalDate.of(2026, 10, 9))
-        assertFalse(viewModel.editor.value.showsWeekAfterBreak)
-
-        viewModel.updateRange(LocalDate.of(2026, 12, 21), LocalDate.of(2027, 1, 3))
+        viewModel.updateRange(LocalDate.of(2026, 11, 12), LocalDate.of(2026, 11, 12))
         viewModel.updateWeekAfterBreak(WeekType.A)
         val state = viewModel.editor.value
         assertTrue(state.showsWeekAfterBreak)
         assertEquals(
-            "Od 4 sty 2027 tydzień A, potem na zmianę. Powstanie korekta „Od tego tygodnia”.",
+            "Od 16 lis 2026 tydzień A, potem na zmianę. Powstanie korekta „Od tego tygodnia”.",
             state.weekAfterBreakDescription
         )
     }
@@ -167,7 +162,7 @@ class FreeDayEditorViewModelTest {
     }
 
     @Test
-    fun saveDropsWeekAfterBreakWhenRangeNoLongerCoversWholeWeek() = runTest(mainDispatcher) {
+    fun saveKeepsWeekAfterBreakForShortRange() = runTest(mainDispatcher) {
         addSecondProgramWithCalendar()
         val viewModel = viewModel()
         viewModel.startNew(semesterId = 1L, date = LocalDate.of(2026, 12, 21))
@@ -179,7 +174,7 @@ class FreeDayEditorViewModelTest {
         viewModel.save()
         advanceUntilIdle()
 
-        assertNull(semesters.freeDayGroupSaves.last().weekAfterBreak)
+        assertEquals(WeekType.B, semesters.freeDayGroupSaves.last().weekAfterBreak)
     }
 
     @Test
