@@ -99,6 +99,8 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
 
     override suspend fun deleteFreeDays(ids: List<Long>) = Unit
 
+    override suspend fun saveStudyProgramInActiveSemester(program: StudyProgramRecord): SemesterRecord? = null
+
     override suspend fun saveSemester(record: SemesterRecord): Long {
         val id = record.id.takeIf { it != 0L } ?: nextId++
         semesters += record.copy(id = id)

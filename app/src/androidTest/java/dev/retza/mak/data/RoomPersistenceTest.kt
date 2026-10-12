@@ -956,6 +956,38 @@ class RoomPersistenceTest {
         assertEquals(listOf(firstCalendarId), days.map { it.academicCalendarId })
     }
 
+    @Test
+    fun saveStudyProgramInActiveSemesterAssignsSharedCalendar() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val sharedCalendarId = insertCalendar(semesterId)
+        insertCalendar(semesterId)
+
+        val result = repository.saveStudyProgramInActiveSemester(
+            StudyProgramRecord(name = "Fizyka", color = "#112233")
+        )
+
+        assertEquals(semesterId, result?.id)
+        val assignments = repository.observeSemesterPrograms(semesterId).first()
+        assertEquals(listOf(sharedCalendarId), assignments.map { it.academicCalendarId })
+    }
+
+    @Test
+    fun saveStudyProgramInActiveSemesterWithoutSemesterSavesProgramOnly() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+
+        val result = repository.saveStudyProgramInActiveSemester(
+            StudyProgramRecord(name = "Fizyka", color = "#112233")
+        )
+
+        assertNull(result)
+        val programs = repository.observeStudyPrograms().first()
+        assertEquals(listOf("Fizyka"), programs.map { it.name })
+        assertTrue(repository.observeStudyProgramSemesters(programs.single().id).first().isEmpty())
+    }
+
     private suspend fun insertCalendar(semesterId: Long): Long =
         database!!.academicCalendarDao().insert(
             AcademicCalendarEntity(

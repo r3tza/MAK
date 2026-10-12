@@ -29,6 +29,9 @@ interface SemesterDao {
     @Query("SELECT * FROM semesters WHERE is_active = 1 LIMIT 1")
     fun observeActive(): Flow<SemesterEntity?>
 
+    @Query("SELECT * FROM semesters WHERE is_active = 1 LIMIT 1")
+    suspend fun findActive(): SemesterEntity?
+
     @Query(
         "SELECT s.* FROM semesters s LEFT JOIN academic_calendars c ON c.semester_id = s.id " +
             "GROUP BY s.id ORDER BY MIN(c.start_date) IS NULL, MIN(c.start_date), s.id"
@@ -109,6 +112,9 @@ interface StudyProgramDao {
 interface AcademicCalendarDao {
     @Query("SELECT * FROM academic_calendars WHERE semester_id = :semesterId ORDER BY start_date, id")
     fun observeForSemester(semesterId: Long): Flow<List<AcademicCalendarEntity>>
+
+    @Query("SELECT * FROM academic_calendars WHERE semester_id = :semesterId ORDER BY start_date, id")
+    suspend fun getForSemester(semesterId: Long): List<AcademicCalendarEntity>
 
     @Query("SELECT * FROM academic_calendars ORDER BY id")
     fun observeAll(): Flow<List<AcademicCalendarEntity>>

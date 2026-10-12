@@ -13,6 +13,7 @@ import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.domain.WeekType
+import dev.retza.mak.domain.sharedCalendarOf
 import dev.retza.mak.domain.shouldActivateNewSemester
 import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.sync.PlanEditTracker
@@ -223,8 +224,7 @@ class SetupViewModel(
         val resume = active?.let { semester ->
             val assignments = semesterRepository.observeSemesterPrograms(semester.id).first()
             if (assignments.isNotEmpty()) return@let null
-            val calendar = semesterRepository.observeCalendars(semester.id).first()
-                .minByOrNull { it.id }
+            val calendar = sharedCalendarOf(semesterRepository.observeCalendars(semester.id).first()) { it.id }
             SetupSemesterResume(
                 semesterId = semester.id,
                 calendarId = calendar?.id ?: 0L,

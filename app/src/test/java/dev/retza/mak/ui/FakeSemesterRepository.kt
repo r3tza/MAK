@@ -14,6 +14,7 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.data.repository.toEntity
 import dev.retza.mak.data.repository.toRecord
+import dev.retza.mak.domain.sharedCalendarOf
 import dev.retza.mak.domain.Holiday
 import dev.retza.mak.domain.WeekType
 import dev.retza.mak.settings.InMemorySettingsPreferences
@@ -183,6 +184,18 @@ internal class FakeSemesterRepository(
         academicCalendarId: Long
     ): SetupConfigurationIds = written {
         delegate.saveStudyProgramAssignment(semesterId, studyProgram.toEntity(), academicCalendarId)
+    }
+
+    override suspend fun saveStudyProgramInActiveSemester(program: StudyProgramRecord): SemesterRecord? {
+        val semester = observeActiveSemester().first()
+        val calendar = semester?.let { s -> sharedCalendarOf(observeCalendars(s.id).first()) { it.id } }
+        return if (semester != null && calendar != null) {
+            saveStudyProgramAssignment(semester.id, program, calendar.id)
+            semester
+        } else {
+            saveStudyProgram(program)
+            null
+        }
     }
 
     override suspend fun addSeparatedSemesterProgram(

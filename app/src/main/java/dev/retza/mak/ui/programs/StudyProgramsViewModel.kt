@@ -259,19 +259,10 @@ class StudyProgramsViewModel(
             errorMessage = "Nie udało się dodać kierunku.",
             onFinish = { state.update { it.copy(editor = it.editor.copy(isSaving = false)) } }
         ) {
-            val semester = semesterRepository.observeActiveSemester().first()
-            // Same rule as sharedCalendar() in SemesterViewModel: the shared calendar is the lowest id.
-            val calendar = semester?.let { s ->
-                semesterRepository.observeCalendars(s.id).first().minByOrNull { it.id }
-            }
             val program = StudyProgramRecord(id = 0L, name = name, color = color)
-            if (semester != null && calendar != null) {
-                semesterRepository.saveStudyProgramAssignment(semester.id, program, calendar.id)
-                feedbackSink.publish(UiFeedback("Dodano kierunek do semestru ${semester.name}", UiFeedbackKind.Success))
-            } else {
-                semesterRepository.saveStudyProgram(program)
-                feedbackSink.publish(UiFeedback("Dodano kierunek", UiFeedbackKind.Success))
-            }
+            val semester = semesterRepository.saveStudyProgramInActiveSemester(program)
+            val message = if (semester != null) "Dodano kierunek do semestru ${semester.name}" else "Dodano kierunek"
+            feedbackSink.publish(UiFeedback(message, UiFeedbackKind.Success))
             state.update { it.copy(editor = StudyProgramEditorUi()) }
             effectsChannel.trySend(StudyProgramsEffect.CloseEditor)
         }
