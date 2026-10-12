@@ -5,7 +5,6 @@ import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -15,16 +14,10 @@ import androidx.compose.material.icons.outlined.Add
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.semantics.stateDescription
-import androidx.compose.ui.semantics.semantics
-import androidx.compose.foundation.selection.toggleable
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import dev.retza.mak.ui.components.MakCheckboxBox
+import dev.retza.mak.ui.components.MakCheckbox
 import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDialogAction
@@ -118,10 +111,13 @@ private fun HolidaysDialog(
             )
         }
         dialog.options.forEach { option ->
-            HolidayOptionRow(
-                option = option,
+            MakCheckbox(
+                label = option.name,
+                checked = option.checked,
+                onCheckedChange = { onToggle(option.date) },
+                modifier = Modifier.fillMaxWidth(),
                 enabled = option.enabled && !dialog.isSaving,
-                onToggle = { onToggle(option.date) }
+                supportingText = option.detail
             )
         }
         Text(
@@ -129,37 +125,6 @@ private fun HolidaysDialog(
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant
         )
-    }
-}
-
-@Composable
-private fun HolidayOptionRow(
-    option: HolidayOptionUi,
-    enabled: Boolean,
-    onToggle: () -> Unit
-) {
-    // One toggleable row, so a screen reader announces the holiday, its date and its state once.
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .heightIn(min = 48.dp)
-            .alpha(if (enabled) 1f else 0.38f)
-            .toggleable(value = option.checked, enabled = enabled, role = Role.Checkbox, onValueChange = { onToggle() })
-            .semantics(mergeDescendants = true) {
-                stateDescription = if (option.checked) "Zaznaczone" else "Niezaznaczone"
-            },
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)
-    ) {
-        MakCheckboxBox(checked = option.checked, focused = false)
-        Column {
-            Text(option.name, style = MaterialTheme.typography.bodyMedium)
-            Text(
-                text = option.detail,
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
     }
 }
 

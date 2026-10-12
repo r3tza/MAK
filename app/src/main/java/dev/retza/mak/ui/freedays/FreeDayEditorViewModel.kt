@@ -55,7 +55,6 @@ data class FreeDayEditorUiState(
         get() {
             val end = endDate ?: return null
             val type = weekAfterBreak ?: return null
-            if (!showsWeekAfterBreak) return null
             val monday = firstMondayAfter(end).format(shortDateWithYearFormatter)
             return "Od $monday tydzień ${type.name}, potem na zmianę. " +
                 "Powstanie korekta „Od tego tygodnia”."

@@ -103,15 +103,7 @@ fun MakDatePickerField(
         hasOpened = true
         open = true
     }
-    val selectableDates = remember(minDate, maxDate) {
-        object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                val date = Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate()
-                return (minDate == null || !date.isBefore(minDate)) &&
-                    (maxDate == null || !date.isAfter(maxDate))
-            }
-        }
-    }
+    val selectableDates = rememberSelectableDates(minDate, maxDate)
 
     OutlinedTextField(
         value = selectedDate?.format(polishDateFormatter).orEmpty(),
@@ -210,15 +202,7 @@ fun MakDateRangeFields(
     var startTapped by remember { mutableStateOf(true) }
     val startFocus = remember { FocusRequester() }
     val endFocus = remember { FocusRequester() }
-    val selectableDates = remember(minDate, maxDate) {
-        object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                val date = Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate()
-                return (minDate == null || !date.isBefore(minDate)) &&
-                    (maxDate == null || !date.isAfter(maxDate))
-            }
-        }
-    }
+    val selectableDates = rememberSelectableDates(minDate, maxDate)
     val openFrom: (Boolean) -> Unit = { fromStart ->
         startTapped = fromStart
         hasOpened = true
@@ -545,4 +529,18 @@ private fun LocalDate.toUtcMillis(): Long = atStartOfDay().toInstant(ZoneOffset.
 
 private fun Long.toLocalDate(): LocalDate =
     Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
+
+/** Days from [minDate] to [maxDate], both inclusive; a null bound leaves that side open. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun rememberSelectableDates(minDate: LocalDate?, maxDate: LocalDate?): SelectableDates =
+    remember(minDate, maxDate) {
+        object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                val date = Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate()
+                return (minDate == null || !date.isBefore(minDate)) &&
+                    (maxDate == null || !date.isAfter(maxDate))
+            }
+        }
+    }
 
