@@ -16,14 +16,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.DateRangePickerDefaults
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -245,9 +248,14 @@ fun MakDateRangeFields(
     }
 
     if (open) {
+        // Opened from "Od", the whole range is preselected, so a tap starts a new range at the tapped day.
+        // Opened from "Do", only the start is preselected, so the first tap after it sets the end.
+        val pickerStart = startDate?.coerceToRange(minDate, maxDate)
+        val pickerEnd = endDate?.coerceToRange(minDate, maxDate)
         val pickerState = rememberDateRangePickerState(
-            initialSelectedStartDateMillis = startDate?.coerceToRange(minDate, maxDate)?.toUtcMillis(),
-            initialSelectedEndDateMillis = endDate?.coerceToRange(minDate, maxDate)?.toUtcMillis(),
+            initialSelectedStartDateMillis = pickerStart?.toUtcMillis(),
+            initialSelectedEndDateMillis = if (startTapped) pickerEnd?.toUtcMillis() else null,
+            initialDisplayedMonthMillis = (if (startTapped) pickerStart else pickerEnd ?: pickerStart)?.toUtcMillis(),
             selectableDates = selectableDates
         )
         DatePickerDialog(
@@ -258,8 +266,12 @@ fun MakDateRangeFields(
                     onClick = {
                         val start = pickerState.selectedStartDateMillis?.toLocalDate()
                         if (start != null) {
-                            val end = pickerState.selectedEndDateMillis?.toLocalDate() ?: start
-                            onRangeChange(start, end)
+                            val (rangeStart, rangeEnd) = resolvePickedRange(
+                                pickedStart = start,
+                                pickedEnd = pickerState.selectedEndDateMillis?.toLocalDate(),
+                                previousEnd = endDate
+                            )
+                            onRangeChange(rangeStart, rangeEnd)
                         }
                         open = false
                     }
@@ -273,7 +285,29 @@ fun MakDateRangeFields(
                 }
             }
         ) {
-            DateRangePicker(state = pickerState)
+            val dateFormatter = remember { DatePickerDefaults.dateFormatter() }
+            DateRangePicker(
+                state = pickerState,
+                dateFormatter = dateFormatter,
+                // The default 64 dp start padding is meant for a full-screen picker and wraps the text in a dialog.
+                title = {
+                    DateRangePickerDefaults.DateRangePickerTitle(
+                        displayMode = pickerState.displayMode,
+                        modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp)
+                    )
+                },
+                headline = {
+                    ProvideTextStyle(MaterialTheme.typography.titleMedium) {
+                        DateRangePickerDefaults.DateRangePickerHeadline(
+                            selectedStartDateMillis = pickerState.selectedStartDateMillis,
+                            selectedEndDateMillis = pickerState.selectedEndDateMillis,
+                            displayMode = pickerState.displayMode,
+                            dateFormatter = dateFormatter,
+                            modifier = Modifier.padding(start = 24.dp, end = 12.dp, bottom = 12.dp)
+                        )
+                    }
+                }
+            )
         }
     }
 
