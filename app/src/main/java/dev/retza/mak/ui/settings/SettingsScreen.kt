@@ -435,17 +435,15 @@ fun SettingsSemestersScreen(
         verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
         if (state.semesters.isNotEmpty()) {
-            ActiveSemesterField(
-                semesters = state.semesters,
-                activeSemesterId = state.activeSemesterId,
-                onSemesterSelected = onSemesterSelected
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                ActiveSemesterField(
+                    semesters = state.semesters,
+                    activeSemesterId = state.activeSemesterId,
+                    onSemesterSelected = onSemesterSelected
+                )
+                MakHelperText("Konfiguracja przypisań, kalendarzy i korekt należy do wybranego semestru.")
+            }
         }
-        MakNoteBanner(
-            title = null,
-            subtitle = "Konfiguracja przypisań, kalendarzy i korekt należy do wybranego semestru.",
-            role = MakNoteRole.Neutral
-        )
         Text(
             text = "Lista semestrów",
             style = MaterialTheme.typography.titleMedium,

@@ -75,9 +75,13 @@ fun FreeDaysScreen(
         )
         MakSecondaryAction(
             text = "Dodaj święta ustawowe",
-            onClick = onOpenHolidays
+            onClick = onOpenHolidays,
+            modifier = Modifier.padding(top = MakSpacing.sm)
         )
-        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
+        Column(
+            modifier = Modifier.padding(top = MakSpacing.lg),
+            verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+        ) {
             state.groups.forEach { group ->
                 FreeDayGroupCard(
                     group = group,

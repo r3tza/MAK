@@ -184,10 +184,13 @@ class FreeDayEditorViewModelTest {
 
     @Test
     fun descriptionCountsDaysInclusively() {
-        val oneDay = FreeDayEditorUiState(startDate = LocalDate.of(2026, 10, 1), endDate = LocalDate.of(2026, 10, 1))
-        assertTrue(oneDay.description!!.startsWith("1 dzień. "))
-
-        val twelveDays = FreeDayEditorUiState(startDate = LocalDate.of(2026, 10, 1), endDate = LocalDate.of(2026, 10, 12))
-        assertTrue(twelveDays.description!!.startsWith("12 dni. "))
+        assertEquals("1 dzień", descriptionFor(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 1)))
+        assertEquals("12 dni", descriptionFor(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 12)))
+        assertEquals("2 dni", descriptionFor(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 2)))
+        assertEquals("5 dni", descriptionFor(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 5)))
+        assertEquals("22 dni", descriptionFor(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 10, 22)))
     }
+
+    private fun descriptionFor(start: LocalDate, end: LocalDate): String? =
+        FreeDayEditorUiState(startDate = start, endDate = end).description
 }

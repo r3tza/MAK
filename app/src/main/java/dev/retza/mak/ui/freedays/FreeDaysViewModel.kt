@@ -197,7 +197,7 @@ class FreeDaysViewModel(
         }
         return HolidaysDialogUi(
             intro = "Święta w czasie semestru, ${start.format(shortDateWithYearFormatter)} - " +
-                "${end.format(shortDateWithYearFormatter)}. Odznacz te, w które uczelnia prowadzi zajęcia.",
+                "${end.format(shortDateWithYearFormatter)}.",
             options = options,
             calendarsLabel = calendarsLabelOf(calendars.map { calendarName(it.id) })
         )

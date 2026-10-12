@@ -73,8 +73,7 @@ data class FreeDayEditorUiState(
             val end = endDate ?: return null
             val days = ChronoUnit.DAYS.between(start, end).toInt() + 1
             val noun = polishPlural(days, "dzień", "dni", "dni")
-            return "$days $noun. Zajęcia cykliczne w tym czasie się nie odbędą. " +
-                "Terminy jednorazowe i przeniesione zostaną."
+            return "$days $noun"
         }
 }
 

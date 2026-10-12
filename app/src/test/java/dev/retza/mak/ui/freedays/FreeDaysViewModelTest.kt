@@ -160,6 +160,29 @@ class FreeDaysViewModelTest {
     }
 
     @Test
+    fun holidaysIntroNamesOnlySemesterRange() = runTest(mainDispatcher) {
+        val calendarId = stretchSemesterCalendar()
+        semesters.saveFreeDayGroup(
+            1L,
+            emptyList(),
+            LocalDate.of(2026, 12, 23),
+            LocalDate.of(2027, 1, 1),
+            "Przerwa świąteczna",
+            listOf(calendarId)
+        )
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.openHolidays()
+        advanceUntilIdle()
+
+        val intro = viewModel.freeDays.value.holidays!!.intro
+        assertTrue(intro.endsWith("."))
+        assertFalse(intro.contains("Odznacz"))
+        assertTrue(intro.startsWith("Święta w czasie semestru, "))
+    }
+
+    @Test
     fun addHolidaysAddsCheckedOnesToAllCalendars() = runTest(mainDispatcher) {
         val calendarId = stretchSemesterCalendar()
         val viewModel = viewModel()
