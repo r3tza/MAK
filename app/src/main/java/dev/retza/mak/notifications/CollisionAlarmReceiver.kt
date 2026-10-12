@@ -14,7 +14,6 @@ import dev.retza.mak.R
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.CollisionNotificationKind
 import dev.retza.mak.domain.collisionNotificationGroups
-import dev.retza.mak.domain.findGaps
 import dev.retza.mak.domain.gapNotificationGroups
 import dev.retza.mak.domain.shouldShowCollisionNotification
 import dev.retza.mak.data.ActivePlanSource
@@ -76,11 +75,12 @@ class CollisionAlarmReceiver : BroadcastReceiver(), KoinComponent {
         if (!NotificationManagerCompat.from(context).areNotificationsEnabled()) return
         val settings = preferences.collisionNotifications.first()
         if (!settings.enabled) return
+        val topics = settings.toPlannerSettings()
         val kindEnabled = when (kind) {
-            CollisionNotificationKind.EVENING -> settings.eveningEnabled
-            CollisionNotificationKind.BEFORE_CLASS -> settings.beforeClassEnabled
-            CollisionNotificationKind.GAP_EVENING -> settings.gapEveningEnabled
-            CollisionNotificationKind.GAP_BEFORE_CLASS -> settings.gapBeforeClassEnabled
+            CollisionNotificationKind.EVENING -> topics.collisions.eveningEnabled
+            CollisionNotificationKind.BEFORE_CLASS -> topics.collisions.beforeClassEnabled
+            CollisionNotificationKind.GAP_EVENING -> topics.gaps.eveningEnabled
+            CollisionNotificationKind.GAP_BEFORE_CLASS -> topics.gaps.beforeClassEnabled
         }
         if (!kindEnabled) return
 
@@ -90,10 +90,7 @@ class CollisionAlarmReceiver : BroadcastReceiver(), KoinComponent {
             CollisionNotificationKind.EVENING, CollisionNotificationKind.BEFORE_CLASS ->
                 collisionNotificationGroups(plan.collisions)
             CollisionNotificationKind.GAP_EVENING, CollisionNotificationKind.GAP_BEFORE_CLASS ->
-                gapNotificationGroups(
-                    plan.schedule.occurrences,
-                    findGaps(plan.schedule.occurrences, inputs.display.gapThresholdMinutes.toLong())
-                )
+                gapNotificationGroups(plan, inputs.display)
         }
         val occurrences = plan.schedule.occurrences.filter { it.id in occurrenceIds }
         if (occurrences.isEmpty()) return
@@ -167,26 +164,15 @@ class CollisionAlarmReceiver : BroadcastReceiver(), KoinComponent {
 private fun groupLabel(count: Int): String =
     "${polishPlural(count, "grupa", "grupy", "grup")} kolizji"
 
-fun ensureCollisionChannel(context: Context) {
+private fun ensureChannel(context: Context, id: String, name: String, description: String) {
     val manager = context.getSystemService(NotificationManager::class.java) ?: return
-    val channel = NotificationChannel(
-        COLLISION_NOTIFICATION_CHANNEL_ID,
-        "Kolizje w planie",
-        NotificationManager.IMPORTANCE_DEFAULT
-    ).apply {
-        description = "Powiadomienia o nakładających się zajęciach."
-    }
+    val channel = NotificationChannel(id, name, NotificationManager.IMPORTANCE_DEFAULT)
+        .apply { this.description = description }
     manager.createNotificationChannel(channel)
 }
 
-fun ensureGapChannel(context: Context) {
-    val manager = context.getSystemService(NotificationManager::class.java) ?: return
-    val channel = NotificationChannel(
-        GAP_NOTIFICATION_CHANNEL_ID,
-        "Okienka w planie",
-        NotificationManager.IMPORTANCE_DEFAULT
-    ).apply {
-        description = "Powiadomienia o przerwach między zajęciami."
-    }
-    manager.createNotificationChannel(channel)
-}
+fun ensureCollisionChannel(context: Context) =
+    ensureChannel(context, COLLISION_NOTIFICATION_CHANNEL_ID, "Kolizje w planie", "Powiadomienia o nakładających się zajęciach.")
+
+fun ensureGapChannel(context: Context) =
+    ensureChannel(context, GAP_NOTIFICATION_CHANNEL_ID, "Okienka w planie", "Powiadomienia o przerwach między zajęciami.")

@@ -31,16 +31,13 @@ class CollisionNotificationPlannerTest {
     )
     private val settings = CollisionNotificationSettings(
         enabled = true,
-        eveningEnabled = true,
-        beforeClassEnabled = true
+        collisions = NotificationTopicSettings(eveningEnabled = true, beforeClassEnabled = true)
     )
 
     private val gapSettings = CollisionNotificationSettings(
         enabled = true,
-        eveningEnabled = false,
-        beforeClassEnabled = false,
-        gapEveningEnabled = true,
-        gapBeforeClassEnabled = true
+        collisions = NotificationTopicSettings(eveningEnabled = false, beforeClassEnabled = false),
+        gaps = NotificationTopicSettings(eveningEnabled = true, beforeClassEnabled = true)
     )
 
     private val monday = LocalDate.of(2026, 9, 21)
@@ -219,7 +216,7 @@ class CollisionNotificationPlannerTest {
                 item(1L, tuesday, LocalTime.of(12, 0), LocalTime.of(13, 0)),
                 item(2L, tuesday, LocalTime.of(12, 30), LocalTime.of(13, 30))
             ),
-            settings.copy(eveningEnabled = false),
+            settings.copy(collisions = settings.collisions.copy(eveningEnabled = false)),
             PlanDisplaySettings.DEFAULT
         )
 
@@ -234,7 +231,7 @@ class CollisionNotificationPlannerTest {
                 item(1L, tuesday, LocalTime.of(8, 0), LocalTime.of(9, 30)),
                 item(2L, tuesday, LocalTime.of(11, 0), LocalTime.of(12, 0))
             ),
-            gapSettings.copy(gapBeforeClassEnabled = false, gapEveningHour = LocalTime.of(19, 0)),
+            gapSettings.copy(gaps = gapSettings.gaps.copy(beforeClassEnabled = false, eveningHour = LocalTime.of(19, 0))),
             PlanDisplaySettings.DEFAULT
         )
 
@@ -253,7 +250,7 @@ class CollisionNotificationPlannerTest {
                 item(1L, tuesday, LocalTime.of(8, 0), LocalTime.of(9, 30)),
                 item(2L, tuesday, LocalTime.of(11, 0), LocalTime.of(12, 0))
             ),
-            gapSettings.copy(gapEveningEnabled = false, gapLeadMinutes = 15),
+            gapSettings.copy(gaps = gapSettings.gaps.copy(eveningEnabled = false, leadMinutes = 15)),
             PlanDisplaySettings.DEFAULT
         )
 
@@ -320,7 +317,7 @@ class CollisionNotificationPlannerTest {
                 item(1L, tuesday, LocalTime.of(8, 0), LocalTime.of(9, 30)),
                 item(2L, tuesday, LocalTime.of(11, 0), LocalTime.of(12, 0))
             ),
-            settings.copy(eveningEnabled = false, beforeClassEnabled = false),
+            settings.copy(collisions = settings.collisions.copy(eveningEnabled = false, beforeClassEnabled = false)),
             PlanDisplaySettings.DEFAULT
         )
 
