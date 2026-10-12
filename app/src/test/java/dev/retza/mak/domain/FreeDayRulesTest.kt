@@ -21,4 +21,10 @@ class FreeDayRulesTest {
     fun firstMondayAfterMondayIsSevenDaysLater() {
         assertEquals(LocalDate.of(2026, 10, 19), firstMondayAfter(LocalDate.of(2026, 10, 12)))
     }
+
+    @Test
+    fun inclusiveDaysCountsBothEnds() {
+        assertEquals(1, inclusiveDays(LocalDate.of(2026, 10, 12), LocalDate.of(2026, 10, 12)))
+        assertEquals(10, inclusiveDays(LocalDate.of(2026, 12, 24), LocalDate.of(2027, 1, 2)))
+    }
 }

@@ -31,6 +31,10 @@ internal fun dateRangeWithYearLabel(start: LocalDate, end: LocalDate): String =
         "${start.format(shortDateWithYearFormatter)} - ${end.format(shortDateWithYearFormatter)}"
     }
 
+/** Date range with the year on both dates, such as "24 gru 2026 - 2 sty 2027". */
+internal fun dateRangeLabel(start: LocalDate, end: LocalDate): String =
+    "${start.format(shortDateWithYearFormatter)} - ${end.format(shortDateWithYearFormatter)}"
+
 /** A free day as a note above the classes of its day (`FEATURES.md`, „Dni wolne”). */
 data class FreeDayNoteUi(val title: String, val subtitle: String)
 
@@ -44,6 +48,20 @@ internal fun FreeDay.listNote(): FreeDayNoteUi = FreeDayNoteUi(
     title = name?.let { "Dzień wolny: $it" } ?: "Dzień wolny",
     subtitle = FREE_DAY_RULE
 )
+
+/** The name and, for a range that goes on after [date], its last day. */
+internal fun freeDayDetail(freeDay: FreeDay, date: LocalDate): String? {
+    val until = if (freeDay.endDate.isAfter(date)) "do ${freeDay.endDate.format(shortDateFormatter)}" else null
+    return when {
+        freeDay.name != null && until != null -> "${freeDay.name}, $until"
+        freeDay.name != null -> freeDay.name
+        until != null -> until.replaceFirstChar { it.uppercase() }
+        else -> null
+    }
+}
+
+/** „1 dzień”, „2 dni”, „12 dni”. */
+internal fun daysLabel(count: Int): String = "$count ${polishPlural(count, "dzień", "dni", "dni")}"
 
 private const val FREE_DAY_RULE = "Zajęcia cykliczne się nie odbywają."
 

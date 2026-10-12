@@ -6,16 +6,16 @@ import dev.retza.mak.data.repository.SemesterConfiguration
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.WeekType
 import dev.retza.mak.domain.firstMondayAfter
+import dev.retza.mak.domain.inclusiveDays
 import dev.retza.mak.sync.PlanEditTracker
-import dev.retza.mak.text.polishPlural
 import dev.retza.mak.ui.PlanEditSession
+import dev.retza.mak.ui.daysLabel
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
 import dev.retza.mak.ui.shortDateWithYearFormatter
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -66,9 +66,7 @@ data class FreeDayEditorUiState(
         get() {
             val start = startDate ?: return null
             val end = endDate ?: return null
-            val days = ChronoUnit.DAYS.between(start, end).toInt() + 1
-            val noun = polishPlural(days, "dzień", "dni", "dni")
-            return "$days $noun"
+            return daysLabel(inclusiveDays(start, end))
         }
 }
 

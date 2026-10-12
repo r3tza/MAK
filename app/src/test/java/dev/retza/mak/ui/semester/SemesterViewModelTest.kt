@@ -9,6 +9,7 @@ import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
+import dev.retza.mak.ui.dateRangeLabel
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
@@ -784,10 +785,10 @@ class SemesterViewModelTest {
     }
 
     @Test
-    fun calendarRangeLabelUsesShortDatesWithYear() {
+    fun dateRangeLabelUsesShortDatesWithYear() {
         assertEquals(
             "1 lis 2026 - 15 mar 2027",
-            calendarRangeLabel(LocalDate.of(2026, 11, 1), LocalDate.of(2027, 3, 15))
+            dateRangeLabel(LocalDate.of(2026, 11, 1), LocalDate.of(2027, 3, 15))
         )
     }
 }

@@ -8,6 +8,7 @@ import dev.retza.mak.domain.StudyProgram
 import dev.retza.mak.domain.WeekStatus
 import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.parseHexColor
+import dev.retza.mak.ui.freeDayDetail
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime

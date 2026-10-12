@@ -8,9 +8,11 @@ import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.Holiday
 import dev.retza.mak.domain.PolishHolidays
 import dev.retza.mak.sync.PlanEditTracker
-import dev.retza.mak.text.polishPlural
 import dev.retza.mak.ui.AppLocale
+import dev.retza.mak.domain.inclusiveDays
 import dev.retza.mak.ui.PlanEditSession
+import dev.retza.mak.ui.dateRangeLabel
+import dev.retza.mak.ui.daysLabel
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
@@ -18,7 +20,6 @@ import dev.retza.mak.ui.feedback.launchUiOperation
 import dev.retza.mak.ui.shortDateWithYearFormatter
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
-import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -49,8 +50,8 @@ data class HolidaysDialogUi(val intro: String, val options: List<HolidayOptionUi
 
     /** Days of every checked option; the Christmas break counts all of its days. */
     val checkedDayCount: Int
-        get() = options.filter { it.checked }.sumOf { ChronoUnit.DAYS.between(it.date, it.endDate).toInt() + 1 }
-    val confirmLabel: String get() = "Dodaj $checkedDayCount ${polishPlural(checkedDayCount, "dzień", "dni", "dni")}"
+        get() = options.filter { it.checked }.sumOf { inclusiveDays(it.date, it.endDate) }
+    val confirmLabel: String get() = "Dodaj ${daysLabel(checkedDayCount)}"
 }
 
 data class FreeDaysUiState(
@@ -70,9 +71,7 @@ private fun singleDayLabel(date: LocalDate): String {
 
 private fun rangeLabel(start: LocalDate, end: LocalDate): String {
     if (start == end) return singleDayLabel(start)
-    val days = ChronoUnit.DAYS.between(start, end).toInt() + 1
-    return "${start.format(shortDateWithYearFormatter)} - ${end.format(shortDateWithYearFormatter)}, " +
-        "$days ${polishPlural(days, "dzień", "dni", "dni")}"
+    return "${dateRangeLabel(start, end)}, ${daysLabel(inclusiveDays(start, end))}"
 }
 
 private fun calendarsLabelOf(names: List<String>): String =
@@ -219,8 +218,7 @@ class FreeDaysViewModel(
             )
         }
         return HolidaysDialogUi(
-            intro = "Święta w czasie semestru, ${start.format(shortDateWithYearFormatter)} - " +
-                "${end.format(shortDateWithYearFormatter)}.",
+            intro = "Święta w czasie semestru, ${dateRangeLabel(start, end)}.",
             options = options,
             calendarsLabel = calendarsLabelOf(calendars.map { calendarName(it.id) })
         )

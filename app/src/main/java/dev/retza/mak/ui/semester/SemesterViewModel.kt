@@ -13,12 +13,13 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
+import dev.retza.mak.domain.sharedCalendarOf
 import dev.retza.mak.domain.validateDateRange
 import dev.retza.mak.domain.weekStart
 import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.PlanEditSession
-import dev.retza.mak.ui.shortDateWithYearFormatter
+import dev.retza.mak.ui.dateRangeLabel
 import dev.retza.mak.domain.toLocalDateOrNull
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
@@ -678,7 +679,7 @@ class SemesterViewModel(
 
 
 private fun SemesterConfiguration.sharedCalendar(): AcademicCalendarRecord? =
-    calendars.minByOrNull { it.id }
+    sharedCalendarOf(calendars) { it.id }
 
 private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long?): SemesterScreenUiState {
     val selected = calendars.firstOrNull { it.id == selectedCalendarId } ?: sharedCalendar()
@@ -692,7 +693,7 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
             name = program.name,
             color = program.color,
             calendarId = calendar?.id,
-            calendarLabel = calendar?.let { calendarRangeLabel(it.startDate, it.endDate) }.orEmpty(),
+            calendarLabel = calendar?.let { dateRangeLabel(it.startDate, it.endDate) }.orEmpty(),
             sharesCalendar = programs.count {
                 it.academicCalendarId == assignment.academicCalendarId
             } > 1
@@ -725,7 +726,7 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
                 id = calendar.id,
                 startDate = calendar.startDate.toString(),
                 endDate = calendar.endDate.toString(),
-                rangeLabel = calendarRangeLabel(calendar.startDate, calendar.endDate),
+                rangeLabel = dateRangeLabel(calendar.startDate, calendar.endDate),
                 firstWeek = calendar.firstWeekType,
                 courseNames = programs
                     .filter { it.academicCalendarId == calendar.id }
@@ -741,7 +742,4 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
         }
     )
 }
-
-internal fun calendarRangeLabel(start: LocalDate, end: LocalDate): String =
-    "${start.format(shortDateWithYearFormatter)} - ${end.format(shortDateWithYearFormatter)}"
 

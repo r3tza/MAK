@@ -12,6 +12,7 @@ import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDialogAction
 import dev.retza.mak.ui.components.MakField
 import dev.retza.mak.ui.components.MakSelectField
+import dev.retza.mak.ui.components.label
 import java.time.LocalDate
 
 @Composable
@@ -88,11 +89,7 @@ fun FreeDayDialog(
     }
 }
 
-private fun weekAfterBreakLabel(type: WeekType?): String = when (type) {
-    null -> "Bez zmiany"
-    WeekType.A -> "Tydzień A"
-    WeekType.B -> "Tydzień B"
-}
+private fun weekAfterBreakLabel(type: WeekType?): String = type?.label() ?: "Bez zmiany"
 
 @Composable
 private fun FreeDayErrorText(text: String) {
