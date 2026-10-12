@@ -4,7 +4,6 @@ import dev.retza.mak.data.repository.FreeDayRecord
 import dev.retza.mak.data.repository.SemesterConfiguration
 import dev.retza.mak.text.polishPlural
 import java.time.LocalDate
-import java.time.temporal.ChronoUnit
 
 /** Free days saved together: the same name and dates in one or more calendars (`FEATURES.md`, „Dni wolne”). */
 data class FreeDayGroup(
@@ -13,9 +12,7 @@ data class FreeDayGroup(
     val startDate: LocalDate,
     val endDate: LocalDate,
     val name: String?
-) {
-    val dayCount: Int get() = ChronoUnit.DAYS.between(startDate, endDate).toInt() + 1
-}
+)
 
 fun groupFreeDays(records: List<FreeDayRecord>): List<FreeDayGroup> =
     records

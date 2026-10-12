@@ -914,6 +914,26 @@ class RoomPersistenceTest {
     }
 
     @Test
+    fun addHolidaysSavesTheChristmasBreakAsOneRangePerCalendar() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val firstCalendarId = insertCalendar(semesterId)
+        val secondCalendarId = insertCalendar(semesterId)
+
+        repository.addHolidays(
+            semesterId = semesterId,
+            holidays = listOf(Holiday(LocalDate.of(2026, 12, 24), "Przerwa świąteczna", LocalDate.of(2027, 1, 2))),
+            calendarIds = listOf(firstCalendarId, secondCalendarId)
+        )
+
+        val days = repository.observeFreeDays(semesterId).first()
+        assertEquals(2, days.size)
+        assertTrue(days.all { it.startDate == LocalDate.of(2026, 12, 24) && it.endDate == LocalDate.of(2027, 1, 2) })
+        assertEquals(setOf(firstCalendarId, secondCalendarId), days.map { it.academicCalendarId }.toSet())
+    }
+
+    @Test
     fun deletingCalendarDeletesItsFreeDays() = runBlocking {
         database = openDatabase()
         val repository = repository()

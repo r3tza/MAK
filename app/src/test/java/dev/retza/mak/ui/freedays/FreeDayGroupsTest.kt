@@ -43,7 +43,6 @@ class FreeDayGroupsTest {
         assertEquals(1, groups.size)
         assertEquals(listOf(1L, 2L), groups.single().ids)
         assertEquals(listOf(1L, 2L), groups.single().calendarIds)
-        assertEquals(10, groups.single().dayCount)
     }
 
     @Test

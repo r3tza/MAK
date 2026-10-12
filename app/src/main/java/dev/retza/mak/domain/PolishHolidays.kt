@@ -2,10 +2,13 @@ package dev.retza.mak.domain
 
 import java.time.LocalDate
 
-data class Holiday(val date: LocalDate, val name: String)
+/** A holiday or a holiday break from [date] to [endDate], both inclusive; a single holiday has [endDate] equal to [date]. */
+data class Holiday(val date: LocalDate, val name: String, val endDate: LocalDate = date)
 
 /** Polish public holidays (ustawa o dniach wolnych od pracy), movable dates computed locally. */
 object PolishHolidays {
+    private const val ChristmasBreakName = "Przerwa świąteczna"
+
     /** Holidays from [start] to [end], both inclusive, sorted by date; empty when [end] is before [start]. */
     fun between(start: LocalDate, end: LocalDate): List<Holiday> {
         if (end.isBefore(start)) return emptyList()
@@ -13,6 +16,25 @@ object PolishHolidays {
             .flatMap { year -> holidaysOf(year) }
             .filter { !it.date.isBefore(start) && !it.date.isAfter(end) }
             .sortedBy { it.date }
+    }
+
+    /**
+     * Free day options for the holidays dialog: the statutory holidays from [start] to [end], except that
+     * Christmas Eve, both days of Christmas and New Year's Day are one "Przerwa świąteczna" from 24 December
+     * to 2 January, clipped to [start]..[end]. A clipped break without any statutory holiday is left out.
+     */
+    fun freeDayOptions(start: LocalDate, end: LocalDate): List<Holiday> {
+        if (end.isBefore(start)) return emptyList()
+        val holidays = between(start, end)
+        val breaks = (start.year - 1..end.year).mapNotNull { year ->
+            val breakStart = maxOf(LocalDate.of(year, 12, 24), start)
+            val breakEnd = minOf(LocalDate.of(year + 1, 1, 2), end)
+            if (breakEnd.isBefore(breakStart)) return@mapNotNull null
+            if (holidays.none { it.date in breakStart..breakEnd }) return@mapNotNull null
+            Holiday(breakStart, ChristmasBreakName, breakEnd)
+        }
+        val outsideBreaks = holidays.filter { holiday -> breaks.none { holiday.date in it.date..it.endDate } }
+        return (outsideBreaks + breaks).sortedBy { it.date }
     }
 
     private fun holidaysOf(year: Int): List<Holiday> {

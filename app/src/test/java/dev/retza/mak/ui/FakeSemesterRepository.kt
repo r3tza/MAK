@@ -150,7 +150,7 @@ internal class FakeSemesterRepository(
                         semesterId = semesterId,
                         academicCalendarId = calendarId,
                         startDate = holiday.date,
-                        endDate = holiday.date,
+                        endDate = holiday.endDate,
                         name = holiday.name
                     )
                 }

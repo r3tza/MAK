@@ -134,9 +134,9 @@ class FreeDaysViewModelTest {
         semesters.saveFreeDayGroup(
             1L,
             emptyList(),
-            LocalDate.of(2026, 12, 23),
-            LocalDate.of(2027, 1, 1),
-            "Przerwa świąteczna",
+            LocalDate.of(2026, 12, 21),
+            LocalDate.of(2027, 1, 3),
+            "Przerwa zimowa",
             listOf(calendarId)
         )
         val viewModel = viewModel()
@@ -148,15 +148,67 @@ class FreeDaysViewModelTest {
         val dialog = viewModel.freeDays.value.holidays!!
         val allSaints = dialog.options.single { it.name == "Wszystkich Świętych" }
         assertTrue(allSaints.checked && allSaints.enabled)
-        val christmas = dialog.options.filter { it.name == "Boże Narodzenie" }
-        assertTrue(christmas.isNotEmpty())
-        christmas.forEach {
-            assertFalse(it.checked)
-            assertFalse(it.enabled)
-            assertEquals("Już w „Przerwa świąteczna”", it.detail)
-        }
+        val christmasBreak = dialog.options.single { it.name == "Przerwa świąteczna" }
+        assertFalse(christmasBreak.checked)
+        assertFalse(christmasBreak.enabled)
+        assertEquals("Już w „Przerwa zimowa”", christmasBreak.detail)
+        assertTrue(dialog.options.none { it.name == "Boże Narodzenie" || it.name == "Nowy Rok" })
         assertEquals(dialog.options.count { it.enabled }, dialog.checkedCount)
-        assertTrue(dialog.confirmLabel.startsWith("Dodaj ${dialog.checkedCount} "))
+        assertTrue(dialog.confirmLabel.startsWith("Dodaj ${dialog.checkedDayCount} "))
+    }
+
+    @Test
+    fun christmasBreakIsOneOptionWithItsRange() = runTest(mainDispatcher) {
+        stretchSemesterCalendar()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.openHolidays()
+        advanceUntilIdle()
+
+        val dialog = viewModel.freeDays.value.holidays!!
+        val option = dialog.options.single { it.name == "Przerwa świąteczna" }
+        assertEquals(LocalDate.of(2026, 12, 24), option.date)
+        assertEquals(LocalDate.of(2027, 1, 2), option.endDate)
+        assertEquals("24 gru 2026 - 2 sty 2027, 10 dni", option.detail)
+        assertTrue(option.checked && option.enabled)
+    }
+
+    @Test
+    fun confirmLabelCountsDaysOfTheBreak() = runTest(mainDispatcher) {
+        stretchSemesterCalendar()
+        val viewModel = viewModel()
+        advanceUntilIdle()
+        viewModel.openHolidays()
+        advanceUntilIdle()
+
+        val others = viewModel.freeDays.value.holidays!!.options
+            .filter { it.checked && it.name != "Przerwa świąteczna" }
+        others.forEach { viewModel.toggleHoliday(it.date) }
+        advanceUntilIdle()
+
+        assertEquals("Dodaj 10 dni", viewModel.freeDays.value.holidays!!.confirmLabel)
+    }
+
+    @Test
+    fun partlyCoveredBreakStaysEnabled() = runTest(mainDispatcher) {
+        val calendarId = stretchSemesterCalendar()
+        semesters.saveFreeDayGroup(
+            1L,
+            emptyList(),
+            LocalDate.of(2026, 12, 24),
+            LocalDate.of(2026, 12, 24),
+            "Wigilia",
+            listOf(calendarId)
+        )
+        val viewModel = viewModel()
+        advanceUntilIdle()
+
+        viewModel.openHolidays()
+        advanceUntilIdle()
+
+        val option = viewModel.freeDays.value.holidays!!.options.single { it.name == "Przerwa świąteczna" }
+        assertTrue(option.enabled && option.checked)
     }
 
     @Test
@@ -197,6 +249,7 @@ class FreeDaysViewModelTest {
 
         val add = semesters.holidayAdds.single()
         assertEquals(expectedDates, add.holidays.map { it.date })
+        assertEquals(LocalDate.of(2027, 1, 2), add.holidays.single { it.name == "Przerwa świąteczna" }.endDate)
         assertFalse(add.holidays.any { it.name == "Wszystkich Świętych" })
         assertEquals(listOf(calendarId), add.calendarIds)
         assertEquals(null, viewModel.freeDays.value.holidays)

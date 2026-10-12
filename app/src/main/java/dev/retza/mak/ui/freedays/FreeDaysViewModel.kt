@@ -18,6 +18,7 @@ import dev.retza.mak.ui.feedback.launchUiOperation
 import dev.retza.mak.ui.shortDateWithYearFormatter
 import java.time.LocalDate
 import java.time.format.DateTimeFormatter
+import java.time.temporal.ChronoUnit
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -34,11 +35,22 @@ data class FreeDayGroupUi(
     val calendarsLabel: String
 )
 
-data class HolidayOptionUi(val date: LocalDate, val name: String, val detail: String, val checked: Boolean, val enabled: Boolean)
+data class HolidayOptionUi(
+    val date: LocalDate,
+    val name: String,
+    val detail: String,
+    val checked: Boolean,
+    val enabled: Boolean,
+    val endDate: LocalDate = date
+)
 
 data class HolidaysDialogUi(val intro: String, val options: List<HolidayOptionUi>, val calendarsLabel: String, val isSaving: Boolean = false) {
     val checkedCount: Int get() = options.count { it.checked }
-    val confirmLabel: String get() = "Dodaj $checkedCount ${polishPlural(checkedCount, "dzień", "dni", "dni")}"
+
+    /** Days of every checked option; the Christmas break counts all of its days. */
+    val checkedDayCount: Int
+        get() = options.filter { it.checked }.sumOf { ChronoUnit.DAYS.between(it.date, it.endDate).toInt() + 1 }
+    val confirmLabel: String get() = "Dodaj $checkedDayCount ${polishPlural(checkedDayCount, "dzień", "dni", "dni")}"
 }
 
 data class FreeDaysUiState(
@@ -54,6 +66,13 @@ private val weekdayFormatter = DateTimeFormatter.ofPattern("EEEE", AppLocale)
 private fun singleDayLabel(date: LocalDate): String {
     val weekday = weekdayFormatter.format(date).replaceFirstChar { it.titlecase(AppLocale) }
     return "$weekday, ${date.format(shortDateWithYearFormatter)}"
+}
+
+private fun rangeLabel(start: LocalDate, end: LocalDate): String {
+    if (start == end) return singleDayLabel(start)
+    val days = ChronoUnit.DAYS.between(start, end).toInt() + 1
+    return "${start.format(shortDateWithYearFormatter)} - ${end.format(shortDateWithYearFormatter)}, " +
+        "$days ${polishPlural(days, "dzień", "dni", "dni")}"
 }
 
 private fun calendarsLabelOf(names: List<String>): String =
@@ -160,7 +179,7 @@ class FreeDaysViewModel(
         val semesterId = state.value.semesterId ?: return
         val config = configuration ?: return
         if (dialog.isSaving || dialog.checkedCount == 0) return
-        val holidays = dialog.options.filter { it.checked }.map { Holiday(it.date, it.name) }
+        val holidays = dialog.options.filter { it.checked }.map { Holiday(it.date, it.name, it.endDate) }
         state.update { it.copy(holidays = dialog.copy(isSaving = true)) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
@@ -175,22 +194,26 @@ class FreeDaysViewModel(
         }
     }
 
-    /** Holidays from the first to the last calendar day; a holiday covered by a free day in every calendar is off. */
+    /** Holidays from the first to the last calendar day; a holiday whose whole range is covered by a free day in every calendar is off. */
     private fun SemesterConfiguration.toHolidaysDialog(): HolidaysDialogUi? {
         if (calendars.isEmpty()) return null
         val calendarIds = calendars.map { it.id }
         val start = calendars.minOf { it.startDate }
         val end = calendars.maxOf { it.endDate }
-        val options = PolishHolidays.between(start, end).map { holiday ->
+        val options = PolishHolidays.freeDayOptions(start, end).map { holiday ->
             val coveringDays = calendarIds.map { calendarId ->
-                freeDays.firstOrNull { it.academicCalendarId == calendarId && holiday.date in it.startDate..it.endDate }
+                freeDays.firstOrNull {
+                    it.academicCalendarId == calendarId &&
+                        !it.startDate.isAfter(holiday.date) && !it.endDate.isBefore(holiday.endDate)
+                }
             }
             val coveredEverywhere = coveringDays.all { it != null }
             val coveringName = coveringDays.firstOrNull()?.name ?: "Dni wolne"
             HolidayOptionUi(
                 date = holiday.date,
+                endDate = holiday.endDate,
                 name = holiday.name,
-                detail = if (coveredEverywhere) "Już w „$coveringName”" else singleDayLabel(holiday.date),
+                detail = if (coveredEverywhere) "Już w „$coveringName”" else rangeLabel(holiday.date, holiday.endDate),
                 checked = !coveredEverywhere,
                 enabled = !coveredEverywhere
             )
@@ -215,11 +238,5 @@ class FreeDaysViewModel(
         }
 
 
-    private fun dateLabelOf(group: FreeDayGroup): String {
-        if (group.startDate == group.endDate) return singleDayLabel(group.startDate)
-        val start = group.startDate.format(shortDateWithYearFormatter)
-        val end = group.endDate.format(shortDateWithYearFormatter)
-        val days = group.dayCount
-        return "$start - $end, $days ${polishPlural(days, "dzień", "dni", "dni")}"
-    }
+    private fun dateLabelOf(group: FreeDayGroup): String = rangeLabel(group.startDate, group.endDate)
 }

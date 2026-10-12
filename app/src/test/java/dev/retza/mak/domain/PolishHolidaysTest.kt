@@ -49,6 +49,50 @@ class PolishHolidaysTest {
         assertTrue(PolishHolidays.between(LocalDate.of(2026, 5, 2), LocalDate.of(2026, 5, 1)).isEmpty())
     }
 
+    @Test
+    fun freeDayOptionsMergeChristmasAndNewYear() {
+        assertEquals(
+            listOf(
+                Holiday(LocalDate.of(2026, 12, 24), "Przerwa świąteczna", LocalDate.of(2027, 1, 2)),
+                Holiday(LocalDate.of(2027, 1, 6), "Trzech Króli")
+            ),
+            PolishHolidays.freeDayOptions(LocalDate.of(2026, 12, 20), LocalDate.of(2027, 1, 10))
+        )
+    }
+
+    @Test
+    fun freeDayOptionsClipBreakToSemester() {
+        val options = PolishHolidays.freeDayOptions(LocalDate.of(2026, 10, 1), LocalDate.of(2026, 12, 28))
+        assertEquals(
+            Holiday(LocalDate.of(2026, 12, 24), "Przerwa świąteczna", LocalDate.of(2026, 12, 28)),
+            options.last()
+        )
+        assertTrue(options.none { it.name == "Boże Narodzenie" })
+    }
+
+    @Test
+    fun freeDayOptionsSkipBreakWithoutHoliday() {
+        val options = PolishHolidays.freeDayOptions(LocalDate.of(2027, 1, 2), LocalDate.of(2027, 2, 28))
+        assertTrue(options.none { it.name == "Przerwa świąteczna" })
+        assertTrue(options.any { it.name == "Trzech Króli" })
+    }
+
+    @Test
+    fun freeDayOptionsKeepBreakBefore2025() {
+        val options = PolishHolidays.freeDayOptions(LocalDate.of(2024, 12, 1), LocalDate.of(2025, 1, 10))
+        assertTrue(
+            options.contains(
+                Holiday(LocalDate.of(2024, 12, 24), "Przerwa świąteczna", LocalDate.of(2025, 1, 2))
+            )
+        )
+    }
+
+    @Test
+    fun freeDayOptionsSemesterWithTwoBreaks() {
+        val options = PolishHolidays.freeDayOptions(LocalDate.of(2026, 12, 1), LocalDate.of(2028, 1, 31))
+        assertEquals(2, options.count { it.name == "Przerwa świąteczna" })
+    }
+
     private fun holidayNamed(year: Int, name: String): Holiday =
         PolishHolidays.between(LocalDate.of(year, 1, 1), LocalDate.of(year, 12, 31))
             .single { it.name == name }
