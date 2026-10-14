@@ -369,6 +369,63 @@ class ScheduleViewModelTest {
     }
 
     @Test
+    fun weekOutsideTheCalendarHasNoSourceHintOrCorrection() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+        viewModel.changeWeek(10)
+        advanceUntilIdle()
+
+        val state = viewModel.schedule.value
+        assertEquals("Poza semestrem", state.weekTypeLabel)
+        assertFalse(state.canCorrectWeek)
+        assertEquals("", state.weekSourceLabel)
+        assertEquals(null, state.weekCorrectionHint)
+
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
+        advanceUntilIdle()
+        assertTrue(repository.weekOverrides.isEmpty())
+    }
+
+    @Test
+    fun severalCalendarsInRangeHintToPickAProgram() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(name = "Fizyka", color = "#000000"),
+            sourceCalendarId = 1L
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        assertEquals(
+            "Wybierz kierunek w polu „Kierunek”, aby zmienić tydzień.",
+            viewModel.schedule.value.weekCorrectionHint
+        )
+
+        viewModel.changeWeek(10)
+        advanceUntilIdle()
+        assertEquals("Poza semestrem", viewModel.schedule.value.weekTypeLabel)
+        assertEquals("", viewModel.schedule.value.weekSourceLabel)
+        assertEquals(null, viewModel.schedule.value.weekCorrectionHint)
+    }
+
+    @Test
+    fun emptyDayMessageDependsOnTheFilter() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+        assertEquals("Brak zajęć w tym dniu.", viewModel.schedule.value.emptyDayMessage)
+
+        viewModel.selectCourseFilter(1L)
+        advanceUntilIdle()
+        assertEquals("Brak zajęć w tym dniu dla wybranego kierunku.", viewModel.schedule.value.emptyDayMessage)
+    }
+
+    @Test
     fun filteredProgramShowsTheWeekOfItsCalendar() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val second = repository.addSeparatedSemesterProgram(

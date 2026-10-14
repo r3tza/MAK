@@ -62,6 +62,7 @@ import dev.retza.mak.ui.components.makRowFocus
 import dev.retza.mak.ui.longDateFormatter
 import dev.retza.mak.text.polishPlural
 import dev.retza.mak.domain.toLocalDateOrNull
+import java.time.LocalDate
 import dev.retza.mak.ui.components.parseHexColor
 
 data class SemesterFormUiState(
@@ -369,6 +370,7 @@ fun SemesterWeekOverridesScreen(
         WeekOverridesSection(
             overrides = state.overrides,
             form = state.overrideForm,
+            calendar = state.calendars.firstOrNull { it.id == state.selectedCalendarId },
             onWeekStartDateChanged = onWeekStartDateChanged,
             onWeekTypeChanged = onWeekTypeChanged,
             onScopeChanged = onScopeChanged,
@@ -710,6 +712,7 @@ private fun String.asLongDate(): String =
 private fun WeekOverridesSection(
     overrides: List<WeekOverrideUi>,
     form: WeekOverrideFormUiState,
+    calendar: SemesterCalendarUi?,
     onWeekStartDateChanged: (String) -> Unit,
     onWeekTypeChanged: (WeekType) -> Unit,
     onScopeChanged: (WeekOverrideScope) -> Unit,
@@ -731,6 +734,8 @@ private fun WeekOverridesSection(
         if (form.isOpen && form.id == null) {
             WeekOverrideForm(
                 state = form,
+                minDate = calendar?.startDate?.toLocalDateOrNull(),
+                maxDate = calendar?.endDate?.toLocalDateOrNull(),
                 onWeekStartDateChanged = onWeekStartDateChanged,
                 onWeekTypeChanged = onWeekTypeChanged,
                 onScopeChanged = onScopeChanged,
@@ -750,6 +755,8 @@ private fun WeekOverridesSection(
                 if (form.isOpen && form.id == override.id) {
                     WeekOverrideForm(
                         state = form,
+                        minDate = calendar?.startDate?.toLocalDateOrNull(),
+                        maxDate = calendar?.endDate?.toLocalDateOrNull(),
                         onWeekStartDateChanged = onWeekStartDateChanged,
                         onWeekTypeChanged = onWeekTypeChanged,
                         onScopeChanged = onScopeChanged,
@@ -807,6 +814,8 @@ private fun WeekOverrideCard(
 @Composable
 private fun WeekOverrideForm(
     state: WeekOverrideFormUiState,
+    minDate: LocalDate?,
+    maxDate: LocalDate?,
     onWeekStartDateChanged: (String) -> Unit,
     onWeekTypeChanged: (WeekType) -> Unit,
     onScopeChanged: (WeekOverrideScope) -> Unit,
@@ -824,6 +833,8 @@ private fun WeekOverrideForm(
             label = "Dzień w tygodniu korekty",
             value = state.weekStartDate,
             onValueChange = onWeekStartDateChanged,
+            minDate = minDate,
+            maxDate = maxDate,
             isError = state.weekStartDateError != null
         )
         FieldError(state.weekStartDateError?.let(::FieldErrorUi))

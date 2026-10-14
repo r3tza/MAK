@@ -622,6 +622,17 @@ class SemesterViewModel(
             update { it.copy(overrideForm = form.copy(weekStartDateError = "Wybierz tydzień.")) }
             return
         }
+        val calendar = state.value.calendars.firstOrNull { it.id == currentCalendarId }
+        val calendarStart = calendar?.startDate?.toLocalDateOrNull()
+        val calendarEnd = calendar?.endDate?.toLocalDateOrNull()
+        if (calendarStart != null && calendarEnd != null &&
+            (date.plusDays(6).isBefore(calendarStart) || date.isAfter(calendarEnd))
+        ) {
+            update {
+                it.copy(overrideForm = form.copy(weekStartDateError = "Wybierz tydzień z zakresu kalendarza."))
+            }
+            return
+        }
         // A new override has no id yet; the repository treats 0 as "insert".
         val overrideId = form.id ?: 0L
         update { it.copy(overrideForm = form.copy(isSaving = true, weekStartDateError = null)) }

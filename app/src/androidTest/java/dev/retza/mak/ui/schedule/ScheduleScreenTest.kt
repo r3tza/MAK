@@ -84,7 +84,8 @@ class ScheduleScreenTest {
             state = scheduleState().copy(
                 weekTypeLabel = "Różne tygodnie",
                 weekSourceLabel = "Różne kalendarze",
-                canCorrectWeek = false
+                canCorrectWeek = false,
+                weekCorrectionHint = "Wybierz kierunek w polu „Kierunek”, aby zmienić tydzień."
             )
         )
 
@@ -92,6 +93,51 @@ class ScheduleScreenTest {
         composeTestRule.onNodeWithText("Zmień").assertDoesNotExist()
         composeTestRule.onAllNodes(hasClickAction() and hasText("Różne tygodnie", substring = true))
             .assertCountEquals(0)
+    }
+
+    @Test
+    fun weekRowOutsideTheSemesterHasNoHintAndNoCorrectionAt320Dp() {
+        setScheduleContent(
+            state = scheduleState().copy(
+                weekTypeLabel = "Poza semestrem",
+                weekSourceLabel = "",
+                canCorrectWeek = false,
+                weekCorrectionHint = null
+            )
+        )
+
+        composeTestRule.onNodeWithText("Poza semestrem").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Wybierz kierunek w polu „Kierunek”, aby zmienić tydzień.").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Zmień").assertDoesNotExist()
+    }
+
+    @Test
+    fun calendarHidesMarkFreeActionOnlyOnAFreeDayAt320Dp() {
+        val calendarState = scheduleState().copy(
+            view = ScheduleView.Calendar,
+            calendarMonthLabel = "listopad 2026",
+            calendarSelectedDayLabel = "Niedziela, 1 listopada 2026",
+            calendarSelectedDayCountLabel = "0 zajęć"
+        )
+        setScheduleContent(
+            state = calendarState.copy(
+                calendarFreeDay = FreeDayNoteUi("Dzień wolny: Wszystkich Świętych", "Zajęcia cykliczne się nie odbywają.")
+            )
+        )
+        composeTestRule.onNodeWithText("Oznacz jako wolny").assertDoesNotExist()
+    }
+
+    @Test
+    fun calendarShowsMarkFreeActionOnAWorkingDayAt320Dp() {
+        setScheduleContent(
+            state = scheduleState().copy(
+                view = ScheduleView.Calendar,
+                calendarMonthLabel = "wrzesień 2026",
+                calendarSelectedDayLabel = "Wtorek, 1 września 2026",
+                calendarSelectedDayCountLabel = "0 zajęć"
+            )
+        )
+        composeTestRule.onNodeWithText("Oznacz jako wolny").assertIsDisplayed()
     }
 
     @Test

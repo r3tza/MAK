@@ -189,6 +189,7 @@ class ScheduleViewModel(
         if (weekOverrideOperationRunning) return
         val data = activePlan.value?.data ?: return
         val calendarId = visibleWeekCalendarId(data) ?: return
+        if (!schedule.value.canCorrectWeek) return
         val monday = controls.value.scheduleDate.weekStart()
         weekOverrideOperationRunning = true
         viewModelScope.launchUiOperation(
@@ -324,6 +325,11 @@ class ScheduleViewModel(
         // The week row follows the calendar of the active filter, or the single calendar when there is no filter.
         val weekCalendarId = visibleWeekCalendarId(data, activeFilter)
         val shownWeek = weekCalendarId?.let { selected.weeksByCalendarId[it] }
+        val weekOutside = if (weekCalendarId == null) {
+            selected.weekStatus == WeekStatus.OutsideSemester
+        } else {
+            shownWeek == null
+        }
         val relevantWeeks = selected.weeksByCalendarId.filterKeys { it in relevantCalendarIds }.values
         return ScheduleUiState(
             view = control.scheduleView,
@@ -335,6 +341,7 @@ class ScheduleViewModel(
                 else -> WeekStatus.Single(shownWeek.weekType).label()
             },
             weekSourceLabel = when {
+                weekOutside -> ""
                 weekCalendarId == null && selected.weekStatus == WeekStatus.Mixed -> "Różne kalendarze"
                 relevantWeeks.any { it.overrideSource != null } -> "Korekta ręczna"
                 else -> "Wyliczony automatycznie"
@@ -392,7 +399,17 @@ class ScheduleViewModel(
                 it.academicCalendarId in relevantCalendarIds &&
                     it.weekStartDate == monday && it.scope == WeekOverrideScope.ONE_WEEK
             },
-            canCorrectWeek = visibleWeekCalendarId(data, activeFilter) != null,
+            canCorrectWeek = weekCalendarId != null && shownWeek != null,
+            weekCorrectionHint = if (weekCalendarId == null && !weekOutside) {
+                "Wybierz kierunek w polu „Kierunek”, aby zmienić tydzień."
+            } else {
+                null
+            },
+            emptyDayMessage = if (activeFilter == null) {
+                "Brak zajęć w tym dniu."
+            } else {
+                "Brak zajęć w tym dniu dla wybranego kierunku."
+            },
             hasFromWeekCorrection = data.weekOverrides.any {
                 it.academicCalendarId in relevantCalendarIds &&
                     it.weekStartDate == monday && it.scope == WeekOverrideScope.FROM_WEEK

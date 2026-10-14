@@ -125,8 +125,11 @@ data class ScheduleUiState(
     val showCancelled: Boolean = false,
     val hasOneWeekCorrection: Boolean = false,
     val hasFromWeekCorrection: Boolean = false,
-    // False when the filter shows several calendars, so a week correction would have no target.
+    // False when the filter shows several calendars or the week lies outside the shown calendar.
     val canCorrectWeek: Boolean = true,
+    // Shown instead of the correction action when the filter shows several calendars in a semester week.
+    val weekCorrectionHint: String? = null,
+    val emptyDayMessage: String = "Brak zajęć w tym dniu.",
     // Every study program of the semester is hidden on this phone; the list gives way to a note.
     val allProgramsHidden: Boolean = false,
     // Set when every calendar the view shows has a free day on the date; the classes are then not held.
@@ -243,7 +246,7 @@ private fun ListView(
         MakRowTitle(title = state.selectedDayLabel, meta = state.selectedDayCountLabel)
         state.freeDay?.let { MakNoteBanner(title = it.title, subtitle = it.subtitle, role = MakNoteRole.Neutral) }
         if (state.items.isEmpty()) {
-            if (state.freeDay == null) MakEmptyState("Brak zajęć w tym dniu dla wybranego kierunku.")
+            if (state.freeDay == null) MakEmptyState(state.emptyDayMessage)
         } else {
                 Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 state.items.forEach { item ->
@@ -290,6 +293,7 @@ private fun WeekNavigationHeader(
             weekTypeLabel = state.weekTypeLabel,
             weekSourceLabel = state.weekSourceLabel,
             canCorrect = state.canCorrectWeek,
+            hint = state.weekCorrectionHint,
             onClick = onEditWeek
         )
     }
@@ -303,6 +307,7 @@ private fun WeekTypeBadge(
     weekTypeLabel: String,
     weekSourceLabel: String,
     canCorrect: Boolean,
+    hint: String?,
     onClick: () -> Unit
 ) {
     var focused by remember { mutableStateOf(false) }
@@ -346,11 +351,13 @@ private fun WeekTypeBadge(
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
-                Text(
-                    text = weekSourceLabel,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 13.sp
-                )
+                if (weekSourceLabel.isNotBlank()) {
+                    Text(
+                        text = weekSourceLabel,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.sp
+                    )
+                }
             }
             val correctAction: @Composable () -> Unit = {
                 Row(
@@ -386,9 +393,9 @@ private fun WeekTypeBadge(
                 }
             }
         }
-        if (!canCorrect) {
+        hint?.let {
             Text(
-                text = "Wybierz kierunek w polu „Kierunek”, aby zmienić tydzień.",
+                text = it,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(bottom = MakSpacing.xs)
@@ -526,15 +533,17 @@ private fun CalendarView(
                 icon = Icons.Outlined.Add,
                 onClick = onAddOneOff
             )
-            MakSecondaryAction(
-                text = "Oznacz jako wolny",
-                icon = Icons.Outlined.EventBusy,
-                onClick = onMarkFree
-            )
+            if (state.calendarFreeDay == null) {
+                MakSecondaryAction(
+                    text = "Oznacz jako wolny",
+                    icon = Icons.Outlined.EventBusy,
+                    onClick = onMarkFree
+                )
+            }
         }
         state.calendarFreeDay?.let { MakNoteBanner(title = it.title, subtitle = it.subtitle, role = MakNoteRole.Neutral) }
         if (state.calendarItems.isEmpty()) {
-            if (state.calendarFreeDay == null) MakEmptyState("Brak zajęć w tym dniu.")
+            if (state.calendarFreeDay == null) MakEmptyState(state.emptyDayMessage)
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 state.calendarItems.forEach { item ->
