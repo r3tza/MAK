@@ -306,6 +306,33 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun deleteSemesterDialogNamesTheSemester() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(900.dp)) {
+                    SettingsSemestersScreen(
+                        state = SettingsUiState(
+                            semesters = listOf(semester),
+                            activeSemesterId = 1L,
+                            semesterToDeleteId = semester.id
+                        ),
+                        onSemesterSelected = {},
+                        onAddSemester = {},
+                        onConfigureSemester = {},
+                        onDeleteSemester = {},
+                        onConfirmDelete = {},
+                        onCancelDelete = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText(
+            "Usunięcie semestru „Semestr zimowy” usunie jego plan i dane. Tej operacji nie można cofnąć."
+        ).assertIsDisplayed()
+    }
+
+    @Test
     fun semesterCardShowsIconRowsAt320Dp() {
         val longPrograms = "Informatyka, Zarządzanie, Ekonomia, Socjologia, Filologia angielska, " +
             "Pedagogika opiekuńczo-wychowawcza, Gospodarka przestrzenna"
@@ -755,6 +782,7 @@ class SettingsScreenTest {
                                 overrideCount = 4,
                                 noteCount = 1,
                                 changeCount = 2,
+                                freeDayCount = 3,
                                 activeSemesterName = "Semestr zimowy"
                             )
                         ),
@@ -768,6 +796,7 @@ class SettingsScreenTest {
         composeTestRule.onNodeWithText("Zastąpisz wszystkie lokalne dane").assertIsDisplayed()
         composeTestRule.onNodeWithText("Semestry").assertIsDisplayed()
         composeTestRule.onNodeWithText("Zajęcia").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dni wolne").assertIsDisplayed()
         composeTestRule.onNodeWithText("Aktywny semestr: Semestr zimowy").assertIsDisplayed()
         composeTestRule.onNodeWithText("Zastąp dane").assertIsDisplayed().performClick()
         assertEquals(1, confirmed)

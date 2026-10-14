@@ -471,6 +471,7 @@ fun SettingsSemestersScreen(
     }
     if (state.semesterToDeleteId != null) {
         DeleteSemesterDialog(
+            semesterName = state.semesters.firstOrNull { it.id == state.semesterToDeleteId }?.name.orEmpty(),
             isDeleting = state.isDeletingSemester,
             onConfirm = onConfirmDelete,
             onCancel = onCancelDelete
@@ -540,13 +541,14 @@ private fun SemesterDetailRow(icon: ImageVector, text: String) {
 
 @Composable
 private fun DeleteSemesterDialog(
+    semesterName: String,
     isDeleting: Boolean,
     onConfirm: () -> Unit,
     onCancel: () -> Unit
 ) {
     MakConfirmDeletionDialog(
         title = "Usuń semestr",
-        text = "Usunięcie semestru usunie jego plan i dane. Tej operacji nie można cofnąć.",
+        text = "Usunięcie semestru „$semesterName” usunie jego plan i dane. Tej operacji nie można cofnąć.",
         isDeleting = isDeleting,
         onConfirm = onConfirm,
         onCancel = onCancel
@@ -835,6 +837,7 @@ fun ImportPreviewScreen(
                 ImportStatRow("Korekty tygodni", preview.overrideCount)
                 ImportStatRow("Notatki", preview.noteCount)
                 ImportStatRow("Zmiany wystąpień", preview.changeCount)
+                ImportStatRow("Dni wolne", preview.freeDayCount)
             }
             Text(
                 text = "Aktywny semestr: ${preview.activeSemesterName ?: "brak"}",

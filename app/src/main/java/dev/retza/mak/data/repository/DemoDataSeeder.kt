@@ -182,7 +182,15 @@ suspend fun seedDemoDataIfEmpty(
             room = "A204",
             building = "Budynek B",
             teacherName = null,
-            note = "Przykład zmienionego i przeniesionego terminu."
+            note = null
+        )
+    )
+    scheduleRepository.saveOccurrenceNote(
+        OccurrenceNoteRecord(
+            semesterId = semesterId,
+            classId = analyticsId,
+            occurrenceDate = changeDate,
+            body = "Przykład notatki, która przechodzi z przeniesionym terminem."
         )
     )
 }

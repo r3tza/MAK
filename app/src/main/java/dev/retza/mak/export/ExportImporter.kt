@@ -50,6 +50,9 @@ object ExportImporter {
             if (program.name.isBlank()) {
                 errors += "Kierunek ${program.id} nie ma nazwy."
             }
+            if (!HexColor.matches(program.color)) {
+                errors += "Kierunek ${program.id} ma niepoprawny kolor."
+            }
         }
         val knownProgramIds = programIds.toSet()
 
@@ -421,3 +424,5 @@ private fun String.toLocalDateOrNull(): LocalDate? =
 
 private fun String.toLocalTimeOrNull(): LocalTime? =
     runCatching { LocalTime.parse(this) }.getOrNull()
+
+private val HexColor = Regex("^#[0-9A-Fa-f]{6}$")

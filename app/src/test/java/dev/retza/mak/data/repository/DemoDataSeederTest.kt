@@ -31,9 +31,22 @@ class DemoDataSeederTest {
         assertEquals(1, repository.calendars.size)
         assertEquals(2, repository.semesterPrograms.size)
         assertEquals(1, repository.weekOverrides.size)
-        assertEquals(1, repository.occurrenceNotes.size)
+        assertEquals(2, repository.occurrenceNotes.size)
         assertEquals(1, repository.occurrenceChanges.size)
         assertEquals("2026-09-19", repository.classes.single { it.date != null }.date.toString())
+    }
+
+    @Test
+    fun movedAnalyticsOccurrenceKeepsItsNoteOnTheScheduleDate() = runTest {
+        val repository = RecordingRepository()
+        val clock = Clock.fixed(Instant.parse("2026-09-19T10:00:00Z"), ZoneId.of("Europe/Warsaw"))
+
+        seedDemoDataIfEmpty(repository, repository, clock)
+
+        val change = repository.occurrenceChanges.single()
+        val note = repository.occurrenceNotes.single { it.classId == change.classId }
+        assertEquals(change.originalDate, note.occurrenceDate)
+        assertEquals(null, change.note)
     }
 }
 

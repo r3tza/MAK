@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -185,6 +186,12 @@ fun MakDatePickerField(
     LaunchedFocusRestore(open = open, hasOpened = hasOpened, focusRequester = focusRequester)
 }
 
+// Two fields side by side fit the date "14.10.2026" and the icon only from this width at font scale 1.
+internal val DateRangeSideBySideMinWidth = 344.dp
+
+internal fun stackDateRangeFields(maxWidth: Dp, fontScale: Float): Boolean =
+    maxWidth / fontScale < DateRangeSideBySideMinWidth
+
 /** A start and an end date as two read-only fields. Either field opens one range picker. */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -209,26 +216,52 @@ fun MakDateRangeFields(
         open = true
     }
 
-    Row(
-        modifier = modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
-    ) {
-        RangeDateField(
-            label = "Od",
-            date = startDate,
-            isError = isError,
-            focusRequester = startFocus,
-            onOpen = { openFrom(true) },
-            modifier = Modifier.weight(1f)
-        )
-        RangeDateField(
-            label = "Do",
-            date = endDate,
-            isError = isError,
-            focusRequester = endFocus,
-            onOpen = { openFrom(false) },
-            modifier = Modifier.weight(1f)
-        )
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        if (stackDateRangeFields(maxWidth, LocalDensity.current.fontScale)) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+            ) {
+                RangeDateField(
+                    label = "Od",
+                    date = startDate,
+                    isError = isError,
+                    focusRequester = startFocus,
+                    onOpen = { openFrom(true) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+                RangeDateField(
+                    label = "Do",
+                    date = endDate,
+                    isError = isError,
+                    focusRequester = endFocus,
+                    onOpen = { openFrom(false) },
+                    modifier = Modifier.fillMaxWidth()
+                )
+            }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+            ) {
+                RangeDateField(
+                    label = "Od",
+                    date = startDate,
+                    isError = isError,
+                    focusRequester = startFocus,
+                    onOpen = { openFrom(true) },
+                    modifier = Modifier.weight(1f)
+                )
+                RangeDateField(
+                    label = "Do",
+                    date = endDate,
+                    isError = isError,
+                    focusRequester = endFocus,
+                    onOpen = { openFrom(false) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+        }
     }
 
     if (open) {

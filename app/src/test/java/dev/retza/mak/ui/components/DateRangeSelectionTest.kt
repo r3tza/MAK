@@ -1,6 +1,9 @@
 package dev.retza.mak.ui.components
 
+import androidx.compose.ui.unit.dp
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
+import org.junit.Assert.assertTrue
 import org.junit.Test
 import java.time.LocalDate
 
@@ -34,6 +37,13 @@ class DateRangeSelectionTest {
             LocalDate.of(2026, 10, 22) to LocalDate.of(2026, 10, 22),
             resolvePickedRange(LocalDate.of(2026, 10, 22), null, LocalDate.of(2026, 10, 20))
         )
+    }
+
+    @Test
+    fun dateRangeFieldsStackWhenTooNarrowForTwoDates() {
+        assertTrue(stackDateRangeFields(272.dp, 1f))
+        assertFalse(stackDateRangeFields(512.dp, 1f))
+        assertTrue(stackDateRangeFields(512.dp, 2f))
     }
 
     @Test

@@ -391,6 +391,35 @@ class ExportImporterTest {
     }
 
     @Test
+    fun prepareRejectsProgramColorOutsideHexFormat() {
+        listOf("zielony", "#12345").forEach { color ->
+            val result = ExportImporter.prepare(
+                exportSnapshotOf(
+                    listOf(semesterData(1, active = true)),
+                    listOf(program().copy(color = color))
+                )
+            )
+
+            assertTrue(result is ImportSnapshotResult.Invalid)
+            assertTrue(
+                (result as ImportSnapshotResult.Invalid).errors.any { it == "Kierunek 3 ma niepoprawny kolor." }
+            )
+        }
+    }
+
+    @Test
+    fun prepareAcceptsLowercaseHexProgramColor() {
+        val result = ExportImporter.prepare(
+            exportSnapshotOf(
+                listOf(semesterData(1, active = true)),
+                listOf(program().copy(color = "#137b71"))
+            )
+        )
+
+        assertTrue(result is ImportSnapshotResult.Ready)
+    }
+
+    @Test
     fun prepareAcceptsVersion3Snapshot() {
         val snapshot = validSnapshot().copy(schemaVersion = ExportSchema.WITHOUT_FREE_DAYS_VERSION)
 
