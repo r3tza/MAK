@@ -115,6 +115,8 @@ Z ekranu szczegółów konkretnego terminu użytkownik może wybrać:
 - „Przenieś ten termin”;
 - „Przywróć termin”, jeśli wcześniej zapisano zmianę.
 
+Zajęcia mają najwyżej jedną zmianę danego terminu, więc odwołanie terminu zmienionego albo przeniesionego zastępuje jego zmianę odwołaniem. Odwołany termin stoi wtedy w dacie z planu, „Przywróć termin” przywraca termin z planu, a notatka do terminu zostaje (decyzja użytkownika z 2026-10-14, I-101).
+
 Odrabianie albo inne dodatkowe spotkanie jest zapisywane jako `ClassEntity` z `recurrence = ONCE` i konkretną datą. Formularz może skopiować nazwę, kierunek, prowadzącego i typ z istniejących zajęć, ale zapis pozostaje niezależny od cyklu.
 
 Zmiany wystąpień są stosowane po rozwinięciu planu cyklicznego i przed wykrywaniem kolizji. Usunięcie albo edycja zmiany nie modyfikuje bazowego wpisu zajęć.

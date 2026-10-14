@@ -221,7 +221,7 @@ fun MakApp(
                     updateViewModel = updateViewModel,
                     navController = navController,
                     onAddSemester = {
-                        openSetup(navController)
+                        openSetup(navController, fromSettings = true)
                     },
                     onConfigureSemester = { id ->
                         openSemesterConfiguration(navController, id)

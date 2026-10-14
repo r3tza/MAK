@@ -60,4 +60,13 @@ class MakNavigationTest {
         assertTrue(isSetupRoute(MakRoutes.Setup))
         assertFalse(isSetupRoute(MakRoutes.Today))
     }
+
+    @Test
+    fun returnToSettingsPopsOnlyOverSettingsScreens() {
+        assertTrue(returnsToSettingsByPop(MakRoutes.Settings))
+        assertTrue(returnsToSettingsByPop(MakRoutes.SettingsSemesters))
+        assertFalse(returnsToSettingsByPop(MakRoutes.Today))
+        assertFalse(returnsToSettingsByPop(MakRoutes.SetupRoute))
+        assertFalse(returnsToSettingsByPop(null))
+    }
 }

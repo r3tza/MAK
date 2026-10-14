@@ -2,6 +2,17 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-14: Poprawki po przeglądzie aplikacji na emulatorze (I-99 do I-103)
+
+- Fakty: Przegląd scenariuszy na emulatorze z 2026-10-13 wykazał pętlę nawigacji między „Ustawieniami” a kreatorem semestru, zapis korekty tygodnia A/B poza zakresem kalendarza, drugi dzień wolny w dniu, który już jest wolny, łamanie dat w polach „Od” i „Do” dialogu dni wolnych, przyjmowanie przez import niepoprawnego koloru kierunku, brak liczby dni wolnych w podsumowaniu importu i niewidoczną notatkę zmiany terminu w danych demonstracyjnych. Wybór godziny pozwala ustawić każdą minutę; na emulatorze nie dało się tego sprawdzić przez `adb`.
+- Decyzja użytkownika z 2026-10-14: kalendarz „Planu” oznacza odwołany termin krzyżykiem w kolorze kierunku, zawsze, także bez „Pokaż odwołane”; legenda ma pozycję „Odwołany termin”. Odrzucone: przekreślone kółko i oznaczenie tylko przy „Pokaż odwołane”.
+- Decyzja użytkownika z 2026-10-14: termin zmieniony albo przeniesiony można odwołać. Odwołanie zastępuje zmianę, poprzedzone dialogiem, który o tym uprzedza; „Przywróć termin” przywraca wtedy termin z planu, a notatka do terminu zostaje. Odrzucone: zachowanie zmiany pod odwołaniem, bo wymaga zmian w `ScheduleResolver`, imporcie i porównaniu synchronizacji.
+- Decyzja użytkownika z 2026-10-14: „Przywróć termin” pyta o potwierdzenie, a dialog usunięcia semestru podaje jego nazwę.
+- Decyzja użytkownika z 2026-10-14: wyjście z formularza zajęć i zamknięcie dialogu „Edytuj ten termin” bez zapisu poprzedza dialog „Odrzucić zmiany?”, tylko gdy któreś pole po pominięciu spacji na początku i końcu różni się od stanu z chwili otwarcia. „Anuluj” w dialogu „Edytuj ten termin” zamyka go bez pytania.
+- Decyzja użytkownika z 2026-10-14: pusty dzień przy filtrze „Wszystkie” pokazuje „Brak zajęć w tym dniu.”, a przy wybranym kierunku „Brak zajęć w tym dniu dla wybranego kierunku.”.
+- Decyzja użytkownika z 2026-10-14: pola „Od” i „Do” w dialogu dni wolnych stoją obok siebie, gdy każde mieści datę w jednej linii, a w węższym dialogu jedno pod drugim. Odrzucone: zawsze jedno pod drugim.
+- Wykonanie (agent na zlecenie użytkownika): agent rozstrzygnął pozostałe poprawki według celu istniejących reguł: kreator wraca do ekranu ustawień, z którego go otwarto; korekta tygodnia mieści się w zakresie kalendarza, a poza nim wiersz tygodnia nie jest akcją; „Oznacz jako wolny” znika w dniu, który już jest wolny; import odrzuca kolor kierunku spoza formatu `#RRGGBB`. Plan poprawek jest w `PLAN.md`.
+
 ## 2026-10-12: Poprawki dni wolnych po pierwszym odbiorze (I-81, I-82)
 
 - Decyzja użytkownika z 2026-10-12: pole „Po przerwie zacznij od tygodnia” jest dostępne dla każdego zakresu dni wolnych, także jednego dnia. Zastępuje decyzję z 2026-10-11 o wymogu pełnego tygodnia od poniedziałku do piątku.
@@ -160,10 +171,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja użytkownika: nazwy gałęzi i tytuły pull requestów są po angielsku, a opisy pull requestów mogą pozostać po polsku. Większe zadanie ma własny pull request. Kilka małych, powiązanych zadań należy łączyć w jeden pull request zamiast tworzyć osobny dla każdej drobnej zmiany.
 - Powód: spójne nazewnictwo repozytorium i mniej narzutu przy recenzowaniu niewielkich zmian.
 - Warunek: wspólny pull request ma jeden czytelny zakres, a każde zawarte zadanie zachowuje własny status, kryteria i odpowiednie testy.
-
-## 2026-09-28: Gałąź i pull request dla każdego zadania
-
-- Decyzja użytkownika (wariant zaproponowany przez agenta): każde zadanie, także zmiana samej dokumentacji, powstaje na gałęzi `task/<ID>-<opis>` od `origin/main` i kończy się pull requestem do `main`. Agent sam wypycha gałąź i otwiera pull request, a scala go wyłącznie użytkownik przez squash. Workflow `checks.yml` uruchamia kontrolę dokumentacji i testy JVM na każdym pull requeście. Gałąź `main` ma ochronę: zmiany tylko przez pull request z zielonym `checks`, bez wyjątku dla administratora, bo agenci działają na poświadczeniach użytkownika.
-- Powód: izolacja nieudanych kroków, jedno miejsce recenzji i testy przed scaleniem zamiast dopiero przy tagu wydania.
-- Odrzucone: gałąź `dev` z przenoszeniem na `main` przy wydaniu (stan wydania wyznacza tag); bezpośrednie commity małych poprawek dokumentacji na `main` (użytkownik najpierw je dopuścił, potem wybrał pełną ochronę gałęzi).
-- Ograniczenie: na komputerze użytkownika nie ma GitHub CLI (`gh`), więc do czasu jego instalacji i logowania agent podaje odnośnik do utworzenia pull requesta, a ochronę gałęzi użytkownik włącza w ustawieniach repozytorium.

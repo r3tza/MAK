@@ -1,12 +1,14 @@
 # Znane problemy
 
-Stan na 2026-10-09. Ten rejestr obejmuje otwarte problemy potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`, a zadania i statusy `QUEUE.md`. Naprawione problemy nie są tu powtarzane; ich historia jest w sekcji „Zakończone” w `QUEUE.md` i w `LOG.md`.
+Stan na 2026-10-14. Ten rejestr obejmuje otwarte problemy potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`, a zadania i statusy `QUEUE.md`. Naprawione problemy nie są tu powtarzane; ich historia jest w sekcji „Zakończone” w `QUEUE.md` i w `LOG.md`.
 
 ## Otwarte problemy
 
 Poprawki z audytu synchronizacji I-70 zostały zakończone i zaakceptowane po recenzji 2026-10-02. Rzeczywiste OAuth i Drive przeszły odbiór I-69 na wersji debug 2026-10-08. Klient OAuth release jest skonfigurowany, ale nie był sprawdzony na podpisanym APK; użytkownik zamknął I-69 bez tego testu, więc pierwsze wydanie z synchronizacją wymaga sprawdzenia logowania. Pozostałe dwie kwestie z audytu interfejsu (obramowane przyciski ikon w górnym pasku i trzy style zaznaczenia na „Planie”) użytkownik zamknął bez zmian (`LOG.md`, 2026-09-29).
 
 Synchronizacja Google (I-68) nie należy jeszcze do opublikowanego wydania. Projekt Google Cloud działa w trybie Testing, więc logować mogą się tylko konta z listy testowej; publikacja aplikacji w Google Auth Platform jest osobną decyzją przed wydaniem. Świadome ograniczenie projektu: Drive nie ma warunkowego zapisu, więc przy niemal równoczesnym wysłaniu z dwóch telefonów zostaje późniejsza wersja, a druga trafia do archiwum telefonu przy kolejnej synchronizacji. Szkic zajęć odtworzony po zakończeniu procesu aplikacji nie wstrzymuje pobrania planu; jeśli w tym czasie inny telefon zmienił plan, zapis szkicu może trafić do wpisu o tym samym numerze.
+
+Przegląd scenariuszy na emulatorze z 2026-10-13 potwierdził w kodzie gałęzi `task/settings-and-gap-notifications`: pętlę nawigacji między „Ustawieniami” a kreatorem semestru otwartym z ustawień, bez wyjścia do „Dzisiaj” (I-99); zapis korekty tygodnia A/B poza zakresem kalendarza i drugi dzień wolny w dniu, który już jest wolny (I-100); łamanie dat w polach „Od” i „Do” dialogu dni wolnych, przyjmowanie przez import niepoprawnego koloru kierunku i brak liczby dni wolnych w podsumowaniu importu (I-103). Plan poprawek jest w `PLAN.md`.
 
 ### Sprzeczności dokumentacji i pytania po audycie
 

@@ -77,6 +77,10 @@ internal fun shouldCloseImportPreview(currentRoute: String?): Boolean =
 internal fun shouldHandleSetupEffect(currentRoute: String?): Boolean =
     currentRoute == MakRoutes.Setup || currentRoute == MakRoutes.SetupRoute
 
+/** The wizard opened from settings stands above that screen, so leaving it goes back to it. */
+internal fun returnsToSettingsByPop(previousRoute: String?): Boolean =
+    previousRoute == MakRoutes.Settings || previousRoute == MakRoutes.SettingsSemesters
+
 internal enum class AddAction {
     None,
     Setup,
