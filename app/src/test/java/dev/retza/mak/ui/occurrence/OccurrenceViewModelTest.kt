@@ -695,6 +695,80 @@ class OccurrenceViewModelTest {
     }
 
     @Test
+    fun movedOccurrenceCanBeCancelledAfterConfirmationAndRestoredToPlanDate() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+        viewModel.updateOccurrenceNoteDraft("Notatka terminu")
+        viewModel.saveOccurrenceNote()
+        advanceUntilIdle()
+        viewModel.openEditDialog()
+        viewModel.updateTargetDateDraft("2026-09-23")
+        advanceUntilIdle()
+        viewModel.saveOccurrenceChange()
+        advanceUntilIdle()
+        assertEquals(OccurrenceStatusUi.Moved, viewModel.details.value.status)
+        assertTrue(viewModel.details.value.canCancelOccurrence)
+
+        viewModel.requestCancelOccurrence()
+        advanceUntilIdle()
+        assertTrue(viewModel.details.value.showCancelChangedConfirmation)
+        assertEquals(OccurrenceStatusUi.Moved, viewModel.details.value.status)
+
+        viewModel.cancelOccurrence()
+        advanceUntilIdle()
+        val cancelled = viewModel.details.value
+        assertFalse(cancelled.showCancelChangedConfirmation)
+        assertEquals(OccurrenceStatusUi.Cancelled, cancelled.status)
+        assertEquals("2026-09-21", cancelled.currentDate)
+        assertTrue(cancelled.canRestoreOccurrence)
+        assertEquals("Notatka terminu", cancelled.occurrenceNote)
+
+        viewModel.requestRestoreOccurrence()
+        advanceUntilIdle()
+        assertTrue(viewModel.details.value.showRestoreConfirmation)
+        assertTrue(viewModel.details.value.restoreTargetLabel.endsWith("${cancelled.baseStartTime} - ${cancelled.baseEndTime}"))
+
+        viewModel.restoreOccurrence()
+        advanceUntilIdle()
+        val restored = viewModel.details.value
+        assertFalse(restored.showRestoreConfirmation)
+        assertEquals(OccurrenceStatusUi.Scheduled, restored.status)
+        assertEquals("2026-09-21", restored.currentDate)
+    }
+
+    @Test
+    fun requestCancelOnRegularOccurrenceCancelsWithoutConfirmation() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.requestCancelOccurrence()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.details.value.showCancelChangedConfirmation)
+        assertEquals(OccurrenceStatusUi.Cancelled, viewModel.details.value.status)
+    }
+
+    @Test
+    fun requestRestoreWithoutChangeSetsNoFlag() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = occurrenceViewModel(repository)
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.requestRestoreOccurrence()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.details.value.showRestoreConfirmation)
+    }
+
+    @Test
     fun restoreWithoutChangeDoesNothing() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)

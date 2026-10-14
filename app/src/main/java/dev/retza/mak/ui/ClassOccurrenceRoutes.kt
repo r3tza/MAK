@@ -103,7 +103,7 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
         val details = occurrenceViewModel.details.collectAsStateWithLifecycle().value
         val actions: List<Pair<String, () -> Unit>> = remember(details.canCancelOccurrence, details.canEditBaseClass, details.canDeleteBaseClass) {
             listOfNotNull(
-                if (details.canCancelOccurrence) "Odwołaj termin" to { occurrenceViewModel.cancelOccurrence() } else null,
+                if (details.canCancelOccurrence) "Odwołaj termin" to { occurrenceViewModel.requestCancelOccurrence() } else null,
                 if (details.canEditBaseClass) {
                     "Edytuj wszystkie terminy" to {
                         occurrenceViewModel.selectedClassId.value?.let { id ->
@@ -123,6 +123,10 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
             onDismissOccurrenceEdit = occurrenceViewModel::dismissEditDialog,
             onSaveOccurrenceChange = occurrenceViewModel::saveOccurrenceChange,
             onRestoreOccurrence = occurrenceViewModel::restoreOccurrence,
+            onRequestRestore = occurrenceViewModel::requestRestoreOccurrence,
+            onDismissRestore = occurrenceViewModel::dismissRestoreConfirmation,
+            onConfirmCancelChanged = occurrenceViewModel::cancelOccurrence,
+            onDismissCancelChanged = occurrenceViewModel::dismissCancelChangedConfirmation,
             onOccurrenceNoteDraftChanged = occurrenceViewModel::updateOccurrenceNoteDraft,
             onSharedNoteDraftChanged = occurrenceViewModel::updateSharedNoteDraft,
             onTargetDateDraftChanged = occurrenceViewModel::updateTargetDateDraft,

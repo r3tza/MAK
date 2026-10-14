@@ -9,6 +9,7 @@ import dev.retza.mak.domain.ActivePlanInputs
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.FreeDay
 import dev.retza.mak.domain.ResolvedSchedule
+import dev.retza.mak.domain.OccurrenceStatus
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekStatus
@@ -262,23 +263,26 @@ class ScheduleViewModel(
             val schedule = activePlanProvider.schedule(visible, date)
             // Days of the grid show only markers, so their collisions are not needed.
             val occurrences = schedule.occurrences.filter { matchesFilter(it, activeFilter) }
+            val cancelled = schedule.cancelled.filter { matchesFilter(it, activeFilter) }
+            val shown = occurrences + cancelled
             val isFreeDay = schedule.viewFreeDay(calendarIds) != null
             CalendarDayUi(
                 id = date.toString(),
                 dayLabel = date.dayOfMonth.toString(),
-                accessibilityLabel = calendarAccessibilityLabel(date, occurrences, isFreeDay),
+                accessibilityLabel = calendarAccessibilityLabel(date, occurrences, cancelled, isFreeDay),
                 isInCurrentMonth = YearMonth.from(date) == month,
                 isToday = date == today,
                 isSelected = false,
-                markers = occurrences.take(if (occurrences.size > 5) 4 else 5).map {
+                markers = shown.take(if (shown.size > 5) 4 else 5).map {
                     CalendarMarkerUi(
                         id = it.id,
                         contentDescription = calendarOccurrenceLabel(it),
-                        isChanged = it.occurrenceChange != null,
+                        isChanged = it.occurrenceChange != null && it.status != OccurrenceStatus.CANCELLED,
+                        isCancelled = it.status == OccurrenceStatus.CANCELLED,
                         colorHex = it.studyProgram?.color
                     )
                 },
-                hasMoreMarkers = occurrences.size > 5,
+                hasMoreMarkers = shown.size > 5,
                 isFreeDay = isFreeDay
             )
         }
@@ -379,7 +383,8 @@ class ScheduleViewModel(
                 data,
                 programs,
                 activeFilter,
-                hasFreeDay = calendarDays.any { it.isFreeDay }
+                hasFreeDay = calendarDays.any { it.isFreeDay },
+                hasCancelled = calendarDays.any { it.markers.any(CalendarMarkerUi::isCancelled) }
             ),
             freeDay = selected.viewFreeDay(relevantCalendarIds)?.listNote(),
             calendarFreeDay = calendarPlan?.schedule?.viewFreeDay(relevantCalendarIds)?.listNote(),
@@ -439,7 +444,8 @@ private fun calendarLegend(
     data: ActivePlanData,
     programs: List<SemesterProgram>,
     activeFilter: Long?,
-    hasFreeDay: Boolean
+    hasFreeDay: Boolean,
+    hasCancelled: Boolean
 ): List<CalendarLegendUi> =
     programs
         .filter { activeFilter == null || it.id == activeFilter }
@@ -447,14 +453,16 @@ private fun calendarLegend(
         .distinctBy { it.id }
         .map { CalendarLegendUi(label = it.name, colorHex = it.color) } +
         CalendarLegendUi(label = "Zmieniony termin", isChange = true) +
+        (if (hasCancelled) listOf(CalendarLegendUi(label = "Odwołany termin", isCancelled = true)) else emptyList()) +
         if (hasFreeDay) listOf(CalendarLegendUi(label = "Dzień wolny", isFreeDay = true)) else emptyList()
 
 private fun calendarAccessibilityLabel(
     date: LocalDate,
     occurrences: List<PlannedOccurrence>,
+    cancelled: List<PlannedOccurrence>,
     isFreeDay: Boolean
 ): String {
-    val details = occurrences.take(3).joinToString("; ") { calendarOccurrenceLabel(it) }
+    val details = (occurrences + cancelled).take(3).joinToString("; ") { calendarOccurrenceLabel(it) }
     return buildString {
         append(date.format(fullDateFormatter))
         if (isFreeDay) append(", dzień wolny")

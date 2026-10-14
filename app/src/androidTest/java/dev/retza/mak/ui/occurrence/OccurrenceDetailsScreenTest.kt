@@ -76,7 +76,7 @@ class OccurrenceDetailsScreenTest {
                         onOpenOccurrenceEdit = { state = state.copy(showEditDialog = true) },
                         onDismissOccurrenceEdit = { state = state.copy(showEditDialog = false) },
                         onSaveOccurrenceChange = {},
-                        onRestoreOccurrence = {},
+                        onRestoreOccurrence = {}, onRequestRestore = {}, onDismissRestore = {}, onConfirmCancelChanged = {}, onDismissCancelChanged = {},
                         onOccurrenceNoteDraftChanged = {},
                         onSharedNoteDraftChanged = {},
                         onTargetDateDraftChanged = {},
@@ -131,7 +131,7 @@ class OccurrenceDetailsScreenTest {
                     ),
                     onDeleteBaseClass = {}, onDismissDeleteConfirmation = {},
                     onOpenOccurrenceEdit = {}, onDismissOccurrenceEdit = {},
-                    onSaveOccurrenceChange = {}, onRestoreOccurrence = {},
+                    onSaveOccurrenceChange = {}, onRestoreOccurrence = {}, onRequestRestore = {}, onDismissRestore = {}, onConfirmCancelChanged = {}, onDismissCancelChanged = {},
                     onOccurrenceNoteDraftChanged = {}, onSharedNoteDraftChanged = {},
                     onTargetDateDraftChanged = {}, onStartTimeDraftChanged = {},
                     onEndTimeDraftChanged = {}, onRoomDraftChanged = {},
@@ -174,7 +174,7 @@ class OccurrenceDetailsScreenTest {
                         onOpenOccurrenceEdit = {},
                         onDismissOccurrenceEdit = {},
                         onSaveOccurrenceChange = {},
-                        onRestoreOccurrence = {},
+                        onRestoreOccurrence = {}, onRequestRestore = {}, onDismissRestore = {}, onConfirmCancelChanged = {}, onDismissCancelChanged = {},
                         onOccurrenceNoteDraftChanged = {},
                         onSharedNoteDraftChanged = {},
                         onTargetDateDraftChanged = {},
@@ -200,6 +200,7 @@ class OccurrenceDetailsScreenTest {
     @Test
     fun restoreCaseShowsAndRunsRestoreActionAt320Dp() {
         var restoreClicks = 0
+        var requestClicks = 0
 
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
@@ -229,6 +230,8 @@ class OccurrenceDetailsScreenTest {
                         onDismissOccurrenceEdit = {},
                         onSaveOccurrenceChange = {},
                         onRestoreOccurrence = { restoreClicks += 1 },
+                        onRequestRestore = { requestClicks += 1 }, onDismissRestore = {},
+                        onConfirmCancelChanged = {}, onDismissCancelChanged = {},
                         onOccurrenceNoteDraftChanged = {},
                         onSharedNoteDraftChanged = {},
                         onTargetDateDraftChanged = {},
@@ -243,9 +246,74 @@ class OccurrenceDetailsScreenTest {
         }
 
         composeTestRule.onNodeWithText("Przywróć termin").assertIsDisplayed().performClick()
-        assertEquals(1, restoreClicks)
+        assertEquals(1, requestClicks)
+        assertEquals(0, restoreClicks)
         composeTestRule.onNodeWithText("Zamknij").assertDoesNotExist()
         composeTestRule.onAllNodesWithText("Zmień termin").assertCountEquals(0)
+    }
+
+    @Test
+    fun restoreConfirmationShowsPlanTargetAndConfirmsAt320Dp() {
+        var restoreClicks = 0
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                OccurrenceDetailsScreen(
+                    state = OccurrenceDetailsUiState(
+                        subjectName = "Analiza danych",
+                        canChangeOccurrence = false,
+                        canRestoreOccurrence = true,
+                        showRestoreConfirmation = true,
+                        restoreTargetLabel = "poniedziałek, 21 września 2026, 11:00 - 12:30"
+                    ),
+                    onDeleteBaseClass = {}, onDismissDeleteConfirmation = {},
+                    onOpenOccurrenceEdit = {}, onDismissOccurrenceEdit = {},
+                    onSaveOccurrenceChange = {}, onRestoreOccurrence = { restoreClicks += 1 },
+                    onRequestRestore = {}, onDismissRestore = {},
+                    onConfirmCancelChanged = {}, onDismissCancelChanged = {},
+                    onOccurrenceNoteDraftChanged = {}, onSharedNoteDraftChanged = {},
+                    onTargetDateDraftChanged = {}, onStartTimeDraftChanged = {},
+                    onEndTimeDraftChanged = {}, onRoomDraftChanged = {},
+                    onSaveSharedNote = {}, onSaveOccurrenceNote = {}
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Przywrócić termin?").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Termin wróci do planu: poniedziałek, 21 września 2026, 11:00 - 12:30.")
+            .assertIsDisplayed()
+        composeTestRule.onNodeWithText("Przywróć").assertIsDisplayed().performClick()
+        assertEquals(1, restoreClicks)
+    }
+
+    @Test
+    fun cancelChangedConfirmationConfirmsAt320Dp() {
+        var confirmClicks = 0
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                OccurrenceDetailsScreen(
+                    state = OccurrenceDetailsUiState(
+                        subjectName = "Analiza danych",
+                        canRestoreOccurrence = true,
+                        showCancelChangedConfirmation = true
+                    ),
+                    onDeleteBaseClass = {}, onDismissDeleteConfirmation = {},
+                    onOpenOccurrenceEdit = {}, onDismissOccurrenceEdit = {},
+                    onSaveOccurrenceChange = {}, onRestoreOccurrence = {},
+                    onRequestRestore = {}, onDismissRestore = {},
+                    onConfirmCancelChanged = { confirmClicks += 1 }, onDismissCancelChanged = {},
+                    onOccurrenceNoteDraftChanged = {}, onSharedNoteDraftChanged = {},
+                    onTargetDateDraftChanged = {}, onStartTimeDraftChanged = {},
+                    onEndTimeDraftChanged = {}, onRoomDraftChanged = {},
+                    onSaveSharedNote = {}, onSaveOccurrenceNote = {}
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Odwołać zmieniony termin?").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Odwołaj").assertIsDisplayed().performClick()
+        assertEquals(1, confirmClicks)
     }
 
     @Test
@@ -283,7 +351,7 @@ class OccurrenceDetailsScreenTest {
                         onOpenOccurrenceEdit = {},
                         onDismissOccurrenceEdit = { dismissCalls += 1 },
                         onSaveOccurrenceChange = {},
-                        onRestoreOccurrence = {},
+                        onRestoreOccurrence = {}, onRequestRestore = {}, onDismissRestore = {}, onConfirmCancelChanged = {}, onDismissCancelChanged = {},
                         onOccurrenceNoteDraftChanged = {},
                         onSharedNoteDraftChanged = {},
                         onTargetDateDraftChanged = {},
@@ -337,7 +405,7 @@ class OccurrenceDetailsScreenTest {
                         onOpenOccurrenceEdit = {},
                         onDismissOccurrenceEdit = {},
                         onSaveOccurrenceChange = {},
-                        onRestoreOccurrence = {},
+                        onRestoreOccurrence = {}, onRequestRestore = {}, onDismissRestore = {}, onConfirmCancelChanged = {}, onDismissCancelChanged = {},
                         onOccurrenceNoteDraftChanged = {},
                         onSharedNoteDraftChanged = {},
                         onTargetDateDraftChanged = {},
@@ -381,7 +449,7 @@ class OccurrenceDetailsScreenTest {
                         onOpenOccurrenceEdit = {},
                         onDismissOccurrenceEdit = {},
                         onSaveOccurrenceChange = {},
-                        onRestoreOccurrence = {},
+                        onRestoreOccurrence = {}, onRequestRestore = {}, onDismissRestore = {}, onConfirmCancelChanged = {}, onDismissCancelChanged = {},
                         onOccurrenceNoteDraftChanged = {},
                         onSharedNoteDraftChanged = {},
                         onTargetDateDraftChanged = {},

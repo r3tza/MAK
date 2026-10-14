@@ -55,6 +55,10 @@ fun OccurrenceDetailsScreen(
     onDismissOccurrenceEdit: () -> Unit,
     onSaveOccurrenceChange: () -> Unit,
     onRestoreOccurrence: () -> Unit,
+    onRequestRestore: () -> Unit,
+    onDismissRestore: () -> Unit,
+    onConfirmCancelChanged: () -> Unit,
+    onDismissCancelChanged: () -> Unit,
     onOccurrenceNoteDraftChanged: (String) -> Unit,
     onSharedNoteDraftChanged: (String) -> Unit,
     onTargetDateDraftChanged: (String) -> Unit,
@@ -98,7 +102,28 @@ fun OccurrenceDetailsScreen(
         OccurrenceBottomActions(
             state = state,
             onOpenOccurrenceEdit = onOpenOccurrenceEdit,
-            onRestoreOccurrence = onRestoreOccurrence
+            onRestoreOccurrence = onRequestRestore
+        )
+    }
+
+    if (state.showRestoreConfirmation) {
+        MakDialog(
+            title = "Przywrócić termin?",
+            description = "Termin wróci do planu: ${state.restoreTargetLabel}.",
+            onDismiss = onDismissRestore,
+            dismissAction = MakDialogAction("Anuluj", onDismissRestore, enabled = !state.isSaving),
+            confirmAction = MakDialogAction("Przywróć", onRestoreOccurrence, enabled = !state.isSaving)
+        )
+    }
+
+    if (state.showCancelChangedConfirmation) {
+        MakConfirmDeletionDialog(
+            title = "Odwołać zmieniony termin?",
+            text = "Zmiana tego terminu zostanie usunięta, a termin będzie odwołany. Notatka do terminu zostanie.",
+            isDeleting = state.isSaving,
+            onConfirm = onConfirmCancelChanged,
+            onCancel = onDismissCancelChanged,
+            confirmLabel = "Odwołaj"
         )
     }
 

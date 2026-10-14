@@ -63,7 +63,10 @@ data class OccurrenceDetailsUiState(
     val notFound: Boolean = false,
     val canCancelOccurrence: Boolean = true,
     val canChangeOccurrence: Boolean = true,
-    val canRestoreOccurrence: Boolean = false
+    val canRestoreOccurrence: Boolean = false,
+    val showRestoreConfirmation: Boolean = false,
+    val showCancelChangedConfirmation: Boolean = false,
+    val restoreTargetLabel: String = ""
 ) {
     val canSaveSharedNote: Boolean
         get() = noteContentChanged(sharedNoteDraft, sharedNote)
@@ -74,7 +77,8 @@ data class OccurrenceDetailsUiState(
 /** Details block a downloaded plan only while the user has typed or opened something to confirm. */
 fun OccurrenceDetailsUiState.hasPlanDraft(): Boolean =
     canSaveSharedNote || canSaveOccurrenceNote || isSaving || isSavingSharedNote ||
-        isSavingOccurrenceNote || showEditDialog || showDeleteConfirmation || isDeletingClass
+        isSavingOccurrenceNote || showEditDialog || showDeleteConfirmation || isDeletingClass ||
+        showRestoreConfirmation || showCancelChangedConfirmation
 
 /**
  * What differs from the base occurrence, one line per change; the class card shows only an icon,

@@ -324,6 +324,41 @@ class ScheduleScreenTest {
     }
 
     @Test
+    fun calendarLegendShowsCancelledEntryAndDayShowsCancelledMarkerAt320Dp() {
+        setScheduleContent(
+            state = scheduleState().copy(
+                view = ScheduleView.Calendar,
+                calendarMonthLabel = "wrzesień 2026",
+                calendarDays = listOf(
+                    CalendarDayUi(
+                        id = "2026-09-01",
+                        dayLabel = "1",
+                        accessibilityLabel = "Wtorek, 1 września 2026",
+                        isSelected = true,
+                        markers = listOf(
+                            CalendarMarkerUi(
+                                id = "cancelled-1",
+                                contentDescription = "Zajęcia testowe, odwołane",
+                                isCancelled = true,
+                                colorHex = "#137B71"
+                            )
+                        )
+                    )
+                ),
+                calendarLegend = listOf(
+                    CalendarLegendUi(label = "Informatyka"),
+                    CalendarLegendUi(label = "Odwołany termin", isCancelled = true)
+                ),
+                calendarSelectedDayLabel = "Wtorek, 1 września 2026",
+                calendarSelectedDayCountLabel = "0 zajęć"
+            )
+        )
+
+        composeTestRule.onNodeWithText("Odwołany termin").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("calendar-marker-cancelled-1", useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test
     fun calendarOneOffActionWrapsWithoutClippingAtFontScaleTwoAt320Dp() {
         setScheduleContent(
             state = scheduleState().copy(

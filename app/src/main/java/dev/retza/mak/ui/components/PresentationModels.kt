@@ -57,6 +57,7 @@ data class CalendarMarkerUi(
     val id: String,
     val contentDescription: String,
     val isChanged: Boolean = false,
+    val isCancelled: Boolean = false,
     val colorHex: String? = null
 )
 
@@ -66,6 +67,7 @@ data class CalendarLegendUi(
     val label: String,
     val colorHex: String? = null,
     val isChange: Boolean = false,
+    val isCancelled: Boolean = false,
     val isFreeDay: Boolean = false
 )
 

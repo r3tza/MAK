@@ -45,6 +45,7 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -632,6 +633,7 @@ private fun RowScope.CalendarDay(day: CalendarDayUi, onSelected: (String) -> Uni
                 CalendarMarker(
                     color = if (day.isSelected) MaterialTheme.colorScheme.onPrimary else courseMarkerTint(marker.colorHex),
                     changed = marker.isChanged,
+                    cancelled = marker.isCancelled,
                     size = markerSize,
                     modifier = Modifier.testTag("calendar-marker-${marker.id}")
                 )
@@ -656,16 +658,38 @@ private fun courseMarkerTint(hex: String?): Color =
 private fun CalendarMarker(
     color: Color,
     changed: Boolean,
+    cancelled: Boolean = false,
     size: Dp = 8.dp,
     modifier: Modifier = Modifier
 ) {
     val shape = CircleShape
+    val strokeWidth = if (size >= 8.dp) 1.5.dp else 1.dp
     Box(
         modifier = modifier
             .size(size)
             .then(
-                if (changed) Modifier.border(if (size >= 8.dp) 1.5.dp else 1.dp, color, shape)
-                else Modifier.background(color, shape)
+                when {
+                    cancelled -> Modifier.drawBehind {
+                        val stroke = strokeWidth.toPx()
+                        val inset = stroke / 2f
+                        drawLine(
+                            color = color,
+                            start = Offset(inset, inset),
+                            end = Offset(this.size.width - inset, this.size.height - inset),
+                            strokeWidth = stroke,
+                            cap = StrokeCap.Round
+                        )
+                        drawLine(
+                            color = color,
+                            start = Offset(this.size.width - inset, inset),
+                            end = Offset(inset, this.size.height - inset),
+                            strokeWidth = stroke,
+                            cap = StrokeCap.Round
+                        )
+                    }
+                    changed -> Modifier.border(strokeWidth, color, shape)
+                    else -> Modifier.background(color, shape)
+                }
             )
     )
 }
@@ -694,8 +718,13 @@ private fun CalendarLegend(items: List<CalendarLegendUi>) {
                     )
                 } else {
                     CalendarMarker(
-                        color = if (item.isChange) MaterialTheme.colorScheme.onSurfaceVariant else courseMarkerTint(item.colorHex),
-                        changed = item.isChange
+                        color = if (item.isChange || item.isCancelled) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            courseMarkerTint(item.colorHex)
+                        },
+                        changed = item.isChange,
+                        cancelled = item.isCancelled
                     )
                 }
                 Text(
