@@ -353,6 +353,101 @@ class ClassEditViewModelTest {
         assertEquals("Programowanie", viewModel.editor.value.name)
     }
 
+    private suspend fun kotlinx.coroutines.test.TestScope.closeEffects(viewModel: ClassEditViewModel): List<ClassEditEffect> {
+        val effects = mutableListOf<ClassEditEffect>()
+        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+        return effects
+    }
+
+    @Test
+    fun closingUntouchedNewFormOrOneWithOnlySpacesInNameAsksNothing() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan()
+        val effects = closeEffects(viewModel)
+
+        viewModel.requestClose()
+        viewModel.update { it.copy(name = "   ") }
+        viewModel.requestClose()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.editor.value.showDiscardConfirmation)
+        assertEquals(listOf(ClassEditEffect.CloseEditor, ClassEditEffect.CloseEditor), effects)
+    }
+
+    @Test
+    fun closingNewFormWithTypedNameAsksBeforeDiscarding() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan()
+        val effects = closeEffects(viewModel)
+        viewModel.update { it.copy(name = "A") }
+
+        viewModel.requestClose()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.editor.value.showDiscardConfirmation)
+        assertTrue(effects.isEmpty())
+
+        viewModel.dismissDiscard()
+        assertFalse(viewModel.editor.value.showDiscardConfirmation)
+        viewModel.requestClose()
+        viewModel.confirmDiscard()
+        advanceUntilIdle()
+        assertFalse(viewModel.editor.value.showDiscardConfirmation)
+        assertEquals(listOf(ClassEditEffect.CloseEditor), effects)
+    }
+
+    @Test
+    fun closingEditedFormWithoutChangesOrWithRestoredValueAsksNothing() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.openEditFromFreshPlan(1L)
+        val effects = closeEffects(viewModel)
+        val originalRoom = viewModel.editor.value.room
+
+        viewModel.requestClose()
+        viewModel.update { it.copy(room = "Z999") }
+        viewModel.update { it.copy(room = originalRoom) }
+        viewModel.requestClose()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.editor.value.showDiscardConfirmation)
+        assertEquals(2, effects.size)
+    }
+
+    @Test
+    fun closingUntouchedOneOffFormAsksNothing() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan(LocalDate.of(2026, 9, 25))
+        val effects = closeEffects(viewModel)
+
+        viewModel.requestClose()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.editor.value.showDiscardConfirmation)
+        assertEquals(listOf(ClassEditEffect.CloseEditor), effects)
+    }
+
+    @Test
+    fun typedChangeStillAsksAfterRecreationFromSavedState() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val savedState = SavedStateHandle()
+        val first = viewModel(repository, savedState)
+        advanceUntilIdle()
+        first.openNewFromFreshPlan()
+        first.update { it.copy(name = "Algebra") }
+        advanceUntilIdle()
+
+        val restored = viewModel(repository, savedState)
+        advanceUntilIdle()
+        restored.requestClose()
+
+        assertTrue(restored.editor.value.showDiscardConfirmation)
+    }
+
     @Test
     fun saveRejectsInvalidTime() = runTest(mainDispatcher) {
         val repository = FakeRepository()

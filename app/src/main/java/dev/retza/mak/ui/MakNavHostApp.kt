@@ -134,7 +134,7 @@ fun MakApp(
                 title = spec?.title ?: titleForRoute(currentRoute),
                 showBack = showBack,
                 showSettings = isRoot,
-                onBack = ::navigateBack,
+                onBack = spec?.onBack ?: ::navigateBack,
                 onSettings = { openSettings(navController) },
                 actions = if (topBarActions.isEmpty()) {
                     null

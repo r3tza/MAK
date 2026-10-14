@@ -215,8 +215,43 @@ class OccurrenceViewModel(
 
     fun dismissEditDialog() = editSession.run {
         if (state.value.isSaving) return@run
-        update { it.copy(showEditDialog = false, draftErrors = emptyMap(), draftError = null) }
+        update {
+            it.copy(
+                showEditDialog = false,
+                showDiscardEditConfirmation = false,
+                draftErrors = emptyMap(),
+                draftError = null
+            )
+        }
     }
+
+    /** Closes the edit dialog at once when no field differs from the open occurrence, otherwise asks first. */
+    fun requestDismissEditDialog() {
+        val current = state.value
+        if (current.isSaving) return
+        val unchanged = current.targetDateDraft == current.currentDate &&
+            current.startTimeDraft == current.startTime &&
+            current.endTimeDraft == current.endTime &&
+            current.roomDraft.trim() == current.room.orEmpty().trim()
+        if (unchanged) {
+            dismissEditDialog()
+        } else {
+            editSession.run { update { it.copy(showDiscardEditConfirmation = true) } }
+        }
+    }
+
+    fun confirmDiscardEdit() = editSession.run {
+        update {
+            it.copy(
+                showDiscardEditConfirmation = false,
+                showEditDialog = false,
+                draftErrors = emptyMap(),
+                draftError = null
+            )
+        }
+    }
+
+    fun keepEditing() = editSession.run { update { it.copy(showDiscardEditConfirmation = false) } }
 
     fun requestClassDeletion() = editSession.run { update { it.copy(showDeleteConfirmation = true) } }
 
@@ -608,6 +643,7 @@ class OccurrenceViewModel(
             showDeleteConfirmation = showDeleteConfirmation,
             showRestoreConfirmation = showRestoreConfirmation,
             showCancelChangedConfirmation = showCancelChangedConfirmation,
+            showDiscardEditConfirmation = showDiscardEditConfirmation,
             isDeletingClass = isDeletingClass
         )
     }

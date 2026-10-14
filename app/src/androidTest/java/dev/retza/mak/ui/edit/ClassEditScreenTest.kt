@@ -11,11 +11,13 @@ import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.hasAnyAncestor
 import androidx.compose.ui.test.hasText
+import androidx.compose.ui.test.isDialog
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.ui.theme.MAKTheme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
@@ -56,6 +58,8 @@ class ClassEditScreenTest {
                         onConfirmHiddenData = {},
                         onDismissHiddenData = {},
                         onCancel = {},
+                        onConfirmDiscard = {},
+                        onDismissDiscard = {},
                     )
                 }
             }
@@ -94,6 +98,8 @@ class ClassEditScreenTest {
                         onConfirmHiddenData = {},
                         onDismissHiddenData = {},
                         onCancel = {},
+                        onConfirmDiscard = {},
+                        onDismissDiscard = {},
                     )
                 }
             }
@@ -103,6 +109,79 @@ class ClassEditScreenTest {
         // "Anuluj" is also the screen's own secondary action, so match the button inside the dialog pane.
         composeTestRule.onNode(dialogButton("Zapisz")).assertIsNotEnabled()
         composeTestRule.onNode(dialogButton("Anuluj")).assertIsNotEnabled()
+    }
+
+    @Test
+    fun discardDialogShowsTextAndReportsBothChoices() {
+        var confirmed = 0
+        var dismissed = 0
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                ClassEditScreen(
+                    state = ClassEditUiState(showDiscardConfirmation = true),
+                    onNameChanged = {},
+                    onCourseChanged = {},
+                    onTypeChanged = {},
+                    onDayChanged = {},
+                    onStartTimeChanged = {},
+                    onEndTimeChanged = {},
+                    onRecurrenceChanged = {},
+                    onOccurrenceDateChanged = {},
+                    onRoomChanged = {},
+                    onBuildingChanged = {},
+                    onGroupChanged = {},
+                    onTeacherChanged = {},
+                    onNoteChanged = {},
+                    onSave = {},
+                    onConfirmHiddenData = {},
+                    onDismissHiddenData = {},
+                    onCancel = {},
+                    onConfirmDiscard = { confirmed++ },
+                    onDismissDiscard = { dismissed++ }
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Odrzucić zmiany?").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Wpisane dane nie zostaną zapisane.").assertIsDisplayed()
+        composeTestRule.onNode(hasText("Anuluj") and hasAnyAncestor(isDialog())).performClick()
+        composeTestRule.onNodeWithText("Odrzuć").performClick()
+        assertEquals(1, dismissed)
+        assertEquals(1, confirmed)
+    }
+
+    @Test
+    fun formCancelReportsCancel() {
+        var cancelled = 0
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                ClassEditScreen(
+                    state = ClassEditUiState(),
+                    onNameChanged = {},
+                    onCourseChanged = {},
+                    onTypeChanged = {},
+                    onDayChanged = {},
+                    onStartTimeChanged = {},
+                    onEndTimeChanged = {},
+                    onRecurrenceChanged = {},
+                    onOccurrenceDateChanged = {},
+                    onRoomChanged = {},
+                    onBuildingChanged = {},
+                    onGroupChanged = {},
+                    onTeacherChanged = {},
+                    onNoteChanged = {},
+                    onSave = {},
+                    onConfirmHiddenData = {},
+                    onDismissHiddenData = {},
+                    onCancel = { cancelled++ },
+                    onConfirmDiscard = {},
+                    onDismissDiscard = {}
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Anuluj").performClick()
+        assertEquals(1, cancelled)
     }
 
     private fun dialogButton(text: String) = hasText(text) and hasAnyAncestor(

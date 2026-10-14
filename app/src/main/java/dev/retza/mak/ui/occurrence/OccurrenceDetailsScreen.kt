@@ -53,6 +53,9 @@ fun OccurrenceDetailsScreen(
     onDismissDeleteConfirmation: () -> Unit,
     onOpenOccurrenceEdit: () -> Unit,
     onDismissOccurrenceEdit: () -> Unit,
+    onRequestDismissOccurrenceEdit: () -> Unit,
+    onConfirmDiscardEdit: () -> Unit,
+    onKeepEditing: () -> Unit,
     onSaveOccurrenceChange: () -> Unit,
     onRestoreOccurrence: () -> Unit,
     onRequestRestore: () -> Unit,
@@ -135,7 +138,19 @@ fun OccurrenceDetailsScreen(
             onEndTimeDraftChanged = onEndTimeDraftChanged,
             onRoomDraftChanged = onRoomDraftChanged,
             onDismiss = onDismissOccurrenceEdit,
+            onRequestDismiss = onRequestDismissOccurrenceEdit,
             onSave = onSaveOccurrenceChange
+        )
+    }
+
+    if (state.showDiscardEditConfirmation) {
+        MakConfirmDeletionDialog(
+            title = "Odrzucić zmiany?",
+            text = "Wpisane dane nie zostaną zapisane.",
+            isDeleting = false,
+            onConfirm = onConfirmDiscardEdit,
+            onCancel = onKeepEditing,
+            confirmLabel = "Odrzuć"
         )
     }
 
@@ -193,12 +208,13 @@ private fun OccurrenceEditDialog(
     onEndTimeDraftChanged: (String) -> Unit,
     onRoomDraftChanged: (String) -> Unit,
     onDismiss: () -> Unit,
+    onRequestDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
     MakDialog(
         title = "Edytuj ten termin",
         description = "Zmiany dotyczą tylko tego terminu. Pozostałe wystąpienia zajęć pozostaną bez zmian.",
-        onDismiss = { if (!state.isSaving) onDismiss() },
+        onDismiss = { if (!state.isSaving) onRequestDismiss() },
         dismissAction = MakDialogAction("Anuluj", onDismiss, enabled = !state.isSaving),
         confirmAction = MakDialogAction("Zapisz", onSave, enabled = state.canSaveOccurrenceEdit && !state.isSaving)
     ) {

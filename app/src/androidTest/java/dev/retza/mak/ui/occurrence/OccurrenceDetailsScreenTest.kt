@@ -75,6 +75,7 @@ class OccurrenceDetailsScreenTest {
                         onDismissDeleteConfirmation = {},
                         onOpenOccurrenceEdit = { state = state.copy(showEditDialog = true) },
                         onDismissOccurrenceEdit = { state = state.copy(showEditDialog = false) },
+                        onRequestDismissOccurrenceEdit = {}, onConfirmDiscardEdit = {}, onKeepEditing = {},
                         onSaveOccurrenceChange = {},
                         onRestoreOccurrence = {}, onRequestRestore = {}, onDismissRestore = {}, onConfirmCancelChanged = {}, onDismissCancelChanged = {},
                         onOccurrenceNoteDraftChanged = {},
@@ -131,6 +132,7 @@ class OccurrenceDetailsScreenTest {
                     ),
                     onDeleteBaseClass = {}, onDismissDeleteConfirmation = {},
                     onOpenOccurrenceEdit = {}, onDismissOccurrenceEdit = {},
+                    onRequestDismissOccurrenceEdit = {}, onConfirmDiscardEdit = {}, onKeepEditing = {},
                     onSaveOccurrenceChange = {}, onRestoreOccurrence = {}, onRequestRestore = {}, onDismissRestore = {}, onConfirmCancelChanged = {}, onDismissCancelChanged = {},
                     onOccurrenceNoteDraftChanged = {}, onSharedNoteDraftChanged = {},
                     onTargetDateDraftChanged = {}, onStartTimeDraftChanged = {},
@@ -173,6 +175,7 @@ class OccurrenceDetailsScreenTest {
                         onDismissDeleteConfirmation = {},
                         onOpenOccurrenceEdit = {},
                         onDismissOccurrenceEdit = {},
+                        onRequestDismissOccurrenceEdit = {}, onConfirmDiscardEdit = {}, onKeepEditing = {},
                         onSaveOccurrenceChange = {},
                         onRestoreOccurrence = {}, onRequestRestore = {}, onDismissRestore = {}, onConfirmCancelChanged = {}, onDismissCancelChanged = {},
                         onOccurrenceNoteDraftChanged = {},
@@ -228,6 +231,7 @@ class OccurrenceDetailsScreenTest {
                         onDismissDeleteConfirmation = {},
                         onOpenOccurrenceEdit = {},
                         onDismissOccurrenceEdit = {},
+                        onRequestDismissOccurrenceEdit = {}, onConfirmDiscardEdit = {}, onKeepEditing = {},
                         onSaveOccurrenceChange = {},
                         onRestoreOccurrence = { restoreClicks += 1 },
                         onRequestRestore = { requestClicks += 1 }, onDismissRestore = {},
@@ -268,6 +272,7 @@ class OccurrenceDetailsScreenTest {
                     ),
                     onDeleteBaseClass = {}, onDismissDeleteConfirmation = {},
                     onOpenOccurrenceEdit = {}, onDismissOccurrenceEdit = {},
+                    onRequestDismissOccurrenceEdit = {}, onConfirmDiscardEdit = {}, onKeepEditing = {},
                     onSaveOccurrenceChange = {}, onRestoreOccurrence = { restoreClicks += 1 },
                     onRequestRestore = {}, onDismissRestore = {},
                     onConfirmCancelChanged = {}, onDismissCancelChanged = {},
@@ -300,6 +305,7 @@ class OccurrenceDetailsScreenTest {
                     ),
                     onDeleteBaseClass = {}, onDismissDeleteConfirmation = {},
                     onOpenOccurrenceEdit = {}, onDismissOccurrenceEdit = {},
+                    onRequestDismissOccurrenceEdit = {}, onConfirmDiscardEdit = {}, onKeepEditing = {},
                     onSaveOccurrenceChange = {}, onRestoreOccurrence = {},
                     onRequestRestore = {}, onDismissRestore = {},
                     onConfirmCancelChanged = { confirmClicks += 1 }, onDismissCancelChanged = {},
@@ -314,6 +320,45 @@ class OccurrenceDetailsScreenTest {
         composeTestRule.onNodeWithText("Odwołać zmieniony termin?").assertIsDisplayed()
         composeTestRule.onNodeWithText("Odwołaj").assertIsDisplayed().performClick()
         assertEquals(1, confirmClicks)
+    }
+
+    @Test
+    fun discardEditDialogShowsTextAndReportsBothChoices() {
+        var confirmed = 0
+        var kept = 0
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                OccurrenceDetailsScreen(
+                    state = OccurrenceDetailsUiState(
+                        subjectName = "Matematyka",
+                        currentDate = "2026-09-21",
+                        startTime = "09:00",
+                        endTime = "10:30",
+                        showDiscardEditConfirmation = true
+                    ),
+                    onDeleteBaseClass = {}, onDismissDeleteConfirmation = {},
+                    onOpenOccurrenceEdit = {}, onDismissOccurrenceEdit = {},
+                    onRequestDismissOccurrenceEdit = {}, onConfirmDiscardEdit = { confirmed++ }, onKeepEditing = { kept++ },
+                    onSaveOccurrenceChange = {},
+                    onRestoreOccurrence = {}, onRequestRestore = {}, onDismissRestore = {}, onConfirmCancelChanged = {}, onDismissCancelChanged = {},
+                    onOccurrenceNoteDraftChanged = {},
+                    onSharedNoteDraftChanged = {},
+                    onTargetDateDraftChanged = {},
+                    onStartTimeDraftChanged = {},
+                    onEndTimeDraftChanged = {},
+                    onRoomDraftChanged = {},
+                    onSaveSharedNote = {},
+                    onSaveOccurrenceNote = {},
+                )
+            }
+        }
+
+        composeTestRule.onNodeWithText("Odrzucić zmiany?").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Wpisane dane nie zostaną zapisane.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Odrzuć").performClick()
+        assertEquals(1, confirmed)
+        composeTestRule.onNodeWithText("Anuluj").performClick()
+        assertEquals(1, kept)
     }
 
     @Test
@@ -350,6 +395,7 @@ class OccurrenceDetailsScreenTest {
                         onDismissDeleteConfirmation = {},
                         onOpenOccurrenceEdit = {},
                         onDismissOccurrenceEdit = { dismissCalls += 1 },
+                        onRequestDismissOccurrenceEdit = {}, onConfirmDiscardEdit = {}, onKeepEditing = {},
                         onSaveOccurrenceChange = {},
                         onRestoreOccurrence = {}, onRequestRestore = {}, onDismissRestore = {}, onConfirmCancelChanged = {}, onDismissCancelChanged = {},
                         onOccurrenceNoteDraftChanged = {},
@@ -404,6 +450,7 @@ class OccurrenceDetailsScreenTest {
                         onDismissDeleteConfirmation = {},
                         onOpenOccurrenceEdit = {},
                         onDismissOccurrenceEdit = {},
+                        onRequestDismissOccurrenceEdit = {}, onConfirmDiscardEdit = {}, onKeepEditing = {},
                         onSaveOccurrenceChange = {},
                         onRestoreOccurrence = {}, onRequestRestore = {}, onDismissRestore = {}, onConfirmCancelChanged = {}, onDismissCancelChanged = {},
                         onOccurrenceNoteDraftChanged = {},
@@ -448,6 +495,7 @@ class OccurrenceDetailsScreenTest {
                         onDismissDeleteConfirmation = {},
                         onOpenOccurrenceEdit = {},
                         onDismissOccurrenceEdit = {},
+                        onRequestDismissOccurrenceEdit = {}, onConfirmDiscardEdit = {}, onKeepEditing = {},
                         onSaveOccurrenceChange = {},
                         onRestoreOccurrence = {}, onRequestRestore = {}, onDismissRestore = {}, onConfirmCancelChanged = {}, onDismissCancelChanged = {},
                         onOccurrenceNoteDraftChanged = {},

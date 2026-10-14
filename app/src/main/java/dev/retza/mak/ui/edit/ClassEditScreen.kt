@@ -22,6 +22,7 @@ import dev.retza.mak.domain.toLocalDateOrNull
 import dev.retza.mak.ui.dayNames
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
+import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDialogAction
@@ -90,7 +91,8 @@ data class ClassEditUiState(
     val courseOptions: List<ClassCourseOptionUi> = emptyList(),
     val errors: Map<ClassEditField, FieldErrorUi> = emptyMap(),
     val isSaving: Boolean = false,
-    val pendingHiddenData: HiddenDataWarningUi? = null
+    val pendingHiddenData: HiddenDataWarningUi? = null,
+    val showDiscardConfirmation: Boolean = false
 )
 
 @Composable
@@ -113,8 +115,20 @@ fun ClassEditScreen(
     onConfirmHiddenData: () -> Unit,
     onDismissHiddenData: () -> Unit,
     onCancel: () -> Unit,
+    onConfirmDiscard: () -> Unit,
+    onDismissDiscard: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    if (state.showDiscardConfirmation) {
+        MakConfirmDeletionDialog(
+            title = "Odrzucić zmiany?",
+            text = "Wpisane dane nie zostaną zapisane.",
+            isDeleting = false,
+            onConfirm = onConfirmDiscard,
+            onCancel = onDismissDiscard,
+            confirmLabel = "Odrzuć"
+        )
+    }
     state.pendingHiddenData?.let { warning ->
         MakDialog(
             title = "Część danych przestanie być widoczna",

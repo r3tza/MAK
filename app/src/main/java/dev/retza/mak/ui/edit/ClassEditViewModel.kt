@@ -69,6 +69,12 @@ class ClassEditViewModel(
             field = value
             savedState[KEY_EDITING_CLASS_ID] = value
         }
+    // Field values from the moment the form opened; a close asks for confirmation only when they differ.
+    private var baseline: HashMap<String, String>? = savedState[KEY_BASELINE]
+        set(value) {
+            field = value
+            savedState[KEY_BASELINE] = value
+        }
     private var editPlanData: ActivePlanData? = null
 
     // Kept in the saved state so a rotation or process death does not load the form again over a restored draft.
@@ -137,6 +143,7 @@ class ClassEditViewModel(
             ),
             freshActivePlanData().also { editPlanData = it }
         )
+        rememberBaseline()
     }
 
     suspend fun openEditFromFreshPlan(classId: Long): Boolean {
@@ -148,7 +155,32 @@ class ClassEditViewModel(
         editPlanData = data
         editingClassId = classId
         state.value = classEditState(item, data)
+        rememberBaseline()
         return true
+    }
+
+    private fun rememberBaseline() {
+        baseline = state.value.comparableDraft()
+    }
+
+    fun hasUnsavedChanges(): Boolean = baseline?.let { state.value.comparableDraft() != it } ?: false
+
+    fun requestClose() {
+        if (state.value.isSaving) return
+        if (hasUnsavedChanges()) {
+            state.update { it.copy(showDiscardConfirmation = true) }
+        } else {
+            effectsChannel.trySend(ClassEditEffect.CloseEditor)
+        }
+    }
+
+    fun confirmDiscard() {
+        state.update { it.copy(showDiscardConfirmation = false) }
+        effectsChannel.trySend(ClassEditEffect.CloseEditor)
+    }
+
+    fun dismissDiscard() {
+        state.update { it.copy(showDiscardConfirmation = false) }
     }
 
     private fun classEditState(item: dev.retza.mak.domain.ClassItem, data: ActivePlanData): ClassEditUiState {
@@ -367,6 +399,7 @@ private fun legacyRecurrenceFromId(id: String?): Recurrence = when (id) {
 private const val KEY_EDITING_CLASS_ID = "class_edit_editing_class_id"
 private const val KEY_OPEN_STATE = "class_edit_open_state"
 private const val KEY_DRAFT = "class_edit_draft"
+private const val KEY_BASELINE = "class_edit_baseline"
 
 // Only the values typed by the user are stored; options and calendar ranges come from Room.
 private val draftFields: List<Pair<String, (ClassEditUiState) -> String?>> = listOf(
@@ -386,6 +419,11 @@ private val draftFields: List<Pair<String, (ClassEditUiState) -> String?>> = lis
     "teacher" to { it.teacher },
     "note" to { it.note }
 )
+
+private val comparedDraftFields = draftFields.filter { it.first != "title" && it.first != "courseName" }
+
+private fun ClassEditUiState.comparableDraft(): HashMap<String, String> =
+    HashMap(comparedDraftFields.associate { it.first to it.second(this).orEmpty().trim() })
 
 private fun SavedStateHandle.storeClassEditDraft(value: ClassEditUiState) {
     set(KEY_DRAFT, true)

@@ -518,6 +518,48 @@ class OccurrenceViewModelTest {
     }
 
     @Test
+    fun closingEditDialogWithoutChangesOrWithOnlySpacesInRoomClosesIt() = runTest(mainDispatcher) {
+        val viewModel = occurrenceViewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+
+        viewModel.openEditDialog()
+        viewModel.requestDismissEditDialog()
+        assertFalse(viewModel.details.value.showEditDialog)
+
+        viewModel.openEditDialog()
+        viewModel.updateRoomDraft(viewModel.details.value.roomDraft + "  ")
+        viewModel.requestDismissEditDialog()
+        assertFalse(viewModel.details.value.showEditDialog)
+        assertFalse(viewModel.details.value.showDiscardEditConfirmation)
+    }
+
+    @Test
+    fun changedTimeAsksBeforeDiscardingAndKeepEditingKeepsValues() = runTest(mainDispatcher) {
+        val viewModel = occurrenceViewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.open("1:2026-09-21")
+        advanceUntilIdle()
+        viewModel.openEditDialog()
+        viewModel.updateStartTimeDraft("11:00")
+
+        viewModel.requestDismissEditDialog()
+        assertTrue(viewModel.details.value.showDiscardEditConfirmation)
+        assertTrue(viewModel.details.value.showEditDialog)
+
+        viewModel.keepEditing()
+        assertFalse(viewModel.details.value.showDiscardEditConfirmation)
+        assertTrue(viewModel.details.value.showEditDialog)
+        assertEquals("11:00", viewModel.details.value.startTimeDraft)
+
+        viewModel.requestDismissEditDialog()
+        viewModel.confirmDiscardEdit()
+        assertFalse(viewModel.details.value.showDiscardEditConfirmation)
+        assertFalse(viewModel.details.value.showEditDialog)
+    }
+
+    @Test
     fun occurrenceChangeSaveRefreshesStatusAfterEditedDraft() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = occurrenceViewModel(repository)

@@ -66,6 +66,7 @@ data class OccurrenceDetailsUiState(
     val canRestoreOccurrence: Boolean = false,
     val showRestoreConfirmation: Boolean = false,
     val showCancelChangedConfirmation: Boolean = false,
+    val showDiscardEditConfirmation: Boolean = false,
     val restoreTargetLabel: String = ""
 ) {
     val canSaveSharedNote: Boolean

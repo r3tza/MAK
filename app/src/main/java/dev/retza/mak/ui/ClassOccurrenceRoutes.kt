@@ -1,5 +1,6 @@
 package dev.retza.mak.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -62,7 +63,9 @@ internal fun NavGraphBuilder.classEditRoute(
         }
         ClassEditEffects(classEditViewModel, navController)
         val editorState = classEditViewModel.editor.collectAsStateWithLifecycle().value
-        DeclareTopBar(topBar, TopBarSpec(MakRoutes.Edit, title = editorState.title))
+        val requestClose = remember(classEditViewModel) { { classEditViewModel.requestClose() } }
+        BackHandler(onBack = requestClose)
+        DeclareTopBar(topBar, TopBarSpec(MakRoutes.Edit, title = editorState.title, onBack = requestClose))
         ClassEditScreen(
             state = editorState,
             onNameChanged = { value -> classEditViewModel.update { it.copy(name = value) } },
@@ -81,7 +84,9 @@ internal fun NavGraphBuilder.classEditRoute(
             onSave = classEditViewModel::save,
             onConfirmHiddenData = classEditViewModel::confirmSaveWithHiddenData,
             onDismissHiddenData = classEditViewModel::dismissHiddenData,
-            onCancel = onBack,
+            onCancel = requestClose,
+            onConfirmDiscard = classEditViewModel::confirmDiscard,
+            onDismissDiscard = classEditViewModel::dismissDiscard,
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -121,6 +126,9 @@ internal fun NavGraphBuilder.occurrenceDetailsRoute(
             onDismissDeleteConfirmation = occurrenceViewModel::cancelClassDeletion,
             onOpenOccurrenceEdit = occurrenceViewModel::openEditDialog,
             onDismissOccurrenceEdit = occurrenceViewModel::dismissEditDialog,
+            onRequestDismissOccurrenceEdit = occurrenceViewModel::requestDismissEditDialog,
+            onConfirmDiscardEdit = occurrenceViewModel::confirmDiscardEdit,
+            onKeepEditing = occurrenceViewModel::keepEditing,
             onSaveOccurrenceChange = occurrenceViewModel::saveOccurrenceChange,
             onRestoreOccurrence = occurrenceViewModel::restoreOccurrence,
             onRequestRestore = occurrenceViewModel::requestRestoreOccurrence,

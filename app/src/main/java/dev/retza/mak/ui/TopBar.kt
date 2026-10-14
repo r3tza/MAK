@@ -12,7 +12,8 @@ import androidx.compose.runtime.setValue
 internal data class TopBarSpec(
     val route: String,
     val title: String? = null,
-    val actions: List<Pair<String, () -> Unit>> = emptyList()
+    val actions: List<Pair<String, () -> Unit>> = emptyList(),
+    val onBack: (() -> Unit)? = null
 )
 
 /** Holds the spec of the destination on screen; a leaving destination clears only its own spec. */
