@@ -2,6 +2,7 @@ package dev.retza.mak.ui.freedays
 
 import dev.retza.mak.data.repository.FreeDayRecord
 import dev.retza.mak.data.repository.SemesterConfiguration
+import dev.retza.mak.data.repository.groupKey
 import dev.retza.mak.text.polishPlural
 import dev.retza.mak.ui.daysLabel
 import java.time.LocalDate
@@ -17,7 +18,7 @@ data class FreeDayGroup(
 
 fun groupFreeDays(records: List<FreeDayRecord>): List<FreeDayGroup> =
     records
-        .groupBy { Triple(it.name, it.startDate, it.endDate) }
+        .groupBy { it.groupKey() }
         .map { (key, rows) ->
             FreeDayGroup(
                 ids = rows.map { it.id }.sorted(),

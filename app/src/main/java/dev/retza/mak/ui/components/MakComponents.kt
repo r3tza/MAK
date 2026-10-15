@@ -1467,6 +1467,19 @@ fun MakConfirmDeletionDialog(
     )
 }
 
+/** Asks before dropping typed values; shared by the class form and the occurrence edit dialog. */
+@Composable
+fun MakDiscardChangesDialog(onConfirm: () -> Unit, onCancel: () -> Unit) {
+    MakConfirmDeletionDialog(
+        title = "Odrzucić zmiany?",
+        text = "Wpisane dane nie zostaną zapisane.",
+        isDeleting = false,
+        onConfirm = onConfirm,
+        onCancel = onCancel,
+        confirmLabel = "Odrzuć"
+    )
+}
+
 @Composable
 fun MakHelperText(
     text: String,

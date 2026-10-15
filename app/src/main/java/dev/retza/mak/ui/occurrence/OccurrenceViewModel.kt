@@ -240,16 +240,7 @@ class OccurrenceViewModel(
         }
     }
 
-    fun confirmDiscardEdit() = editSession.run {
-        update {
-            it.copy(
-                showDiscardEditConfirmation = false,
-                showEditDialog = false,
-                draftErrors = emptyMap(),
-                draftError = null
-            )
-        }
-    }
+    fun confirmDiscardEdit() = dismissEditDialog()
 
     fun keepEditing() = editSession.run { update { it.copy(showDiscardEditConfirmation = false) } }
 

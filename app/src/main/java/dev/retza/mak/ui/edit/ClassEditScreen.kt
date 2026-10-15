@@ -22,10 +22,10 @@ import dev.retza.mak.domain.toLocalDateOrNull
 import dev.retza.mak.ui.dayNames
 import dev.retza.mak.ui.components.FieldError
 import dev.retza.mak.ui.components.FieldErrorUi
-import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDialogAction
+import dev.retza.mak.ui.components.MakDiscardChangesDialog
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakExpandableSection
 import dev.retza.mak.ui.components.MakField
@@ -120,14 +120,7 @@ fun ClassEditScreen(
     modifier: Modifier = Modifier
 ) {
     if (state.showDiscardConfirmation) {
-        MakConfirmDeletionDialog(
-            title = "Odrzucić zmiany?",
-            text = "Wpisane dane nie zostaną zapisane.",
-            isDeleting = false,
-            onConfirm = onConfirmDiscard,
-            onCancel = onDismissDiscard,
-            confirmLabel = "Odrzuć"
-        )
+        MakDiscardChangesDialog(onConfirm = onConfirmDiscard, onCancel = onDismissDiscard)
     }
     state.pendingHiddenData?.let { warning ->
         MakDialog(

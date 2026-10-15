@@ -34,6 +34,7 @@ import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDialogAction
+import dev.retza.mak.ui.components.MakDiscardChangesDialog
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakFactRow
 import dev.retza.mak.ui.components.MakField
@@ -144,14 +145,7 @@ fun OccurrenceDetailsScreen(
     }
 
     if (state.showDiscardEditConfirmation) {
-        MakConfirmDeletionDialog(
-            title = "Odrzucić zmiany?",
-            text = "Wpisane dane nie zostaną zapisane.",
-            isDeleting = false,
-            onConfirm = onConfirmDiscardEdit,
-            onCancel = onKeepEditing,
-            confirmLabel = "Odrzuć"
-        )
+        MakDiscardChangesDialog(onConfirm = onConfirmDiscardEdit, onCancel = onKeepEditing)
     }
 
     if (state.showDeleteConfirmation) {

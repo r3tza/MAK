@@ -1,8 +1,8 @@
 package dev.retza.mak.export
 
 import dev.retza.mak.data.repository.BackupData
-import dev.retza.mak.data.repository.FreeDayRecord
 import dev.retza.mak.data.repository.PlanBackupGateway
+import dev.retza.mak.data.repository.groupKey
 import dev.retza.mak.settings.SettingsPreferences
 
 class ImportHandle internal constructor(internal val data: BackupData)
@@ -59,9 +59,6 @@ private fun BackupData.toSummary(): ImportSummary = ImportSummary(
     overrideCount = semesters.sumOf { it.weekOverrides.size },
     noteCount = semesters.sumOf { it.occurrenceNotes.size },
     changeCount = semesters.sumOf { it.occurrenceChanges.size },
-    freeDayCount = semesters.sumOf { it.freeDays.distinctBy(::freeDayGroupKey).size },
+    freeDayCount = semesters.sumOf { it.freeDays.distinctBy { day -> day.groupKey() }.size },
     activeSemesterName = semesters.firstOrNull { it.semester.isActive }?.semester?.name
 )
-
-/** The same range in several calendars is one card on the free days screen. */
-private fun freeDayGroupKey(day: FreeDayRecord) = Triple(day.startDate, day.endDate, day.name)

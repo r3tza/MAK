@@ -722,6 +722,8 @@ private fun WeekOverridesSection(
     onDeleteOverride: (Long) -> Unit,
     onCancelEdit: () -> Unit
 ) {
+    val minDate = calendar?.startDate?.toLocalDateOrNull()
+    val maxDate = calendar?.endDate?.toLocalDateOrNull()
     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -734,8 +736,8 @@ private fun WeekOverridesSection(
         if (form.isOpen && form.id == null) {
             WeekOverrideForm(
                 state = form,
-                minDate = calendar?.startDate?.toLocalDateOrNull(),
-                maxDate = calendar?.endDate?.toLocalDateOrNull(),
+                minDate = minDate,
+                maxDate = maxDate,
                 onWeekStartDateChanged = onWeekStartDateChanged,
                 onWeekTypeChanged = onWeekTypeChanged,
                 onScopeChanged = onScopeChanged,
@@ -755,8 +757,8 @@ private fun WeekOverridesSection(
                 if (form.isOpen && form.id == override.id) {
                     WeekOverrideForm(
                         state = form,
-                        minDate = calendar?.startDate?.toLocalDateOrNull(),
-                        maxDate = calendar?.endDate?.toLocalDateOrNull(),
+                        minDate = minDate,
+                        maxDate = maxDate,
                         onWeekStartDateChanged = onWeekStartDateChanged,
                         onWeekTypeChanged = onWeekTypeChanged,
                         onScopeChanged = onScopeChanged,

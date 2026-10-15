@@ -269,7 +269,7 @@ class ScheduleViewModel(
             CalendarDayUi(
                 id = date.toString(),
                 dayLabel = date.dayOfMonth.toString(),
-                accessibilityLabel = calendarAccessibilityLabel(date, occurrences, cancelled, isFreeDay),
+                accessibilityLabel = calendarAccessibilityLabel(date, occurrences, shown, isFreeDay),
                 isInCurrentMonth = YearMonth.from(date) == month,
                 isToday = date == today,
                 isSelected = false,
@@ -459,10 +459,10 @@ private fun calendarLegend(
 private fun calendarAccessibilityLabel(
     date: LocalDate,
     occurrences: List<PlannedOccurrence>,
-    cancelled: List<PlannedOccurrence>,
+    shown: List<PlannedOccurrence>,
     isFreeDay: Boolean
 ): String {
-    val details = (occurrences + cancelled).take(3).joinToString("; ") { calendarOccurrenceLabel(it) }
+    val details = shown.take(3).joinToString("; ") { calendarOccurrenceLabel(it) }
     return buildString {
         append(date.format(fullDateFormatter))
         if (isFreeDay) append(", dzień wolny")

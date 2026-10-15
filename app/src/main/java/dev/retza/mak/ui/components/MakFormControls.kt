@@ -217,50 +217,35 @@ fun MakDateRangeFields(
     }
 
     BoxWithConstraints(modifier.fillMaxWidth()) {
-        if (stackDateRangeFields(maxWidth, LocalDensity.current.fontScale)) {
+        val stacked = stackDateRangeFields(maxWidth, LocalDensity.current.fontScale)
+        val fields: @Composable (Modifier) -> Unit = { fieldModifier ->
+            RangeDateField(
+                label = "Od",
+                date = startDate,
+                isError = isError,
+                focusRequester = startFocus,
+                onOpen = { openFrom(true) },
+                modifier = fieldModifier
+            )
+            RangeDateField(
+                label = "Do",
+                date = endDate,
+                isError = isError,
+                focusRequester = endFocus,
+                onOpen = { openFrom(false) },
+                modifier = fieldModifier
+            )
+        }
+        if (stacked) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
-            ) {
-                RangeDateField(
-                    label = "Od",
-                    date = startDate,
-                    isError = isError,
-                    focusRequester = startFocus,
-                    onOpen = { openFrom(true) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-                RangeDateField(
-                    label = "Do",
-                    date = endDate,
-                    isError = isError,
-                    focusRequester = endFocus,
-                    onOpen = { openFrom(false) },
-                    modifier = Modifier.fillMaxWidth()
-                )
-            }
+            ) { fields(Modifier.fillMaxWidth()) }
         } else {
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
-            ) {
-                RangeDateField(
-                    label = "Od",
-                    date = startDate,
-                    isError = isError,
-                    focusRequester = startFocus,
-                    onOpen = { openFrom(true) },
-                    modifier = Modifier.weight(1f)
-                )
-                RangeDateField(
-                    label = "Do",
-                    date = endDate,
-                    isError = isError,
-                    focusRequester = endFocus,
-                    onOpen = { openFrom(false) },
-                    modifier = Modifier.weight(1f)
-                )
-            }
+            ) { fields(Modifier.weight(1f)) }
         }
     }
 

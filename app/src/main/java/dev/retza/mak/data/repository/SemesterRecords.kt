@@ -49,6 +49,9 @@ data class FreeDayRecord(
     val name: String? = null
 )
 
+/** Free days with the same name and dates form one entry, whatever calendars they were saved in. */
+fun FreeDayRecord.groupKey(): Triple<String?, LocalDate, LocalDate> = Triple(name, startDate, endDate)
+
 /** One semester with everything its configuration screens show, read in one transaction. */
 data class SemesterConfiguration(
     val semester: SemesterRecord,
