@@ -13,6 +13,7 @@ object MakRoutes {
     const val SemesterCourseAdd = "semester/{semesterId}/course-new"
     const val SemesterCourseEdit = "semester/{semesterId}/course/{assignmentId}"
     const val SemesterOverrides = "semester/{semesterId}/week-overrides"
+    const val SemesterFreeDays = "semester/{semesterId}/free-days"
     const val SemesterCalendars = "semester/{semesterId}/calendars"
     const val Settings = "settings"
     const val SettingsSemesters = "settings/semesters"
@@ -24,6 +25,7 @@ object MakRoutes {
     const val SettingsUpdate = "settings/update"
     const val StudyPrograms = "settings/programs"
     const val StudyProgramEdit = "settings/programs/{programId}"
+    const val StudyProgramAdd = "settings/program-new"
     const val ImportPreview = "settings/import"
     const val Setup = "setup"
     const val SetupRoute = "setup?resume={resume}"
@@ -54,6 +56,8 @@ fun semesterCourseEditRoute(semesterId: String, assignmentId: Long): String =
 
 fun semesterOverridesRoute(id: String): String = "semester/$id/week-overrides"
 
+fun semesterFreeDaysRoute(id: String): String = "semester/$id/free-days"
+
 fun semesterCalendarsRoute(id: String): String = "semester/$id/calendars"
 
 fun setupRoute(resumeExisting: Boolean): String = "${MakRoutes.Setup}?resume=$resumeExisting"
@@ -72,6 +76,10 @@ internal fun shouldCloseImportPreview(currentRoute: String?): Boolean =
 
 internal fun shouldHandleSetupEffect(currentRoute: String?): Boolean =
     currentRoute == MakRoutes.Setup || currentRoute == MakRoutes.SetupRoute
+
+/** The wizard opened from settings stands above that screen, so leaving it goes back to it. */
+internal fun returnsToSettingsByPop(previousRoute: String?): Boolean =
+    previousRoute == MakRoutes.Settings || previousRoute == MakRoutes.SettingsSemesters
 
 internal enum class AddAction {
     None,
@@ -94,6 +102,7 @@ internal fun titleForRoute(route: String?): String = when (route) {
     MakRoutes.SemesterCourseAdd -> "Dodaj kierunek"
     MakRoutes.SemesterCourseEdit -> "Edytuj kierunek"
     MakRoutes.SemesterOverrides -> "Korekty tygodni"
+    MakRoutes.SemesterFreeDays -> "Dni wolne"
     MakRoutes.SemesterCalendars -> "Kalendarze"
     MakRoutes.Settings -> "Ustawienia"
     MakRoutes.SettingsSemesters -> "Semestry"
@@ -105,6 +114,7 @@ internal fun titleForRoute(route: String?): String = when (route) {
     MakRoutes.SettingsUpdate -> "Aktualizacja"
     MakRoutes.StudyPrograms -> "Kierunki"
     MakRoutes.StudyProgramEdit -> "Edytuj kierunek"
+    MakRoutes.StudyProgramAdd -> "Dodaj kierunek"
     MakRoutes.ImportPreview -> "Import"
     MakRoutes.Setup, MakRoutes.SetupRoute -> "Konfiguracja"
     else -> "Dzisiaj"

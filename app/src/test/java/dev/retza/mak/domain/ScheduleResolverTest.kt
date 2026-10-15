@@ -5,6 +5,7 @@ import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -51,7 +52,8 @@ class ScheduleResolverTest {
         changes: Collection<OccurrenceChange> = emptyList(),
         notes: Collection<OccurrenceNote> = emptyList(),
         overrides: Collection<WeekOverride> = emptyList(),
-        extraCourses: Collection<StudyProgram> = emptyList()
+        extraCourses: Collection<StudyProgram> = emptyList(),
+        freeDays: Collection<FreeDay> = emptyList()
     ) = resolver.resolve(
         date = date,
         semester = semester,
@@ -61,7 +63,8 @@ class ScheduleResolverTest {
         calendars = listOf(calendar),
         weekOverrides = overrides,
         occurrenceChanges = changes,
-        occurrenceNotes = notes
+        occurrenceNotes = notes,
+        freeDays = freeDays
     )
 
     @Test
@@ -299,5 +302,159 @@ class ScheduleResolverTest {
             WeekStatus.OutsideSemester,
             resolve(LocalDate.of(2026, 2, 10), emptyList()).weekStatus
         )
+    }
+
+    private val freeWeek = FreeDay(
+        id = 1L,
+        academicCalendarId = calendar.id,
+        startDate = LocalDate.of(2026, 1, 12),
+        endDate = LocalDate.of(2026, 1, 19)
+    )
+
+    @Test
+    fun recurringClassIsSkippedOnFreeDayIncludingBothEnds() {
+        val freeDays = listOf(
+            FreeDay(id = 1L, academicCalendarId = calendar.id, startDate = LocalDate.of(2026, 1, 12), endDate = LocalDate.of(2026, 1, 14))
+        )
+        val classes = listOf(
+            classItem(id = 2L, day = DayOfWeek.MONDAY),
+            classItem(id = 3L, day = DayOfWeek.WEDNESDAY),
+            classItem(id = 4L, day = DayOfWeek.SUNDAY),
+            classItem(id = 5L, day = DayOfWeek.THURSDAY)
+        )
+
+        assertEquals(listOf(4L), resolve(LocalDate.of(2026, 1, 11), classes, freeDays = freeDays).occurrences.map { it.classId })
+        assertTrue(resolve(LocalDate.of(2026, 1, 12), classes, freeDays = freeDays).occurrences.isEmpty())
+        assertTrue(resolve(LocalDate.of(2026, 1, 14), classes, freeDays = freeDays).occurrences.isEmpty())
+        assertEquals(listOf(5L), resolve(LocalDate.of(2026, 1, 15), classes, freeDays = freeDays).occurrences.map { it.classId })
+    }
+
+    @Test
+    fun oneTimeClassStaysOnFreeDay() {
+        val once = classItem(
+            id = 2L,
+            recurrence = Recurrence.ONCE,
+            day = DayOfWeek.MONDAY,
+            date = LocalDate.of(2026, 1, 12)
+        )
+
+        val result = resolve(LocalDate.of(2026, 1, 12), listOf(once), freeDays = listOf(freeWeek))
+
+        assertEquals(listOf(2L), result.occurrences.map { it.classId })
+    }
+
+    @Test
+    fun occurrenceMovedOntoFreeDayStaysOnIt() {
+        val moved = OccurrenceChange(
+            id = 1L,
+            classId = 2L,
+            originalDate = LocalDate.of(2026, 1, 5),
+            kind = OccurrenceChangeKind.MODIFIED,
+            targetDate = LocalDate.of(2026, 1, 12)
+        )
+
+        val result = resolve(
+            LocalDate.of(2026, 1, 12),
+            listOf(classItem(id = 2L)),
+            changes = listOf(moved),
+            freeDays = listOf(freeWeek)
+        )
+
+        assertEquals(listOf(LocalDate.of(2026, 1, 5)), result.occurrences.map { it.originalDate })
+    }
+
+    @Test
+    fun occurrenceMovedFromFreeDayToNormalDayAppearsOnTarget() {
+        val moved = OccurrenceChange(
+            id = 1L,
+            classId = 2L,
+            originalDate = LocalDate.of(2026, 1, 12),
+            kind = OccurrenceChangeKind.MODIFIED,
+            targetDate = LocalDate.of(2026, 1, 8)
+        )
+
+        val result = resolve(
+            LocalDate.of(2026, 1, 8),
+            listOf(classItem(id = 2L)),
+            changes = listOf(moved),
+            freeDays = listOf(freeWeek)
+        )
+
+        assertEquals(listOf(LocalDate.of(2026, 1, 12)), result.occurrences.map { it.originalDate })
+    }
+
+    @Test
+    fun occurrenceModifiedWithoutMovingIsSkippedOnFreeDay() {
+        val modified = OccurrenceChange(
+            id = 1L,
+            classId = 2L,
+            originalDate = LocalDate.of(2026, 1, 12),
+            kind = OccurrenceChangeKind.MODIFIED,
+            startTime = LocalTime.of(12, 0)
+        )
+
+        val result = resolve(
+            LocalDate.of(2026, 1, 12),
+            listOf(classItem(id = 2L)),
+            changes = listOf(modified),
+            freeDays = listOf(freeWeek)
+        )
+
+        assertTrue(result.occurrences.isEmpty())
+    }
+
+    @Test
+    fun cancelledOccurrenceOnFreeDayIsNotReportedAsCancelled() {
+        val cancelled = OccurrenceChange(
+            id = 1L,
+            classId = 2L,
+            originalDate = LocalDate.of(2026, 1, 12),
+            kind = OccurrenceChangeKind.CANCELLED
+        )
+
+        val result = resolve(
+            LocalDate.of(2026, 1, 12),
+            listOf(classItem(id = 2L)),
+            changes = listOf(cancelled),
+            freeDays = listOf(freeWeek)
+        )
+
+        assertTrue(result.cancelled.isEmpty())
+    }
+
+    @Test
+    fun freeDayOfOneCalendarDoesNotSkipClassesOfAnotherCalendar() {
+        val otherCalendar = AcademicCalendar(
+            id = 2L,
+            startDate = LocalDate.of(2026, 1, 1),
+            endDate = LocalDate.of(2026, 1, 31),
+            firstWeekType = WeekType.A
+        )
+        val otherAssignment = SemesterProgram(2L, semester.id, course.id, otherCalendar.id)
+
+        val result = resolver.resolve(
+            date = LocalDate.of(2026, 1, 12),
+            semester = semester,
+            classes = listOf(classItem(id = 2L), classItem(id = 3L).copy(semesterProgramId = otherAssignment.id)),
+            courses = listOf(course),
+            semesterPrograms = listOf(assignment, otherAssignment),
+            calendars = listOf(calendar, otherCalendar),
+            freeDays = listOf(freeWeek)
+        )
+
+        assertEquals(listOf(3L), result.occurrences.map { it.classId })
+        assertNull(result.freeDay)
+        assertEquals(freeWeek, result.freeDayOf(listOf(calendar.id)))
+    }
+
+    @Test
+    fun freeDayOfCalendarOutsideSemesterDoesNotAffectPlan() {
+        val result = resolve(
+            LocalDate.of(2026, 1, 12),
+            listOf(classItem(id = 2L)),
+            freeDays = listOf(freeWeek.copy(academicCalendarId = 99L))
+        )
+
+        assertEquals(listOf(2L), result.occurrences.map { it.classId })
     }
 }

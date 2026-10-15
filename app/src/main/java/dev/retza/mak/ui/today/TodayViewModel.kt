@@ -15,6 +15,7 @@ import dev.retza.mak.domain.uniqueCollisionCount
 import dev.retza.mak.data.ActivePlanSource
 import dev.retza.mak.ui.AppLocale
 import dev.retza.mak.ui.label
+import dev.retza.mak.ui.todayNote
 import dev.retza.mak.ui.toUi
 import dev.retza.mak.ui.todayTitleFormatter
 import java.time.Clock
@@ -78,7 +79,8 @@ class TodayViewModel(
             items = schedule.occurrences.map { it.toUi(labels[it.id], names[it.id]) },
             // With every program hidden the note on the list says it all; the hint would repeat it.
             hiddenProgramNames = if (allHidden) emptyList() else hiddenProgramNames(data, inputs.display),
-            allProgramsHidden = allHidden
+            allProgramsHidden = allHidden,
+            freeDay = schedule.freeDay?.todayNote()
         )
     }
 }

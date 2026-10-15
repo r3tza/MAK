@@ -8,6 +8,7 @@ import dev.retza.mak.domain.StudyProgram
 import dev.retza.mak.domain.WeekStatus
 import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.parseHexColor
+import dev.retza.mak.ui.freeDayDetail
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.LocalTime
@@ -55,6 +56,53 @@ class WidgetPresenterTest {
         assertTrue(
             presenter.present(outsideDate, semester.name, outsidePlan, LocalTime.of(0, 0)) is WidgetUiState.OutsideSemester
         )
+    }
+
+    @Test
+    fun freeDayWithoutClassesShowsFreeDayState() {
+        val christmasEve = LocalDate.of(2026, 12, 24)
+        val longCalendar = dev.retza.mak.domain.AcademicCalendar(
+            id = 1L,
+            startDate = date,
+            endDate = LocalDate.of(2027, 2, 7),
+            firstWeekType = dev.retza.mak.domain.WeekType.A
+        )
+        val plan = ActivePlanProvider().resolve(
+            ActivePlanData(
+                semester = semester,
+                classes = emptyList(),
+                courses = listOf(course),
+                semesterPrograms = listOf(assignment),
+                calendars = listOf(longCalendar),
+                freeDays = listOf(
+                    dev.retza.mak.domain.FreeDay(
+                        id = 1L,
+                        academicCalendarId = longCalendar.id,
+                        startDate = LocalDate.of(2026, 12, 23),
+                        endDate = LocalDate.of(2027, 1, 1),
+                        name = "Przerwa świąteczna"
+                    )
+                )
+            ),
+            christmasEve,
+            PlanDisplaySettings.DEFAULT
+        )
+
+        val state = WidgetPresenter().present(christmasEve, semester.name, plan, LocalTime.of(10, 0))
+        assertTrue(state is WidgetUiState.FreeDay)
+        assertEquals("Przerwa świąteczna, do 1 sty", (state as WidgetUiState.FreeDay).detail)
+    }
+
+    @Test
+    fun freeDayDetailNamesLastDayAndCapitalizesUnnamedRange() {
+        val named = dev.retza.mak.domain.FreeDay(1L, 1L, LocalDate.of(2026, 12, 23), LocalDate.of(2027, 1, 1), "Przerwa świąteczna")
+        assertEquals("Przerwa świąteczna", freeDayDetail(named, LocalDate.of(2027, 1, 1)))
+
+        val unnamed = named.copy(name = null)
+        assertEquals("Do 1 sty", freeDayDetail(unnamed, LocalDate.of(2026, 12, 31)))
+
+        val singleDay = dev.retza.mak.domain.FreeDay(2L, 1L, date, date, null)
+        assertNull(freeDayDetail(singleDay, date))
     }
 
     @Test

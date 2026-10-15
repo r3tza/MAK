@@ -27,6 +27,7 @@ import dev.retza.mak.data.repository.RoomScheduleRepository
 import dev.retza.mak.data.repository.RoomSemesterRepository
 import dev.retza.mak.data.repository.SemesterBackup
 import dev.retza.mak.data.repository.toRecord
+import dev.retza.mak.domain.Holiday
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.Instant
@@ -288,6 +289,42 @@ class RoomPersistenceTest {
     }
 
     @Test
+    fun sharedCalendarsMapLowestCalendarPerSemester() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val first = database!!.semesterDao().insert(semester("Pierwszy", true))
+        val second = database!!.semesterDao().insert(semester("Drugi", false))
+        val firstCalendar = database!!.academicCalendarDao().insert(
+            AcademicCalendarEntity(
+                semesterId = first,
+                startDate = LocalDate.of(2026, 9, 7),
+                endDate = LocalDate.of(2027, 2, 14),
+                firstWeekType = WeekType.A
+            )
+        )
+        val secondCalendar = database!!.academicCalendarDao().insert(
+            AcademicCalendarEntity(
+                semesterId = second,
+                startDate = LocalDate.of(2027, 2, 22),
+                endDate = LocalDate.of(2027, 6, 15),
+                firstWeekType = WeekType.A
+            )
+        )
+        database!!.academicCalendarDao().insert(
+            AcademicCalendarEntity(
+                semesterId = first,
+                startDate = LocalDate.of(2026, 10, 1),
+                endDate = LocalDate.of(2027, 1, 31),
+                firstWeekType = WeekType.B
+            )
+        )
+
+        val shared = repository.observeSharedCalendars().first()
+
+        assertEquals(mapOf(first to firstCalendar, second to secondCalendar), shared.mapValues { it.value.id })
+    }
+
+    @Test
     fun deletingInactiveSemesterKeepsActive() = runBlocking {
         database = openDatabase()
         val repository = repository()
@@ -472,6 +509,7 @@ class RoomPersistenceTest {
                     programs = listOf(newAssignment.toRecord()),
                     classes = listOf(newClass.toRecord()),
                     weekOverrides = emptyList(),
+                    freeDays = emptyList(),
                     occurrenceNotes = emptyList(),
                     occurrenceChanges = emptyList()
                 )
@@ -506,6 +544,7 @@ class RoomPersistenceTest {
                     programs = emptyList(),
                     classes = emptyList(),
                     weekOverrides = emptyList(),
+                    freeDays = emptyList(),
                     occurrenceNotes = emptyList(),
                     occurrenceChanges = emptyList()
                 )
@@ -785,6 +824,170 @@ class RoomPersistenceTest {
         assertEquals(dev.retza.mak.domain.WeekType.B, updated?.overrides?.single()?.weekType)
     }
 
+    @Test
+    fun saveFreeDayGroupReplacesGroupInEachCalendar() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val firstCalendarId = insertCalendar(semesterId)
+        val secondCalendarId = insertCalendar(semesterId)
+        val holiday = LocalDate.of(2026, 11, 11)
+        repository.saveFreeDayGroup(
+            semesterId = semesterId,
+            replacedIds = emptyList(),
+            startDate = holiday,
+            endDate = holiday,
+            name = "Święto",
+            calendarIds = listOf(firstCalendarId, secondCalendarId)
+        )
+        val groupIds = database!!.freeDayDao().getForSemester(semesterId).map { it.id }
+        assertEquals(2, groupIds.size)
+
+        repository.saveFreeDayGroup(
+            semesterId = semesterId,
+            replacedIds = groupIds,
+            startDate = LocalDate.of(2026, 11, 12),
+            endDate = LocalDate.of(2026, 11, 13),
+            name = "  ",
+            calendarIds = listOf(firstCalendarId)
+        )
+
+        val days = repository.observeFreeDays(semesterId).first()
+        assertEquals(1, days.size)
+        assertEquals(firstCalendarId, days.single().academicCalendarId)
+        assertEquals(LocalDate.of(2026, 11, 12), days.single().startDate)
+        assertEquals(LocalDate.of(2026, 11, 13), days.single().endDate)
+        assertEquals(null, days.single().name)
+    }
+
+    @Test
+    fun saveFreeDayGroupWithWeekAfterBreakAddsFromWeekOverride() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val calendarId = insertCalendar(semesterId)
+        repository.saveFreeDayGroup(
+            semesterId = semesterId,
+            replacedIds = emptyList(),
+            startDate = LocalDate.of(2026, 11, 2),
+            endDate = LocalDate.of(2026, 11, 15),
+            name = "Przerwa",
+            calendarIds = listOf(calendarId),
+            weekAfterBreak = dev.retza.mak.domain.WeekType.B
+        )
+
+        val overrides = repository.observeWeekOverrides(semesterId).first()
+        assertEquals(1, overrides.size)
+        assertEquals(LocalDate.of(2026, 11, 16), overrides.single().weekStartDate)
+        assertEquals("B", overrides.single().weekType.name)
+        assertEquals("FROM_WEEK", overrides.single().scope.name)
+    }
+
+    @Test
+    fun addHolidaysAddsOneDayFreeDaysInEachCalendar() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val firstCalendarId = insertCalendar(semesterId)
+        val secondCalendarId = insertCalendar(semesterId)
+        val holidays = listOf(
+            Holiday(LocalDate.of(2026, 11, 11), "Święto Niepodległości"),
+            Holiday(LocalDate.of(2026, 12, 25), "Boże Narodzenie")
+        )
+        repository.addHolidays(
+            semesterId = semesterId,
+            holidays = holidays,
+            calendarIds = listOf(firstCalendarId, secondCalendarId)
+        )
+
+        val days = repository.observeFreeDays(semesterId).first()
+        assertEquals(4, days.size)
+        assertTrue(days.all { it.startDate == it.endDate })
+        assertEquals(
+            listOf(firstCalendarId, firstCalendarId, secondCalendarId, secondCalendarId),
+            days.sortedBy { it.id }.map { it.academicCalendarId }
+        )
+        assertEquals(
+            listOf("Święto Niepodległości", "Boże Narodzenie"),
+            days.filter { it.academicCalendarId == firstCalendarId }.map { it.name }
+        )
+    }
+
+    @Test
+    fun addHolidaysSavesTheChristmasBreakAsOneRangePerCalendar() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val firstCalendarId = insertCalendar(semesterId)
+        val secondCalendarId = insertCalendar(semesterId)
+
+        repository.addHolidays(
+            semesterId = semesterId,
+            holidays = listOf(Holiday(LocalDate.of(2026, 12, 24), "Przerwa świąteczna", LocalDate.of(2027, 1, 2))),
+            calendarIds = listOf(firstCalendarId, secondCalendarId)
+        )
+
+        val days = repository.observeFreeDays(semesterId).first()
+        assertEquals(2, days.size)
+        assertTrue(days.all { it.startDate == LocalDate.of(2026, 12, 24) && it.endDate == LocalDate.of(2027, 1, 2) })
+        assertEquals(setOf(firstCalendarId, secondCalendarId), days.map { it.academicCalendarId }.toSet())
+    }
+
+    @Test
+    fun deletingCalendarDeletesItsFreeDays() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val firstCalendarId = insertCalendar(semesterId)
+        val secondCalendarId = insertCalendar(semesterId)
+        val holiday = LocalDate.of(2026, 11, 11)
+        repository.saveFreeDayGroup(
+            semesterId = semesterId,
+            replacedIds = emptyList(),
+            startDate = holiday,
+            endDate = holiday,
+            name = null,
+            calendarIds = listOf(firstCalendarId, secondCalendarId)
+        )
+
+        repository.deleteCalendar(secondCalendarId)
+
+        val days = repository.observeFreeDays(semesterId).first()
+        assertEquals(listOf(firstCalendarId), days.map { it.academicCalendarId })
+    }
+
+    @Test
+    fun saveStudyProgramInActiveSemesterAssignsSharedCalendar() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+        val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
+        val sharedCalendarId = insertCalendar(semesterId)
+        insertCalendar(semesterId)
+
+        val result = repository.saveStudyProgramInActiveSemester(
+            StudyProgramRecord(name = "Fizyka", color = "#112233")
+        )
+
+        assertEquals(semesterId, result?.id)
+        val assignments = repository.observeSemesterPrograms(semesterId).first()
+        assertEquals(listOf(sharedCalendarId), assignments.map { it.academicCalendarId })
+    }
+
+    @Test
+    fun saveStudyProgramInActiveSemesterWithoutSemesterSavesProgramOnly() = runBlocking {
+        database = openDatabase()
+        val repository = repository()
+
+        val result = repository.saveStudyProgramInActiveSemester(
+            StudyProgramRecord(name = "Fizyka", color = "#112233")
+        )
+
+        assertNull(result)
+        val programs = repository.observeStudyPrograms().first()
+        assertEquals(listOf("Fizyka"), programs.map { it.name })
+        assertTrue(repository.observeStudyProgramSemesters(programs.single().id).first().isEmpty())
+    }
+
     private suspend fun insertCalendar(semesterId: Long): Long =
         database!!.academicCalendarDao().insert(
             AcademicCalendarEntity(
@@ -837,6 +1040,7 @@ class RoomPersistenceTest {
         programs = emptyList(),
         classes = emptyList(),
         weekOverrides = emptyList(),
+        freeDays = emptyList(),
         occurrenceNotes = emptyList(),
         occurrenceChanges = emptyList()
     )

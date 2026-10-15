@@ -6,6 +6,7 @@ import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.uniqueCollisionCount
 import java.time.LocalDate
 import java.time.LocalTime
+import dev.retza.mak.ui.freeDayDetail
 import dev.retza.mak.ui.label
 import dev.retza.mak.ui.todayTitleFormatter
 
@@ -23,6 +24,10 @@ class WidgetPresenter {
         }
         val weekLabel = weekStatus.label()
         if (plan.schedule.occurrences.isEmpty()) {
+            val freeDay = plan.schedule.freeDay
+            if (freeDay != null) {
+                return WidgetUiState.FreeDay(dateLabel, weekLabel, freeDayDetail(freeDay, date))
+            }
             return WidgetUiState.EmptyDay(dateLabel, weekLabel)
         }
 
@@ -61,3 +66,4 @@ class WidgetPresenter {
 }
 
 internal fun widgetDateLabel(date: LocalDate): String = date.format(todayTitleFormatter)
+

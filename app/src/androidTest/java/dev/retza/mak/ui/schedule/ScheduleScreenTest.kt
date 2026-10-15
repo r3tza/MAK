@@ -24,6 +24,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.Density
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.domain.WeekType
+import dev.retza.mak.ui.FreeDayNoteUi
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.CalendarDayUi
 import dev.retza.mak.ui.components.CalendarLegendUi
@@ -66,12 +67,25 @@ class ScheduleScreenTest {
     }
 
     @Test
+    fun listShowsFreeDayBannerInsteadOfEmptyMessageAt320Dp() {
+        setScheduleContent(
+            state = scheduleState().copy(
+                freeDay = FreeDayNoteUi("Dzień wolny: Rektorskie", "Zajęcia cykliczne się nie odbywają.")
+            )
+        )
+
+        composeTestRule.onNodeWithText("Dzień wolny: Rektorskie").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Brak zajęć w tym dniu dla wybranego kierunku.").assertDoesNotExist()
+    }
+
+    @Test
     fun weekRowWithoutCorrectableCalendarIsInformationOnlyAt320Dp() {
         setScheduleContent(
             state = scheduleState().copy(
                 weekTypeLabel = "Różne tygodnie",
                 weekSourceLabel = "Różne kalendarze",
-                canCorrectWeek = false
+                canCorrectWeek = false,
+                weekCorrectionHint = "Wybierz kierunek w polu „Kierunek”, aby zmienić tydzień."
             )
         )
 
@@ -79,6 +93,51 @@ class ScheduleScreenTest {
         composeTestRule.onNodeWithText("Zmień").assertDoesNotExist()
         composeTestRule.onAllNodes(hasClickAction() and hasText("Różne tygodnie", substring = true))
             .assertCountEquals(0)
+    }
+
+    @Test
+    fun weekRowOutsideTheSemesterHasNoHintAndNoCorrectionAt320Dp() {
+        setScheduleContent(
+            state = scheduleState().copy(
+                weekTypeLabel = "Poza semestrem",
+                weekSourceLabel = "",
+                canCorrectWeek = false,
+                weekCorrectionHint = null
+            )
+        )
+
+        composeTestRule.onNodeWithText("Poza semestrem").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Wybierz kierunek w polu „Kierunek”, aby zmienić tydzień.").assertDoesNotExist()
+        composeTestRule.onNodeWithText("Zmień").assertDoesNotExist()
+    }
+
+    @Test
+    fun calendarHidesMarkFreeActionOnlyOnAFreeDayAt320Dp() {
+        val calendarState = scheduleState().copy(
+            view = ScheduleView.Calendar,
+            calendarMonthLabel = "listopad 2026",
+            calendarSelectedDayLabel = "Niedziela, 1 listopada 2026",
+            calendarSelectedDayCountLabel = "0 zajęć"
+        )
+        setScheduleContent(
+            state = calendarState.copy(
+                calendarFreeDay = FreeDayNoteUi("Dzień wolny: Wszystkich Świętych", "Zajęcia cykliczne się nie odbywają.")
+            )
+        )
+        composeTestRule.onNodeWithText("Oznacz jako wolny").assertDoesNotExist()
+    }
+
+    @Test
+    fun calendarShowsMarkFreeActionOnAWorkingDayAt320Dp() {
+        setScheduleContent(
+            state = scheduleState().copy(
+                view = ScheduleView.Calendar,
+                calendarMonthLabel = "wrzesień 2026",
+                calendarSelectedDayLabel = "Wtorek, 1 września 2026",
+                calendarSelectedDayCountLabel = "0 zajęć"
+            )
+        )
+        composeTestRule.onNodeWithText("Oznacz jako wolny").assertIsDisplayed()
     }
 
     @Test
@@ -265,6 +324,41 @@ class ScheduleScreenTest {
     }
 
     @Test
+    fun calendarLegendShowsCancelledEntryAndDayShowsCancelledMarkerAt320Dp() {
+        setScheduleContent(
+            state = scheduleState().copy(
+                view = ScheduleView.Calendar,
+                calendarMonthLabel = "wrzesień 2026",
+                calendarDays = listOf(
+                    CalendarDayUi(
+                        id = "2026-09-01",
+                        dayLabel = "1",
+                        accessibilityLabel = "Wtorek, 1 września 2026",
+                        isSelected = true,
+                        markers = listOf(
+                            CalendarMarkerUi(
+                                id = "cancelled-1",
+                                contentDescription = "Zajęcia testowe, odwołane",
+                                isCancelled = true,
+                                colorHex = "#137B71"
+                            )
+                        )
+                    )
+                ),
+                calendarLegend = listOf(
+                    CalendarLegendUi(label = "Informatyka"),
+                    CalendarLegendUi(label = "Odwołany termin", isCancelled = true)
+                ),
+                calendarSelectedDayLabel = "Wtorek, 1 września 2026",
+                calendarSelectedDayCountLabel = "0 zajęć"
+            )
+        )
+
+        composeTestRule.onNodeWithText("Odwołany termin").assertIsDisplayed()
+        composeTestRule.onNodeWithTag("calendar-marker-cancelled-1", useUnmergedTree = true).assertIsDisplayed()
+    }
+
+    @Test
     fun calendarOneOffActionWrapsWithoutClippingAtFontScaleTwoAt320Dp() {
         setScheduleContent(
             state = scheduleState().copy(
@@ -438,6 +532,7 @@ class ScheduleScreenTest {
                             onCalendarDaySelected = {},
                             onShowCancelledChanged = onShowCancelledChanged,
                             onAddOneOff = onAddOneOff,
+                            onMarkFree = {},
                             onOpenClass = {},
                             onSaveWeekCorrection = { _, _ -> },
                             onClearWeekCorrection = {},

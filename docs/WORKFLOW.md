@@ -58,4 +58,4 @@ Wypchnięcie gałęzi, otwarcie pull requesta, utworzenie taga lub publikacja wy
 - `gotowe`: wszystkie kryteria zadania, w tym wymagany odbiór, zostały potwierdzone.
 - `zablokowane`: dalszy postęp wymaga decyzji użytkownika lub zmiany stanu zewnętrznego. Zapisz konkretny bloker i nie zgaduj.
 
-Zaktualizuj jeden wiersz w `QUEUE.md` po zmianie statusu. Wiersz ze statusem `gotowe` przenieś do tabeli w sekcji „Zakończone”. W odpowiedzi podaj wynik, zakres weryfikacji i otwarte ograniczenia. Commit może obejmować jedną logiczną zmianę. Nie wypychaj, nie twórz PR ani nie zmieniaj historii bez wyraźnego polecenia użytkownika.
+Zaktualizuj jeden wiersz w `QUEUE.md` po zmianie statusu. Wiersz ze statusem `gotowe` przenieś do tabeli w `queue_archive/<rok>.md` według numeru (zadania I- od najwyższego numeru, pozycje odbioru O- na końcu). Zależność otwartego zadania od zakończonego zamień na `brak`. W odpowiedzi podaj wynik, zakres weryfikacji i otwarte ograniczenia. Commit może obejmować jedną logiczną zmianę. Nie wypychaj, nie twórz PR ani nie zmieniaj historii bez wyraźnego polecenia użytkownika.

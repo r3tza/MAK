@@ -215,8 +215,34 @@ class OccurrenceViewModel(
 
     fun dismissEditDialog() = editSession.run {
         if (state.value.isSaving) return@run
-        update { it.copy(showEditDialog = false, draftErrors = emptyMap(), draftError = null) }
+        update {
+            it.copy(
+                showEditDialog = false,
+                showDiscardEditConfirmation = false,
+                draftErrors = emptyMap(),
+                draftError = null
+            )
+        }
     }
+
+    /** Closes the edit dialog at once when no field differs from the open occurrence, otherwise asks first. */
+    fun requestDismissEditDialog() {
+        val current = state.value
+        if (current.isSaving) return
+        val unchanged = current.targetDateDraft == current.currentDate &&
+            current.startTimeDraft == current.startTime &&
+            current.endTimeDraft == current.endTime &&
+            current.roomDraft.trim() == current.room.orEmpty().trim()
+        if (unchanged) {
+            dismissEditDialog()
+        } else {
+            editSession.run { update { it.copy(showDiscardEditConfirmation = true) } }
+        }
+    }
+
+    fun confirmDiscardEdit() = dismissEditDialog()
+
+    fun keepEditing() = editSession.run { update { it.copy(showDiscardEditConfirmation = false) } }
 
     fun requestClassDeletion() = editSession.run { update { it.copy(showDeleteConfirmation = true) } }
 
@@ -237,13 +263,35 @@ class OccurrenceViewModel(
         }
     }
 
+    fun requestCancelOccurrence() {
+        val current = state.value
+        if (!current.canCancelOccurrence) return
+        if (!current.canRestoreOccurrence) {
+            cancelOccurrence()
+        } else {
+            editSession.run { update { it.copy(showCancelChangedConfirmation = true) } }
+        }
+    }
+
+    fun dismissCancelChangedConfirmation() = editSession.run {
+        update { it.copy(showCancelChangedConfirmation = false) }
+    }
+
+    fun requestRestoreOccurrence() = editSession.run {
+        if (state.value.canRestoreOccurrence) update { it.copy(showRestoreConfirmation = true) }
+    }
+
+    fun dismissRestoreConfirmation() = editSession.run {
+        update { it.copy(showRestoreConfirmation = false) }
+    }
+
     fun cancelOccurrence() = editSession.run {
         if (occurrenceStateOperationRunning) return@run
         val data = editPlanData ?: activePlan.value?.data ?: return@run
         val classId = selectedClassIdState.value ?: return@run
         val original = originalDate ?: return@run
         occurrenceStateOperationRunning = true
-        update { it.copy(isSaving = true, draftError = null) }
+        update { it.copy(isSaving = true, draftError = null, showCancelChangedConfirmation = false) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
             errorMessage = "Nie udało się odwołać terminu.",
@@ -280,7 +328,7 @@ class OccurrenceViewModel(
         val classId = selectedClassIdState.value ?: return@run
         val original = originalDate ?: return@run
         occurrenceStateOperationRunning = true
-        update { it.copy(isSaving = true, draftError = null) }
+        update { it.copy(isSaving = true, draftError = null, showRestoreConfirmation = false) }
         viewModelScope.launchUiOperation(
             feedbackSink = feedbackSink,
             errorMessage = "Nie udało się przywrócić terminu.",
@@ -551,9 +599,10 @@ class OccurrenceViewModel(
                 ?.startDate?.toString().orEmpty(),
             semesterEndDate = data.calendarForAssignment(base.semesterProgramId)
                 ?.endDate?.toString().orEmpty(),
-            canCancelOccurrence = canEdit && occurrence.occurrenceChange == null,
+            canCancelOccurrence = canEdit,
             canChangeOccurrence = canEdit,
-            canRestoreOccurrence = occurrence.occurrenceChange != null
+            canRestoreOccurrence = occurrence.occurrenceChange != null,
+            restoreTargetLabel = "${originalDate.format(fullDateFormatter)}, ${base.startTime} - ${base.endTime}"
         )
     }
 
@@ -583,6 +632,9 @@ class OccurrenceViewModel(
             isSavingSharedNote = isSavingSharedNote,
             isSavingOccurrenceNote = isSavingOccurrenceNote,
             showDeleteConfirmation = showDeleteConfirmation,
+            showRestoreConfirmation = showRestoreConfirmation,
+            showCancelChangedConfirmation = showCancelChangedConfirmation,
+            showDiscardEditConfirmation = showDiscardEditConfirmation,
             isDeletingClass = isDeletingClass
         )
     }

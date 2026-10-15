@@ -125,6 +125,10 @@ internal fun NavGraphBuilder.settingsRoute(
             onBeforeClassNotificationsEnabled = settingsViewModel::setBeforeClassNotificationsEnabled,
             onEveningHourSelected = settingsViewModel::setEveningHour,
             onBeforeClassLeadSelected = settingsViewModel::setBeforeClassLeadMinutes,
+            onGapEveningNotificationsEnabled = settingsViewModel::setGapEveningNotificationsEnabled,
+            onGapBeforeClassNotificationsEnabled = settingsViewModel::setGapBeforeClassNotificationsEnabled,
+            onGapEveningHourSelected = settingsViewModel::setGapEveningHour,
+            onGapLeadSelected = settingsViewModel::setGapLeadMinutes,
             onRequestNotificationPermission = onRequestNotificationPermission,
             onOpenAppSettings = onOpenAppSettings,
             modifier = Modifier.fillMaxSize()

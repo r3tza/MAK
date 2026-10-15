@@ -1,6 +1,7 @@
 package dev.retza.mak.settings
 
 import androidx.datastore.core.DataStore
+import androidx.datastore.preferences.core.MutablePreferences
 import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.booleanPreferencesKey
 import androidx.datastore.preferences.core.edit
@@ -21,6 +22,10 @@ private val eveningEnabledKey = booleanPreferencesKey("evening_notifications_ena
 private val beforeClassEnabledKey = booleanPreferencesKey("before_class_notifications_enabled")
 private val eveningHourKey = intPreferencesKey("evening_hour_minutes")
 private val leadMinutesKey = intPreferencesKey("before_class_lead_minutes")
+private val gapEveningEnabledKey = booleanPreferencesKey("gap_evening_notifications_enabled")
+private val gapBeforeClassEnabledKey = booleanPreferencesKey("gap_before_class_notifications_enabled")
+private val gapEveningHourKey = intPreferencesKey("gap_evening_hour_minutes")
+private val gapLeadMinutesKey = intPreferencesKey("gap_lead_minutes")
 private val gapThresholdMinutesKey = intPreferencesKey("gap_threshold_minutes")
 private val minimumBreakMinutesKey = intPreferencesKey("minimum_break_minutes")
 private val hiddenStudyProgramIdsKey = stringSetPreferencesKey("hidden_study_program_ids")
@@ -56,15 +61,25 @@ class DataStoreSettingsPreferences(
     }
 
     override suspend fun setCollisionNotificationsEnabled(enabled: Boolean) {
-        dataStore.edit { preferences -> preferences[notificationsEnabledKey] = enabled }
+        dataStore.edit { preferences ->
+            preferences.writeNotificationKinds(NotificationKinds(enabled, enabled, enabled, enabled))
+        }
     }
 
     override suspend fun setEveningNotificationsEnabled(enabled: Boolean) {
-        dataStore.edit { preferences -> preferences[eveningEnabledKey] = enabled }
+        updateNotificationKinds { it.copy(evening = enabled) }
     }
 
     override suspend fun setBeforeClassNotificationsEnabled(enabled: Boolean) {
-        dataStore.edit { preferences -> preferences[beforeClassEnabledKey] = enabled }
+        updateNotificationKinds { it.copy(beforeClass = enabled) }
+    }
+
+    override suspend fun setGapEveningNotificationsEnabled(enabled: Boolean) {
+        updateNotificationKinds { it.copy(gapEvening = enabled) }
+    }
+
+    override suspend fun setGapBeforeClassNotificationsEnabled(enabled: Boolean) {
+        updateNotificationKinds { it.copy(gapBeforeClass = enabled) }
     }
 
     override suspend fun setEveningHour(hour: LocalTime) {
@@ -73,6 +88,21 @@ class DataStoreSettingsPreferences(
 
     override suspend fun setBeforeClassLeadMinutes(minutes: Long) {
         dataStore.edit { preferences -> preferences[leadMinutesKey] = minutes.toInt() }
+    }
+
+    override suspend fun setGapEveningHour(hour: LocalTime) {
+        dataStore.edit { preferences -> preferences[gapEveningHourKey] = hour.toSecondOfDay() / 60 }
+    }
+
+    override suspend fun setGapLeadMinutes(minutes: Long) {
+        dataStore.edit { preferences -> preferences[gapLeadMinutesKey] = minutes.toInt() }
+    }
+
+    /** Reads the kinds and writes the changed set back in one edit, so a kind and the main switch never diverge. */
+    private suspend fun updateNotificationKinds(change: (NotificationKinds) -> NotificationKinds) {
+        dataStore.edit { preferences ->
+            preferences.writeNotificationKinds(change(preferences.notificationKinds()))
+        }
     }
 
     override suspend fun setGapThresholdMinutes(minutes: Int) {
@@ -111,15 +141,60 @@ class DataStoreSettingsPreferences(
     }
 }
 
+/** Effective on/off state of the four notification kinds. */
+private data class NotificationKinds(
+    val evening: Boolean,
+    val beforeClass: Boolean,
+    val gapEvening: Boolean,
+    val gapBeforeClass: Boolean
+) {
+    val any: Boolean get() = evening || beforeClass || gapEvening || gapBeforeClass
+}
+
+/**
+ * A kind is on only while the main switch is on. Older versions kept the kind defaults `true` while the feature
+ * was off, so a missing or false main switch turns every kind off. The gap kinds are new and default to off.
+ * No migration is needed.
+ */
+private fun Preferences.notificationKinds(): NotificationKinds {
+    val main = this[notificationsEnabledKey] ?: false
+    return NotificationKinds(
+        evening = main && (this[eveningEnabledKey] ?: true),
+        beforeClass = main && (this[beforeClassEnabledKey] ?: true),
+        gapEvening = main && (this[gapEveningEnabledKey] ?: false),
+        gapBeforeClass = main && (this[gapBeforeClassEnabledKey] ?: false)
+    )
+}
+
+/** Writes the four kinds and the main switch, which is on exactly when some kind is on. */
+private fun MutablePreferences.writeNotificationKinds(kinds: NotificationKinds) {
+    this[notificationsEnabledKey] = kinds.any
+    this[eveningEnabledKey] = kinds.evening
+    this[beforeClassEnabledKey] = kinds.beforeClass
+    this[gapEveningEnabledKey] = kinds.gapEvening
+    this[gapBeforeClassEnabledKey] = kinds.gapBeforeClass
+}
+
+private fun Preferences.storedEveningHour(key: Preferences.Key<Int>): LocalTime {
+    val minutes = (this[key] ?: defaultEveningHourMinutes).coerceIn(0, 23 * 60 + 59)
+    return LocalTime.ofSecondOfDay(minutes * 60L)
+}
+
+private fun Preferences.storedLeadMinutes(key: Preferences.Key<Int>): Long =
+    (this[key] ?: defaultLeadMinutes).coerceIn(5, 120).toLong()
+
 private fun Preferences.toNotificationPreferences(): CollisionNotificationPreferences {
-    val eveningMinutes = (this[eveningHourKey] ?: defaultEveningHourMinutes)
-        .coerceIn(0, 23 * 60 + 59)
+    val kinds = notificationKinds()
     return CollisionNotificationPreferences(
-        enabled = this[notificationsEnabledKey] ?: false,
-        eveningEnabled = this[eveningEnabledKey] ?: true,
-        beforeClassEnabled = this[beforeClassEnabledKey] ?: true,
-        eveningHour = LocalTime.ofSecondOfDay(eveningMinutes * 60L),
-        leadMinutes = (this[leadMinutesKey] ?: defaultLeadMinutes).coerceIn(5, 120).toLong()
+        enabled = kinds.any,
+        eveningEnabled = kinds.evening,
+        beforeClassEnabled = kinds.beforeClass,
+        eveningHour = storedEveningHour(eveningHourKey),
+        leadMinutes = storedLeadMinutes(leadMinutesKey),
+        gapEveningEnabled = kinds.gapEvening,
+        gapBeforeClassEnabled = kinds.gapBeforeClass,
+        gapEveningHour = storedEveningHour(gapEveningHourKey),
+        gapLeadMinutes = storedLeadMinutes(gapLeadMinutesKey)
     )
 }
 

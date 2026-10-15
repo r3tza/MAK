@@ -62,6 +62,7 @@ import dev.retza.mak.ui.components.makRowFocus
 import dev.retza.mak.ui.longDateFormatter
 import dev.retza.mak.text.polishPlural
 import dev.retza.mak.domain.toLocalDateOrNull
+import java.time.LocalDate
 import dev.retza.mak.ui.components.parseHexColor
 
 data class SemesterFormUiState(
@@ -151,6 +152,7 @@ data class SemesterScreenUiState(
     val overrides: List<WeekOverrideUi> = emptyList(),
     val overrideForm: WeekOverrideFormUiState = WeekOverrideFormUiState(),
     val overrideCount: Int = 0,
+    val freeDaysSummary: String = "Brak",
     val courseItems: List<SemesterCourseUi> = emptyList(),
     val calendars: List<SemesterCalendarUi> = emptyList(),
     val selectedCalendarId: Long? = null,
@@ -194,14 +196,13 @@ fun SemesterScreen(
     onSaveSemester: () -> Unit,
     onOpenCourses: () -> Unit,
     onOpenOverrides: () -> Unit,
+    onOpenFreeDays: () -> Unit,
     onOpenCalendars: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     MakScreenContent(
         modifier = modifier.verticalScroll(rememberScrollState())
     ) {
-        MakScreenIntro("Zakres dat, pierwszy tydzień A/B, kierunki i ręczne korekty tygodni.")
-
         SemesterForm(
             state = state.semester,
             showDates = state.calendars.size <= 1,
@@ -236,6 +237,15 @@ fun SemesterScreen(
                 "$it ${polishPlural(it, "korekta", "korekty", "korekt")}"
             },
             onClick = onOpenOverrides
+        )
+        HorizontalDivider(
+            modifier = Modifier.padding(horizontal = MakSpacing.md),
+            color = MaterialTheme.colorScheme.outlineVariant
+        )
+        SemesterNavigationRow(
+            title = "Dni wolne",
+            countLabel = state.freeDaysSummary,
+            onClick = onOpenFreeDays
         )
         if (state.calendars.size > 1) {
             HorizontalDivider(
@@ -345,7 +355,6 @@ fun SemesterWeekOverridesScreen(
         )
     }
     MakScreenContent(modifier = modifier.verticalScroll(rememberScrollState())) {
-        MakScreenIntro("Ustaw oznaczenie tylko dla jednego tygodnia albo od wybranego tygodnia w przyszłość.")
         if (state.calendars.size > 1) {
             MakSelectField(
                 label = "Kalendarz",
@@ -361,6 +370,7 @@ fun SemesterWeekOverridesScreen(
         WeekOverridesSection(
             overrides = state.overrides,
             form = state.overrideForm,
+            calendar = state.calendars.firstOrNull { it.id == state.selectedCalendarId },
             onWeekStartDateChanged = onWeekStartDateChanged,
             onWeekTypeChanged = onWeekTypeChanged,
             onScopeChanged = onScopeChanged,
@@ -702,6 +712,7 @@ private fun String.asLongDate(): String =
 private fun WeekOverridesSection(
     overrides: List<WeekOverrideUi>,
     form: WeekOverrideFormUiState,
+    calendar: SemesterCalendarUi?,
     onWeekStartDateChanged: (String) -> Unit,
     onWeekTypeChanged: (WeekType) -> Unit,
     onScopeChanged: (WeekOverrideScope) -> Unit,
@@ -711,6 +722,8 @@ private fun WeekOverridesSection(
     onDeleteOverride: (Long) -> Unit,
     onCancelEdit: () -> Unit
 ) {
+    val minDate = calendar?.startDate?.toLocalDateOrNull()
+    val maxDate = calendar?.endDate?.toLocalDateOrNull()
     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
         Row(
             modifier = Modifier.fillMaxWidth(),
@@ -720,10 +733,11 @@ private fun WeekOverridesSection(
             Text("Zapisane korekty", fontWeight = FontWeight.SemiBold, fontSize = MaterialTheme.typography.titleMedium.fontSize)
             MakTextAction(text = "Dodaj", onClick = onNewOverride)
         }
-        MakHelperText("Każda korekta dotyczy poniedziałku wybranego tygodnia.")
         if (form.isOpen && form.id == null) {
             WeekOverrideForm(
                 state = form,
+                minDate = minDate,
+                maxDate = maxDate,
                 onWeekStartDateChanged = onWeekStartDateChanged,
                 onWeekTypeChanged = onWeekTypeChanged,
                 onScopeChanged = onScopeChanged,
@@ -743,6 +757,8 @@ private fun WeekOverridesSection(
                 if (form.isOpen && form.id == override.id) {
                     WeekOverrideForm(
                         state = form,
+                        minDate = minDate,
+                        maxDate = maxDate,
                         onWeekStartDateChanged = onWeekStartDateChanged,
                         onWeekTypeChanged = onWeekTypeChanged,
                         onScopeChanged = onScopeChanged,
@@ -800,6 +816,8 @@ private fun WeekOverrideCard(
 @Composable
 private fun WeekOverrideForm(
     state: WeekOverrideFormUiState,
+    minDate: LocalDate?,
+    maxDate: LocalDate?,
     onWeekStartDateChanged: (String) -> Unit,
     onWeekTypeChanged: (WeekType) -> Unit,
     onScopeChanged: (WeekOverrideScope) -> Unit,
@@ -817,6 +835,8 @@ private fun WeekOverrideForm(
             label = "Dzień w tygodniu korekty",
             value = state.weekStartDate,
             onValueChange = onWeekStartDateChanged,
+            minDate = minDate,
+            maxDate = maxDate,
             isError = state.weekStartDateError != null
         )
         FieldError(state.weekStartDateError?.let(::FieldErrorUi))

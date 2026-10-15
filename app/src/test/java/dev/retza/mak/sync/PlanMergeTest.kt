@@ -5,6 +5,7 @@ import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.data.repository.AcademicCalendarRecord
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.ClassRecord
+import dev.retza.mak.data.repository.FreeDayRecord
 import dev.retza.mak.data.repository.OccurrenceChangeRecord
 import dev.retza.mak.data.repository.OccurrenceNoteRecord
 import dev.retza.mak.data.repository.SemesterProgramRecord
@@ -17,6 +18,7 @@ import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.LocalTime
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -103,6 +105,32 @@ class PlanMergeTest {
         assertEquals(PlanRowKey(PlanRowKind.CLASS, 2), problems.single().child)
         assertEquals(PlanRowKey(PlanRowKind.SEMESTER_PROGRAM, 2), problems.single().parent)
         assertEquals(PlanRowKey(PlanRowKind.SEMESTER_PROGRAM, 2), problems.single().parentDifference?.key)
+    }
+
+    @Test
+    fun freeDayAddedOnThePhoneIsADifferenceAndMergesIn() {
+        val base = basePlan()
+        val freeDay = dev.retza.mak.data.entity.FreeDayEntity(
+            id = 1,
+            semesterId = 1,
+            academicCalendarId = 1,
+            startDate = LocalDate.of(2026, 11, 11),
+            endDate = LocalDate.of(2026, 11, 11),
+            name = "Święto"
+        )
+        val phone = basePlan(freeDays = listOf(freeDay))
+        val drive = basePlan()
+
+        val freeDayKeys = planDifferences(phone, drive, base).map { it.key }
+            .filter { it.kind == PlanRowKind.FREE_DAY }
+        assertEquals(listOf(PlanRowKey(PlanRowKind.FREE_DAY, 1)), freeDayKeys)
+
+        val merged = merge(phone, drive, base) { PlanSide.PHONE }.data()
+
+        assertEquals(
+            FreeDayRecord(id = 1, semesterId = 1, academicCalendarId = 1, startDate = freeDay.startDate, endDate = freeDay.endDate, name = "Święto"),
+            merged.semesters.single().freeDays.single()
+        )
     }
 
     @Test

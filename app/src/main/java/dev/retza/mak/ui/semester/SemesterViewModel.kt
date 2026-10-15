@@ -13,17 +13,20 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
+import dev.retza.mak.domain.sharedCalendarOf
 import dev.retza.mak.domain.validateDateRange
 import dev.retza.mak.domain.weekStart
 import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.PlanEditSession
-import dev.retza.mak.ui.shortDateWithYearFormatter
+import dev.retza.mak.ui.dateRangeLabel
 import dev.retza.mak.domain.toLocalDateOrNull
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.ui.feedback.launchUiOperation
+import dev.retza.mak.ui.freedays.freeDaysSummary
+import dev.retza.mak.ui.freedays.groupFreeDays
 import java.time.LocalDate
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.channels.Channel
@@ -619,6 +622,17 @@ class SemesterViewModel(
             update { it.copy(overrideForm = form.copy(weekStartDateError = "Wybierz tydzień.")) }
             return
         }
+        val calendar = state.value.calendars.firstOrNull { it.id == currentCalendarId }
+        val calendarStart = calendar?.startDate?.toLocalDateOrNull()
+        val calendarEnd = calendar?.endDate?.toLocalDateOrNull()
+        if (calendarStart != null && calendarEnd != null &&
+            (date.plusDays(6).isBefore(calendarStart) || date.isAfter(calendarEnd))
+        ) {
+            update {
+                it.copy(overrideForm = form.copy(weekStartDateError = "Wybierz tydzień z zakresu kalendarza."))
+            }
+            return
+        }
         // A new override has no id yet; the repository treats 0 as "insert".
         val overrideId = form.id ?: 0L
         update { it.copy(overrideForm = form.copy(isSaving = true, weekStartDateError = null)) }
@@ -676,7 +690,7 @@ class SemesterViewModel(
 
 
 private fun SemesterConfiguration.sharedCalendar(): AcademicCalendarRecord? =
-    calendars.minByOrNull { it.id }
+    sharedCalendarOf(calendars) { it.id }
 
 private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long?): SemesterScreenUiState {
     val selected = calendars.firstOrNull { it.id == selectedCalendarId } ?: sharedCalendar()
@@ -690,7 +704,7 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
             name = program.name,
             color = program.color,
             calendarId = calendar?.id,
-            calendarLabel = calendar?.let { calendarRangeLabel(it.startDate, it.endDate) }.orEmpty(),
+            calendarLabel = calendar?.let { dateRangeLabel(it.startDate, it.endDate) }.orEmpty(),
             sharesCalendar = programs.count {
                 it.academicCalendarId == assignment.academicCalendarId
             } > 1
@@ -716,13 +730,14 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
                 )
             },
         overrideCount = overrides.size,
+        freeDaysSummary = freeDaysSummary(groupFreeDays(freeDays)),
         courseItems = courseItems,
         calendars = calendars.map { calendar ->
             SemesterCalendarUi(
                 id = calendar.id,
                 startDate = calendar.startDate.toString(),
                 endDate = calendar.endDate.toString(),
-                rangeLabel = calendarRangeLabel(calendar.startDate, calendar.endDate),
+                rangeLabel = dateRangeLabel(calendar.startDate, calendar.endDate),
                 firstWeek = calendar.firstWeekType,
                 courseNames = programs
                     .filter { it.academicCalendarId == calendar.id }
@@ -738,7 +753,4 @@ private fun SemesterConfiguration.toSemesterScreenState(selectedCalendarId: Long
         }
     )
 }
-
-internal fun calendarRangeLabel(start: LocalDate, end: LocalDate): String =
-    "${start.format(shortDateWithYearFormatter)} - ${end.format(shortDateWithYearFormatter)}"
 

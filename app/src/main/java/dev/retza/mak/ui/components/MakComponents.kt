@@ -72,6 +72,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.geometry.Offset
@@ -1270,27 +1271,45 @@ fun MakChoiceRow(
     }
 }
 
+/**
+ * A labelled checkbox row. A disabled row is dimmed and ignores taps; [supportingText] is shown under the label.
+ */
 @Composable
 fun MakCheckbox(
     label: String,
     checked: Boolean,
     onCheckedChange: (Boolean) -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    enabled: Boolean = true,
+    supportingText: String? = null
 ) {
     var focused by remember { mutableStateOf(false) }
+    // One toggleable row, so a screen reader announces the label, the supporting text and the state once.
     Row(
         modifier = modifier
             .heightIn(min = 48.dp)
+            .alpha(if (enabled) 1f else 0.38f)
             .onFocusChanged { focused = it.isFocused }
-            .clickable(role = Role.Checkbox, onClick = { onCheckedChange(!checked) })
-            .semantics {
+            .toggleable(value = checked, enabled = enabled, role = Role.Checkbox, onValueChange = onCheckedChange)
+            .semantics(mergeDescendants = true) {
                 stateDescription = if (checked) "Zaznaczone" else "Niezaznaczone"
             },
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
     ) {
         MakCheckboxBox(checked = checked, focused = focused)
-        Text(label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+        if (supportingText == null) {
+            Text(label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+        } else {
+            Column {
+                Text(label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
+                Text(
+                    text = supportingText,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
     }
 }
 
@@ -1319,7 +1338,7 @@ fun MakCheckbox(
 }
 
 @Composable
-private fun MakCheckboxBox(checked: Boolean, focused: Boolean) {
+internal fun MakCheckboxBox(checked: Boolean, focused: Boolean) {
     val shape = RoundedCornerShape(4.dp)
     Box(
         modifier = Modifier
@@ -1445,6 +1464,19 @@ fun MakConfirmDeletionDialog(
         dismissButton = {
             TextButton(onClick = onCancel, enabled = !isDeleting) { Text("Anuluj") }
         }
+    )
+}
+
+/** Asks before dropping typed values; shared by the class form and the occurrence edit dialog. */
+@Composable
+fun MakDiscardChangesDialog(onConfirm: () -> Unit, onCancel: () -> Unit) {
+    MakConfirmDeletionDialog(
+        title = "Odrzucić zmiany?",
+        text = "Wpisane dane nie zostaną zapisane.",
+        isDeleting = false,
+        onConfirm = onConfirm,
+        onCancel = onCancel,
+        confirmLabel = "Odrzuć"
     )
 }
 

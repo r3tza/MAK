@@ -30,6 +30,7 @@ import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
+import dev.retza.mak.ui.FreeDayNoteUi
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.settings.SyncAttentionUi
 import dev.retza.mak.ui.settings.SyncIssueFix
@@ -83,6 +84,32 @@ class TodayScreenTest {
         composeTestRule.onNodeWithText("Nie teraz").assertIsDisplayed().performClick()
         assertTrue(viewed)
         assertTrue(dismissed)
+    }
+
+    @Test
+    fun freeDayShowsBannerInsteadOfEmptyMessage() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                TodayScreen(
+                    state = TodayUiState(
+                        dateLabel = "Poniedziałek, 21 września",
+                        semesterLabel = "Semestr",
+                        weekLabel = "Tydzień A",
+                        hasActiveSemester = true,
+                        freeDay = FreeDayNoteUi(
+                            title = "Dzień wolny",
+                            subtitle = "Zajęcia cykliczne się nie odbywają."
+                        )
+                    ),
+                    onOpenClass = {},
+                    onStartSetup = {}
+                )
+            }
+        }
+
+        // Once in the summary card, once as the banner above the classes.
+        composeTestRule.onAllNodesWithText("Dzień wolny").assertCountEquals(2)
+        composeTestRule.onAllNodesWithText("Nie masz dziś zajęć.").assertCountEquals(0)
     }
 
     @Test

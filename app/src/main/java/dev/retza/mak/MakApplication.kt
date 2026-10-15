@@ -10,6 +10,7 @@ import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.data.repository.seedDemoDataIfEmpty
 import dev.retza.mak.notifications.CollisionAlarmScheduler
 import dev.retza.mak.notifications.ensureCollisionChannel
+import dev.retza.mak.notifications.ensureGapChannel
 import dev.retza.mak.data.ActivePlanSource
 import dev.retza.mak.settings.SettingsPreferences
 import dev.retza.mak.data.retainExistingHiddenPrograms
@@ -65,6 +66,7 @@ class MakApplication : Application(), Configuration.Provider {
         }
         syncRoomChangeObserver.observe(initializationScope)
         ensureCollisionChannel(this)
+        ensureGapChannel(this)
         registerMakWidgetRefresh(
             planChanges = planChanges.changes,
             planDisplay = preferences.planDisplay,

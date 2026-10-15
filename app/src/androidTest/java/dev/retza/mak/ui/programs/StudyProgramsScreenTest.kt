@@ -3,12 +3,17 @@ package dev.retza.mak.ui.programs
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.width
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.assertIsOff
 import androidx.compose.ui.test.assertIsOn
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
@@ -41,7 +46,8 @@ class StudyProgramsScreenTest {
                             )
                         ),
                         onOpenProgram = { opened = it },
-                        onVisibleChange = { _, _ -> }
+                        onVisibleChange = { _, _ -> },
+                        onAddProgram = {}
                     )
                 }
             }
@@ -71,7 +77,8 @@ class StudyProgramsScreenTest {
                             )
                         ),
                         onOpenProgram = { opened = it },
-                        onVisibleChange = { id, visible -> visibility = id to visible }
+                        onVisibleChange = { id, visible -> visibility = id to visible },
+                        onAddProgram = {}
                     )
                 }
             }
@@ -92,11 +99,67 @@ class StudyProgramsScreenTest {
     fun emptyListExplainsWhereProgramsComeFrom() {
         composeTestRule.setContent {
             MAKTheme(dynamicColor = false) {
-                StudyProgramsScreen(state = StudyProgramsUiState(), onOpenProgram = {}, onVisibleChange = { _, _ -> })
+                StudyProgramsScreen(
+                    state = StudyProgramsUiState(),
+                    onOpenProgram = {},
+                    onVisibleChange = { _, _ -> },
+                    onAddProgram = {}
+                )
             }
         }
 
-        composeTestRule.onNodeWithText("Kierunki pojawią się po skonfigurowaniu planu.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Nie masz jeszcze kierunków.").assertIsDisplayed()
+    }
+
+    @Test
+    fun addActionIsVisibleWithAndWithoutProgramsAt320Dp() {
+        var programs by mutableStateOf(listOf(StudyProgramUi(1L, "Informatyka", "#137B71")))
+        var addRequests = 0
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(700.dp)) {
+                    StudyProgramsScreen(
+                        state = StudyProgramsUiState(programs = programs),
+                        onOpenProgram = {},
+                        onVisibleChange = { _, _ -> },
+                        onAddProgram = { addRequests += 1 }
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Dodaj kierunek").assertIsDisplayed()
+        composeTestRule.runOnIdle { programs = emptyList() }
+        composeTestRule.onNodeWithText("Nie masz jeszcze kierunków.").assertIsDisplayed()
+        composeTestRule.onNodeWithText("Dodaj kierunek").performClick()
+
+        assertEquals(1, addRequests)
+    }
+
+    @Test
+    fun newProgramFormHasNoDeleteSectionAt320Dp() {
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(900.dp)) {
+                    StudyProgramEditScreen(
+                        editor = StudyProgramEditorUi(id = null, activeSemesterName = "Semestr 2026/27"),
+                        onNameChanged = {},
+                        onColorChanged = {},
+                        onSave = {},
+                        onCancel = {},
+                        onRequestDelete = {},
+                        onConfirmDelete = {},
+                        onCancelDelete = {}
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onAllNodesWithText("Usuń kierunek").assertCountEquals(0)
+        composeTestRule.onNodeWithText("Dodaj kierunek").assertIsDisplayed()
+        composeTestRule.onNodeWithText(
+            "Kierunek trafi do semestru Semestr 2026/27. Nazwa i kolor są wspólne dla wszystkich semestrów."
+        ).assertIsDisplayed()
     }
 
     @Test

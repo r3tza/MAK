@@ -10,6 +10,8 @@ import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
 import org.koin.compose.viewmodel.koinViewModel
+import dev.retza.mak.ui.freedays.FreeDayDialog
+import dev.retza.mak.ui.freedays.FreeDayEditorViewModel
 import dev.retza.mak.ui.schedule.ScheduleEffect
 import dev.retza.mak.ui.schedule.ScheduleScreen
 import dev.retza.mak.ui.schedule.ScheduleViewModel
@@ -78,8 +80,10 @@ internal fun NavGraphBuilder.scheduleRoute(
                 onPlanDateShown()
             }
         }
-        ScheduleEffects(scheduleViewModel, navController)
+        val freeDayEditor: FreeDayEditorViewModel = koinViewModel()
+        ScheduleEffects(scheduleViewModel, navController, freeDayEditor)
         val scheduleState = scheduleViewModel.schedule.collectAsStateWithLifecycle().value
+        val freeDayState = freeDayEditor.editor.collectAsStateWithLifecycle().value
         ScheduleScreen(
             state = scheduleState,
             onViewChanged = scheduleViewModel::selectView,
@@ -92,6 +96,7 @@ internal fun NavGraphBuilder.scheduleRoute(
             onCalendarDaySelected = scheduleViewModel::selectCalendarDay,
             onShowCancelledChanged = scheduleViewModel::setShowCancelled,
             onAddOneOff = scheduleViewModel::openNewClassForSelectedCalendarDay,
+            onMarkFree = scheduleViewModel::markSelectedCalendarDayFree,
             onOpenClass = onOpenOccurrence,
             onSaveWeekCorrection = scheduleViewModel::saveVisibleWeekOverride,
             onClearWeekCorrection = scheduleViewModel::clearVisibleWeekOverride,
@@ -101,15 +106,25 @@ internal fun NavGraphBuilder.scheduleRoute(
             requiresSetup = appState.requiresSetup,
             modifier = Modifier.fillMaxSize()
         )
+        FreeDayDialog(
+            state = freeDayState,
+            onRangeChange = freeDayEditor::updateRange,
+            onNameChange = freeDayEditor::updateName,
+            onToggleCalendar = freeDayEditor::toggleCalendar,
+            onWeekAfterBreakChange = freeDayEditor::updateWeekAfterBreak,
+            onSave = freeDayEditor::save,
+            onCancel = freeDayEditor::cancel
+        )
     }
 }
 
 @Composable
 internal fun ScheduleEffects(
     scheduleViewModel: ScheduleViewModel,
-    navController: NavController
+    navController: NavController,
+    freeDayEditor: FreeDayEditorViewModel
 ) {
-    LaunchedEffect(scheduleViewModel, navController) {
+    LaunchedEffect(scheduleViewModel, navController, freeDayEditor) {
         scheduleViewModel.effects.collect { effect ->
             when (effect) {
                 is ScheduleEffect.OpenNewClassEditor -> {
@@ -117,6 +132,7 @@ internal fun ScheduleEffects(
                         openClassEditor(navController, effect.date)
                     }
                 }
+                is ScheduleEffect.OpenFreeDayEditor -> freeDayEditor.startNew(effect.semesterId, effect.date)
             }
         }
     }

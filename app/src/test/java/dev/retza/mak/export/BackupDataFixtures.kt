@@ -20,6 +20,7 @@ internal fun exportSnapshotOf(
                 programs = data.semesterPrograms.map { it.toRecord() },
                 classes = data.classes.map { it.toRecord() },
                 weekOverrides = data.weekOverrides.map { it.toRecord() },
+                freeDays = data.freeDays.map { it.toRecord() },
                 occurrenceNotes = data.occurrenceNotes.map { it.toRecord() },
                 occurrenceChanges = data.occurrenceChanges.map { it.toRecord() }
             )

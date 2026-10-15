@@ -1,12 +1,14 @@
 package dev.retza.mak.ui
 
 import dev.retza.mak.text.polishPlural
+import dev.retza.mak.domain.FreeDay
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.WeekStatus
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.toUi
 import java.time.DayOfWeek
+import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 
 internal val fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", AppLocale)
@@ -17,6 +19,51 @@ internal val shortDateWithYearFormatter = DateTimeFormatter.ofPattern("d MMM yyy
 internal val longDateFormatter = DateTimeFormatter.ofPattern("d MMMM yyyy", AppLocale)
 internal val timeFormatter = DateTimeFormatter.ofPattern("HH:mm")
 internal val monthFormatter = DateTimeFormatter.ofPattern("LLLL yyyy", AppLocale)
+
+/**
+ * Date range such as "22 lut - 15 cze 2027". The year is shown once when both dates
+ * fall in the same year; otherwise each date gets its own year.
+ */
+internal fun dateRangeWithYearLabel(start: LocalDate, end: LocalDate): String =
+    if (start.year == end.year) {
+        "${start.format(shortDateFormatter)} - ${end.format(shortDateFormatter)} ${end.year}"
+    } else {
+        "${start.format(shortDateWithYearFormatter)} - ${end.format(shortDateWithYearFormatter)}"
+    }
+
+/** Date range with the year on both dates, such as "24 gru 2026 - 2 sty 2027". */
+internal fun dateRangeLabel(start: LocalDate, end: LocalDate): String =
+    "${start.format(shortDateWithYearFormatter)} - ${end.format(shortDateWithYearFormatter)}"
+
+/** A free day as a note above the classes of its day (`FEATURES.md`, „Dni wolne”). */
+data class FreeDayNoteUi(val title: String, val subtitle: String)
+
+internal fun FreeDay.todayNote(): FreeDayNoteUi = FreeDayNoteUi(
+    title = name ?: "Dzień wolny",
+    subtitle = if (startDate == endDate) FREE_DAY_RULE else
+        "${startDate.format(shortDateFormatter)} - ${endDate.format(shortDateFormatter)}. $FREE_DAY_RULE"
+)
+
+internal fun FreeDay.listNote(): FreeDayNoteUi = FreeDayNoteUi(
+    title = name?.let { "Dzień wolny: $it" } ?: "Dzień wolny",
+    subtitle = FREE_DAY_RULE
+)
+
+/** The name and, for a range that goes on after [date], its last day. */
+internal fun freeDayDetail(freeDay: FreeDay, date: LocalDate): String? {
+    val until = if (freeDay.endDate.isAfter(date)) "do ${freeDay.endDate.format(shortDateFormatter)}" else null
+    return when {
+        freeDay.name != null && until != null -> "${freeDay.name}, $until"
+        freeDay.name != null -> freeDay.name
+        until != null -> until.replaceFirstChar { it.uppercase() }
+        else -> null
+    }
+}
+
+/** „1 dzień”, „2 dni”, „12 dni”. */
+internal fun daysLabel(count: Int): String = "$count ${polishPlural(count, "dzień", "dni", "dni")}"
+
+private const val FREE_DAY_RULE = "Zajęcia cykliczne się nie odbywają."
 
 internal val dayNames = linkedMapOf(
     DayOfWeek.MONDAY to "Poniedziałek",

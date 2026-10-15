@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.schedule
 
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.data.entity.WeekOverrideEntity
@@ -26,6 +27,7 @@ import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -367,6 +369,63 @@ class ScheduleViewModelTest {
     }
 
     @Test
+    fun weekOutsideTheCalendarHasNoSourceHintOrCorrection() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+        viewModel.changeWeek(10)
+        advanceUntilIdle()
+
+        val state = viewModel.schedule.value
+        assertEquals("Poza semestrem", state.weekTypeLabel)
+        assertFalse(state.canCorrectWeek)
+        assertEquals("", state.weekSourceLabel)
+        assertEquals(null, state.weekCorrectionHint)
+
+        viewModel.saveVisibleWeekOverride(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK)
+        advanceUntilIdle()
+        assertTrue(repository.weekOverrides.isEmpty())
+    }
+
+    @Test
+    fun severalCalendarsInRangeHintToPickAProgram() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(name = "Fizyka", color = "#000000"),
+            sourceCalendarId = 1L
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        assertEquals(
+            "Wybierz kierunek w polu „Kierunek”, aby zmienić tydzień.",
+            viewModel.schedule.value.weekCorrectionHint
+        )
+
+        viewModel.changeWeek(10)
+        advanceUntilIdle()
+        assertEquals("Poza semestrem", viewModel.schedule.value.weekTypeLabel)
+        assertEquals("", viewModel.schedule.value.weekSourceLabel)
+        assertEquals(null, viewModel.schedule.value.weekCorrectionHint)
+    }
+
+    @Test
+    fun emptyDayMessageDependsOnTheFilter() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+        assertEquals("Brak zajęć w tym dniu.", viewModel.schedule.value.emptyDayMessage)
+
+        viewModel.selectCourseFilter(1L)
+        advanceUntilIdle()
+        assertEquals("Brak zajęć w tym dniu dla wybranego kierunku.", viewModel.schedule.value.emptyDayMessage)
+    }
+
+    @Test
     fun filteredProgramShowsTheWeekOfItsCalendar() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val second = repository.addSeparatedSemesterProgram(
@@ -513,6 +572,63 @@ class ScheduleViewModelTest {
     }
 
     @Test
+    fun calendarMarksCancelledOccurrencesAfterHeldOnes() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        addMondayClasses(repository, 2)
+        repository.occurrenceChanges += cancelledChange(classId = 1L)
+        val viewModel = viewModel(repository)
+        viewModel.selectView(ScheduleView.Calendar)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.schedule.value
+        val day = state.calendarDays.single { it.id == "2026-09-21" }
+        assertEquals(listOf("2:2026-09-21", "1:2026-09-21"), day.markers.map { it.id })
+        assertEquals(listOf(false, true), day.markers.map { it.isCancelled })
+        assertEquals(listOf(false, false), day.markers.map { it.isChanged })
+        assertTrue(day.accessibilityLabel.contains("odwołane"))
+        assertTrue(day.accessibilityLabel.contains("1 zajęcie"))
+        assertTrue(state.calendarLegend.any { it.label == "Odwołany termin" && it.isCancelled })
+    }
+
+    @Test
+    fun calendarLegendHasNoCancelledEntryWithoutCancellations() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        viewModel.selectView(ScheduleView.Calendar)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        assertTrue(viewModel.schedule.value.calendarLegend.none { it.isCancelled })
+    }
+
+    @Test
+    fun calendarSkipsCancelledOccurrenceOfProgramOutsideFilter() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val second = repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(name = "Fizyka", color = "#000000"),
+            sourceCalendarId = 1L
+        )
+        repository.classes += repository.classes.single().copy(
+            id = 2L,
+            semesterProgramId = second.semesterProgramId,
+            name = "Mechanika",
+            startTime = LocalTime.of(11, 0),
+            endTime = LocalTime.of(12, 0)
+        )
+        repository.occurrenceChanges += cancelledChange(classId = 1L)
+        val viewModel = viewModel(repository)
+        viewModel.selectView(ScheduleView.Calendar)
+        viewModel.selectCourseFilter(second.semesterProgramId)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        val day = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }
+        assertEquals(listOf("2:2026-09-21"), day.markers.map { it.id })
+        assertTrue(day.markers.none { it.isCancelled })
+    }
+
+    @Test
     fun listViewDoesNotBuildTheCalendarGrid() = runTest(mainDispatcher) {
         val viewModel = viewModel(FakeRepository())
         backgroundScope.launch { viewModel.schedule.collect {} }
@@ -567,6 +683,24 @@ class ScheduleViewModelTest {
         advanceUntilIdle()
 
         assertEquals(listOf(ScheduleEffect.OpenNewClassEditor(LocalDate.of(2026, 10, 5))), effects)
+    }
+
+    @Test
+    fun markSelectedCalendarDayFreeOpensEditorForSelectedDay() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        val effects = mutableListOf<ScheduleEffect>()
+        backgroundScope.launch { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+
+        viewModel.selectCalendarDay("2026-10-05")
+        viewModel.markSelectedCalendarDayFree()
+        advanceUntilIdle()
+
+        assertEquals(
+            listOf(ScheduleEffect.OpenFreeDayEditor(repository.activeSemesterId, LocalDate.of(2026, 10, 5))),
+            effects
+        )
     }
 
     @Test
@@ -658,7 +792,81 @@ class ScheduleViewModelTest {
 
         assertEquals(listOf(WeekOverrideScope.FROM_WEEK), repository.weekOverrides.map { it.scope })
     }
+
+    @Test
+    fun freeDayMarksCalendarDaysAsBand() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.freeDays += FreeDayEntity(
+            id = 1L,
+            semesterId = 1L,
+            academicCalendarId = 1L,
+            startDate = LocalDate.of(2026, 9, 21),
+            endDate = LocalDate.of(2026, 9, 23),
+            name = "Rekolekcje"
+        )
+        val viewModel = viewModel(repository)
+        viewModel.selectView(ScheduleView.Calendar)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+
+        val days = viewModel.schedule.value.calendarDays
+        val monday = days.single { it.id == "2026-09-21" }
+        val tuesday = days.single { it.id == "2026-09-22" }
+        val wednesday = days.single { it.id == "2026-09-23" }
+        assertTrue(monday.isFreeDay && tuesday.isFreeDay && wednesday.isFreeDay)
+        assertFalse(monday.joinsPrevious)
+        assertTrue(monday.joinsNext)
+        assertTrue(tuesday.joinsPrevious && tuesday.joinsNext)
+        assertTrue(wednesday.joinsPrevious)
+        assertFalse(wednesday.joinsNext)
+        assertTrue(viewModel.schedule.value.calendarLegend.any { it.label == "Dzień wolny" })
+    }
+
+    @Test
+    fun freeDayNoteFollowsTheFilter() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val second = repository.addSeparatedSemesterProgram(
+            semesterId = 1L,
+            studyProgram = dev.retza.mak.data.entity.StudyProgramEntity(name = "Fizyka", color = "#000000"),
+            sourceCalendarId = 1L
+        )
+        repository.freeDays += FreeDayEntity(
+            id = 1L,
+            semesterId = 1L,
+            academicCalendarId = 1L,
+            startDate = LocalDate.of(2026, 9, 21),
+            endDate = LocalDate.of(2026, 9, 25),
+            name = "Rektorskie"
+        )
+        val viewModel = viewModel(repository)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+        assertNull(viewModel.schedule.value.freeDay)
+
+        viewModel.selectCourseFilter(second.semesterProgramId)
+        advanceUntilIdle()
+        assertNull(viewModel.schedule.value.freeDay)
+
+        viewModel.selectCourseFilter(1L)
+        advanceUntilIdle()
+        assertEquals("Dzień wolny: Rektorskie", viewModel.schedule.value.freeDay?.title)
+    }
 }
+
+private fun cancelledChange(classId: Long) = OccurrenceChangeEntity(
+    id = classId,
+    semesterId = 1L,
+    classId = classId,
+    originalDate = LocalDate.of(2026, 9, 21),
+    kind = dev.retza.mak.data.entity.OccurrenceChangeKind.CANCELLED,
+    targetDate = null,
+    newStartTime = null,
+    newEndTime = null,
+    newRoom = null,
+    newBuilding = null,
+    newTeacherName = null,
+    newNote = null
+)
 
 private fun addMondayClasses(repository: FakeRepository, count: Int) {
     (2..count).forEach { index ->

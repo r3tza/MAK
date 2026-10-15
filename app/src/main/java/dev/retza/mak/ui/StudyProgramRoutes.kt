@@ -31,6 +31,7 @@ internal fun NavGraphBuilder.studyProgramRoutes(
                 navController.navigate(studyProgramEditRoute(id))
             },
             onVisibleChange = studyProgramsViewModel::setVisible,
+            onAddProgram = { navController.navigate(MakRoutes.StudyProgramAdd) },
             modifier = Modifier.fillMaxSize()
         )
     }
@@ -39,36 +40,60 @@ internal fun NavGraphBuilder.studyProgramRoutes(
         route = MakRoutes.StudyProgramEdit,
         arguments = listOf(navArgument("programId") { type = NavType.LongType })
     ) { entry ->
-        val studyProgramsViewModel: StudyProgramsViewModel = koinViewModel()
         val programId = entry.arguments?.getLong("programId")
-        val openState by studyProgramsViewModel.opened.collectAsStateWithLifecycle()
-        LaunchedEffect(programId) {
-            programId?.let { studyProgramsViewModel.openOnce(it) }
-        }
-        if (openState != StudyProgramEditOpenState.Open) {
-            LaunchedEffect(openState) {
-                if (openState == StudyProgramEditOpenState.Missing) onBack()
-            }
-            PlanEditingWait()
-            return@composable
-        }
-        StudyProgramEffects(studyProgramsViewModel, navController)
-        val state by studyProgramsViewModel.programs.collectAsStateWithLifecycle()
-        StudyProgramEditScreen(
-            editor = state.editor,
-            onNameChanged = studyProgramsViewModel::updateName,
-            onColorChanged = studyProgramsViewModel::updateColor,
-            onSave = studyProgramsViewModel::save,
-            onCancel = {
-                studyProgramsViewModel.closeEditor()
-                onBack()
-            },
-            onRequestDelete = studyProgramsViewModel::requestDelete,
-            onConfirmDelete = studyProgramsViewModel::confirmDelete,
-            onCancelDelete = studyProgramsViewModel::cancelDelete,
-            modifier = Modifier.fillMaxSize()
+        StudyProgramEditDestination(
+            navController = navController,
+            onBack = onBack,
+            openKey = programId,
+            open = { viewModel -> programId?.let { viewModel.openOnce(it) } }
         )
     }
+
+    composable(MakRoutes.StudyProgramAdd) {
+        StudyProgramEditDestination(
+            navController = navController,
+            onBack = onBack,
+            openKey = Unit,
+            open = { viewModel -> viewModel.openNewOnce() }
+        )
+    }
+}
+
+@Composable
+private fun StudyProgramEditDestination(
+    navController: NavController,
+    onBack: () -> Unit,
+    openKey: Any?,
+    open: suspend (StudyProgramsViewModel) -> Unit
+) {
+    val studyProgramsViewModel: StudyProgramsViewModel = koinViewModel()
+    val openState by studyProgramsViewModel.opened.collectAsStateWithLifecycle()
+    LaunchedEffect(openKey) {
+        open(studyProgramsViewModel)
+    }
+    if (openState != StudyProgramEditOpenState.Open) {
+        LaunchedEffect(openState) {
+            if (openState == StudyProgramEditOpenState.Missing) onBack()
+        }
+        PlanEditingWait()
+        return
+    }
+    StudyProgramEffects(studyProgramsViewModel, navController)
+    val state by studyProgramsViewModel.programs.collectAsStateWithLifecycle()
+    StudyProgramEditScreen(
+        editor = state.editor,
+        onNameChanged = studyProgramsViewModel::updateName,
+        onColorChanged = studyProgramsViewModel::updateColor,
+        onSave = studyProgramsViewModel::save,
+        onCancel = {
+            studyProgramsViewModel.closeEditor()
+            onBack()
+        },
+        onRequestDelete = studyProgramsViewModel::requestDelete,
+        onConfirmDelete = studyProgramsViewModel::confirmDelete,
+        onCancelDelete = studyProgramsViewModel::cancelDelete,
+        modifier = Modifier.fillMaxSize()
+    )
 }
 
 @Composable
@@ -81,7 +106,11 @@ internal fun StudyProgramEffects(
             when (effect) {
                 StudyProgramsEffect.CloseEditor -> {
                     val route = navController.currentBackStackEntry?.destination?.route
-                    if (route == MakRoutes.StudyProgramEdit || route == MakRoutes.SemesterCourseEdit) {
+                    if (
+                        route == MakRoutes.StudyProgramEdit ||
+                        route == MakRoutes.StudyProgramAdd ||
+                        route == MakRoutes.SemesterCourseEdit
+                    ) {
                         navController.popBackStack()
                     }
                 }

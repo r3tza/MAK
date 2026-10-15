@@ -25,6 +25,7 @@ import androidx.compose.material.icons.automirrored.outlined.ArrowBack
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
 import androidx.compose.material.icons.outlined.Edit
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.EventBusy
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -38,8 +39,13 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.selected
@@ -64,6 +70,9 @@ import dev.retza.mak.ui.components.WeekTypeSelectField
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDialogAction
 import dev.retza.mak.ui.components.MakEmptyState
+import dev.retza.mak.ui.components.MakNoteBanner
+import dev.retza.mak.ui.components.MakNoteRole
+import dev.retza.mak.ui.FreeDayNoteUi
 import dev.retza.mak.ui.components.MakPrimaryAction
 import dev.retza.mak.ui.components.MakRoundButton
 import dev.retza.mak.ui.components.MakRowTitle
@@ -117,10 +126,16 @@ data class ScheduleUiState(
     val showCancelled: Boolean = false,
     val hasOneWeekCorrection: Boolean = false,
     val hasFromWeekCorrection: Boolean = false,
-    // False when the filter shows several calendars, so a week correction would have no target.
+    // False when the filter shows several calendars or the week lies outside the shown calendar.
     val canCorrectWeek: Boolean = true,
+    // Shown instead of the correction action when the filter shows several calendars in a semester week.
+    val weekCorrectionHint: String? = null,
+    val emptyDayMessage: String = "Brak zajęć w tym dniu.",
     // Every study program of the semester is hidden on this phone; the list gives way to a note.
-    val allProgramsHidden: Boolean = false
+    val allProgramsHidden: Boolean = false,
+    // Set when every calendar the view shows has a free day on the date; the classes are then not held.
+    val freeDay: FreeDayNoteUi? = null,
+    val calendarFreeDay: FreeDayNoteUi? = null
 )
 
 @Composable
@@ -136,6 +151,7 @@ fun ScheduleScreen(
     onCalendarDaySelected: (String) -> Unit,
     onShowCancelledChanged: (Boolean) -> Unit,
     onAddOneOff: () -> Unit,
+    onMarkFree: () -> Unit,
     onOpenClass: (String) -> Unit,
     onSaveWeekCorrection: (WeekType, WeekOverrideScope) -> Unit,
     onClearWeekCorrection: (WeekOverrideScope) -> Unit,
@@ -184,6 +200,7 @@ fun ScheduleScreen(
                 onCalendarDaySelected = onCalendarDaySelected,
                 onShowCancelledChanged = onShowCancelledChanged,
                 onAddOneOff = onAddOneOff,
+                onMarkFree = onMarkFree,
                 onOpenClass = onOpenClass
             )
         }
@@ -228,8 +245,9 @@ private fun ListView(
             ScheduleFilterSection(filters = state.filters, onFilterSelected = onFilterSelected)
         }
         MakRowTitle(title = state.selectedDayLabel, meta = state.selectedDayCountLabel)
+        state.freeDay?.let { MakNoteBanner(title = it.title, subtitle = it.subtitle, role = MakNoteRole.Neutral) }
         if (state.items.isEmpty()) {
-            MakEmptyState("Brak zajęć w tym dniu dla wybranego kierunku.")
+            if (state.freeDay == null) MakEmptyState(state.emptyDayMessage)
         } else {
                 Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 state.items.forEach { item ->
@@ -276,6 +294,7 @@ private fun WeekNavigationHeader(
             weekTypeLabel = state.weekTypeLabel,
             weekSourceLabel = state.weekSourceLabel,
             canCorrect = state.canCorrectWeek,
+            hint = state.weekCorrectionHint,
             onClick = onEditWeek
         )
     }
@@ -289,6 +308,7 @@ private fun WeekTypeBadge(
     weekTypeLabel: String,
     weekSourceLabel: String,
     canCorrect: Boolean,
+    hint: String?,
     onClick: () -> Unit
 ) {
     var focused by remember { mutableStateOf(false) }
@@ -332,11 +352,13 @@ private fun WeekTypeBadge(
                     fontWeight = FontWeight.Bold,
                     fontSize = 14.sp
                 )
-                Text(
-                    text = weekSourceLabel,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontSize = 13.sp
-                )
+                if (weekSourceLabel.isNotBlank()) {
+                    Text(
+                        text = weekSourceLabel,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 13.sp
+                    )
+                }
             }
             val correctAction: @Composable () -> Unit = {
                 Row(
@@ -372,9 +394,9 @@ private fun WeekTypeBadge(
                 }
             }
         }
-        if (!canCorrect) {
+        hint?.let {
             Text(
-                text = "Wybierz kierunek w polu „Kierunek”, aby zmienić tydzień.",
+                text = it,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontSize = 12.sp,
                 modifier = Modifier.padding(bottom = MakSpacing.xs)
@@ -459,6 +481,7 @@ private fun CalendarView(
     onCalendarDaySelected: (String) -> Unit,
     onShowCancelledChanged: (Boolean) -> Unit,
     onAddOneOff: () -> Unit,
+    onMarkFree: () -> Unit,
     onOpenClass: (String) -> Unit
 ) {
     Column {
@@ -502,14 +525,26 @@ private fun CalendarView(
             modifier = Modifier.padding(bottom = MakSpacing.md)
         )
         MakRowTitle(title = state.calendarSelectedDayLabel, meta = state.calendarSelectedDayCountLabel)
-        MakSecondaryAction(
-            text = "Dodaj termin jednorazowy",
-            icon = Icons.Outlined.Add,
-            onClick = onAddOneOff,
+        Column(
+            verticalArrangement = Arrangement.spacedBy(MakSpacing.sm),
             modifier = Modifier.padding(bottom = MakSpacing.md)
-        )
+        ) {
+            MakSecondaryAction(
+                text = "Dodaj termin jednorazowy",
+                icon = Icons.Outlined.Add,
+                onClick = onAddOneOff
+            )
+            if (state.calendarFreeDay == null) {
+                MakSecondaryAction(
+                    text = "Oznacz jako wolny",
+                    icon = Icons.Outlined.EventBusy,
+                    onClick = onMarkFree
+                )
+            }
+        }
+        state.calendarFreeDay?.let { MakNoteBanner(title = it.title, subtitle = it.subtitle, role = MakNoteRole.Neutral) }
         if (state.calendarItems.isEmpty()) {
-            MakEmptyState("Brak zajęć w tym dniu.")
+            if (state.calendarFreeDay == null) MakEmptyState(state.emptyDayMessage)
         } else {
             Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
                 state.calendarItems.forEach { item ->
@@ -530,11 +565,35 @@ private fun RowScope.CalendarDay(day: CalendarDayUi, onSelected: (String) -> Uni
         day.markers.size <= 3 && !day.hasMoreMarkers -> 8.dp
         else -> 6.dp
     }
+    val bandColor = MaterialTheme.colorScheme.secondaryContainer
     Column(
         modifier = Modifier
             .weight(1f)
             .heightIn(min = 48.dp)
             .clip(shape)
+            .then(
+                if (day.isFreeDay) {
+                    // A band across the cell; the rounded ends are dropped where it joins a free neighbour.
+                    Modifier.drawBehind {
+                        val bandHeight = 36.dp.toPx()
+                        val radius = 18.dp.toPx()
+                        val top = (size.height - bandHeight) / 2f
+                        drawRoundRect(
+                            color = bandColor,
+                            topLeft = Offset(0f, top),
+                            size = Size(size.width, bandHeight),
+                            cornerRadius = CornerRadius(radius)
+                        )
+                        // Where the band joins a free neighbour, the rounded end is squared off.
+                        if (day.joinsPrevious) {
+                            drawRect(bandColor, Offset(0f, top), Size(radius, bandHeight))
+                        }
+                        if (day.joinsNext) {
+                            drawRect(bandColor, Offset(size.width - radius, top), Size(radius, bandHeight))
+                        }
+                    }
+                } else Modifier
+            )
             .then(
                 if (day.isToday && !day.isSelected) {
                     Modifier.border(1.dp, MaterialTheme.colorScheme.primary, shape)
@@ -556,6 +615,7 @@ private fun RowScope.CalendarDay(day: CalendarDayUi, onSelected: (String) -> Uni
             fontSize = 13.sp,
             color = when {
                 day.isSelected -> MaterialTheme.colorScheme.onPrimary
+                day.isFreeDay -> MaterialTheme.colorScheme.onSecondaryContainer
                 day.isInCurrentMonth -> MaterialTheme.colorScheme.onSurface
                 else -> MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.38f)
             },
@@ -573,6 +633,7 @@ private fun RowScope.CalendarDay(day: CalendarDayUi, onSelected: (String) -> Uni
                 CalendarMarker(
                     color = if (day.isSelected) MaterialTheme.colorScheme.onPrimary else courseMarkerTint(marker.colorHex),
                     changed = marker.isChanged,
+                    cancelled = marker.isCancelled,
                     size = markerSize,
                     modifier = Modifier.testTag("calendar-marker-${marker.id}")
                 )
@@ -597,16 +658,38 @@ private fun courseMarkerTint(hex: String?): Color =
 private fun CalendarMarker(
     color: Color,
     changed: Boolean,
+    cancelled: Boolean = false,
     size: Dp = 8.dp,
     modifier: Modifier = Modifier
 ) {
     val shape = CircleShape
+    val strokeWidth = if (size >= 8.dp) 1.5.dp else 1.dp
     Box(
         modifier = modifier
             .size(size)
             .then(
-                if (changed) Modifier.border(if (size >= 8.dp) 1.5.dp else 1.dp, color, shape)
-                else Modifier.background(color, shape)
+                when {
+                    cancelled -> Modifier.drawBehind {
+                        val stroke = strokeWidth.toPx()
+                        val inset = stroke / 2f
+                        drawLine(
+                            color = color,
+                            start = Offset(inset, inset),
+                            end = Offset(this.size.width - inset, this.size.height - inset),
+                            strokeWidth = stroke,
+                            cap = StrokeCap.Round
+                        )
+                        drawLine(
+                            color = color,
+                            start = Offset(this.size.width - inset, inset),
+                            end = Offset(inset, this.size.height - inset),
+                            strokeWidth = stroke,
+                            cap = StrokeCap.Round
+                        )
+                    }
+                    changed -> Modifier.border(strokeWidth, color, shape)
+                    else -> Modifier.background(color, shape)
+                }
             )
     )
 }
@@ -626,10 +709,24 @@ private fun CalendarLegend(items: List<CalendarLegendUi>) {
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(6.dp)
             ) {
-                CalendarMarker(
-                    color = if (item.isChange) MaterialTheme.colorScheme.onSurfaceVariant else courseMarkerTint(item.colorHex),
-                    changed = item.isChange
-                )
+                if (item.isFreeDay) {
+                    Box(
+                        Modifier
+                            .size(width = 12.dp, height = 10.dp)
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(MaterialTheme.colorScheme.secondaryContainer)
+                    )
+                } else {
+                    CalendarMarker(
+                        color = if (item.isChange || item.isCancelled) {
+                            MaterialTheme.colorScheme.onSurfaceVariant
+                        } else {
+                            courseMarkerTint(item.colorHex)
+                        },
+                        changed = item.isChange,
+                        cancelled = item.isCancelled
+                    )
+                }
                 Text(
                     text = item.label,
                     style = MaterialTheme.typography.bodySmall,

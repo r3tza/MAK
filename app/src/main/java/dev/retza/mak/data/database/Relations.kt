@@ -5,6 +5,7 @@ import androidx.room.Junction
 import androidx.room.Relation
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.data.entity.SemesterEntity
@@ -36,5 +37,7 @@ data class SemesterWithData(
     @Relation(parentColumn = "id", entityColumn = "semester_id")
     val occurrenceNotes: List<OccurrenceNoteEntity>,
     @Relation(parentColumn = "id", entityColumn = "semester_id")
-    val occurrenceChanges: List<OccurrenceChangeEntity>
+    val occurrenceChanges: List<OccurrenceChangeEntity>,
+    @Relation(parentColumn = "id", entityColumn = "semester_id")
+    val freeDays: List<FreeDayEntity>
 )

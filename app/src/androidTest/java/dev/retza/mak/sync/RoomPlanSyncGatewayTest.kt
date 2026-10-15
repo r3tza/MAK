@@ -339,6 +339,7 @@ class RoomPlanSyncGatewayTest {
                 programs = listOf(SemesterProgramEntity(id, id, 1, id).toRecord()),
                 classes = emptyList(),
                 weekOverrides = emptyList(),
+                freeDays = emptyList(),
                 occurrenceNotes = emptyList(),
                 occurrenceChanges = emptyList()
             )

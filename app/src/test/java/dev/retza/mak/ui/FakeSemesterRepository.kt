@@ -1,7 +1,9 @@
 package dev.retza.mak.ui
 
 import dev.retza.mak.data.ActivePlanSource
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.repository.AcademicCalendarRecord
+import dev.retza.mak.data.repository.FreeDayRecord
 import dev.retza.mak.data.repository.SemesterConfiguration
 import dev.retza.mak.data.repository.SemesterDeletionResult
 import dev.retza.mak.data.repository.SemesterProgramRecord
@@ -12,6 +14,9 @@ import dev.retza.mak.data.repository.StudyProgramRecord
 import dev.retza.mak.data.repository.WeekOverrideRecord
 import dev.retza.mak.data.repository.toEntity
 import dev.retza.mak.data.repository.toRecord
+import dev.retza.mak.domain.sharedCalendarOf
+import dev.retza.mak.domain.Holiday
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.settings.InMemorySettingsPreferences
 import dev.retza.mak.settings.SettingsPreferences
 import java.time.LocalDate
@@ -27,6 +32,28 @@ internal class FakeSemesterRepository(
     private val delegate: FakeRepository
 ) : SemesterRepository {
     var countClassesGate: CompletableDeferred<Unit>? = null
+
+    /** Every saveFreeDayGroup call in order, recorded before the write. */
+    val freeDayGroupSaves = mutableListOf<FreeDayGroupSave>()
+
+    /** Every addHolidays call in order, recorded before the write. */
+    val holidayAdds = mutableListOf<HolidayAdd>()
+
+    data class FreeDayGroupSave(
+        val semesterId: Long,
+        val replacedIds: List<Long>,
+        val startDate: LocalDate,
+        val endDate: LocalDate,
+        val name: String?,
+        val calendarIds: List<Long>,
+        val weekAfterBreak: WeekType? = null
+    )
+
+    data class HolidayAdd(
+        val semesterId: Long,
+        val holidays: List<Holiday>,
+        val calendarIds: List<Long>
+    )
 
     override fun observeSemesters(): Flow<List<SemesterRecord>> =
         delegate.observeSemesters().map { list -> list.map { it.toRecord() } }
@@ -54,6 +81,14 @@ internal class FakeSemesterRepository(
     override fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarRecord>> =
         delegate.observeCalendars(semesterId).map { list -> list.map { it.toRecord() } }
 
+    override fun observeSharedCalendars(): Flow<Map<Long, AcademicCalendarRecord>> = flow {
+        emit(
+            delegate.calendars.map { it.toRecord() }
+                .groupBy { it.semesterId }
+                .mapValues { (_, records) -> records.minBy { it.id } }
+        )
+    }
+
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>> =
         delegate.observeWeekOverrides(semesterId).map { list -> list.map { it.toRecord() } }
 
@@ -66,10 +101,67 @@ internal class FakeSemesterRepository(
                     programs = it.semesterPrograms.map { program -> program.toRecord() },
                     studyPrograms = delegate.studyPrograms.map { program -> program.toRecord() },
                     calendars = it.academicCalendars.map { calendar -> calendar.toRecord() },
-                    overrides = it.weekOverrides.map { week -> week.toRecord() }
+                    overrides = it.weekOverrides.map { week -> week.toRecord() },
+                    freeDays = it.freeDays.map { day -> day.toRecord() }
                 )
             }
         }
+
+    override fun observeFreeDays(semesterId: Long): Flow<List<FreeDayRecord>> =
+        delegate.observeSemesterData(semesterId).map { data ->
+            data?.freeDays?.map { it.toRecord() }.orEmpty()
+        }
+
+    override suspend fun saveFreeDayGroup(
+        semesterId: Long,
+        replacedIds: List<Long>,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        name: String?,
+        calendarIds: List<Long>,
+        weekAfterBreak: WeekType?
+    ) {
+        freeDayGroupSaves += FreeDayGroupSave(
+            semesterId, replacedIds, startDate, endDate, name, calendarIds, weekAfterBreak
+        )
+        written {
+            delegate.freeDays.removeAll { it.id in replacedIds }
+            var nextId = (delegate.freeDays.maxOfOrNull { it.id } ?: 0L) + 1
+            calendarIds.forEach { calendarId ->
+                delegate.freeDays += FreeDayEntity(
+                    id = nextId++,
+                    semesterId = semesterId,
+                    academicCalendarId = calendarId,
+                    startDate = startDate,
+                    endDate = endDate,
+                    name = name?.trim()?.takeIf { it.isNotEmpty() }
+                )
+            }
+        }
+    }
+
+    override suspend fun addHolidays(semesterId: Long, holidays: List<Holiday>, calendarIds: List<Long>) {
+        holidayAdds += HolidayAdd(semesterId, holidays, calendarIds)
+        written {
+            var nextId = (delegate.freeDays.maxOfOrNull { it.id } ?: 0L) + 1
+            calendarIds.forEach { calendarId ->
+                holidays.forEach { holiday ->
+                    delegate.freeDays += FreeDayEntity(
+                        id = nextId++,
+                        semesterId = semesterId,
+                        academicCalendarId = calendarId,
+                        startDate = holiday.date,
+                        endDate = holiday.endDate,
+                        name = holiday.name
+                    )
+                }
+            }
+        }
+    }
+
+    override suspend fun deleteFreeDays(ids: List<Long>) {
+        written { delegate.freeDays.removeAll { it.id in ids } }
+    }
 
     override suspend fun saveSemester(record: SemesterRecord): Long =
         written { delegate.saveSemester(record.toEntity()) }
@@ -92,6 +184,18 @@ internal class FakeSemesterRepository(
         academicCalendarId: Long
     ): SetupConfigurationIds = written {
         delegate.saveStudyProgramAssignment(semesterId, studyProgram.toEntity(), academicCalendarId)
+    }
+
+    override suspend fun saveStudyProgramInActiveSemester(program: StudyProgramRecord): SemesterRecord? {
+        val semester = observeActiveSemester().first()
+        val calendar = semester?.let { s -> sharedCalendarOf(observeCalendars(s.id).first()) { it.id } }
+        return if (semester != null && calendar != null) {
+            saveStudyProgramAssignment(semester.id, program, calendar.id)
+            semester
+        } else {
+            saveStudyProgram(program)
+            null
+        }
     }
 
     override suspend fun addSeparatedSemesterProgram(

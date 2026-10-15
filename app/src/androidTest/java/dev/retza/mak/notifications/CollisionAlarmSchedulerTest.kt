@@ -34,6 +34,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.cancel
@@ -199,8 +200,8 @@ class CollisionAlarmSchedulerTest {
 
     private class EnabledNotifications : SettingsPreferences {
         override val theme: Flow<ThemeMode> = flowOf(ThemeMode.System)
-        override val collisionNotifications: Flow<CollisionNotificationPreferences> =
-            flowOf(CollisionNotificationPreferences(enabled = true))
+        private val notifications = MutableStateFlow(CollisionNotificationPreferences(enabled = true))
+        override val collisionNotifications: Flow<CollisionNotificationPreferences> = notifications
         override val planDisplay: Flow<PlanDisplaySettings> = flowOf(PlanDisplaySettings.DEFAULT)
         override suspend fun setTheme(mode: ThemeMode) = Unit
         override suspend fun setGapThresholdMinutes(minutes: Int) = Unit
@@ -208,11 +209,51 @@ class CollisionAlarmSchedulerTest {
         override suspend fun setStudyProgramHidden(id: Long, hidden: Boolean) = Unit
         override suspend fun clearHiddenStudyPrograms() = Unit
         override suspend fun retainHiddenStudyPrograms(existingIds: Set<Long>) = Unit
-        override suspend fun setCollisionNotificationsEnabled(enabled: Boolean) = Unit
-        override suspend fun setEveningNotificationsEnabled(enabled: Boolean) = Unit
-        override suspend fun setBeforeClassNotificationsEnabled(enabled: Boolean) = Unit
+        override suspend fun setCollisionNotificationsEnabled(enabled: Boolean) {
+            notifications.value = notifications.value.withKinds(
+                evening = enabled,
+                beforeClass = enabled,
+                gapEvening = enabled,
+                gapBeforeClass = enabled
+            )
+        }
+        override suspend fun setEveningNotificationsEnabled(enabled: Boolean) {
+            notifications.value = notifications.value.readKindsThroughMainSwitch().withKinds(evening = enabled)
+        }
+        override suspend fun setBeforeClassNotificationsEnabled(enabled: Boolean) {
+            notifications.value = notifications.value.readKindsThroughMainSwitch().withKinds(beforeClass = enabled)
+        }
+        override suspend fun setGapEveningNotificationsEnabled(enabled: Boolean) {
+            notifications.value = notifications.value.readKindsThroughMainSwitch().withKinds(gapEvening = enabled)
+        }
+        override suspend fun setGapBeforeClassNotificationsEnabled(enabled: Boolean) {
+            notifications.value = notifications.value.readKindsThroughMainSwitch().withKinds(gapBeforeClass = enabled)
+        }
         override suspend fun setEveningHour(hour: LocalTime) = Unit
         override suspend fun setBeforeClassLeadMinutes(minutes: Long) = Unit
+        override suspend fun setGapEveningHour(hour: LocalTime) = Unit
+        override suspend fun setGapLeadMinutes(minutes: Long) = Unit
+
+        private fun CollisionNotificationPreferences.readKindsThroughMainSwitch(): CollisionNotificationPreferences =
+            withKinds(
+                evening = enabled && eveningEnabled,
+                beforeClass = enabled && beforeClassEnabled,
+                gapEvening = enabled && gapEveningEnabled,
+                gapBeforeClass = enabled && gapBeforeClassEnabled
+            )
+
+        private fun CollisionNotificationPreferences.withKinds(
+            evening: Boolean = eveningEnabled,
+            beforeClass: Boolean = beforeClassEnabled,
+            gapEvening: Boolean = gapEveningEnabled,
+            gapBeforeClass: Boolean = gapBeforeClassEnabled
+        ): CollisionNotificationPreferences = copy(
+            enabled = evening || beforeClass || gapEvening || gapBeforeClass,
+            eveningEnabled = evening,
+            beforeClassEnabled = beforeClass,
+            gapEveningEnabled = gapEvening,
+            gapBeforeClassEnabled = gapBeforeClass
+        )
     }
 
     private companion object {

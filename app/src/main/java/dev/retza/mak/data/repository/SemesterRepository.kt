@@ -3,10 +3,15 @@ package dev.retza.mak.data.repository
 import androidx.room.withTransaction
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.entity.AcademicCalendarEntity
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.entity.SemesterProgramEntity
+import dev.retza.mak.domain.Holiday
 import dev.retza.mak.domain.SemesterSpan
 import dev.retza.mak.domain.WeekOverrideScope
+import dev.retza.mak.domain.WeekType
 import dev.retza.mak.domain.fallbackActiveSemester
+import dev.retza.mak.domain.firstMondayAfter
+import dev.retza.mak.domain.sharedCalendarOf
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.LocalDate
@@ -31,6 +36,9 @@ interface SemesterRepository {
 
     fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarRecord>>
 
+    /** The shared calendar of each semester by semester id: its lowest-id calendar, as `ActivePlanData.sharedCalendar()`. */
+    fun observeSharedCalendars(): Flow<Map<Long, AcademicCalendarRecord>>
+
     fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>>
 
     /** The semester with its programs, calendars and week overrides, or null when it does not exist. */
@@ -54,6 +62,12 @@ interface SemesterRepository {
         studyProgram: StudyProgramRecord,
         academicCalendarId: Long
     ): SetupConfigurationIds
+
+    /**
+     * Saves a new program; with an active semester that has a calendar, also assigns it to the shared calendar.
+     * Returns that semester, or null when the program was saved alone.
+     */
+    suspend fun saveStudyProgramInActiveSemester(program: StudyProgramRecord): SemesterRecord?
 
     suspend fun addSeparatedSemesterProgram(
         semesterId: Long,
@@ -94,6 +108,27 @@ interface SemesterRepository {
     suspend fun deleteWeekOverride(id: Long)
 
     suspend fun deleteWeekOverride(calendarId: Long, weekStartDate: LocalDate, scope: WeekOverrideScope)
+
+    fun observeFreeDays(semesterId: Long): Flow<List<FreeDayRecord>>
+
+    /**
+     * Replaces [replacedIds] with the range in each calendar of [calendarIds], in one transaction.
+     * With [weekAfterBreak], also starts that week type from the first Monday after the range in each of those calendars that covers the Monday.
+     */
+    suspend fun saveFreeDayGroup(
+        semesterId: Long,
+        replacedIds: List<Long>,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        name: String?,
+        calendarIds: List<Long>,
+        weekAfterBreak: WeekType? = null
+    )
+
+    /** Adds each holiday as a one-day free day named after it in every calendar of [calendarIds], in one transaction. */
+    suspend fun addHolidays(semesterId: Long, holidays: List<Holiday>, calendarIds: List<Long>)
+
+    suspend fun deleteFreeDays(ids: List<Long>)
 }
 
 @org.koin.core.annotation.Single(binds = [SemesterRepository::class])
@@ -107,6 +142,7 @@ class RoomSemesterRepository(
     private val semesterPrograms = database.semesterProgramDao()
     private val weekOverrides = database.weekOverrideDao()
     private val classes = database.classDao()
+    private val freeDays = database.freeDayDao()
 
     override fun observeSemesters(): Flow<List<SemesterRecord>> =
         semesters.observeAll().map { list -> list.map { it.toRecord() } }
@@ -129,6 +165,13 @@ class RoomSemesterRepository(
     override fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarRecord>> =
         calendars.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }
 
+    override fun observeSharedCalendars(): Flow<Map<Long, AcademicCalendarRecord>> =
+        calendars.observeAll().map { list ->
+            list.map { it.toRecord() }
+                .groupBy { it.semesterId }
+                .mapValues { (_, records) -> checkNotNull(sharedCalendarOf(records) { it.id }) }
+        }
+
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>> =
         weekOverrides.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }
 
@@ -140,7 +183,8 @@ class RoomSemesterRepository(
                     programs = it.semesterPrograms.map { program -> program.toRecord() },
                     studyPrograms = programs.map { program -> program.toRecord() },
                     calendars = it.academicCalendars.map { calendar -> calendar.toRecord() },
-                    overrides = it.weekOverrides.map { week -> week.toRecord() }
+                    overrides = it.weekOverrides.map { week -> week.toRecord() },
+                    freeDays = it.freeDays.map { day -> day.toRecord() }
                 )
             }
         }
@@ -255,6 +299,19 @@ class RoomSemesterRepository(
             SetupConfigurationIds(semesterId, studyProgramId, academicCalendarId, semesterProgramId)
         }
     }
+
+    override suspend fun saveStudyProgramInActiveSemester(program: StudyProgramRecord): SemesterRecord? =
+        database.withTransaction {
+            val semester = semesters.findActive()
+            val calendar = semester?.let { sharedCalendarOf(calendars.getForSemester(it.id)) { calendar -> calendar.id } }
+            if (semester != null && calendar != null) {
+                saveStudyProgramAssignment(semester.id, program, calendar.id)
+                semester.toRecord()
+            } else {
+                saveStudyProgram(program)
+                null
+            }
+        }
 
     override suspend fun addSeparatedSemesterProgram(
         semesterId: Long,
@@ -525,7 +582,94 @@ class RoomSemesterRepository(
         dev.retza.mak.data.entity.WeekOverrideScope.valueOf(scope.name)
     )
 
-    /** A new calendar with the dates, rhythm and week overrides of [source] (`ARCHITECTURE.md`, section 7). */
+    override fun observeFreeDays(semesterId: Long): Flow<List<FreeDayRecord>> =
+        freeDays.observeForSemester(semesterId).map { list -> list.map { it.toRecord() } }
+
+    override suspend fun saveFreeDayGroup(
+        semesterId: Long,
+        replacedIds: List<Long>,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        name: String?,
+        calendarIds: List<Long>,
+        weekAfterBreak: WeekType?
+    ) {
+        database.withTransaction {
+            requireCalendarsOfSemester(semesterId, calendarIds)
+            require(calendarIds.isNotEmpty()) { "Free day group needs at least one calendar" }
+            require(!endDate.isBefore(startDate)) { "Free day must not end before it starts" }
+            val existingIds = freeDays.getForSemester(semesterId).map { it.id }.toSet()
+            require(replacedIds.all { it in existingIds }) { "Free day does not exist in the semester" }
+            freeDays.deleteByIds(replacedIds)
+            val trimmedName = name?.trim()?.takeIf { it.isNotEmpty() }
+            insertFreeDays(semesterId, calendarIds, startDate, endDate, trimmedName)
+            if (weekAfterBreak != null) {
+                val monday = firstMondayAfter(endDate)
+                calendarIds.forEach { calendarId ->
+                    val calendar = calendars.findById(calendarId) ?: error("Calendar must exist")
+                    if (monday.isBefore(calendar.startDate) || monday.isAfter(calendar.endDate)) return@forEach
+                    saveWeekOverride(
+                        WeekOverrideRecord(
+                            semesterId = semesterId,
+                            academicCalendarId = calendarId,
+                            weekStartDate = monday,
+                            weekType = weekAfterBreak,
+                            scope = WeekOverrideScope.FROM_WEEK
+                        )
+                    )
+                }
+            }
+        }
+    }
+
+    override suspend fun addHolidays(semesterId: Long, holidays: List<Holiday>, calendarIds: List<Long>) {
+        database.withTransaction {
+            requireCalendarsOfSemester(semesterId, calendarIds)
+            require(calendarIds.isNotEmpty()) { "Holidays need at least one calendar" }
+            require(holidays.isNotEmpty()) { "Holidays list must not be empty" }
+            calendarIds.forEach { calendarId ->
+                holidays.forEach { holiday ->
+                    insertFreeDays(semesterId, listOf(calendarId), holiday.date, holiday.endDate, holiday.name)
+                }
+            }
+        }
+    }
+
+    /** The semester exists and every calendar of [calendarIds] belongs to it. */
+    private suspend fun requireCalendarsOfSemester(semesterId: Long, calendarIds: List<Long>) {
+        require(semesters.findById(semesterId) != null) { "Semester does not exist" }
+        calendarIds.forEach { id ->
+            require(calendars.findById(id)?.semesterId == semesterId) { "Calendar must belong to the semester" }
+        }
+    }
+
+    /** One free day row per calendar, as one group (`FEATURES.md`, „Dni wolne”). */
+    private suspend fun insertFreeDays(
+        semesterId: Long,
+        calendarIds: List<Long>,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        name: String?
+    ) {
+        calendarIds.forEach { calendarId ->
+            freeDays.insert(
+                FreeDayEntity(
+                    semesterId = semesterId,
+                    academicCalendarId = calendarId,
+                    startDate = startDate,
+                    endDate = endDate,
+                    name = name
+                )
+            )
+        }
+    }
+
+    override suspend fun deleteFreeDays(ids: List<Long>) = freeDays.deleteByIds(ids)
+
+    /**
+     * A new calendar with the dates, rhythm, week overrides and free days of [source]
+     * (`ARCHITECTURE.md`, section 7).
+     */
     private suspend fun copyCalendarWithOverrides(source: AcademicCalendarEntity): Long {
         val calendarId = calendars.insert(
             AcademicCalendarEntity(
@@ -537,6 +681,9 @@ class RoomSemesterRepository(
         )
         weekOverrides.getForCalendar(source.id).forEach { override ->
             weekOverrides.insert(override.copy(id = 0, academicCalendarId = calendarId))
+        }
+        freeDays.getForCalendar(source.id).forEach { day ->
+            freeDays.insert(day.copy(id = 0, academicCalendarId = calendarId))
         }
         return calendarId
     }

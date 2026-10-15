@@ -3,6 +3,7 @@ package dev.retza.mak.ui
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.data.entity.Recurrence
@@ -92,6 +93,7 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
     val occurrenceNotes = mutableListOf<OccurrenceNoteEntity>()
     val occurrenceChanges = mutableListOf<OccurrenceChangeEntity>()
     val weekOverrides = mutableListOf<WeekOverrideEntity>()
+    val freeDays = mutableListOf<FreeDayEntity>()
 
     val events = mutableListOf<String>()
     var saveGate: CompletableDeferred<Unit>? = null
@@ -117,6 +119,10 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
     fun clearSemesters() {
         semesterFlow.value = emptyList()
         activeSemesterFlow.value = 0L
+    }
+
+    fun addSemester(entity: SemesterEntity) {
+        semesterFlow.value = semesterFlow.value + entity
     }
 
     private fun semesterById(id: Long): SemesterEntity? =
@@ -158,7 +164,8 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
                 classes = classes.filter { it.semesterId == id },
                 weekOverrides = weekOverrides.filter { it.semesterId == id },
                 occurrenceNotes = occurrenceNotes,
-                occurrenceChanges = occurrenceChanges
+                occurrenceChanges = occurrenceChanges,
+                freeDays = freeDays.filter { it.semesterId == id }
             )
         )
     }
@@ -190,6 +197,7 @@ internal class FakeRepository : ScheduleRepository, PlanBackupGateway {
                     programs = semesterPrograms.filter { it.semesterId == semester.id }.map { it.toRecord() },
                     classes = classes.filter { it.semesterId == semester.id }.map { it.toRecord() },
                     weekOverrides = weekOverrides.filter { it.semesterId == semester.id }.map { it.toRecord() },
+                    freeDays = emptyList(),
                     occurrenceNotes = occurrenceNotes.map { it.toRecord() },
                     occurrenceChanges = occurrenceChanges.map { it.toRecord() }
                 )
