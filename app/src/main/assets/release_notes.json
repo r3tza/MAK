@@ -2,6 +2,22 @@
   "minorChanges": "Pomniejsze poprawki",
   "releases": [
     {
+      "version": "0.4.0",
+      "date": "2026-10-19",
+      "changes": [
+        "Dodano dni wolne. W przerwie i w pojedyncze wolne dni zajęcia cykliczne się nie odbywają. Dni wolne dodasz w ustawieniach semestru albo z kalendarza w „Planie”, a święta ustawowe i przerwę świąteczną jednym dialogiem.",
+        "Po dniach wolnych można wybrać, od którego tygodnia, A czy B, plan ma ruszyć dalej.",
+        "Jeśli synchronizujesz plan przez konto Google, zaktualizuj MAK na wszystkich telefonach. Starsza wersja nie odczyta planu z dniami wolnymi i poprosi o aktualizację.",
+        "Kierunek można ukryć na tym telefonie. Jego zajęcia znikają z planu, widgetu i powiadomień, a na innych telefonach zostają.",
+        "Kierunek można teraz dodać od razu na ekranie „Kierunki” w ustawieniach. Karty semestrów pokazują daty, kierunki i liczbę zajęć.",
+        "Nowy ekran „Powiadomienia” ma jeden przełącznik dla wszystkich powiadomień i osobne ustawienia każdego rodzaju.",
+        "Dodano powiadomienia o okienkach: wieczorem przed dniem z okienkiem i przed zajęciami, po których zaczyna się okienko. Domyślnie są wyłączone.",
+        "Odwołany termin ma krzyżyk w kalendarzu „Planu”. Odwołać można też termin wcześniej zmieniony albo przeniesiony.",
+        "Przed zamknięciem formularza zajęć albo edycji terminu z niezapisanymi zmianami aplikacja pyta, czy je odrzucić.",
+        "Przy zajęciach jednorazowych można wybrać typ „Egzamin” albo „Zaliczenie”."
+      ]
+    },
+    {
       "version": "0.3.2",
       "date": "2026-10-09",
       "changes": [
