@@ -72,7 +72,7 @@ class SyncViewModelTest {
 
     @Test
     fun resultWithoutAPendingRequestIsIgnored() = runBlocking {
-        onMain { viewModel.onAuthorizationResult(succeeded = true, data = Intent()) }
+        onMain { viewModel.onAuthorizationResult(data = Intent()) }
 
         assertEquals(0, authorization.completed)
         assertNull(coordinator.state.value.account)
@@ -85,7 +85,7 @@ class SyncViewModelTest {
         onMain { viewModel.reconnect() }
         awaitState { it.isWorking }
 
-        onMain { viewModel.onAuthorizationResult(succeeded = false, data = null) }
+        onMain { viewModel.onAuthorizationResult(data = null) }
 
         awaitState { !it.isWorking }
         assertEquals(connected, coordinator.state.value.account)
@@ -98,7 +98,7 @@ class SyncViewModelTest {
         awaitState { it.isWorking }
         authorization.next = AuthorizationAttempt.Granted(SyncAccount("sub-1", "ala@example.com", "ala@example.com"))
 
-        onMain { viewModel.onAuthorizationResult(succeeded = true, data = Intent()) }
+        onMain { viewModel.onAuthorizationResult(data = Intent()) }
 
         awaitState { !it.isWorking && it.accountEmail != null && drive.uploads == 1 }
         assertEquals(1, authorization.completed)
