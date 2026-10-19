@@ -291,6 +291,8 @@ class ClassEditViewModel(
             }
             if (editor.type.isBlank()) {
                 put(ClassEditField.Type, FieldErrorUi("Wybierz typ zajęć."))
+            } else if (editor.type in oneOffClassTypes && recurrence != Recurrence.ONCE) {
+                put(ClassEditField.Type, FieldErrorUi("${editor.type} może być tylko zajęciami jednorazowymi."))
             }
         }
         if (errors.isNotEmpty() || assignment == null || start == null || end == null) {

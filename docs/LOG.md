@@ -2,6 +2,12 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-19: Egzamin i zaliczenie jako typy zajęć jednorazowych (I-104)
+
+- Decyzja użytkownika z 2026-10-19: formularz zajęć ma typy „Egzamin” i „Zaliczenie” przed „Inne”, tylko przy powtarzaniu „Jednorazowo”. Kolokwia na zajęciach i terminy projektów użytkownik wpisuje w notatki do terminu.
+- Odrzucone: oznaczanie terminu jako sprawdzianu z własnym znacznikiem w kalendarzu oraz osobne terminy projektów z listą na „Dzisiaj” i przypomnieniami, bo wymagają nowych tabel, migracji, nowej wersji eksportu i zmian w synchronizacji, a terminy projektów wykraczają poza `PRODUCT.md` (zadania domowe poza zakresem).
+- Wykonanie (agent na zlecenie użytkownika): typ zostaje zwykłym tekstem, więc zmiana nie dotyka bazy, eksportu ani synchronizacji. Zapis zajęć cyklicznych z typem „Egzamin” albo „Zaliczenie”, na przykład po zmianie powtarzania, pokazuje błąd przy polu „Typ”.
+
 ## 2026-10-14: Poprawki po przeglądzie aplikacji na emulatorze (I-99 do I-103)
 
 - Fakty: Przegląd scenariuszy na emulatorze z 2026-10-13 wykazał pętlę nawigacji między „Ustawieniami” a kreatorem semestru, zapis korekty tygodnia A/B poza zakresem kalendarza, drugi dzień wolny w dniu, który już jest wolny, łamanie dat w polach „Od” i „Do” dialogu dni wolnych, przyjmowanie przez import niepoprawnego koloru kierunku, brak liczby dni wolnych w podsumowaniu importu i niewidoczną notatkę zmiany terminu w danych demonstracyjnych. Wybór godziny pozwala ustawić każdą minutę; na emulatorze nie dało się tego sprawdzić przez `adb`.
@@ -165,9 +171,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 
 - Decyzja użytkownika: w formularzu z akcjami w jednym wierszu „Anuluj” stoi przed akcją zapisu, a akcja zapisu jest na końcu wiersza; gdy akcje stoją jedna pod drugą, akcja zapisu jest na górze, a „Anuluj” pod nią. Reguła jest w `ARCHITECTURE.md`, sekcja „Stały język wizualny”.
 - Powód: I-59 ujednolicił kolejność w kodzie, bo formularz korekty tygodnia miał ją odwrotną niż pozostałe formularze. Zapisana reguła zapobiega powrotowi tej niespójności w nowych formularzach. Kolejność w wierszu odpowiada wzorcowi Material 3, w którym akcja potwierdzająca stoi na końcu.
-
-## 2026-09-28: Angielskie nazwy i wspólne pull requesty dla małych zadań
-
-- Decyzja użytkownika: nazwy gałęzi i tytuły pull requestów są po angielsku, a opisy pull requestów mogą pozostać po polsku. Większe zadanie ma własny pull request. Kilka małych, powiązanych zadań należy łączyć w jeden pull request zamiast tworzyć osobny dla każdej drobnej zmiany.
-- Powód: spójne nazewnictwo repozytorium i mniej narzutu przy recenzowaniu niewielkich zmian.
-- Warunek: wspólny pull request ma jeden czytelny zakres, a każde zawarte zadanie zachowuje własny status, kryteria i odpowiednie testy.

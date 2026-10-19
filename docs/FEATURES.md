@@ -143,7 +143,7 @@ Formularz powinien zawierać:
 ### Podstawowe dane
 
 - nazwa przedmiotu;
-- typ: wykład, ćwiczenia, laboratorium, projekt, seminarium lub inne;
+- typ: wykład, ćwiczenia, laboratorium, projekt, seminarium lub inne, a przy powtarzaniu „Jednorazowo” także egzamin i zaliczenie, przed „Inne” (decyzja użytkownika z 2026-10-19, I-104); zapis zajęć cyklicznych z typem „Egzamin” albo „Zaliczenie” pokazuje przy polu „Typ” błąd „{typ} może być tylko zajęciami jednorazowymi.”; kolokwia i terminy projektów użytkownik wpisuje w notatki do terminu;
 - kierunek;
 - prowadzący.
 

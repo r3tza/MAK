@@ -49,7 +49,13 @@ enum class ClassEditField {
     Date
 }
 
-internal val classTypeOptions = listOf("Wykład", "Ćwiczenia", "Laboratorium", "Projekt", "Seminarium", "Inne")
+// Exams and credit tests happen on a single date, so only one-off classes offer them.
+internal val oneOffClassTypes = setOf("Egzamin", "Zaliczenie")
+
+internal fun classTypeOptions(recurrence: Recurrence): List<String> =
+    listOf("Wykład", "Ćwiczenia", "Laboratorium", "Projekt", "Seminarium") +
+        (if (recurrence == Recurrence.ONCE) oneOffClassTypes else emptyList()) +
+        "Inne"
 
 fun Recurrence.formLabel(): String = when (this) {
     Recurrence.EVERY_WEEK -> "Co tydzień"
@@ -178,7 +184,7 @@ fun ClassEditScreen(
                         MakSelectField(
                             label = "Typ",
                             value = state.type,
-                            options = classTypeOptions,
+                            options = classTypeOptions(state.recurrence),
                             onSelected = onTypeChanged,
                             isError = state.errors.containsKey(ClassEditField.Type)
                         )

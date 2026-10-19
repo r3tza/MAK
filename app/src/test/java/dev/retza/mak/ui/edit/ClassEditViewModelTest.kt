@@ -504,6 +504,74 @@ class ClassEditViewModelTest {
     }
 
     @Test
+    fun examAndCreditTestAreOfferedOnlyForOneOffClasses() {
+        assertEquals(
+            listOf("Wykład", "Ćwiczenia", "Laboratorium", "Projekt", "Seminarium", "Egzamin", "Zaliczenie", "Inne"),
+            classTypeOptions(Recurrence.ONCE)
+        )
+        Recurrence.entries.filter { it != Recurrence.ONCE }.forEach { recurrence ->
+            assertEquals(
+                listOf("Wykład", "Ćwiczenia", "Laboratorium", "Projekt", "Seminarium", "Inne"),
+                classTypeOptions(recurrence)
+            )
+        }
+    }
+
+    @Test
+    fun saveRejectsExamTypeForRecurringClass() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan(LocalDate.of(2026, 9, 25))
+        viewModel.update {
+            it.copy(
+                name = "Analiza",
+                semesterProgramId = 1L,
+                type = "Egzamin",
+                dayLabel = "Piątek",
+                startTime = "12:00",
+                endTime = "13:30",
+                recurrence = Recurrence.EVERY_WEEK
+            )
+        }
+        advanceUntilIdle()
+
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals(
+            "Egzamin może być tylko zajęciami jednorazowymi.",
+            viewModel.editor.value.errors[ClassEditField.Type]?.message
+        )
+        assertEquals(1, repository.classes.size)
+    }
+
+    @Test
+    fun saveAcceptsExamTypeForOneOffClass() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan(LocalDate.of(2026, 9, 25))
+        viewModel.update {
+            it.copy(
+                name = "Analiza",
+                semesterProgramId = 1L,
+                type = "Egzamin",
+                dayLabel = "Piątek",
+                startTime = "12:00",
+                endTime = "13:30"
+            )
+        }
+        advanceUntilIdle()
+
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals(2, repository.classes.size)
+        assertEquals("Egzamin", repository.classes.last().type)
+    }
+
+    @Test
     fun invalidCourseSelectionDoesNotInsert() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
