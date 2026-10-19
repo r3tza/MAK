@@ -114,7 +114,7 @@ internal class SyncDifferenceLabels(phone: BackupData, drive: BackupData) {
         is AcademicCalendarRecord -> "Daty semestru i tydzień A/B"
         is SemesterProgramRecord -> "Kierunek w semestrze ${semesterName(row.semesterId, side)}"
         is WeekOverrideRecord -> "Semestr ${semesterName(row.semesterId, side)}"
-        is FreeDayRecord -> "Dni wolne, semestr ${semesterName(row.semesterId, side)}"
+        is FreeDayRecord -> "Dni wolne, ${semesterName(row.semesterId, side)}"
         else -> ""
     }
 
