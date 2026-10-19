@@ -18,7 +18,7 @@ Poniższe pozycje mają gotowy kod; brakuje potwierdzenia na urządzeniu. Szczeg
 
 1. **Tryb tabletowy (I-45 do I-47).** Kod istnieje: klasy szerokości okna z progami 600 i 840 dp, obrót na urządzeniach o najkrótszym boku od 600 dp, boczny pasek nawigacji od 600 dp, treść najwyżej 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp i dialogi najwyżej 560 dp z przewijaniem. Na emulatorze z symulowanym dużym ekranem układ jest zgodny z wariantem A, a układ telefonu przy 411 i 320 dp jest identyczny jak przed zmianą. Do potwierdzenia (O-08): prawdziwy tablet albo telefon składany w pionie, w poziomie i w podzielonym ekranie, zachowanie ekranu i wpisanych danych po obrocie oraz układ poziomy wyboru godziny z I-44.
 2. **Powiadomienia (O-04).** Do potwierdzenia: zgoda, alarmy, zachowanie po restarcie telefonu i otwarcie zajęć z powiadomienia.
-3. **Gałąź `task/settings-and-gap-notifications` (I-81, I-82, I-95 do I-103).** Kod jest gotowy i sprawdzony na emulatorze, w tym poprawki po przeglądzie z 2026-10-13. Do potwierdzenia na telefonie użytkownika: scenariusze z wierszy tych zadań w `QUEUE.md`, w tym synchronizacja dni wolnych między dwoma telefonami po aktualizacji obu i powiadomienia o okienkach.
+3. **Gałąź `task/settings-and-gap-notifications` (I-81, I-82, I-95 do I-103).** Kod jest gotowy i sprawdzony na emulatorze, w tym poprawki po przeglądzie z 2026-10-13. Do potwierdzenia na telefonie użytkownika: scenariusze z wierszy tych zadań w `QUEUE.md`, w tym synchronizacja dni wolnych między dwoma telefonami po aktualizacji obu (na dwóch emulatorach przeszła 2026-10-19) i powiadomienia o okienkach.
 
 ## Zamknięte w kodzie, bez odbioru urządzeniowego
 

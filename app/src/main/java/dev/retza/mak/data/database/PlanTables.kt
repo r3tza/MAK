@@ -9,5 +9,6 @@ val PLAN_TABLES = arrayOf(
     "classes",
     "week_overrides",
     "occurrence_notes",
-    "occurrence_changes"
+    "occurrence_changes",
+    "free_days"
 )
