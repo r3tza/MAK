@@ -4,8 +4,11 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.widthIn
@@ -160,16 +163,20 @@ fun SyncScreen(
         ) {
             // Counts tell little when the content changed, so they give way to the list of differences.
             val withDifferences = choice.differences.isNotEmpty()
-            Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
+            // Both cards take the height of the taller one.
+            Row(
+                modifier = Modifier.height(IntrinsicSize.Min),
+                horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+            ) {
                 VersionCard(
                     title = "Ten telefon",
                     lines = listOf(choice.phoneChanged) + if (withDifferences) emptyList() else choice.phone,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).fillMaxHeight()
                 )
                 VersionCard(
                     title = "Dysk Google",
                     lines = listOf(choice.driveChanged) + if (withDifferences) emptyList() else choice.drive,
-                    modifier = Modifier.weight(1f)
+                    modifier = Modifier.weight(1f).fillMaxHeight()
                 )
             }
             if (withDifferences) {

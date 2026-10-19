@@ -31,6 +31,9 @@ sealed interface AuthorizationAttempt {
 /** Consent expired or lacks a permission; the screen asks for it again with „Połącz ponownie”. */
 class UserActionRequiredException : IllegalStateException("Google authorization needs user action")
 
+/** The consent screen ended with an error that trying again soon will not fix, such as a configuration problem. */
+class AuthorizationFailedException(cause: Exception) : IllegalStateException("Google consent failed", cause)
+
 /** Google answered for a different account than the connected one; a new consent cannot fix that. */
 class AccountMismatchException : IllegalStateException("Google account changed; disconnect and connect again")
 
@@ -168,7 +171,7 @@ class GoogleAccountAuthorization(
     private fun authorizationResultFromIntent(intent: Intent): AuthorizationResult = try {
         client.getAuthorizationResultFromIntent(intent)
     } catch (error: Exception) {
-        throw mapGoogleAuthorizationException(error)
+        throw mapConsentResultException(error)
     }
 
     private sealed interface Verification {
@@ -197,5 +200,20 @@ internal fun mapGoogleAuthorizationException(error: Exception): Exception {
         CommonStatusCodes.CONNECTION_SUSPENDED_DURING_CALL -> IOException("Temporary Google authorization failure", error)
         CommonStatusCodes.CANCELED -> CancellationException("Google authorization was cancelled").also { it.initCause(error) }
         else -> error
+    }
+}
+
+/**
+ * Maps the error a consent screen returned. Only manual connection reads it, so an internal error is shown
+ * as a failure instead of being retried in the background. A result without a status means cancellation.
+ */
+internal fun mapConsentResultException(error: Exception): Exception {
+    if (error is CancellationException) return error
+    val status = (error as? ApiException)?.statusCode ?: return error
+    return when (status) {
+        CommonStatusCodes.NETWORK_ERROR,
+        CommonStatusCodes.TIMEOUT -> IOException("Google consent could not reach the network", error)
+        CommonStatusCodes.CANCELED -> CancellationException("Google authorization was cancelled").also { it.initCause(error) }
+        else -> AuthorizationFailedException(error)
     }
 }
