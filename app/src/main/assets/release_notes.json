@@ -3,7 +3,7 @@
   "releases": [
     {
       "version": "0.4.0",
-      "date": "2026-10-19",
+      "date": "2026-10-21",
       "changes": [
         "Dodano dni wolne. W przerwie i w pojedyncze wolne dni zajęcia cykliczne się nie odbywają. Dni wolne dodasz w ustawieniach semestru albo z kalendarza w „Planie”, a święta ustawowe i przerwę świąteczną jednym dialogiem.",
         "Po dniach wolnych można wybrać, od którego tygodnia, A czy B, plan ma ruszyć dalej.",
