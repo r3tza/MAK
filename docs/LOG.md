@@ -2,6 +2,16 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-20: Odbiór na emulatorze i trzy poprawki po nim
+
+- Fakty: Odbiór na emulatorze `Medium_Phone_2` z 2026-10-20 (I-44 do I-47, I-81, I-82, I-95 do I-98, I-104, O-04, O-08) wykazał: pole „Dzień tygodnia” wymagane przy zajęciach jednorazowych, ale pomijane przy zapisie; widget bez informacji o dniu wolnym, gdy w tym dniu są terminy jednorazowe; ikonę powiadomień widoczną jako pełne koło, bo `ic_launcher_foreground` jest kolorowa i nieprzezroczysta; brak pierwszego tygodnia miesiąca w wyborze daty w niskim oknie (otwarte w `KNOWN_ISSUES.md`).
+- Decyzja użytkownika z 2026-10-20: przy „Jednorazowo” formularz ukrywa „Dzień tygodnia”, a dzień wynika z daty; powrót do zajęć cyklicznych ustawia dzień z daty. Odrzucone: wyszarzone pole, bo zajmuje miejsce i może pokazywać dzień niezgodny z datą.
+- Decyzja użytkownika z 2026-10-20 (po pierwszej wersji): „Data zajęć” zajmuje miejsce dnia tygodnia, nad godzinami, zamiast stać pod „Powtarzaniem”.
+- Decyzja użytkownika z 2026-10-20: „Egzamin” i „Zaliczenie” są na liście typów zawsze i oznaczają zajęcia jednorazowe, więc przy nich formularz ukrywa pole „Powtarzanie”; wybór innego typu przywraca to pole z wcześniejszym powtarzaniem. Zmienia decyzję z 2026-10-19, według której te typy były tylko przy „Jednorazowo”. Odrzucone: widoczne pole przełączane na „Jednorazowo” z przywracaniem typu przy ręcznej zmianie powtarzania (wdrożone i zastąpione tego samego dnia, bo pole bez wyboru tylko myliło), zablokowane pole „Powtarzanie” i sam błąd przy zapisie.
+- Decyzja użytkownika z 2026-10-20: widget w dniu wolnym z terminami pokazuje nad nimi wiersz „Dzień wolny: {nazwa, do daty}”, jak baner w „Planie”.
+- Decyzja użytkownika z 2026-10-20: mała ikona powiadomień to jednobarwny mak `ic_notification` z kształtu `ic_launcher_monochrome`, przycięty do kwiatu, z szerszymi przerwami między płatkami i wokół środka, z kolorem `mak_poppy`.
+- Wykonanie (agent na zlecenie użytkownika): `ClassEditViewModel.selectType` pamięta powtarzanie sprzed egzaminu w `SavedStateHandle`; testy JVM `ClassEditViewModelTest` (41), `WidgetPresenterTest` (12) i `MakTodayWidgetCompositionTest` (4), test Compose `ClassEditScreenTest` (6) na emulatorze; przełączanie sprawdzone ręcznie na emulatorze; zrzuty ikony i widgetu z emulatora.
+
 ## 2026-10-19: Egzamin i zaliczenie jako typy zajęć jednorazowych (I-104)
 
 - Decyzja użytkownika z 2026-10-19: formularz zajęć ma typy „Egzamin” i „Zaliczenie” przed „Inne”, tylko przy powtarzaniu „Jednorazowo”. Kolokwia na zajęciach i terminy projektów użytkownik wpisuje w notatki do terminu.
@@ -166,8 +176,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja użytkownika po przeglądzie makiet w artefakcie „MAK: audyt interfejsu, przed i po”: karta podsumowania „Dzisiaj” dostaje w motywie ciemnym ciemniejszy gradient `#2C3F94` do `#1C2A6A` z krawędzią 1 dp w bieli o kryciu 8% (I-63, `FEATURES.md`, sekcja „Ekran Dzisiaj”). Przyciski ikon w górnym pasku zachowują obramowanie, a przełącznik widoku na „Planie” zachowuje obecny wygląd z cieniem.
 - Powód: w motywie ciemnym karta była najjaśniejszym elementem ekranu, a czerwona i zielona liczba miały na niej kontrast 3,3:1 i 3,5:1; nowy wariant daje 5,5:1 i 5,8:1. Usunięcie ramek w pasku było zmianą estetyczną, która tworzyłaby dwa style przycisków ikon, a zmiana przełącznika nie poprawiała kontrastu stanu zaznaczenia.
 - Odrzucone: przyciski ikon bez ramek w górnym pasku; przełącznik widoku z jasnym tłem akcentu i znacznikiem wyboru zamiast cienia.
-
-## 2026-09-29: Kolejność akcji w formularzu
-
-- Decyzja użytkownika: w formularzu z akcjami w jednym wierszu „Anuluj” stoi przed akcją zapisu, a akcja zapisu jest na końcu wiersza; gdy akcje stoją jedna pod drugą, akcja zapisu jest na górze, a „Anuluj” pod nią. Reguła jest w `ARCHITECTURE.md`, sekcja „Stały język wizualny”.
-- Powód: I-59 ujednolicił kolejność w kodzie, bo formularz korekty tygodnia miał ją odwrotną niż pozostałe formularze. Zapisana reguła zapobiega powrotowi tej niespójności w nowych formularzach. Kolejność w wierszu odpowiada wzorcowi Material 3, w którym akcja potwierdzająca stoi na końcu.

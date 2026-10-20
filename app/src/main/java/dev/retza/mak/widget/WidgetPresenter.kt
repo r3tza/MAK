@@ -23,8 +23,8 @@ class WidgetPresenter {
             return WidgetUiState.OutsideSemester(dateLabel, semesterName)
         }
         val weekLabel = weekStatus.label()
+        val freeDay = plan.schedule.freeDay
         if (plan.schedule.occurrences.isEmpty()) {
-            val freeDay = plan.schedule.freeDay
             if (freeDay != null) {
                 return WidgetUiState.FreeDay(dateLabel, weekLabel, freeDayDetail(freeDay, date))
             }
@@ -37,6 +37,9 @@ class WidgetPresenter {
             dateLabel = dateLabel,
             weekLabel = weekLabel,
             collisionCount = uniqueCollisionCount(plan.collisions),
+            freeDayLabel = freeDay?.let { day ->
+                listOfNotNull("Dzień wolny", freeDayDetail(day, date)).joinToString(": ")
+            },
             items = plan.schedule.occurrences.map { occurrence ->
                 WidgetOccurrenceUi(
                     id = occurrence.id,

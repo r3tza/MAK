@@ -12,6 +12,7 @@ import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.settings.InMemorySettingsPreferences
+import java.time.DayOfWeek
 import java.time.LocalDate
 import dev.retza.mak.sync.PlanEditTracker
 import kotlinx.coroutines.CoroutineScope
@@ -504,17 +505,43 @@ class ClassEditViewModelTest {
     }
 
     @Test
-    fun examAndCreditTestAreOfferedOnlyForOneOffClasses() {
+    fun examAndCreditTestAreAlwaysOfferedBeforeOther() {
         assertEquals(
             listOf("Wykład", "Ćwiczenia", "Laboratorium", "Projekt", "Seminarium", "Egzamin", "Zaliczenie", "Inne"),
-            classTypeOptions(Recurrence.ONCE)
+            classTypeOptions
         )
-        Recurrence.entries.filter { it != Recurrence.ONCE }.forEach { recurrence ->
-            assertEquals(
-                listOf("Wykład", "Ćwiczenia", "Laboratorium", "Projekt", "Seminarium", "Inne"),
-                classTypeOptions(recurrence)
-            )
-        }
+    }
+
+    @Test
+    fun choosingExamSwitchesToOneOffAndAnotherTypeRestoresRecurrence() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan()
+        advanceUntilIdle()
+        viewModel.selectRecurrence(Recurrence.A_WEEK)
+        viewModel.selectType("Wykład")
+
+        viewModel.selectType("Egzamin")
+        assertEquals(Recurrence.ONCE, viewModel.editor.value.recurrence)
+        viewModel.selectType("Zaliczenie")
+        assertEquals(Recurrence.ONCE, viewModel.editor.value.recurrence)
+        viewModel.selectType("Projekt")
+
+        assertEquals("Projekt", viewModel.editor.value.type)
+        assertEquals(Recurrence.A_WEEK, viewModel.editor.value.recurrence)
+    }
+
+    @Test
+    fun examChosenForOneOffClassKeepsOneOffAfterAnotherType() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan(LocalDate.of(2026, 9, 25))
+        advanceUntilIdle()
+
+        viewModel.selectType("Egzamin")
+        viewModel.selectType("Inne")
+
+        assertEquals(Recurrence.ONCE, viewModel.editor.value.recurrence)
     }
 
     @Test
@@ -569,6 +596,39 @@ class ClassEditViewModelTest {
 
         assertEquals(2, repository.classes.size)
         assertEquals("Egzamin", repository.classes.last().type)
+    }
+
+    @Test
+    fun oneOffClassTakesWeekdayFromDateWithoutDayField() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        // 2026-09-25 is a Friday; the stale "Poniedziałek" must not be saved.
+        viewModel.openNewFromFreshPlan(LocalDate.of(2026, 9, 25))
+        viewModel.update {
+            it.copy(name = "Analiza", semesterProgramId = 1L, type = "Egzamin", dayLabel = "Poniedziałek", startTime = "12:00", endTime = "13:30")
+        }
+        viewModel.update { it.copy(dayLabel = "") }
+        advanceUntilIdle()
+
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals(2, repository.classes.size)
+        assertEquals(DayOfWeek.FRIDAY, repository.classes.last().dayOfWeek)
+    }
+
+    @Test
+    fun leavingOneOffRecurrenceSetsWeekdayFromDate() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan(LocalDate.of(2026, 9, 25))
+        advanceUntilIdle()
+
+        viewModel.selectRecurrence(Recurrence.A_WEEK)
+
+        assertEquals(Recurrence.A_WEEK, viewModel.editor.value.recurrence)
+        assertEquals("Piątek", viewModel.editor.value.dayLabel)
     }
 
     @Test

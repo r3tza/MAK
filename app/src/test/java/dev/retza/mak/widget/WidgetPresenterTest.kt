@@ -94,6 +94,40 @@ class WidgetPresenterTest {
     }
 
     @Test
+    fun freeDayWithOneOffClassShowsFreeDayLineAboveClasses() {
+        val christmasEve = LocalDate.of(2026, 12, 24)
+        val longCalendar = calendar.copy(endDate = LocalDate.of(2027, 2, 7))
+        val exam = classItem(id = 1L, name = "Egzamin", start = LocalTime.of(10, 0), end = LocalTime.of(11, 0))
+            .copy(dayOfWeek = DayOfWeek.THURSDAY, recurrence = dev.retza.mak.domain.Recurrence.ONCE, date = christmasEve)
+        val plan = ActivePlanProvider().resolve(
+            ActivePlanData(
+                semester = semester,
+                classes = listOf(exam),
+                courses = listOf(course),
+                semesterPrograms = listOf(assignment),
+                calendars = listOf(longCalendar),
+                freeDays = listOf(
+                    dev.retza.mak.domain.FreeDay(
+                        id = 1L,
+                        academicCalendarId = longCalendar.id,
+                        startDate = LocalDate.of(2026, 12, 23),
+                        endDate = LocalDate.of(2027, 1, 1),
+                        name = "Przerwa świąteczna"
+                    )
+                )
+            ),
+            christmasEve,
+            PlanDisplaySettings.DEFAULT
+        )
+
+        val state = WidgetPresenter().present(christmasEve, semester.name, plan, LocalTime.of(9, 0))
+        assertTrue(state is WidgetUiState.Ready)
+        state as WidgetUiState.Ready
+        assertEquals("Dzień wolny: Przerwa świąteczna, do 1 sty", state.freeDayLabel)
+        assertEquals(listOf("Egzamin"), state.items.map { it.name })
+    }
+
+    @Test
     fun freeDayDetailNamesLastDayAndCapitalizesUnnamedRange() {
         val named = dev.retza.mak.domain.FreeDay(1L, 1L, LocalDate.of(2026, 12, 23), LocalDate.of(2027, 1, 1), "Przerwa świąteczna")
         assertEquals("Przerwa świąteczna", freeDayDetail(named, LocalDate.of(2027, 1, 1)))

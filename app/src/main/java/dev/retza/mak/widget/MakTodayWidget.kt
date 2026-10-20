@@ -116,6 +116,7 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
             is WidgetUiState.FreeDay -> WidgetFreeDay(state)
             is WidgetUiState.Error -> WidgetMessage(state.message)
             is WidgetUiState.Ready -> {
+                state.freeDayLabel?.let { label -> WidgetFreeDayLine(label) }
                 WidgetOccurrenceList(
                     items = state.items,
                     openTodayAction = openTodayAction,
@@ -286,6 +287,20 @@ private fun WidgetFreeDay(state: WidgetUiState.FreeDay) {
             )
         }
     }
+}
+
+@Composable
+private fun WidgetFreeDayLine(label: String) {
+    Text(
+        text = label,
+        modifier = GlanceModifier.padding(bottom = 4.dp),
+        style = TextStyle(
+            color = GlanceTheme.colors.onBackground,
+            fontSize = 12.sp,
+            fontWeight = FontWeight.Bold
+        ),
+        maxLines = 1
+    )
 }
 
 @Composable

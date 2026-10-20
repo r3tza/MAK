@@ -76,6 +76,14 @@ class ClassEditViewModel(
             savedState[KEY_BASELINE] = value
         }
     private var editPlanData: ActivePlanData? = null
+    // „Egzamin” and „Zaliczenie” make the class one-off and hide „Powtarzanie”; another type brings back
+    // the recurrence chosen before them (decision of 2026-10-20).
+    private var recurrenceBeforeOneOffType: Recurrence? =
+        savedState.get<String>(KEY_RECURRENCE_BEFORE_ONE_OFF)?.let(Recurrence::valueOf)
+        set(value) {
+            field = value
+            savedState[KEY_RECURRENCE_BEFORE_ONE_OFF] = value?.name
+        }
 
     // Kept in the saved state so a rotation or process death does not load the form again over a restored draft.
     private val openState = MutableStateFlow(
@@ -161,6 +169,7 @@ class ClassEditViewModel(
 
     private fun rememberBaseline() {
         baseline = state.value.comparableDraft()
+        recurrenceBeforeOneOffType = null
     }
 
     fun hasUnsavedChanges(): Boolean = baseline?.let { state.value.comparableDraft() != it } ?: false
@@ -225,6 +234,29 @@ class ClassEditViewModel(
         }
     }
 
+    /** „Egzamin” and „Zaliczenie” set „Jednorazowo”; another type brings back the recurrence chosen before. */
+    fun selectType(type: String) {
+        val current = state.value
+        val wasOneOffType = current.type in oneOffClassTypes
+        val isOneOffType = type in oneOffClassTypes
+        when {
+            isOneOffType && !wasOneOffType -> {
+                recurrenceBeforeOneOffType = current.recurrence.takeIf { it != Recurrence.ONCE }
+                update { it.copy(type = type).withRecurrence(Recurrence.ONCE) }
+            }
+            !isOneOffType && wasOneOffType -> {
+                val restored = recurrenceBeforeOneOffType
+                recurrenceBeforeOneOffType = null
+                update { state -> state.copy(type = type).let { if (restored != null) it.withRecurrence(restored) else it } }
+            }
+            else -> update { it.copy(type = type) }
+        }
+    }
+
+    fun selectRecurrence(recurrence: Recurrence) {
+        update { it.withRecurrence(recurrence) }
+    }
+
     fun save() = save(confirmedHiddenData = false)
 
     fun confirmSaveWithHiddenData() {
@@ -246,6 +278,12 @@ class ClassEditViewModel(
         val end = editor.endTime.toLocalTimeOrNull()
         val recurrence = editor.recurrence
         val date = editor.occurrenceDate.toLocalDateOrNull()
+        // A one-off class takes its weekday from its date; the form hides the day field then.
+        val dayOfWeek = if (recurrence == Recurrence.ONCE) {
+            date?.dayOfWeek
+        } else {
+            dayNames.entries.firstOrNull { it.value == editor.dayLabel }?.key
+        }
         val assignmentId = editor.semesterProgramId
         val assignment = assignmentId?.let { id ->
             data.semesterPrograms.firstOrNull { it.id == id }
@@ -286,7 +324,7 @@ class ClassEditViewModel(
             if (recurrence == Recurrence.ONCE && date != null && !dateInCalendar(date, calendar)) {
                 put(ClassEditField.Date, FieldErrorUi(FormErrorTexts.DateOutsideCalendar))
             }
-            if (editor.dayLabel !in dayNames.values) {
+            if (recurrence != Recurrence.ONCE && dayOfWeek == null) {
                 put(ClassEditField.Day, FieldErrorUi("Wybierz dzień tygodnia."))
             }
             if (editor.type.isBlank()) {
@@ -295,7 +333,7 @@ class ClassEditViewModel(
                 put(ClassEditField.Type, FieldErrorUi("${editor.type} może być tylko zajęciami jednorazowymi."))
             }
         }
-        if (errors.isNotEmpty() || assignment == null || start == null || end == null) {
+        if (errors.isNotEmpty() || assignment == null || start == null || end == null || dayOfWeek == null) {
             state.update { it.copy(errors = errors) }
             return
         }
@@ -308,7 +346,7 @@ class ClassEditViewModel(
             name = editor.name.trim(),
             type = editor.type,
             teacherName = editor.teacher.trim().ifEmpty { null },
-            dayOfWeek = dayNames.entries.first { it.value == editor.dayLabel }.key,
+            dayOfWeek = dayOfWeek,
             startTime = start,
             endTime = end,
             room = editor.room.trim().ifEmpty { null },
@@ -402,6 +440,17 @@ private const val KEY_EDITING_CLASS_ID = "class_edit_editing_class_id"
 private const val KEY_OPEN_STATE = "class_edit_open_state"
 private const val KEY_DRAFT = "class_edit_draft"
 private const val KEY_BASELINE = "class_edit_baseline"
+private const val KEY_RECURRENCE_BEFORE_ONE_OFF = "class_edit_recurrence_before_one_off"
+
+/** Leaving „Jednorazowo” takes the weekday from the chosen date, because the form hides the day for one-off classes. */
+private fun ClassEditUiState.withRecurrence(recurrence: Recurrence): ClassEditUiState {
+    val dateDay = occurrenceDate.toLocalDateOrNull()?.dayOfWeek
+    val leavesOnce = this.recurrence == Recurrence.ONCE && recurrence != Recurrence.ONCE
+    return copy(
+        recurrence = recurrence,
+        dayLabel = if (leavesOnce && dateDay != null) dayNames.getValue(dateDay) else dayLabel
+    )
+}
 
 // Only the values typed by the user are stored; options and calendar ranges come from Room.
 private val draftFields: List<Pair<String, (ClassEditUiState) -> String?>> = listOf(

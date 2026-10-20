@@ -125,7 +125,7 @@ Krok pierwszy (I-81):
 - wejście z konfiguracji semestru: wiersz „Dni wolne” pod „Korekty tygodni” z liczbą zakresów i dni (na przykład „2 zakresy, 11 dni”, bez dni wolnych „Brak”) otwiera ekran „Dni wolne”: zdanie „W dni wolne zajęcia cykliczne się nie odbywają. Terminy jednorazowe i przeniesione zostają.”, obrysowana akcja „Dodaj dni wolne”, pod nią z odstępem 8 dp akcja „Dodaj święta ustawowe” (I-82) i, 16 dp niżej, karty z nazwą (bez nazwy „Dni wolne”), datami („Czwartek, 12 lis 2026” albo „23 gru 2026 - 1 sty 2027, 10 dni”), kalendarzami („Kalendarz: …” albo „Kalendarze: …”) i akcjami „Edytuj” oraz „Usuń” z potwierdzeniem;
 - „Dzisiaj” w dniu wolnym ma w karcie podsumowania nagłówek „Dzień wolny”, a w sekcji „Zajęcia” baner z nazwą (bez nazwy „Dzień wolny”), zakresem dat i zdaniem „Zajęcia cykliczne się nie odbywają.”, nad zajęciami jednorazowymi i przeniesionymi, jeśli są;
 - kalendarz „Planu” wyróżnia dni wolne tłem łączącym kolejne dni w pas, bez znaczników pominiętych zajęć, a legenda ma pozycję „Dzień wolny”; lista pokazuje w takim dniu baner „Dzień wolny: {nazwa}” ze zdaniem „Zajęcia cykliczne się nie odbywają.”;
-- widget pokazuje „Dzień wolny” i nazwę z datą końca zakresu (na przykład „Przerwa świąteczna, do 1 sty”).
+- widget pokazuje „Dzień wolny” i nazwę z datą końca zakresu (na przykład „Przerwa świąteczna, do 1 sty”); gdy w dniu wolnym są terminy jednorazowe albo przeniesione, widget pokazuje nad nimi jeden wiersz „Dzień wolny: {nazwa, do daty}” albo samo „Dzień wolny” (decyzja użytkownika z 2026-10-20).
 
 Krok drugi (I-82):
 
@@ -143,17 +143,17 @@ Formularz powinien zawierać:
 ### Podstawowe dane
 
 - nazwa przedmiotu;
-- typ: wykład, ćwiczenia, laboratorium, projekt, seminarium lub inne, a przy powtarzaniu „Jednorazowo” także egzamin i zaliczenie, przed „Inne” (decyzja użytkownika z 2026-10-19, I-104); zapis zajęć cyklicznych z typem „Egzamin” albo „Zaliczenie” pokazuje przy polu „Typ” błąd „{typ} może być tylko zajęciami jednorazowymi.”; kolokwia i terminy projektów użytkownik wpisuje w notatki do terminu;
+- typ: wykład, ćwiczenia, laboratorium, projekt, seminarium, egzamin, zaliczenie lub inne; „Egzamin” i „Zaliczenie” stoją przed „Inne” (decyzja użytkownika z 2026-10-19, I-104) i są na liście zawsze; egzamin i zaliczenie są zawsze jednorazowe, więc przy nich formularz nie ma pola „Powtarzanie”, tylko „Data zajęć”; wybór innego typu przywraca pole „Powtarzanie” z wartością sprzed egzaminu albo zaliczenia (decyzje użytkownika z 2026-10-20, I-110); zapis zajęć cyklicznych z typem „Egzamin” albo „Zaliczenie”, możliwy tylko z odtworzonego szkicu starszej wersji, pokazuje przy polu „Typ” błąd „{typ} może być tylko zajęciami jednorazowymi.”; kolokwia i terminy projektów użytkownik wpisuje w notatki do terminu;
 - kierunek;
 - prowadzący.
 
 ### Termin
 
-- dzień tygodnia;
+- dzień tygodnia, tylko przy powtarzaniu co tydzień, tydzień A i tydzień B; przy „Jednorazowo” jego miejsce, nad godzinami, zajmuje pole „Data zajęć”, a dzień tygodnia wynika z daty; zmiana z „Jednorazowo” na zajęcia cykliczne ustawia dzień tygodnia z wybranej daty (decyzje użytkownika z 2026-10-20, I-110);
 - godzina rozpoczęcia;
 - godzina zakończenia;
-- powtarzanie: co tydzień, tydzień A, tydzień B lub jednorazowo;
-- konkretna data, gdy zajęcia są jednorazowe.
+- powtarzanie: co tydzień, tydzień A, tydzień B lub jednorazowo; bez tego pola przy egzaminie i zaliczeniu;
+- konkretna data, gdy zajęcia są jednorazowe (w miejscu dnia tygodnia).
 
 Formularz ogranicza zajęcia do jednego dnia kalendarzowego. Godzina zakończenia musi być późniejsza od rozpoczęcia; zajęcia przechodzące przez północ są odrzucane.
 
@@ -315,7 +315,7 @@ Szczegóły przyjęte przez użytkownika 2026-10-09 (makiety w artefakcie „MAK
 
 Ekran „Kierunki” semestru (decyzja użytkownika z 2026-09-28) pokazuje nagłówek „Przypisane kierunki”, pod nim obrysowany przycisk z ikoną plusa „Dodaj kierunek” i karty kierunków: kropka koloru, nazwa, kalendarz („wspólny” albo „osobny”) oraz akcje „Edytuj” i „Usuń”. „Dodaj kierunek” otwiera osobny ekran z formularzem: nowy albo istniejący kierunek, nazwa, kolor, wspólne albo osobne daty i tygodnie, akcje „Dodaj kierunek” i „Anuluj”. „Edytuj” otwiera ekran „Edytuj kierunek”, od góry: pole „Nazwa kierunku”; sekcja „Kalendarz w tym semestrze” (wybór kalendarza, gdy jest ich kilka, i „Rozdziel kalendarz” przy kalendarzu wspólnym; zmiana zapisuje się od razu po potwierdzeniu); paleta „Kolor kierunku”; informacja, że nazwa i kolor zmienią się we wszystkich semestrach; akcje „Zapisz kierunek” i „Anuluj”, które dotyczą nazwy i koloru.
 
-Powiadomienia o okienkach (decyzja użytkownika z 2026-10-11, I-98, reguła w `DOMAIN.md`, sekcja „Okienka”) są domyślnie wyłączone, także po aktualizacji. „Dzień wcześniej” przychodzi o wybranej godzinie dnia poprzedniego z tytułem „Okienka jutro” i treścią „{liczba} {okienko|okienka|okienek}: 10:30-12:00, 14:00-15:30”. „Przed zajęciami” przychodzi z wybranym wyprzedzeniem przed zajęciami, po których zaczyna się okienko, z tytułem „Okienko po zajęciach” i treścią „Okienko 10:30-12:00 po zajęciach: {nazwa zajęć}”, w której nazwa zajęć stoi w mianowniku, bo aplikacja nie odmienia nazw. Powiadomienia o okienkach mają osobny kanał systemowy „Okienka w planie”, więc można je wyciszyć niezależnie od kanału „Kolizje w planie”. Dotknięcie powiadomienia otwiera „Plan” na dniu okienka, jak przy kolizjach.
+Powiadomienia o okienkach (decyzja użytkownika z 2026-10-11, I-98, reguła w `DOMAIN.md`, sekcja „Okienka”) są domyślnie wyłączone, także po aktualizacji. „Dzień wcześniej” przychodzi o wybranej godzinie dnia poprzedniego z tytułem „Okienka jutro” i treścią „{liczba} {okienko|okienka|okienek}: 10:30-12:00, 14:00-15:30”. „Przed zajęciami” przychodzi z wybranym wyprzedzeniem przed zajęciami, po których zaczyna się okienko, z tytułem „Okienko po zajęciach” i treścią „Okienko 10:30-12:00 po zajęciach: {nazwa zajęć}”, w której nazwa zajęć stoi w mianowniku, bo aplikacja nie odmienia nazw. Powiadomienia o okienkach mają osobny kanał systemowy „Okienka w planie”, więc można je wyciszyć niezależnie od kanału „Kolizje w planie”. Dotknięcie powiadomienia otwiera „Plan” na dniu okienka, jak przy kolizjach. Powiadomienia mają na pasku stanu jednobarwną sylwetkę maku z przerwami między płatkami (`ic_notification`), w rozwiniętym powiadomieniu w kolorze płatków maku (decyzja użytkownika z 2026-10-20).
 
 Na Androidzie 13 i nowszym włączenie powiadomień przy braku zgody prosi o zgodę systemową. Na Androidzie 12 taka zgoda nie istnieje, więc aplikacja otwiera systemowe ustawienia powiadomień aplikacji, a po powrocie odświeża stan „Zablokowane przez system”.
 

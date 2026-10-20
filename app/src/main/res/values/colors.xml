@@ -4,4 +4,6 @@
     <color name="mak_accent">#FF334FCE</color>
     <color name="mak_background_dark">#FF10192B</color>
     <color name="mak_accent_dark">#FF9AAFFF</color>
+    <!-- Petal red of the poppy logo (PoppyRed in MakPoppyLogo.kt), used to tint the notification icon. -->
+    <color name="mak_poppy">#FFE5402A</color>
 </resources>
