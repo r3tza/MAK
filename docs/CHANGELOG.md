@@ -2,6 +2,16 @@
 
 Techniczna historia wydań dla agentów. Notatki dla użytkowników są w `app/src/main/assets/release_notes.json`.
 
+## 0.4.0, 2026-10-21
+
+- Dodano dni wolne (I-81): model `FreeDay` przypięty do kalendarza, pomijanie zajęć cyklicznych w `ScheduleResolver` (terminy jednorazowe i przeniesione zostają), tabela Room z migracją 3 do 4, eksport JSON w wersji 4 i synchronizacja. Starsza wersja odrzuca nowszy plan z problemem `NEWER_REMOTE_PLAN`. Ekran „Dni wolne”, „Oznacz jako wolny” w kalendarzu „Planu”, pas dni wolnych w kalendarzu, baner na „Dzisiaj” i stan widgetu.
+- Święta ustawowe z „Przerwą świąteczną” jako jednym zakresem i wybór tygodnia A albo B po przerwie jako korekta „Od tego tygodnia” (I-82).
+- Kierunek można ukryć na jednym telefonie; jego zajęcia znikają z planu, widgetu i powiadomień (I-79). „Dodaj kierunek” na ekranie „Kierunki” (I-95), karta semestru w wierszach z ikonami i datami z rokiem (I-96).
+- Ekran „Powiadomienia” z głównym przełącznikiem powiązanym z rodzajami i sekcjami tematów (I-97). Powiadomienia o okienkach dzień wcześniej i przed zajęciami, z osobnym kanałem „Okienka w planie” i wspólną ścieżką planowania z kolizjami (I-98).
+- Poprawki po przeglądzie na emulatorze: powrót z kreatora do ekranu ustawień (I-99), korekta tygodnia tylko w zakresie kalendarza i komunikat pustego dnia zależny od filtra (I-100), krzyżyk odwołanego terminu w kalendarzu i odwołanie terminu zmienionego (I-101), dialog „Odrzucić zmiany?” (I-102), pola dat dni wolnych, nazwa semestru w dialogu usunięcia i walidacja koloru w imporcie (I-103).
+- Typy „Egzamin” i „Zaliczenie” (I-104). Po odbiorze na emulatorze (I-110): przy nich formularz nie ma pola „Powtarzanie”, przy zajęciach jednorazowych „Data zajęć” zastępuje dzień tygodnia, a dzień wynika z daty; widget w dniu wolnym z terminami pokazuje wiersz „Dzień wolny”; powiadomienia mają jednobarwną ikonę `ic_notification` w kolorze `mak_poppy`.
+- Komunikat błędu przy nieudanej zgodzie Google, karty wersji o tej samej wysokości, synchronizacja i odświeżenie widgetu po zmianie dni wolnych.
+
 ## 0.3.2, 2026-10-09
 
 - Zajęcia tego samego dnia z przerwą nie dłuższą niż minimalna przerwa (0 do 20 min, domyślnie 0) są kolizją `Collision.NoBreak` z opisem „Bez przerwy o 09:45” albo „Przerwa 5 min o 09:45” (I-80). Próg okienka ma opcje od 20 min, więc przerwa nie jest jednocześnie kolizją i okienkiem; zapisane 15 min jest odczytywane jako 20.
