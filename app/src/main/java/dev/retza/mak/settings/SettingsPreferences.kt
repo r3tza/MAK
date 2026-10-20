@@ -10,12 +10,22 @@ enum class ThemeMode {
     Dark
 }
 
+/**
+ * `enabled` is true exactly when at least one of the four kinds is enabled. Turning the main switch on or off sets
+ * all kinds; turning one kind on turns the main switch on; turning the last kind off turns the main switch off.
+ * A stored main switch that is false or missing reads as all kinds off. The gap kinds are new, so a missing stored
+ * gap kind reads as off, while the two collision kinds read as on.
+ */
 data class CollisionNotificationPreferences(
     val enabled: Boolean = false,
     val eveningEnabled: Boolean = true,
     val beforeClassEnabled: Boolean = true,
     val eveningHour: LocalTime = LocalTime.of(20, 0),
-    val leadMinutes: Long = 30
+    val leadMinutes: Long = 30,
+    val gapEveningEnabled: Boolean = false,
+    val gapBeforeClassEnabled: Boolean = false,
+    val gapEveningHour: LocalTime = LocalTime.of(20, 0),
+    val gapLeadMinutes: Long = 30
 )
 
 interface SettingsPreferences {
@@ -46,9 +56,17 @@ interface SettingsPreferences {
 
     suspend fun setBeforeClassNotificationsEnabled(enabled: Boolean)
 
+    suspend fun setGapEveningNotificationsEnabled(enabled: Boolean)
+
+    suspend fun setGapBeforeClassNotificationsEnabled(enabled: Boolean)
+
     suspend fun setEveningHour(hour: LocalTime)
 
     suspend fun setBeforeClassLeadMinutes(minutes: Long)
+
+    suspend fun setGapEveningHour(hour: LocalTime)
+
+    suspend fun setGapLeadMinutes(minutes: Long)
 }
 
 fun themeModeFromStored(value: String?): ThemeMode =

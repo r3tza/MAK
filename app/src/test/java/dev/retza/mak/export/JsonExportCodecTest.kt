@@ -3,6 +3,7 @@ package dev.retza.mak.export
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceChangeKind
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
@@ -69,7 +70,7 @@ class JsonExportCodecTest {
 
     @Test
     fun newerSchemaVersionIsRejectedBeforeItsUnknownFieldsAreRead() {
-        val newer = "{\"schemaVersion\":4,\"studyPrograms\":[],\"semesters\":[],\"daysOff\":[]}"
+        val newer = "{\"schemaVersion\":${ExportSchema.VERSION + 1},\"studyPrograms\":[],\"semesters\":[],\"daysOff\":[]}"
 
         try {
             JsonExportCodec.decode(newer.toByteArray())
@@ -77,6 +78,17 @@ class JsonExportCodecTest {
         } catch (_: NewerExportVersionException) {
             // Expected: the version is checked before the unknown "daysOff" field is read.
         }
+    }
+
+    @Test
+    fun version3SemesterWithoutFreeDaysDecodesWithNoFreeDays() {
+        val version3 = "{\"schemaVersion\":3,\"studyPrograms\":[],\"semesters\":[{\"id\":1,\"name\":\"Zimowy\"," +
+            "\"isActive\":true,\"calendars\":[],\"programs\":[],\"classes\":[],\"weekOverrides\":[]," +
+            "\"occurrenceNotes\":[],\"occurrenceChanges\":[]}]}"
+
+        val snapshot = JsonExportCodec.decode(version3.toByteArray())
+
+        assertTrue(snapshot.semesters.single().freeDays.isEmpty())
     }
 
     @Test
@@ -176,7 +188,25 @@ class JsonExportCodecTest {
                     classes = listOf(classEntity),
                     weekOverrides = listOf(weekOverride),
                     occurrenceNotes = listOf(occurrenceNote),
-                    occurrenceChanges = listOf(occurrenceChange)
+                    occurrenceChanges = listOf(occurrenceChange),
+                    freeDays = listOf(
+                        FreeDayEntity(
+                            id = 9,
+                            semesterId = semester.id,
+                            academicCalendarId = calendar.id,
+                            startDate = LocalDate.of(2026, 11, 11),
+                            endDate = LocalDate.of(2026, 11, 11),
+                            name = "Święto"
+                        ),
+                        FreeDayEntity(
+                            id = 10,
+                            semesterId = semester.id,
+                            academicCalendarId = calendar.id,
+                            startDate = LocalDate.of(2026, 12, 21),
+                            endDate = LocalDate.of(2027, 1, 2),
+                            name = null
+                        )
+                    )
                 )
             ),
             studyPrograms = listOf(studyProgram)

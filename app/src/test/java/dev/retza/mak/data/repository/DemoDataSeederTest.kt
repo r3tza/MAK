@@ -1,7 +1,10 @@
 package dev.retza.mak.data.repository
 
+import dev.retza.mak.domain.Holiday
+import dev.retza.mak.domain.WeekType
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalDate
 import java.time.ZoneId
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flowOf
@@ -28,9 +31,22 @@ class DemoDataSeederTest {
         assertEquals(1, repository.calendars.size)
         assertEquals(2, repository.semesterPrograms.size)
         assertEquals(1, repository.weekOverrides.size)
-        assertEquals(1, repository.occurrenceNotes.size)
+        assertEquals(2, repository.occurrenceNotes.size)
         assertEquals(1, repository.occurrenceChanges.size)
         assertEquals("2026-09-19", repository.classes.single { it.date != null }.date.toString())
+    }
+
+    @Test
+    fun movedAnalyticsOccurrenceKeepsItsNoteOnTheScheduleDate() = runTest {
+        val repository = RecordingRepository()
+        val clock = Clock.fixed(Instant.parse("2026-09-19T10:00:00Z"), ZoneId.of("Europe/Warsaw"))
+
+        seedDemoDataIfEmpty(repository, repository, clock)
+
+        val change = repository.occurrenceChanges.single()
+        val note = repository.occurrenceNotes.single { it.classId == change.classId }
+        assertEquals(change.originalDate, note.occurrenceDate)
+        assertEquals(null, change.note)
     }
 }
 
@@ -62,6 +78,8 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
     override fun observeCalendars(semesterId: Long): Flow<List<AcademicCalendarRecord>> =
         flowOf(calendars.filter { it.semesterId == semesterId })
 
+    override fun observeSharedCalendars(): Flow<Map<Long, AcademicCalendarRecord>> = flowOf(emptyMap())
+
     override fun observeWeekOverrides(semesterId: Long): Flow<List<WeekOverrideRecord>> =
         flowOf(weekOverrides.filter { it.semesterId == semesterId })
 
@@ -72,10 +90,29 @@ private class RecordingRepository : SemesterRepository, ScheduleRepository {
                 programs = semesterPrograms.filter { it.semesterId == id },
                 studyPrograms = studyPrograms.toList(),
                 calendars = calendars.filter { it.semesterId == id },
-                overrides = weekOverrides.filter { it.semesterId == id }
+                overrides = weekOverrides.filter { it.semesterId == id },
+                freeDays = emptyList()
             )
         }
     )
+
+    override fun observeFreeDays(semesterId: Long): Flow<List<FreeDayRecord>> = flowOf(emptyList())
+
+    override suspend fun saveFreeDayGroup(
+        semesterId: Long,
+        replacedIds: List<Long>,
+        startDate: LocalDate,
+        endDate: LocalDate,
+        name: String?,
+        calendarIds: List<Long>,
+        weekAfterBreak: WeekType?
+    ) = Unit
+
+    override suspend fun addHolidays(semesterId: Long, holidays: List<Holiday>, calendarIds: List<Long>) = Unit
+
+    override suspend fun deleteFreeDays(ids: List<Long>) = Unit
+
+    override suspend fun saveStudyProgramInActiveSemester(program: StudyProgramRecord): SemesterRecord? = null
 
     override suspend fun saveSemester(record: SemesterRecord): Long {
         val id = record.id.takeIf { it != 0L } ?: nextId++

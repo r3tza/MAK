@@ -67,6 +67,21 @@ data class AcademicCalendar(
     operator fun contains(date: LocalDate): Boolean = !date.isBefore(startDate) && !date.isAfter(endDate)
 }
 
+/** Days off of one academic calendar, both ends included (`DOMAIN.md`, „Dni wolne”). */
+data class FreeDay(
+    val id: Long,
+    val academicCalendarId: Long,
+    val startDate: LocalDate,
+    val endDate: LocalDate,
+    val name: String? = null
+) {
+    init {
+        require(!endDate.isBefore(startDate)) { "Free day end must not be before its start" }
+    }
+
+    operator fun contains(date: LocalDate): Boolean = !date.isBefore(startDate) && !date.isAfter(endDate)
+}
+
 data class SemesterProgram(
     val id: Long,
     val semesterId: Long,
@@ -194,10 +209,23 @@ data class ResolvedSchedule(
     val occurrences: List<PlannedOccurrence>,
     val weekStatus: WeekStatus,
     val cancelled: List<PlannedOccurrence> = emptyList(),
-    val weeksByCalendarId: Map<Long, WeekCalculation> = emptyMap()
+    val weeksByCalendarId: Map<Long, WeekCalculation> = emptyMap(),
+    val freeDaysByCalendarId: Map<Long, FreeDay> = emptyMap()
 ) {
     val items: List<PlannedOccurrence>
         get() = occurrences
+
+    /** The free day of this date when every calendar in [calendarIds] has one; null for an empty list. */
+    fun freeDayOf(calendarIds: Collection<Long>): FreeDay? =
+        if (calendarIds.isNotEmpty() && calendarIds.all { it in freeDaysByCalendarId }) {
+            freeDaysByCalendarId.getValue(calendarIds.first())
+        } else {
+            null
+        }
+
+    /** The free day of every semester calendar covering this date. */
+    val freeDay: FreeDay?
+        get() = freeDayOf(weeksByCalendarId.keys)
 }
 
 /** Two classes of one day that cannot both be attended comfortably (`DOMAIN.md`, „Kolizje”). */

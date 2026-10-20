@@ -14,7 +14,8 @@ class ScheduleResolver(
         calendars: Collection<AcademicCalendar> = emptyList(),
         weekOverrides: Collection<WeekOverride> = emptyList(),
         occurrenceChanges: Collection<OccurrenceChange> = emptyList(),
-        occurrenceNotes: Collection<OccurrenceNote> = emptyList()
+        occurrenceNotes: Collection<OccurrenceNote> = emptyList(),
+        freeDays: Collection<FreeDay> = emptyList()
     ): ResolvedSchedule {
         val semesterClasses = classes.filter { it.semesterId == semester.id }
         val studyProgramsById = courses.associateBy { it.id }
@@ -36,6 +37,10 @@ class ScheduleResolver(
         val notesByOccurrence = occurrenceNotes
             .groupBy { it.classId to it.occurrenceDate }
             .mapValues { (_, notes) -> notes.last() }
+        val freeDaysByCalendar = freeDays.groupBy { it.academicCalendarId }
+
+        fun isFreeDay(calendarId: Long, day: LocalDate) =
+            freeDaysByCalendar[calendarId].orEmpty().any { day in it }
 
         val resolved = semesterClasses
             .mapNotNull { classItem ->
@@ -48,7 +53,8 @@ class ScheduleResolver(
                     changesByDate = changesByClass[classItem.id].orEmpty(),
                     studyPrograms = studyProgramsById,
                     assignments = assignmentsById,
-                    notesByOccurrence = notesByOccurrence
+                    notesByOccurrence = notesByOccurrence,
+                    isFree = { isFreeDay(calendar.id, it) }
                 )
             }
             .flatten()
@@ -73,7 +79,10 @@ class ScheduleResolver(
             occurrences = occurrences,
             weekStatus = weekStatus,
             cancelled = cancelled,
-            weeksByCalendarId = weeks
+            weeksByCalendarId = weeks,
+            freeDaysByCalendarId = weeks.keys.mapNotNull { id ->
+                freeDaysByCalendar[id]?.firstOrNull { date in it }?.let { id to it }
+            }.toMap()
         )
     }
 
@@ -85,7 +94,8 @@ class ScheduleResolver(
         changesByDate: Map<LocalDate, OccurrenceChange>,
         studyPrograms: Map<Long, StudyProgram>,
         assignments: Map<Long, SemesterProgram>,
-        notesByOccurrence: Map<Pair<Long, LocalDate>, OccurrenceNote>
+        notesByOccurrence: Map<Pair<Long, LocalDate>, OccurrenceNote>,
+        isFree: (LocalDate) -> Boolean
     ): List<PlannedOccurrence> {
         if (classItem.recurrence == Recurrence.ONCE) {
             if (!classItem.hasBaseOccurrenceOn(date, calendar, weekOverrides, weekCalculator)) return emptyList()
@@ -115,6 +125,9 @@ class ScheduleResolver(
             val change = changesByDate[sourceDate]
             val actualDate = change?.targetDate ?: sourceDate
             if (actualDate != date) return@mapNotNull null
+            // A moved occurrence is how a class is made up, so only one that stays on a free day is skipped.
+            val isMoved = change?.targetDate != null && change.targetDate != sourceDate
+            if (!isMoved && isFree(sourceDate)) return@mapNotNull null
 
             render(
                 classItem = classItem,

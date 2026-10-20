@@ -319,7 +319,7 @@ class SyncCoordinatorTest {
     @Test
     fun driveFileFromANewerVersionLeavesBothSidesUnchangedUntilItCanBeRead() = runTest {
         phone.data = plan("Telefon")
-        val newer = """{"schemaVersion": 4, "studyPrograms": [], "semesters": [], "daysOff": []}""".toByteArray()
+        val newer = """{"schemaVersion": 5, "studyPrograms": [], "semesters": [], "daysOff": []}""".toByteArray()
         drive.putRaw(newer)
 
         assertEquals(SyncOutcome.NeedsAttention, coordinator.synchronize())
@@ -609,6 +609,7 @@ private fun plan(vararg names: String, active: Long? = null, starts: List<LocalD
             programs = listOf(SemesterProgramEntity(id, id, 1, id).toRecord()),
             classes = emptyList(),
             weekOverrides = emptyList(),
+            freeDays = emptyList(),
             occurrenceNotes = emptyList(),
             occurrenceChanges = emptyList()
         )

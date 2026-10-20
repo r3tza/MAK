@@ -1,6 +1,5 @@
 package dev.retza.mak.ui
 
-import android.app.Activity
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
@@ -125,6 +124,10 @@ internal fun NavGraphBuilder.settingsRoute(
             onBeforeClassNotificationsEnabled = settingsViewModel::setBeforeClassNotificationsEnabled,
             onEveningHourSelected = settingsViewModel::setEveningHour,
             onBeforeClassLeadSelected = settingsViewModel::setBeforeClassLeadMinutes,
+            onGapEveningNotificationsEnabled = settingsViewModel::setGapEveningNotificationsEnabled,
+            onGapBeforeClassNotificationsEnabled = settingsViewModel::setGapBeforeClassNotificationsEnabled,
+            onGapEveningHourSelected = settingsViewModel::setGapEveningHour,
+            onGapLeadSelected = settingsViewModel::setGapLeadMinutes,
             onRequestNotificationPermission = onRequestNotificationPermission,
             onOpenAppSettings = onOpenAppSettings,
             modifier = Modifier.fillMaxSize()
@@ -207,7 +210,7 @@ private fun SyncRoute(syncViewModel: SyncViewModel, onOpenChanges: () -> Unit, o
     var exportId by rememberSaveable { mutableStateOf<String?>(null) }
     val authorizationLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
-    ) { result -> syncViewModel.onAuthorizationResult(result.resultCode == Activity.RESULT_OK, result.data) }
+    ) { result -> syncViewModel.onAuthorizationResult(result.data) }
     val exportLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.CreateDocument("application/json")
     ) { uri ->

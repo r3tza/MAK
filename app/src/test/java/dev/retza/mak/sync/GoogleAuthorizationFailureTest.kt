@@ -91,6 +91,16 @@ class GoogleAuthorizationFailureTest {
         assertTrue(sdkCancelled is CancellationException)
     }
 
+    @Test
+    fun failedConsentScreenBecomesAVisibleFailureInsteadOfARetry() {
+        // UNREGISTERED_ON_API_CONSOLE arrives as INTERNAL_ERROR.
+        val failure = ApiException(Status(CommonStatusCodes.INTERNAL_ERROR))
+
+        assertTrue(mapConsentResultException(failure) is AuthorizationFailedException)
+        assertTrue(mapConsentResultException(ApiException(Status(CommonStatusCodes.NETWORK_ERROR))) is IOException)
+        assertTrue(mapConsentResultException(ApiException(Status(CommonStatusCodes.CANCELED))) is CancellationException)
+    }
+
     private class EmptyPlan : PlanSyncGateway {
         override suspend fun snapshot() = BackupData(emptyList(), emptyList())
         override suspend fun replaceIfUnchanged(

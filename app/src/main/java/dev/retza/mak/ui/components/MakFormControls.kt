@@ -7,6 +7,7 @@ import androidx.compose.foundation.clickable
 import androidx.compose.foundation.focusable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -16,12 +17,17 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.DatePicker
+import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
+import androidx.compose.material3.DateRangePicker
+import androidx.compose.material3.DateRangePickerDefaults
+import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.ProvideTextStyle
 import androidx.compose.material3.SelectableDates
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -98,15 +104,7 @@ fun MakDatePickerField(
         hasOpened = true
         open = true
     }
-    val selectableDates = remember(minDate, maxDate) {
-        object : SelectableDates {
-            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
-                val date = Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate()
-                return (minDate == null || !date.isBefore(minDate)) &&
-                    (maxDate == null || !date.isAfter(maxDate))
-            }
-        }
-    }
+    val selectableDates = rememberSelectableDates(minDate, maxDate)
 
     OutlinedTextField(
         value = selectedDate?.format(polishDateFormatter).orEmpty(),
@@ -186,6 +184,180 @@ fun MakDatePickerField(
     }
 
     LaunchedFocusRestore(open = open, hasOpened = hasOpened, focusRequester = focusRequester)
+}
+
+// Two fields side by side fit the date "14.10.2026" and the icon only from this width at font scale 1.
+internal val DateRangeSideBySideMinWidth = 344.dp
+
+internal fun stackDateRangeFields(maxWidth: Dp, fontScale: Float): Boolean =
+    maxWidth / fontScale < DateRangeSideBySideMinWidth
+
+/** A start and an end date as two read-only fields. Either field opens one range picker. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun MakDateRangeFields(
+    startDate: LocalDate?,
+    endDate: LocalDate?,
+    onRangeChange: (LocalDate, LocalDate) -> Unit,
+    modifier: Modifier = Modifier,
+    minDate: LocalDate? = null,
+    maxDate: LocalDate? = null,
+    isError: Boolean = false
+) {
+    var open by remember { mutableStateOf(false) }
+    var hasOpened by remember { mutableStateOf(false) }
+    var startTapped by remember { mutableStateOf(true) }
+    val startFocus = remember { FocusRequester() }
+    val endFocus = remember { FocusRequester() }
+    val selectableDates = rememberSelectableDates(minDate, maxDate)
+    val openFrom: (Boolean) -> Unit = { fromStart ->
+        startTapped = fromStart
+        hasOpened = true
+        open = true
+    }
+
+    BoxWithConstraints(modifier.fillMaxWidth()) {
+        val stacked = stackDateRangeFields(maxWidth, LocalDensity.current.fontScale)
+        val fields: @Composable (Modifier) -> Unit = { fieldModifier ->
+            RangeDateField(
+                label = "Od",
+                date = startDate,
+                isError = isError,
+                focusRequester = startFocus,
+                onOpen = { openFrom(true) },
+                modifier = fieldModifier
+            )
+            RangeDateField(
+                label = "Do",
+                date = endDate,
+                isError = isError,
+                focusRequester = endFocus,
+                onOpen = { openFrom(false) },
+                modifier = fieldModifier
+            )
+        }
+        if (stacked) {
+            Column(
+                modifier = Modifier.fillMaxWidth(),
+                verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+            ) { fields(Modifier.fillMaxWidth()) }
+        } else {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(MakSpacing.sm)
+            ) { fields(Modifier.weight(1f)) }
+        }
+    }
+
+    if (open) {
+        // Opened from "Od", the whole range is preselected, so a tap starts a new range at the tapped day.
+        // Opened from "Do", only the start is preselected, so the first tap after it sets the end.
+        val pickerStart = startDate?.coerceToRange(minDate, maxDate)
+        val pickerEnd = endDate?.coerceToRange(minDate, maxDate)
+        val pickerState = rememberDateRangePickerState(
+            initialSelectedStartDateMillis = pickerStart?.toUtcMillis(),
+            initialSelectedEndDateMillis = if (startTapped) pickerEnd?.toUtcMillis() else null,
+            initialDisplayedMonthMillis = (if (startTapped) pickerStart else pickerEnd ?: pickerStart)?.toUtcMillis(),
+            selectableDates = selectableDates
+        )
+        DatePickerDialog(
+            onDismissRequest = { open = false },
+            confirmButton = {
+                TextButton(
+                    enabled = pickerState.selectedStartDateMillis != null,
+                    onClick = {
+                        val start = pickerState.selectedStartDateMillis?.toLocalDate()
+                        if (start != null) {
+                            val (rangeStart, rangeEnd) = resolvePickedRange(
+                                pickedStart = start,
+                                pickedEnd = pickerState.selectedEndDateMillis?.toLocalDate(),
+                                previousEnd = endDate
+                            )
+                            onRangeChange(rangeStart, rangeEnd)
+                        }
+                        open = false
+                    }
+                ) {
+                    Text("Wybierz")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { open = false }) {
+                    Text("Anuluj")
+                }
+            }
+        ) {
+            val dateFormatter = remember { DatePickerDefaults.dateFormatter() }
+            DateRangePicker(
+                state = pickerState,
+                dateFormatter = dateFormatter,
+                // The default 64 dp start padding is meant for a full-screen picker and wraps the text in a dialog.
+                title = {
+                    DateRangePickerDefaults.DateRangePickerTitle(
+                        displayMode = pickerState.displayMode,
+                        modifier = Modifier.padding(start = 24.dp, end = 12.dp, top = 16.dp)
+                    )
+                },
+                headline = {
+                    ProvideTextStyle(MaterialTheme.typography.titleMedium) {
+                        DateRangePickerDefaults.DateRangePickerHeadline(
+                            selectedStartDateMillis = pickerState.selectedStartDateMillis,
+                            selectedEndDateMillis = pickerState.selectedEndDateMillis,
+                            displayMode = pickerState.displayMode,
+                            dateFormatter = dateFormatter,
+                            modifier = Modifier.padding(start = 24.dp, end = 12.dp, bottom = 12.dp)
+                        )
+                    }
+                }
+            )
+        }
+    }
+
+    LaunchedFocusRestore(
+        open = open,
+        hasOpened = hasOpened,
+        focusRequester = if (startTapped) startFocus else endFocus
+    )
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun RangeDateField(
+    label: String,
+    date: LocalDate?,
+    isError: Boolean,
+    focusRequester: FocusRequester,
+    onOpen: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val interactionSource = rememberOpenOnTap(enabled = true, onTap = onOpen)
+    OutlinedTextField(
+        value = date?.format(polishDateFormatter).orEmpty(),
+        onValueChange = {},
+        modifier = modifier
+            .heightIn(min = 48.dp)
+            .focusRequester(focusRequester)
+            .clickable(role = Role.Button, onClick = onOpen)
+            .semantics {
+                onClick(label = "Wybierz zakres dat") {
+                    onOpen()
+                    true
+                }
+            },
+        readOnly = true,
+        isError = isError,
+        interactionSource = interactionSource,
+        label = { Text(label) },
+        trailingIcon = {
+            IconButton(onClick = onOpen) {
+                Icon(
+                    imageVector = Icons.Outlined.Event,
+                    contentDescription = "Wybierz zakres dat",
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        }
+    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -375,4 +547,18 @@ private fun LocalDate.toUtcMillis(): Long = atStartOfDay().toInstant(ZoneOffset.
 
 private fun Long.toLocalDate(): LocalDate =
     Instant.ofEpochMilli(this).atZone(ZoneOffset.UTC).toLocalDate()
+
+/** Days from [minDate] to [maxDate], both inclusive; a null bound leaves that side open. */
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun rememberSelectableDates(minDate: LocalDate?, maxDate: LocalDate?): SelectableDates =
+    remember(minDate, maxDate) {
+        object : SelectableDates {
+            override fun isSelectableDate(utcTimeMillis: Long): Boolean {
+                val date = Instant.ofEpochMilli(utcTimeMillis).atZone(ZoneOffset.UTC).toLocalDate()
+                return (minDate == null || !date.isBefore(minDate)) &&
+                    (maxDate == null || !date.isAfter(maxDate))
+            }
+        }
+    }
 

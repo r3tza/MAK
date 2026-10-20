@@ -25,6 +25,7 @@ import androidx.compose.ui.unit.dp
 import androidx.test.ext.junit.runners.AndroidJUnit4
 import dev.retza.mak.domain.WeekOverrideScope
 import dev.retza.mak.domain.WeekType
+import dev.retza.mak.ui.dateRangeLabel
 import dev.retza.mak.ui.theme.MAKTheme
 import dev.retza.mak.ui.programs.StudyProgramEditorUi
 import java.time.LocalDate
@@ -82,6 +83,7 @@ class SemesterScreenTest {
                         onSaveSemester = {},
                         onOpenCourses = { opened = "courses" },
                         onOpenOverrides = { opened = "overrides" },
+                        onOpenFreeDays = { opened = "free-days" },
                         onOpenCalendars = { opened = "calendars" },
                     )
                 }
@@ -124,6 +126,7 @@ class SemesterScreenTest {
                         onSaveSemester = {},
                         onOpenCourses = {},
                         onOpenOverrides = {},
+                        onOpenFreeDays = {},
                         onOpenCalendars = { opened = "calendars" },
                     )
                 }
@@ -253,7 +256,7 @@ class SemesterScreenTest {
         composeTestRule.onNodeWithText("Kolor kierunku").assertDoesNotExist()
         composeTestRule.onNodeWithText(
             "Nazwa i kolor istniejącego kierunku są wspólne dla wszystkich semestrów."
-        ).assertIsDisplayed()
+        ).assertDoesNotExist()
     }
 
     @Test
@@ -631,7 +634,7 @@ class SemesterScreenTest {
         id = id,
         startDate = startDate,
         endDate = endDate,
-        rangeLabel = calendarRangeLabel(LocalDate.parse(startDate), LocalDate.parse(endDate)),
+        rangeLabel = dateRangeLabel(LocalDate.parse(startDate), LocalDate.parse(endDate)),
         firstWeek = WeekType.A,
         courseNames = courseNames
     )

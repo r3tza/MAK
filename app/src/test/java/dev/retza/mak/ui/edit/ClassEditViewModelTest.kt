@@ -12,6 +12,7 @@ import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
 import dev.retza.mak.settings.InMemorySettingsPreferences
+import java.time.DayOfWeek
 import java.time.LocalDate
 import dev.retza.mak.sync.PlanEditTracker
 import kotlinx.coroutines.CoroutineScope
@@ -353,6 +354,101 @@ class ClassEditViewModelTest {
         assertEquals("Programowanie", viewModel.editor.value.name)
     }
 
+    private suspend fun kotlinx.coroutines.test.TestScope.closeEffects(viewModel: ClassEditViewModel): List<ClassEditEffect> {
+        val effects = mutableListOf<ClassEditEffect>()
+        backgroundScope.launch(mainDispatcher) { viewModel.effects.collect { effects += it } }
+        advanceUntilIdle()
+        return effects
+    }
+
+    @Test
+    fun closingUntouchedNewFormOrOneWithOnlySpacesInNameAsksNothing() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan()
+        val effects = closeEffects(viewModel)
+
+        viewModel.requestClose()
+        viewModel.update { it.copy(name = "   ") }
+        viewModel.requestClose()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.editor.value.showDiscardConfirmation)
+        assertEquals(listOf(ClassEditEffect.CloseEditor, ClassEditEffect.CloseEditor), effects)
+    }
+
+    @Test
+    fun closingNewFormWithTypedNameAsksBeforeDiscarding() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan()
+        val effects = closeEffects(viewModel)
+        viewModel.update { it.copy(name = "A") }
+
+        viewModel.requestClose()
+        advanceUntilIdle()
+
+        assertTrue(viewModel.editor.value.showDiscardConfirmation)
+        assertTrue(effects.isEmpty())
+
+        viewModel.dismissDiscard()
+        assertFalse(viewModel.editor.value.showDiscardConfirmation)
+        viewModel.requestClose()
+        viewModel.confirmDiscard()
+        advanceUntilIdle()
+        assertFalse(viewModel.editor.value.showDiscardConfirmation)
+        assertEquals(listOf(ClassEditEffect.CloseEditor), effects)
+    }
+
+    @Test
+    fun closingEditedFormWithoutChangesOrWithRestoredValueAsksNothing() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.openEditFromFreshPlan(1L)
+        val effects = closeEffects(viewModel)
+        val originalRoom = viewModel.editor.value.room
+
+        viewModel.requestClose()
+        viewModel.update { it.copy(room = "Z999") }
+        viewModel.update { it.copy(room = originalRoom) }
+        viewModel.requestClose()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.editor.value.showDiscardConfirmation)
+        assertEquals(2, effects.size)
+    }
+
+    @Test
+    fun closingUntouchedOneOffFormAsksNothing() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan(LocalDate.of(2026, 9, 25))
+        val effects = closeEffects(viewModel)
+
+        viewModel.requestClose()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.editor.value.showDiscardConfirmation)
+        assertEquals(listOf(ClassEditEffect.CloseEditor), effects)
+    }
+
+    @Test
+    fun typedChangeStillAsksAfterRecreationFromSavedState() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val savedState = SavedStateHandle()
+        val first = viewModel(repository, savedState)
+        advanceUntilIdle()
+        first.openNewFromFreshPlan()
+        first.update { it.copy(name = "Algebra") }
+        advanceUntilIdle()
+
+        val restored = viewModel(repository, savedState)
+        advanceUntilIdle()
+        restored.requestClose()
+
+        assertTrue(restored.editor.value.showDiscardConfirmation)
+    }
+
     @Test
     fun saveRejectsInvalidTime() = runTest(mainDispatcher) {
         val repository = FakeRepository()
@@ -406,6 +502,133 @@ class ClassEditViewModelTest {
 
         assertNotNull(viewModel.editor.value.errors[ClassEditField.Date])
         assertEquals(1, repository.classes.size)
+    }
+
+    @Test
+    fun examAndCreditTestAreAlwaysOfferedBeforeOther() {
+        assertEquals(
+            listOf("Wykład", "Ćwiczenia", "Laboratorium", "Projekt", "Seminarium", "Egzamin", "Zaliczenie", "Inne"),
+            classTypeOptions
+        )
+    }
+
+    @Test
+    fun choosingExamSwitchesToOneOffAndAnotherTypeRestoresRecurrence() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan()
+        advanceUntilIdle()
+        viewModel.selectRecurrence(Recurrence.A_WEEK)
+        viewModel.selectType("Wykład")
+
+        viewModel.selectType("Egzamin")
+        assertEquals(Recurrence.ONCE, viewModel.editor.value.recurrence)
+        viewModel.selectType("Zaliczenie")
+        assertEquals(Recurrence.ONCE, viewModel.editor.value.recurrence)
+        viewModel.selectType("Projekt")
+
+        assertEquals("Projekt", viewModel.editor.value.type)
+        assertEquals(Recurrence.A_WEEK, viewModel.editor.value.recurrence)
+    }
+
+    @Test
+    fun examChosenForOneOffClassKeepsOneOffAfterAnotherType() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan(LocalDate.of(2026, 9, 25))
+        advanceUntilIdle()
+
+        viewModel.selectType("Egzamin")
+        viewModel.selectType("Inne")
+
+        assertEquals(Recurrence.ONCE, viewModel.editor.value.recurrence)
+    }
+
+    @Test
+    fun saveRejectsExamTypeForRecurringClass() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan(LocalDate.of(2026, 9, 25))
+        viewModel.update {
+            it.copy(
+                name = "Analiza",
+                semesterProgramId = 1L,
+                type = "Egzamin",
+                dayLabel = "Piątek",
+                startTime = "12:00",
+                endTime = "13:30",
+                recurrence = Recurrence.EVERY_WEEK
+            )
+        }
+        advanceUntilIdle()
+
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals(
+            "Egzamin może być tylko zajęciami jednorazowymi.",
+            viewModel.editor.value.errors[ClassEditField.Type]?.message
+        )
+        assertEquals(1, repository.classes.size)
+    }
+
+    @Test
+    fun saveAcceptsExamTypeForOneOffClass() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan(LocalDate.of(2026, 9, 25))
+        viewModel.update {
+            it.copy(
+                name = "Analiza",
+                semesterProgramId = 1L,
+                type = "Egzamin",
+                dayLabel = "Piątek",
+                startTime = "12:00",
+                endTime = "13:30"
+            )
+        }
+        advanceUntilIdle()
+
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals(2, repository.classes.size)
+        assertEquals("Egzamin", repository.classes.last().type)
+    }
+
+    @Test
+    fun oneOffClassTakesWeekdayFromDateWithoutDayField() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        // 2026-09-25 is a Friday; the stale "Poniedziałek" must not be saved.
+        viewModel.openNewFromFreshPlan(LocalDate.of(2026, 9, 25))
+        viewModel.update {
+            it.copy(name = "Analiza", semesterProgramId = 1L, type = "Egzamin", dayLabel = "Poniedziałek", startTime = "12:00", endTime = "13:30")
+        }
+        viewModel.update { it.copy(dayLabel = "") }
+        advanceUntilIdle()
+
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals(2, repository.classes.size)
+        assertEquals(DayOfWeek.FRIDAY, repository.classes.last().dayOfWeek)
+    }
+
+    @Test
+    fun leavingOneOffRecurrenceSetsWeekdayFromDate() = runTest(mainDispatcher) {
+        val viewModel = viewModel(FakeRepository())
+        advanceUntilIdle()
+        viewModel.openNewFromFreshPlan(LocalDate.of(2026, 9, 25))
+        advanceUntilIdle()
+
+        viewModel.selectRecurrence(Recurrence.A_WEEK)
+
+        assertEquals(Recurrence.A_WEEK, viewModel.editor.value.recurrence)
+        assertEquals("Piątek", viewModel.editor.value.dayLabel)
     }
 
     @Test

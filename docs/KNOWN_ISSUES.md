@@ -1,26 +1,29 @@
 # Znane problemy
 
-Stan na 2026-10-09. Ten rejestr obejmuje otwarte problemy potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`, a zadania i statusy `QUEUE.md`. Naprawione problemy nie są tu powtarzane; ich historia jest w sekcji „Zakończone” w `QUEUE.md` i w `LOG.md`.
+Stan na 2026-10-20. Ten rejestr obejmuje otwarte problemy potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`, a zadania i statusy `QUEUE.md`. Naprawione problemy nie są tu powtarzane; ich historia jest w sekcji „Zakończone” w `QUEUE.md` i w `LOG.md`.
 
 ## Otwarte problemy
 
-Poprawki z audytu synchronizacji I-70 zostały zakończone i zaakceptowane po recenzji 2026-10-02. Rzeczywiste OAuth i Drive przeszły odbiór I-69 na wersji debug 2026-10-08. Klient OAuth release jest skonfigurowany, ale nie był sprawdzony na podpisanym APK; użytkownik zamknął I-69 bez tego testu, więc pierwsze wydanie z synchronizacją wymaga sprawdzenia logowania. Pozostałe dwie kwestie z audytu interfejsu (obramowane przyciski ikon w górnym pasku i trzy style zaznaczenia na „Planie”) użytkownik zamknął bez zmian (`LOG.md`, 2026-09-29).
+Poprawki z audytu synchronizacji I-70 zostały zakończone i zaakceptowane po recenzji 2026-10-02. Rzeczywiste OAuth i Drive przeszły odbiór I-69 na wersji debug 2026-10-08. Logowanie przez klienta OAuth release na podpisanym APK działa, co użytkownik potwierdził 2026-10-19. Pozostałe dwie kwestie z audytu interfejsu (obramowane przyciski ikon w górnym pasku i trzy style zaznaczenia na „Planie”) użytkownik zamknął bez zmian (`LOG.md`, 2026-09-29).
+
+Problemy z odbioru na emulatorze `Medium_Phone_2` z 2026-10-20:
+
+- **Wybór daty w niskim oknie (I-44).** W oknie o wysokości 450 dp (okno swobodne na symulowanym tablecie) wybór daty nie pokazuje pierwszego tygodnia miesiąca: brakuje 1 do 4 października i 1 listopada 2026. Tych dni nie ma w drzewie widoku ani po przewinięciu, więc da się je wybrać tylko przez wpisanie daty. Dotyczy kryterium O-08 „wybór daty i godziny w całości”. Wybór godziny w tym samym oknie jest kompletny.
+- **Emulator w `STACK.md`.** Sekcja 5 wskazuje `Medium_Phone_A12`, którego nie ma na komputerze; nie ma też obrazu Androida 12. Odbiór z 2026-10-20 wykonano na `Medium_Phone_2` (Android 16, 2048 MiB) za zgodą użytkownika na ten jeden odbiór. Wybór stałego emulatora należy do użytkownika.
 
 Synchronizacja Google (I-68) nie należy jeszcze do opublikowanego wydania. Projekt Google Cloud działa w trybie Testing, więc logować mogą się tylko konta z listy testowej; publikacja aplikacji w Google Auth Platform jest osobną decyzją przed wydaniem. Świadome ograniczenie projektu: Drive nie ma warunkowego zapisu, więc przy niemal równoczesnym wysłaniu z dwóch telefonów zostaje późniejsza wersja, a druga trafia do archiwum telefonu przy kolejnej synchronizacji. Szkic zajęć odtworzony po zakończeniu procesu aplikacji nie wstrzymuje pobrania planu; jeśli w tym czasie inny telefon zmienił plan, zapis szkicu może trafić do wpisu o tym samym numerze.
 
 ### Sprzeczności dokumentacji i pytania po audycie
 
-Brak otwartych pytań (stan na 2026-10-08).
+Brak otwartych pytań (stan na 2026-10-20). Pytania o dzień tygodnia zajęć jednorazowych i widget w dniu wolnym użytkownik rozstrzygnął 2026-10-20 (I-110).
 
 ## Wymagają odbioru na urządzeniu
 
 Poniższe pozycje mają gotowy kod; brakuje potwierdzenia na urządzeniu. Szczegóły scenariuszy są w `FEATURES.md`, sekcja „Odbiór na urządzeniu”. Pozostałe odbiory użytkownik zamknął 2026-10-08, bo aplikacja działa u kilku osób.
 
-1. **Systemowa kopia zapasowa (I-14).** Kod istnieje: lista dozwolonych plików w `data_extraction_rules.xml` (baza i ustawienia), kopia w chmurze tylko z szyfrowaniem, tekst w „Dane i prywatność”. Na emulatorze z lokalnym transportem kopii przywracanie po reinstalacji z APK działa, a bez szyfrowania nic nie trafia do kopii. Do potwierdzenia (O-09): kopia Google na telefonie z kontem i blokadą ekranu, reinstalacja z APK oraz przeniesienie na nowy telefon.
-2. **Tryb tabletowy (I-45 do I-47).** Kod istnieje: klasy szerokości okna z progami 600 i 840 dp, obrót na urządzeniach o najkrótszym boku od 600 dp, boczny pasek nawigacji od 600 dp, treść najwyżej 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp i dialogi najwyżej 560 dp z przewijaniem. Na emulatorze z symulowanym dużym ekranem układ jest zgodny z wariantem A, a układ telefonu przy 411 i 320 dp jest identyczny jak przed zmianą. Do potwierdzenia (O-08): prawdziwy tablet albo telefon składany w pionie, w poziomie i w podzielonym ekranie, zachowanie ekranu i wpisanych danych po obrocie oraz układ poziomy wyboru godziny z I-44.
-3. **Kolizje bez przerwy (I-80).** Kod istnieje: minimalna przerwa w ustawieniach, kolizja bez nakładania w planie, widgecie i powiadomieniach. Na emulatorze działają: opisy na kartach i w szczegółach, odświeżenie po zmianie ustawienia, widget na ekranie głównym (także odświeżony samą zmianą ustawienia) oraz powiadomienie przed zajęciami o kolizji bez przerwy, które otwiera szczegóły terminu. Do potwierdzenia: powiadomienie wieczorne z opisem przerwy (razem z O-04).
-4. **Ukrywanie kierunków (I-79).** Kod istnieje: checkboxy na ekranie „Kierunki”, filtr planu, widgetu i powiadomień, komunikaty na „Dzisiaj”, w „Planie” i na widgecie. Na emulatorze działają ukrywanie i przywracanie oraz odświeżanie widgetu. Do potwierdzenia: ukrycie kierunku przy połączonej synchronizacji (wybór zostaje na jednym telefonie) i brak powiadomienia o kolizji z ukrytym kierunkiem.
-5. **Powiadomienia (O-04).** Do potwierdzenia: zgoda, alarmy, zachowanie po restarcie telefonu i otwarcie zajęć z powiadomienia.
+1. **Tryb tabletowy (I-45 do I-47).** Kod istnieje: klasy szerokości okna z progami 600 i 840 dp, obrót na urządzeniach o najkrótszym boku od 600 dp, boczny pasek nawigacji od 600 dp, treść najwyżej 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp i dialogi najwyżej 560 dp z przewijaniem. Na emulatorze z symulowanym dużym ekranem układ jest zgodny z wariantem A, a układ telefonu przy 411 i 320 dp jest identyczny jak przed zmianą. Do potwierdzenia (O-08): prawdziwy tablet albo telefon składany w pionie, w poziomie i w podzielonym ekranie, zachowanie ekranu i wpisanych danych po obrocie oraz układ poziomy wyboru godziny z I-44.
+2. **Powiadomienia (O-04).** Na emulatorze przeszły 2026-10-20 (szczegóły w `QUEUE.md`). Do potwierdzenia na telefonie: zgoda, alarmy, zachowanie po restarcie telefonu i otwarcie zajęć z powiadomienia.
+3. **Gałąź `task/settings-and-gap-notifications` (I-81, I-82, I-95 do I-103).** Kod jest gotowy i sprawdzony na emulatorze, w tym poprawki po przeglądzie z 2026-10-13. Do potwierdzenia na telefonie użytkownika: scenariusze z wierszy tych zadań w `QUEUE.md`, w tym synchronizacja dni wolnych między dwoma telefonami po aktualizacji obu (na dwóch emulatorach przeszła 2026-10-19) i powiadomienia o okienkach.
 
 ## Zamknięte w kodzie, bez odbioru urządzeniowego
 

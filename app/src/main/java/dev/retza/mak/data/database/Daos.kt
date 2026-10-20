@@ -8,6 +8,7 @@ import androidx.room.Transaction
 import androidx.room.Update
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.data.entity.SemesterEntity
@@ -27,6 +28,9 @@ interface SemesterDao {
 
     @Query("SELECT * FROM semesters WHERE is_active = 1 LIMIT 1")
     fun observeActive(): Flow<SemesterEntity?>
+
+    @Query("SELECT * FROM semesters WHERE is_active = 1 LIMIT 1")
+    suspend fun findActive(): SemesterEntity?
 
     @Query(
         "SELECT s.* FROM semesters s LEFT JOIN academic_calendars c ON c.semester_id = s.id " +
@@ -108,6 +112,12 @@ interface StudyProgramDao {
 interface AcademicCalendarDao {
     @Query("SELECT * FROM academic_calendars WHERE semester_id = :semesterId ORDER BY start_date, id")
     fun observeForSemester(semesterId: Long): Flow<List<AcademicCalendarEntity>>
+
+    @Query("SELECT * FROM academic_calendars WHERE semester_id = :semesterId ORDER BY start_date, id")
+    suspend fun getForSemester(semesterId: Long): List<AcademicCalendarEntity>
+
+    @Query("SELECT * FROM academic_calendars ORDER BY id")
+    fun observeAll(): Flow<List<AcademicCalendarEntity>>
 
     @Query("SELECT * FROM academic_calendars WHERE id = :id")
     suspend fun findById(id: Long): AcademicCalendarEntity?
@@ -223,6 +233,36 @@ interface WeekOverrideDao {
     )
 
     @Query("DELETE FROM week_overrides")
+    suspend fun deleteAll()
+}
+
+@Dao
+interface FreeDayDao {
+    @Query(
+        "SELECT * FROM free_days WHERE semester_id = :semesterId " +
+            "ORDER BY start_date, end_date, id"
+    )
+    fun observeForSemester(semesterId: Long): Flow<List<FreeDayEntity>>
+
+    @Query(
+        "SELECT * FROM free_days WHERE semester_id = :semesterId " +
+            "ORDER BY start_date, end_date, id"
+    )
+    suspend fun getForSemester(semesterId: Long): List<FreeDayEntity>
+
+    @Query(
+        "SELECT * FROM free_days WHERE academic_calendar_id = :calendarId " +
+            "ORDER BY start_date, end_date, id"
+    )
+    suspend fun getForCalendar(calendarId: Long): List<FreeDayEntity>
+
+    @Insert(onConflict = OnConflictStrategy.ABORT)
+    suspend fun insert(entity: FreeDayEntity): Long
+
+    @Query("DELETE FROM free_days WHERE id IN (:ids)")
+    suspend fun deleteByIds(ids: List<Long>)
+
+    @Query("DELETE FROM free_days")
     suspend fun deleteAll()
 }
 

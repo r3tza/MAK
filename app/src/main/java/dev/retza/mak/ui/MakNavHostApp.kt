@@ -134,7 +134,7 @@ fun MakApp(
                 title = spec?.title ?: titleForRoute(currentRoute),
                 showBack = showBack,
                 showSettings = isRoot,
-                onBack = ::navigateBack,
+                onBack = spec?.onBack ?: ::navigateBack,
                 onSettings = { openSettings(navController) },
                 actions = if (topBarActions.isEmpty()) {
                     null
@@ -221,7 +221,7 @@ fun MakApp(
                     updateViewModel = updateViewModel,
                     navController = navController,
                     onAddSemester = {
-                        openSetup(navController)
+                        openSetup(navController, fromSettings = true)
                     },
                     onConfigureSemester = { id ->
                         openSemesterConfiguration(navController, id)

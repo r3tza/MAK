@@ -6,6 +6,7 @@ import dev.retza.mak.settings.SettingsPreferences
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import org.koin.core.annotation.KoinViewModel
+import dev.retza.mak.data.repository.AcademicCalendarRecord
 import dev.retza.mak.data.repository.SemesterRecord
 import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.ActivePlanData
@@ -19,9 +20,9 @@ import dev.retza.mak.data.ActivePlanSource
 import dev.retza.mak.ui.PlanEditSession
 import dev.retza.mak.ui.components.SemesterUi
 import dev.retza.mak.ui.classCountLabel
-import dev.retza.mak.ui.shortDateFormatter
-import dev.retza.mak.text.polishPlural
-import dev.retza.mak.ui.sharedCalendar
+import dev.retza.mak.ui.dateRangeWithYearLabel
+import dev.retza.mak.ui.programForAssignment
+import dev.retza.mak.ui.components.distinctLabels
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
@@ -107,9 +108,10 @@ class SettingsViewModel(
         semesterRepository.observeSemesters(),
         activePlanData,
         preferencesSnapshot,
-        local
-    ) { semesters, activeData, preferencesState, state ->
-        buildSettingsState(semesters, activeData, preferencesState, state)
+        local,
+        semesterRepository.observeSharedCalendars()
+    ) { semesters, activeData, preferencesState, state, sharedCalendars ->
+        buildSettingsState(semesters, sharedCalendars, activeData, preferencesState, state)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -236,6 +238,22 @@ class SettingsViewModel(
         saveNotifications { preferences.setBeforeClassLeadMinutes(minutes) }
     }
 
+    fun setGapEveningNotificationsEnabled(enabled: Boolean) =
+        saveNotifications { preferences.setGapEveningNotificationsEnabled(enabled) }
+
+    fun setGapBeforeClassNotificationsEnabled(enabled: Boolean) =
+        saveNotifications { preferences.setGapBeforeClassNotificationsEnabled(enabled) }
+
+    fun setGapEveningHour(id: String) {
+        val time = runCatching { java.time.LocalTime.parse(id) }.getOrNull() ?: return
+        saveNotifications { preferences.setGapEveningHour(time) }
+    }
+
+    fun setGapLeadMinutes(id: String) {
+        val minutes = id.toLongOrNull() ?: return
+        saveNotifications { preferences.setGapLeadMinutes(minutes) }
+    }
+
     fun setGapThresholdMinutes(id: String) {
         val minutes = id.toIntOrNull() ?: return
         if (local.value.isSavingGapThreshold) return
@@ -341,26 +359,31 @@ class SettingsViewModel(
 
 private fun buildSettingsState(
     semesterList: List<SemesterRecord>,
+    sharedCalendars: Map<Long, AcademicCalendarRecord>,
     activeData: ActivePlanData?,
     preferences: PreferencesSnapshot,
     local: SettingsLocalState
 ): SettingsUiState = SettingsUiState(
-    semesters = semesterList.map { semester ->
+    semesters = semesterList.sortedWith(
+        // Active semester first, then newest calendar start, semesters without a calendar last.
+        compareByDescending<SemesterRecord> { it.id == activeData?.semester?.id }
+            .thenBy { sharedCalendars[it.id] == null }
+            .thenByDescending { sharedCalendars[it.id]?.startDate }
+            .thenByDescending { it.id }
+    ).map { semester ->
         val isActive = semester.id == activeData?.semester?.id
-        val calendar = activeData?.sharedCalendar()
+        val calendar = sharedCalendars[semester.id]
         SemesterUi(
             id = semester.id,
             name = semester.name,
-            dateRangeLabel = if (isActive && calendar != null) {
-                "${calendar.startDate.format(shortDateFormatter)} - " +
-                    calendar.endDate.format(shortDateFormatter)
-            } else "",
-            firstWeekLabel = if (isActive && calendar != null) {
-                "pierwszy tydzień ${calendar.firstWeekType.name}"
-            } else "",
-            courseCountLabel = if (isActive) {
-                "${activeData.semesterPrograms.size} " +
-                    polishPlural(activeData.semesterPrograms.size, "kierunek", "kierunki", "kierunków")
+            dateLabel = when {
+                calendar == null -> ""
+                isActive -> dateRangeWithYearLabel(calendar.startDate, calendar.endDate) +
+                    ", pierwszy tydzień ${calendar.firstWeekType.name}"
+                else -> dateRangeWithYearLabel(calendar.startDate, calendar.endDate)
+            },
+            programsLabel = if (isActive) {
+                activeProgramsLabel(activeData)
             } else "",
             classCountLabel = if (isActive) {
                 classCountLabel(activeData.classes.size)
@@ -392,22 +415,48 @@ private fun buildSettingsState(
     isReplacingData = local.isReplacingData,
     notifications = NotificationSettingsUi(
         enabled = preferences.notifications.enabled,
-        eveningEnabled = preferences.notifications.eveningEnabled,
-        beforeClassEnabled = preferences.notifications.beforeClassEnabled,
-        eveningHourOptions = notificationHourOptions.map { hour ->
-            val id = "%02d:00".format(hour)
-            SettingsOptionUi(id, id, preferences.notifications.eveningHour.hour == hour)
-        },
-        leadOptions = notificationLeadOptions.map { minutes ->
-            SettingsOptionUi(
-                id = minutes.toString(),
-                label = "$minutes min",
-                isSelected = preferences.notifications.leadMinutes == minutes
-            )
-        }
+        collisions = NotificationTopicUi(
+            eveningEnabled = preferences.notifications.eveningEnabled,
+            beforeClassEnabled = preferences.notifications.beforeClassEnabled,
+            eveningHourOptions = notificationHourOptions.map { hour ->
+                val id = "%02d:00".format(hour)
+                SettingsOptionUi(id, id, preferences.notifications.eveningHour.hour == hour)
+            },
+            leadOptions = notificationLeadOptions.map { minutes ->
+                SettingsOptionUi(
+                    id = minutes.toString(),
+                    label = "$minutes min",
+                    isSelected = preferences.notifications.leadMinutes == minutes
+                )
+            }
+        ),
+        gaps = NotificationTopicUi(
+            eveningEnabled = preferences.notifications.gapEveningEnabled,
+            beforeClassEnabled = preferences.notifications.gapBeforeClassEnabled,
+            eveningHourOptions = notificationHourOptions.map { hour ->
+                val id = "%02d:00".format(hour)
+                SettingsOptionUi(id, id, preferences.notifications.gapEveningHour.hour == hour)
+            },
+            leadOptions = notificationLeadOptions.map { minutes ->
+                SettingsOptionUi(
+                    id = minutes.toString(),
+                    label = "$minutes min",
+                    isSelected = preferences.notifications.gapLeadMinutes == minutes
+                )
+            }
+        )
     )
 )
 
 private val notificationHourOptions = listOf(18, 19, 20, 21, 22)
 private val notificationLeadOptions = listOf(15L, 30L, 45L, 60L)
+
+private fun activeProgramsLabel(activeData: ActivePlanData): String {
+    // Several assignments can point to the same program; it is listed once.
+    val names = activeData.semesterPrograms
+        .mapNotNull { activeData.programForAssignment(it.id) }
+        .distinctBy { it.id }
+        .map { it.name }
+    return if (names.isEmpty()) "Brak kierunków" else distinctLabels(names).joinToString(", ")
+}
 

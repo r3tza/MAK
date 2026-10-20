@@ -21,7 +21,15 @@ import dev.retza.mak.ui.setup.SetupWizard
 internal fun isSetupRoute(route: String?): Boolean =
     route == MakRoutes.Setup || route == MakRoutes.SetupRoute
 
-internal fun openSetup(navController: NavController, resumeExisting: Boolean = false) {
+internal fun openSetup(
+    navController: NavController,
+    resumeExisting: Boolean = false,
+    fromSettings: Boolean = false
+) {
+    if (fromSettings) {
+        navController.navigate(setupRoute(resumeExisting)) { launchSingleTop = true }
+        return
+    }
     navController.navigate(setupRoute(resumeExisting)) {
         popUpTo(MakRoutes.Today) { saveState = true }
         launchSingleTop = true
@@ -92,10 +100,12 @@ internal fun SetupEffects(
                 }
 
                 SetupEffect.ReturnToSettings -> {
-                    if (navController.previousBackStackEntry?.destination?.route == MakRoutes.Settings) {
+                    if (returnsToSettingsByPop(navController.previousBackStackEntry?.destination?.route)) {
                         navController.popBackStack()
                     } else {
-                        openSettings(navController)
+                        navController.navigate(MakRoutes.Settings) {
+                            popUpTo(MakRoutes.SetupRoute) { inclusive = true }
+                        }
                     }
                 }
 

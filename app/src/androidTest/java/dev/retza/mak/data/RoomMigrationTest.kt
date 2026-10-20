@@ -6,6 +6,7 @@ import androidx.test.platform.app.InstrumentationRegistry
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.database.MIGRATION_1_2
 import dev.retza.mak.data.database.MIGRATION_2_3
+import dev.retza.mak.data.database.MIGRATION_3_4
 import androidx.sqlite.db.SupportSQLiteDatabase
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -74,7 +75,7 @@ class RoomMigrationTest {
             )
         }
 
-        helper.runMigrationsAndValidate(DATABASE_NAME, 3, true, MIGRATION_1_2, MIGRATION_2_3).use { db ->
+        helper.runMigrationsAndValidate(DATABASE_NAME, 4, true, MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4).use { db ->
             db.query("SELECT name, is_active FROM semesters WHERE id = 1").use { cursor ->
                 assertTrue(cursor.moveToFirst())
                 assertEquals("Semestr", cursor.getString(0))
@@ -172,6 +173,35 @@ class RoomMigrationTest {
                 assertEquals("2026-10-26", cursor.getString(1))
                 assertEquals("Przeniesiona", cursor.getString(2))
                 assertFalse(cursor.moveToNext())
+            }
+        }
+    }
+
+    @Test
+    fun migrationFromV3AddsFreeDaysTableKeepingData() {
+        helper.createDatabase(DATABASE_NAME, 3).use { db ->
+            db.execSQL("INSERT INTO semesters (id, name, is_active) VALUES (1, 'Semestr', 1)")
+            db.execSQL(
+                "INSERT INTO academic_calendars (id, semester_id, start_date, end_date, first_week_type) " +
+                    "VALUES (1, 1, '2026-10-01', '2027-02-28', 'A')"
+            )
+        }
+
+        helper.runMigrationsAndValidate(DATABASE_NAME, 4, true, MIGRATION_3_4).use { db ->
+            db.query("SELECT name FROM semesters WHERE id = 1").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals("Semestr", cursor.getString(0))
+            }
+            db.execSQL(
+                "INSERT INTO free_days (semester_id, academic_calendar_id, start_date, end_date, name) " +
+                    "VALUES (1, 1, '2026-11-11', '2026-11-11', 'Święto')"
+            )
+            db.query("SELECT COUNT(*) FROM free_days").use { cursor ->
+                assertTrue(cursor.moveToFirst())
+                assertEquals(1, cursor.getInt(0))
+            }
+            db.query("PRAGMA foreign_key_check").use { cursor ->
+                assertFalse(cursor.moveToFirst())
             }
         }
     }

@@ -6,6 +6,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import dev.retza.mak.sync.AccountMismatchException
 import dev.retza.mak.sync.ArchiveSource
+import dev.retza.mak.sync.AuthorizationFailedException
 import dev.retza.mak.sync.AuthorizationAttempt
 import dev.retza.mak.sync.PendingSyncChoice
 import dev.retza.mak.sync.PlanSide
@@ -213,12 +214,13 @@ class SyncViewModel(
 
     fun reconnect() = startAuthorization(pinned = coordinator.state.value.account)
 
-    fun onAuthorizationResult(succeeded: Boolean, data: Intent?) {
+    fun onAuthorizationResult(data: Intent?) {
         val pending = pendingAuthorization ?: return
         pendingAuthorization = null
         local.update { it.copy(isWorking = false) }
-        // Cancelling consent never disconnects an account that is already connected.
-        if (!succeeded || data == null) return
+        // Cancelling consent never disconnects an account that is already connected. A failed consent
+        // returns RESULT_CANCELED with an error status in data, so data is read whatever the result code.
+        if (data == null) return
         work {
             val attempt = if (pending.pinned == null) {
                 authorization.completeAccountSelection(data)
@@ -353,6 +355,8 @@ class SyncViewModel(
 private fun Exception.toMessage(): String = when {
     this is IOException -> "Brak połączenia z internetem. Aplikacja spróbuje ponownie później."
     this is AccountMismatchException -> ACCOUNT_MISMATCH_TEXT
+    this is AuthorizationFailedException ->
+        "Google nie pozwolił połączyć konta. Spróbuj ponownie później. Jeśli błąd się powtarza, zgłoś go autorowi aplikacji."
     else -> "Nie udało się zsynchronizować planu."
 }
 

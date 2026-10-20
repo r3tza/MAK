@@ -147,7 +147,8 @@ class WidgetPlanLoaderTest {
             classes = classes.toList(),
             weekOverrides = emptyList(),
             occurrenceNotes = emptyList(),
-            occurrenceChanges = emptyList()
+            occurrenceChanges = emptyList(),
+            freeDays = emptyList()
         )
     }
 

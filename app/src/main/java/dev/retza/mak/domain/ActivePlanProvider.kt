@@ -10,7 +10,8 @@ data class ActivePlanData(
     val calendars: Collection<AcademicCalendar> = emptyList(),
     val weekOverrides: Collection<WeekOverride> = emptyList(),
     val occurrenceChanges: Collection<OccurrenceChange> = emptyList(),
-    val occurrenceNotes: Collection<OccurrenceNote> = emptyList()
+    val occurrenceNotes: Collection<OccurrenceNote> = emptyList(),
+    val freeDays: Collection<FreeDay> = emptyList()
 )
 
 /** The plan data together with the phone settings that change how it resolves. */
@@ -58,7 +59,8 @@ class ActivePlanProvider(
             calendars = data.calendars,
             weekOverrides = data.weekOverrides,
             occurrenceChanges = data.occurrenceChanges,
-            occurrenceNotes = data.occurrenceNotes
+            occurrenceNotes = data.occurrenceNotes,
+            freeDays = data.freeDays
         )
     }
 }

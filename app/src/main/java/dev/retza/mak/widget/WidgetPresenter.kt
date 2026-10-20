@@ -6,6 +6,7 @@ import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.uniqueCollisionCount
 import java.time.LocalDate
 import java.time.LocalTime
+import dev.retza.mak.ui.freeDayDetail
 import dev.retza.mak.ui.label
 import dev.retza.mak.ui.todayTitleFormatter
 
@@ -22,7 +23,11 @@ class WidgetPresenter {
             return WidgetUiState.OutsideSemester(dateLabel, semesterName)
         }
         val weekLabel = weekStatus.label()
+        val freeDay = plan.schedule.freeDay
         if (plan.schedule.occurrences.isEmpty()) {
+            if (freeDay != null) {
+                return WidgetUiState.FreeDay(dateLabel, weekLabel, freeDayDetail(freeDay, date))
+            }
             return WidgetUiState.EmptyDay(dateLabel, weekLabel)
         }
 
@@ -32,6 +37,9 @@ class WidgetPresenter {
             dateLabel = dateLabel,
             weekLabel = weekLabel,
             collisionCount = uniqueCollisionCount(plan.collisions),
+            freeDayLabel = freeDay?.let { day ->
+                listOfNotNull("Dzień wolny", freeDayDetail(day, date)).joinToString(": ")
+            },
             items = plan.schedule.occurrences.map { occurrence ->
                 WidgetOccurrenceUi(
                     id = occurrence.id,
@@ -61,3 +69,4 @@ class WidgetPresenter {
 }
 
 internal fun widgetDateLabel(date: LocalDate): String = date.format(todayTitleFormatter)
+

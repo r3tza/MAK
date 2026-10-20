@@ -1,9 +1,13 @@
 package dev.retza.mak.ui.programs
 
+import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.StudyProgramEntity
+import dev.retza.mak.data.entity.WeekType
 import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.ui.FakeSemesterRepository
+import dev.retza.mak.ui.FormErrorTexts
 import dev.retza.mak.ui.MainDispatcherRule
+import dev.retza.mak.ui.components.suggestedCourseColor
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
 import dev.retza.mak.ui.feedback.UiFeedbackKind
@@ -14,9 +18,11 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
+import java.time.LocalDate
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotEquals
 import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
@@ -172,5 +178,95 @@ class StudyProgramsViewModelTest {
         assertFalse(editor.canDelete)
         assertFalse(editor.showDeleteConfirmation)
         assertFalse("deleteStudyProgram" in repository.events)
+    }
+
+    @Test
+    fun newProgramIsAssignedToSharedCalendarOfActiveSemester() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink)
+        val effects = mutableListOf<StudyProgramsEffect>()
+        backgroundScope.launch { viewModel.effects.collect { effects += it } }
+        // The fake gives the new calendar a higher id than the existing one, so the lowest id is the shared one.
+        repository.saveCalendar(
+            AcademicCalendarEntity(
+                semesterId = repository.semester.id,
+                startDate = LocalDate.of(2026, 11, 1),
+                endDate = LocalDate.of(2027, 1, 31),
+                firstWeekType = WeekType.B
+            )
+        )
+        advanceUntilIdle()
+        viewModel.openNewOnce()
+        advanceUntilIdle()
+
+        viewModel.updateName("Fizyka")
+        viewModel.save()
+        advanceUntilIdle()
+
+        val program = repository.studyPrograms.first { it.name == "Fizyka" }
+        val assignment = repository.semesterPrograms.single { it.studyProgramId == program.id }
+        assertEquals(repository.semester.id, assignment.semesterId)
+        assertEquals(repository.calendar.id, assignment.academicCalendarId)
+        assertEquals(
+            listOf(UiFeedback("Dodano kierunek do semestru ${repository.semester.name}", UiFeedbackKind.Success)),
+            sink.published
+        )
+        assertEquals(listOf(StudyProgramsEffect.CloseEditor), effects)
+        assertNull(viewModel.programs.value.editor.id)
+    }
+
+    @Test
+    fun newProgramWithoutActiveSemesterIsOnlyCreated() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val sink = RecordingFeedbackSink()
+        val viewModel = viewModel(repository, sink)
+        advanceUntilIdle()
+        repository.clearSemesters()
+        viewModel.openNewOnce()
+        advanceUntilIdle()
+
+        viewModel.updateName("Fizyka")
+        viewModel.save()
+        advanceUntilIdle()
+
+        val program = repository.studyPrograms.first { it.name == "Fizyka" }
+        assertFalse(repository.semesterPrograms.any { it.studyProgramId == program.id })
+        assertFalse("saveStudyProgramAssignment" in repository.events)
+        assertEquals(listOf(UiFeedback("Dodano kierunek", UiFeedbackKind.Success)), sink.published)
+    }
+
+    @Test
+    fun newProgramRejectsBlankName() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+        viewModel.openNewOnce()
+        advanceUntilIdle()
+
+        viewModel.updateName("   ")
+        viewModel.save()
+        advanceUntilIdle()
+
+        assertEquals(FormErrorTexts.ProgramNameRequired, viewModel.programs.value.editor.nameError)
+        assertFalse("saveStudyProgram" in repository.events)
+        assertFalse("saveStudyProgramAssignment" in repository.events)
+    }
+
+    @Test
+    fun newProgramSuggestsColorAwayFromExistingPrograms() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = viewModel(repository)
+        advanceUntilIdle()
+
+        viewModel.openNewOnce()
+        advanceUntilIdle()
+
+        val editor = viewModel.programs.value.editor
+        val existingColor = repository.studyPrograms.first().color
+        assertEquals(suggestedCourseColor(repository.studyPrograms.map { it.color }), editor.color)
+        assertNotEquals(existingColor, editor.color)
+        assertEquals(repository.semester.name, editor.activeSemesterName)
+        assertNull(editor.id)
     }
 }

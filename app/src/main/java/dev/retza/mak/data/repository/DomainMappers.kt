@@ -3,6 +3,7 @@ package dev.retza.mak.data.repository
 import dev.retza.mak.data.database.SemesterWithData
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
 import dev.retza.mak.data.entity.SemesterEntity
@@ -12,6 +13,7 @@ import dev.retza.mak.data.entity.WeekOverrideEntity
 import dev.retza.mak.domain.ActivePlanData
 import dev.retza.mak.domain.AcademicCalendar
 import dev.retza.mak.domain.ClassItem
+import dev.retza.mak.domain.FreeDay
 import dev.retza.mak.domain.OccurrenceChange
 import dev.retza.mak.domain.OccurrenceChangeKind
 import dev.retza.mak.domain.OccurrenceNote
@@ -31,7 +33,8 @@ fun SemesterWithData.toActivePlanData(): ActivePlanData = ActivePlanData(
     calendars = academicCalendars.map(AcademicCalendarEntity::toDomain),
     weekOverrides = weekOverrides.map(WeekOverrideEntity::toDomain),
     occurrenceChanges = occurrenceChanges.map(OccurrenceChangeEntity::toDomain),
-    occurrenceNotes = occurrenceNotes.map(OccurrenceNoteEntity::toDomain)
+    occurrenceNotes = occurrenceNotes.map(OccurrenceNoteEntity::toDomain),
+    freeDays = freeDays.map(FreeDayEntity::toDomain)
 )
 
 private fun SemesterEntity.toDomain() = Semester(
@@ -90,6 +93,14 @@ private fun OccurrenceNoteEntity.toDomain() = OccurrenceNote(
     classId = classId,
     occurrenceDate = occurrenceDate,
     body = body
+)
+
+private fun FreeDayEntity.toDomain() = FreeDay(
+    id = id,
+    academicCalendarId = academicCalendarId,
+    startDate = startDate,
+    endDate = endDate,
+    name = name
 )
 
 private fun OccurrenceChangeEntity.toDomain() = OccurrenceChange(
@@ -176,6 +187,24 @@ internal fun WeekOverrideRecord.toEntity() = WeekOverrideEntity(
     weekStartDate = weekStartDate,
     weekType = dev.retza.mak.data.entity.WeekType.valueOf(weekType.name),
     scope = dev.retza.mak.data.entity.WeekOverrideScope.valueOf(scope.name)
+)
+
+internal fun FreeDayEntity.toRecord() = FreeDayRecord(
+    id = id,
+    semesterId = semesterId,
+    academicCalendarId = academicCalendarId,
+    startDate = startDate,
+    endDate = endDate,
+    name = name
+)
+
+internal fun FreeDayRecord.toEntity() = FreeDayEntity(
+    id = id,
+    semesterId = semesterId,
+    academicCalendarId = academicCalendarId,
+    startDate = startDate,
+    endDate = endDate,
+    name = name
 )
 
 internal fun ClassItem.toRecord() = ClassRecord(

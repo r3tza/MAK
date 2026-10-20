@@ -9,6 +9,7 @@ import dev.retza.mak.ui.FakeRepository
 import dev.retza.mak.sync.PlanEditTracker
 import dev.retza.mak.ui.FakeSemesterRepository
 import dev.retza.mak.ui.MainDispatcherRule
+import dev.retza.mak.ui.dateRangeLabel
 import dev.retza.mak.ui.feedback.FeedbackController
 import dev.retza.mak.ui.feedback.FeedbackSink
 import dev.retza.mak.ui.feedback.UiFeedback
@@ -379,6 +380,41 @@ class SemesterViewModelTest {
         assertEquals("2026-10-05", viewModel.semester.value.overrideForm.weekStartDate)
         viewModel.saveWeekOverride()
         advanceUntilIdle()
+        assertEquals(1, repository.events.count { it == "saveWeekOverride" })
+    }
+
+    @Test
+    fun overrideOutsideTheCalendarRangeIsNotSaved() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = recordingViewModel(repository, RecordingFeedbackSink())
+        advanceUntilIdle()
+        advanceUntilIdle()
+
+        viewModel.newWeekOverride()
+        viewModel.updateWeekStartDate("2026-12-07")
+        viewModel.saveWeekOverride()
+        advanceUntilIdle()
+
+        assertEquals(
+            "Wybierz tydzień z zakresu kalendarza.",
+            viewModel.semester.value.overrideForm.weekStartDateError
+        )
+        assertTrue(repository.events.none { it == "saveWeekOverride" })
+    }
+
+    @Test
+    fun overrideWeekStartingBeforeTheCalendarButOverlappingItIsSaved() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val viewModel = recordingViewModel(repository, RecordingFeedbackSink())
+        advanceUntilIdle()
+        advanceUntilIdle()
+
+        viewModel.newWeekOverride()
+        viewModel.updateWeekStartDate("2026-09-01")
+        assertEquals("2026-08-31", viewModel.semester.value.overrideForm.weekStartDate)
+        viewModel.saveWeekOverride()
+        advanceUntilIdle()
+
         assertEquals(1, repository.events.count { it == "saveWeekOverride" })
     }
 
@@ -784,10 +820,10 @@ class SemesterViewModelTest {
     }
 
     @Test
-    fun calendarRangeLabelUsesShortDatesWithYear() {
+    fun dateRangeLabelUsesShortDatesWithYear() {
         assertEquals(
             "1 lis 2026 - 15 mar 2027",
-            calendarRangeLabel(LocalDate.of(2026, 11, 1), LocalDate.of(2027, 3, 15))
+            dateRangeLabel(LocalDate.of(2026, 11, 1), LocalDate.of(2027, 3, 15))
         )
     }
 }

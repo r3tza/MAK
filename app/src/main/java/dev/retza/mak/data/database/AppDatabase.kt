@@ -7,6 +7,7 @@ import androidx.room.RoomDatabase
 import androidx.room.TypeConverters
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.entity.MakConverters
 import dev.retza.mak.data.entity.OccurrenceChangeEntity
 import dev.retza.mak.data.entity.OccurrenceNoteEntity
@@ -24,9 +25,10 @@ import dev.retza.mak.data.entity.WeekOverrideEntity
         ClassEntity::class,
         WeekOverrideEntity::class,
         OccurrenceNoteEntity::class,
-        OccurrenceChangeEntity::class
+        OccurrenceChangeEntity::class,
+        FreeDayEntity::class
     ],
-    version = 3,
+    version = 4,
     exportSchema = true
 )
 @TypeConverters(MakConverters::class)
@@ -47,6 +49,8 @@ abstract class AppDatabase : RoomDatabase() {
 
     abstract fun occurrenceChangeDao(): OccurrenceChangeDao
 
+    abstract fun freeDayDao(): FreeDayDao
+
     companion object {
         /** Also named in `res/xml/data_extraction_rules.xml`, which allows it into Android backup. */
         const val DATABASE_NAME = "mak.db"
@@ -60,7 +64,7 @@ abstract class AppDatabase : RoomDatabase() {
                     context.applicationContext,
                     AppDatabase::class.java,
                     DATABASE_NAME
-                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3)
+                ).addMigrations(MIGRATION_1_2, MIGRATION_2_3, MIGRATION_3_4)
                     .build()
                     .also { instance = it }
             }

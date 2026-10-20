@@ -34,6 +34,7 @@ import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDialogAction
+import dev.retza.mak.ui.components.MakDiscardChangesDialog
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakFactRow
 import dev.retza.mak.ui.components.MakField
@@ -53,8 +54,15 @@ fun OccurrenceDetailsScreen(
     onDismissDeleteConfirmation: () -> Unit,
     onOpenOccurrenceEdit: () -> Unit,
     onDismissOccurrenceEdit: () -> Unit,
+    onRequestDismissOccurrenceEdit: () -> Unit,
+    onConfirmDiscardEdit: () -> Unit,
+    onKeepEditing: () -> Unit,
     onSaveOccurrenceChange: () -> Unit,
     onRestoreOccurrence: () -> Unit,
+    onRequestRestore: () -> Unit,
+    onDismissRestore: () -> Unit,
+    onConfirmCancelChanged: () -> Unit,
+    onDismissCancelChanged: () -> Unit,
     onOccurrenceNoteDraftChanged: (String) -> Unit,
     onSharedNoteDraftChanged: (String) -> Unit,
     onTargetDateDraftChanged: (String) -> Unit,
@@ -98,7 +106,28 @@ fun OccurrenceDetailsScreen(
         OccurrenceBottomActions(
             state = state,
             onOpenOccurrenceEdit = onOpenOccurrenceEdit,
-            onRestoreOccurrence = onRestoreOccurrence
+            onRestoreOccurrence = onRequestRestore
+        )
+    }
+
+    if (state.showRestoreConfirmation) {
+        MakDialog(
+            title = "Przywrócić termin?",
+            description = "Termin wróci do planu: ${state.restoreTargetLabel}.",
+            onDismiss = onDismissRestore,
+            dismissAction = MakDialogAction("Anuluj", onDismissRestore, enabled = !state.isSaving),
+            confirmAction = MakDialogAction("Przywróć", onRestoreOccurrence, enabled = !state.isSaving)
+        )
+    }
+
+    if (state.showCancelChangedConfirmation) {
+        MakConfirmDeletionDialog(
+            title = "Odwołać zmieniony termin?",
+            text = "Zmiana tego terminu zostanie usunięta, a termin będzie odwołany. Notatka do terminu zostanie.",
+            isDeleting = state.isSaving,
+            onConfirm = onConfirmCancelChanged,
+            onCancel = onDismissCancelChanged,
+            confirmLabel = "Odwołaj"
         )
     }
 
@@ -110,8 +139,13 @@ fun OccurrenceDetailsScreen(
             onEndTimeDraftChanged = onEndTimeDraftChanged,
             onRoomDraftChanged = onRoomDraftChanged,
             onDismiss = onDismissOccurrenceEdit,
+            onRequestDismiss = onRequestDismissOccurrenceEdit,
             onSave = onSaveOccurrenceChange
         )
+    }
+
+    if (state.showDiscardEditConfirmation) {
+        MakDiscardChangesDialog(onConfirm = onConfirmDiscardEdit, onCancel = onKeepEditing)
     }
 
     if (state.showDeleteConfirmation) {
@@ -168,12 +202,13 @@ private fun OccurrenceEditDialog(
     onEndTimeDraftChanged: (String) -> Unit,
     onRoomDraftChanged: (String) -> Unit,
     onDismiss: () -> Unit,
+    onRequestDismiss: () -> Unit,
     onSave: () -> Unit
 ) {
     MakDialog(
         title = "Edytuj ten termin",
         description = "Zmiany dotyczą tylko tego terminu. Pozostałe wystąpienia zajęć pozostaną bez zmian.",
-        onDismiss = { if (!state.isSaving) onDismiss() },
+        onDismiss = { if (!state.isSaving) onRequestDismiss() },
         dismissAction = MakDialogAction("Anuluj", onDismiss, enabled = !state.isSaving),
         confirmAction = MakDialogAction("Zapisz", onSave, enabled = state.canSaveOccurrenceEdit && !state.isSaving)
     ) {

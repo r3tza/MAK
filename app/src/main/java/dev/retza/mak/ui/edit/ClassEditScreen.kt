@@ -25,6 +25,7 @@ import dev.retza.mak.ui.components.FieldErrorUi
 import dev.retza.mak.ui.components.MakDatePickerField
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDialogAction
+import dev.retza.mak.ui.components.MakDiscardChangesDialog
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakExpandableSection
 import dev.retza.mak.ui.components.MakField
@@ -48,7 +49,12 @@ enum class ClassEditField {
     Date
 }
 
-internal val classTypeOptions = listOf("Wykład", "Ćwiczenia", "Laboratorium", "Projekt", "Seminarium", "Inne")
+// Exams and credit tests happen on a single date, so only one-off classes offer them.
+internal val oneOffClassTypes = setOf("Egzamin", "Zaliczenie")
+
+// „Egzamin” and „Zaliczenie” are always offered; choosing one makes the class one-off (decision of 2026-10-20).
+internal val classTypeOptions: List<String> =
+    listOf("Wykład", "Ćwiczenia", "Laboratorium", "Projekt", "Seminarium") + oneOffClassTypes + "Inne"
 
 fun Recurrence.formLabel(): String = when (this) {
     Recurrence.EVERY_WEEK -> "Co tydzień"
@@ -90,7 +96,8 @@ data class ClassEditUiState(
     val courseOptions: List<ClassCourseOptionUi> = emptyList(),
     val errors: Map<ClassEditField, FieldErrorUi> = emptyMap(),
     val isSaving: Boolean = false,
-    val pendingHiddenData: HiddenDataWarningUi? = null
+    val pendingHiddenData: HiddenDataWarningUi? = null,
+    val showDiscardConfirmation: Boolean = false
 )
 
 @Composable
@@ -113,8 +120,13 @@ fun ClassEditScreen(
     onConfirmHiddenData: () -> Unit,
     onDismissHiddenData: () -> Unit,
     onCancel: () -> Unit,
+    onConfirmDiscard: () -> Unit,
+    onDismissDiscard: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    if (state.showDiscardConfirmation) {
+        MakDiscardChangesDialog(onConfirm = onConfirmDiscard, onCancel = onDismissDiscard)
+    }
     state.pendingHiddenData?.let { warning ->
         MakDialog(
             title = "Część danych przestanie być widoczna",
@@ -179,14 +191,27 @@ fun ClassEditScreen(
                     }
                 }
             )
-            MakSelectField(
-                label = "Dzień tygodnia",
-                value = state.dayLabel,
-                options = dayNames.values.toList(),
-                onSelected = onDayChanged,
-                isError = state.errors.containsKey(ClassEditField.Day)
-            )
-            FieldError(state.errors[ClassEditField.Day])
+            // „Data zajęć” takes the place of the weekday for a one-off class (decisions of 2026-10-20).
+            if (state.recurrence == Recurrence.ONCE) {
+                MakDatePickerField(
+                    label = "Data zajęć",
+                    value = state.occurrenceDate,
+                    onValueChange = onOccurrenceDateChanged,
+                    minDate = state.semesterStartDate?.toLocalDateOrNull(),
+                    maxDate = state.semesterEndDate?.toLocalDateOrNull(),
+                    isError = state.errors.containsKey(ClassEditField.Date)
+                )
+                FieldError(state.errors[ClassEditField.Date])
+            } else {
+                MakSelectField(
+                    label = "Dzień tygodnia",
+                    value = state.dayLabel,
+                    options = dayNames.values.toList(),
+                    onSelected = onDayChanged,
+                    isError = state.errors.containsKey(ClassEditField.Day)
+                )
+                FieldError(state.errors[ClassEditField.Day])
+            }
             MakFieldPair(
                 first = {
                     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
@@ -211,24 +236,16 @@ fun ClassEditScreen(
                     }
                 }
             )
-            MakSelectField(
-                label = "Powtarzanie",
-                value = state.recurrence.formLabel(),
-                options = Recurrence.entries,
-                onSelected = onRecurrenceChanged,
-                optionLabel = { it.formLabel() },
-                isError = state.errors.containsKey(ClassEditField.Recurrence)
-            )
-            if (state.recurrence == Recurrence.ONCE) {
-                MakDatePickerField(
-                    label = "Data zajęć",
-                    value = state.occurrenceDate,
-                    onValueChange = onOccurrenceDateChanged,
-                    minDate = state.semesterStartDate?.toLocalDateOrNull(),
-                    maxDate = state.semesterEndDate?.toLocalDateOrNull(),
-                    isError = state.errors.containsKey(ClassEditField.Date)
+            // „Egzamin” and „Zaliczenie” are always one-off, so „Powtarzanie” is hidden (decision of 2026-10-20).
+            if (state.type !in oneOffClassTypes) {
+                MakSelectField(
+                    label = "Powtarzanie",
+                    value = state.recurrence.formLabel(),
+                    options = Recurrence.entries,
+                    onSelected = onRecurrenceChanged,
+                    optionLabel = { it.formLabel() },
+                    isError = state.errors.containsKey(ClassEditField.Recurrence)
                 )
-                FieldError(state.errors[ClassEditField.Date])
             }
             MakExpandableSection(
                 label = "więcej opcji",

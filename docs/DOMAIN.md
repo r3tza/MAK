@@ -32,9 +32,11 @@ Ustawienia semestrów umożliwiają dodanie, edycję, wybór i usunięcie semest
 
 Decyzja użytkownika z 2026-10-09 (I-81, I-82). Dzień wolny to zakres dat (od i do, włącznie; jeden dzień to zakres jednodniowy) z opcjonalną nazwą, np. „Przerwa świąteczna”, należący do jednego `AcademicCalendar`. Jeden zapis w formularzu może utworzyć ten sam zakres w kilku kalendarzach.
 
-W dniu wolnym kalendarza zajęcia cykliczne kierunków używających tego kalendarza nie odbywają się. Nie są usuwane ani zapisywane jako odwołania, tylko pomijane przez `ScheduleResolver`, więc po usunięciu dnia wolnego wracają razem z notatkami. Terminy jednorazowe i terminy przeniesione na dzień wolny pozostają, bo tak użytkownik zapisuje odrabianie zajęć. Pominięte zajęcia nie tworzą kolizji, okienek ani powiadomień.
+W dniu wolnym kalendarza zajęcia cykliczne kierunków używających tego kalendarza nie odbywają się. Nie są usuwane ani zapisywane jako odwołania, tylko pomijane przez `ScheduleResolver`, więc po usunięciu dnia wolnego wracają razem z notatkami. Terminy jednorazowe i terminy przeniesione na dzień wolny pozostają, bo tak użytkownik zapisuje odrabianie zajęć. Termin przeniesiony z dnia wolnego na inny dzień także pozostaje; pomijany jest tylko termin, który bez przeniesienia odbyłby się w dniu wolnym, również ze zmienioną godziną, salą albo prowadzącym, a odwołanie takiego terminu nie trafia do listy odwołanych (decyzja użytkownika z 2026-10-11). Pominięte zajęcia nie tworzą kolizji, okienek ani powiadomień.
 
-Dni wolne nie zmieniają rytmu A/B. Gdy uczelnia po przerwie zaczyna inną literą, służy do tego korekta „Od tego tygodnia”; w kroku I-82 formularz dni wolnych obejmujących cały tydzień może ją utworzyć sam.
+Widok pokazuje dzień jako wolny, gdy dzień wolny mają wszystkie kalendarze, których dotyczy widok: wszystkie kalendarze semestru obejmujące tę datę albo kalendarz kierunku wybranego w filtrze „Planu”.
+
+Dni wolne nie zmieniają rytmu A/B. Gdy uczelnia po przerwie zaczyna inną literą, służy do tego korekta „Od tego tygodnia”; w kroku I-82 formularz dni wolnych może ją utworzyć sam dla każdego zakresu, także jednego dnia (decyzja użytkownika z 2026-10-12; wcześniej wymagany był pełny tydzień od poniedziałku do piątku): korekta „Od tego tygodnia” zaczyna się w pierwszy poniedziałek po ostatnim dniu zakresu, w każdym wybranym kalendarzu, który obejmuje ten poniedziałek (decyzja użytkownika z 2026-10-11).
 
 Dni wolne są częścią planu: trafiają do eksportu JSON i synchronizacji.
 
@@ -113,6 +115,8 @@ Z ekranu szczegółów konkretnego terminu użytkownik może wybrać:
 - „Przenieś ten termin”;
 - „Przywróć termin”, jeśli wcześniej zapisano zmianę.
 
+Zajęcia mają najwyżej jedną zmianę danego terminu, więc odwołanie terminu zmienionego albo przeniesionego zastępuje jego zmianę odwołaniem. Odwołany termin stoi wtedy w dacie z planu, „Przywróć termin” przywraca termin z planu, a notatka do terminu zostaje (decyzja użytkownika z 2026-10-14, I-101).
+
 Odrabianie albo inne dodatkowe spotkanie jest zapisywane jako `ClassEntity` z `recurrence = ONCE` i konkretną datą. Formularz może skopiować nazwę, kierunek, prowadzącego i typ z istniejących zajęć, ale zapis pozostaje niezależny od cyklu.
 
 Zmiany wystąpień są stosowane po rozwinięciu planu cyklicznego i przed wykrywaniem kolizji. Usunięcie albo edycja zmiany nie modyfikuje bazowego wpisu zajęć.
@@ -126,6 +130,8 @@ Wystąpienie identyfikują zajęcia i data oryginalna terminu, a nie data, w kt�
 Okienko jest przerwą dłuższą niż ustawiony próg między końcem jednego bloku zajęć a początkiem następnego. Liczyć je ze wspólnego planu wszystkich kierunków aktywnego semestru, także gdy kierunki używają różnych kalendarzy akademickich. Domyślny próg wynosi 30 minut, więc przerwa trwająca dokładnie 30 minut nie jest okienkiem. Próg wynosi co najmniej 20 minut, a minimalna przerwa (sekcja „Kolizje”) najwyżej 20 minut, więc przerwa nigdy nie jest jednocześnie okienkiem i kolizją. Nie liczyć czasu przed pierwszymi ani po ostatnich zajęciach dnia. Odwołane zajęcia pominąć, a zmiany i przeniesienia uwzględnić. Nakładające się zajęcia najpierw połączyć w blok czasu, aby kolizja nie tworzyła fałszywego okienka.
 
 Obliczanie liczby okienek należy do domeny i korzysta z tego samego aktywnego planu co wykrywanie kolizji.
+
+Powiadomienia o okienkach (decyzja użytkownika z 2026-10-11, I-98) korzystają z tych samych okienek co licznik: zajęcia widocznego planu dnia (bez kierunków ukrytych na telefonie i bez odwołanych zajęć, ze zmianami i przeniesieniami), połączone w bloki, i próg okienka z ustawień planu. Każde okienko wyznaczają zajęcia bloku, który kończy się na jego początku. Powiadomienie „dzień wcześniej” wymienia wszystkie okienka dnia. Powiadomienie „przed zajęciami” przychodzi z wybranym wyprzedzeniem przed początkiem najwcześniejszych zajęć tego bloku, osobno dla każdego okienka. Przed pokazaniem aplikacja sprawdza bieżący plan: powiadomienie wieczorne pokazuje się tylko dzień przed datą okienek, gdy nadal istnieją okienka po tych samych zajęciach, a powiadomienie przed zajęciami tylko wtedy, gdy okienko po tych zajęciach nadal istnieje i zajęcia się nie skończyły.
 
 ## Kolizje
 

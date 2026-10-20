@@ -2,6 +2,7 @@ package dev.retza.mak.ui.today
 
 import androidx.compose.foundation.layout.Arrangement
 import dev.retza.mak.ui.AllProgramsHiddenNote
+import dev.retza.mak.ui.FreeDayNoteUi
 import dev.retza.mak.ui.HiddenProgramsHint
 import dev.retza.mak.ui.MakTwoColumnMaxWidth
 import dev.retza.mak.ui.MakContentMaxWidth
@@ -45,7 +46,8 @@ data class TodayUiState(
     val emptyMessage: String = "Nie masz dziś zajęć.",
     // Study programs of the active semester hidden on this phone; the hint explains the shorter plan.
     val hiddenProgramNames: List<String> = emptyList(),
-    val allProgramsHidden: Boolean = false
+    val allProgramsHidden: Boolean = false,
+    val freeDay: FreeDayNoteUi? = null
 )
 
 @Composable
@@ -128,7 +130,11 @@ private val TodaySummaryColumnWidth = 360.dp
 @Composable
 private fun TodaySummary(state: TodayUiState, modifier: Modifier) {
     MakSummaryCard(
-        title = if (state.classCount == 0) "Dziś bez zajęć" else "Twój plan na dziś",
+        title = when {
+            state.freeDay != null -> "Dzień wolny"
+            state.classCount == 0 -> "Dziś bez zajęć"
+            else -> "Twój plan na dziś"
+        },
         classCount = state.classCount,
         collisionCount = state.collisionCount,
         gapCount = state.gapCount,
@@ -149,6 +155,12 @@ private fun ColumnScope.TodayClasses(
     when {
         state.isLoading -> MakLoadingMessage()
         state.allProgramsHidden -> AllProgramsHiddenNote(onOpenPrograms)
+        state.freeDay != null -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
+            MakNoteBanner(title = state.freeDay.title, subtitle = state.freeDay.subtitle, role = MakNoteRole.Neutral)
+            state.items.forEach { item ->
+                ClassCard(item = item, onClick = { onOpenClass(item.id) })
+            }
+        }
         state.items.isEmpty() -> Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
             MakEmptyState(state.emptyMessage)
             if (requiresSetup) {

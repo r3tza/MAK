@@ -14,7 +14,7 @@ Te zasady obowiązują w całym repozytorium. Szczegóły produktu, architektury
 - `app/src/main/assets/release_notes.json` - notatki wydań dla użytkowników: aplikacja, `update.json` i opis wydania na GitHubie.
 - `docs/LOG.md` - 20 ostatnich wpisów o decyzjach i zmianach; starsze wpisy są w `docs/log_archive/`.
 - `docs/PLAN.md` - najwyżej pięć najbliższych kroków wykonawczych.
-- `docs/QUEUE.md` - bieżące zadania, zależności i oddzielne statusy implementacji oraz odbioru.
+- `docs/QUEUE.md` - bieżące zadania, zależności i oddzielne statusy implementacji oraz odbioru; zakończone zadania są w `docs/queue_archive/`.
 - `docs/MAP.md` - mapa dokumentów według rodzaju zadania.
 - `docs/KNOWN_ISSUES.md` - potwierdzone braki i otwarte scenariusze odbioru.
 - `docs/WRITING.md` - zasady pisania dokumentacji i tekstów dla użytkownika.

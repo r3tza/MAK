@@ -2,6 +2,7 @@ package dev.retza.mak.export
 
 import dev.retza.mak.data.repository.BackupData
 import dev.retza.mak.data.repository.PlanBackupGateway
+import dev.retza.mak.data.repository.groupKey
 import dev.retza.mak.settings.SettingsPreferences
 
 class ImportHandle internal constructor(internal val data: BackupData)
@@ -13,6 +14,7 @@ data class ImportSummary(
     val overrideCount: Int,
     val noteCount: Int,
     val changeCount: Int,
+    val freeDayCount: Int,
     val activeSemesterName: String?
 )
 
@@ -57,5 +59,6 @@ private fun BackupData.toSummary(): ImportSummary = ImportSummary(
     overrideCount = semesters.sumOf { it.weekOverrides.size },
     noteCount = semesters.sumOf { it.occurrenceNotes.size },
     changeCount = semesters.sumOf { it.occurrenceChanges.size },
+    freeDayCount = semesters.sumOf { it.freeDays.distinctBy { day -> day.groupKey() }.size },
     activeSemesterName = semesters.firstOrNull { it.semester.isActive }?.semester?.name
 )

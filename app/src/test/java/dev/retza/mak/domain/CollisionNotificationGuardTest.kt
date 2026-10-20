@@ -104,6 +104,32 @@ class CollisionNotificationGuardTest {
     }
 
     @Test
+    fun gapBeforeClassIsNotShownWhenGapIsGone() {
+        val requested = listOf("a", "b")
+
+        assertTrue(
+            shouldShowCollisionNotification(
+                CollisionNotificationKind.GAP_BEFORE_CLASS,
+                date,
+                requested,
+                listOf(groupA),
+                date.atTime(8, 30),
+                LocalTime.of(10, 0)
+            )
+        )
+        assertFalse(
+            shouldShowCollisionNotification(
+                CollisionNotificationKind.GAP_BEFORE_CLASS,
+                date,
+                requested,
+                emptyList(),
+                date.atTime(8, 30),
+                LocalTime.of(10, 0)
+            )
+        )
+    }
+
+    @Test
     fun payloadCarriesAllGroupIds() {
         val item = PlannedCollisionNotification(
             id = 1,

@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.today
 
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.data.entity.StudyProgramEntity
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.PlanDisplaySettings
@@ -9,6 +10,7 @@ import dev.retza.mak.ui.activePlanSource
 import dev.retza.mak.settings.InMemorySettingsPreferences
 import java.time.Clock
 import java.time.Instant
+import java.time.LocalDate
 import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.launch
@@ -170,6 +172,27 @@ class TodayViewModelTest {
         assertEquals("Brak aktywnego semestru", viewModel.today.value.dateLabel)
         assertTrue(viewModel.today.value.items.isEmpty())
         assertFalse(viewModel.today.value.hasActiveSemester)
+    }
+
+    @Test
+    fun freeDayShowsNoteAndSkipsRecurringClasses() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.freeDays += FreeDayEntity(
+            id = 1L,
+            semesterId = 1L,
+            academicCalendarId = 1L,
+            startDate = LocalDate.of(2026, 9, 21),
+            endDate = LocalDate.of(2026, 9, 25),
+            name = "Rekolekcje"
+        )
+        val viewModel = todayViewModel(repository)
+        backgroundScope.launch { viewModel.today.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.today.value
+        assertEquals("Rekolekcje", state.freeDay?.title)
+        assertTrue(state.freeDay!!.subtitle.contains("21 wrz - 25 wrz"))
+        assertTrue(state.items.isEmpty())
     }
 
     private fun todayViewModel(

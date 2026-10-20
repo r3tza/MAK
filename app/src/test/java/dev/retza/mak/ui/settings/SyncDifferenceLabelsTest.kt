@@ -1,5 +1,6 @@
 package dev.retza.mak.ui.settings
 
+import dev.retza.mak.data.entity.FreeDayEntity
 import dev.retza.mak.sync.PlanMergeProblem
 import dev.retza.mak.sync.PlanRowKey
 import dev.retza.mak.sync.PlanRowKind
@@ -36,6 +37,25 @@ class SyncDifferenceLabelsTest {
         val label = SyncDifferenceLabels(phone, base).describe(difference)
 
         assertEquals(SyncDifferenceUi("Konsultacje", "Notatka do terminu, 8 października", "Zadania z listy 3", "Brak"), label)
+    }
+
+    @Test
+    fun aFreeDayNamesItsSemesterWithoutRepeatingTheWord() {
+        val base = basePlan()
+        val freeDay = FreeDayEntity(
+            id = 1,
+            semesterId = 1,
+            academicCalendarId = 1,
+            startDate = LocalDate.of(2026, 11, 20),
+            endDate = LocalDate.of(2026, 11, 20),
+            name = "Test B"
+        )
+        val phone = basePlan(freeDays = listOf(freeDay))
+        val difference = planDifferences(phone, base, base).single()
+
+        val label = SyncDifferenceLabels(phone, base).describe(difference)
+
+        assertEquals("Test B" to "Dni wolne, Zimowy", label.title to label.subtitle)
     }
 
     @Test

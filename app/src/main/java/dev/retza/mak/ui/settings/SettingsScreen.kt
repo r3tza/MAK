@@ -17,7 +17,12 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.ArrowForward
+import androidx.compose.material.icons.automirrored.outlined.FormatListBulleted
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.ExpandMore
+import androidx.compose.material.icons.outlined.CalendarMonth
+import androidx.compose.material.icons.outlined.School
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Switch
@@ -28,11 +33,16 @@ import androidx.compose.material.icons.outlined.Refresh
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.saveable.rememberSaveable
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.heading
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
@@ -40,6 +50,7 @@ import androidx.compose.ui.unit.dp
 import dev.retza.mak.ui.components.MakConfirmDeletionDialog
 import dev.retza.mak.ui.components.MakDialog
 import dev.retza.mak.ui.components.MakDialogAction
+import dev.retza.mak.ui.components.MakChoiceRow
 import dev.retza.mak.ui.components.MakEmptyState
 import dev.retza.mak.ui.components.MakHelperText
 import dev.retza.mak.ui.components.MakNoteBanner
@@ -79,12 +90,18 @@ data class SettingsOptionUi(
     val isSelected: Boolean = false
 )
 
-data class NotificationSettingsUi(
-    val enabled: Boolean = false,
-    val eveningEnabled: Boolean = true,
-    val beforeClassEnabled: Boolean = true,
+/** The evening and before-class kinds of one notification topic (collisions or gaps). */
+data class NotificationTopicUi(
+    val eveningEnabled: Boolean,
+    val beforeClassEnabled: Boolean,
     val eveningHourOptions: List<SettingsOptionUi> = emptyList(),
     val leadOptions: List<SettingsOptionUi> = emptyList()
+)
+
+data class NotificationSettingsUi(
+    val enabled: Boolean = false,
+    val collisions: NotificationTopicUi = NotificationTopicUi(eveningEnabled = true, beforeClassEnabled = true),
+    val gaps: NotificationTopicUi = NotificationTopicUi(eveningEnabled = false, beforeClassEnabled = false)
 )
 
 data class SettingsUiState(
@@ -143,9 +160,7 @@ fun SettingsScreen(
                     }
                     SettingsNavigationRow(
                         title = "Zarządzaj semestrami",
-                        value = active
-                            ?.let { "${it.dateRangeLabel}, ${it.firstWeekLabel}" }
-                            .orEmpty(),
+                        value = active?.dateLabel.orEmpty(),
                         onClick = onOpenSemesters
                     )
                     SettingsRowDivider()
@@ -192,7 +207,7 @@ fun SettingsScreen(
             SettingsListSection("Powiadomienia") {
                 val notificationsStatus = notificationsStatus(state.notifications, notificationsBlocked)
                 SettingsNavigationRow(
-                    title = "Powiadomienia o kolizjach",
+                    title = "Powiadomienia",
                     value = notificationsStatus.first,
                     details = notificationsStatus.second,
                     onClick = onOpenNotifications
@@ -249,15 +264,17 @@ fun SettingsScreen(
 /** Section whose rows reach the card edges, so the pressed state covers the whole row. */
 @Composable
 internal fun SettingsListSection(
-    title: String,
+    title: String?,
     content: @Composable ColumnScope.() -> Unit
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
-        Text(
-            text = title,
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
+        if (title != null) {
+            Text(
+                text = title,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold
+            )
+        }
         Column(
             modifier = Modifier
                 .fillMaxWidth()
@@ -384,15 +401,21 @@ private fun SettingsSwitchRow(
     }
 }
 
+private const val NOTIFICATION_KIND_COUNT = 4
+
 private fun notificationsStatus(
     notifications: NotificationSettingsUi,
     blocked: Boolean
 ): Pair<String, String?> {
-    if (!notifications.enabled) return "Wyłączone" to null
-    if (blocked) return "Włączone" to "Zablokowane przez system"
-    val hour = notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty()
-    val lead = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty()
-    return "Włączone" to "$hour dzień wcześniej, $lead przed zajęciami"
+    // Two topics (collisions, gaps), each with an evening and a before-class kind.
+    val enabledCount = listOf(notifications.collisions, notifications.gaps)
+        .sumOf { listOf(it.eveningEnabled, it.beforeClassEnabled).count { enabled -> enabled } }
+    val value = when (enabledCount) {
+        0 -> return "Wyłączone" to null
+        NOTIFICATION_KIND_COUNT -> "Wszystkie włączone"
+        else -> "Włączone: $enabledCount z $NOTIFICATION_KIND_COUNT"
+    }
+    return value to if (blocked) "Zablokowane przez system" else null
 }
 
 @Composable
@@ -413,17 +436,15 @@ fun SettingsSemestersScreen(
         verticalArrangement = Arrangement.spacedBy(MakSpacing.md)
     ) {
         if (state.semesters.isNotEmpty()) {
-            ActiveSemesterField(
-                semesters = state.semesters,
-                activeSemesterId = state.activeSemesterId,
-                onSemesterSelected = onSemesterSelected
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.xs)) {
+                ActiveSemesterField(
+                    semesters = state.semesters,
+                    activeSemesterId = state.activeSemesterId,
+                    onSemesterSelected = onSemesterSelected
+                )
+                MakHelperText("Konfiguracja przypisań, kalendarzy i korekt należy do wybranego semestru.")
+            }
         }
-        MakNoteBanner(
-            title = null,
-            subtitle = "Konfiguracja przypisań, kalendarzy i korekt należy do wybranego semestru.",
-            role = MakNoteRole.Neutral
-        )
         Text(
             text = "Lista semestrów",
             style = MaterialTheme.typography.titleMedium,
@@ -450,6 +471,7 @@ fun SettingsSemestersScreen(
     }
     if (state.semesterToDeleteId != null) {
         DeleteSemesterDialog(
+            semesterName = state.semesters.firstOrNull { it.id == state.semesterToDeleteId }?.name.orEmpty(),
             isDeleting = state.isDeletingSemester,
             onConfirm = onConfirmDelete,
             onCancel = onCancelDelete
@@ -482,17 +504,15 @@ private fun SemesterRow(
                 StatusText(text = "Aktywny")
             }
         }
-        listOf(
-            semester.dateRangeLabel,
-            semester.firstWeekLabel,
-            semester.courseCountLabel,
-            semester.classCountLabel
-        ).filter { it.isNotBlank() }.takeIf { it.isNotEmpty() }?.let { details ->
-            Text(
-                text = details.joinToString(", "),
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+        val details = listOf(
+            Icons.Outlined.CalendarMonth to semester.dateLabel,
+            Icons.Outlined.School to semester.programsLabel,
+            Icons.AutoMirrored.Outlined.FormatListBulleted to semester.classCountLabel
+        ).filter { (_, text) -> text.isNotBlank() }
+        if (details.isNotEmpty()) {
+            Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                details.forEach { (icon, text) -> SemesterDetailRow(icon = icon, text = text) }
+            }
         }
         Row(horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)) {
             MakTextAction(text = "Konfiguruj", onClick = onConfigure)
@@ -502,14 +522,33 @@ private fun SemesterRow(
 }
 
 @Composable
+private fun SemesterDetailRow(icon: ImageVector, text: String) {
+    Row(horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+        Icon(
+            imageVector = icon,
+            contentDescription = null,
+            modifier = Modifier.size(18.dp).padding(top = 1.dp),
+            tint = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurface,
+            modifier = Modifier.weight(1f)
+        )
+    }
+}
+
+@Composable
 private fun DeleteSemesterDialog(
+    semesterName: String,
     isDeleting: Boolean,
     onConfirm: () -> Unit,
     onCancel: () -> Unit
 ) {
     MakConfirmDeletionDialog(
         title = "Usuń semestr",
-        text = "Usunięcie semestru usunie jego plan i dane. Tej operacji nie można cofnąć.",
+        text = "Usunięcie semestru „$semesterName” usunie jego plan i dane. Tej operacji nie można cofnąć.",
         isDeleting = isDeleting,
         onConfirm = onConfirm,
         onCancel = onCancel
@@ -525,11 +564,16 @@ fun SettingsNotificationsScreen(
     onBeforeClassNotificationsEnabled: (Boolean) -> Unit,
     onEveningHourSelected: (String) -> Unit,
     onBeforeClassLeadSelected: (String) -> Unit,
+    onGapEveningNotificationsEnabled: (Boolean) -> Unit,
+    onGapBeforeClassNotificationsEnabled: (Boolean) -> Unit,
+    onGapEveningHourSelected: (String) -> Unit,
+    onGapLeadSelected: (String) -> Unit,
     onRequestNotificationPermission: () -> Unit,
     onOpenAppSettings: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val notifications = state.notifications
+    var openDialog by rememberSaveable { mutableStateOf<NotificationDialog?>(null) }
     MakScreenContent(
         modifier = modifier
             .verticalScroll(rememberScrollState())
@@ -546,9 +590,9 @@ fun SettingsNotificationsScreen(
                 MakSecondaryAction(text = "Otwórz ustawienia aplikacji", onClick = onOpenAppSettings)
             }
         }
-        SettingsListSection("Kolizje w planie") {
+        SettingsListSection(title = null) {
             SettingsSwitchRow(
-                title = "Powiadomienia o kolizjach",
+                title = "Wszystkie powiadomienia",
                 checked = notifications.enabled,
                 onCheckedChange = { enabled ->
                     onNotificationsEnabled(enabled)
@@ -556,45 +600,170 @@ fun SettingsNotificationsScreen(
                 }
             )
         }
-        if (notifications.enabled) {
-            SettingsListSection("Dzień wcześniej") {
-                SettingsSwitchRow(
-                    title = "Powiadomienie wieczorne",
-                    checked = notifications.eveningEnabled,
-                    onCheckedChange = onEveningNotificationsEnabled
+        NotificationTopicSection(
+            title = "Kolizje",
+            topic = notifications.collisions,
+            onEveningCheckedChange = { enabled ->
+                onEveningNotificationsEnabled(enabled)
+                if (enabled && notificationsBlocked) onRequestNotificationPermission()
+            },
+            onOpenEvening = { openDialog = NotificationDialog.CollisionEvening },
+            onLeadCheckedChange = { enabled ->
+                onBeforeClassNotificationsEnabled(enabled)
+                if (enabled && notificationsBlocked) onRequestNotificationPermission()
+            },
+            onOpenLead = { openDialog = NotificationDialog.CollisionLead }
+        )
+        NotificationTopicSection(
+            title = "Okienka",
+            topic = notifications.gaps,
+            onEveningCheckedChange = { enabled ->
+                onGapEveningNotificationsEnabled(enabled)
+                if (enabled && notificationsBlocked) onRequestNotificationPermission()
+            },
+            onOpenEvening = { openDialog = NotificationDialog.GapEvening },
+            onLeadCheckedChange = { enabled ->
+                onGapBeforeClassNotificationsEnabled(enabled)
+                if (enabled && notificationsBlocked) onRequestNotificationPermission()
+            },
+            onOpenLead = { openDialog = NotificationDialog.GapLead }
+        )
+        MakHelperText(NOTIFICATION_DELAY_NOTE)
+        openDialog?.let { dialog ->
+            val isCollision = dialog == NotificationDialog.CollisionEvening || dialog == NotificationDialog.CollisionLead
+            val topicTitle = if (isCollision) "Kolizje" else "Okienka"
+            val topic = if (isCollision) notifications.collisions else notifications.gaps
+            val isEvening = dialog == NotificationDialog.CollisionEvening || dialog == NotificationDialog.GapEvening
+            NotificationChoiceDialog(
+                title = if (isEvening) "$topicTitle: dzień wcześniej" else "$topicTitle: przed zajęciami",
+                options = if (isEvening) topic.eveningHourOptions else topic.leadOptions,
+                optionLabel = { option -> if (isEvening) "O ${option.label}" else "${option.label} wcześniej" },
+                onSave = when (dialog) {
+                    NotificationDialog.CollisionEvening -> onEveningHourSelected
+                    NotificationDialog.CollisionLead -> onBeforeClassLeadSelected
+                    NotificationDialog.GapEvening -> onGapEveningHourSelected
+                    NotificationDialog.GapLead -> onGapLeadSelected
+                },
+                onDismiss = { openDialog = null }
+            )
+        }
+    }
+}
+
+/** The choice dialogs of the notification screen: evening hour or lead time, for collisions or gaps. */
+private enum class NotificationDialog { CollisionEvening, CollisionLead, GapEvening, GapLead }
+
+/** One topic of notification kinds (the evening and the before-class kind) in its own list section. */
+@Composable
+private fun NotificationTopicSection(
+    title: String,
+    topic: NotificationTopicUi,
+    onEveningCheckedChange: (Boolean) -> Unit,
+    onOpenEvening: () -> Unit,
+    onLeadCheckedChange: (Boolean) -> Unit,
+    onOpenLead: () -> Unit
+) {
+    val eveningValue = "O " + topic.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty()
+    val leadValue = topic.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty() + " wcześniej"
+    SettingsListSection(title) {
+        NotificationKindRow(
+            sectionTitle = title,
+            title = "Dzień wcześniej",
+            value = eveningValue,
+            checked = topic.eveningEnabled,
+            onCheckedChange = onEveningCheckedChange,
+            onOpenValue = onOpenEvening
+        )
+        SettingsRowDivider()
+        NotificationKindRow(
+            sectionTitle = title,
+            title = "Przed zajęciami",
+            value = leadValue,
+            checked = topic.beforeClassEnabled,
+            onCheckedChange = onLeadCheckedChange,
+            onOpenValue = onOpenLead
+        )
+    }
+}
+
+/** One notification kind: the title and its switch, with the value below that opens the choice dialog. */
+@Composable
+private fun NotificationKindRow(
+    sectionTitle: String,
+    title: String,
+    value: String,
+    checked: Boolean,
+    onCheckedChange: (Boolean) -> Unit,
+    onOpenValue: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(SettingsRowPadding),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)
+    ) {
+        Column(modifier = Modifier.weight(1f)) {
+            Text(title, style = MaterialTheme.typography.bodyLarge, fontWeight = FontWeight.SemiBold)
+            Row(
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .clickable(onClick = onOpenValue)
+                    .semantics(mergeDescendants = true) {
+                        contentDescription = "$sectionTitle $title, $value, zmień"
+                    },
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(MakSpacing.xs)
+            ) {
+                Text(
+                    text = value,
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.bodyMedium
                 )
-                if (notifications.eveningEnabled) {
-                    SettingsFieldItem {
-                        MakSelectField(
-                            label = "Godzina wieczorna",
-                            value = notifications.eveningHourOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                            options = notifications.eveningHourOptions,
-                            onSelected = { onEveningHourSelected(it.id) },
-                            optionLabel = { it.label }
-                        )
-                    }
-                }
-            }
-            SettingsListSection("Przed zajęciami") {
-                SettingsSwitchRow(
-                    title = "Powiadomienie przed zajęciami",
-                    checked = notifications.beforeClassEnabled,
-                    onCheckedChange = onBeforeClassNotificationsEnabled
+                Icon(
+                    imageVector = Icons.Outlined.ExpandMore,
+                    contentDescription = null,
+                    tint = MaterialTheme.colorScheme.primary,
+                    modifier = Modifier.size(18.dp)
                 )
-                if (notifications.beforeClassEnabled) {
-                    SettingsFieldItem {
-                        MakSelectField(
-                            label = "Wyprzedzenie przed zajęciami",
-                            value = notifications.leadOptions.firstOrNull { it.isSelected }?.label.orEmpty(),
-                            options = notifications.leadOptions,
-                            onSelected = { onBeforeClassLeadSelected(it.id) },
-                            optionLabel = { it.label }
-                        )
-                    }
-                }
             }
         }
-        if (notifications.enabled) MakHelperText(NOTIFICATION_DELAY_NOTE)
+        Switch(
+            checked = checked,
+            onCheckedChange = onCheckedChange,
+            modifier = Modifier.semantics { contentDescription = "$sectionTitle: $title" }
+        )
+    }
+}
+
+/** Single choice from [options]; the picked id survives rotation and is saved only on „Zapisz”. */
+@Composable
+private fun NotificationChoiceDialog(
+    title: String,
+    options: List<SettingsOptionUi>,
+    optionLabel: (SettingsOptionUi) -> String,
+    onSave: (String) -> Unit,
+    onDismiss: () -> Unit
+) {
+    var picked by rememberSaveable { mutableStateOf(options.firstOrNull { it.isSelected }?.id) }
+    MakDialog(
+        title = title,
+        onDismiss = onDismiss,
+        dismissAction = MakDialogAction("Anuluj", onDismiss),
+        confirmAction = MakDialogAction("Zapisz", {
+            picked?.let(onSave)
+            onDismiss()
+        })
+    ) {
+        Column(verticalArrangement = Arrangement.spacedBy(MakSpacing.sm)) {
+            options.forEach { option ->
+                MakChoiceRow(
+                    label = optionLabel(option),
+                    selected = option.id == picked,
+                    onClick = { picked = option.id }
+                )
+            }
+        }
     }
 }
 
@@ -668,6 +837,7 @@ fun ImportPreviewScreen(
                 ImportStatRow("Korekty tygodni", preview.overrideCount)
                 ImportStatRow("Notatki", preview.noteCount)
                 ImportStatRow("Zmiany wystąpień", preview.changeCount)
+                ImportStatRow("Dni wolne", preview.freeDayCount)
             }
             Text(
                 text = "Aktywny semestr: ${preview.activeSemesterName ?: "brak"}",

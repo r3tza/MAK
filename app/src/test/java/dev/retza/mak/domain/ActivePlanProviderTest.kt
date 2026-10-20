@@ -44,6 +44,38 @@ class ActivePlanProviderTest {
     }
 
     @Test
+    fun collisionAppearsOnNormalDayButNotOnFreeDayOfItsCalendar() {
+        val date = LocalDate.of(2026, 9, 21)
+        val semester = Semester(id = 1L, name = "Semestr")
+        val calendar = AcademicCalendar(id = 1L, startDate = date, endDate = date.plusDays(7), firstWeekType = WeekType.A)
+        val course = StudyProgram(1L, "Informatyka", "#137B71")
+        val assignment = SemesterProgram(1L, semester.id, course.id, calendar.id)
+        val data = ActivePlanData(
+            semester = semester,
+            classes = listOf(
+                classItem(1L, "first", semester.id, assignment.id, LocalTime.of(9, 0), LocalTime.of(10, 0)),
+                classItem(2L, "second", semester.id, assignment.id, LocalTime.of(9, 30), LocalTime.of(10, 30))
+            ),
+            courses = listOf(course),
+            semesterPrograms = listOf(assignment),
+            calendars = listOf(calendar)
+        )
+        val freeDay = FreeDay(id = 1L, academicCalendarId = calendar.id, startDate = date, endDate = date)
+        val provider = ActivePlanProvider()
+
+        val normal = provider.resolve(data = data, date = date.plusDays(7), display = PlanDisplaySettings.DEFAULT)
+        val free = provider.resolve(
+            data = data.copy(freeDays = listOf(freeDay)),
+            date = date,
+            display = PlanDisplaySettings.DEFAULT
+        )
+
+        assertEquals(1, normal.collisions.size)
+        assertTrue(free.collisions.isEmpty())
+        assertEquals(0, free.gapCount)
+    }
+
+    @Test
     fun hiddenStudyProgramLeavesNoClassesCollisionsOrGaps() {
         val shown = twoProgramPlan(PlanDisplaySettings.DEFAULT)
         val hidden = twoProgramPlan(PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf(3L)))

@@ -31,9 +31,8 @@ data class ClassItemUi(
 data class SemesterUi(
     val id: Long,
     val name: String,
-    val dateRangeLabel: String,
-    val firstWeekLabel: String,
-    val courseCountLabel: String,
+    val dateLabel: String,
+    val programsLabel: String,
     val classCountLabel: String,
     val isActive: Boolean = false
 )
@@ -47,7 +46,10 @@ data class CalendarDayUi(
     val isToday: Boolean = false,
     val isSelected: Boolean = false,
     val markers: List<CalendarMarkerUi> = emptyList(),
-    val hasMoreMarkers: Boolean = false
+    val hasMoreMarkers: Boolean = false,
+    val isFreeDay: Boolean = false,
+    val joinsPrevious: Boolean = false,
+    val joinsNext: Boolean = false
 )
 
 @Immutable
@@ -55,6 +57,7 @@ data class CalendarMarkerUi(
     val id: String,
     val contentDescription: String,
     val isChanged: Boolean = false,
+    val isCancelled: Boolean = false,
     val colorHex: String? = null
 )
 
@@ -63,7 +66,9 @@ data class CalendarMarkerUi(
 data class CalendarLegendUi(
     val label: String,
     val colorHex: String? = null,
-    val isChange: Boolean = false
+    val isChange: Boolean = false,
+    val isCancelled: Boolean = false,
+    val isFreeDay: Boolean = false
 )
 
 @Immutable
