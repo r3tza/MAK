@@ -14,7 +14,9 @@
         "Dodano powiadomienia o okienkach: wieczorem przed dniem z okienkiem i przed zajęciami, po których zaczyna się okienko. Domyślnie są wyłączone.",
         "Odwołany termin ma krzyżyk w kalendarzu „Planu”. Odwołać można też termin wcześniej zmieniony albo przeniesiony.",
         "Przed zamknięciem formularza zajęć albo edycji terminu z niezapisanymi zmianami aplikacja pyta, czy je odrzucić.",
-        "Przy zajęciach jednorazowych można wybrać typ „Egzamin” albo „Zaliczenie”."
+        "Typ „Egzamin” albo „Zaliczenie” od razu oznacza termin jednorazowy: zamiast dnia tygodnia i powtarzania wybierasz datę.",
+        "W dniu wolnym widget pokazuje nazwę dnia wolnego nad zajęciami, które się odbywają.",
+        "Powiadomienia mają na pasku stanu ikonę maku."
       ]
     },
     {
