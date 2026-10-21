@@ -2,6 +2,13 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-21: Plan na jutro wieczorem (I-111) i zakres następnej gałęzi
+
+- Decyzja użytkownika z 2026-10-21: 2 godziny po końcu ostatnich zajęć, a w dniu bez zajęć o 18:00, ekran „Dzisiaj” i widget pokazują następny dzień kalendarzowy. Gdy jutro nie ma zajęć, widać „Jutro bez zajęć”; karta podsumowania liczy pokazany dzień; przełącznik „Plan na jutro wieczorem” w sekcji „Wygląd”, domyślnie włączony. Odrzucone: przełączenie o stałej godzinie, godzina do wyboru w ustawieniach, opóźnienie do wyboru (1 h albo 2 h), najbliższy dzień z zajęciami zamiast jutra, karta bez liczb, funkcja bez możliwości wyłączenia.
+- Szczegóły zaproponowane przez agenta i potwierdzone przez użytkownika 2026-10-21: tytuł „Jutro, {dzień}, {data}”, nagłówki „Twój plan na jutro” i „Jutro bez zajęć”, brak przełączenia po zajęciach kończących się o 22:00 lub później, dzień wolny bez zajęć jak dzień bez zajęć, przybliżony alarm widgetu.
+- Ustawienie jest polem `PlanDisplaySettings` zapisanym tylko na telefonie, więc dociera do „Dzisiaj” i widgetu tą samą drogą co próg okienka i ukryte kierunki, a jego zmiana odświeża widget.
+- Decyzja użytkownika z 2026-10-21: gałąź `task/I-111-tomorrow-plan-and-ci` obejmuje I-111, I-109, I-105, I-106 i I-108; plan dla słabszych agentów w `PLAN.md`.
+
 ## 2026-10-20: Odbiór na emulatorze i trzy poprawki po nim
 
 - Fakty: Odbiór na emulatorze `Medium_Phone_2` z 2026-10-20 (I-44 do I-47, I-81, I-82, I-95 do I-98, I-104, O-04, O-08) wykazał: pole „Dzień tygodnia” wymagane przy zajęciach jednorazowych, ale pomijane przy zapisie; widget bez informacji o dniu wolnym, gdy w tym dniu są terminy jednorazowe; ikonę powiadomień widoczną jako pełne koło, bo `ic_launcher_foreground` jest kolorowa i nieprzezroczysta; brak pierwszego tygodnia miesiąca w wyborze daty w niskim oknie (otwarte w `KNOWN_ISSUES.md`).
@@ -170,9 +177,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Fakty: próba na emulatorze z lokalnym transportem kopii potwierdziła, że Android przywraca dane przy instalacji z pliku APK, a nie tylko ze Sklepu Play; dokumentacja Androida mówi to samo. Szablonowe reguły kopiowały też identyfikatory widgetów i zaplanowanych alarmów, które należą do jednego urządzenia. Porównywalne aplikacje (Tasks.org, Loop Habit Tracker, AnkiDroid, Fossify Calendar, Signal) mają kopię włączoną i różnią się zakresem kopiowanych danych.
 - Powód: mało techniczni odbiorcy rzadko robią ręczny eksport JSON, a kopia systemowa chroni plan przy resecie lub reinstalacji bez pracy po ich stronie. Lista dozwolonych plików sprawia, że przyszły stan synchronizacji domyślnie nie trafi do kopii, więc kopia nie koliduje z opcjonalną synchronizacją.
 - Odrzucone: wyłączenie kopii (`allowBackup="false"`); przełącznik kopii w ustawieniach aplikacji, bo użytkownik steruje kopią w ustawieniach Androida.
-
-## 2026-09-29: Decyzje po makietach audytu interfejsu (I-63)
-
-- Decyzja użytkownika po przeglądzie makiet w artefakcie „MAK: audyt interfejsu, przed i po”: karta podsumowania „Dzisiaj” dostaje w motywie ciemnym ciemniejszy gradient `#2C3F94` do `#1C2A6A` z krawędzią 1 dp w bieli o kryciu 8% (I-63, `FEATURES.md`, sekcja „Ekran Dzisiaj”). Przyciski ikon w górnym pasku zachowują obramowanie, a przełącznik widoku na „Planie” zachowuje obecny wygląd z cieniem.
-- Powód: w motywie ciemnym karta była najjaśniejszym elementem ekranu, a czerwona i zielona liczba miały na niej kontrast 3,3:1 i 3,5:1; nowy wariant daje 5,5:1 i 5,8:1. Usunięcie ramek w pasku było zmianą estetyczną, która tworzyłaby dwa style przycisków ikon, a zmiana przełącznika nie poprawiała kontrastu stanu zaznaczenia.
-- Odrzucone: przyciski ikon bez ramek w górnym pasku; przełącznik widoku z jasnym tłem akcentu i znacznikiem wyboru zamiast cienia.

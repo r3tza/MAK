@@ -50,6 +50,19 @@ Definicja okienka i reguła jego liczenia są w `DOMAIN.md`, sekcja „Okienka�
 
 `TodayViewModel` umieszcza liczbę zajęć, unikalnych kolizji i okienek w stanie widoku. Karta zachowuje obecny gradient w motywie jasnym i nie pokazuje ozdobnej ikony. W motywie ciemnym używa ciemniejszego gradientu `#2C3F94` do `#1C2A6A` z krawędzią 1 dp w bieli o kryciu 8% zamiast cienia, aby nie była najjaśniejszym elementem ekranu (decyzja z 2026-09-29, I-63). Nagłówek karty jest pogrubiony, większy od etykiet kolumn (17 sp), w pełni biały i oznaczony semantycznie jako nagłówek. Przy braku zajęć nagłówek brzmi „Dziś bez zajęć” zamiast „Twój plan na dziś”, a karta pokazuje trzy wartości równe zero, bez dodatkowego tekstu pod liczbami. Pionowe separatory między kolumnami są wyraźnie widoczne na gradiencie (biel 50% krycia, 40 dp wysokości). Układ musi zachować czytelność i semantykę przy szerokości 320 dp oraz w motywie jasnym i ciemnym. Etykiety kolumn są w pełni białe, mieszczą się w jednej linii i przy dużej czcionce zmniejszają się do 12 sp; przy skali 2,0 dopuszczalny jest wielokropek, a pełną etykietę czyta czytnik ekranu. Nad kartą są tylko data oraz wiersz z tygodniem A/B i semestrem, bez nadtytułu „Dzisiaj”, a tytuł listy „Zajęcia” nie ma podpisu o kolejności (decyzja z 2026-09-28: te elementy powtarzały zaznaczoną pozycję paska i stały porządek; nagłówek karty podsumowania zostaje).
 
+### Plan na jutro
+
+Decyzje użytkownika z 2026-10-21 (I-111):
+
+- 2 godziny po końcu ostatnich zajęć dnia „Dzisiaj” i widget pokazują plan następnego dnia kalendarzowego; w dniu bez zajęć przełączenie następuje o 18:00;
+- gdy jutro nie ma zajęć, ekran i widget pokazują „Jutro bez zajęć”, a nie najbliższy dzień z zajęciami;
+- karta podsumowania liczy zajęcia, kolizje i okienka pokazanego dnia;
+- funkcję wyłącza przełącznik „Plan na jutro wieczorem” w sekcji „Wygląd” ustawień, domyślnie włączony;
+- dzisiejsze zajęcia pozostają dostępne w „Planie”;
+- po przełączeniu tytuł ekranu brzmi „Jutro, {dzień tygodnia}, {data}” (na przykład „Jutro, środa, 22 października”), nagłówek karty „Twój plan na jutro”, a bez zajęć „Jutro bez zajęć”; jutro wolne wygląda jak dzień wolny dzisiaj (baner, nagłówek „Dzień wolny”); widget ma w nagłówku ten sam tytuł i żadne jutrzejsze zajęcia nie są oznaczone jako „Teraz” ani „Następne”;
+- gdy ostatnie zajęcia kończą się o 22:00 lub później, przełączenia nie ma; dzień wolny bez zajęć liczy się jak dzień bez zajęć (18:00);
+- widget przełącza się przybliżonym alarmem (`AlarmManager.set`, bez wybudzania), więc system może go opóźnić; ekran „Dzisiaj” przelicza moment przełączenia przy każdym powrocie na ekran.
+
 ### Struktura karty zajęć
 
 Kartę zajęć zbudować jako czytelną siatkę z dwiema głównymi kolumnami. Lewa kolumna ma stałą szerokość i pokazuje godzinę rozpoczęcia oraz zakończenia, a pod nimi ikonę stanu terminu, jeśli termin jest odwołany, zmieniony (także przeniesiony) albo jednorazowy (wariant bez pilli z 2026-09-28). Prawa zawiera dane zajęć. Kolumny rozdziela subtelny pionowy separator. W prawej części użyć cienkich poziomych separatorów między informacjami podstawowymi, statusem kolizji i notatkami. Nie obramowywać każdej komórki osobno.
@@ -279,7 +292,8 @@ Ekran główny dzieli ustawienia na sekcje:
    - pozycja „Zarządzaj semestrami” prowadząca do osobnego ekranu;
    - pozycja „Kierunki” prowadząca do listy globalnych kierunków.
 2. „Wygląd”:
-   - pozycja „Motyw” z bieżącą wartością „Systemowy”, „Jasny” albo „Ciemny”; dopóki jest to jedyne ustawienie wyglądu, wybór może pozostać na ekranie głównym.
+   - pozycja „Motyw” z bieżącą wartością „Systemowy”, „Jasny” albo „Ciemny”; dopóki jest to jedyne ustawienie wyglądu, wybór może pozostać na ekranie głównym;
+   - przełącznik „Plan na jutro wieczorem”, domyślnie włączony (I-111, sekcja „Plan na jutro”).
 3. „Powiadomienia”:
    - pozycja „Powiadomienia” (decyzja użytkownika z 2026-10-11, I-97) z liczbą włączonych rodzajów powiadomień: „Wszystkie włączone”, „Włączone: 2 z 4” albo „Wyłączone”; godzina i wyprzedzenie są tylko na ekranie „Powiadomienia”;
    - gdy włączony jest co najmniej jeden rodzaj, a system blokuje powiadomienia, drugi wiersz podsumowania pokazuje „Zablokowane przez system”;
