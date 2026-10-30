@@ -29,6 +29,7 @@ private val gapLeadMinutesKey = intPreferencesKey("gap_lead_minutes")
 private val gapThresholdMinutesKey = intPreferencesKey("gap_threshold_minutes")
 private val minimumBreakMinutesKey = intPreferencesKey("minimum_break_minutes")
 private val hiddenStudyProgramIdsKey = stringSetPreferencesKey("hidden_study_program_ids")
+private val showTomorrowInEveningKey = booleanPreferencesKey("show_tomorrow_in_evening")
 
 private const val defaultEveningHourMinutes = 20 * 60
 private const val defaultLeadMinutes = 30
@@ -52,7 +53,8 @@ class DataStoreSettingsPreferences(
                 .coerceIn(0, PlanDisplayLimits.maxMinimumBreakMinutes),
             gapThresholdMinutes = (stored[gapThresholdMinutesKey] ?: PlanDisplayLimits.DEFAULT_GAP_THRESHOLD_MINUTES)
                 .coerceIn(PlanDisplayLimits.minGapThresholdMinutes, PlanDisplayLimits.MAX_GAP_THRESHOLD_MINUTES),
-            hiddenProgramIds = storedHiddenProgramIds(stored[hiddenStudyProgramIdsKey])
+            hiddenProgramIds = storedHiddenProgramIds(stored[hiddenStudyProgramIdsKey]),
+            showTomorrowInEvening = stored[showTomorrowInEveningKey] ?: true
         )
     }.distinctUntilChanged()
 
@@ -118,6 +120,10 @@ class DataStoreSettingsPreferences(
         dataStore.edit { preferences ->
             preferences[minimumBreakMinutesKey] = minutes.coerceIn(0, PlanDisplayLimits.maxMinimumBreakMinutes)
         }
+    }
+
+    override suspend fun setShowTomorrowInEvening(enabled: Boolean) {
+        dataStore.edit { preferences -> preferences[showTomorrowInEveningKey] = enabled }
     }
 
     override suspend fun setStudyProgramHidden(id: Long, hidden: Boolean) {

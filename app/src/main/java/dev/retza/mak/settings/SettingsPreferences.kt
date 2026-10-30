@@ -42,6 +42,8 @@ interface SettingsPreferences {
 
     suspend fun setMinimumBreakMinutes(minutes: Int)
 
+    suspend fun setShowTomorrowInEvening(enabled: Boolean)
+
     suspend fun setStudyProgramHidden(id: Long, hidden: Boolean)
 
     /** After a plan from elsewhere replaced this one, the stored numbers name other programs. */

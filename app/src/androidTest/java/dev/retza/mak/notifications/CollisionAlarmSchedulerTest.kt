@@ -206,6 +206,7 @@ class CollisionAlarmSchedulerTest {
         override suspend fun setTheme(mode: ThemeMode) = Unit
         override suspend fun setGapThresholdMinutes(minutes: Int) = Unit
         override suspend fun setMinimumBreakMinutes(minutes: Int) = Unit
+        override suspend fun setShowTomorrowInEvening(enabled: Boolean) = Unit
         override suspend fun setStudyProgramHidden(id: Long, hidden: Boolean) = Unit
         override suspend fun clearHiddenStudyPrograms() = Unit
         override suspend fun retainHiddenStudyPrograms(existingIds: Set<Long>) = Unit
