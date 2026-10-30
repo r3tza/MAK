@@ -8,6 +8,7 @@ on:
 
 permissions:
   contents: read
+  pull-requests: read
 
 concurrency:
   group: checks-${{ github.ref }}
@@ -38,3 +39,53 @@ jobs:
 
       - name: Run JVM tests
         run: bash ./gradlew test
+
+      - name: Run Android Lint
+        run: bash ./gradlew lintDebug
+
+  data-changes:
+    name: data-changes
+    runs-on: ubuntu-latest
+    outputs:
+      data: ${{ steps.filter.outputs.data }}
+    steps:
+      - uses: actions/checkout@v7
+      - id: filter
+        uses: dorny/paths-filter@v3
+        with:
+          filters: |
+            data:
+              - 'app/src/main/java/dev/retza/mak/data/**'
+              - 'app/schemas/**'
+
+  room-tests:
+    name: room-tests
+    needs: data-changes
+    if: needs.data-changes.outputs.data == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v7
+
+      - name: Set up Java
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v6
+
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      - name: Run Room tests on an emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 34
+          arch: x86_64
+          ram-size: 2048M
+          script: ./gradlew connectedDebugAndroidTest "-Pandroid.testInstrumentationRunnerArguments.class=dev.retza.mak.data.RoomMigrationTest,dev.retza.mak.data.RoomPersistenceTest"

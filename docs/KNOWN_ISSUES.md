@@ -6,10 +6,9 @@ Stan na 2026-10-30. Ten rejestr obejmuje otwarte problemy potwierdzone przegląd
 
 Poprawki z audytu synchronizacji I-70 zostały zakończone i zaakceptowane po recenzji 2026-10-02. Rzeczywiste OAuth i Drive przeszły odbiór I-69 na wersji debug 2026-10-08. Logowanie przez klienta OAuth release na podpisanym APK działa, co użytkownik potwierdził 2026-10-19. Pozostałe dwie kwestie z audytu interfejsu (obramowane przyciski ikon w górnym pasku i trzy style zaznaczenia na „Planie”) użytkownik zamknął bez zmian (`LOG.md`, 2026-09-29).
 
-Problemy z odbioru na emulatorze `Medium_Phone_2` z 2026-10-20:
+Problem z odbioru na emulatorze `Medium_Phone_2` z 2026-10-20:
 
 - **Wybór daty w niskim oknie (I-44).** W oknie o wysokości 450 dp (okno swobodne na symulowanym tablecie) wybór daty nie pokazuje pierwszego tygodnia miesiąca: brakuje 1 do 4 października i 1 listopada 2026. Tych dni nie ma w drzewie widoku ani po przewinięciu, więc da się je wybrać tylko przez wpisanie daty. Dotyczy kryterium O-08 „wybór daty i godziny w całości”. Wybór godziny w tym samym oknie jest kompletny.
-- **Emulator w `STACK.md`.** Sekcja 5 wskazuje `Medium_Phone_A12`, którego nie ma na komputerze; nie ma też obrazu Androida 12. Odbiór z 2026-10-20 wykonano na `Medium_Phone_2` (Android 16, 2048 MiB) za zgodą użytkownika na ten jeden odbiór. Wybór stałego emulatora należy do użytkownika.
 
 Synchronizacja Google (I-68) weszła w wydaniu 0.3.0. Aplikacja jest opublikowana w Google Auth Platform (potwierdzenie użytkownika z 2026-10-30). Świadome ograniczenie projektu: Drive nie ma warunkowego zapisu, więc przy niemal równoczesnym wysłaniu z dwóch telefonów zostaje późniejsza wersja, a druga trafia do archiwum telefonu przy kolejnej synchronizacji. Szkic zajęć odtworzony po zakończeniu procesu aplikacji nie wstrzymuje pobrania planu; jeśli w tym czasie inny telefon zmienił plan, zapis szkicu może trafić do wpisu o tym samym numerze.
 

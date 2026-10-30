@@ -2,6 +2,13 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-30: Lint i testy Room w CI, krótsze wiersze kolejki, emulator na dwóch komputerach
+
+- Wykonanie na zlecenie użytkownika (I-105, I-106, decyzje użytkownika z 2026-10-20): `checks.yml` uruchamia `lintDebug` z bazą `app/lint-baseline.xml` (12 ostrzeżeń w chwili utworzenia), a zadanie `room-tests` uruchamia `RoomMigrationTest` i `RoomPersistenceTest` na emulatorze tylko przy zmianach w `data/` i `app/schemas/`. Opis w `STACK.md`, sekcje 5 i 7.
+- Wykonanie na zlecenie użytkownika (I-108): otwarte wiersze `QUEUE.md` skrócone do zadania, kryterium, źródła decyzji, nazw klas i testów oraz tego, co pozostało do odbioru; zasada w `WORKFLOW.md`.
+- Decyzja użytkownika z 2026-10-30: użytkownik pracuje na dwóch komputerach z różnymi emulatorami, więc `STACK.md` nie wskazuje jednego stałego AVD; agent używa AVD telefonu dostępnego na danym komputerze, z 2048 MiB, i podaje jego nazwę w raporcie.
+- Fakty z 2026-10-30: aplikacja jest opublikowana w Google Auth Platform (potwierdzenie użytkownika), a notatka o aktualizacji wszystkich telefonów weszła do wydania 0.4.0.
+
 ## 2026-10-21: Plan na jutro wieczorem (I-111) i zakres następnej gałęzi
 
 - Decyzja użytkownika z 2026-10-21: 2 godziny po końcu ostatnich zajęć, a w dniu bez zajęć o 18:00, ekran „Dzisiaj” i widget pokazują następny dzień kalendarzowy. Gdy jutro nie ma zajęć, widać „Jutro bez zajęć”; karta podsumowania liczy pokazany dzień; przełącznik „Plan na jutro wieczorem” w sekcji „Wygląd”, domyślnie włączony. Odrzucone: przełączenie o stałej godzinie, godzina do wyboru w ustawieniach, opóźnienie do wyboru (1 h albo 2 h), najbliższy dzień z zajęciami zamiast jutra, karta bez liczb, funkcja bez możliwości wyłączenia.
@@ -170,10 +177,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja użytkownika: każdy test ma wykrywać błąd, który może realnie wystąpić. Kryteria są w `STACK.md`, sekcja 5, „Sposób testowania”.
 - Przegląd: testów JVM jest 391 zamiast 422, a testów Compose 112 zamiast 118. Usunięto testy, które sprawdzały logikę atrapy repozytorium, tautologie modeli danych, dokładne wartości krzywych animacji albo powtarzały inny test; przypadki testów częściowo pokrywających się dołączono do testu, który zostaje. Testy ochrony przed podwójnym zapisem, anulowaniem i błędem zapisu zostały, bo każda akcja ma w kodzie osobną ścieżkę; ich uproszczenie wymaga wspólnej funkcji zapisu (I-64).
 - Znaleziony błąd: widget i powiadomienie miały własną odmianę liczebników i dla 22 do 24 pisały „22 kolizji” i „22 zajęć”. Używają teraz wspólnej `polishPlural`.
-
-## 2026-09-29: Jawna systemowa kopia zapasowa (I-14)
-
-- Decyzja użytkownika: systemowa kopia zapasowa Androida zostaje włączona i opisana w „Dane i prywatność”. Reguły kopii są listą dozwolonych plików (baza planu i plik ustawień), a kopia w chmurze działa tylko z szyfrowaniem end-to-end (`ARCHITECTURE.md`, sekcja 8, punkt 14).
-- Fakty: próba na emulatorze z lokalnym transportem kopii potwierdziła, że Android przywraca dane przy instalacji z pliku APK, a nie tylko ze Sklepu Play; dokumentacja Androida mówi to samo. Szablonowe reguły kopiowały też identyfikatory widgetów i zaplanowanych alarmów, które należą do jednego urządzenia. Porównywalne aplikacje (Tasks.org, Loop Habit Tracker, AnkiDroid, Fossify Calendar, Signal) mają kopię włączoną i różnią się zakresem kopiowanych danych.
-- Powód: mało techniczni odbiorcy rzadko robią ręczny eksport JSON, a kopia systemowa chroni plan przy resecie lub reinstalacji bez pracy po ich stronie. Lista dozwolonych plików sprawia, że przyszły stan synchronizacji domyślnie nie trafi do kopii, więc kopia nie koliduje z opcjonalną synchronizacją.
-- Odrzucone: wyłączenie kopii (`allowBackup="false"`); przełącznik kopii w ustawieniach aplikacji, bo użytkownik steruje kopią w ustawieniach Androida.
