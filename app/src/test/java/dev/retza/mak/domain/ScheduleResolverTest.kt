@@ -155,6 +155,40 @@ class ScheduleResolverTest {
     }
 
     @Test
+    fun weekAClassMovedIntoWeekBAppearsOnTheTarget() {
+        val source = LocalDate.of(2026, 1, 12)
+        val target = LocalDate.of(2026, 1, 21)
+        val change = OccurrenceChange(
+            id = 3L,
+            classId = 1L,
+            originalDate = source,
+            kind = OccurrenceChangeKind.MODIFIED,
+            targetDate = target
+        )
+        val weekA = classItem(recurrence = Recurrence.A_WEEK)
+
+        assertEquals(WeekType.B, resolve(target, listOf(weekA)).weeksByCalendarId.getValue(calendar.id).weekType)
+        assertEquals(listOf(source), resolve(target, listOf(weekA), changes = listOf(change)).occurrences.map { it.originalDate })
+    }
+
+    @Test
+    fun moveFromADayTheClassNoLongerHasIsIgnored() {
+        val formerTuesday = LocalDate.of(2026, 1, 13)
+        val target = LocalDate.of(2026, 1, 14)
+        val staleMove = OccurrenceChange(
+            id = 3L,
+            classId = 1L,
+            originalDate = formerTuesday,
+            kind = OccurrenceChangeKind.MODIFIED,
+            targetDate = target
+        )
+
+        val schedule = resolve(target, listOf(classItem(day = DayOfWeek.MONDAY)), changes = listOf(staleMove))
+
+        assertTrue(schedule.occurrences.isEmpty())
+    }
+
+    @Test
     fun occurrenceMovedOntoRegularDayOfSameClassKeepsDistinctIdentity() {
         val source = LocalDate.of(2026, 1, 5)
         val target = LocalDate.of(2026, 1, 12)

@@ -76,16 +76,6 @@ class CollisionDetectorTest {
     }
 
     @Test
-    fun breakLongerThanMinimumIsNotCollision() {
-        val classes = listOf(
-            item(1L, "first", LocalTime.of(8, 15), LocalTime.of(9, 45)),
-            item(2L, "second", LocalTime.of(9, 46), LocalTime.of(11, 15))
-        )
-
-        assertTrue(detector.detect(occurrences(classes), minimumBreakMinutes = 0).isEmpty())
-    }
-
-    @Test
     fun breakEqualToMinimumIsCollisionAndLongerIsNot() {
         val tenMinutes = listOf(
             item(1L, "first", LocalTime.of(8, 15), LocalTime.of(9, 45)),

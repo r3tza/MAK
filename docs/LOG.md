@@ -2,6 +2,12 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-10-30: Przegląd testów
+
+- Wykonanie na zlecenie użytkownika: przegląd testów według zasady z 2026-09-29 (`STACK.md`, sekcja 5). Usunięte albo połączone powtórzenia: progi i bloki w `GapCounterTest` (`countGaps` to liczba wyników `findGaps`), przerwa dłuższa od minimum w `CollisionDetectorTest`, początek tygodnia w `WeekCalculatorTest`, próg okienka w `TodayViewModelTest` i ukryte kierunki w `WidgetPlanLoaderTest` (sprawdza je `ActivePlanProviderTest`), trzy testy znaczników kalendarza i dwa testy przywracania terminu bez zmiany.
+- Nowe przypadki JVM: krótkie zajęcia w środku dłuższych nie kończą bloku przed okienkiem, korekta innego kalendarza nie zmienia tygodnia, zajęcia z tygodnia A przeniesione do tygodnia B są w dniu docelowym, przeniesienie z dnia, w którym zajęć już nie ma, jest pomijane, a przełączenie na plan jutra liczy się od zajęć kończących się najpóźniej.
+- `RoomPersistenceTest` (41 testów, wcześniej 31): pełny plan `RoomTestPlan` po ponownym otwarciu bazy, kaskady usunięcia semestru i kierunku w semestrze, jeden aktywny semestr, zastąpienie korekty tygodnia, notatki i zmiany terminu o tym samym kluczu, kaskada usunięcia zajęć, odrzucenie zapisu w cudzym semestrze, para godzin zmiany terminu, odświeżenie aktywnego planu po zapisie oraz kopia dni wolnych przy oddzieleniu kalendarza. Nowe testy są w tej klasie, bo zadanie `room-tests` uruchamia tylko dwie klasy (I-106).
+
 ## 2026-10-30: Lint i testy Room w CI, krótsze wiersze kolejki, emulator na dwóch komputerach
 
 - Wykonanie na zlecenie użytkownika (I-105, I-106, decyzje użytkownika z 2026-10-20): `checks.yml` uruchamia `lintDebug` z bazą `app/lint-baseline.xml` (12 ostrzeżeń w chwili utworzenia), a zadanie `room-tests` uruchamia `RoomMigrationTest` i `RoomPersistenceTest` na emulatorze tylko przy zmianach w `data/` i `app/schemas/`. Opis w `STACK.md`, sekcje 5 i 7.
@@ -173,9 +179,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Fakty: próba na `SemesterViewModel.saveSemester` przed resztą przeniesień pokazała, że wszystkie dotychczasowe testy przechodzą bez zmian, a mutacje funkcji i akcji wskazały, które testy pilnują przepływu. Wykryła też błędy planu: test podwójnego zapisu semestru i kierunku chroni przed drugim efektem zamknięcia ekranu, więc został; `finally` z warunkiem sesji trzeba kopiować dosłownie; błąd zapisu z poprzedniej sesji semestru nie miał testu, więc go dodano.
 - Wynik: testy JVM 391 przed zmianą i 373 po niej, pełne testy na urządzeniu 112 z 112.
 - Odrzucone: przeniesienie blokady podwójnego wywołania i komunikatu sukcesu do wspólnej funkcji, bo zmieniało kolejność komunikatu i efektu nawigacji i ukrywało pomyłki w przypisaniu flag; bazowa klasa ViewModelu zamiast funkcji rozszerzającej.
-
-## 2026-09-29: Testy tylko z realną wartością
-
-- Decyzja użytkownika: każdy test ma wykrywać błąd, który może realnie wystąpić. Kryteria są w `STACK.md`, sekcja 5, „Sposób testowania”.
-- Przegląd: testów JVM jest 391 zamiast 422, a testów Compose 112 zamiast 118. Usunięto testy, które sprawdzały logikę atrapy repozytorium, tautologie modeli danych, dokładne wartości krzywych animacji albo powtarzały inny test; przypadki testów częściowo pokrywających się dołączono do testu, który zostaje. Testy ochrony przed podwójnym zapisem, anulowaniem i błędem zapisu zostały, bo każda akcja ma w kodzie osobną ścieżkę; ich uproszczenie wymaga wspólnej funkcji zapisu (I-64).
-- Znaleziony błąd: widget i powiadomienie miały własną odmianę liczebników i dla 22 do 24 pisały „22 kolizji” i „22 zajęć”. Używają teraz wspólnej `polishPlural`.

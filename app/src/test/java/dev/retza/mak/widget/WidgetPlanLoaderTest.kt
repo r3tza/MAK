@@ -76,18 +76,6 @@ class WidgetPlanLoaderTest {
     }
 
     @Test
-    fun loaderLeavesOutHiddenStudyPrograms() = runTest {
-        val management = programming.copy(id = 4, semesterProgramId = 2, name = "Zarządzanie projektami")
-
-        val state = loader(
-            repositoryReturning(semester, planData(programming, management)),
-            InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings.DEFAULT.copy(hiddenProgramIds = setOf(2L)))
-        ).states().first()
-
-        assertEquals(listOf("Zarządzanie projektami"), (state as WidgetUiState.Ready).items.map { it.name })
-    }
-
-    @Test
     fun loaderSaysWhenEveryStudyProgramIsHidden() = runTest {
         val state = loader(
             repositoryReturning(semester, planData(programming)),

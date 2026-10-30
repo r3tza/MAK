@@ -27,6 +27,16 @@ class TomorrowPlanTest {
     }
 
     @Test
+    fun classEndingLastDecidesEvenWhenALaterOneStartsAfterIt() {
+        val occurrences = listOf(
+            occurrence(1L, LocalTime.of(8, 0), LocalTime.of(16, 30)),
+            occurrence(2L, LocalTime.of(13, 0), LocalTime.of(14, 0))
+        )
+
+        assertEquals(LocalTime.of(18, 30), tomorrowSwitchTime(occurrences))
+    }
+
+    @Test
     fun lastClassEndingBeforeTenStillSwitches() {
         val occurrences = listOf(occurrence(1L, LocalTime.of(20, 0), LocalTime.of(21, 59)))
 

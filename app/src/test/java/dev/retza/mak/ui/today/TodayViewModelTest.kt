@@ -66,27 +66,6 @@ class TodayViewModelTest {
     }
 
     @Test
-    fun gapCountingUsesThreshold() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        repository.classes += repository.classes.single().copy(
-            id = 2L,
-            name = "Analiza",
-            startTime = LocalTime.of(11, 1),
-            endTime = LocalTime.of(12, 0)
-        )
-        val preferences = InMemorySettingsPreferences(
-            initialPlanDisplay = PlanDisplaySettings(minimumBreakMinutes = 0, gapThresholdMinutes = 30)
-        )
-        val viewModel = todayViewModel(repository, preferences = preferences)
-        backgroundScope.launch { viewModel.today.collect {} }
-        advanceUntilIdle()
-
-        val state = viewModel.today.value
-        assertEquals(2, state.classCount)
-        assertEquals(1, state.gapCount)
-    }
-
-    @Test
     fun minimumBreakTurnsShortBreakIntoCollision() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         repository.classes += repository.classes.single().copy(

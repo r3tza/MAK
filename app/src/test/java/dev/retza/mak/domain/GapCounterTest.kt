@@ -10,52 +10,35 @@ class GapCounterTest {
     private val date = LocalDate.of(2026, 9, 21)
 
     @Test
-    fun gapEqualToThresholdIsNotCounted() {
+    fun breakLongerThanThresholdIsGapAndEqualIsNot() {
         val occurrences = listOf(
             occurrence(1L, "a", LocalTime.of(9, 0), LocalTime.of(10, 0)),
             occurrence(2L, "b", LocalTime.of(10, 30), LocalTime.of(11, 0))
         )
 
-        assertEquals(0, countGaps(occurrences, 30))
-        assertEquals(1, countGaps(occurrences, 29))
-    }
-
-    @Test
-    fun overlappingClassesFormOneBlock() {
-        val occurrences = listOf(
-            occurrence(1L, "a", LocalTime.of(9, 0), LocalTime.of(10, 0)),
-            occurrence(2L, "b", LocalTime.of(9, 30), LocalTime.of(10, 30))
-        )
-
-        assertEquals(0, countGaps(occurrences, 30))
-    }
-
-    @Test
-    fun countsEveryGapBetweenBlocks() {
-        val occurrences = listOf(
-            occurrence(1L, "a", LocalTime.of(9, 0), LocalTime.of(10, 0)),
-            occurrence(2L, "b", LocalTime.of(10, 31), LocalTime.of(11, 0)),
-            occurrence(3L, "c", LocalTime.of(12, 0), LocalTime.of(13, 0))
-        )
-
-        assertEquals(2, countGaps(occurrences, 30))
+        assertEquals(emptyList<Gap>(), findGaps(occurrences, 30))
+        assertEquals(1, findGaps(occurrences, 29).size)
     }
 
     @Test
     fun fewerThanTwoOccurrencesHaveNoGaps() {
-        assertEquals(0, countGaps(emptyList(), 30))
-        assertEquals(0, countGaps(listOf(occurrence(1L, "a", LocalTime.of(9, 0), LocalTime.of(10, 0))), 30))
+        assertEquals(emptyList<Gap>(), findGaps(emptyList(), 30))
+        assertEquals(emptyList<Gap>(), findGaps(listOf(occurrence(1L, "a", LocalTime.of(9, 0), LocalTime.of(10, 0))), 30))
     }
 
     @Test
-    fun findGapsReturnsRangeAndClassesBeforeGap() {
+    fun everyGapBetweenBlocksHasItsRangeAndClassesBeforeIt() {
         val a = occurrence(1L, "a", LocalTime.of(8, 0), LocalTime.of(9, 30))
         val b = occurrence(2L, "b", LocalTime.of(11, 0), LocalTime.of(12, 0))
+        val c = occurrence(3L, "c", LocalTime.of(14, 0), LocalTime.of(15, 0))
 
-        val gaps = findGaps(listOf(a, b), 30)
+        val gaps = findGaps(listOf(c, a, b), 30)
 
         assertEquals(
-            listOf(Gap(LocalTime.of(9, 30), LocalTime.of(11, 0), listOf(a.id))),
+            listOf(
+                Gap(LocalTime.of(9, 30), LocalTime.of(11, 0), listOf(a.id)),
+                Gap(LocalTime.of(12, 0), LocalTime.of(14, 0), listOf(b.id))
+            ),
             gaps
         )
     }
@@ -75,25 +58,14 @@ class GapCounterTest {
     }
 
     @Test
-    fun breakEqualToThresholdIsNotGap() {
-        val occurrences = listOf(
-            occurrence(1L, "a", LocalTime.of(9, 0), LocalTime.of(10, 0)),
-            occurrence(2L, "b", LocalTime.of(10, 30), LocalTime.of(11, 0))
-        )
+    fun shortClassInsideALongerOneDoesNotEndTheBlock() {
+        val long = occurrence(1L, "long", LocalTime.of(8, 0), LocalTime.of(12, 0))
+        val inside = occurrence(2L, "inside", LocalTime.of(9, 0), LocalTime.of(10, 0))
+        val after = occurrence(3L, "after", LocalTime.of(12, 40), LocalTime.of(14, 0))
 
-        assertEquals(emptyList<Gap>(), findGaps(occurrences, 30))
-    }
+        val gaps = findGaps(listOf(long, inside, after), 30)
 
-    @Test
-    fun countGapsMatchesFindGaps() {
-        val occurrences = listOf(
-            occurrence(1L, "a", LocalTime.of(9, 0), LocalTime.of(10, 0)),
-            occurrence(2L, "b", LocalTime.of(11, 0), LocalTime.of(12, 0)),
-            occurrence(3L, "c", LocalTime.of(14, 0), LocalTime.of(15, 0))
-        )
-
-        assertEquals(2, countGaps(occurrences, 30))
-        assertEquals(2, findGaps(occurrences, 30).size)
+        assertEquals(listOf(Gap(LocalTime.of(12, 0), LocalTime.of(12, 40), listOf(long.id, inside.id))), gaps)
     }
 
     private fun occurrence(id: Long, name: String, start: LocalTime, end: LocalTime) = PlannedOccurrence(

@@ -337,10 +337,6 @@ class OccurrenceViewModelTest {
         viewModel.open("42:not-a-date")
         advanceUntilIdle()
         assertEquals(null, viewModel.selectedClassId.value)
-
-        viewModel.open(OccurrenceArgs(99L, LocalDate.of(2026, 9, 21)))
-        advanceUntilIdle()
-        assertEquals(null, viewModel.selectedClassId.value)
     }
 
     @Test
@@ -797,27 +793,17 @@ class OccurrenceViewModelTest {
     }
 
     @Test
-    fun requestRestoreWithoutChangeSetsNoFlag() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val viewModel = occurrenceViewModel(repository)
-        advanceUntilIdle()
-        viewModel.open("1:2026-09-21")
-        advanceUntilIdle()
-
-        viewModel.requestRestoreOccurrence()
-        advanceUntilIdle()
-
-        assertFalse(viewModel.details.value.showRestoreConfirmation)
-    }
-
-    @Test
-    fun restoreWithoutChangeDoesNothing() = runTest(mainDispatcher) {
+    fun restoringScheduledOccurrenceAsksNothingAndChangesNothing() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
+
+        viewModel.requestRestoreOccurrence()
+        advanceUntilIdle()
+        assertFalse(viewModel.details.value.showRestoreConfirmation)
 
         viewModel.restoreOccurrence()
         advanceUntilIdle()

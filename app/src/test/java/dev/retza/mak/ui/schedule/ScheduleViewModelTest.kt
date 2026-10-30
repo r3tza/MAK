@@ -498,21 +498,7 @@ class ScheduleViewModelTest {
     }
 
     @Test
-    fun calendarShowsThreeMarkersWithoutOverflow() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        addMondayClasses(repository, 3)
-        val viewModel = viewModel(repository)
-        viewModel.selectView(ScheduleView.Calendar)
-        backgroundScope.launch { viewModel.schedule.collect {} }
-        advanceUntilIdle()
-
-        val day = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }
-        assertEquals(3, day.markers.size)
-        assertFalse(day.hasMoreMarkers)
-    }
-
-    @Test
-    fun calendarShowsFiveMarkersWithoutOverflow() = runTest(mainDispatcher) {
+    fun calendarShowsFiveMarkersAndFromSixClassesFourWithOverflow() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         addMondayClasses(repository, 5)
         val viewModel = viewModel(repository)
@@ -520,23 +506,22 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
-        val day = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }
-        assertEquals(5, day.markers.size)
-        assertFalse(day.hasMoreMarkers)
-    }
+        val five = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }
+        assertEquals(5, five.markers.size)
+        assertFalse(five.hasMoreMarkers)
 
-    @Test
-    fun calendarShowsFourMarkersAndOverflowAtSixClasses() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        addMondayClasses(repository, 6)
-        val viewModel = viewModel(repository)
-        viewModel.selectView(ScheduleView.Calendar)
-        backgroundScope.launch { viewModel.schedule.collect {} }
+        repository.classes += repository.classes.first().copy(
+            id = 6L,
+            name = "Zajęcia 6",
+            startTime = LocalTime.of(14, 0),
+            endTime = LocalTime.of(15, 0)
+        )
+        repository.notifyDataChanged()
         advanceUntilIdle()
 
-        val day = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }
-        assertEquals(4, day.markers.size)
-        assertTrue(day.hasMoreMarkers)
+        val six = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }
+        assertEquals(4, six.markers.size)
+        assertTrue(six.hasMoreMarkers)
     }
 
     @Test
