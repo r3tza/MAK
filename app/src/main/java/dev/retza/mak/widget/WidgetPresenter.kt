@@ -15,9 +15,10 @@ class WidgetPresenter {
         date: LocalDate,
         semesterName: String,
         plan: ActivePlan,
-        now: LocalTime
+        now: LocalTime?,
+        isTomorrow: Boolean = false
     ): WidgetUiState {
-        val dateLabel = widgetDateLabel(date)
+        val dateLabel = if (isTomorrow) "Jutro, " + widgetDateLabel(date) else widgetDateLabel(date)
         val weekStatus = plan.schedule.weekStatus
         if (weekStatus == WeekStatus.OutsideSemester) {
             return WidgetUiState.OutsideSemester(dateLabel, semesterName)
@@ -28,11 +29,11 @@ class WidgetPresenter {
             if (freeDay != null) {
                 return WidgetUiState.FreeDay(dateLabel, weekLabel, freeDayDetail(freeDay, date))
             }
-            return WidgetUiState.EmptyDay(dateLabel, weekLabel)
+            return WidgetUiState.EmptyDay(dateLabel, weekLabel, isTomorrow)
         }
 
         val labelsByOccurrence = collisionLabels(plan.collisions)
-        val nextId = plan.schedule.occurrences.firstOrNull { it.startTime.isAfter(now) }?.id
+        val nextId = now?.let { time -> plan.schedule.occurrences.firstOrNull { it.startTime.isAfter(time) }?.id }
         return WidgetUiState.Ready(
             dateLabel = dateLabel,
             weekLabel = weekLabel,
@@ -57,6 +58,7 @@ class WidgetPresenter {
                     classNote = occurrence.classNote?.trim()?.ifEmpty { null },
                     occurrenceNote = occurrence.occurrenceNoteBody?.trim()?.ifEmpty { null },
                     phase = when {
+                        now == null -> WidgetOccurrencePhase.Scheduled
                         !now.isBefore(occurrence.endTime) -> WidgetOccurrencePhase.Past
                         !now.isBefore(occurrence.startTime) -> WidgetOccurrencePhase.Current
                         occurrence.id == nextId -> WidgetOccurrencePhase.Next

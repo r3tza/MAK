@@ -21,6 +21,7 @@ import java.time.Clock
 import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.CancellationException
@@ -104,6 +105,60 @@ class WidgetPlanLoaderTest {
     }
 
     @Test
+    fun loaderShowsTodayUntilTwoHoursAfterLastClassThenTomorrow() = runTest {
+        val calls = mutableListOf<LocalDateTime?>()
+        val repository = repositoryReturning(semester, planData(programming))
+
+        val beforeSwitch = loader(
+            repository,
+            clock = clockAt("2026-09-21T08:00:00Z"),
+            daySwitchScheduler = WidgetDaySwitchScheduler { calls += it }
+        ).states().first()
+
+        assertTrue(beforeSwitch is WidgetUiState.Ready)
+        assertEquals(listOf<LocalDateTime?>(LocalDateTime.of(2026, 9, 21, 12, 0)), calls)
+
+        calls.clear()
+        val afterSwitch = loader(
+            repository,
+            clock = clockAt("2026-09-21T12:30:00Z"),
+            daySwitchScheduler = WidgetDaySwitchScheduler { calls += it }
+        ).states().first()
+
+        assertTrue(afterSwitch is WidgetUiState.EmptyDay)
+        assertTrue((afterSwitch as WidgetUiState.EmptyDay).isTomorrow)
+        assertTrue(afterSwitch.dateLabel.startsWith("Jutro, "))
+        assertEquals(listOf<LocalDateTime?>(null), calls)
+    }
+
+    @Test
+    fun loaderKeepsTodayWhenTomorrowSwitchIsTurnedOff() = runTest {
+        val calls = mutableListOf<LocalDateTime?>()
+
+        val state = loader(
+            repositoryReturning(semester, planData(programming)),
+            InMemorySettingsPreferences(initialPlanDisplay = PlanDisplaySettings.DEFAULT.copy(showTomorrowInEvening = false)),
+            clock = clockAt("2026-09-21T12:30:00Z"),
+            daySwitchScheduler = WidgetDaySwitchScheduler { calls += it }
+        ).states().first()
+
+        assertTrue(state is WidgetUiState.Ready)
+        assertEquals(listOf<LocalDateTime?>(null), calls)
+    }
+
+    @Test
+    fun loaderCancelsDaySwitchWithoutActiveSemester() = runTest {
+        val calls = mutableListOf<LocalDateTime?>()
+
+        loader(
+            repositoryReturning(null, null),
+            daySwitchScheduler = WidgetDaySwitchScheduler { calls += it }
+        ).states().first()
+
+        assertEquals(listOf<LocalDateTime?>(null), calls)
+    }
+
+    @Test
     fun loaderMapsReadFailureToErrorState() = runTest {
         val repository = repositoryFailingWith(IllegalStateException("database closed"))
 
@@ -154,13 +209,18 @@ class WidgetPlanLoaderTest {
 
     private fun TestScope.loader(
         repository: Any,
-        preferences: InMemorySettingsPreferences = InMemorySettingsPreferences()
+        preferences: InMemorySettingsPreferences = InMemorySettingsPreferences(),
+        clock: Clock = Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), ZoneId.of("UTC")),
+        daySwitchScheduler: WidgetDaySwitchScheduler = WidgetDaySwitchScheduler {}
     ) = WidgetPlanLoader(
         semesterRepository = repository as SemesterRepository,
         activePlanSource = ActivePlanSource(repository, repository as ScheduleRepository, preferences, backgroundScope),
         activePlanProvider = ActivePlanProvider(),
-        clock = Clock.fixed(Instant.parse("2026-09-21T08:00:00Z"), ZoneId.of("UTC"))
+        clock = clock,
+        daySwitchScheduler = daySwitchScheduler
     )
+
+    private fun clockAt(moment: String) = Clock.fixed(Instant.parse(moment), ZoneId.of("UTC"))
 
     private fun repositoryFailingWith(error: Throwable): Any = Proxy.newProxyInstance(
         SemesterRepository::class.java.classLoader,

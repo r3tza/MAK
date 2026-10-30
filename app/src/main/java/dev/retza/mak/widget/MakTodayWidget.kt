@@ -68,7 +68,8 @@ class MakTodayWidget : GlanceAppWidget() {
             semesterRepository = koin.get(),
             activePlanSource = koin.get(),
             activePlanProvider = koin.get(),
-            clock = koin.get()
+            clock = koin.get(),
+            daySwitchScheduler = AlarmWidgetDaySwitchScheduler(context, koin.get())
         ).states().stateIn(this)
 
         provideContent {
@@ -111,7 +112,7 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
             is WidgetUiState.OutsideSemester -> WidgetMessage("Poza zakresem semestru")
             is WidgetUiState.AllProgramsHidden -> WidgetMessage("Wszystkie kierunki są ukryte na tym telefonie.")
             is WidgetUiState.EmptyDay -> {
-                WidgetMessage("Brak zajęć na dziś")
+                WidgetMessage(if (state.isTomorrow) "Jutro bez zajęć" else "Brak zajęć na dziś")
             }
             is WidgetUiState.FreeDay -> WidgetFreeDay(state)
             is WidgetUiState.Error -> WidgetMessage(state.message)

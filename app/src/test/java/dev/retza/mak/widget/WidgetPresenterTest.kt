@@ -140,6 +140,41 @@ class WidgetPresenterTest {
     }
 
     @Test
+    fun tomorrowStateHasTomorrowLabelAndNoCurrentOrNextPhase() {
+        val classes = listOf(
+            classItem(1L, "first", LocalTime.of(9, 0), LocalTime.of(10, 0)),
+            classItem(2L, "second", LocalTime.of(10, 30), LocalTime.of(11, 30))
+        )
+        val plan = ActivePlanProvider().resolve(
+            ActivePlanData(semester, classes, courses = listOf(course), semesterPrograms = listOf(assignment), calendars = listOf(calendar)),
+            date,
+            PlanDisplaySettings.DEFAULT
+        )
+
+        val state = WidgetPresenter().present(date, semester.name, plan, now = null, isTomorrow = true) as WidgetUiState.Ready
+
+        assertTrue(state.dateLabel.startsWith("Jutro, "))
+        assertEquals("Jutro, " + widgetDateLabel(date), state.dateLabel)
+        assertEquals(listOf("1:$date", "2:$date"), state.items.map { it.id })
+        assertTrue(state.items.all { it.phase == WidgetOccurrencePhase.Scheduled })
+    }
+
+    @Test
+    fun tomorrowEmptyDayIsMarkedAsTomorrow() {
+        val emptyPlan = ActivePlanProvider().resolve(
+            ActivePlanData(semester = semester, classes = emptyList(), courses = listOf(course), semesterPrograms = listOf(assignment), calendars = listOf(calendar)),
+            date,
+            PlanDisplaySettings.DEFAULT
+        )
+
+        val state = WidgetPresenter().present(date, semester.name, emptyPlan, now = null, isTomorrow = true)
+
+        assertTrue(state is WidgetUiState.EmptyDay)
+        assertEquals("Jutro, " + widgetDateLabel(date), state.dateLabel)
+        assertTrue((state as WidgetUiState.EmptyDay).isTomorrow)
+    }
+
+    @Test
     fun presenterShowsPlanWhenActiveCalendarsHaveMixedWeekTypes() {
         val calendarA = dev.retza.mak.domain.AcademicCalendar(
             id = 1L,
