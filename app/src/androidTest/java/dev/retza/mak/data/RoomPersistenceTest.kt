@@ -75,11 +75,11 @@ class RoomPersistenceTest {
     @Test
     fun wholePlanIsReadBackUnchangedAfterOpeningDatabaseAgain() = runBlocking {
         val plan = RoomTestPlan.data()
-        database = openDatabase()
+        database = openFileDatabase()
         backup().replaceAll(plan)
         database!!.close()
 
-        database = openDatabase()
+        database = openFileDatabase()
         val stored = backup().snapshot()
 
         assertEquals(plan.sortedById(), stored.sortedById())
@@ -473,67 +473,15 @@ class RoomPersistenceTest {
     }
 
     @Test
-    fun replaceAllDataSwapsWholeBackup() = runBlocking {
+    fun replaceAllLeavesNothingOfThePreviousPlan() = runBlocking {
         database = openDatabase()
-        val repository = repository()
-        val oldSemesterId = database!!.semesterDao().insert(semester("Stary", true))
-        database!!.studyProgramDao().insert(StudyProgramEntity(name = "Stary kierunek", color = "#000000"))
+        database!!.semesterDao().insert(SemesterEntity(id = 900, name = "Stary", isActive = true))
+        database!!.studyProgramDao().insert(StudyProgramEntity(id = 900, name = "Stary kierunek", color = "#000000"))
 
-        val newSemester = SemesterEntity(id = 500, name = "Nowy", isActive = true)
-        val newProgram = StudyProgramEntity(id = 500, name = "Nowy kierunek", color = "#111111")
-        val newCalendar = AcademicCalendarEntity(
-            id = 501,
-            semesterId = 500,
-            startDate = LocalDate.of(2026, 10, 1),
-            endDate = LocalDate.of(2027, 2, 28),
-            firstWeekType = WeekType.A
-        )
-        val newAssignment = SemesterProgramEntity(
-            id = 502,
-            semesterId = 500,
-            studyProgramId = 500,
-            academicCalendarId = 501
-        )
-        val newClass = ClassEntity(
-            id = 503,
-            semesterId = 500,
-            semesterProgramId = 502,
-            name = "Nowe zajęcia",
-            type = "Wykład",
-            teacherName = null,
-            dayOfWeek = DayOfWeek.MONDAY,
-            startTime = LocalTime.of(8, 0),
-            endTime = LocalTime.of(9, 30),
-            room = null,
-            building = null,
-            group = null,
-            recurrence = Recurrence.EVERY_WEEK,
-            date = null,
-            classNote = null
-        )
-        val data = BackupData(
-            studyPrograms = listOf(newProgram.toRecord()),
-            semesters = listOf(
-                SemesterBackup(
-                    semester = newSemester.toRecord(),
-                    calendars = listOf(newCalendar.toRecord()),
-                    programs = listOf(newAssignment.toRecord()),
-                    classes = listOf(newClass.toRecord()),
-                    weekOverrides = emptyList(),
-                    freeDays = emptyList(),
-                    occurrenceNotes = emptyList(),
-                    occurrenceChanges = emptyList()
-                )
-            )
-        )
+        val activeId = backup().replaceAll(RoomTestPlan.data())
 
-        val activeId = RoomPlanBackupGateway(database!!, fixedClock).replaceAll(data)
-
-        assertEquals(500L, activeId)
-        assertNull(database!!.semesterDao().findById(oldSemesterId))
-        assertEquals(listOf(500L), repository.observeSemesters().first().map { it.id })
-        assertEquals(listOf(500L), repository.observeStudyPrograms().first().map { it.id })
-        assertEquals(1, RoomScheduleRepository(database!!).observeActivePlanData(500).first()!!.classes.size)
+        assertEquals(RoomTestPlan.ACTIVE_SEMESTER, activeId)
+        assertEquals(RoomTestPlan.data().sortedById(), backup().snapshot().sortedById())
     }
 
     @Test
@@ -1176,5 +1124,8 @@ class RoomPersistenceTest {
     )
 
     private fun openDatabase(): AppDatabase =
+        Room.inMemoryDatabaseBuilder(context, AppDatabase::class.java).build()
+
+    private fun openFileDatabase(): AppDatabase =
         Room.databaseBuilder(context, AppDatabase::class.java, databaseFileName).build()
 }
