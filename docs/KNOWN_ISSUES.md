@@ -1,6 +1,6 @@
 # Znane problemy
 
-Stan na 2026-10-20. Ten rejestr obejmuje otwarte problemy potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`, a zadania i statusy `QUEUE.md`. Naprawione problemy nie są tu powtarzane; ich historia jest w sekcji „Zakończone” w `QUEUE.md` i w `LOG.md`.
+Stan na 2026-10-30. Ten rejestr obejmuje otwarte problemy potwierdzone przeglądem kodu oraz odbiór, którego jeszcze nie wykonano na urządzeniu. Docelowe zachowanie opisują `FEATURES.md`, `DOMAIN.md` i `ARCHITECTURE.md`, a zadania i statusy `QUEUE.md`. Naprawione problemy nie są tu powtarzane; ich historia jest w sekcji „Zakończone” w `QUEUE.md` i w `LOG.md`.
 
 ## Otwarte problemy
 
@@ -23,7 +23,7 @@ Poniższe pozycje mają gotowy kod; brakuje potwierdzenia na urządzeniu. Szczeg
 
 1. **Tryb tabletowy (I-45 do I-47).** Kod istnieje: klasy szerokości okna z progami 600 i 840 dp, obrót na urządzeniach o najkrótszym boku od 600 dp, boczny pasek nawigacji od 600 dp, treść najwyżej 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp i dialogi najwyżej 560 dp z przewijaniem. Na emulatorze z symulowanym dużym ekranem układ jest zgodny z wariantem A, a układ telefonu przy 411 i 320 dp jest identyczny jak przed zmianą. Do potwierdzenia (O-08): prawdziwy tablet albo telefon składany w pionie, w poziomie i w podzielonym ekranie, zachowanie ekranu i wpisanych danych po obrocie oraz układ poziomy wyboru godziny z I-44.
 2. **Powiadomienia (O-04).** Na emulatorze przeszły 2026-10-20 (szczegóły w `QUEUE.md`). Do potwierdzenia na telefonie: zgoda, alarmy, zachowanie po restarcie telefonu i otwarcie zajęć z powiadomienia.
-3. **Gałąź `task/settings-and-gap-notifications` (I-81, I-82, I-95 do I-103) i plan na jutro (I-111).** Kod jest gotowy i sprawdzony na emulatorze, w tym poprawki po przeglądzie z 2026-10-13. Do potwierdzenia na telefonie użytkownika: scenariusze z wierszy tych zadań w `QUEUE.md`, w tym synchronizacja dni wolnych między dwoma telefonami po aktualizacji obu (na dwóch emulatorach przeszła 2026-10-19) i powiadomienia o okienkach. I-111 ma tylko testy JVM i skompilowany test Compose, bez sprawdzenia na emulatorze.
+3. **Wydanie 0.4.0 (I-81, I-82, I-95 do I-104, I-110) i plan na jutro (I-111).** Kod zmian z wydania 0.4.0 jest sprawdzony na emulatorze, w tym poprawki po przeglądzie z 2026-10-13. Do potwierdzenia na telefonie użytkownika: scenariusze z wierszy tych zadań w `QUEUE.md`, w tym synchronizacja dni wolnych między dwoma telefonami po aktualizacji obu (na dwóch emulatorach przeszła 2026-10-19) i powiadomienia o okienkach. I-111 ma tylko testy JVM i skompilowany test Compose, bez sprawdzenia na emulatorze.
 
 ## Zamknięte w kodzie, bez odbioru urządzeniowego
 
