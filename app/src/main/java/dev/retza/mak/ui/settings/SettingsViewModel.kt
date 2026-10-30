@@ -54,7 +54,8 @@ private data class PreferencesSnapshot(
     val theme: ThemeMode,
     val notifications: CollisionNotificationPreferences,
     val gapThresholdMinutes: Int,
-    val minimumBreakMinutes: Int
+    val minimumBreakMinutes: Int,
+    val showTomorrowInEvening: Boolean
 )
 
 private data class SettingsLocalState(
@@ -101,7 +102,13 @@ class SettingsViewModel(
         preferences.collisionNotifications,
         preferences.planDisplay
     ) { theme, notifications, display ->
-        PreferencesSnapshot(theme, notifications, display.gapThresholdMinutes, display.minimumBreakMinutes)
+        PreferencesSnapshot(
+            theme,
+            notifications,
+            display.gapThresholdMinutes,
+            display.minimumBreakMinutes,
+            display.showTomorrowInEvening
+        )
     }
 
     val settings: StateFlow<SettingsUiState> = combine(
@@ -267,6 +274,16 @@ class SettingsViewModel(
         }
     }
 
+    fun setShowTomorrowInEvening(enabled: Boolean) {
+        viewModelScope.launchUiOperation(
+            feedbackSink = feedbackSink,
+            errorMessage = "Nie udało się zapisać ustawienia.",
+            onFinish = {}
+        ) {
+            preferences.setShowTomorrowInEvening(enabled)
+        }
+    }
+
     fun setMinimumBreakMinutes(id: String) {
         val minutes = id.toIntOrNull() ?: return
         if (local.value.isSavingMinimumBreak) return
@@ -393,6 +410,7 @@ private fun buildSettingsState(
     },
     activeSemesterId = activeData?.semester?.id,
     theme = preferences.theme,
+    showTomorrowInEvening = preferences.showTomorrowInEvening,
     gapThresholdOptions = PlanDisplayLimits.gapThresholdOptions.map { minutes ->
         SettingsOptionUi(
             id = minutes.toString(),

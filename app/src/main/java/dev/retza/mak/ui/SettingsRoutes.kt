@@ -67,6 +67,7 @@ internal fun NavGraphBuilder.settingsRoute(
             onSemesterSelected = settingsViewModel::selectSemester,
             onAddSemester = onAddSemester,
             onThemeSelected = settingsViewModel::selectTheme,
+            onShowTomorrowChanged = settingsViewModel::setShowTomorrowInEvening,
             onGapThresholdSelected = settingsViewModel::setGapThresholdMinutes,
             onMinimumBreakSelected = settingsViewModel::setMinimumBreakMinutes,
             notificationsBlocked = notificationsBlocked,

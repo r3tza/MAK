@@ -108,6 +108,7 @@ data class SettingsUiState(
     val semesters: List<SemesterUi> = emptyList(),
     val activeSemesterId: Long? = null,
     val theme: ThemeMode = ThemeMode.System,
+    val showTomorrowInEvening: Boolean = true,
     val gapThresholdOptions: List<SettingsOptionUi> = emptyList(),
     val minimumBreakOptions: List<SettingsOptionUi> = emptyList(),
     val semesterToDeleteId: Long? = null,
@@ -129,6 +130,7 @@ fun SettingsScreen(
     onSemesterSelected: (Long) -> Unit,
     onAddSemester: () -> Unit,
     onThemeSelected: (ThemeMode) -> Unit,
+    onShowTomorrowChanged: (Boolean) -> Unit = {},
     onGapThresholdSelected: (String) -> Unit,
     onMinimumBreakSelected: (String) -> Unit,
     notificationsBlocked: Boolean,
@@ -203,6 +205,12 @@ fun SettingsScreen(
                         optionLabel = { it.label() }
                     )
                 }
+                SettingsRowDivider()
+                SettingsSwitchRow(
+                    title = "Plan na jutro wieczorem",
+                    checked = state.showTomorrowInEvening,
+                    onCheckedChange = onShowTomorrowChanged
+                )
             }
             SettingsListSection("Powiadomienia") {
                 val notificationsStatus = notificationsStatus(state.notifications, notificationsBlocked)

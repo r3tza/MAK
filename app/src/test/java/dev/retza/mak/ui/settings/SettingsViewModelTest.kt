@@ -384,6 +384,22 @@ class SettingsViewModelTest {
     }
 
     @Test
+    fun tomorrowInEveningSwitchPersistsAndMapsToState() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val preferences = InMemorySettingsPreferences()
+        val viewModel = viewModel(repository, preferences)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+        assertTrue(viewModel.settings.value.showTomorrowInEvening)
+
+        viewModel.setShowTomorrowInEvening(false)
+        advanceUntilIdle()
+
+        assertFalse(preferences.planDisplay.first().showTomorrowInEvening)
+        assertFalse(viewModel.settings.value.showTomorrowInEvening)
+    }
+
+    @Test
     fun prepareImportAcceptsValidSnapshotAndEmitsOpenEffect() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)

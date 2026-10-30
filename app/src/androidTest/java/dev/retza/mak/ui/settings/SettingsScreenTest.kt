@@ -137,6 +137,43 @@ class SettingsScreenTest {
     }
 
     @Test
+    fun tomorrowPlanSwitchReportsNewValueAt320Dp() {
+        var changedTo: Boolean? = null
+
+        composeTestRule.setContent {
+            MAKTheme(dynamicColor = false) {
+                Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
+                    SettingsScreen(
+                        state = SettingsUiState(
+                            semesters = listOf(semester),
+                            activeSemesterId = 1L,
+                            showTomorrowInEvening = true,
+                            gapThresholdOptions = listOf(SettingsOptionUi("30", "30 min", true)),
+                            minimumBreakOptions = listOf(SettingsOptionUi("0", "0 min", true)),
+                        ),
+                        onOpenSemesters = {},
+                        onOpenPrograms = {},
+                        onOpenNotifications = {},
+                        onOpenData = {},
+                        onOpenAbout = {},
+                        onSemesterSelected = {},
+                        onAddSemester = {},
+                        onThemeSelected = {},
+                        onShowTomorrowChanged = { changedTo = it },
+                        onGapThresholdSelected = {},
+                        onMinimumBreakSelected = {},
+                        notificationsBlocked = false,
+                    )
+                }
+            }
+        }
+
+        composeTestRule.onNodeWithText("Plan na jutro wieczorem").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Plan na jutro wieczorem").performScrollTo().performClick()
+        assertEquals(false, changedTo)
+    }
+
+    @Test
     fun enabledAutomaticChecksNameOnlyTheInterval() {
         showUpdates(UpdateSettingsUi(installedVersion = "0.1.0", automaticChecks = true))
 
