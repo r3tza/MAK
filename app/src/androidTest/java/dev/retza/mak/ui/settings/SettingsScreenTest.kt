@@ -45,7 +45,7 @@ class SettingsScreenTest {
         var opened = ""
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SettingsScreen(
                         state = SettingsUiState(
@@ -141,7 +141,7 @@ class SettingsScreenTest {
         var changedTo: Boolean? = null
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SettingsScreen(
                         state = SettingsUiState(
@@ -200,7 +200,7 @@ class SettingsScreenTest {
         onAutomatic: (Boolean) -> Unit = {}
     ) {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SettingsScreen(
                         state = SettingsUiState(
@@ -232,7 +232,7 @@ class SettingsScreenTest {
     @Test
     fun settingsScreenWithoutSemesterOffersSetupAt320Dp() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SettingsScreen(
                         state = SettingsUiState(
@@ -261,7 +261,7 @@ class SettingsScreenTest {
     fun activeSemesterFieldSelectsRepeatedNameByIdAt320Dp() {
         var selected = 0L
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SettingsSemestersScreen(
                         state = SettingsUiState(
@@ -289,7 +289,7 @@ class SettingsScreenTest {
     fun semestersScreenKeepsEmptyStateAndAddActionTogether() {
         var added = false
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SettingsSemestersScreen(
                         state = SettingsUiState(),
@@ -312,7 +312,7 @@ class SettingsScreenTest {
     @Test
     fun semestersScreenShowsManageActionsAt320Dp() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SettingsSemestersScreen(
                         state = SettingsUiState(
@@ -345,7 +345,7 @@ class SettingsScreenTest {
     @Test
     fun deleteSemesterDialogNamesTheSemester() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SettingsSemestersScreen(
                         state = SettingsUiState(
@@ -374,7 +374,7 @@ class SettingsScreenTest {
         val longPrograms = "Informatyka, Zarządzanie, Ekonomia, Socjologia, Filologia angielska, " +
             "Pedagogika opiekuńczo-wychowawcza, Gospodarka przestrzenna"
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SettingsSemestersScreen(
                         state = SettingsUiState(
@@ -400,7 +400,7 @@ class SettingsScreenTest {
     @Test
     fun notificationsScreenGroupsKindsByTopicAt320Dp() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SettingsNotificationsScreen(
                         state = SettingsUiState(
@@ -471,7 +471,7 @@ class SettingsScreenTest {
         val blocked = mutableStateOf(false)
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SettingsScreen(
                         state = SettingsUiState(
@@ -525,7 +525,7 @@ class SettingsScreenTest {
     @Test
     fun notificationKindsAreVisibleWhenAllAreOffAt320Dp() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SettingsNotificationsScreen(
                         state = SettingsUiState(
@@ -569,7 +569,7 @@ class SettingsScreenTest {
     @Test
     fun notificationsScreenKeepsValuesOfDisabledKind() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SettingsNotificationsScreen(
                         state = SettingsUiState(
@@ -615,7 +615,7 @@ class SettingsScreenTest {
     fun enablingBlockedNotificationsRequestsSystemPermission() {
         var permissionRequested = false
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SettingsNotificationsScreen(
                         state = SettingsUiState(notifications = NotificationSettingsUi(enabled = false)),
@@ -675,7 +675,7 @@ class SettingsScreenTest {
     @Test
     fun gapSectionShowsBothKindsAt320Dp() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SettingsNotificationsScreen(
                         state = SettingsUiState(
@@ -724,7 +724,7 @@ class SettingsScreenTest {
         onBeforeClassLeadSelected: (String) -> Unit = {}
     ) {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SettingsNotificationsScreen(
                         state = SettingsUiState(
@@ -783,7 +783,7 @@ class SettingsScreenTest {
         var imported = 0
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(700.dp)) {
                     SettingsDataScreen(
                         state = SettingsUiState(),
@@ -808,7 +808,7 @@ class SettingsScreenTest {
         var confirmed = 0
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     ImportPreviewScreen(
                         state = SettingsUiState(
@@ -842,7 +842,7 @@ class SettingsScreenTest {
     @Test
     fun importPreviewShowsEmptyStateWithoutSnapshot() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(700.dp)) {
                     ImportPreviewScreen(
                         state = SettingsUiState(),

@@ -33,7 +33,7 @@ class MakNavigationChromeTest {
         var backClicks = 0
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp)) {
                     MakTopBar(
                         title = "Termin",
@@ -56,7 +56,7 @@ class MakNavigationChromeTest {
     @Test
     fun topBarRendersProvidedActionsBesideBackAction() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp)) {
                     MakTopBar(
                         title = "Termin",
@@ -82,7 +82,7 @@ class MakNavigationChromeTest {
         var deleteClicks = 0
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp)) {
                     MakTopBar(
                         title = "Termin",
@@ -127,7 +127,7 @@ class MakNavigationChromeTest {
         var addClicks = 0
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(700.dp)) {
                     MakNavRail(
                         todaySelected = true,

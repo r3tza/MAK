@@ -28,7 +28,7 @@ class MakNoteBannerTest {
     fun warningAndErrorHaveRolePrefixesAndActionsWork() {
         var actionClicked = false
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(Modifier.width(320.dp).height(500.dp)) {
                     androidx.compose.foundation.layout.Column {
                         MakNoteBanner(
@@ -58,7 +58,7 @@ class MakNoteBannerTest {
     fun dismissActionStandsBeforeTheMainAction() {
         val clicked = mutableListOf<String>()
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(Modifier.width(320.dp).height(200.dp)) {
                     MakNoteBanner(
                         title = "Dostępna aktualizacja",

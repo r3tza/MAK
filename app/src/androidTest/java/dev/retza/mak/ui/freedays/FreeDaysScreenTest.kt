@@ -39,7 +39,7 @@ class FreeDaysScreenTest {
         onToggleHoliday: (LocalDate) -> Unit = {}
     ) {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 FreeDaysScreen(
                     state = state,
                     onAdd = {},

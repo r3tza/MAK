@@ -38,7 +38,7 @@ class SetupWizardTest {
         var selectedWeek = WeekType.A
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(
                     modifier = Modifier
                         .width(320.dp)
@@ -200,7 +200,7 @@ class SetupWizardTest {
         showReturnToSettings: Boolean = false
     ) {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(700.dp)) {
                     SetupWizard(
                         state = state,
@@ -233,7 +233,7 @@ class SetupWizardTest {
         var addClicks = 0
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(
                     modifier = Modifier
                         .width(320.dp)
@@ -280,7 +280,7 @@ class SetupWizardTest {
         var selectedProgram: Long? = null
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(
                     modifier = Modifier
                         .width(320.dp)

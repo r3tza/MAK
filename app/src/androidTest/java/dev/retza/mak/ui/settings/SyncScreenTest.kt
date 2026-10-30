@@ -130,7 +130,7 @@ class SyncScreenTest {
         composeTestRule.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, 2f)) {
-                MAKTheme(dynamicColor = false) {
+                MAKTheme() {
                     Box(Modifier.width(320.dp).height(640.dp)) {
                         SyncScreen(
                             state = state,
