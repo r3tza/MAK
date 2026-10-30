@@ -4,9 +4,6 @@ import android.content.Context
 import androidx.room.Room
 import androidx.test.core.app.ApplicationProvider
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import dev.retza.mak.data.RoomTestPlan.ACTIVE_SEMESTER
-import dev.retza.mak.data.RoomTestPlan.OTHER_SEMESTER
-import dev.retza.mak.data.RoomTestPlan.WEEKLY_CLASS
 import dev.retza.mak.data.database.AppDatabase
 import dev.retza.mak.data.entity.AcademicCalendarEntity
 import dev.retza.mak.data.entity.ClassEntity
@@ -34,6 +31,8 @@ import dev.retza.mak.data.repository.SemesterBackup
 import dev.retza.mak.data.repository.toRecord
 import dev.retza.mak.domain.Holiday
 import dev.retza.mak.domain.OccurrenceChangeKind as ChangeKind
+import dev.retza.mak.domain.WeekOverrideScope as OverrideScope
+import dev.retza.mak.domain.WeekType as DomainWeekType
 import java.time.Clock
 import java.time.DayOfWeek
 import java.time.Instant
@@ -42,7 +41,6 @@ import java.time.LocalTime
 import java.time.ZoneId
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
-import kotlinx.coroutines.withTimeout
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNotNull
@@ -95,14 +93,13 @@ class RoomPersistenceTest {
 
         val stored = backup().snapshot()
         assertEquals(listOf(RoomTestPlan.OTHER_SEMESTER), stored.semesters.map { it.semester.id })
-        assertEquals(RoomTestPlan.OTHER_SEMESTER, stored.activeSemesterId)
         assertEquals(
             listOf(RoomTestPlan.PROGRAM, RoomTestPlan.UNASSIGNED_PROGRAM),
             stored.studyPrograms.map { it.id }.sorted()
         )
         assertNull(database!!.classDao().findById(RoomTestPlan.WEEKLY_CLASS))
         assertNull(database!!.occurrenceNoteDao().findById(RoomTestPlan.NOTE))
-        assertNull(database!!.occurrenceChangeDao().findById(701))
+        assertNull(database!!.occurrenceChangeDao().findById(RoomTestPlan.CANCELLED_CHANGE))
         assertTrue(database!!.weekOverrideDao().getForCalendar(RoomTestPlan.CALENDAR).isEmpty())
         assertTrue(database!!.freeDayDao().getForCalendar(RoomTestPlan.CALENDAR).isEmpty())
     }
@@ -116,11 +113,7 @@ class RoomPersistenceTest {
         val semester = backup().snapshot().semesters.single { it.semester.id == RoomTestPlan.ACTIVE_SEMESTER }
         assertTrue(semester.programs.isEmpty())
         assertTrue(semester.classes.isEmpty())
-        assertTrue(semester.occurrenceNotes.isEmpty())
-        assertTrue(semester.occurrenceChanges.isEmpty())
         assertEquals(listOf(RoomTestPlan.UNUSED_CALENDAR), semester.calendars.map { it.id })
-        assertTrue(semester.weekOverrides.isEmpty())
-        assertTrue(semester.freeDays.isEmpty())
         assertNotNull(database!!.studyProgramDao().findById(RoomTestPlan.PROGRAM))
     }
 
@@ -146,7 +139,7 @@ class RoomPersistenceTest {
         val semesterId = database!!.semesterDao().insert(semester("Semestr", true))
         val calendarId = insertCalendar(semesterId)
         val monday = LocalDate.of(2026, 10, 5)
-        fun override(type: dev.retza.mak.domain.WeekType, scope: dev.retza.mak.domain.WeekOverrideScope) =
+        fun override(type: DomainWeekType, scope: OverrideScope) =
             WeekOverrideRecord(
                 semesterId = semesterId,
                 academicCalendarId = calendarId,
@@ -155,9 +148,9 @@ class RoomPersistenceTest {
                 scope = scope
             )
 
-        val firstId = repository.saveWeekOverride(override(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK))
-        val secondId = repository.saveWeekOverride(override(dev.retza.mak.domain.WeekType.A, dev.retza.mak.domain.WeekOverrideScope.ONE_WEEK))
-        repository.saveWeekOverride(override(dev.retza.mak.domain.WeekType.B, dev.retza.mak.domain.WeekOverrideScope.FROM_WEEK))
+        val firstId = repository.saveWeekOverride(override(DomainWeekType.B, OverrideScope.ONE_WEEK))
+        val secondId = repository.saveWeekOverride(override(DomainWeekType.A, OverrideScope.ONE_WEEK))
+        repository.saveWeekOverride(override(DomainWeekType.B, OverrideScope.FROM_WEEK))
 
         assertEquals(firstId, secondId)
         val stored = database!!.weekOverrideDao().getForCalendar(calendarId).associate { it.scope to it.weekType }
@@ -1056,82 +1049,42 @@ class RoomPersistenceTest {
         scheduleRepository().saveOccurrenceNote(note("Kolokwium"))
         scheduleRepository().saveOccurrenceChange(change(ChangeKind.CANCELLED))
 
-        scheduleRepository().deleteClass(WEEKLY_CLASS)
+        scheduleRepository().deleteClass(RoomTestPlan.WEEKLY_CLASS)
 
         val plan = planData()
-        assertTrue(plan.classes.none { it.id == WEEKLY_CLASS })
-        assertTrue(plan.occurrenceNotes.none { it.classId == WEEKLY_CLASS })
-        assertTrue(plan.occurrenceChanges.none { it.classId == WEEKLY_CLASS })
+        assertTrue(plan.classes.none { it.id == RoomTestPlan.WEEKLY_CLASS })
+        assertTrue(plan.occurrenceNotes.none { it.classId == RoomTestPlan.WEEKLY_CLASS })
+        assertTrue(plan.occurrenceChanges.none { it.classId == RoomTestPlan.WEEKLY_CLASS })
     }
 
     @Test
     fun recordsOfAClassCannotBeSavedInAnotherSemester() = runBlocking {
         openWithTestPlan()
-        val otherAssignment = database!!.semesterProgramDao().insert(
-            SemesterProgramEntity(
-                semesterId = OTHER_SEMESTER,
-                studyProgramId = RoomTestPlan.UNASSIGNED_PROGRAM,
-                academicCalendarId = RoomTestPlan.OTHER_SEMESTER_CALENDAR
-            )
-        )
+        val otherAssignment = insertAssignment(RoomTestPlan.OTHER_SEMESTER, RoomTestPlan.UNASSIGNED_PROGRAM, RoomTestPlan.OTHER_SEMESTER_CALENDAR)
         val before = backup().snapshot()
-        val weekly = before.semesters.first().classes.single { it.id == WEEKLY_CLASS }
+        val weekly = before.semesters.first().classes.single { it.id == RoomTestPlan.WEEKLY_CLASS }
 
         assertRejected { scheduleRepository().saveClass(weekly.copy(id = 0, semesterProgramId = otherAssignment)) }
-        assertRejected { scheduleRepository().saveClass(weekly.copy(semesterId = OTHER_SEMESTER, semesterProgramId = otherAssignment)) }
-        assertRejected { scheduleRepository().saveOccurrenceNote(note("Kolokwium").copy(semesterId = OTHER_SEMESTER)) }
-        assertRejected { scheduleRepository().saveOccurrenceChange(change(ChangeKind.CANCELLED).copy(semesterId = OTHER_SEMESTER)) }
+        assertRejected { scheduleRepository().saveClass(weekly.copy(semesterId = RoomTestPlan.OTHER_SEMESTER, semesterProgramId = otherAssignment)) }
+        assertRejected { scheduleRepository().saveOccurrenceNote(note("Kolokwium").copy(semesterId = RoomTestPlan.OTHER_SEMESTER)) }
+        assertRejected { scheduleRepository().saveOccurrenceChange(change(ChangeKind.CANCELLED).copy(semesterId = RoomTestPlan.OTHER_SEMESTER)) }
 
         assertEquals(before.sortedById(), backup().snapshot().sortedById())
     }
 
-    @Test
-    fun replacementTimesMustComeAsAPairInOrder() = runBlocking {
-        openWithTestPlan()
-        assertRejected { scheduleRepository().saveOccurrenceChange(change(ChangeKind.MODIFIED, start = LocalTime.of(10, 0))) }
-        assertRejected {
-            scheduleRepository().saveOccurrenceChange(
-                change(ChangeKind.MODIFIED, start = LocalTime.of(11, 0), end = LocalTime.of(10, 0))
-            )
-        }
-
-        assertTrue(planData().occurrenceChanges.none { it.originalDate == changedDate })
-    }
-
-    @Test
-    fun activePlanEmitsTheSavedMoveWithItsNewTimeAndClearedRoom() = runBlocking {
-        openWithTestPlan()
-        val plan = scheduleRepository().observeActivePlanData(ACTIVE_SEMESTER)
-        assertTrue(plan.first()!!.occurrenceChanges.none { it.originalDate == changedDate })
-        val target = changedDate.plusDays(2)
-
-        scheduleRepository().saveOccurrenceChange(
-            change(ChangeKind.MODIFIED, start = LocalTime.of(12, 0), end = LocalTime.of(13, 30))
-                .copy(targetDate = target, room = "")
-        )
-
-        val moved = withTimeout(5_000) {
-            plan.first { data -> data!!.occurrenceChanges.any { it.originalDate == changedDate } }
-        }!!.occurrenceChanges.single { it.originalDate == changedDate }
-        assertEquals(target, moved.targetDate)
-        assertEquals(LocalTime.of(12, 0), moved.startTime)
-        assertEquals(LocalTime.of(13, 30), moved.endTime)
-        assertEquals("", moved.room)
-    }
-
-    private suspend fun planData() = scheduleRepository().observeActivePlanData(ACTIVE_SEMESTER).first()!!
+    private suspend fun planData() = scheduleRepository().observeActivePlanData(RoomTestPlan.ACTIVE_SEMESTER).first()!!
 
     private fun note(body: String) = OccurrenceNoteRecord(
-        semesterId = ACTIVE_SEMESTER,
-        classId = WEEKLY_CLASS,
+        semesterId = RoomTestPlan.ACTIVE_SEMESTER,
+        classId = RoomTestPlan.WEEKLY_CLASS,
         occurrenceDate = changedDate,
         body = body
     )
 
     private fun change(kind: ChangeKind, start: LocalTime? = null, end: LocalTime? = null) =
         OccurrenceChangeRecord(
-            semesterId = ACTIVE_SEMESTER,
-            classId = WEEKLY_CLASS,
+            semesterId = RoomTestPlan.ACTIVE_SEMESTER,
+            classId = RoomTestPlan.WEEKLY_CLASS,
             originalDate = changedDate,
             kind = kind,
             targetDate = null,

@@ -510,12 +510,7 @@ class ScheduleViewModelTest {
         assertEquals(5, five.markers.size)
         assertFalse(five.hasMoreMarkers)
 
-        repository.classes += repository.classes.first().copy(
-            id = 6L,
-            name = "Zajęcia 6",
-            startTime = LocalTime.of(14, 0),
-            endTime = LocalTime.of(15, 0)
-        )
+        addMondayClass(repository, 6)
         repository.notifyDataChanged()
         advanceUntilIdle()
 
@@ -854,14 +849,16 @@ private fun cancelledChange(classId: Long) = OccurrenceChangeEntity(
 )
 
 private fun addMondayClasses(repository: FakeRepository, count: Int) {
-    (2..count).forEach { index ->
-        repository.classes += repository.classes.first().copy(
-            id = index.toLong(),
-            name = "Zajęcia $index",
-            startTime = LocalTime.of(8 + index, 0),
-            endTime = LocalTime.of(9 + index, 0)
-        )
-    }
+    (2..count).forEach { index -> addMondayClass(repository, index) }
+}
+
+private fun addMondayClass(repository: FakeRepository, index: Int) {
+    repository.classes += repository.classes.first().copy(
+        id = index.toLong(),
+        name = "Zajęcia $index",
+        startTime = LocalTime.of(8 + index, 0),
+        endTime = LocalTime.of(9 + index, 0)
+    )
 }
 
 private class MutableClock(var now: Instant) : Clock() {

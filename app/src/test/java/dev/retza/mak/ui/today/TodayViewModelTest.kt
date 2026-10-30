@@ -35,6 +35,12 @@ class TodayViewModelTest {
     @Test
     fun todayStateMapsActiveSemesterPlan() = runTest(mainDispatcher) {
         val repository = FakeRepository()
+        repository.classes += repository.classes.single().copy(
+            id = 2L,
+            name = "Analiza",
+            startTime = LocalTime.of(11, 1),
+            endTime = LocalTime.of(12, 0)
+        )
         val viewModel = todayViewModel(repository)
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
@@ -43,10 +49,10 @@ class TodayViewModelTest {
         assertEquals("Poniedziałek, 21 września", state.dateLabel)
         assertEquals("Semestr", state.semesterLabel)
         assertTrue(state.weekLabel.startsWith("Tydzień"))
-        assertEquals(1, state.classCount)
+        assertEquals(2, state.classCount)
         assertEquals(0, state.collisionCount)
-        assertEquals(0, state.gapCount)
-        assertEquals("Programowanie", state.items.single().name)
+        assertEquals(1, state.gapCount)
+        assertEquals(listOf("Programowanie", "Analiza"), state.items.map { it.name })
     }
 
     @Test

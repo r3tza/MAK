@@ -36,7 +36,7 @@ object RoomTestPlan {
     const val WEEKLY_CLASS = 301L
     const val EXAM = 302L
     const val NOTE = 601L
-    val noteDate: LocalDate = LocalDate.of(2026, 10, 5)
+    const val CANCELLED_CHANGE = 701L
 
     fun data(): BackupData = BackupData(
         studyPrograms = listOf(
@@ -95,10 +95,10 @@ object RoomTestPlan {
                     FreeDayRecord(501, ACTIVE_SEMESTER, CALENDAR, LocalDate.of(2026, 12, 24), LocalDate.of(2027, 1, 2), "Przerwa świąteczna"),
                     FreeDayRecord(502, ACTIVE_SEMESTER, CALENDAR, LocalDate.of(2026, 11, 11), LocalDate.of(2026, 11, 11), null)
                 ),
-                occurrenceNotes = listOf(OccurrenceNoteRecord(NOTE, ACTIVE_SEMESTER, WEEKLY_CLASS, noteDate, "Kolokwium")),
+                occurrenceNotes = listOf(OccurrenceNoteRecord(NOTE, ACTIVE_SEMESTER, WEEKLY_CLASS, LocalDate.of(2026, 10, 5), "Kolokwium")),
                 occurrenceChanges = listOf(
                     OccurrenceChangeRecord(
-                        701, ACTIVE_SEMESTER, WEEKLY_CLASS, LocalDate.of(2026, 10, 19), OccurrenceChangeKind.CANCELLED,
+                        CANCELLED_CHANGE, ACTIVE_SEMESTER, WEEKLY_CLASS, LocalDate.of(2026, 10, 19), OccurrenceChangeKind.CANCELLED,
                         targetDate = null, startTime = null, endTime = null, room = null, building = null,
                         teacherName = null, note = null
                     ),
