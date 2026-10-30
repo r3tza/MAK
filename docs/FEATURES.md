@@ -364,5 +364,5 @@ Import powinien:
 Odbiór na urządzeniu jest odrębnym kryterium od kompilacji testów Android. Lista zawiera tylko otwarte scenariusze; zamknięte są w archiwum `QUEUE.md`.
 
 - Sprawdzić zgodę na powiadomienia, alarm wieczorny i przed zajęciami, restart, zmianę czasu, anulowanie kolizji i kliknięcie powiadomienia (O-04).
-- Sprawdzić tablet (O-08) w pionie, w poziomie i w podzielonym ekranie: boczny pasek nawigacji od 600 dp, dolny pasek poniżej, treść nie szersza niż 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp, wybór daty i godziny w całości i po polsku, zachowanie bieżącego ekranu i wpisanych danych po obrocie.
+- Sprawdzić tablet (O-08) w pionie, w poziomie i w podzielonym ekranie: boczny pasek nawigacji od 600 dp, dolny pasek poniżej, treść nie szersza niż 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp, wybór daty i godziny w całości i po polsku (w oknie niższym niż 560 dp wybór godziny ma układ poziomy, a wybór daty otwiera się w trybie wpisywania, I-44), zachowanie bieżącego ekranu i wpisanych danych po obrocie.
 - Scenariusze I-95 do I-98 zapisane w ich wierszach w `QUEUE.md`.

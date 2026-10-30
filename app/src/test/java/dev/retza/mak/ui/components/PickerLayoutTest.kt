@@ -5,11 +5,18 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
-class TimePickerLayoutTest {
+class PickerLayoutTest {
     @Test
     fun lowWindowUsesHorizontalClock() {
         assertTrue(useHorizontalTimePicker(559.dp))
         assertFalse(useHorizontalTimePicker(560.dp))
         assertFalse(useHorizontalTimePicker(800.dp))
+    }
+
+    @Test
+    fun lowWindowOpensDateAsInput() {
+        assertTrue(openDatePickerAsInput(450.dp))
+        assertTrue(openDatePickerAsInput(559.dp))
+        assertFalse(openDatePickerAsInput(560.dp))
     }
 }

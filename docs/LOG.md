@@ -7,6 +7,8 @@ Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Tr
 - Wykonanie na zlecenie użytkownika (I-105, I-106, decyzje użytkownika z 2026-10-20): `checks.yml` uruchamia `lintDebug` z bazą `app/lint-baseline.xml` (12 ostrzeżeń w chwili utworzenia), a zadanie `room-tests` uruchamia `RoomMigrationTest` i `RoomPersistenceTest` na emulatorze tylko przy zmianach w `data/` i `app/schemas/`. Opis w `STACK.md`, sekcje 5 i 7.
 - Wykonanie na zlecenie użytkownika (I-108): otwarte wiersze `QUEUE.md` skrócone do zadania, kryterium, źródła decyzji, nazw klas i testów oraz tego, co pozostało do odbioru; zasada w `WORKFLOW.md`.
 - Decyzja użytkownika z 2026-10-30: użytkownik pracuje na dwóch komputerach z różnymi emulatorami, więc `STACK.md` nie wskazuje jednego stałego AVD; agent używa AVD telefonu dostępnego na danym komputerze, z 2048 MiB, i podaje jego nazwę w raporcie.
+- Decyzja użytkownika z 2026-10-30 (I-44): w oknie niższym niż 560 dp wybór daty otwiera się w trybie wpisywania, bo kalendarz Material traci w nim pierwszy tydzień miesiąca; kalendarz zostaje dostępny ikoną w dialogu. Odrzucone: poprawianie układu samego kalendarza (duży nakład przy rzadkim przypadku).
+- Wykonanie na zlecenie użytkownika (I-107): `MakComponents.kt` podzielony na nawigację, dialogi, kartę zajęć i przyciski akcji, bez zmiany kodu.
 - Fakty z 2026-10-30: aplikacja jest opublikowana w Google Auth Platform (potwierdzenie użytkownika), a notatka o aktualizacji wszystkich telefonów weszła do wydania 0.4.0.
 
 ## 2026-10-21: Plan na jutro wieczorem (I-111) i zakres następnej gałęzi
