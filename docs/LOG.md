@@ -2,6 +2,12 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-11-11: Plan na jutro po przeglądzie
+
+- Decyzja użytkownika z 2026-11-11: odwołane zajęcia nie wyznaczają końca ostatnich zajęć, a widget odświeża się także o północy.
+- Wykonanie przez agenta na zlecenie użytkownika: alarm widgetu jest ustawiany ponownie po restarcie telefonu, zmianie czasu i aktualizacji aplikacji; działająca sesja Glance przelicza plan po zmianie czasu; parametr `onShowTomorrowChanged` nie ma domyślnego wywołania.
+- Testy JVM napisano, ale nie uruchomiono na polecenie użytkownika.
+
 ## 2026-10-30: Przegląd testów
 
 - Wykonanie na zlecenie użytkownika: przegląd testów według zasady z 2026-09-29 (`STACK.md`, sekcja 5). Usunięte albo połączone powtórzenia: progi i bloki w `GapCounterTest` (`countGaps` to liczba wyników `findGaps`), przerwa dłuższa od minimum w `CollisionDetectorTest`, początek tygodnia w `WeekCalculatorTest`, próg okienka w `TodayViewModelTest` i ukryte kierunki w `WidgetPlanLoaderTest` (sprawdza je `ActivePlanProviderTest`), trzy testy znaczników kalendarza i dwa testy przywracania terminu bez zmiany.
@@ -175,9 +181,3 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja użytkownika: małe zadanie dołącza do najbliższego większego na tej samej gałęzi, także gdy nie jest z nim ściśle powiązane (na przykład I-63 z trybem tabletowym). Plan trafia do gałęzi, która go wykonuje. Commit obejmuje logiczną część zadania razem z dokumentami, których dotyczy; drobnych poprawek dokumentów nie commituje się osobno, a pull request ma zwykle od jednego do pięciu commitów (`AGENTS.md`, sekcja „Git”; `WORKFLOW.md`, „Gałąź i pull request”).
 - Powód: od wydania 0.2.2 przybyło około 60 commitów, choć zakres zmieściłby się w 10 do 20; osobne gałęzie i pull requesty na drobne zmiany i same plany zapychają repozytorium i utrudniają przegląd historii.
 
-## 2026-09-29: Wspólna obsługa błędów zapisu (I-64)
-
-- Decyzja użytkownika: 27 akcji zapisu w sześciu ViewModelach korzysta z jednej funkcji `launchUiOperation`, a testy ViewModeli sprawdzają tylko własną logikę akcji (`ARCHITECTURE.md`, sekcja 5). I-14, przegląd testów i I-64 trafiają do jednego pull requesta na gałęzi `task/backup-tests-and-ui-operation`.
-- Fakty: próba na `SemesterViewModel.saveSemester` przed resztą przeniesień pokazała, że wszystkie dotychczasowe testy przechodzą bez zmian, a mutacje funkcji i akcji wskazały, które testy pilnują przepływu. Wykryła też błędy planu: test podwójnego zapisu semestru i kierunku chroni przed drugim efektem zamknięcia ekranu, więc został; `finally` z warunkiem sesji trzeba kopiować dosłownie; błąd zapisu z poprzedniej sesji semestru nie miał testu, więc go dodano.
-- Wynik: testy JVM 391 przed zmianą i 373 po niej, pełne testy na urządzeniu 112 z 112.
-- Odrzucone: przeniesienie blokady podwójnego wywołania i komunikatu sukcesu do wspólnej funkcji, bo zmieniało kolejność komunikatu i efektu nawigacji i ukrywało pomyłki w przypisaniu flag; bazowa klasa ViewModelu zamiast funkcji rozszerzającej.

@@ -130,7 +130,7 @@ fun SettingsScreen(
     onSemesterSelected: (Long) -> Unit,
     onAddSemester: () -> Unit,
     onThemeSelected: (ThemeMode) -> Unit,
-    onShowTomorrowChanged: (Boolean) -> Unit = {},
+    onShowTomorrowChanged: (Boolean) -> Unit,
     onGapThresholdSelected: (String) -> Unit,
     onMinimumBreakSelected: (String) -> Unit,
     notificationsBlocked: Boolean,

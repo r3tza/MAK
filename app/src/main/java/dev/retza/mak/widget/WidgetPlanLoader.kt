@@ -14,6 +14,7 @@ import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.map
@@ -24,26 +25,29 @@ class WidgetPlanLoader(
     private val activePlanProvider: ActivePlanProvider,
     private val clock: Clock,
     private val presenter: WidgetPresenter = WidgetPresenter(),
-    private val daySwitchScheduler: WidgetDaySwitchScheduler = WidgetDaySwitchScheduler {}
+    private val daySwitchScheduler: WidgetDaySwitchScheduler = WidgetDaySwitchScheduler {},
+    private val timeTicks: Flow<Any?> = flowOf(Unit)
 ) {
     /**
-     * The widget state again after every change of the plan or of its settings. A running Glance session
-     * only recomposes on update, so it has to follow the data itself.
+     * Emits widget state again after every change of the plan, its settings, or the time. A running Glance
+     * session only recomposes on update, so it has to follow the data and time ticks itself.
      */
     @OptIn(ExperimentalCoroutinesApi::class)
     fun states(): Flow<WidgetUiState> =
         semesterRepository.observeActiveSemester()
             .flatMapLatest { semester ->
                 if (semester == null) {
-                    daySwitchScheduler.schedule(null)
-                    flowOf(WidgetUiState.NoActiveSemester(todayLabel()))
+                    timeTicks.map {
+                        daySwitchScheduler.schedule(nextMidnight())
+                        WidgetUiState.NoActiveSemester(todayLabel())
+                    }
                 } else {
-                    activePlanSource.observe(semester.id).map(::present)
+                    combine(activePlanSource.observe(semester.id), timeTicks) { inputs, _ -> present(inputs) }
                 }
             }
             .catch { error ->
                 if (error is CancellationException) throw error
-                daySwitchScheduler.schedule(null)
+                daySwitchScheduler.schedule(nextMidnight())
                 emit(WidgetUiState.Error(todayLabel()))
             }
 
@@ -51,11 +55,11 @@ class WidgetPlanLoader(
         val now = LocalDateTime.now(clock)
         val today = now.toLocalDate()
         if (inputs == null) {
-            daySwitchScheduler.schedule(null)
+            daySwitchScheduler.schedule(nextMidnight())
             return WidgetUiState.Error(widgetDateLabel(today))
         }
         if (inputs.data.allProgramsHidden(inputs.display)) {
-            daySwitchScheduler.schedule(null)
+            daySwitchScheduler.schedule(nextMidnight())
             return WidgetUiState.AllProgramsHidden(widgetDateLabel(today))
         }
         val todayPlan = activePlanProvider.resolve(inputs, today)
@@ -64,14 +68,16 @@ class WidgetPlanLoader(
         val shown = shownPlanDate(today, now.toLocalTime(), switchTime, enabled)
         val semesterName = inputs.data.semester.name
         if (shown == today) {
-            // Only a time still ahead is planned, because a past switch time would already show tomorrow.
-            daySwitchScheduler.schedule(if (enabled && switchTime != null) today.atTime(switchTime) else null)
+            val nextUpdate = if (enabled && switchTime != null) today.atTime(switchTime) else nextMidnight()
+            daySwitchScheduler.schedule(nextUpdate)
             return presenter.present(today, semesterName, todayPlan, now.toLocalTime())
         }
-        daySwitchScheduler.schedule(null)
+        daySwitchScheduler.schedule(nextMidnight())
         val tomorrowPlan = activePlanProvider.resolve(inputs, shown)
         return presenter.present(shown, semesterName, tomorrowPlan, now = null, isTomorrow = true)
     }
 
     private fun todayLabel(): String = widgetDateLabel(LocalDate.now(clock))
+
+    private fun nextMidnight(): LocalDateTime = LocalDate.now(clock).plusDays(1).atStartOfDay()
 }

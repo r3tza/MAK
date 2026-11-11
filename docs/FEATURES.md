@@ -60,8 +60,8 @@ Decyzje użytkownika z 2026-10-21 (I-111):
 - funkcję wyłącza przełącznik „Plan na jutro wieczorem” w sekcji „Wygląd” ustawień, domyślnie włączony;
 - dzisiejsze zajęcia pozostają dostępne w „Planie”;
 - po przełączeniu tytuł ekranu brzmi „Jutro, {dzień tygodnia}, {data}” (na przykład „Jutro, środa, 22 października”), nagłówek karty „Twój plan na jutro”, a bez zajęć „Jutro bez zajęć”; jutro wolne wygląda jak dzień wolny dzisiaj (baner, nagłówek „Dzień wolny”); widget ma w nagłówku ten sam tytuł i żadne jutrzejsze zajęcia nie są oznaczone jako „Teraz” ani „Następne”;
-- gdy ostatnie zajęcia kończą się o 22:00 lub później, przełączenia nie ma; dzień wolny bez zajęć liczy się jak dzień bez zajęć (18:00);
-- widget przełącza się przybliżonym alarmem (`AlarmManager.set`, bez wybudzania), więc system może go opóźnić; ekran „Dzisiaj” przelicza moment przełączenia przy każdym powrocie na ekran.
+- gdy ostatnie zajęcia kończą się o 22:00 lub później, przełączenia nie ma; dzień wolny bez zajęć liczy się jak dzień bez zajęć (18:00); odwołane zajęcia nie wyznaczają końca ostatnich zajęć, a dzień ze wszystkimi zajęciami odwołanymi przełącza się o 18:00;
+- widget ma jeden przybliżony alarm (`AlarmManager.set`, bez wybudzania): przełącza go na plan na jutro albo odświeża o północy, więc system może opóźnić aktualizację; po restarcie telefonu, zmianie czasu i aktualizacji aplikacji alarm jest ustawiany od nowa; ekran „Dzisiaj” przelicza moment przełączenia przy każdym powrocie na ekran.
 
 ### Struktura karty zajęć
 
@@ -364,5 +364,5 @@ Import powinien:
 Odbiór na urządzeniu jest odrębnym kryterium od kompilacji testów Android. Lista zawiera tylko otwarte scenariusze; zamknięte są w archiwum `QUEUE.md`.
 
 - Sprawdzić zgodę na powiadomienia, alarm wieczorny i przed zajęciami, restart, zmianę czasu, anulowanie kolizji i kliknięcie powiadomienia (O-04).
-- Sprawdzić tablet (O-08) w pionie, w poziomie i w podzielonym ekranie: boczny pasek nawigacji od 600 dp, dolny pasek poniżej, treść nie szersza niż 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp, wybór daty i godziny w całości i po polsku (w oknie niższym niż 560 dp wybór godziny ma układ poziomy, a wybór daty otwiera się w trybie wpisywania, I-44), zachowanie bieżącego ekranu i wpisanych danych po obrocie.
+- Sprawdzić tablet (O-08) w pionie, w poziomie i w podzielonym ekranie: boczny pasek nawigacji od 600 dp, dolny pasek poniżej, treść nie szersza niż 640 dp, „Dzisiaj” w dwóch kolumnach od 840 dp, wybór daty i godziny w całości i po polsku (w oknie niższym niż 560 dp wybór godziny ma układ poziomy, a wybór daty otwiera się w trybie wpisywania, I-44), wybór zakresu dni wolnych w oknie niższym niż 560 dp pokazuje cały miesiąc po przewinięciu, zachowanie bieżącego ekranu i wpisanych danych po obrocie.
 - Scenariusze I-95 do I-98 zapisane w ich wierszach w `QUEUE.md`.

@@ -13,9 +13,15 @@ val NoClassesSwitchTime: LocalTime = LocalTime.of(18, 0)
 // Two hours after 22:00 is already the next day, so there is no switch.
 private val LastSwitchableClassEnd: LocalTime = LocalTime.of(22, 0)
 
-/** The time from which today's plan gives way to tomorrow's, or null when it never does on this day. */
+/**
+ * Returns the switch time after the latest non-cancelled class, or 18:00 when none remain.
+ * Returns null when the latest class ends at or after 22:00.
+ */
 fun tomorrowSwitchTime(todayOccurrences: List<PlannedOccurrence>): LocalTime? {
-    val lastEnd = todayOccurrences.maxOfOrNull { it.endTime } ?: return NoClassesSwitchTime
+    val lastEnd = todayOccurrences
+        .filter { it.status != OccurrenceStatus.CANCELLED }
+        .maxOfOrNull { it.endTime }
+        ?: return NoClassesSwitchTime
     return if (lastEnd.isBefore(LastSwitchableClassEnd)) lastEnd.plus(TomorrowSwitchDelay) else null
 }
 

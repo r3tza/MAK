@@ -27,6 +27,41 @@ class TomorrowPlanTest {
     }
 
     @Test
+    fun cancelledLatestClassDoesNotDelayTomorrowSwitch() {
+        val occurrences = listOf(
+            occurrence(1L, LocalTime.of(13, 0), LocalTime.of(15, 30)),
+            occurrence(
+                2L,
+                LocalTime.of(20, 0),
+                LocalTime.of(21, 30),
+                occurrenceChange = cancelled(2L)
+            )
+        )
+
+        assertEquals(LocalTime.of(17, 30), tomorrowSwitchTime(occurrences))
+    }
+
+    @Test
+    fun allCancelledClassesSwitchAtSix() {
+        val occurrences = listOf(
+            occurrence(
+                1L,
+                LocalTime.of(9, 0),
+                LocalTime.of(10, 0),
+                occurrenceChange = cancelled(1L)
+            ),
+            occurrence(
+                2L,
+                LocalTime.of(20, 0),
+                LocalTime.of(21, 30),
+                occurrenceChange = cancelled(2L)
+            )
+        )
+
+        assertEquals(NoClassesSwitchTime, tomorrowSwitchTime(occurrences))
+    }
+
+    @Test
     fun classEndingLastDecidesEvenWhenALaterOneStartsAfterIt() {
         val occurrences = listOf(
             occurrence(1L, LocalTime.of(8, 0), LocalTime.of(16, 30)),
@@ -65,7 +100,15 @@ class TomorrowPlanTest {
         assertEquals(today, shownPlanDate(today, LocalTime.of(23, 0), null, enabled = true))
     }
 
-    private fun occurrence(id: Long, start: LocalTime, end: LocalTime) = PlannedOccurrence(
+    private fun cancelled(id: Long) =
+        OccurrenceChange(id = id, classId = id, originalDate = today, kind = OccurrenceChangeKind.CANCELLED)
+
+    private fun occurrence(
+        id: Long,
+        start: LocalTime,
+        end: LocalTime,
+        occurrenceChange: OccurrenceChange? = null
+    ) = PlannedOccurrence(
         classItem = ClassItem(
             id = id,
             semesterId = 1L,
@@ -85,6 +128,7 @@ class TomorrowPlanTest {
         teacherName = null,
         studyProgram = null,
         classNote = null,
-        occurrenceNote = null
+        occurrenceNote = null,
+        occurrenceChange = occurrenceChange
     )
 }

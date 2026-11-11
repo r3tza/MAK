@@ -69,7 +69,8 @@ class MakTodayWidget : GlanceAppWidget() {
             activePlanSource = koin.get(),
             activePlanProvider = koin.get(),
             clock = koin.get(),
-            daySwitchScheduler = AlarmWidgetDaySwitchScheduler(context, koin.get())
+            daySwitchScheduler = AlarmWidgetDaySwitchScheduler(context, koin.get()),
+            timeTicks = WidgetTimeTicks.ticks
         ).states().stateIn(this)
 
         provideContent {
