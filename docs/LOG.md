@@ -2,11 +2,14 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
-## 2026-11-11: Plan na jutro po przeglądzie
+## 2026-11-11: Plan na jutro po przeglądzie i przygotowanie 0.4.1
 
 - Decyzja użytkownika z 2026-11-11: odwołane zajęcia nie wyznaczają końca ostatnich zajęć, a widget odświeża się także o północy.
 - Wykonanie przez agenta na zlecenie użytkownika: alarm widgetu jest ustawiany ponownie po restarcie telefonu, zmianie czasu i aktualizacji aplikacji; działająca sesja Glance przelicza plan po zmianie czasu; parametr `onShowTomorrowChanged` nie ma domyślnego wywołania.
-- Testy JVM napisano, ale nie uruchomiono na polecenie użytkownika.
+- Weryfikacja na późniejsze polecenie użytkownika z 2026-11-11: 703 testy JVM, 225 testów Android na emulatorze `Medium_Phone_A12` (Android 12, 2048 MiB RAM), `lintDebug`, 10 testów skryptu dokumentacji i kontrola mapy przeszły. Pierwszy przebieg testów Android przerwano z powodu uśpionego ekranu emulatora; cały przebieg po wybudzeniu przeszedł.
+- Ręczny odbiór I-111 na emulatorze `Medium_Phone_A12` (Android 12, 2048 MiB RAM): po ostatnich zajęciach kończących się o 10:30 ekran po powrocie i widget pokazują jutro od 12:30; pusty dzień przełącza się o 18:00; podsumowanie liczy jutrzejsze zajęcia; puste jutro pokazuje „Jutro bez zajęć”; wyłączenie i ponowne włączenie ustawienia odświeża oba widoki. Widget sam przełączył się alarmem po zajęciach, po 18:00 i po północy; po północy usunął „Jutro” i przywrócił etykietę „Następne”. Po restarcie przy rzeczywistym czasie oraz po ponownej instalacji debug APK widget i alarm wróciły bez otwierania aplikacji. Zrzuty z odbioru są lokalnie w `build/release_qa/`. Zegar i automatyczne ustawianie czasu emulatora przywrócono. Pozostaje potwierdzenie na telefonie użytkownika i odbiór aktualizacji podpisanego wydania.
+- Decyzja użytkownika z 2026-11-11: następne wydanie ma numer 0.4.1. Użytkownik zatwierdził tekst notatek o planie na jutro i trybie wpisywania daty w niskim oknie; wpis dodano do `app/src/main/assets/release_notes.json`. Wydania jeszcze nie opublikowano.
+- Przygotowanie 0.4.1: `assembleDebug` z `makVersionName=0.4.1` i `makVersionCode=401`, pięć testów `ReleaseHistoryTest` po zmianie notatek, `check_map.py` i `git diff --check` przeszły. Wyróżnienie trwających zajęć pozostaje propozycją w `QUEUE.md`; użytkownik zlecił wariant do obejrzenia przed implementacją.
 
 ## 2026-10-30: Przegląd testów
 
