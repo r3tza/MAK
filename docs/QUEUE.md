@@ -34,7 +34,7 @@ Odbiór zmian z I-02 do I-06 należy do kryterium tych zadań. O-06 dotyczy istn
 
 Poniższe propozycje nie są zatwierdzonymi zadaniami. Przed przeniesieniem do planu trzeba ustalić zakres i kryteria zakończenia.
 
-- Porządki po przeglądzie I-112 (decyzja użytkownika z 2026-11-12: rozważyć przy kolejnej wersji, nie w 0.4.1). Bez zmiany zachowania:
+- Porządki po przeglądzie I-112 (decyzja użytkownika z 2026-11-12: rozważyć przy kolejnej wersji, nie w 0.5.0). Bez zmiany zachowania:
   - jeden wspólny mechanizm bieżącej chwili zamiast osobnego efektu minutowego i `LifecycleResumeEffect` w każdym ekranie oraz osobnego `MutableStateFlow` z chwilą w `TodayViewModel` i `ScheduleViewModel` (`ui/TodayScheduleRoutes.kt`);
   - wybór następnego odświeżenia widgetu (granica zajęć, przełączenie na jutro, północ) jako czysta funkcja w `domain/` zamiast w `WidgetPlanLoader`, oraz zmiana nazwy `WidgetDaySwitchScheduler` na nazwę opisującą każde odświeżenie;
   - jedna funkcja domenowa fazy wystąpienia (minione, trwające, przyszłe) zamiast porównania godzin w `WidgetPresenter` obok `isOccurrenceCurrent`.
