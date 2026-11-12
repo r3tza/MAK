@@ -39,6 +39,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.focus.onFocusChanged
 import androidx.compose.ui.graphics.lerp
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.testTag
@@ -66,6 +67,21 @@ fun ClassCard(
     val surface = MaterialTheme.colorScheme.surface
     val barColor = remember(accent, surface) {
         courseShapeColor(accent, surface)
+    }
+    val cardBackground = remember(item.isCurrent, surface, barColor) {
+        if (item.isCurrent) CurrentClassTint.startBackground(barColor, surface) else surface
+    }
+    // Muted text already has enough contrast on the plain surface, so only the tint can change it.
+    val mutedTextColor = MaterialTheme.colorScheme.onSurfaceVariant
+    val mutedText = remember(cardBackground, mutedTextColor) { courseTextColor(mutedTextColor, cardBackground) }
+    val currentGradient = remember(item.isCurrent, surface, barColor, cardBackground) {
+        if (item.isCurrent) {
+            Brush.horizontalGradient(
+                0f to cardBackground,
+                CurrentClassTint.MIDDLE_STOP to lerp(surface, barColor, CurrentClassTint.MIDDLE),
+                1f to surface
+            )
+        } else null
     }
     val shape = RoundedCornerShape(16.dp)
     var focused by remember { mutableStateOf(false) }
@@ -104,6 +120,7 @@ fun ClassCard(
             modifier = Modifier
                 .weight(1f)
                 .fillMaxHeight()
+                .then(currentGradient?.let { Modifier.background(it) } ?: Modifier)
                 .padding(start = MakSpacing.sm, end = MakSpacing.lg, top = MakSpacing.md, bottom = MakSpacing.md),
             horizontalArrangement = Arrangement.spacedBy(MakSpacing.md)
         ) {
@@ -120,9 +137,18 @@ fun ClassCard(
                     text = item.endTime,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = mutedText,
                     maxLines = 1
                 )
+                if (item.isCurrent) {
+                    Text(
+                        text = "Teraz",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = courseTextColor(accent, cardBackground),
+                        maxLines = 1
+                    )
+                }
                 occurrenceStatusIcon(item.status)?.let { (icon, tint) ->
                     // The card's own description already reads the status.
                     Icon(
@@ -152,12 +178,16 @@ fun ClassCard(
                     itemVerticalAlignment = Alignment.CenterVertically,
                     modifier = Modifier.fillMaxWidth()
                 ) {
-                    CourseNameText(name = item.courseName, accent = accent)
+                    CourseNameText(
+                        name = item.courseName,
+                        accent = accent,
+                        surface = cardBackground
+                    )
                     if (item.type.isNotBlank()) {
                         Text(
                             text = item.type,
                             style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = mutedText,
                             maxLines = 1,
                             overflow = TextOverflow.Ellipsis
                         )
@@ -166,7 +196,7 @@ fun ClassCard(
                 Text(
                     text = classMeta(item),
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = mutedText,
                     maxLines = 2,
                     overflow = TextOverflow.Ellipsis
                 )
@@ -252,9 +282,9 @@ internal fun MakConflictNote(label: String, partners: String?, modifier: Modifie
 internal fun CourseNameText(
     name: String,
     accent: Color,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    surface: Color = MaterialTheme.colorScheme.surface
 ) {
-    val surface = MaterialTheme.colorScheme.surface
     val textColor = remember(accent, surface) { Color(courseTextColor(accent.toArgb(), surface.toArgb())) }
     Text(
         text = name,
@@ -313,6 +343,7 @@ private fun classMeta(item: ClassItemUi): String = listOfNotNull(
 /** What TalkBack reads for a class card; empty parts are skipped. */
 internal fun classCardDescription(item: ClassItemUi): String = buildList {
     add("${item.startTime}-${item.endTime}, ${item.name}")
+    if (item.isCurrent) add("Teraz")
     item.statusBadge?.takeIf(String::isNotBlank)?.let(::add)
     item.courseName.takeIf(String::isNotBlank)?.let(::add)
     item.type.takeIf(String::isNotBlank)?.let(::add)

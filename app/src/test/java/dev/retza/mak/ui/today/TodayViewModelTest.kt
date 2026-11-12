@@ -72,6 +72,22 @@ class TodayViewModelTest {
     }
 
     @Test
+    fun currentOccurrenceUpdatesOnRefreshAndStopsAtItsEnd() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val clock = MutableClock(Instant.parse("2026-09-21T07:30:00Z"), zone)
+        val viewModel = todayViewModel(repository, clock = clock)
+        backgroundScope.launch { viewModel.today.collect {} }
+        advanceUntilIdle()
+
+        assertTrue(viewModel.today.value.items.single().isCurrent)
+        clock.advanceTo(Instant.parse("2026-09-21T08:30:00Z"))
+        viewModel.refreshToday()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.today.value.items.single().isCurrent)
+    }
+
+    @Test
     fun minimumBreakTurnsShortBreakIntoCollision() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         repository.classes += repository.classes.single().copy(
@@ -205,6 +221,7 @@ class TodayViewModelTest {
         assertTrue(state.dateLabel.startsWith("Jutro, "))
         assertTrue(state.isTomorrow)
         assertEquals(listOf("Analiza"), state.items.map { it.name })
+        assertTrue(state.items.all { !it.isCurrent })
     }
 
     @Test

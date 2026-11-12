@@ -15,7 +15,7 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
-/** Plans one widget update when it should show tomorrow or at midnight. */
+/** Plans the next widget update: a class start or end, the switch to tomorrow, or midnight. */
 fun interface WidgetDaySwitchScheduler {
     fun schedule(at: LocalDateTime)
 }

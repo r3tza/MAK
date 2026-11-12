@@ -2,6 +2,13 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-11-11: Trwające zajęcia gradientem koloru kierunku (I-112)
+
+- Decyzja użytkownika: trwające zajęcia na „Dzisiaj”, listach wybranego dnia „Planu” i w widgecie mają gradient koloru kierunku oraz tekst „Teraz”. Użytkownik zaakceptował makietę `gradient-kierunku.html`. Zmiana zastępuje wcześniejszą propozycję „Następne” w widgecie i dopuszcza gradient jako wyjątek od jego zakazu. Wykonanie nie dodaje alarmów początku ani końca zajęć ani odświeżania widgetu co minutę.
+- Wykonanie przez Lunę na zlecenie użytkownika: wspólna reguła czasu wystąpienia, odświeżanie minutowe wyłącznie dla widocznych ekranów oraz gradient na kartach i wierszu widgetu. Ręczny odbiór agenta nadrzędnego na emulatorze `Medium_Phone_A12`, 320 dp: jasny i ciemny motyw, ekran „Dzisiaj”, lista „Planu”, launcher widget, naturalna granica minuty i skala tekstu 200%. Zrzuty są w `build/release_qa/i112-after-*`.
+- Użytkownik odrzucił dodatkowy opis przełącznika i zlecił użyć samej nazwy „Pokazuj jutrzejszy plan wieczorem”.
+- Decyzja użytkownika z 2026-11-12: widget odświeża się na początku i końcu dzisiejszych zajęć, bo przy odświeżaniu co godzinę „Teraz” mogło się spóźniać do godziny. Zastępuje to zakaz alarmów początku i końca zajęć z pierwszego punktu. Wykonuje to istniejący pojedynczy przybliżony alarm bez wybudzania (`nextCurrentStateChange`), bez serwisu i odświeżania co minutę. Odrzucone: zostawienie przybliżonego „Teraz” i usunięcie „Teraz” z widgetu. Użytkownik zostawił też widok bez oznaczania następnych zajęć i zatwierdził notatki 0.4.1.
+
 ## 2026-11-11: Plan na jutro po przeglądzie i przygotowanie 0.4.1
 
 - Decyzja użytkownika z 2026-11-11: odwołane zajęcia nie wyznaczają końca ostatnich zajęć, a widget odświeża się także o północy.
@@ -179,8 +186,4 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja użytkownika o testach: ograniczyć je do przypadków brzegowych i testów wnoszących realną wartość (`STACK.md`, sekcja 5).
 - Ograniczenie: użytkownik potwierdził brak projektu Google Cloud. Rzeczywiste logowanie i dwa telefony to I-69.
 
-## 2026-09-29: Mniej gałęzi, pull requestów i commitów
-
-- Decyzja użytkownika: małe zadanie dołącza do najbliższego większego na tej samej gałęzi, także gdy nie jest z nim ściśle powiązane (na przykład I-63 z trybem tabletowym). Plan trafia do gałęzi, która go wykonuje. Commit obejmuje logiczną część zadania razem z dokumentami, których dotyczy; drobnych poprawek dokumentów nie commituje się osobno, a pull request ma zwykle od jednego do pięciu commitów (`AGENTS.md`, sekcja „Git”; `WORKFLOW.md`, „Gałąź i pull request”).
-- Powód: od wydania 0.2.2 przybyło około 60 commitów, choć zakres zmieściłby się w 10 do 20; osobne gałęzie i pull requesty na drobne zmiany i same plany zapychają repozytorium i utrudniają przegląd historii.
 

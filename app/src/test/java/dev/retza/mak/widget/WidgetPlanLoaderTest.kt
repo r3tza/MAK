@@ -109,7 +109,7 @@ class WidgetPlanLoaderTest {
         ).states().first()
 
         assertTrue(beforeSwitch is WidgetUiState.Ready)
-        assertEquals(listOf(LocalDateTime.of(2026, 9, 21, 12, 0)), calls)
+        assertEquals(listOf(LocalDateTime.of(2026, 9, 21, 9, 0)), calls)
 
         calls.clear()
         val afterSwitch = loader(
@@ -122,6 +122,19 @@ class WidgetPlanLoaderTest {
         assertTrue((afterSwitch as WidgetUiState.EmptyDay).isTomorrow)
         assertTrue(afterSwitch.dateLabel.startsWith("Jutro, "))
         assertEquals(listOf(LocalDateTime.of(2026, 9, 22, 0, 0)), calls)
+    }
+
+    @Test
+    fun loaderPlansRefreshAtClassEndThenAtSwitchToTomorrow() = runTest {
+        val calls = mutableListOf<LocalDateTime>()
+        val repository = repositoryReturning(semester, planData(programming))
+
+        for (time in listOf("2026-09-21T09:30:00Z", "2026-09-21T10:30:00Z")) {
+            loader(repository, clock = clockAt(time), daySwitchScheduler = WidgetDaySwitchScheduler { calls += it })
+                .states().first()
+        }
+
+        assertEquals(listOf(LocalDateTime.of(2026, 9, 21, 10, 0), LocalDateTime.of(2026, 9, 21, 12, 0)), calls)
     }
 
     @Test

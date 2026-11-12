@@ -19,7 +19,8 @@ data class ClassItemUi(
     val occurrenceNote: String? = null,
     val status: OccurrenceStatusUi = OccurrenceStatusUi.Scheduled,
     val conflictLabel: String? = null,
-    val conflictWith: String? = null
+    val conflictWith: String? = null,
+    val isCurrent: Boolean = false
 ) {
     val isCancelled: Boolean
         get() = status == OccurrenceStatusUi.Cancelled

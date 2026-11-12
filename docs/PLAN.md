@@ -1,3 +1,3 @@
 # Plan
 
-Brak zaplanowanych kroków implementacji. Poprawki planu na jutro po przeglądzie gałęzi `task/test-review` z 2026-11-11 są wykonane. Tego dnia przeszły wszystkie 703 testy JVM, 225 testów Android na emulatorze `Medium_Phone_A12` (Android 12, 2048 MiB RAM), `lintDebug`, 10 testów skryptu dokumentacji i kontrola mapy. Otwarte odbiory i wymagania CI pozostają w `QUEUE.md`.
+Brak zaplanowanych kroków implementacji. I-112 jest wykonane na gałęzi `task/test-review` razem z poprawkami po przeglądzie jakości z 2026-11-12 i trafia do wydania 0.4.1. Otwarte odbiory są w `QUEUE.md`, a porządki odłożone do kolejnej wersji w jego sekcji „Pomysły do rozważenia”.

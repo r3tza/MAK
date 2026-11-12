@@ -4,8 +4,10 @@ import dev.retza.mak.domain.ActivePlan
 import dev.retza.mak.domain.WeekStatus
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.uniqueCollisionCount
+import dev.retza.mak.domain.isOccurrenceCurrent
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.LocalDateTime
 import dev.retza.mak.ui.freeDayDetail
 import dev.retza.mak.ui.label
 import dev.retza.mak.ui.todayTitleFormatter
@@ -33,7 +35,6 @@ class WidgetPresenter {
         }
 
         val labelsByOccurrence = collisionLabels(plan.collisions)
-        val nextId = now?.let { time -> plan.schedule.occurrences.firstOrNull { it.startTime.isAfter(time) }?.id }
         return WidgetUiState.Ready(
             dateLabel = dateLabel,
             weekLabel = weekLabel,
@@ -60,8 +61,7 @@ class WidgetPresenter {
                     phase = when {
                         now == null -> WidgetOccurrencePhase.Scheduled
                         !now.isBefore(occurrence.endTime) -> WidgetOccurrencePhase.Past
-                        !now.isBefore(occurrence.startTime) -> WidgetOccurrencePhase.Current
-                        occurrence.id == nextId -> WidgetOccurrencePhase.Next
+                        occurrence.isOccurrenceCurrent(LocalDateTime.of(date, now)) -> WidgetOccurrencePhase.Current
                         else -> WidgetOccurrencePhase.Scheduled
                     }
                 )

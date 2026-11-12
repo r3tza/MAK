@@ -3,9 +3,14 @@ package dev.retza.mak.ui
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.Modifier
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.compose.LocalLifecycleOwner
 import androidx.lifecycle.compose.LifecycleResumeEffect
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.navigation.NavController
 import androidx.navigation.NavGraphBuilder
 import androidx.navigation.compose.composable
@@ -20,6 +25,8 @@ import dev.retza.mak.ui.today.TodayScreen
 import dev.retza.mak.ui.today.TodayViewModel
 import dev.retza.mak.update.UpdateViewModel
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.isActive
 
 internal fun NavGraphBuilder.todayRoute(
     appState: AppUiState,
@@ -32,6 +39,7 @@ internal fun NavGraphBuilder.todayRoute(
 ) {
     composable(MakRoutes.Today) {
         val todayViewModel: TodayViewModel = koinViewModel()
+        RefreshVisiblePlanEachMinute(todayViewModel::refreshToday)
         LifecycleResumeEffect(todayViewModel) {
             todayViewModel.refreshToday()
             onPauseOrDispose { }
@@ -69,6 +77,7 @@ internal fun NavGraphBuilder.scheduleRoute(
 ) {
     composable(MakRoutes.Schedule) {
         val scheduleViewModel: ScheduleViewModel = koinViewModel()
+        RefreshVisiblePlanEachMinute(scheduleViewModel::refreshToday)
         LifecycleResumeEffect(scheduleViewModel) {
             scheduleViewModel.refreshToday()
             onPauseOrDispose { }
@@ -115,6 +124,21 @@ internal fun NavGraphBuilder.scheduleRoute(
             onSave = freeDayEditor::save,
             onCancel = freeDayEditor::cancel
         )
+    }
+}
+
+@Composable
+private fun RefreshVisiblePlanEachMinute(refresh: () -> Unit) {
+    val lifecycleOwner = LocalLifecycleOwner.current
+    val currentRefresh by rememberUpdatedState(refresh)
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            while (isActive) {
+                val millisUntilMinute = 60_000L - Math.floorMod(System.currentTimeMillis(), 60_000L)
+                delay(millisUntilMinute)
+                currentRefresh()
+            }
+        }
     }
 }
 

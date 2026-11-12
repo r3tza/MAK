@@ -91,7 +91,9 @@ class TodayViewModel(
             classCount = schedule.occurrences.size,
             collisionCount = uniqueCollisionCount(plan.collisions),
             gapCount = plan.gapCount,
-            items = schedule.occurrences.map { it.toUi(labels[it.id], names[it.id]) },
+            items = schedule.occurrences.map {
+                it.toUi(labels[it.id], names[it.id], moment)
+            },
             // With every program hidden the note on the list says it all; the hint would repeat it.
             hiddenProgramNames = if (allHidden) emptyList() else hiddenProgramNames(data, inputs.display),
             allProgramsHidden = allHidden,

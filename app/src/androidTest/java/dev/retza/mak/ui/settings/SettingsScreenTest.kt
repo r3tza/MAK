@@ -169,8 +169,8 @@ class SettingsScreenTest {
             }
         }
 
-        composeTestRule.onNodeWithText("Plan na jutro wieczorem").performScrollTo().assertIsDisplayed()
-        composeTestRule.onNodeWithText("Plan na jutro wieczorem").performScrollTo().performClick()
+        composeTestRule.onNodeWithText("Pokazuj jutrzejszy plan wieczorem").performScrollTo().assertIsDisplayed()
+        composeTestRule.onNodeWithText("Pokazuj jutrzejszy plan wieczorem").performScrollTo().performClick()
         assertEquals(false, changedTo)
     }
 

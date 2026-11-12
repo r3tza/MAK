@@ -252,7 +252,7 @@ class WidgetPresenterTest {
     }
 
     @Test
-    fun presenterMarksCurrentNextAndPastPhases() {
+    fun presenterMarksCurrentAndPastPhasesWithoutNext() {
         val classes = listOf(
             classItem(1L, "first", LocalTime.of(8, 0), LocalTime.of(9, 0)),
             classItem(2L, "second", LocalTime.of(9, 30), LocalTime.of(10, 30)),
@@ -273,7 +273,7 @@ class WidgetPresenterTest {
 
         assertEquals(WidgetOccurrencePhase.Past, state.items.first { it.id == "1:$date" }.phase)
         assertEquals(WidgetOccurrencePhase.Current, state.items.first { it.id == "2:$date" }.phase)
-        assertEquals(WidgetOccurrencePhase.Next, state.items.first { it.id == "3:$date" }.phase)
+        assertEquals(WidgetOccurrencePhase.Scheduled, state.items.first { it.id == "3:$date" }.phase)
     }
 
     @Test

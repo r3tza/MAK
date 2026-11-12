@@ -4,6 +4,7 @@ import dev.retza.mak.data.repository.SemesterRepository
 import dev.retza.mak.domain.ActivePlanInputs
 import dev.retza.mak.domain.ActivePlanProvider
 import dev.retza.mak.domain.allProgramsHidden
+import dev.retza.mak.domain.nextCurrentStateChange
 import dev.retza.mak.domain.shownPlanDate
 import dev.retza.mak.domain.tomorrowSwitchTime
 import dev.retza.mak.data.ActivePlanSource
@@ -68,8 +69,9 @@ class WidgetPlanLoader(
         val shown = shownPlanDate(today, now.toLocalTime(), switchTime, enabled)
         val semesterName = inputs.data.semester.name
         if (shown == today) {
-            val nextUpdate = if (enabled && switchTime != null) today.atTime(switchTime) else nextMidnight()
-            daySwitchScheduler.schedule(nextUpdate)
+            val dayUpdate = if (enabled && switchTime != null) today.atTime(switchTime) else nextMidnight()
+            val classUpdate = nextCurrentStateChange(todayPlan.schedule.occurrences, now)
+            daySwitchScheduler.schedule(listOfNotNull(dayUpdate, classUpdate).min())
             return presenter.present(today, semesterName, todayPlan, now.toLocalTime())
         }
         daySwitchScheduler.schedule(nextMidnight())

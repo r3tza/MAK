@@ -3,8 +3,9 @@
   "releases": [
     {
       "version": "0.4.1",
-      "date": "2026-11-11",
+      "date": "2026-11-12",
       "changes": [
+        "Trwające zajęcia wyróżnia teraz gradient koloru kierunku i napis „Teraz” w aplikacji oraz w widgecie.",
         "Wieczorem ekran „Dzisiaj” i widget pokazują plan na jutro: 2 godziny po ostatnich zajęciach, a w dni bez zajęć od 18:00. Funkcję można wyłączyć w ustawieniach wyglądu.",
         "W niskim oknie wybór daty otwiera się od razu w trybie wpisywania."
       ]

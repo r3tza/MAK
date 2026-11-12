@@ -48,7 +48,6 @@ sealed interface WidgetUiState {
 enum class WidgetOccurrencePhase {
     Past,
     Current,
-    Next,
     Scheduled
 }
 

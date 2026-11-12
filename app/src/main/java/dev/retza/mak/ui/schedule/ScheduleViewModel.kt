@@ -44,6 +44,7 @@ import dev.retza.mak.domain.toLocalDateOrNull
 import dev.retza.mak.ui.toUi
 import java.time.Clock
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.YearMonth
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -94,6 +95,7 @@ class ScheduleViewModel(
             )
         )
     }
+    private val moment = MutableStateFlow(LocalDateTime.now(clock))
 
     private val activePlan = activePlanSource.observeActive()
         .stateIn(viewModelScope, SharingStarted.Eagerly, null)
@@ -118,8 +120,8 @@ class ScheduleViewModel(
         }
     }.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5_000), emptyList())
 
-    val schedule: StateFlow<ScheduleUiState> = combine(activePlan, controls, calendarGrid) { inputs, control, grid ->
-        buildSchedule(inputs, control, grid)
+    val schedule: StateFlow<ScheduleUiState> = combine(activePlan, controls, calendarGrid, moment) { inputs, control, grid, currentMoment ->
+        buildSchedule(inputs, control, grid, currentMoment)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -135,17 +137,21 @@ class ScheduleViewModel(
      * Called when the app returns to the foreground. After midnight the plan follows the new day,
      * but a week or day the user picked on purpose stays selected.
      */
-    fun refreshToday() = controls.update { control ->
-        val newToday = LocalDate.now(clock)
-        if (newToday == control.today) return@update control
-        val followList = control.scheduleDate == control.today
-        val followCalendar = control.calendarDate == control.today
-        control.copy(
-            today = newToday,
-            scheduleDate = if (followList) newToday else control.scheduleDate,
-            calendarDate = if (followCalendar) newToday else control.calendarDate,
-            calendarMonth = if (followCalendar) YearMonth.from(newToday) else control.calendarMonth
-        )
+    fun refreshToday() {
+        val currentMoment = LocalDateTime.now(clock)
+        moment.value = currentMoment
+        controls.update { control ->
+            val newToday = currentMoment.toLocalDate()
+            if (newToday == control.today) return@update control
+            val followList = control.scheduleDate == control.today
+            val followCalendar = control.calendarDate == control.today
+            control.copy(
+                today = newToday,
+                scheduleDate = if (followList) newToday else control.scheduleDate,
+                calendarDate = if (followCalendar) newToday else control.calendarDate,
+                calendarMonth = if (followCalendar) YearMonth.from(newToday) else control.calendarMonth
+            )
+        }
     }
 
     fun changeWeek(amount: Long) = controls.update { it.copy(scheduleDate = it.scheduleDate.plusWeeks(amount)) }
@@ -299,7 +305,8 @@ class ScheduleViewModel(
     private fun buildSchedule(
         inputs: ActivePlanInputs?,
         control: ScheduleControls,
-        grid: List<CalendarDayUi>
+        grid: List<CalendarDayUi>,
+        currentMoment: LocalDateTime
     ): ScheduleUiState {
         if (inputs == null) return emptyScheduleState()
         // Hidden study programs are neither filter options, legend entries, cancelled classes nor markers.
@@ -376,7 +383,9 @@ class ScheduleViewModel(
             selectedDayLabel = dayNames[control.scheduleDate.dayOfWeek].orEmpty(),
             // Counts only classes that take place, like "Dzisiaj" and the widget.
             selectedDayCountLabel = classCountLabel(filtered.size),
-            items = filtered.map { it.toUi(labels[it.id], names[it.id]) } + cancelled,
+            items = filtered.map {
+                it.toUi(labels[it.id], names[it.id], currentMoment)
+            } + cancelled,
             calendarMonthLabel = control.calendarMonth.format(monthFormatter),
             calendarDays = calendarDays,
             calendarLegend = calendarLegend(
@@ -396,7 +405,9 @@ class ScheduleViewModel(
             calendarItems = if (calendarPlan == null) {
                 emptyList()
             } else {
-                calendarFiltered.map { it.toUi(calendarLabels[it.id], calendarNames[it.id]) } +
+                calendarFiltered.map {
+                    it.toUi(calendarLabels[it.id], calendarNames[it.id], currentMoment)
+                } +
                     if (control.showCancelled) cancelledItems(calendarPlan.schedule.cancelled, activeFilter) else emptyList()
             },
             showCancelled = control.showCancelled,

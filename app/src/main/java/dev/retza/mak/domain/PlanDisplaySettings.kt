@@ -6,7 +6,7 @@ data class PlanDisplaySettings(
     val gapThresholdMinutes: Int = PlanDisplayLimits.DEFAULT_GAP_THRESHOLD_MINUTES,
     // Study programs hidden on this phone (`DOMAIN.md`, „Kierunki”); their classes are left out of the plan.
     val hiddenProgramIds: Set<Long> = emptySet(),
-    // "Plan na jutro wieczorem" (I-111); stored on this phone only.
+    // "Pokazuj jutrzejszy plan wieczorem" (I-111); stored on this phone only.
     val showTomorrowInEvening: Boolean = true
 ) {
     companion object {

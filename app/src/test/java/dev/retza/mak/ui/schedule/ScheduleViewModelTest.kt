@@ -95,6 +95,34 @@ class ScheduleViewModelTest {
     }
 
     @Test
+    fun currentOccurrenceRefreshesAndSelectedOtherDayHasNoCurrentClass() = runTest(mainDispatcher) {
+        val clock = MutableClock(Instant.parse("2026-09-21T07:30:00Z"))
+        val repository = FakeRepository()
+        repository.classes += repository.classes.first().copy(
+            id = 2L,
+            name = "Wtorkowe",
+            dayOfWeek = java.time.DayOfWeek.TUESDAY,
+            recurrence = dev.retza.mak.data.entity.Recurrence.ONCE,
+            date = LocalDate.of(2026, 9, 22)
+        )
+        val viewModel = viewModel(repository, clock)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+        assertTrue(viewModel.schedule.value.items.single().isCurrent)
+
+        viewModel.selectDay("2026-09-22")
+        advanceUntilIdle()
+        assertEquals(listOf("Wtorkowe"), viewModel.schedule.value.items.map { it.name })
+        assertFalse(viewModel.schedule.value.items.single().isCurrent)
+
+        viewModel.selectDay("2026-09-21")
+        clock.now = Instant.parse("2026-09-21T08:30:00Z")
+        viewModel.refreshToday()
+        advanceUntilIdle()
+        assertFalse(viewModel.schedule.value.items.single().isCurrent)
+    }
+
+    @Test
     fun initialStateMapsActiveSemesterPlan() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)

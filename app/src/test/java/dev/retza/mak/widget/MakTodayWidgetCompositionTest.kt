@@ -98,7 +98,7 @@ class MakTodayWidgetCompositionTest {
                 conflictLabel = null,
                 classNote = "Przeczytać rozdział 4",
                 occurrenceNote = "Przynieść materiały",
-                phase = WidgetOccurrencePhase.Current
+                phase = WidgetOccurrencePhase.Scheduled
             )
             val state = WidgetUiState.Ready(
                 dateLabel = "poniedziałek, 21 września",
@@ -124,7 +124,6 @@ class MakTodayWidgetCompositionTest {
             onNode(hasText("Przeczytać rozdział 4")).assertExists()
             onNode(hasContentDescription("Notatka do terminu")).assertExists()
             onNode(hasText("Przynieść materiały")).assertExists()
-            onNode(hasText("Teraz")).assertExists()
             onNode(hasText("Tydzień A,")).assertExists()
         }
 

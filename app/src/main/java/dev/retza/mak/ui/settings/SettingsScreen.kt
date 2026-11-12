@@ -207,7 +207,7 @@ fun SettingsScreen(
                 }
                 SettingsRowDivider()
                 SettingsSwitchRow(
-                    title = "Plan na jutro wieczorem",
+                    title = "Pokazuj jutrzejszy plan wieczorem",
                     checked = state.showTomorrowInEvening,
                     onCheckedChange = onShowTomorrowChanged
                 )

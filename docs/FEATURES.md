@@ -57,11 +57,11 @@ Decyzje użytkownika z 2026-10-21 (I-111):
 - 2 godziny po końcu ostatnich zajęć dnia „Dzisiaj” i widget pokazują plan następnego dnia kalendarzowego; w dniu bez zajęć przełączenie następuje o 18:00;
 - gdy jutro nie ma zajęć, ekran i widget pokazują „Jutro bez zajęć”, a nie najbliższy dzień z zajęciami;
 - karta podsumowania liczy zajęcia, kolizje i okienka pokazanego dnia;
-- funkcję wyłącza przełącznik „Plan na jutro wieczorem” w sekcji „Wygląd” ustawień, domyślnie włączony;
+- funkcję wyłącza przełącznik „Pokazuj jutrzejszy plan wieczorem” w sekcji „Wygląd” ustawień, domyślnie włączony;
 - dzisiejsze zajęcia pozostają dostępne w „Planie”;
-- po przełączeniu tytuł ekranu brzmi „Jutro, {dzień tygodnia}, {data}” (na przykład „Jutro, środa, 22 października”), nagłówek karty „Twój plan na jutro”, a bez zajęć „Jutro bez zajęć”; jutro wolne wygląda jak dzień wolny dzisiaj (baner, nagłówek „Dzień wolny”); widget ma w nagłówku ten sam tytuł i żadne jutrzejsze zajęcia nie są oznaczone jako „Teraz” ani „Następne”;
+- po przełączeniu tytuł ekranu brzmi „Jutro, {dzień tygodnia}, {data}” (na przykład „Jutro, środa, 22 października”), nagłówek karty „Twój plan na jutro”, a bez zajęć „Jutro bez zajęć”; jutro wolne wygląda jak dzień wolny dzisiaj (baner, nagłówek „Dzień wolny”); widget ma w nagłówku ten sam tytuł i żadne jutrzejsze zajęcia nie są oznaczone jako „Teraz”;
 - gdy ostatnie zajęcia kończą się o 22:00 lub później, przełączenia nie ma; dzień wolny bez zajęć liczy się jak dzień bez zajęć (18:00); odwołane zajęcia nie wyznaczają końca ostatnich zajęć, a dzień ze wszystkimi zajęciami odwołanymi przełącza się o 18:00;
-- widget ma jeden przybliżony alarm (`AlarmManager.set`, bez wybudzania): przełącza go na plan na jutro albo odświeża o północy, więc system może opóźnić aktualizację; po restarcie telefonu, zmianie czasu i aktualizacji aplikacji alarm jest ustawiany od nowa; ekran „Dzisiaj” przelicza moment przełączenia przy każdym powrocie na ekran.
+- widget ma jeden przybliżony alarm (`AlarmManager.set`, bez wybudzania): odświeża go na początku i końcu dzisiejszych zajęć, przełącza na plan na jutro albo odświeża o północy, zależnie od tego, co nastąpi najpierw, więc system może opóźnić aktualizację; po restarcie telefonu, zmianie czasu i aktualizacji aplikacji alarm jest ustawiany od nowa; ekran „Dzisiaj” przelicza moment przełączenia przy każdym powrocie na ekran.
 
 ### Struktura karty zajęć
 
@@ -76,6 +76,8 @@ Kolejność sekcji w prawej kolumnie:
 5. Notatki, jeśli występują.
 
 Pionowy pasek przy krawędzi karty używa koloru kierunku dopasowanego do kontrastu co najmniej 3:1 z tłem karty. Nazwa kierunku jest pogrubionym tekstem w tym samym odcieniu, przyciemnionym w motywie jasnym i rozjaśnionym w ciemnym tak, aby miał kontrast co najmniej 4,5:1 z tłem karty; zapisany kolor kierunku się nie zmienia. Nie kolorować całej karty według kierunku. Typ zajęć pozostaje neutralnym tekstem obok nazwy kierunku. Kolor kierunku zawsze występuje razem z jego nazwą, więc nie jest jedynym nośnikiem informacji.
+
+Trwające zajęcia na „Dzisiaj” oraz na listach wybranego dnia w „Planie” mają poziomy gradient: 23% dopasowanego koloru kierunku po lewej, 9% przy 45% szerokości i zwykłe tło po prawej. Pod godzinami pokazują tekst „Teraz” o rozmiarze co najmniej 12 sp. Czytnik ekranu odczytuje tę etykietę w opisie karty. Wyróżnienie dotyczy faktycznej daty wystąpienia, od początku włącznie do końca wyłącznie, także przy zmianie daty i kolizji; odwołane terminy nie są trwające. Nie wyróżnia jutra ani innego wybranego dnia. Karty bez aktywnego terminu nie zmieniają wyglądu. Ekran odświeża stan na granicy minuty tylko na widoku pierwszoplanowym i po powrocie z tła.
 
 Każda notatka to jeden wiersz: ikona i pełna treść, bez etykiety tekstowej i bez tła. Notatka do zajęć ma ikonę notatki w kolorze akcentu, a notatka do terminu ikonę kalendarza w kolorze zmiany; ten sam zapis obowiązuje w „Planie” dla każdego dnia. Jeśli istnieją oba rodzaje notatek, pokazać dwa osobne wiersze. Pełną nazwę rodzaju notatki czyta czytnik ekranu i pokazują pola w szczegółach terminu. Kolizja zachowuje pomarańczowy wiersz ostrzegawczy z ikoną i zakresem nakładania, a w drugiej linii nazwą drugich zajęć („Z: {nazwa}”, kilka nazw po przecinku).
 
@@ -112,7 +114,7 @@ Widok listy na telefonie składa się z:
 - oznaczeń wykrytych kolizji;
 - komunikatu pustego dnia: „Brak zajęć w tym dniu.” przy filtrze „Wszystkie” i „Brak zajęć w tym dniu dla wybranego kierunku.” przy wybranym kierunku; widok „Kalendarz” używa tych samych tekstów (decyzja użytkownika z 2026-10-14, I-100).
 
-Plan uwzględnia aktualny semestr, automatyczne lub ręcznie skorygowane oznaczenie A/B, zmiany pojedynczych wystąpień oraz zajęcia jednorazowe. Ręcznie skorygowany tydzień jest wyraźnie oznaczony; użytkownik może usunąć korektę i wrócić do automatycznego wyniku.
+Plan uwzględnia aktualny semestr, automatyczne lub ręcznie skorygowane oznaczenie A/B, zmiany pojedynczych wystąpień oraz zajęcia jednorazowe. Ręcznie skorygowany tydzień jest wyraźnie oznaczony; użytkownik może usunąć korektę i wrócić do automatycznego wyniku. Trwające zajęcia wybranego dnia dostają takie samo wyróżnienie gradientem i etykietą „Teraz” jak na „Dzisiaj”; wybrana przyszła albo przeszła data pozostaje bez wyróżnienia.
 
 ### Widok „Kalendarz”
 
@@ -212,7 +214,7 @@ Widget powinien otrzymywać żądanie odświeżenia po:
 - zmianie rozmiaru albo konfiguracji widgetu;
 - okresowym sygnale systemu jako zabezpieczeniu przy zmianie daty.
 
-System może opóźnić odświeżenie po północy. Widget nie obiecuje zmiany dokładnie o 00:00; przy każdym odświeżeniu odczytuje aktualną datę i aktywny plan. Nie należy używać ciągłego serwisu w tle, dokładnych alarmów ani odświeżania co minutę. Tekst „Następne: 10:15” jest wystarczający i ogranicza zużycie baterii. Układ musi dostosować liczbę widocznych zajęć do faktycznego rozmiaru widgetu.
+System może opóźnić odświeżenie po północy. Widget nie obiecuje zmiany dokładnie o 00:00; przy każdym odświeżeniu odczytuje aktualną datę i aktywny plan. Nie należy używać ciągłego serwisu w tle, dokładnych alarmów ani odświeżania co minutę. Ten sam przybliżony alarm bez wybudzania odświeża widget na początku i końcu dzisiejszych zajęć, aby „Teraz” pojawiało się i znikało razem z zajęciami (decyzja użytkownika z 2026-11-12, I-112). Wystąpienie trwające w chwili odświeżenia pokazuje „Teraz” i poziomy gradient koloru kierunku. Ten wiersz jest wyjątkiem od ogólnej zasady zakazu gradientu widgetu (decyzja użytkownika z 2026-11-11, I-112). Układ musi dostosować liczbę widocznych zajęć do faktycznego rozmiaru widgetu.
 
 ### Układ i zachowanie widgetu
 
@@ -273,11 +275,11 @@ Zmiana ma poprawić hierarchię i atrakcyjność widgetu bez zwiększania liczby
 5. Rozdzielić kierunek od lokalizacji. W pierwszym wierszu metadanych pokazać kierunek, w następnym najważniejszą lokalizację. Prowadzącego pokazywać tylko w wariantach, w których mieści się bez wypierania czasu, nazwy, kierunku, sali lub kolizji.
 6. Zmniejszyć wizualny ciężar kolizji przy zajęciach. Zamiast dużego bloku użyć jasnego pomarańczowego tła ostrzegawczego z cienkim pomarańczowym paskiem, w tych samych kolorach co wiersz kolizji na karcie w aplikacji, i jednej linii „Kolizja {zakres}” albo „Kolizje: {zakresy}”, a przy kolizji bez nakładania „Bez przerwy o {godzina}” albo „Przerwa {N} min o {godzina}” (I-80). Kolor błędu nie występuje, bo kolizja nie jest winą użytkownika (`ARCHITECTURE.md`). Widget nie pokazuje nazwy drugich zajęć, bo ma mało miejsca; nazwę pokazują karta i szczegóły terminu w aplikacji (decyzja użytkownika z 2026-09-28). Zakres musi pozostać dostępny bez polegania na kolorze.
 7. Separator renderować wyłącznie między zajęciami. Wewnątrz wpisu budować hierarchię przez odstępy, wagę tekstu i role kolorów.
-8. Dodać prezentacyjne stany „Teraz” i „Następne” jako pogrubiony tekst w kolorze akcentu, bez tła, tylko wtedy, gdy mieszczą się w danym progu rozmiaru. Zakończone zajęcia można lekko przygasić. Stan wynika z czasu odczytanego przez wstrzyknięty `Clock` podczas odświeżenia i nie może sugerować aktualizacji co minutę.
-9. Zachować role kolorów: kolor kierunku (pasek dopasowany do kontrastu 3:1 z tłem) dla osi czasu i nazwy kierunku, pomarańczowy kolor ostrzeżenia dla alertu kolizji, taki sam jak na karcie zajęć w aplikacji, i czerwony dla liczby kolizji w nagłówku (decyzja użytkownika z 2026-09-28, `ARCHITECTURE.md`), niebieski lub indygo dla tygodnia A/B oraz neutralny dla godzin, lokalizacji, prowadzącego i zakończonych zajęć. Kolor akcentu w wierszu mają tylko „Teraz” i „Następne”.
-10. Dla każdego progu rozmiaru ustalić jawnie widoczne metadane, maksymalną liczbę linii oraz obecność stanów „Teraz” i „Następne”. Nie polegać na przypadkowym przycinaniu przez `RemoteViews`.
+8. Wiersz aktualnie trwającego wystąpienia pokazuje „Teraz” i poziomy gradient koloru kierunku. Wspólna reguła czasu sprawdza datę wystąpienia, początek włącznie, koniec wyłącznie i pomija odwołane terminy. Nie wyróżniać najbliższych przyszłych zajęć. Zakończone zajęcia można lekko przygasić. Stan wynika z czasu wstrzykniętego `Clock` przy odświeżeniu; alarm widgetu odświeża go na granicach zajęć (`nextCurrentStateChange`).
+9. Zachować role kolorów: kolor kierunku dla gradientu, osi czasu i nazwy kierunku, pomarańczowy kolor ostrzeżenia dla alertu kolizji, taki sam jak na karcie zajęć w aplikacji, i czerwony dla liczby kolizji w nagłówku (decyzja użytkownika z 2026-09-28, `ARCHITECTURE.md`), niebieski lub indygo dla tygodnia A/B oraz neutralny dla godzin, lokalizacji, prowadzącego i zakończonych zajęć.
+10. Dla każdego progu rozmiaru ustalić jawnie widoczne metadane, maksymalną liczbę linii oraz obecność stanu „Teraz”. Nie polegać na przypadkowym przycinaniu przez `RemoteViews`.
 
-Odbiór na launcherze obejmuje mały, pośredni i duży rozmiar, oba motywy, brak kolizji, jedną i kilka kolizji, długie nazwy, trwające, następne i zakończone zajęcia oraz brak danych. Porównać co najmniej dwa warianty odcieni nagłówka i intensywności tła kolizji.
+Odbiór na launcherze obejmuje mały, pośredni i duży rozmiar, oba motywy, brak kolizji, jedną i kilka kolizji, długie nazwy, trwające i zakończone zajęcia oraz brak danych.
 
 Kryterium zakończenia: użytkownik najpierw odczytuje datę, czas i nazwę zajęć, następnie kierunek oraz lokalizację, a dopiero później szczegóły kolizji. Żaden wariant nie ucina czasu, nie wymaga koloru do zrozumienia stanu ani nie oddaje kolizji większej powierzchni niż podstawowym informacjom o zajęciach.
 
@@ -293,7 +295,7 @@ Ekran główny dzieli ustawienia na sekcje:
    - pozycja „Kierunki” prowadząca do listy globalnych kierunków.
 2. „Wygląd”:
    - pozycja „Motyw” z bieżącą wartością „Systemowy”, „Jasny” albo „Ciemny”; dopóki jest to jedyne ustawienie wyglądu, wybór może pozostać na ekranie głównym;
-   - przełącznik „Plan na jutro wieczorem”, domyślnie włączony (I-111, sekcja „Plan na jutro”).
+   - przełącznik „Pokazuj jutrzejszy plan wieczorem”, domyślnie włączony (I-111).
 3. „Powiadomienia”:
    - pozycja „Powiadomienia” (decyzja użytkownika z 2026-10-11, I-97) z liczbą włączonych rodzajów powiadomień: „Wszystkie włączone”, „Włączone: 2 z 4” albo „Wyłączone”; godzina i wyprzedzenie są tylko na ekranie „Powiadomienia”;
    - gdy włączony jest co najmniej jeden rodzaj, a system blokuje powiadomienia, drugi wiersz podsumowania pokazuje „Zablokowane przez system”;
