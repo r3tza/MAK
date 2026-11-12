@@ -2,6 +2,14 @@
 
 Techniczna historia wydań dla agentów. Notatki dla użytkowników są w `app/src/main/assets/release_notes.json`.
 
+## 0.5.0, 2026-11-12
+
+- Plan na jutro wieczorem (I-111): 2 godziny po końcu ostatnich nieodwołanych zajęć, a w dniu bez zajęć o 18:00, ekran „Dzisiaj” i widget pokazują następny dzień kalendarzowy z kartą podsumowania tego dnia (`TomorrowPlan`, `tomorrowSwitchTime`, `shownPlanDate`). Przełącznik „Pokazuj jutrzejszy plan wieczorem” w sekcji „Wygląd”, domyślnie włączony, zapisany tylko na telefonie (`PlanDisplaySettings`).
+- Trwające zajęcia (I-112): wspólna reguła `isOccurrenceCurrent` w `domain/OccurrenceTime.kt` (faktyczna data, początek włącznie, koniec wyłącznie, bez odwołanych). Karty na „Dzisiaj” i w liście „Planu” mają gradient koloru kierunku (`CurrentClassTint`) i etykietę „Teraz” w semantyce; widoczny ekran odświeża stan na granicy minuty. Widget stracił fazę `Next` i etykietę „Następne”, a wiersz trwający dostaje „Teraz” i gradient z bitmapy Canvas.
+- Jeden przybliżony alarm widgetu (`AlarmManager.set`, bez wybudzania) ustawia się na najbliższy z momentów: początek albo koniec dzisiejszych zajęć (`nextCurrentStateChange`), przełączenie na jutro, północ. Alarm jest odtwarzany po restarcie, zmianie czasu i aktualizacji aplikacji.
+- W oknie niższym niż 560 dp wybór daty otwiera się w trybie wpisywania (I-44).
+- CI: Android Lint w zadaniu `checks` (I-105) i testy Room na emulatorze API 34 przy zmianach `data/` albo `app/schemas/` (I-106). Podział `MakComponents.kt` według pojęć (I-107), poprawki po przeglądzie (I-108, I-109), porządki testów i testy zapisu Room na bazie w pamięci.
+
 ## 0.4.0, 2026-10-21
 
 - Dodano dni wolne (I-81): model `FreeDay` przypięty do kalendarza, pomijanie zajęć cyklicznych w `ScheduleResolver` (terminy jednorazowe i przeniesione zostają), tabela Room z migracją 3 do 4, eksport JSON w wersji 4 i synchronizacja. Starsza wersja odrzuca nowszy plan z problemem `NEWER_REMOTE_PLAN`. Ekran „Dni wolne”, „Oznacz jako wolny” w kalendarzu „Planu”, pas dni wolnych w kalendarzu, baner na „Dzisiaj” i stan widgetu.
