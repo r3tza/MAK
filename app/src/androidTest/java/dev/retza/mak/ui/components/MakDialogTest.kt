@@ -33,7 +33,7 @@ class MakDialogTest {
         choices: List<MakDialogAction> = emptyList()
     ) {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 MakDialog(
                     title = "Tytuł",
                     onDismiss = {},

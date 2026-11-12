@@ -66,7 +66,11 @@ fun MakCourseColorPicker(
     previewName: String = "Kierunek"
 ) {
     val current = parseCourseHex(selectedColor)
-    val defaultLightness = remember { hueAndLightnessOf(parseCourseHex(DefaultCourseColor)!!).lightness }
+    val defaultLightness = remember {
+        hueAndLightnessOf(
+            checkNotNull(parseCourseHex(DefaultCourseColor)) { "DefaultCourseColor must be a valid #RRGGBB color" }
+        ).lightness
+    }
     var lastHue by rememberSaveable { mutableFloatStateOf(DEFAULT_HUE) }
     val hue = current
         ?.takeIf { saturationOf(it) > GREY_SATURATION }

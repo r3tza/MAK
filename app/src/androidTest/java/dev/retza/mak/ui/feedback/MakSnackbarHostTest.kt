@@ -27,7 +27,7 @@ class MakSnackbarHostTest {
         val channel = Channel<UiFeedback>(Channel.BUFFERED)
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 MakSnackbarHost(feedback = channel.receiveAsFlow(), hostState = hostState)
             }
         }
@@ -60,7 +60,7 @@ class MakSnackbarHostTest {
         val channel = Channel<UiFeedback>(Channel.BUFFERED)
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 MakSnackbarHost(feedback = channel.receiveAsFlow(), hostState = hostState)
             }
         }

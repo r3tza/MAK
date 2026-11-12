@@ -74,7 +74,7 @@ class SyncChangesScreenTest {
     private fun Screen(state: SyncChangesUi, onPick: (Int, PlanSide) -> Unit, onSave: () -> Unit) {
         val density = LocalDensity.current
         CompositionLocalProvider(LocalDensity provides Density(density.density, 2f)) {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(Modifier.width(320.dp).height(640.dp)) {
                     SyncChangesScreen(state = state, onPick = onPick, onSave = onSave)
                 }

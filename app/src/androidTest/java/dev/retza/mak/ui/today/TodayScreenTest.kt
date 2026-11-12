@@ -58,7 +58,7 @@ class TodayScreenTest {
         composeTestRule.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) {
-                MAKTheme(dynamicColor = false) {
+                MAKTheme() {
                     Box(modifier = Modifier.width(320.dp).height(1400.dp)) {
                         TodayScreen(
                             state = TodayUiState(
@@ -89,7 +89,7 @@ class TodayScreenTest {
     @Test
     fun freeDayShowsBannerInsteadOfEmptyMessage() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 TodayScreen(
                     state = TodayUiState(
                         dateLabel = "Poniedziałek, 21 września",
@@ -117,7 +117,7 @@ class TodayScreenTest {
         var viewedUpdate = false
         var openedSync = false
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1400.dp)) {
                     TodayScreen(
                         state = TodayUiState(
@@ -151,7 +151,7 @@ class TodayScreenTest {
         var openedPrograms = false
         var allHidden by mutableStateOf(false)
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1400.dp)) {
                     TodayScreen(
                         state = TodayUiState(
@@ -194,7 +194,7 @@ class TodayScreenTest {
         composeTestRule.setContent {
             val density = LocalDensity.current
             CompositionLocalProvider(LocalDensity provides Density(density.density, fontScale = 2f)) {
-                MAKTheme(dynamicColor = false) {
+                MAKTheme() {
                     Box(modifier = Modifier.width(320.dp).height(1400.dp)) {
                         TodayScreen(
                             state = TodayUiState(
@@ -249,7 +249,7 @@ class TodayScreenTest {
         )
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(
                     modifier = Modifier
                         .width(320.dp)
@@ -291,7 +291,7 @@ class TodayScreenTest {
     @Test
     fun summaryShowsZerosAndEmptyTextAt320Dp() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(
                     modifier = Modifier
                         .width(320.dp)
@@ -319,7 +319,7 @@ class TodayScreenTest {
     @Test
     fun withoutActiveSemesterHidesSummaryCard() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(
                     modifier = Modifier
                         .width(320.dp)
@@ -356,7 +356,7 @@ class TodayScreenTest {
             endTime = "10:30"
         )
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.requiredWidth(1100.dp).height(700.dp).testTag("window")) {
                     TodayScreen(
                         state = TodayUiState(
@@ -388,7 +388,7 @@ class TodayScreenTest {
     @Test
     fun wideTodayWithoutSemesterStaysSingleColumn() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.requiredWidth(1100.dp).height(700.dp).testTag("window")) {
                     TodayScreen(
                         state = TodayUiState(

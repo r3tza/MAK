@@ -116,7 +116,7 @@ class UpdateScreenTest {
         onCancel: () -> Unit = {}
     ) {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(Modifier.width(320.dp).height(900.dp)) {
                     UpdateScreen(
                         state = state,

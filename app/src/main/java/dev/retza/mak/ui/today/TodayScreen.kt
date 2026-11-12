@@ -47,7 +47,9 @@ data class TodayUiState(
     // Study programs of the active semester hidden on this phone; the hint explains the shorter plan.
     val hiddenProgramNames: List<String> = emptyList(),
     val allProgramsHidden: Boolean = false,
-    val freeDay: FreeDayNoteUi? = null
+    val freeDay: FreeDayNoteUi? = null,
+    // The plan shown is tomorrow's, shown from the evening switch time (I-111).
+    val isTomorrow: Boolean = false
 )
 
 @Composable
@@ -132,7 +134,8 @@ private fun TodaySummary(state: TodayUiState, modifier: Modifier) {
     MakSummaryCard(
         title = when {
             state.freeDay != null -> "Dzień wolny"
-            state.classCount == 0 -> "Dziś bez zajęć"
+            state.classCount == 0 -> if (state.isTomorrow) "Jutro bez zajęć" else "Dziś bez zajęć"
+            state.isTomorrow -> "Twój plan na jutro"
             else -> "Twój plan na dziś"
         },
         classCount = state.classCount,

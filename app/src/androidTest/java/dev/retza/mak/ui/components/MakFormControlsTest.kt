@@ -60,7 +60,7 @@ class MakFormControlsTest {
                 LocalContext provides context,
                 LocalConfiguration provides context.resources.configuration
             ) {
-                MAKTheme(dynamicColor = false) {
+                MAKTheme() {
                     MakDatePickerField(label = "Data zajęć", value = "2026-09-21", onValueChange = {})
                 }
             }
@@ -82,7 +82,7 @@ class MakFormControlsTest {
         lateinit var inputModeManager: InputModeManager
         composeTestRule.setContent {
             inputModeManager = LocalInputModeManager.current
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Column(modifier = Modifier.width(320.dp)) {
                     MakIconButton(label = "Pierwszy", icon = Icons.Outlined.Settings, onClick = {})
                     MakChoiceRow(label = "Opcja", selected = false, onClick = {})
@@ -112,7 +112,7 @@ class MakFormControlsTest {
         var selected by mutableStateOf(DefaultCourseColor)
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     MakCourseColorPicker(
                         selectedColor = selected,
@@ -138,7 +138,7 @@ class MakFormControlsTest {
         var selected by mutableStateOf(courseHex(courseColorFrom(30f, 0.7f)))
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 MakCourseColorPicker(selectedColor = selected, onColorSelected = { selected = it })
             }
         }
@@ -156,7 +156,7 @@ class MakFormControlsTest {
         var selected by mutableStateOf(DefaultCourseColor)
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 MakCourseColorPicker(selectedColor = selected, onColorSelected = { selected = it })
             }
         }
@@ -173,7 +173,7 @@ class MakFormControlsTest {
     fun optionalSectionKeepsSecondaryContentHiddenUntilRequested() {
         var expanded by mutableStateOf(false)
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 MakExpandableSection(
                     label = "więcej opcji",
                     expanded = expanded,
@@ -197,7 +197,7 @@ class MakFormControlsTest {
     @Test
     fun datePickerAndActionMenuKeepSecondaryInteractionsOutOfTheForm() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(390.dp).height(700.dp)) {
                     MakDatePickerField(
                         label = "Data",
@@ -222,7 +222,7 @@ class MakFormControlsTest {
         var time by mutableStateOf("09:30")
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Column(modifier = Modifier.width(390.dp)) {
                     MakDatePickerField(
                         label = "Data",
@@ -252,7 +252,7 @@ class MakFormControlsTest {
     @Test
     fun darkThemeKeepsLabeledFieldVisibleAt390Dp() {
         composeTestRule.setContent {
-            MAKTheme(darkTheme = true, dynamicColor = false) {
+            MAKTheme(darkTheme = true) {
                 Box(modifier = Modifier.width(390.dp).height(700.dp)) {
                     MakField(
                         label = "Bardzo długa nazwa przedmiotu",

@@ -61,7 +61,7 @@ class SemesterScreenTest {
         var opened = ""
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(800.dp)) {
                     SemesterScreen(
                         state = SemesterScreenUiState(
@@ -112,7 +112,7 @@ class SemesterScreenTest {
         var opened = ""
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SemesterScreen(
                         state = SemesterScreenUiState(
@@ -146,7 +146,7 @@ class SemesterScreenTest {
         var deleted = 0L
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SemesterCoursesScreen(
                         state = SemesterScreenUiState(
@@ -187,7 +187,7 @@ class SemesterScreenTest {
     fun courseAddScreenShowsFormAndCancelAt320Dp() {
         var cancelled = 0
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SemesterCourseAddScreen(
                         state = SemesterScreenUiState(
@@ -225,7 +225,7 @@ class SemesterScreenTest {
     @Test
     fun courseAddScreenExistingProgramShowsSelectionInsteadOfNameAndColorDraft() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SemesterCourseAddScreen(
                         state = SemesterScreenUiState(
@@ -263,7 +263,7 @@ class SemesterScreenTest {
     fun courseEditScreenShowsNameCalendarAndColorInOrderAndSharedSplitActionAt320Dp() {
         var separated = 0L
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SemesterCourseEditScreen(
                         state = SemesterScreenUiState(
@@ -304,7 +304,7 @@ class SemesterScreenTest {
     @Test
     fun courseEditScreenShowsCalendarPickerOnlyWithMultipleCalendarsAndNoSplitForSeparateCalendar() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SemesterCourseEditScreen(
                         state = SemesterScreenUiState(
@@ -335,7 +335,7 @@ class SemesterScreenTest {
         var confirmed = 0
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SemesterCourseEditScreen(
                         state = SemesterScreenUiState(
@@ -378,7 +378,7 @@ class SemesterScreenTest {
         var cancelled = 0
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SemesterCoursesScreen(
                         state = SemesterScreenUiState(
@@ -412,7 +412,7 @@ class SemesterScreenTest {
         var deleted = 0L
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(1000.dp)) {
                     SemesterCalendarsScreen(
                         state = SemesterScreenUiState(
@@ -454,7 +454,7 @@ class SemesterScreenTest {
         var selected = 0L
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SemesterWeekOverridesScreen(
                         state = SemesterScreenUiState(
@@ -493,7 +493,7 @@ class SemesterScreenTest {
         )
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SemesterWeekOverridesScreen(
                         state = state,
@@ -553,7 +553,7 @@ class SemesterScreenTest {
     @Test
     fun weekOverridesScreenKeepsDarkThemeFormAt390Dp() {
         composeTestRule.setContent {
-            MAKTheme(darkTheme = true, dynamicColor = false) {
+            MAKTheme(darkTheme = true) {
                 Box(modifier = Modifier.width(390.dp).height(900.dp)) {
                     SemesterWeekOverridesScreen(
                         state = SemesterScreenUiState(
@@ -593,7 +593,7 @@ class SemesterScreenTest {
         var cancelled = 0
         val override = WeekOverrideUi(7L, "2026-10-05", WeekType.A, WeekOverrideScope.ONE_WEEK)
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     SemesterWeekOverridesScreen(
                         state = SemesterScreenUiState(

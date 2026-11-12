@@ -3,6 +3,9 @@ package dev.retza.mak.notifications
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import androidx.glance.appwidget.updateAll
+import dev.retza.mak.widget.MakTodayWidget
+import dev.retza.mak.widget.WidgetTimeTicks
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -19,11 +22,22 @@ class NotificationRescheduleReceiver : BroadcastReceiver(), KoinComponent {
         val pendingResult = goAsync()
         CoroutineScope(SupervisorJob() + Dispatchers.IO).launch {
             try {
-                scheduler.refresh()
-            } catch (error: CancellationException) {
-                throw error
-            } catch (error: Exception) {
-                // The next app start or data change reschedules the alarms.
+                try {
+                    scheduler.refresh()
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    // The next app start or data change reschedules the alarms.
+                }
+                try {
+                    // After a reboot, time change, or app update, recreate the widget alarm.
+                    WidgetTimeTicks.bump()
+                    MakTodayWidget().updateAll(context)
+                } catch (error: CancellationException) {
+                    throw error
+                } catch (error: Exception) {
+                    // The next app start or data change reschedules the widget alarm.
+                }
             } finally {
                 pendingResult.finish()
             }

@@ -95,6 +95,34 @@ class ScheduleViewModelTest {
     }
 
     @Test
+    fun currentOccurrenceRefreshesAndSelectedOtherDayHasNoCurrentClass() = runTest(mainDispatcher) {
+        val clock = MutableClock(Instant.parse("2026-09-21T07:30:00Z"))
+        val repository = FakeRepository()
+        repository.classes += repository.classes.first().copy(
+            id = 2L,
+            name = "Wtorkowe",
+            dayOfWeek = java.time.DayOfWeek.TUESDAY,
+            recurrence = dev.retza.mak.data.entity.Recurrence.ONCE,
+            date = LocalDate.of(2026, 9, 22)
+        )
+        val viewModel = viewModel(repository, clock)
+        backgroundScope.launch { viewModel.schedule.collect {} }
+        advanceUntilIdle()
+        assertTrue(viewModel.schedule.value.items.single().isCurrent)
+
+        viewModel.selectDay("2026-09-22")
+        advanceUntilIdle()
+        assertEquals(listOf("Wtorkowe"), viewModel.schedule.value.items.map { it.name })
+        assertFalse(viewModel.schedule.value.items.single().isCurrent)
+
+        viewModel.selectDay("2026-09-21")
+        clock.now = Instant.parse("2026-09-21T08:30:00Z")
+        viewModel.refreshToday()
+        advanceUntilIdle()
+        assertFalse(viewModel.schedule.value.items.single().isCurrent)
+    }
+
+    @Test
     fun initialStateMapsActiveSemesterPlan() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val viewModel = viewModel(repository)
@@ -498,21 +526,7 @@ class ScheduleViewModelTest {
     }
 
     @Test
-    fun calendarShowsThreeMarkersWithoutOverflow() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        addMondayClasses(repository, 3)
-        val viewModel = viewModel(repository)
-        viewModel.selectView(ScheduleView.Calendar)
-        backgroundScope.launch { viewModel.schedule.collect {} }
-        advanceUntilIdle()
-
-        val day = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }
-        assertEquals(3, day.markers.size)
-        assertFalse(day.hasMoreMarkers)
-    }
-
-    @Test
-    fun calendarShowsFiveMarkersWithoutOverflow() = runTest(mainDispatcher) {
+    fun calendarShowsFiveMarkersAndFromSixClassesFourWithOverflow() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         addMondayClasses(repository, 5)
         val viewModel = viewModel(repository)
@@ -520,23 +534,17 @@ class ScheduleViewModelTest {
         backgroundScope.launch { viewModel.schedule.collect {} }
         advanceUntilIdle()
 
-        val day = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }
-        assertEquals(5, day.markers.size)
-        assertFalse(day.hasMoreMarkers)
-    }
+        val five = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }
+        assertEquals(5, five.markers.size)
+        assertFalse(five.hasMoreMarkers)
 
-    @Test
-    fun calendarShowsFourMarkersAndOverflowAtSixClasses() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        addMondayClasses(repository, 6)
-        val viewModel = viewModel(repository)
-        viewModel.selectView(ScheduleView.Calendar)
-        backgroundScope.launch { viewModel.schedule.collect {} }
+        addMondayClass(repository, 6)
+        repository.notifyDataChanged()
         advanceUntilIdle()
 
-        val day = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }
-        assertEquals(4, day.markers.size)
-        assertTrue(day.hasMoreMarkers)
+        val six = viewModel.schedule.value.calendarDays.single { it.id == "2026-09-21" }
+        assertEquals(4, six.markers.size)
+        assertTrue(six.hasMoreMarkers)
     }
 
     @Test
@@ -869,14 +877,16 @@ private fun cancelledChange(classId: Long) = OccurrenceChangeEntity(
 )
 
 private fun addMondayClasses(repository: FakeRepository, count: Int) {
-    (2..count).forEach { index ->
-        repository.classes += repository.classes.first().copy(
-            id = index.toLong(),
-            name = "Zajęcia $index",
-            startTime = LocalTime.of(8 + index, 0),
-            endTime = LocalTime.of(9 + index, 0)
-        )
-    }
+    (2..count).forEach { index -> addMondayClass(repository, index) }
+}
+
+private fun addMondayClass(repository: FakeRepository, index: Int) {
+    repository.classes += repository.classes.first().copy(
+        id = index.toLong(),
+        name = "Zajęcia $index",
+        startTime = LocalTime.of(8 + index, 0),
+        endTime = LocalTime.of(9 + index, 0)
+    )
 }
 
 private class MutableClock(var now: Instant) : Clock() {

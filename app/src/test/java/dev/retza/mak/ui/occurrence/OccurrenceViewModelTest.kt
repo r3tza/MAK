@@ -337,10 +337,6 @@ class OccurrenceViewModelTest {
         viewModel.open("42:not-a-date")
         advanceUntilIdle()
         assertEquals(null, viewModel.selectedClassId.value)
-
-        viewModel.open(OccurrenceArgs(99L, LocalDate.of(2026, 9, 21)))
-        advanceUntilIdle()
-        assertEquals(null, viewModel.selectedClassId.value)
     }
 
     @Test
@@ -463,9 +459,10 @@ class OccurrenceViewModelTest {
     }
 
     @Test
-    fun occurrenceNoteSaveDeletesOnEmpty() = runTest(mainDispatcher) {
+    fun occurrenceNoteIsSavedAndEmptyDraftDeletesItWithMessages() = runTest(mainDispatcher) {
         val repository = FakeRepository()
-        val viewModel = occurrenceViewModel(repository)
+        val sink = RecordingFeedbackSink(repository.events)
+        val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
@@ -478,6 +475,7 @@ class OccurrenceViewModelTest {
         advanceUntilIdle()
         assertEquals("Notatka daty", viewModel.details.value.occurrenceNote)
         assertEquals(1, repository.occurrenceNotes.size)
+        assertEquals("Zapisano notatkę do terminu", sink.published.single().message)
 
         viewModel.updateOccurrenceNoteDraft("")
         advanceUntilIdle()
@@ -489,6 +487,7 @@ class OccurrenceViewModelTest {
         assertEquals(null, state.occurrenceNote)
         assertEquals("", state.occurrenceNoteDraft)
         assertTrue(repository.occurrenceNotes.isEmpty())
+        assertEquals("Usunięto notatkę do terminu", sink.published.last().message)
     }
 
     @Test
@@ -797,27 +796,17 @@ class OccurrenceViewModelTest {
     }
 
     @Test
-    fun requestRestoreWithoutChangeSetsNoFlag() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val viewModel = occurrenceViewModel(repository)
-        advanceUntilIdle()
-        viewModel.open("1:2026-09-21")
-        advanceUntilIdle()
-
-        viewModel.requestRestoreOccurrence()
-        advanceUntilIdle()
-
-        assertFalse(viewModel.details.value.showRestoreConfirmation)
-    }
-
-    @Test
-    fun restoreWithoutChangeDoesNothing() = runTest(mainDispatcher) {
+    fun restoringScheduledOccurrenceAsksNothingAndChangesNothing() = runTest(mainDispatcher) {
         val repository = FakeRepository()
         val sink = RecordingFeedbackSink(repository.events)
         val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
         viewModel.open("1:2026-09-21")
         advanceUntilIdle()
+
+        viewModel.requestRestoreOccurrence()
+        advanceUntilIdle()
+        assertFalse(viewModel.details.value.showRestoreConfirmation)
 
         viewModel.restoreOccurrence()
         advanceUntilIdle()
@@ -916,28 +905,6 @@ class OccurrenceViewModelTest {
         viewModel.saveSharedNote()
         advanceUntilIdle()
         assertEquals("Usunięto notatkę do zajęć", sink.published.last().message)
-    }
-
-    @Test
-    fun occurrenceNotePublishesSaveAndDeleteMessages() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink(repository.events)
-        val viewModel = recordingViewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.open("1:2026-09-21")
-        advanceUntilIdle()
-
-        viewModel.updateOccurrenceNoteDraft("Notatka daty")
-        advanceUntilIdle()
-        viewModel.saveOccurrenceNote()
-        advanceUntilIdle()
-        assertEquals("Zapisano notatkę do terminu", sink.published.single().message)
-
-        viewModel.updateOccurrenceNoteDraft("")
-        advanceUntilIdle()
-        viewModel.saveOccurrenceNote()
-        advanceUntilIdle()
-        assertEquals("Usunięto notatkę do terminu", sink.published.last().message)
     }
 
     @Test

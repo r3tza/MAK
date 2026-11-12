@@ -63,7 +63,7 @@ class OccurrenceDetailsScreenTest {
         )
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(
                     modifier = Modifier
                         .width(320.dp)
@@ -118,7 +118,7 @@ class OccurrenceDetailsScreenTest {
     @Test
     fun oneOffAndCollisionDetailsShowOnlyMeaningfulStatusAndPartner() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 OccurrenceDetailsScreen(
                     state = OccurrenceDetailsUiState(
                         subjectName = "Laboratorium",
@@ -154,7 +154,7 @@ class OccurrenceDetailsScreenTest {
         var occurrenceSaves = 0
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(
                     modifier = Modifier
                         .width(320.dp)
@@ -206,7 +206,7 @@ class OccurrenceDetailsScreenTest {
         var requestClicks = 0
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(
                     modifier = Modifier
                         .width(320.dp)
@@ -261,7 +261,7 @@ class OccurrenceDetailsScreenTest {
         var restoreClicks = 0
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 OccurrenceDetailsScreen(
                     state = OccurrenceDetailsUiState(
                         subjectName = "Analiza danych",
@@ -296,7 +296,7 @@ class OccurrenceDetailsScreenTest {
         var confirmClicks = 0
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 OccurrenceDetailsScreen(
                     state = OccurrenceDetailsUiState(
                         subjectName = "Analiza danych",
@@ -327,7 +327,7 @@ class OccurrenceDetailsScreenTest {
         var confirmed = 0
         var kept = 0
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 OccurrenceDetailsScreen(
                     state = OccurrenceDetailsUiState(
                         subjectName = "Matematyka",
@@ -366,7 +366,7 @@ class OccurrenceDetailsScreenTest {
         var dismissCalls = 0
 
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(
                     modifier = Modifier
                         .width(320.dp)
@@ -421,7 +421,7 @@ class OccurrenceDetailsScreenTest {
     @Test
     fun editDialogShowsFieldValidationErrorAt320Dp() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(
                     modifier = Modifier
                         .width(320.dp)
@@ -475,7 +475,7 @@ class OccurrenceDetailsScreenTest {
     @Test
     fun deleteDialogBlocksActionsWhileDeletingAt320Dp() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(
                     modifier = Modifier
                         .width(320.dp)

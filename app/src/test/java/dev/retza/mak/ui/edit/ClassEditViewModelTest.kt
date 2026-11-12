@@ -657,9 +657,10 @@ class ClassEditViewModelTest {
     }
 
     @Test
-    fun savePersistsNewClassAndResetsEditor() = runTest(mainDispatcher) {
+    fun savePersistsNewClassResetsEditorAndPublishesAddedMessage() = runTest(mainDispatcher) {
         val repository = FakeRepository()
-        val viewModel = viewModel(repository)
+        val sink = RecordingFeedbackSink()
+        val viewModel = recordingViewModel(repository, sink)
         advanceUntilIdle()
         viewModel.openNewFromFreshPlan()
         viewModel.update {
@@ -686,6 +687,7 @@ class ClassEditViewModelTest {
         assertEquals("Dodaj zajęcia", viewModel.editor.value.title)
         assertEquals("", viewModel.editor.value.name)
         assertEquals(listOf(ClassEditEffect.CloseEditor), effects)
+        assertEquals(listOf(UiFeedback("Dodano zajęcia", UiFeedbackKind.Success)), sink.published)
     }
 
     @Test
@@ -720,34 +722,6 @@ class ClassEditViewModelTest {
         assertEquals(1, repository.events.count { it == "saveClass" })
         assertEquals(listOf(ClassEditEffect.CloseEditor), effects)
         assertFalse(viewModel.editor.value.isSaving)
-    }
-
-    @Test
-    fun saveNewClassPublishesAddedMessage() = runTest(mainDispatcher) {
-        val repository = FakeRepository()
-        val sink = RecordingFeedbackSink()
-        val viewModel = recordingViewModel(repository, sink)
-        advanceUntilIdle()
-        viewModel.openNewFromFreshPlan()
-        viewModel.update {
-            it.copy(
-                name = "Analiza",
-                semesterProgramId = 1L,
-                type = "Wykład",
-                dayLabel = "Poniedziałek",
-                startTime = "12:00",
-                endTime = "13:30"
-            )
-        }
-        advanceUntilIdle()
-
-        viewModel.save()
-        advanceUntilIdle()
-
-        assertEquals(
-            listOf(UiFeedback("Dodano zajęcia", UiFeedbackKind.Success)),
-            sink.published
-        )
     }
 
     @Test

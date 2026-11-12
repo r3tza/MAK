@@ -27,7 +27,7 @@ class AboutScreenTest {
     @Test
     fun showsDescriptionAuthorAndHistoryWithoutUpdateActionsAt320Dp() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(Modifier.width(320.dp).height(900.dp)) {
                     AboutScreen(
                         installedVersionName = "0.1.0-debug",

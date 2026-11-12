@@ -21,6 +21,7 @@ import androidx.compose.material3.DatePickerDefaults
 import androidx.compose.material3.DatePickerDialog
 import androidx.compose.material3.DateRangePicker
 import androidx.compose.material3.DateRangePickerDefaults
+import androidx.compose.material3.DisplayMode
 import androidx.compose.material3.rememberDateRangePickerState
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.IconButton
@@ -80,6 +81,9 @@ private val LowWindowHeight = 560.dp
 
 /** The vertical clock does not fit a window lower than 560 dp, e.g. a split screen. */
 internal fun useHorizontalTimePicker(windowHeight: Dp): Boolean = windowHeight < LowWindowHeight
+
+/** The calendar month loses its first week in a window lower than 560 dp, so the date is typed instead (I-44). */
+internal fun openDatePickerAsInput(windowHeight: Dp): Boolean = windowHeight < LowWindowHeight
 
 private val polishDateFormatter = DateTimeFormatter.ofPattern("dd.MM.yyyy", AppLocale)
 
@@ -155,9 +159,11 @@ fun MakDatePickerField(
     )
 
     if (open) {
+        val windowHeight = with(LocalDensity.current) { LocalWindowInfo.current.containerSize.height.toDp() }
         val pickerState = rememberDatePickerState(
             initialSelectedDateMillis = initialDate?.toUtcMillis(),
-            selectableDates = selectableDates
+            selectableDates = selectableDates,
+            initialDisplayMode = if (openDatePickerAsInput(windowHeight)) DisplayMode.Input else DisplayMode.Picker
         )
         DatePickerDialog(
             onDismissRequest = { open = false },

@@ -24,7 +24,7 @@ class MakConfirmDeletionDialogTest {
         onCancel: () -> Unit = {}
     ) {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 if (confirmLabel == null) {
                     MakConfirmDeletionDialog(
                         title = "Usunąć kalendarz?",

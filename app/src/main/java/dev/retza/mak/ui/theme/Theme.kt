@@ -87,7 +87,6 @@ private val MakShapes = Shapes(
 @Composable
 fun MAKTheme(
     darkTheme: Boolean = isSystemInDarkTheme(),
-    @Suppress("UNUSED_PARAMETER") dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
     val view = LocalView.current

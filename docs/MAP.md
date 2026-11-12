@@ -9,7 +9,7 @@ Zacznij od pytania, które rozwiązuje zadanie. Otwórz wskazany dokument i potr
 | Jak obliczać plan? | [DOMAIN.md](DOMAIN.md): semestry i kalendarze, rytm A/B, zajęcia, zmiany wystąpień, okienka i kolizje |
 | Jakie są granice kodu i zasady UI? | [ARCHITECTURE.md](ARCHITECTURE.md): repozytoria, wspólna logika planu, nawigacja, integracje i zasady interfejsu |
 | Jakich narzędzi i testów używać? | [STACK.md](STACK.md): wersje bibliotek, środowisko, rodzaje kontroli i odrzucone alternatywy |
-| Jak przygotować OAuth Google i co sprawdzić na prawdziwym koncie? | [STACK.md](STACK.md): „Konfiguracja synchronizacji Google”; zależność od udziału użytkownika i odbiór I-69 w [QUEUE.md](QUEUE.md) |
+| Jak przygotować OAuth Google i co sprawdzić na prawdziwym koncie? | [STACK.md](STACK.md): „Konfiguracja synchronizacji Google”; odbiór I-69 w [archiwum kolejki](queue_archive/2026.md) |
 | Jak działa opcjonalna synchronizacja Google? | [SYNC.md](SYNC.md): jeden plik planu, tabela przypadków, wybór wersji, archiwum, konto, praca w tle i testy. Odbiór rzeczywistego konta to I-69 |
 | Co wykonać teraz? | [PLAN.md](PLAN.md): najwyżej pięć najbliższych kroków z kryteriami zakończenia. [QUEUE.md](QUEUE.md) zawiera otwarte zadania, zależności i statusy; zakończone są w [archiwum](queue_archive/2026.md) |
 | Co jest gotowe w kodzie, ale czeka na urządzenie? | [QUEUE.md](QUEUE.md): osobne pozycje odbioru; szczegółowe scenariusze w [FEATURES.md](FEATURES.md) |

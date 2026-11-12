@@ -19,7 +19,8 @@ sealed interface WidgetUiState {
 
     data class EmptyDay(
         override val dateLabel: String,
-        val weekLabel: String
+        val weekLabel: String,
+        val isTomorrow: Boolean = false
     ) : WidgetUiState
 
     /** A free day of every semester calendar without classes left (`FEATURES.md`, „Dni wolne”). */
@@ -47,7 +48,6 @@ sealed interface WidgetUiState {
 enum class WidgetOccurrencePhase {
     Past,
     Current,
-    Next,
     Scheduled
 }
 

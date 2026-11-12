@@ -2,6 +2,47 @@
 
 Najnowsze wpisy są u góry. Czytaj kilka ostatnich przy rozpoczynaniu pracy. Trwałe reguły są w `PRODUCT.md`, `DOMAIN.md`, `FEATURES.md`, `ARCHITECTURE.md` i `STACK.md`. Archiwum jest zapisem historii, nie źródłem bieżącego statusu.
 
+## 2026-11-11: Trwające zajęcia gradientem koloru kierunku (I-112)
+
+- Decyzja użytkownika: trwające zajęcia na „Dzisiaj”, listach wybranego dnia „Planu” i w widgecie mają gradient koloru kierunku oraz tekst „Teraz”. Użytkownik zaakceptował makietę `gradient-kierunku.html`. Zmiana zastępuje wcześniejszą propozycję „Następne” w widgecie i dopuszcza gradient jako wyjątek od jego zakazu. Wykonanie nie dodaje alarmów początku ani końca zajęć ani odświeżania widgetu co minutę.
+- Wykonanie przez Lunę na zlecenie użytkownika: wspólna reguła czasu wystąpienia, odświeżanie minutowe wyłącznie dla widocznych ekranów oraz gradient na kartach i wierszu widgetu. Ręczny odbiór agenta nadrzędnego na emulatorze `Medium_Phone_A12`, 320 dp: jasny i ciemny motyw, ekran „Dzisiaj”, lista „Planu”, launcher widget, naturalna granica minuty i skala tekstu 200%. Zrzuty są w `build/release_qa/i112-after-*`.
+- Użytkownik odrzucił dodatkowy opis przełącznika i zlecił użyć samej nazwy „Pokazuj jutrzejszy plan wieczorem”.
+- Decyzja użytkownika z 2026-11-12: widget odświeża się na początku i końcu dzisiejszych zajęć, bo przy odświeżaniu co godzinę „Teraz” mogło się spóźniać do godziny. Zastępuje to zakaz alarmów początku i końca zajęć z pierwszego punktu. Wykonuje to istniejący pojedynczy przybliżony alarm bez wybudzania (`nextCurrentStateChange`), bez serwisu i odświeżania co minutę. Odrzucone: zostawienie przybliżonego „Teraz” i usunięcie „Teraz” z widgetu. Użytkownik zostawił też widok bez oznaczania następnych zajęć i zatwierdził notatki wydania.
+- Decyzja użytkownika z 2026-11-12: wydanie ma numer 0.5.0 zamiast 0.4.1, bo dodaje nowe funkcje (plan na jutro, wyróżnienie trwających zajęć) i zmienia zachowanie widgetu. Zastępuje to numer z wpisu z 2026-11-11; treść notatek się nie zmienia.
+
+## 2026-11-11: Plan na jutro po przeglądzie i przygotowanie 0.4.1
+
+- Decyzja użytkownika z 2026-11-11: odwołane zajęcia nie wyznaczają końca ostatnich zajęć, a widget odświeża się także o północy.
+- Wykonanie przez agenta na zlecenie użytkownika: alarm widgetu jest ustawiany ponownie po restarcie telefonu, zmianie czasu i aktualizacji aplikacji; działająca sesja Glance przelicza plan po zmianie czasu; parametr `onShowTomorrowChanged` nie ma domyślnego wywołania.
+- Weryfikacja na późniejsze polecenie użytkownika z 2026-11-11: 703 testy JVM, 225 testów Android na emulatorze `Medium_Phone_A12` (Android 12, 2048 MiB RAM), `lintDebug`, 10 testów skryptu dokumentacji i kontrola mapy przeszły. Pierwszy przebieg testów Android przerwano z powodu uśpionego ekranu emulatora; cały przebieg po wybudzeniu przeszedł.
+- Ręczny odbiór I-111 na emulatorze `Medium_Phone_A12` (Android 12, 2048 MiB RAM): po ostatnich zajęciach kończących się o 10:30 ekran po powrocie i widget pokazują jutro od 12:30; pusty dzień przełącza się o 18:00; podsumowanie liczy jutrzejsze zajęcia; puste jutro pokazuje „Jutro bez zajęć”; wyłączenie i ponowne włączenie ustawienia odświeża oba widoki. Widget sam przełączył się alarmem po zajęciach, po 18:00 i po północy; po północy usunął „Jutro” i przywrócił etykietę „Następne”. Po restarcie przy rzeczywistym czasie oraz po ponownej instalacji debug APK widget i alarm wróciły bez otwierania aplikacji. Zrzuty z odbioru są lokalnie w `build/release_qa/`. Zegar i automatyczne ustawianie czasu emulatora przywrócono. Pozostaje potwierdzenie na telefonie użytkownika i odbiór aktualizacji podpisanego wydania.
+- Decyzja użytkownika z 2026-11-11: następne wydanie ma numer 0.4.1. Użytkownik zatwierdził tekst notatek o planie na jutro i trybie wpisywania daty w niskim oknie; wpis dodano do `app/src/main/assets/release_notes.json`. Wydania jeszcze nie opublikowano.
+- Przygotowanie 0.4.1: `assembleDebug` z `makVersionName=0.4.1` i `makVersionCode=401`, pięć testów `ReleaseHistoryTest` po zmianie notatek, `check_map.py` i `git diff --check` przeszły. Wyróżnienie trwających zajęć pozostaje propozycją w `QUEUE.md`; użytkownik zlecił wariant do obejrzenia przed implementacją.
+
+## 2026-10-30: Przegląd testów
+
+- Wykonanie na zlecenie użytkownika: przegląd testów według zasady z 2026-09-29 (`STACK.md`, sekcja 5). Usunięte albo połączone powtórzenia: progi i bloki w `GapCounterTest` (`countGaps` to liczba wyników `findGaps`), przerwa dłuższa od minimum w `CollisionDetectorTest`, początek tygodnia w `WeekCalculatorTest`, próg okienka w `TodayViewModelTest` i ukryte kierunki w `WidgetPlanLoaderTest` (sprawdza je `ActivePlanProviderTest`), trzy testy znaczników kalendarza i dwa testy przywracania terminu bez zmiany.
+- `TodayViewModelTest.todayStateMapsActiveSemesterPlan` liczy teraz jedno okienko, więc zostaje test połączenia liczby okienek z ekranem.
+- Nowe przypadki JVM: krótkie zajęcia w środku dłuższych nie kończą bloku przed okienkiem, korekta innego kalendarza nie zmienia tygodnia, zajęcia z tygodnia A przeniesione do tygodnia B są w dniu docelowym, przeniesienie z dnia, w którym zajęć już nie ma, jest pomijane, a przełączenie na plan jutra liczy się od zajęć kończących się najpóźniej.
+- `RoomPersistenceTest` (39 testów, wcześniej 31): pełny plan `RoomTestPlan` po ponownym otwarciu bazy, kaskady usunięcia semestru i kierunku w semestrze, jeden aktywny semestr, zastąpienie korekty tygodnia, notatki i zmiany terminu o tym samym kluczu, kaskada usunięcia zajęć, odrzucenie zapisu w cudzym semestrze oraz kopia dni wolnych przy oddzieleniu kalendarza. Bez testów asercji repozytorium, których nie da się wywołać z formularza (para godzin zmiany terminu, sprawdzana przez `validateOccurrenceDraft`), i bez powtórzenia odczytu, który pokrywa test pełnego planu. Nowe testy są w tej klasie, bo zadanie `room-tests` uruchamia tylko dwie klasy (I-106).
+- Drugi przebieg z 2026-10-31: `RoomPersistenceTest` używa bazy w pamięci, a bazy w pliku tylko w teście ponownego otwarcia; `replaceAllDataSwapsWholeBackup` zastąpił węższy `replaceAllLeavesNothingOfThePreviousPlan`. Połączone testy tej samej ścieżki: zapis zajęć z komunikatem w `ClassEditViewModelTest`, notatka do terminu z komunikatami w `OccurrenceViewModelTest` i trzy testy głównego przełącznika powiadomień w `SettingsPreferencesTest`; `SettingsViewModelTest` nie przepisuje już list opcji. Testy Compose sprawdzają głównie układ przy 320 dp, role i dostępność, więc zostały bez zmian.
+
+## 2026-10-30: Lint i testy Room w CI, krótsze wiersze kolejki, emulator na dwóch komputerach
+
+- Wykonanie na zlecenie użytkownika (I-105, I-106, decyzje użytkownika z 2026-10-20): `checks.yml` uruchamia `lintDebug` z bazą `app/lint-baseline.xml` (12 ostrzeżeń w chwili utworzenia), a zadanie `room-tests` uruchamia `RoomMigrationTest` i `RoomPersistenceTest` na emulatorze tylko przy zmianach w `data/` i `app/schemas/`. Opis w `STACK.md`, sekcje 5 i 7.
+- Wykonanie na zlecenie użytkownika (I-108): otwarte wiersze `QUEUE.md` skrócone do zadania, kryterium, źródła decyzji, nazw klas i testów oraz tego, co pozostało do odbioru; zasada w `WORKFLOW.md`.
+- Decyzja użytkownika z 2026-10-30: użytkownik pracuje na dwóch komputerach z różnymi emulatorami, więc `STACK.md` nie wskazuje jednego stałego AVD; agent używa AVD telefonu dostępnego na danym komputerze, z 2048 MiB, i podaje jego nazwę w raporcie.
+- Decyzja użytkownika z 2026-10-30 (I-44): w oknie niższym niż 560 dp wybór daty otwiera się w trybie wpisywania, bo kalendarz Material traci w nim pierwszy tydzień miesiąca; kalendarz zostaje dostępny ikoną w dialogu. Odrzucone: poprawianie układu samego kalendarza (duży nakład przy rzadkim przypadku).
+- Wykonanie na zlecenie użytkownika (I-107): `MakComponents.kt` podzielony na nawigację, dialogi, kartę zajęć i przyciski akcji, bez zmiany kodu.
+- Fakty z 2026-10-30: aplikacja jest opublikowana w Google Auth Platform (potwierdzenie użytkownika), a notatka o aktualizacji wszystkich telefonów weszła do wydania 0.4.0.
+
+## 2026-10-21: Plan na jutro wieczorem (I-111) i zakres następnej gałęzi
+
+- Decyzja użytkownika z 2026-10-21: 2 godziny po końcu ostatnich zajęć, a w dniu bez zajęć o 18:00, ekran „Dzisiaj” i widget pokazują następny dzień kalendarzowy. Gdy jutro nie ma zajęć, widać „Jutro bez zajęć”; karta podsumowania liczy pokazany dzień; przełącznik „Plan na jutro wieczorem” w sekcji „Wygląd”, domyślnie włączony. Odrzucone: przełączenie o stałej godzinie, godzina do wyboru w ustawieniach, opóźnienie do wyboru (1 h albo 2 h), najbliższy dzień z zajęciami zamiast jutra, karta bez liczb, funkcja bez możliwości wyłączenia.
+- Szczegóły zaproponowane przez agenta i potwierdzone przez użytkownika 2026-10-21: tytuł „Jutro, {dzień}, {data}”, nagłówki „Twój plan na jutro” i „Jutro bez zajęć”, brak przełączenia po zajęciach kończących się o 22:00 lub później, dzień wolny bez zajęć jak dzień bez zajęć, przybliżony alarm widgetu.
+- Ustawienie jest polem `PlanDisplaySettings` zapisanym tylko na telefonie, więc dociera do „Dzisiaj” i widgetu tą samą drogą co próg okienka i ukryte kierunki, a jego zmiana odświeża widget.
+- Decyzja użytkownika z 2026-10-21: gałąź `task/I-111-tomorrow-plan-and-ci` obejmuje I-111, I-109, I-105, I-106 i I-108; plan dla słabszych agentów w `PLAN.md`.
+
 ## 2026-10-20: Odbiór na emulatorze i trzy poprawki po nim
 
 - Fakty: Odbiór na emulatorze `Medium_Phone_2` z 2026-10-20 (I-44 do I-47, I-81, I-82, I-95 do I-98, I-104, O-04, O-08) wykazał: pole „Dzień tygodnia” wymagane przy zajęciach jednorazowych, ale pomijane przy zapisie; widget bez informacji o dniu wolnym, gdy w tym dniu są terminy jednorazowe; ikonę powiadomień widoczną jako pełne koło, bo `ic_launcher_foreground` jest kolorowa i nieprzezroczysta; brak pierwszego tygodnia miesiąca w wyborze daty w niskim oknie (otwarte w `KNOWN_ISSUES.md`).
@@ -146,33 +187,4 @@ Limit: 20 wpisów datowanych. Przy dodaniu kolejnego przenieś najstarszy do `lo
 - Decyzja użytkownika o testach: ograniczyć je do przypadków brzegowych i testów wnoszących realną wartość (`STACK.md`, sekcja 5).
 - Ograniczenie: użytkownik potwierdził brak projektu Google Cloud. Rzeczywiste logowanie i dwa telefony to I-69.
 
-## 2026-09-29: Mniej gałęzi, pull requestów i commitów
 
-- Decyzja użytkownika: małe zadanie dołącza do najbliższego większego na tej samej gałęzi, także gdy nie jest z nim ściśle powiązane (na przykład I-63 z trybem tabletowym). Plan trafia do gałęzi, która go wykonuje. Commit obejmuje logiczną część zadania razem z dokumentami, których dotyczy; drobnych poprawek dokumentów nie commituje się osobno, a pull request ma zwykle od jednego do pięciu commitów (`AGENTS.md`, sekcja „Git”; `WORKFLOW.md`, „Gałąź i pull request”).
-- Powód: od wydania 0.2.2 przybyło około 60 commitów, choć zakres zmieściłby się w 10 do 20; osobne gałęzie i pull requesty na drobne zmiany i same plany zapychają repozytorium i utrudniają przegląd historii.
-
-## 2026-09-29: Wspólna obsługa błędów zapisu (I-64)
-
-- Decyzja użytkownika: 27 akcji zapisu w sześciu ViewModelach korzysta z jednej funkcji `launchUiOperation`, a testy ViewModeli sprawdzają tylko własną logikę akcji (`ARCHITECTURE.md`, sekcja 5). I-14, przegląd testów i I-64 trafiają do jednego pull requesta na gałęzi `task/backup-tests-and-ui-operation`.
-- Fakty: próba na `SemesterViewModel.saveSemester` przed resztą przeniesień pokazała, że wszystkie dotychczasowe testy przechodzą bez zmian, a mutacje funkcji i akcji wskazały, które testy pilnują przepływu. Wykryła też błędy planu: test podwójnego zapisu semestru i kierunku chroni przed drugim efektem zamknięcia ekranu, więc został; `finally` z warunkiem sesji trzeba kopiować dosłownie; błąd zapisu z poprzedniej sesji semestru nie miał testu, więc go dodano.
-- Wynik: testy JVM 391 przed zmianą i 373 po niej, pełne testy na urządzeniu 112 z 112.
-- Odrzucone: przeniesienie blokady podwójnego wywołania i komunikatu sukcesu do wspólnej funkcji, bo zmieniało kolejność komunikatu i efektu nawigacji i ukrywało pomyłki w przypisaniu flag; bazowa klasa ViewModelu zamiast funkcji rozszerzającej.
-
-## 2026-09-29: Testy tylko z realną wartością
-
-- Decyzja użytkownika: każdy test ma wykrywać błąd, który może realnie wystąpić. Kryteria są w `STACK.md`, sekcja 5, „Sposób testowania”.
-- Przegląd: testów JVM jest 391 zamiast 422, a testów Compose 112 zamiast 118. Usunięto testy, które sprawdzały logikę atrapy repozytorium, tautologie modeli danych, dokładne wartości krzywych animacji albo powtarzały inny test; przypadki testów częściowo pokrywających się dołączono do testu, który zostaje. Testy ochrony przed podwójnym zapisem, anulowaniem i błędem zapisu zostały, bo każda akcja ma w kodzie osobną ścieżkę; ich uproszczenie wymaga wspólnej funkcji zapisu (I-64).
-- Znaleziony błąd: widget i powiadomienie miały własną odmianę liczebników i dla 22 do 24 pisały „22 kolizji” i „22 zajęć”. Używają teraz wspólnej `polishPlural`.
-
-## 2026-09-29: Jawna systemowa kopia zapasowa (I-14)
-
-- Decyzja użytkownika: systemowa kopia zapasowa Androida zostaje włączona i opisana w „Dane i prywatność”. Reguły kopii są listą dozwolonych plików (baza planu i plik ustawień), a kopia w chmurze działa tylko z szyfrowaniem end-to-end (`ARCHITECTURE.md`, sekcja 8, punkt 14).
-- Fakty: próba na emulatorze z lokalnym transportem kopii potwierdziła, że Android przywraca dane przy instalacji z pliku APK, a nie tylko ze Sklepu Play; dokumentacja Androida mówi to samo. Szablonowe reguły kopiowały też identyfikatory widgetów i zaplanowanych alarmów, które należą do jednego urządzenia. Porównywalne aplikacje (Tasks.org, Loop Habit Tracker, AnkiDroid, Fossify Calendar, Signal) mają kopię włączoną i różnią się zakresem kopiowanych danych.
-- Powód: mało techniczni odbiorcy rzadko robią ręczny eksport JSON, a kopia systemowa chroni plan przy resecie lub reinstalacji bez pracy po ich stronie. Lista dozwolonych plików sprawia, że przyszły stan synchronizacji domyślnie nie trafi do kopii, więc kopia nie koliduje z opcjonalną synchronizacją.
-- Odrzucone: wyłączenie kopii (`allowBackup="false"`); przełącznik kopii w ustawieniach aplikacji, bo użytkownik steruje kopią w ustawieniach Androida.
-
-## 2026-09-29: Decyzje po makietach audytu interfejsu (I-63)
-
-- Decyzja użytkownika po przeglądzie makiet w artefakcie „MAK: audyt interfejsu, przed i po”: karta podsumowania „Dzisiaj” dostaje w motywie ciemnym ciemniejszy gradient `#2C3F94` do `#1C2A6A` z krawędzią 1 dp w bieli o kryciu 8% (I-63, `FEATURES.md`, sekcja „Ekran Dzisiaj”). Przyciski ikon w górnym pasku zachowują obramowanie, a przełącznik widoku na „Planie” zachowuje obecny wygląd z cieniem.
-- Powód: w motywie ciemnym karta była najjaśniejszym elementem ekranu, a czerwona i zielona liczba miały na niej kontrast 3,3:1 i 3,5:1; nowy wariant daje 5,5:1 i 5,8:1. Usunięcie ramek w pasku było zmianą estetyczną, która tworzyłaby dwa style przycisków ikon, a zmiana przełącznika nie poprawiała kontrastu stanu zaznaczenia.
-- Odrzucone: przyciski ikon bez ramek w górnym pasku; przełącznik widoku z jasnym tłem akcentu i znacznikiem wyboru zamiast cienia.

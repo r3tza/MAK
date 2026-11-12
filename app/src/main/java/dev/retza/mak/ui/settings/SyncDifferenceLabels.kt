@@ -149,7 +149,7 @@ internal class SyncDifferenceLabels(phone: BackupData, drive: BackupData) {
 
     /** A class on one side only; a class on both sides differs field by field. */
     private fun classDifference(title: String, onPhone: ClassRecord?, onDrive: ClassRecord?): SyncDifferenceUi {
-        val any = onPhone ?: onDrive!!
+        val any = onPhone ?: checkNotNull(onDrive) { "A difference has a value on the phone or on Drive" }
         return SyncDifferenceUi(
             title = title,
             subtitle = "Zajęcia, ${slot(any)}",

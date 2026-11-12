@@ -1,6 +1,5 @@
 package dev.retza.mak.domain
 
-import java.time.DayOfWeek
 import java.time.LocalDate
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertNull
@@ -22,11 +21,6 @@ class WeekCalculatorTest {
 
         assertEquals(LocalDate.of(2026, 1, 5), result?.weekStartDate)
         assertEquals(WeekType.A, result?.weekType)
-    }
-
-    @Test
-    fun weekStartOfSundayIsPreviousMonday() {
-        assertEquals(LocalDate.of(2026, 1, 5), LocalDate.of(2026, 1, 11).weekStart())
     }
 
     @Test
@@ -90,8 +84,24 @@ class WeekCalculatorTest {
     }
 
     @Test
-    fun weekStartAlwaysUsesMonday() {
-        assertEquals(LocalDate.of(2026, 1, 5), calculator.weekStart(LocalDate.of(2026, 1, 11)))
-        assertEquals(DayOfWeek.MONDAY, calculator.weekStart(LocalDate.of(2026, 1, 12)).dayOfWeek)
+    fun overrideOfAnotherCalendarDoesNotChangeTheWeek() {
+        val otherCalendarOverride = WeekOverride(
+            id = 1L,
+            academicCalendarId = calendar.id + 1,
+            weekStartDate = LocalDate.of(2026, 1, 12),
+            weekType = WeekType.A,
+            scope = WeekOverrideScope.FROM_WEEK
+        )
+
+        val result = calculator.calculate(calendar, LocalDate.of(2026, 1, 12), listOf(otherCalendarOverride))
+
+        assertEquals(WeekType.B, result?.weekType)
+        assertNull(result?.overrideSource)
+    }
+
+    @Test
+    fun weekStartsOnMondayFromSundayAndFromMondayItself() {
+        assertEquals(LocalDate.of(2026, 1, 5), LocalDate.of(2026, 1, 11).weekStart())
+        assertEquals(LocalDate.of(2026, 1, 12), LocalDate.of(2026, 1, 12).weekStart())
     }
 }

@@ -31,7 +31,7 @@ class MakAdaptiveLayoutTest {
     @Test
     fun screenContentIsCenteredAndLimitedTo640Dp() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(Modifier.requiredWidth(1000.dp).testTag("window")) {
                     MakScreenContent {
                         Box(Modifier.fillMaxWidth().height(10.dp).testTag("content"))
@@ -51,7 +51,7 @@ class MakAdaptiveLayoutTest {
     @Test
     fun phoneContentKeepsFullWidth() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(Modifier.requiredWidth(411.dp)) {
                     MakScreenContent {
                         Box(Modifier.fillMaxWidth().height(10.dp).testTag("content"))
@@ -70,7 +70,7 @@ class MakAdaptiveLayoutTest {
         composeTestRule.setContent {
             // At density 1 the phone screen is over 1000 dp wide, wider than the dialog limit.
             CompositionLocalProvider(LocalDensity provides Density(1f)) {
-                MAKTheme(dynamicColor = false) {
+                MAKTheme() {
                     MakDialog(title = "Zmień termin", onDismiss = {}, dismissAction = MakDialogAction("Anuluj", {})) {
                         repeat(60) { Text("Wiersz $it") }
                         Box(Modifier.fillMaxWidth().height(1.dp).testTag("dialog-content"))

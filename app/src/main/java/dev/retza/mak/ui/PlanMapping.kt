@@ -5,10 +5,12 @@ import dev.retza.mak.domain.FreeDay
 import dev.retza.mak.domain.PlannedOccurrence
 import dev.retza.mak.domain.Recurrence
 import dev.retza.mak.domain.WeekStatus
+import dev.retza.mak.domain.isOccurrenceCurrent
 import dev.retza.mak.ui.components.ClassItemUi
 import dev.retza.mak.ui.components.toUi
 import java.time.DayOfWeek
 import java.time.LocalDate
+import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
 
 internal val fullDateFormatter = DateTimeFormatter.ofPattern("EEEE, d MMMM yyyy", AppLocale)
@@ -89,7 +91,11 @@ internal val shortDayNames = linkedMapOf(
 internal fun classCountLabel(count: Int): String =
     "$count ${polishPlural(count, "zajęcie", "zajęcia", "zajęć")}"
 
-internal fun PlannedOccurrence.toUi(conflictLabel: String?, conflictWith: String? = null): ClassItemUi {
+internal fun PlannedOccurrence.toUi(
+    conflictLabel: String?,
+    conflictWith: String? = null,
+    moment: LocalDateTime? = null
+): ClassItemUi {
     return ClassItemUi(
         id = id,
         name = name,
@@ -111,7 +117,8 @@ internal fun PlannedOccurrence.toUi(conflictLabel: String?, conflictWith: String
         occurrenceNote = occurrenceNoteBody?.takeIf { it.isNotBlank() },
         status = status.toUi(),
         conflictLabel = conflictLabel,
-        conflictWith = conflictWith
+        conflictWith = conflictWith,
+        isCurrent = moment != null && isOccurrenceCurrent(moment)
     )
 }
 

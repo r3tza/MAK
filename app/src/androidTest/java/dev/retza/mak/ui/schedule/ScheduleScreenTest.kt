@@ -518,7 +518,7 @@ class ScheduleScreenTest {
             val density = LocalDensity.current
             val testDensity = fontScale?.let { Density(density.density, it) } ?: density
             CompositionLocalProvider(LocalDensity provides testDensity) {
-                MAKTheme(darkTheme = darkTheme, dynamicColor = false) {
+                MAKTheme(darkTheme = darkTheme) {
                     Box(modifier = Modifier.width(width).height(height)) {
                         ScheduleScreen(
                             state = state,

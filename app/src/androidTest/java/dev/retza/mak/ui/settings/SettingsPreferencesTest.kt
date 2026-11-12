@@ -104,35 +104,12 @@ class SettingsPreferencesTest {
     }
 
     @Test
-    fun turningMainOnEnablesAllKinds() = runBlocking {
-        val preferences = preferences(openDataStore())
-
-        preferences.setCollisionNotificationsEnabled(true)
-
-        assertNotifications(preferences, enabled = true, evening = true, beforeClass = true)
-    }
-
-    @Test
     fun turningMainOffDisablesAllKinds() = runBlocking {
         val preferences = preferences(openDataStore())
         preferences.setCollisionNotificationsEnabled(true)
 
         preferences.setCollisionNotificationsEnabled(false)
 
-        assertNotifications(preferences, enabled = false, evening = false, beforeClass = false)
-    }
-
-    @Test
-    fun turningOffLastKindTurnsMainOff() = runBlocking {
-        val preferences = preferences(openDataStore())
-        preferences.setCollisionNotificationsEnabled(true)
-        preferences.setGapEveningNotificationsEnabled(false)
-        preferences.setGapBeforeClassNotificationsEnabled(false)
-
-        preferences.setEveningNotificationsEnabled(false)
-        assertNotifications(preferences, enabled = true, evening = false, beforeClass = true)
-
-        preferences.setBeforeClassNotificationsEnabled(false)
         assertNotifications(preferences, enabled = false, evening = false, beforeClass = false)
     }
 
@@ -157,10 +134,11 @@ class SettingsPreferencesTest {
     }
 
     @Test
-    fun mainSwitchCoversGapKinds() = runBlocking {
+    fun mainSwitchTurnsEveryKindOnAndTurningOffTheLastKindTurnsItOff() = runBlocking {
         val preferences = preferences(openDataStore())
 
         preferences.setCollisionNotificationsEnabled(true)
+        assertNotifications(preferences, enabled = true, evening = true, beforeClass = true)
         assertGapNotifications(preferences, gapEvening = true, gapBeforeClass = true)
 
         preferences.setEveningNotificationsEnabled(false)

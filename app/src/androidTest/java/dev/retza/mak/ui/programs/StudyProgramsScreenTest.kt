@@ -35,7 +35,7 @@ class StudyProgramsScreenTest {
     fun listShowsProgramsWithDistinctNamesAndOpensEditAt320Dp() {
         var opened: Long? = null
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(700.dp)) {
                     StudyProgramsScreen(
                         state = StudyProgramsUiState(
@@ -67,7 +67,7 @@ class StudyProgramsScreenTest {
         var visibility: Pair<Long, Boolean>? = null
         var opened: Long? = null
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(700.dp)) {
                     StudyProgramsScreen(
                         state = StudyProgramsUiState(
@@ -98,7 +98,7 @@ class StudyProgramsScreenTest {
     @Test
     fun emptyListExplainsWhereProgramsComeFrom() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 StudyProgramsScreen(
                     state = StudyProgramsUiState(),
                     onOpenProgram = {},
@@ -116,7 +116,7 @@ class StudyProgramsScreenTest {
         var programs by mutableStateOf(listOf(StudyProgramUi(1L, "Informatyka", "#137B71")))
         var addRequests = 0
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(700.dp)) {
                     StudyProgramsScreen(
                         state = StudyProgramsUiState(programs = programs),
@@ -139,7 +139,7 @@ class StudyProgramsScreenTest {
     @Test
     fun newProgramFormHasNoDeleteSectionAt320Dp() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     StudyProgramEditScreen(
                         editor = StudyProgramEditorUi(id = null, activeSemesterName = "Semestr 2026/27"),
@@ -166,7 +166,7 @@ class StudyProgramsScreenTest {
     fun editScreenShowsErrorAndActionsAt320Dp() {
         var saved = 0
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     StudyProgramEditScreen(
                         editor = StudyProgramEditorUi(id = 1L, name = "", nameError = "Podaj nazwę kierunku."),
@@ -192,7 +192,7 @@ class StudyProgramsScreenTest {
     @Test
     fun assignedProgramHasDisabledDeleteWithExplanationAt320Dp() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     StudyProgramEditScreen(
                         editor = StudyProgramEditorUi(

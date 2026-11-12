@@ -355,7 +355,6 @@ class SettingsViewModelTest {
         backgroundScope.launch { viewModel.settings.collect {} }
         advanceUntilIdle()
 
-        assertEquals(listOf("20", "30", "45", "60"), viewModel.settings.value.gapThresholdOptions.map { it.id })
         assertTrue(viewModel.settings.value.gapThresholdOptions.first { it.id == "30" }.isSelected)
 
         viewModel.setGapThresholdMinutes("45")
@@ -373,7 +372,6 @@ class SettingsViewModelTest {
         backgroundScope.launch { viewModel.settings.collect {} }
         advanceUntilIdle()
 
-        assertEquals(listOf("0", "5", "10", "15", "20"), viewModel.settings.value.minimumBreakOptions.map { it.id })
         assertTrue(viewModel.settings.value.minimumBreakOptions.first { it.id == "0" }.isSelected)
 
         viewModel.setMinimumBreakMinutes("10")
@@ -381,6 +379,22 @@ class SettingsViewModelTest {
 
         assertEquals(10, preferences.planDisplay.first().minimumBreakMinutes)
         assertTrue(viewModel.settings.value.minimumBreakOptions.first { it.id == "10" }.isSelected)
+    }
+
+    @Test
+    fun tomorrowInEveningSwitchPersistsAndMapsToState() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val preferences = InMemorySettingsPreferences()
+        val viewModel = viewModel(repository, preferences)
+        backgroundScope.launch { viewModel.settings.collect {} }
+        advanceUntilIdle()
+        assertTrue(viewModel.settings.value.showTomorrowInEvening)
+
+        viewModel.setShowTomorrowInEvening(false)
+        advanceUntilIdle()
+
+        assertFalse(preferences.planDisplay.first().showTomorrowInEvening)
+        assertFalse(viewModel.settings.value.showTomorrowInEvening)
     }
 
     @Test

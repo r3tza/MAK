@@ -37,6 +37,11 @@ class InMemorySettingsPreferences(
         display.value = display.value.copy(minimumBreakMinutes = minutes)
     }
 
+    override suspend fun setShowTomorrowInEvening(enabled: Boolean) {
+        awaitWrite()
+        display.value = display.value.copy(showTomorrowInEvening = enabled)
+    }
+
     override suspend fun setStudyProgramHidden(id: Long, hidden: Boolean) {
         awaitWrite()
         val current = display.value.hiddenProgramIds

@@ -36,7 +36,7 @@ class ClassEditScreenTest {
     @Test
     fun hiddenStudyProgramIsMarkedAndExplainedAt320Dp() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     ClassEditScreen(
                         state = ClassEditUiState(
@@ -80,7 +80,7 @@ class ClassEditScreenTest {
     fun dayFieldIsHiddenOnlyForOneOffClasses() {
         var recurrence by mutableStateOf(Recurrence.EVERY_WEEK)
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 ClassEditScreen(
                     state = ClassEditUiState(recurrence = recurrence),
                     onNameChanged = {},
@@ -120,7 +120,7 @@ class ClassEditScreenTest {
     fun recurrenceIsHiddenForExamAndCreditTest() {
         var type by mutableStateOf("Wykład")
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 ClassEditScreen(
                     state = ClassEditUiState(type = type, recurrence = if (type in oneOffClassTypes) Recurrence.ONCE else Recurrence.EVERY_WEEK),
                     onNameChanged = {},
@@ -157,7 +157,7 @@ class ClassEditScreenTest {
     @Test
     fun hiddenDataDialogBlocksActionsWhileSavingAt320Dp() {
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 Box(modifier = Modifier.width(320.dp).height(900.dp)) {
                     ClassEditScreen(
                         state = ClassEditUiState(
@@ -200,7 +200,7 @@ class ClassEditScreenTest {
         var confirmed = 0
         var dismissed = 0
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 ClassEditScreen(
                     state = ClassEditUiState(showDiscardConfirmation = true),
                     onNameChanged = {},
@@ -238,7 +238,7 @@ class ClassEditScreenTest {
     fun formCancelReportsCancel() {
         var cancelled = 0
         composeTestRule.setContent {
-            MAKTheme(dynamicColor = false) {
+            MAKTheme() {
                 ClassEditScreen(
                     state = ClassEditUiState(),
                     onNameChanged = {},

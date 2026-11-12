@@ -2,15 +2,22 @@ package dev.retza.mak.widget
 
 import android.content.Context
 import android.content.Intent
+import android.graphics.Bitmap
+import android.graphics.Canvas
+import android.graphics.LinearGradient
+import android.graphics.Paint
+import android.graphics.Shader
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.glance.GlanceId
 import androidx.glance.GlanceModifier
+import androidx.compose.ui.platform.LocalContext
 import dev.retza.mak.R
 import androidx.glance.layout.size
 import androidx.glance.ImageProvider
@@ -47,7 +54,9 @@ import androidx.glance.text.Text
 import androidx.glance.text.TextStyle
 import dev.retza.mak.MainActivity
 import dev.retza.mak.ui.classCountLabel
+import dev.retza.mak.ui.components.CurrentClassTint
 import dev.retza.mak.ui.components.courseShapeColor
+import dev.retza.mak.ui.components.courseTextColor
 import dev.retza.mak.ui.components.parseHexColor
 import dev.retza.mak.ui.theme.MakOrange
 import dev.retza.mak.ui.theme.MakOrangeDark
@@ -68,7 +77,9 @@ class MakTodayWidget : GlanceAppWidget() {
             semesterRepository = koin.get(),
             activePlanSource = koin.get(),
             activePlanProvider = koin.get(),
-            clock = koin.get()
+            clock = koin.get(),
+            daySwitchScheduler = AlarmWidgetDaySwitchScheduler(context, koin.get()),
+            timeTicks = WidgetTimeTicks.ticks
         ).states().stateIn(this)
 
         provideContent {
@@ -111,7 +122,7 @@ private fun MakTodayWidgetContent(context: Context, state: WidgetUiState) {
             is WidgetUiState.OutsideSemester -> WidgetMessage("Poza zakresem semestru")
             is WidgetUiState.AllProgramsHidden -> WidgetMessage("Wszystkie kierunki są ukryte na tym telefonie.")
             is WidgetUiState.EmptyDay -> {
-                WidgetMessage("Brak zajęć na dziś")
+                WidgetMessage(if (state.isTomorrow) "Jutro bez zajęć" else "Brak zajęć na dziś")
             }
             is WidgetUiState.FreeDay -> WidgetFreeDay(state)
             is WidgetUiState.Error -> WidgetMessage(state.message)
@@ -309,9 +320,24 @@ private fun WidgetOccurrenceRow(
     openTodayAction: androidx.glance.action.Action,
     layoutPolicy: WidgetLayoutPolicy
 ) {
+    val rawColor = item.courseColor?.let(::parseHexColor)
+    val widgetBackground = if (item.phase == WidgetOccurrencePhase.Current && rawColor != null) {
+        GlanceTheme.colors.widgetBackground.getColor(LocalContext.current)
+    } else null
+    // Fitted to the resolved widget background only for the running class, which gets the tint.
+    val currentTint = remember(item.courseColor, widgetBackground) {
+        if (rawColor != null && widgetBackground != null) {
+            val fittedColor = courseShapeColor(rawColor, widgetBackground)
+            CurrentRowTint(
+                gradient = currentGradient(fittedColor),
+                labelColor = courseTextColor(fittedColor, CurrentClassTint.startBackground(fittedColor, widgetBackground))
+            )
+        } else null
+    }
     Row(
         modifier = GlanceModifier
             .fillMaxWidth()
+            .then(currentTint?.let { GlanceModifier.background(it.gradient) } ?: GlanceModifier)
             .clickable(openTodayAction),
         verticalAlignment = Alignment.CenterVertically,
         horizontalAlignment = Alignment.Start
@@ -321,8 +347,7 @@ private fun WidgetOccurrenceRow(
                 .width(4.dp)
                 .height(layoutPolicy.accentHeight)
                 .then(
-                    item.courseColor?.let(::parseHexColor)
-                        ?.let { GlanceModifier.background(widgetCourseColor(it)) }
+                    rawColor?.let { GlanceModifier.background(widgetCourseColor(it)) }
                         ?: GlanceModifier.background(Color.Transparent)
                 )
                 .cornerRadius(2.dp)
@@ -333,7 +358,6 @@ private fun WidgetOccurrenceRow(
             text = "${item.startTime}-${item.endTime}",
             modifier = GlanceModifier.width(62.dp),
             style = TextStyle(
-                // The accent stays on the "Teraz" and "Następne" labels only.
                 color = if (past) GlanceTheme.colors.onSurfaceVariant else GlanceTheme.colors.onBackground,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold
@@ -353,9 +377,9 @@ private fun WidgetOccurrenceRow(
                     ),
                     maxLines = layoutPolicy.nameMaxLines
                 )
-                if (item.phase == WidgetOccurrencePhase.Current || item.phase == WidgetOccurrencePhase.Next) {
+                if (item.phase == WidgetOccurrencePhase.Current) {
                     Spacer(GlanceModifier.width(4.dp))
-                    WidgetPhaseLabel(item.phase)
+                    WidgetPhaseLabel(currentTint?.labelColor)
                 }
             }
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -427,16 +451,42 @@ private fun WidgetConflictAlert(item: WidgetOccurrenceUi) {
 }
 
 @Composable
-private fun WidgetPhaseLabel(phase: WidgetOccurrencePhase) {
+private fun WidgetPhaseLabel(tintedColor: Color?) {
+    // The tinted color already fits the resolved background, so both themes use it.
+    val labelColor = tintedColor?.let { ColorProvider(day = it, night = it) } ?: GlanceTheme.colors.onBackground
     Text(
-        text = if (phase == WidgetOccurrencePhase.Current) "Teraz" else "Następne",
+        text = "Teraz",
         style = TextStyle(
-            color = GlanceTheme.colors.primary,
-            fontSize = 11.sp,
+            color = labelColor,
+            fontSize = 12.sp,
             fontWeight = FontWeight.Bold
         ),
         maxLines = 1
     )
+}
+
+private class CurrentRowTint(val gradient: ImageProvider, val labelColor: Color)
+
+/** A transparent overlay keeps the launcher's dynamic surface visible below the course tint. */
+private fun currentGradient(color: Color): ImageProvider {
+    val bitmap = Bitmap.createBitmap(256, 2, Bitmap.Config.ARGB_8888)
+    val paint = Paint(Paint.ANTI_ALIAS_FLAG).apply {
+        shader = LinearGradient(
+            0f,
+            0f,
+            256f,
+            0f,
+            intArrayOf(
+                color.copy(alpha = CurrentClassTint.START).toArgb(),
+                color.copy(alpha = CurrentClassTint.MIDDLE).toArgb(),
+                color.copy(alpha = 0f).toArgb()
+            ),
+            floatArrayOf(0f, CurrentClassTint.MIDDLE_STOP, 1f),
+            Shader.TileMode.CLAMP
+        )
+    }
+    Canvas(bitmap).drawRect(0f, 0f, 256f, 2f, paint)
+    return ImageProvider(bitmap)
 }
 
 @Composable

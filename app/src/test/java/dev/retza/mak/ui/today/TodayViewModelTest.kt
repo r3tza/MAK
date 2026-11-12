@@ -9,6 +9,7 @@ import dev.retza.mak.ui.MainDispatcherRule
 import dev.retza.mak.ui.activePlanSource
 import dev.retza.mak.settings.InMemorySettingsPreferences
 import java.time.Clock
+import java.time.DayOfWeek
 import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
@@ -34,6 +35,12 @@ class TodayViewModelTest {
     @Test
     fun todayStateMapsActiveSemesterPlan() = runTest(mainDispatcher) {
         val repository = FakeRepository()
+        repository.classes += repository.classes.single().copy(
+            id = 2L,
+            name = "Analiza",
+            startTime = LocalTime.of(11, 1),
+            endTime = LocalTime.of(12, 0)
+        )
         val viewModel = todayViewModel(repository)
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
@@ -42,10 +49,10 @@ class TodayViewModelTest {
         assertEquals("Poniedziałek, 21 września", state.dateLabel)
         assertEquals("Semestr", state.semesterLabel)
         assertTrue(state.weekLabel.startsWith("Tydzień"))
-        assertEquals(1, state.classCount)
+        assertEquals(2, state.classCount)
         assertEquals(0, state.collisionCount)
-        assertEquals(0, state.gapCount)
-        assertEquals("Programowanie", state.items.single().name)
+        assertEquals(1, state.gapCount)
+        assertEquals(listOf("Programowanie", "Analiza"), state.items.map { it.name })
     }
 
     @Test
@@ -65,24 +72,19 @@ class TodayViewModelTest {
     }
 
     @Test
-    fun gapCountingUsesThreshold() = runTest(mainDispatcher) {
+    fun currentOccurrenceUpdatesOnRefreshAndStopsAtItsEnd() = runTest(mainDispatcher) {
         val repository = FakeRepository()
-        repository.classes += repository.classes.single().copy(
-            id = 2L,
-            name = "Analiza",
-            startTime = LocalTime.of(11, 1),
-            endTime = LocalTime.of(12, 0)
-        )
-        val preferences = InMemorySettingsPreferences(
-            initialPlanDisplay = PlanDisplaySettings(minimumBreakMinutes = 0, gapThresholdMinutes = 30)
-        )
-        val viewModel = todayViewModel(repository, preferences = preferences)
+        val clock = MutableClock(Instant.parse("2026-09-21T07:30:00Z"), zone)
+        val viewModel = todayViewModel(repository, clock = clock)
         backgroundScope.launch { viewModel.today.collect {} }
         advanceUntilIdle()
 
-        val state = viewModel.today.value
-        assertEquals(2, state.classCount)
-        assertEquals(1, state.gapCount)
+        assertTrue(viewModel.today.value.items.single().isCurrent)
+        clock.advanceTo(Instant.parse("2026-09-21T08:30:00Z"))
+        viewModel.refreshToday()
+        advanceUntilIdle()
+
+        assertFalse(viewModel.today.value.items.single().isCurrent)
     }
 
     @Test
@@ -193,6 +195,48 @@ class TodayViewModelTest {
         assertEquals("Rekolekcje", state.freeDay?.title)
         assertTrue(state.freeDay!!.subtitle.contains("21 wrz - 25 wrz"))
         assertTrue(state.items.isEmpty())
+    }
+
+    @Test
+    fun showsTomorrowAfterSwitchTimeAndRefresh() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        repository.classes += repository.classes.single().copy(
+            id = 2L,
+            name = "Analiza",
+            dayOfWeek = DayOfWeek.TUESDAY
+        )
+        val clock = MutableClock(Instant.parse("2026-09-21T08:00:00Z"), zone)
+        val viewModel = todayViewModel(repository, clock = clock)
+        backgroundScope.launch { viewModel.today.collect {} }
+        advanceUntilIdle()
+        assertEquals("Poniedziałek, 21 września", viewModel.today.value.dateLabel)
+        assertFalse(viewModel.today.value.isTomorrow)
+
+        // 13:00 in Warsaw is after 12:30, two hours after the Monday class ends at 10:30.
+        clock.advanceTo(Instant.parse("2026-09-21T11:00:00Z"))
+        viewModel.refreshToday()
+        advanceUntilIdle()
+
+        val state = viewModel.today.value
+        assertTrue(state.dateLabel.startsWith("Jutro, "))
+        assertTrue(state.isTomorrow)
+        assertEquals(listOf("Analiza"), state.items.map { it.name })
+        assertTrue(state.items.all { !it.isCurrent })
+    }
+
+    @Test
+    fun keepsTodayAfterSwitchTimeWhenTomorrowIsTurnedOff() = runTest(mainDispatcher) {
+        val repository = FakeRepository()
+        val preferences = InMemorySettingsPreferences()
+        preferences.setShowTomorrowInEvening(false)
+        val clock = MutableClock(Instant.parse("2026-09-21T11:00:00Z"), zone)
+        val viewModel = todayViewModel(repository, clock = clock, preferences = preferences)
+        backgroundScope.launch { viewModel.today.collect {} }
+        advanceUntilIdle()
+
+        val state = viewModel.today.value
+        assertEquals("Poniedziałek, 21 września", state.dateLabel)
+        assertFalse(state.isTomorrow)
     }
 
     private fun todayViewModel(

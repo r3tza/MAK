@@ -1,3 +1,3 @@
 # Plan
 
-Brak zaplanowanych kroków. Poprawki po przeglądzie na emulatorze z 2026-10-13 (I-99 do I-103) są wykonane na gałęzi `task/settings-and-gap-notifications` i czekają na odbiór na telefonie (`QUEUE.md`).
+Brak zaplanowanych kroków implementacji. I-112 jest wykonane na gałęzi `task/test-review` razem z poprawkami po przeglądzie jakości z 2026-11-12 i trafia do wydania 0.5.0. Otwarte odbiory są w `QUEUE.md`, a porządki odłożone do kolejnej wersji w jego sekcji „Pomysły do rozważenia”.

@@ -11,6 +11,8 @@ import dev.retza.mak.domain.allProgramsHidden
 import dev.retza.mak.domain.hiddenAssignments
 import dev.retza.mak.domain.collisionLabels
 import dev.retza.mak.domain.collisionPartnerNames
+import dev.retza.mak.domain.shownPlanDate
+import dev.retza.mak.domain.tomorrowSwitchTime
 import dev.retza.mak.domain.uniqueCollisionCount
 import dev.retza.mak.data.ActivePlanSource
 import dev.retza.mak.ui.AppLocale
@@ -19,7 +21,7 @@ import dev.retza.mak.ui.todayNote
 import dev.retza.mak.ui.toUi
 import dev.retza.mak.ui.todayTitleFormatter
 import java.time.Clock
-import java.time.LocalDate
+import java.time.LocalDateTime
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -36,7 +38,7 @@ class TodayViewModel(
     private val clock: Clock,
     private val activePlanProvider: ActivePlanProvider
 ) : ViewModel() {
-    private val date = MutableStateFlow(LocalDate.now(clock))
+    private val now = MutableStateFlow(LocalDateTime.now(clock))
 
     private val activePlan = activePlanSource.observeActive()
         .map { LoadedPlan(it) }
@@ -44,9 +46,9 @@ class TodayViewModel(
 
     val today: StateFlow<TodayUiState> = combine(
         activePlan,
-        date
-    ) { loaded, day ->
-        if (loaded == null) loadingTodayState() else buildToday(loaded.inputs, day)
+        now
+    ) { loaded, moment ->
+        if (loaded == null) loadingTodayState() else buildToday(loaded.inputs, moment)
     }.stateIn(
         scope = viewModelScope,
         started = SharingStarted.WhileSubscribed(5_000),
@@ -54,33 +56,50 @@ class TodayViewModel(
     )
 
     fun refreshToday() {
-        date.value = LocalDate.now(clock)
+        now.value = LocalDateTime.now(clock)
     }
 
     private fun buildToday(
         inputs: ActivePlanInputs?,
-        day: LocalDate
+        moment: LocalDateTime
     ): TodayUiState {
         if (inputs == null) return emptyTodayState()
         val data = inputs.data
-        val plan = activePlanProvider.resolve(inputs, day)
+        val today = moment.toLocalDate()
+        val todayPlan = activePlanProvider.resolve(inputs, today)
+        val day = shownPlanDate(
+            today = today,
+            now = moment.toLocalTime(),
+            switchTime = tomorrowSwitchTime(todayPlan.schedule.occurrences),
+            enabled = inputs.display.showTomorrowInEvening
+        )
+        val isTomorrow = day != today
+        val plan = if (isTomorrow) activePlanProvider.resolve(inputs, day) else todayPlan
         val allHidden = data.allProgramsHidden(inputs.display)
         val schedule = plan.schedule
         val labels = collisionLabels(plan.collisions)
         val names = collisionPartnerNames(plan.collisions)
         return TodayUiState(
-            dateLabel = day.format(todayTitleFormatter).replaceFirstChar { it.titlecase(AppLocale) },
+            dateLabel = if (isTomorrow) {
+                "Jutro, " + day.format(todayTitleFormatter)
+            } else {
+                day.format(todayTitleFormatter).replaceFirstChar { it.titlecase(AppLocale) }
+            },
             semesterLabel = data.semester.name,
             weekLabel = schedule.weekStatus.label(),
             hasActiveSemester = true,
             classCount = schedule.occurrences.size,
             collisionCount = uniqueCollisionCount(plan.collisions),
             gapCount = plan.gapCount,
-            items = schedule.occurrences.map { it.toUi(labels[it.id], names[it.id]) },
+            items = schedule.occurrences.map {
+                it.toUi(labels[it.id], names[it.id], moment)
+            },
             // With every program hidden the note on the list says it all; the hint would repeat it.
             hiddenProgramNames = if (allHidden) emptyList() else hiddenProgramNames(data, inputs.display),
             allProgramsHidden = allHidden,
-            freeDay = schedule.freeDay?.todayNote()
+            freeDay = schedule.freeDay?.todayNote(),
+            isTomorrow = isTomorrow,
+            emptyMessage = if (isTomorrow) "Nie masz jutro zajęć." else "Nie masz dziś zajęć."
         )
     }
 }

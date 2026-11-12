@@ -93,6 +93,10 @@ android {
             assets.directories += "$projectDir/schemas"
         }
     }
+    lint {
+        baseline = file("lint-baseline.xml")
+        abortOnError = true
+    }
 }
 
 ksp {
